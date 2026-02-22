@@ -6,6 +6,7 @@ import ArticlesSection from "@/components/ArticlesSection";
 import AboutSection from "@/components/AboutSection";
 import PodcastSection from "@/components/PodcastSection";
 import SiteFooter from "@/components/SiteFooter";
+import AdminButton from "@/components/AdminButton";
 
 const Index = () => {
   return (
@@ -20,6 +21,7 @@ const Index = () => {
         <PodcastSection />
       </main>
       <SiteFooter />
+      <AdminButton />
     </div>
   );
 };
