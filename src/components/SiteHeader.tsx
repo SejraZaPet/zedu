@@ -13,6 +13,7 @@ const navItems = [
 const SiteHeader = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 50);
@@ -27,12 +28,12 @@ const SiteHeader = () => {
       }`}
     >
       <div className="container mx-auto flex items-center justify-between h-16 md:h-20 px-4 md:px-8">
-        <a href="/" className="flex items-center gap-2 group">
-          <img src={logo} alt="Sejra za pět" className="h-8 md:h-10 w-auto" />
+        <button onClick={() => navigate("/")} className="flex items-center gap-2 group cursor-pointer bg-transparent border-none p-0">
+          <img src={logo} alt="Sejra za pět" className="h-8 md:h-10 w-auto invert brightness-200" />
           <span className="font-heading text-xl md:text-2xl font-semibold text-foreground tracking-wide group-hover:text-primary transition-colors">
             Sejra<span className="text-primary"> za pět</span>
           </span>
-        </a>
+        </button>
 
         <nav className="hidden md:flex items-center gap-8">
           {navItems.map((item) => (
