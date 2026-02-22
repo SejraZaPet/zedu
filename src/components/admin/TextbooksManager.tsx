@@ -10,6 +10,7 @@ import BlockEditor from "./BlockEditor";
 import {
   Plus, Pencil, Trash2, X, Save, ArrowLeft, Upload, GripVertical,
 } from "lucide-react";
+import LessonPreviewDialog from "./LessonPreviewDialog";
 import {
   DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors, type DragEndEvent,
 } from "@dnd-kit/core";
@@ -246,6 +247,11 @@ const TextbooksManager = () => {
 
           <div className="flex gap-2 pt-2 border-t border-border">
             <Button size="sm" onClick={saveLesson}><Save className="w-4 h-4 mr-1" />Uložit lekci</Button>
+            <LessonPreviewDialog
+              title={editingLesson.title}
+              heroImageUrl={editingLesson.hero_image_url}
+              blocks={editingLesson.blocks}
+            />
             <Button size="sm" variant="ghost" onClick={() => { setEditingLesson(null); setIsNewLesson(false); }}><X className="w-4 h-4 mr-1" />Zrušit</Button>
           </div>
         </div>
