@@ -20,7 +20,8 @@ export type BlockType =
   | "table"
   | "accordion"
   | "quote"
-  | "lesson_link";
+  | "lesson_link"
+  | "youtube";
 
 export interface Block {
   id: string;
@@ -40,6 +41,7 @@ export const BLOCK_TYPES: { type: BlockType; label: string; icon: string }[] = [
   { type: "accordion", label: "Akordeon", icon: "▼" },
   { type: "quote", label: "Citace", icon: "❝" },
   { type: "lesson_link", label: "Odkaz na lekci", icon: "🔗" },
+  { type: "youtube", label: "YouTube video", icon: "▶" },
 ];
 
 export const createDefaultBlock = (type: BlockType): Block => {
@@ -67,6 +69,8 @@ export const createDefaultBlock = (type: BlockType): Block => {
       return { ...base, props: { text: "", author: "" } };
     case "lesson_link":
       return { ...base, props: { lessonId: "", buttonText: "" } };
+    case "youtube":
+      return { ...base, props: { url: "", caption: "", width: "full" } };
     default:
       return { ...base, props: {} };
   }
