@@ -5,7 +5,7 @@ import logo from "@/assets/logo.png";
 
 const navItems = [
   { label: "Učebnice", href: "#ucebnice" },
-  { label: "Články", href: "#clanky" },
+  { label: "Ke kávě", href: "#ke-kave" },
   { label: "Podcast", href: "#podcast" },
   { label: "O projektu", href: "#o-projektu" },
 ];

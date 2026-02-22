@@ -5,12 +5,12 @@ import ArticlesManager from "@/components/admin/ArticlesManager";
 import LinksManager from "@/components/admin/LinksManager";
 import TextbooksManager from "@/components/admin/TextbooksManager";
 import { Button } from "@/components/ui/button";
-import { BookOpen, FileText, Link2, LogOut, Home, GraduationCap } from "lucide-react";
+import { BookOpen, Coffee, Link2, LogOut, Home, GraduationCap } from "lucide-react";
 
 const tabs = [
   { id: "textbooks", label: "Učebnice", icon: GraduationCap },
   { id: "lessons", label: "Lekce", icon: BookOpen },
-  { id: "articles", label: "Články", icon: FileText },
+  { id: "articles", label: "Ke kávě", icon: Coffee },
   { id: "links", label: "Odkazy", icon: Link2 },
 ] as const;
 
