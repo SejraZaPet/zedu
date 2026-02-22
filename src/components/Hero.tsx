@@ -25,7 +25,7 @@ const Hero = () => {
           Sejra <span className="text-gradient-gold">za pět</span>
         </h1>
 
-        <p className="font-body italic text-lg md:text-xl text-accent/80 mb-6 animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
+        <p className="font-body italic text-lg md:text-xl text-primary/80 mb-6 animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
           S láskou ke gastronomii do učitelské sborovny
         </p>
 

@@ -22,7 +22,7 @@
     --muted: 150 6% 16%;
     --muted-foreground: 150 6% 55%;
 
-    --accent: 140 18% 38%;
+    --accent: 14 45% 52%;
     --accent-foreground: 60 10% 95%;
 
     --destructive: 0 84.2% 60.2%;
@@ -36,7 +36,7 @@
 
     --sidebar-background: 150 8% 8%;
     --sidebar-foreground: 60 8% 80%;
-    --sidebar-primary: 140 18% 38%;
+    --sidebar-primary: 14 45% 52%;
     --sidebar-primary-foreground: 60 10% 95%;
     --sidebar-accent: 150 8% 14%;
     --sidebar-accent-foreground: 60 8% 80%;
@@ -44,9 +44,9 @@
     --sidebar-ring: 14 45% 52%;
 
     /* Custom tokens */
-    --sage: 140 18% 38%;
-    --sage-light: 140 15% 52%;
-    --sage-dark: 140 20% 28%;
+    --sage: 14 45% 52%;
+    --sage-light: 14 40% 65%;
+    --sage-dark: 14 50% 40%;
     --terracotta: 14 45% 52%;
     --terracotta-light: 14 40% 65%;
     --terracotta-dark: 14 50% 40%;
