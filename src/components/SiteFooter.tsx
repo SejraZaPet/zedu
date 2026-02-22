@@ -20,7 +20,7 @@ const SiteFooter = () => {
             <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4">Navigace</h4>
             <nav className="flex flex-col gap-2">
               <a href="#ucebnice" className="text-sm text-muted-foreground hover:text-primary transition-colors">Učebnice</a>
-              <a href="#clanky" className="text-sm text-muted-foreground hover:text-primary transition-colors">Články</a>
+              <a href="#ke-kave" className="text-sm text-muted-foreground hover:text-primary transition-colors">Ke kávě</a>
               <a href="#podcast" className="text-sm text-muted-foreground hover:text-primary transition-colors">Podcast</a>
               <a href="#o-projektu" className="text-sm text-muted-foreground hover:text-primary transition-colors">O projektu</a>
             </nav>
