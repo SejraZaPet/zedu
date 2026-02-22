@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
+import logo from "@/assets/logo.png";
 
 const navItems = [
   { label: "Učebnice", href: "#ucebnice" },
@@ -25,8 +27,11 @@ const SiteHeader = () => {
       }`}
     >
       <div className="container mx-auto flex items-center justify-between h-16 md:h-20 px-4 md:px-8">
-        <a href="#" className="font-heading text-xl md:text-2xl font-semibold text-foreground tracking-wide">
-          Sejra<span className="text-primary"> za pět</span>
+        <a href="/" className="flex items-center gap-2 group">
+          <img src={logo} alt="Sejra za pět" className="h-8 md:h-10 w-auto" />
+          <span className="font-heading text-xl md:text-2xl font-semibold text-foreground tracking-wide group-hover:text-primary transition-colors">
+            Sejra<span className="text-primary"> za pět</span>
+          </span>
         </a>
 
         <nav className="hidden md:flex items-center gap-8">
