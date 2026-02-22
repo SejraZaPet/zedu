@@ -8,6 +8,14 @@ import SiteFooter from "@/components/SiteFooter";
 import type { Block } from "@/lib/textbook-config";
 import LessonLinkButton from "@/components/LessonLinkButton";
 
+const extractYouTubeId = (url: string): string | null => {
+  if (!url) return null;
+  const m = url.match(
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/
+  );
+  return m ? m[1] : null;
+};
+
 const LessonPage = () => {
   const { subjectId, grade, topicSlug, lessonSlug } = useParams<{
     subjectId: string;
@@ -204,6 +212,25 @@ const LessonBlock = ({ block }: { block: Block }) => {
       );
     case "lesson_link":
       return <LessonLinkButton lessonId={p.lessonId} buttonText={p.buttonText} />;
+    case "youtube": {
+      const ytId = extractYouTubeId(p.url || "");
+      if (!ytId) return null;
+      const widthClass = p.width === "half" ? "max-w-sm" : p.width === "three_quarter" ? "max-w-2xl" : "w-full";
+      return (
+        <figure className={`mx-auto ${widthClass}`}>
+          <div className="aspect-video w-full rounded-lg overflow-hidden">
+            <iframe
+              src={`https://www.youtube-nocookie.com/embed/${ytId}`}
+              className="w-full h-full"
+              allowFullScreen
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              title={p.caption || "YouTube video"}
+            />
+          </div>
+          {p.caption && <figcaption className="text-sm text-muted-foreground mt-2 text-center">{p.caption}</figcaption>}
+        </figure>
+      );
+    }
     default:
       return null;
   }
