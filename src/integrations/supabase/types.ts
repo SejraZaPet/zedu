@@ -104,6 +104,80 @@ export type Database = {
         }
         Relationships: []
       }
+      textbook_lessons: {
+        Row: {
+          blocks: Json
+          created_at: string
+          hero_image_url: string | null
+          id: string
+          sort_order: number
+          status: string
+          title: string
+          topic_id: string
+          updated_at: string
+        }
+        Insert: {
+          blocks?: Json
+          created_at?: string
+          hero_image_url?: string | null
+          id?: string
+          sort_order?: number
+          status?: string
+          title: string
+          topic_id: string
+          updated_at?: string
+        }
+        Update: {
+          blocks?: Json
+          created_at?: string
+          hero_image_url?: string | null
+          id?: string
+          sort_order?: number
+          status?: string
+          title?: string
+          topic_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "textbook_lessons_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "textbook_topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      textbook_topics: {
+        Row: {
+          created_at: string
+          grade: number
+          id: string
+          sort_order: number
+          subject: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          grade: number
+          id?: string
+          sort_order?: number
+          subject: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          grade?: number
+          id?: string
+          sort_order?: number
+          subject?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
