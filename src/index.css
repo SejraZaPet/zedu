@@ -50,8 +50,8 @@
     --surface: 220 12% 10%;
     --surface-hover: 220 12% 14%;
 
-    --font-heading: 'Playfair Display', Georgia, serif;
-    --font-body: 'DM Sans', system-ui, sans-serif;
+    --font-heading: 'Bebas Neue', 'Impact', sans-serif;
+    --font-body: 'Lato', system-ui, sans-serif;
   }
 }
 
@@ -73,6 +73,8 @@
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-heading);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
 }
 

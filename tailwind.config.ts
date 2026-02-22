@@ -14,8 +14,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        heading: ["Playfair Display", "Georgia", "serif"],
-        body: ["DM Sans", "system-ui", "sans-serif"],
+        heading: ["Bebas Neue", "Impact", "sans-serif"],
+        body: ["Lato", "system-ui", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
