@@ -1,21 +1,21 @@
 import { Button } from "@/components/ui/button";
 import { ArrowDown } from "lucide-react";
-import heroBg from "@/assets/hero-bg.jpg";
+import logo from "@/assets/logo.png";
 
 const Hero = () => {
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Background image */}
-      <div className="absolute inset-0">
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-background">
+      {/* Logo watermark */}
+      <div className="absolute inset-0 flex items-center justify-center">
         <img
-          src={heroBg}
-          alt="Gastronomie"
-          className="w-full h-full object-cover"
+          src={logo}
+          alt=""
+          className="w-[60%] md:w-[50%] lg:w-[40%] max-w-[600px] opacity-[0.08] select-none pointer-events-none"
           loading="eager"
+          aria-hidden="true"
         />
-        <div className="absolute inset-0 bg-background/75" />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
       </div>
+      <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-background/60" />
 
       {/* Content */}
       <div className="relative z-10 text-center px-4 max-w-3xl mx-auto">
