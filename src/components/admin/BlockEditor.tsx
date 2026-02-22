@@ -41,6 +41,7 @@ import CardGridBlock from "./block-editors/CardGridBlock";
 import TableBlock from "./block-editors/TableBlock";
 import AccordionBlock from "./block-editors/AccordionBlock";
 import QuoteBlock from "./block-editors/QuoteBlock";
+import LessonLinkBlock from "./block-editors/LessonLinkBlock";
 
 interface Props {
   blocks: Block[];
@@ -58,6 +59,7 @@ const BlockRenderer = ({ block, onChange }: { block: Block; onChange: (props: Re
     case "table": return <TableBlock block={block} onChange={onChange} />;
     case "accordion": return <AccordionBlock block={block} onChange={onChange} />;
     case "quote": return <QuoteBlock block={block} onChange={onChange} />;
+    case "lesson_link": return <LessonLinkBlock block={block} onChange={onChange} />;
     default: return <p className="text-muted-foreground text-sm">Neznámý blok</p>;
   }
 };
