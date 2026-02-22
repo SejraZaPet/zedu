@@ -3,10 +3,12 @@ import { useAdmin } from "@/hooks/useAdmin";
 import LessonsManager from "@/components/admin/LessonsManager";
 import ArticlesManager from "@/components/admin/ArticlesManager";
 import LinksManager from "@/components/admin/LinksManager";
+import TextbooksManager from "@/components/admin/TextbooksManager";
 import { Button } from "@/components/ui/button";
-import { BookOpen, FileText, Link2, LogOut, Home } from "lucide-react";
+import { BookOpen, FileText, Link2, LogOut, Home, GraduationCap } from "lucide-react";
 
 const tabs = [
+  { id: "textbooks", label: "Učebnice", icon: GraduationCap },
   { id: "lessons", label: "Lekce", icon: BookOpen },
   { id: "articles", label: "Články", icon: FileText },
   { id: "links", label: "Odkazy", icon: Link2 },
@@ -16,7 +18,7 @@ type Tab = typeof tabs[number]["id"];
 
 const Admin = () => {
   const { isAdmin, loading, logout } = useAdmin();
-  const [activeTab, setActiveTab] = useState<Tab>("lessons");
+  const [activeTab, setActiveTab] = useState<Tab>("textbooks");
 
   if (loading) {
     return (
@@ -65,6 +67,7 @@ const Admin = () => {
         </div>
 
         {/* Content */}
+        {activeTab === "textbooks" && <TextbooksManager />}
         {activeTab === "lessons" && <LessonsManager />}
         {activeTab === "articles" && <ArticlesManager />}
         {activeTab === "links" && <LinksManager />}
