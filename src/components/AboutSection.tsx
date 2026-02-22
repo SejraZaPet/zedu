@@ -25,7 +25,7 @@ const AboutSection = () => {
                 chvíli jsem si řekla, že takhle učit nechci. Jsem #kavarenskypovalec a #ucitelvycviku s nakažlivým
                 entusiasmem pro gastronomii. Vítejte v mém světě.
               </p>
-              <p>!Buď gastronomii miluješ nebo ne, není nic mezi tím.</p>
+              <p>"Buď gastronomii miluješ nebo ne, není nic mezi tím."</p>
             </div>
           </div>
         </div>
