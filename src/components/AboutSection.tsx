@@ -17,19 +17,15 @@ const AboutSection = () => {
             <div className="flex items-center gap-3 mb-4">
               <span className="text-sm font-medium uppercase tracking-widest text-primary">O projektu</span>
             </div>
-            <h2 className="font-heading text-3xl md:text-4xl font-semibold mb-6">
-              Paní Sejrová
-            </h2>
+            <h2 className="font-heading text-3xl md:text-4xl font-semibold mb-6">Paní Sejrová</h2>
             <div className="space-y-4 text-muted-foreground leading-relaxed">
               <p>
-                Učitelka s vášní pro gastronomii a moderní vzdělávání. Projekt „Sejra za pět"
-                vznikl z touhy sdílet kvalitní materiály a inspiraci s kolegy i studenty.
+                Ne, není to tak, že bych byla velkým milovníkem sýrů. První dny mé pedagogické stáže zahrnovaly také mé
+                první opravování testů, při kterém jsem dala svoji první pětku a slovo SEJRA bylo jak pěst na oko. V tu
+                chvíli jsem si řekla, že takhle učit nechci. Jsem #kavarenskypovalec a #ucitelvycviku s nakažlivým
+                entusiasmem pro gastronomii. Vítejte v mém světě.
               </p>
-              <p>
-                Věřím, že výuka gastronomie může být kreativní, moderní a zábavná.
-                Mým cílem je vytvořit prostor, kde se pedagogové i studenti mohou
-                vzájemně inspirovat a rozvíjet.
-              </p>
+              <p>!Buď gastronomii miluješ nebo ne, není nic mezi tím.</p>
             </div>
           </div>
         </div>
