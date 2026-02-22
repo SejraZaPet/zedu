@@ -77,6 +77,51 @@ export type Database = {
         }
         Relationships: []
       }
+      podcast_episodes: {
+        Row: {
+          audio_url: string | null
+          blocks: Json
+          created_at: string
+          duration: string | null
+          excerpt: string | null
+          id: string
+          published_date: string
+          sort_order: number
+          status: string
+          thumbnail_url: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          audio_url?: string | null
+          blocks?: Json
+          created_at?: string
+          duration?: string | null
+          excerpt?: string | null
+          id?: string
+          published_date?: string
+          sort_order?: number
+          status?: string
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          audio_url?: string | null
+          blocks?: Json
+          created_at?: string
+          duration?: string | null
+          excerpt?: string | null
+          id?: string
+          published_date?: string
+          sort_order?: number
+          status?: string
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       section_links: {
         Row: {
           created_at: string
