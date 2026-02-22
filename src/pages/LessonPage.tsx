@@ -6,6 +6,7 @@ import { slugify } from "@/lib/slugify";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import type { Block } from "@/lib/textbook-config";
+import LessonLinkButton from "@/components/LessonLinkButton";
 
 const LessonPage = () => {
   const { subjectId, grade, topicSlug, lessonSlug } = useParams<{
@@ -201,6 +202,8 @@ const LessonBlock = ({ block }: { block: Block }) => {
           {p.author && <cite className="text-sm text-muted-foreground not-italic">— {p.author}</cite>}
         </blockquote>
       );
+    case "lesson_link":
+      return <LessonLinkButton lessonId={p.lessonId} buttonText={p.buttonText} />;
     default:
       return null;
   }

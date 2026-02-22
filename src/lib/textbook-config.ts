@@ -19,7 +19,8 @@ export type BlockType =
   | "card_grid"
   | "table"
   | "accordion"
-  | "quote";
+  | "quote"
+  | "lesson_link";
 
 export interface Block {
   id: string;
@@ -38,6 +39,7 @@ export const BLOCK_TYPES: { type: BlockType; label: string; icon: string }[] = [
   { type: "table", label: "Tabulka", icon: "▤" },
   { type: "accordion", label: "Akordeon", icon: "▼" },
   { type: "quote", label: "Citace", icon: "❝" },
+  { type: "lesson_link", label: "Odkaz na lekci", icon: "🔗" },
 ];
 
 export const createDefaultBlock = (type: BlockType): Block => {
@@ -63,6 +65,8 @@ export const createDefaultBlock = (type: BlockType): Block => {
       return { ...base, props: { items: [{ title: "", content: "" }] } };
     case "quote":
       return { ...base, props: { text: "", author: "" } };
+    case "lesson_link":
+      return { ...base, props: { lessonId: "", buttonText: "" } };
     default:
       return { ...base, props: {} };
   }
