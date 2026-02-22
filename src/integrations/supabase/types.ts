@@ -22,6 +22,7 @@ export type Database = {
           excerpt: string
           id: string
           published_date: string
+          status: string
           title: string
           updated_at: string
         }
@@ -32,6 +33,7 @@ export type Database = {
           excerpt?: string
           id?: string
           published_date?: string
+          status?: string
           title: string
           updated_at?: string
         }
@@ -42,6 +44,7 @@ export type Database = {
           excerpt?: string
           id?: string
           published_date?: string
+          status?: string
           title?: string
           updated_at?: string
         }
