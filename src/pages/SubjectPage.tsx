@@ -1,7 +1,8 @@
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { SUBJECTS, getSubject, getGradesForSubject } from "@/lib/textbook-config";
+import { getSubject, getGradesForSubject } from "@/lib/textbook-config";
+import { slugify } from "@/lib/slugify";
 import { ArrowLeft, Loader2, BookOpen } from "lucide-react";
 import { useState } from "react";
 import SiteHeader from "@/components/SiteHeader";
@@ -9,7 +10,6 @@ import SiteFooter from "@/components/SiteFooter";
 
 const SubjectPage = () => {
   const { subjectId } = useParams<{ subjectId: string }>();
-  const navigate = useNavigate();
   const subject = getSubject(subjectId ?? "");
   const grades = getGradesForSubject(subjectId ?? "");
   const hasMultipleGrades = grades.length > 1;
@@ -18,7 +18,8 @@ const SubjectPage = () => {
     hasMultipleGrades ? null : grades[0] ?? null
   );
 
-  const { data: topics, isLoading } = useQuery({
+  // Load topics
+  const { data: topics, isLoading: topicsLoading } = useQuery({
     queryKey: ["textbook-topics", subjectId, selectedGrade],
     queryFn: async () => {
       if (!subjectId || selectedGrade === null) return [];
@@ -32,6 +33,26 @@ const SubjectPage = () => {
       return data;
     },
     enabled: !!subjectId && selectedGrade !== null,
+  });
+
+  // Load published lesson counts per topic
+  const topicIds = topics?.map((t) => t.id) ?? [];
+  const { data: publishedMap } = useQuery({
+    queryKey: ["topic-published-map", topicIds],
+    queryFn: async () => {
+      if (topicIds.length === 0) return {};
+      const { data } = await supabase
+        .from("textbook_lessons")
+        .select("topic_id, status")
+        .in("topic_id", topicIds)
+        .eq("status", "published");
+      const map: Record<string, boolean> = {};
+      for (const row of data ?? []) {
+        map[row.topic_id] = true;
+      }
+      return map;
+    },
+    enabled: topicIds.length > 0,
   });
 
   if (!subject) {
@@ -54,7 +75,6 @@ const SubjectPage = () => {
       <SiteHeader />
       <main className="pt-24 md:pt-28 pb-16 md:pb-24">
         <div className="container mx-auto max-w-3xl px-4">
-          {/* Back link */}
           <Link
             to="/#ucebnice"
             className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors mb-8"
@@ -63,7 +83,6 @@ const SubjectPage = () => {
             Zpět na učebnice
           </Link>
 
-          {/* Subject title */}
           <div className="flex items-center gap-3 mb-2">
             <BookOpen className="w-6 h-6 text-primary" />
             <span className="text-sm font-medium uppercase tracking-widest text-primary">
@@ -74,7 +93,7 @@ const SubjectPage = () => {
             {subject.label}
           </h1>
 
-          {/* Grade selector (only for multi-grade subjects) */}
+          {/* Grade selector */}
           {hasMultipleGrades && (
             <div className="mb-10">
               <p className="text-sm text-muted-foreground mb-4 uppercase tracking-wider">
@@ -98,29 +117,43 @@ const SubjectPage = () => {
             </div>
           )}
 
-          {/* Topics list */}
+          {/* Topics */}
           {selectedGrade === null ? (
             <p className="text-muted-foreground text-center py-12">
               Vyberte ročník pro zobrazení témat.
             </p>
-          ) : isLoading ? (
+          ) : topicsLoading ? (
             <div className="flex items-center justify-center py-16">
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
               <span className="ml-3 text-muted-foreground">Načítám témata…</span>
             </div>
           ) : topics && topics.length > 0 ? (
             <div className="flex flex-col items-center gap-3">
-              {topics.map((topic) => (
-                <button
-                  key={topic.id}
-                  onClick={() =>
-                    navigate(`/ucebnice/${subjectId}/${topic.id}`)
-                  }
-                  className="w-full max-w-2xl px-6 py-4 rounded-full bg-card border border-border text-foreground font-body text-base uppercase tracking-wider font-medium transition-all duration-200 hover:border-primary/50 hover:bg-surface-hover hover:text-primary text-center"
-                >
-                  {topic.title}
-                </button>
-              ))}
+              {topics.map((topic) => {
+                const isPublished = publishedMap?.[topic.id] ?? false;
+                const topicSlug = slugify(topic.title) || topic.id;
+
+                return (
+                  <Link
+                    key={topic.id}
+                    to={`/ucebnice/${subjectId}/${selectedGrade}/${topicSlug}`}
+                    className={`w-full max-w-2xl px-6 py-4 rounded-full font-body text-base uppercase tracking-wider font-medium transition-all duration-200 text-center border ${
+                      isPublished
+                        ? "bg-primary/10 border-primary/40 text-primary hover:bg-primary/20 hover:border-primary"
+                        : "bg-card border-border text-muted-foreground hover:border-border hover:bg-surface-hover hover:text-foreground"
+                    }`}
+                  >
+                    <span className="flex items-center justify-center gap-3">
+                      {topic.title}
+                      {!isPublished && (
+                        <span className="text-[10px] normal-case tracking-normal font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                          v procesu
+                        </span>
+                      )}
+                    </span>
+                  </Link>
+                );
+              })}
             </div>
           ) : (
             <div className="text-center py-16">
