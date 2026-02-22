@@ -1,104 +1,235 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
+import { SUBJECTS, getGradesForSubject } from "@/lib/textbook-config";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Plus, Pencil, Trash2, X, Save } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Pencil, Trash2, Eye, Search, X } from "lucide-react";
 
-interface Lesson {
+interface LessonRow {
   id: string;
   title: string;
-  content: string;
+  status: string;
   sort_order: number;
+  topic_id: string;
+  hero_image_url: string | null;
+  blocks: any;
+  textbook_topics: {
+    id: string;
+    title: string;
+    subject: string;
+    grade: number;
+  };
+}
+
+interface TopicOption {
+  id: string;
+  title: string;
 }
 
 const LessonsManager = () => {
-  const [lessons, setLessons] = useState<Lesson[]>([]);
-  const [editing, setEditing] = useState<Lesson | null>(null);
-  const [isNew, setIsNew] = useState(false);
+  const [lessons, setLessons] = useState<LessonRow[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const fetchLessons = async () => {
-    const { data } = await supabase.from("lessons").select("*").order("sort_order");
-    if (data) setLessons(data);
-  };
+  // Filters
+  const [filterSubject, setFilterSubject] = useState<string>("all");
+  const [filterGrade, setFilterGrade] = useState<string>("all");
+  const [filterTopic, setFilterTopic] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
-  useEffect(() => { fetchLessons(); }, []);
+  // Topics for the topic filter dropdown
+  const [topicOptions, setTopicOptions] = useState<TopicOption[]>([]);
 
-  const handleSave = async () => {
-    if (!editing) return;
-    if (isNew) {
-      await supabase.from("lessons").insert({
-        title: editing.title,
-        content: editing.content,
-        sort_order: editing.sort_order,
-      });
-    } else {
-      await supabase.from("lessons").update({
-        title: editing.title,
-        content: editing.content,
-        sort_order: editing.sort_order,
-      }).eq("id", editing.id);
+  const availableGrades = filterSubject !== "all" ? getGradesForSubject(filterSubject) : [];
+
+  // Fetch topics for dropdown when subject+grade change
+  useEffect(() => {
+    const fetchTopics = async () => {
+      if (filterSubject === "all") {
+        setTopicOptions([]);
+        setFilterTopic("all");
+        return;
+      }
+      let query = supabase.from("textbook_topics").select("id, title").eq("subject", filterSubject).order("sort_order");
+      if (filterGrade !== "all") {
+        query = query.eq("grade", Number(filterGrade));
+      }
+      const { data } = await query;
+      setTopicOptions(data ?? []);
+      setFilterTopic("all");
+    };
+    fetchTopics();
+  }, [filterSubject, filterGrade]);
+
+  // Reset grade when subject changes
+  useEffect(() => {
+    setFilterGrade("all");
+  }, [filterSubject]);
+
+  // Fetch all lessons with topic info
+  const fetchLessons = useCallback(async () => {
+    setLoading(true);
+    let query = supabase
+      .from("textbook_lessons")
+      .select("id, title, status, sort_order, topic_id, hero_image_url, blocks, textbook_topics!inner(id, title, subject, grade)")
+      .order("sort_order");
+
+    if (filterSubject !== "all") {
+      query = query.eq("textbook_topics.subject", filterSubject);
     }
-    setEditing(null);
-    setIsNew(false);
-    fetchLessons();
-  };
+    if (filterGrade !== "all") {
+      query = query.eq("textbook_topics.grade", Number(filterGrade));
+    }
+    if (filterTopic !== "all") {
+      query = query.eq("topic_id", filterTopic);
+    }
+    if (filterStatus !== "all") {
+      query = query.eq("status", filterStatus);
+    }
 
-  const handleDelete = async (id: string) => {
+    const { data } = await query;
+    let results = (data as unknown as LessonRow[]) ?? [];
+
+    // Client-side name search
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      results = results.filter((l) => l.title.toLowerCase().includes(q));
+    }
+
+    setLessons(results);
+    setLoading(false);
+  }, [filterSubject, filterGrade, filterTopic, filterStatus, searchQuery]);
+
+  useEffect(() => { fetchLessons(); }, [fetchLessons]);
+
+  const deleteLesson = async (id: string) => {
     if (!confirm("Opravdu smazat tuto lekci?")) return;
-    await supabase.from("lessons").delete().eq("id", id);
+    await supabase.from("textbook_lessons").delete().eq("id", id);
     fetchLessons();
   };
 
-  const startNew = () => {
-    setEditing({ id: "", title: "", content: "", sort_order: lessons.length });
-    setIsNew(true);
+  const getSubjectLabel = (id: string) => SUBJECTS.find((s) => s.id === id)?.label ?? id;
+
+  const clearFilters = () => {
+    setFilterSubject("all");
+    setFilterGrade("all");
+    setFilterTopic("all");
+    setFilterStatus("all");
+    setSearchQuery("");
   };
+
+  const hasFilters = filterSubject !== "all" || filterGrade !== "all" || filterTopic !== "all" || filterStatus !== "all" || searchQuery.trim() !== "";
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="font-heading text-xl">Lekce</h2>
-        <Button size="sm" onClick={startNew}><Plus className="w-4 h-4 mr-1" /> Přidat</Button>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="font-heading text-xl">Všechny lekce</h2>
+        {hasFilters && (
+          <Button size="sm" variant="ghost" onClick={clearFilters}>
+            <X className="w-4 h-4 mr-1" /> Zrušit filtry
+          </Button>
+        )}
       </div>
 
-      {editing && (
-        <div className="border border-border rounded-lg p-4 mb-6 bg-card space-y-3">
-          <div>
-            <Label>Název</Label>
-            <Input value={editing.title} onChange={(e) => setEditing({ ...editing, title: e.target.value })} className="mt-1" />
-          </div>
-          <div>
-            <Label>Obsah</Label>
-            <Textarea value={editing.content} onChange={(e) => setEditing({ ...editing, content: e.target.value })} rows={6} className="mt-1" />
-          </div>
-          <div>
-            <Label>Pořadí</Label>
-            <Input type="number" value={editing.sort_order} onChange={(e) => setEditing({ ...editing, sort_order: parseInt(e.target.value) || 0 })} className="mt-1 w-24" />
-          </div>
-          <div className="flex gap-2">
-            <Button size="sm" onClick={handleSave}><Save className="w-4 h-4 mr-1" /> Uložit</Button>
-            <Button size="sm" variant="ghost" onClick={() => { setEditing(null); setIsNew(false); }}><X className="w-4 h-4 mr-1" /> Zrušit</Button>
+      {/* Filters */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+        <div>
+          <Label className="text-xs">Předmět</Label>
+          <Select value={filterSubject} onValueChange={setFilterSubject}>
+            <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Všechny</SelectItem>
+              {SUBJECTS.map((s) => (
+                <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div>
+          <Label className="text-xs">Ročník</Label>
+          <Select value={filterGrade} onValueChange={setFilterGrade} disabled={filterSubject === "all"}>
+            <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Všechny</SelectItem>
+              {availableGrades.map((g) => (
+                <SelectItem key={g} value={String(g)}>{g}. ročník</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div>
+          <Label className="text-xs">Téma</Label>
+          <Select value={filterTopic} onValueChange={setFilterTopic} disabled={filterSubject === "all"}>
+            <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Všechna</SelectItem>
+              {topicOptions.map((t) => (
+                <SelectItem key={t.id} value={t.id}>{t.title}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div>
+          <Label className="text-xs">Stav</Label>
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Všechny</SelectItem>
+              <SelectItem value="draft">Koncept</SelectItem>
+              <SelectItem value="published">Publikováno</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div>
+          <Label className="text-xs">Hledat</Label>
+          <div className="relative mt-1">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Název lekce…"
+              className="pl-8"
+            />
           </div>
         </div>
-      )}
-
-      <div className="space-y-2">
-        {lessons.map((lesson) => (
-          <div key={lesson.id} className="flex items-center justify-between border border-border rounded-lg p-3 bg-card">
-            <div className="min-w-0 flex-1">
-              <p className="font-medium text-sm truncate">{lesson.title}</p>
-              <p className="text-xs text-muted-foreground truncate">{lesson.content.substring(0, 80)}...</p>
-            </div>
-            <div className="flex gap-1 ml-3">
-              <Button size="icon" variant="ghost" onClick={() => { setEditing(lesson); setIsNew(false); }}><Pencil className="w-4 h-4" /></Button>
-              <Button size="icon" variant="ghost" onClick={() => handleDelete(lesson.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
-            </div>
-          </div>
-        ))}
-        {lessons.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">Zatím žádné lekce.</p>}
       </div>
+
+      {/* Lessons list */}
+      {loading ? (
+        <p className="text-sm text-muted-foreground text-center py-8">Načítání…</p>
+      ) : lessons.length === 0 ? (
+        <p className="text-sm text-muted-foreground text-center py-8">
+          {hasFilters ? "Žádné lekce pro zvolený filtr." : "Zatím žádné lekce."}
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {lessons.map((lesson) => (
+            <div key={lesson.id} className="flex items-center gap-3 border border-border rounded-lg p-3 bg-card">
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-sm truncate">{lesson.title || "Bez názvu"}</p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {getSubjectLabel(lesson.textbook_topics.subject)} · {lesson.textbook_topics.grade}. ročník · {lesson.textbook_topics.title}
+                </p>
+              </div>
+              <Badge variant={lesson.status === "published" ? "default" : "secondary"} className="text-xs shrink-0">
+                {lesson.status === "published" ? "Publikováno" : "Koncept"}
+              </Badge>
+              <div className="flex gap-1 shrink-0">
+                <Button size="icon" variant="ghost" onClick={() => deleteLesson(lesson.id)}>
+                  <Trash2 className="w-4 h-4 text-destructive" />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
