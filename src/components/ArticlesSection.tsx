@@ -2,12 +2,15 @@ import { useEffect, useState } from "react";
 import { Coffee } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
+import ArticleContent from "@/components/ArticleContent";
+
 interface Article {
   id: string;
   title: string;
   category: string;
   published_date: string;
   excerpt: string;
+  content: string;
 }
 
 const ArticlesSection = () => {
@@ -17,7 +20,7 @@ const ArticlesSection = () => {
     const fetch = async () => {
       const { data } = await supabase
         .from("articles")
-        .select("id, title, category, published_date, excerpt")
+        .select("id, title, category, published_date, excerpt, content")
         .eq("status", "published")
         .order("published_date", { ascending: false });
       if (data) setArticles(data);
