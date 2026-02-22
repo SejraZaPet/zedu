@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import RichTextEditor from "@/components/admin/RichTextEditor";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -134,7 +134,12 @@ const ArticlesManager = () => {
           </div>
           <div>
             <Label>Obsah</Label>
-            <Textarea value={editing.content} onChange={(e) => setEditing({ ...editing, content: e.target.value })} rows={8} className="mt-1" />
+            <div className="mt-1">
+              <RichTextEditor
+                content={editing.content}
+                onChange={(html) => setEditing({ ...editing, content: html })}
+              />
+            </div>
           </div>
           <div className="flex gap-2 pt-2 border-t border-border">
             <Button size="sm" onClick={handleSave}><Save className="w-4 h-4 mr-1" />Uložit</Button>
