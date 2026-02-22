@@ -1,12 +1,13 @@
-import { Button } from "@/components/ui/button";
 import { BookOpen } from "lucide-react";
+import { Link } from "react-router-dom";
+import { SUBJECTS } from "@/lib/textbook-config";
 
-const subjects = [
-  { name: "Technologie", description: "Technologické postupy v gastronomii", lessons: 12 },
-  { name: "Potraviny", description: "Suroviny, kvalita a skladování", lessons: 10 },
-  { name: "Nauka o výživě", description: "Principy zdravé výživy a dietologie", lessons: 8 },
-  { name: "Světová gastronomie", description: "Kuchyně světa a jejich tradice", lessons: 15 },
-];
+const descriptions: Record<string, string> = {
+  technologie: "Technologické postupy v gastronomii",
+  potraviny: "Suroviny, kvalita a skladování",
+  nauka_o_vyzive: "Principy zdravé výživy a dietologie",
+  svetova_gastronomie: "Kuchyně světa a jejich tradice",
+};
 
 const TextbooksSection = () => {
   return (
@@ -25,24 +26,31 @@ const TextbooksSection = () => {
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {subjects.map((subject) => (
-            <div
-              key={subject.name}
+          {SUBJECTS.map((subject) => (
+            <Link
+              key={subject.id}
+              to={`/ucebnice/${subject.id}`}
               className="group rounded-lg border border-border bg-card p-6 md:p-8 flex flex-col justify-between transition-all duration-300 hover:border-primary/30 hover:bg-surface-hover"
             >
               <div>
                 <h3 className="font-heading text-xl md:text-2xl font-semibold mb-2 text-card-foreground">
-                  {subject.name}
+                  {subject.label}
                 </h3>
-                <p className="text-muted-foreground text-sm mb-4">{subject.description}</p>
-                <span className="text-xs text-primary font-medium">{subject.lessons} lekcí</span>
+                <p className="text-muted-foreground text-sm mb-4">
+                  {descriptions[subject.id] ?? ""}
+                </p>
+                <span className="text-xs text-primary font-medium">
+                  {subject.grades.length > 1
+                    ? `Ročníky ${subject.grades.join(", ")}`
+                    : `${subject.grades[0]}. ročník`}
+                </span>
               </div>
               <div className="mt-6">
-                <Button variant="outline-gold" size="sm">
+                <span className="inline-flex items-center px-3 py-1.5 rounded-md text-sm border border-primary/40 text-primary font-medium group-hover:bg-primary/10 group-hover:border-primary transition-colors">
                   Otevřít
-                </Button>
+                </span>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </div>
