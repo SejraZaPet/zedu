@@ -10,6 +10,7 @@ import NotFound from "./pages/NotFound";
 import SubjectPage from "./pages/SubjectPage";
 import TopicPage from "./pages/TopicPage";
 import LessonPage from "./pages/LessonPage";
+import PodcastDetailPage from "./pages/PodcastDetailPage";
 
 const queryClient = new QueryClient();
 
@@ -23,6 +24,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/podcast/:episodeId" element={<PodcastDetailPage />} />
           <Route path="/ucebnice/:subjectId" element={<SubjectPage />} />
           <Route path="/ucebnice/:subjectId/:grade/:topicSlug" element={<TopicPage />} />
           <Route path="/ucebnice/:subjectId/:grade/:topicSlug/:lessonSlug" element={<LessonPage />} />

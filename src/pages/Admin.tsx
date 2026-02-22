@@ -2,16 +2,16 @@ import { useState } from "react";
 import { useAdmin } from "@/hooks/useAdmin";
 import LessonsManager from "@/components/admin/LessonsManager";
 import ArticlesManager from "@/components/admin/ArticlesManager";
-import LinksManager from "@/components/admin/LinksManager";
+import PodcastManager from "@/components/admin/PodcastManager";
 import TextbooksManager from "@/components/admin/TextbooksManager";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Coffee, Link2, LogOut, Home, GraduationCap } from "lucide-react";
+import { BookOpen, Coffee, Mic, LogOut, Home, GraduationCap } from "lucide-react";
 
 const tabs = [
   { id: "textbooks", label: "Učebnice", icon: GraduationCap },
   { id: "lessons", label: "Lekce", icon: BookOpen },
   { id: "articles", label: "Ke kávě", icon: Coffee },
-  { id: "links", label: "Odkazy", icon: Link2 },
+  { id: "podcast", label: "Podcast", icon: Mic },
 ] as const;
 
 type Tab = typeof tabs[number]["id"];
@@ -70,7 +70,7 @@ const Admin = () => {
         {activeTab === "textbooks" && <TextbooksManager />}
         {activeTab === "lessons" && <LessonsManager />}
         {activeTab === "articles" && <ArticlesManager />}
-        {activeTab === "links" && <LinksManager />}
+        {activeTab === "podcast" && <PodcastManager />}
       </div>
     </div>
   );
