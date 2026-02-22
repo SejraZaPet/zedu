@@ -34,7 +34,7 @@ const SiteHeader = () => {
             <a
               key={item.href}
               href={item.href}
-              className="text-sm font-medium text-muted-foreground hover:text-accent transition-colors duration-200"
+              className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors duration-200"
             >
               {item.label}
             </a>
@@ -58,7 +58,7 @@ const SiteHeader = () => {
                 key={item.href}
                 href={item.href}
                 onClick={() => setMenuOpen(false)}
-                className="text-base font-medium text-muted-foreground hover:text-accent transition-colors"
+                className="text-base font-medium text-muted-foreground hover:text-primary transition-colors"
               >
                 {item.label}
               </a>
