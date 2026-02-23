@@ -19,14 +19,16 @@ const LessonPage = () => {
   const { data: lesson, isLoading } = useQuery({
     queryKey: ["lesson-by-slug", topicSlug, lessonSlug],
     queryFn: async () => {
+      // Try by ID first
       const { data: byId } = await supabase
         .from("textbook_lessons")
-        .select("*, textbook_topics!inner(id, title, subject, grade)")
+        .select("*")
         .eq("id", lessonSlug ?? "")
         .eq("status", "published")
         .maybeSingle();
       if (byId) return byId;
 
+      // Find the topic
       const { data: allTopics } = await supabase
         .from("textbook_topics")
         .select("id, title, subject, grade")
@@ -38,10 +40,19 @@ const LessonPage = () => {
       );
       if (!topic) return null;
 
+      // Get lesson IDs via junction table
+      const { data: assignments } = await supabase
+        .from("lesson_topic_assignments")
+        .select("lesson_id")
+        .eq("topic_id", topic.id);
+
+      if (!assignments || assignments.length === 0) return null;
+
+      const lessonIds = assignments.map((a: any) => a.lesson_id);
       const { data: lessons } = await supabase
         .from("textbook_lessons")
-        .select("*, textbook_topics!inner(id, title, subject, grade)")
-        .eq("topic_id", topic.id)
+        .select("*")
+        .in("id", lessonIds)
         .eq("status", "published");
 
       return lessons?.find((l) => slugify(l.title) === lessonSlug) ?? null;

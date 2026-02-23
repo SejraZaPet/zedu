@@ -6,7 +6,14 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Pencil, Trash2, Eye, Search, X } from "lucide-react";
+import { Trash2, Search, X } from "lucide-react";
+
+interface AssignmentInfo {
+  topic_id: string;
+  subject: string;
+  grade: number;
+  topic_title: string;
+}
 
 interface LessonRow {
   id: string;
@@ -15,18 +22,7 @@ interface LessonRow {
   sort_order: number;
   topic_id: string;
   hero_image_url: string | null;
-  blocks: any;
-  textbook_topics: {
-    id: string;
-    title: string;
-    subject: string;
-    grade: number;
-  };
-}
-
-interface TopicOption {
-  id: string;
-  title: string;
+  assignments: AssignmentInfo[];
 }
 
 const LessonsManager = () => {
@@ -36,62 +32,72 @@ const LessonsManager = () => {
   // Filters
   const [filterSubject, setFilterSubject] = useState<string>("all");
   const [filterGrade, setFilterGrade] = useState<string>("all");
-  const [filterTopic, setFilterTopic] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Topics for the topic filter dropdown
-  const [topicOptions, setTopicOptions] = useState<TopicOption[]>([]);
-
   const availableGrades = filterSubject !== "all" ? getGradesForSubject(filterSubject) : [];
-
-  // Fetch topics for dropdown when subject+grade change
-  useEffect(() => {
-    const fetchTopics = async () => {
-      if (filterSubject === "all") {
-        setTopicOptions([]);
-        setFilterTopic("all");
-        return;
-      }
-      let query = supabase.from("textbook_topics").select("id, title").eq("subject", filterSubject).order("sort_order");
-      if (filterGrade !== "all") {
-        query = query.eq("grade", Number(filterGrade));
-      }
-      const { data } = await query;
-      setTopicOptions(data ?? []);
-      setFilterTopic("all");
-    };
-    fetchTopics();
-  }, [filterSubject, filterGrade]);
 
   // Reset grade when subject changes
   useEffect(() => {
     setFilterGrade("all");
   }, [filterSubject]);
 
-  // Fetch all lessons with topic info
+  // Fetch all lessons with assignments
   const fetchLessons = useCallback(async () => {
     setLoading(true);
-    let query = supabase
+
+    // First get all lessons
+    let lessonQuery = supabase
       .from("textbook_lessons")
-      .select("id, title, status, sort_order, topic_id, hero_image_url, blocks, textbook_topics!inner(id, title, subject, grade)")
+      .select("id, title, status, sort_order, topic_id, hero_image_url")
       .order("sort_order");
 
-    if (filterSubject !== "all") {
-      query = query.eq("textbook_topics.subject", filterSubject);
-    }
-    if (filterGrade !== "all") {
-      query = query.eq("textbook_topics.grade", Number(filterGrade));
-    }
-    if (filterTopic !== "all") {
-      query = query.eq("topic_id", filterTopic);
-    }
     if (filterStatus !== "all") {
-      query = query.eq("status", filterStatus);
+      lessonQuery = lessonQuery.eq("status", filterStatus);
     }
 
-    const { data } = await query;
-    let results = (data as unknown as LessonRow[]) ?? [];
+    const { data: lessonData } = await lessonQuery;
+    if (!lessonData || lessonData.length === 0) {
+      setLessons([]);
+      setLoading(false);
+      return;
+    }
+
+    // Fetch all assignments with topic info
+    const lessonIds = lessonData.map((l: any) => l.id);
+    const { data: assignmentData } = await supabase
+      .from("lesson_topic_assignments")
+      .select("lesson_id, topic_id, textbook_topics(id, title, subject, grade)")
+      .in("lesson_id", lessonIds);
+
+    // Build assignment map
+    const assignMap: Record<string, AssignmentInfo[]> = {};
+    for (const row of (assignmentData ?? []) as any[]) {
+      if (!assignMap[row.lesson_id]) assignMap[row.lesson_id] = [];
+      assignMap[row.lesson_id].push({
+        topic_id: row.topic_id,
+        subject: row.textbook_topics?.subject ?? "",
+        grade: row.textbook_topics?.grade ?? 0,
+        topic_title: row.textbook_topics?.title ?? "",
+      });
+    }
+
+    let results: LessonRow[] = lessonData.map((l: any) => ({
+      ...l,
+      assignments: assignMap[l.id] ?? [],
+    }));
+
+    // Filter by subject/grade via assignments
+    if (filterSubject !== "all") {
+      results = results.filter((l) =>
+        l.assignments.some((a) => a.subject === filterSubject)
+      );
+    }
+    if (filterGrade !== "all") {
+      results = results.filter((l) =>
+        l.assignments.some((a) => a.grade === Number(filterGrade) && (filterSubject === "all" || a.subject === filterSubject))
+      );
+    }
 
     // Client-side name search
     if (searchQuery.trim()) {
@@ -101,7 +107,7 @@ const LessonsManager = () => {
 
     setLessons(results);
     setLoading(false);
-  }, [filterSubject, filterGrade, filterTopic, filterStatus, searchQuery]);
+  }, [filterSubject, filterGrade, filterStatus, searchQuery]);
 
   useEffect(() => { fetchLessons(); }, [fetchLessons]);
 
@@ -116,12 +122,11 @@ const LessonsManager = () => {
   const clearFilters = () => {
     setFilterSubject("all");
     setFilterGrade("all");
-    setFilterTopic("all");
     setFilterStatus("all");
     setSearchQuery("");
   };
 
-  const hasFilters = filterSubject !== "all" || filterGrade !== "all" || filterTopic !== "all" || filterStatus !== "all" || searchQuery.trim() !== "";
+  const hasFilters = filterSubject !== "all" || filterGrade !== "all" || filterStatus !== "all" || searchQuery.trim() !== "";
 
   return (
     <div>
@@ -135,7 +140,7 @@ const LessonsManager = () => {
       </div>
 
       {/* Filters */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         <div>
           <Label className="text-xs">Předmět</Label>
           <Select value={filterSubject} onValueChange={setFilterSubject}>
@@ -157,19 +162,6 @@ const LessonsManager = () => {
               <SelectItem value="all">Všechny</SelectItem>
               {availableGrades.map((g) => (
                 <SelectItem key={g} value={String(g)}>{g}. ročník</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div>
-          <Label className="text-xs">Téma</Label>
-          <Select value={filterTopic} onValueChange={setFilterTopic} disabled={filterSubject === "all"}>
-            <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Všechna</SelectItem>
-              {topicOptions.map((t) => (
-                <SelectItem key={t.id} value={t.id}>{t.title}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -214,9 +206,16 @@ const LessonsManager = () => {
             <div key={lesson.id} className="flex items-center gap-3 border border-border rounded-lg p-3 bg-card">
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-sm truncate">{lesson.title || "Bez názvu"}</p>
-                <p className="text-xs text-muted-foreground truncate">
-                  {getSubjectLabel(lesson.textbook_topics.subject)} · {lesson.textbook_topics.grade}. ročník · {lesson.textbook_topics.title}
-                </p>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {lesson.assignments.map((a, i) => (
+                    <Badge key={i} variant="outline" className="text-[10px] px-1.5 py-0">
+                      {getSubjectLabel(a.subject)}/{a.grade}/{a.topic_title}
+                    </Badge>
+                  ))}
+                  {lesson.assignments.length === 0 && (
+                    <span className="text-[10px] text-muted-foreground">Bez umístění</span>
+                  )}
+                </div>
               </div>
               <Badge variant={lesson.status === "published" ? "default" : "secondary"} className="text-xs shrink-0">
                 {lesson.status === "published" ? "Publikováno" : "Koncept"}

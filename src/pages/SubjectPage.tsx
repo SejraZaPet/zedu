@@ -35,20 +35,36 @@ const SubjectPage = () => {
     enabled: !!subjectId && selectedGrade !== null,
   });
 
-  // Load published lesson counts per topic
+  // Load published lesson counts per topic via junction table
   const topicIds = topics?.map((t) => t.id) ?? [];
   const { data: publishedMap } = useQuery({
-    queryKey: ["topic-published-map", topicIds],
+    queryKey: ["topic-published-map-assignments", topicIds],
     queryFn: async () => {
       if (topicIds.length === 0) return {};
-      const { data } = await supabase
+      // Get assignments for these topics
+      const { data: assignments } = await supabase
+        .from("lesson_topic_assignments")
+        .select("topic_id, lesson_id")
+        .in("topic_id", topicIds);
+
+      if (!assignments || assignments.length === 0) return {};
+
+      // Get published lessons
+      const lessonIds = [...new Set(assignments.map((a: any) => a.lesson_id))];
+      const { data: publishedLessons } = await supabase
         .from("textbook_lessons")
-        .select("topic_id, status")
-        .in("topic_id", topicIds)
+        .select("id")
+        .in("id", lessonIds)
         .eq("status", "published");
+
+      const publishedSet = new Set((publishedLessons ?? []).map((l: any) => l.id));
+
+      // Map topic -> has published lesson
       const map: Record<string, boolean> = {};
-      for (const row of data ?? []) {
-        map[row.topic_id] = true;
+      for (const a of assignments as any[]) {
+        if (publishedSet.has(a.lesson_id)) {
+          map[a.topic_id] = true;
+        }
       }
       return map;
     },

@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import BlockEditor from "./BlockEditor";
+import LessonAssignments, { type Assignment } from "./LessonAssignments";
 import {
   Plus, Pencil, Trash2, X, Save, ArrowLeft, Upload, GripVertical,
 } from "lucide-react";
@@ -71,6 +72,7 @@ const TextbooksManager = () => {
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
   const [isNewLesson, setIsNewLesson] = useState(false);
   const [heroUploading, setHeroUploading] = useState(false);
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
 
   const grades = getGradesForSubject(subject);
 
@@ -93,18 +95,56 @@ const TextbooksManager = () => {
 
   useEffect(() => { fetchTopics(); setSelectedTopic(null); }, [fetchTopics]);
 
-  // Fetch lessons
+  // Fetch lessons for a topic via junction table
   const fetchLessons = useCallback(async () => {
     if (!selectedTopic) return;
-    const { data } = await supabase
-      .from("textbook_lessons")
-      .select("*")
+    const { data: assignmentRows } = await supabase
+      .from("lesson_topic_assignments")
+      .select("lesson_id, sort_order")
       .eq("topic_id", selectedTopic.id)
       .order("sort_order");
-    if (data) setLessons(data.map((d: any) => ({ ...d, blocks: (d.blocks as Block[]) || [] })));
+
+    if (!assignmentRows || assignmentRows.length === 0) {
+      setLessons([]);
+      return;
+    }
+
+    const lessonIds = assignmentRows.map((a: any) => a.lesson_id);
+    const { data: lessonRows } = await supabase
+      .from("textbook_lessons")
+      .select("*")
+      .in("id", lessonIds);
+
+    if (lessonRows) {
+      // Sort by assignment sort_order
+      const orderMap = new Map(assignmentRows.map((a: any) => [a.lesson_id, a.sort_order]));
+      const sorted = lessonRows
+        .map((d: any) => ({ ...d, blocks: (d.blocks as Block[]) || [], sort_order: orderMap.get(d.id) ?? 0 }))
+        .sort((a, b) => a.sort_order - b.sort_order);
+      setLessons(sorted);
+    }
   }, [selectedTopic]);
 
   useEffect(() => { if (selectedTopic) fetchLessons(); }, [fetchLessons, selectedTopic]);
+
+  // Load assignments when editing a lesson
+  const loadAssignments = useCallback(async (lessonId: string) => {
+    const { data } = await supabase
+      .from("lesson_topic_assignments")
+      .select("id, topic_id, sort_order, textbook_topics(id, title, subject, grade)")
+      .eq("lesson_id", lessonId);
+
+    if (data) {
+      setAssignments(data.map((row: any) => ({
+        id: row.id,
+        topic_id: row.topic_id,
+        subject: row.textbook_topics?.subject ?? "",
+        grade: row.textbook_topics?.grade ?? 1,
+        topic_title: row.textbook_topics?.title ?? "",
+        sort_order: row.sort_order,
+      })));
+    }
+  }, []);
 
   // === Topic CRUD ===
   const saveTopic = async () => {
@@ -130,20 +170,47 @@ const TextbooksManager = () => {
 
   // === Lesson CRUD ===
   const saveLesson = async () => {
-    if (!editingLesson || !selectedTopic) return;
+    if (!editingLesson) return;
+
+    // Filter valid assignments
+    const validAssignments = assignments.filter((a) => a.topic_id);
+    if (validAssignments.length === 0) {
+      alert("Lekce musí mít alespoň jedno umístění.");
+      return;
+    }
+
+    const primaryTopicId = validAssignments[0].topic_id;
+
     const payload = {
-      topic_id: selectedTopic.id,
+      topic_id: primaryTopicId,
       title: editingLesson.title,
       hero_image_url: editingLesson.hero_image_url,
       status: editingLesson.status,
       blocks: editingLesson.blocks as any,
       sort_order: editingLesson.sort_order,
     };
+
+    let lessonId = editingLesson.id;
+
     if (isNewLesson) {
-      await supabase.from("textbook_lessons").insert(payload);
+      const { data } = await supabase.from("textbook_lessons").insert(payload).select("id").single();
+      if (data) lessonId = data.id;
     } else {
-      await supabase.from("textbook_lessons").update(payload).eq("id", editingLesson.id);
+      await supabase.from("textbook_lessons").update(payload).eq("id", lessonId);
     }
+
+    // Sync assignments: delete old, insert new
+    await supabase.from("lesson_topic_assignments").delete().eq("lesson_id", lessonId);
+    if (validAssignments.length > 0) {
+      await supabase.from("lesson_topic_assignments").insert(
+        validAssignments.map((a, i) => ({
+          lesson_id: lessonId,
+          topic_id: a.topic_id,
+          sort_order: i,
+        }))
+      );
+    }
+
     setEditingLesson(null);
     setIsNewLesson(false);
     fetchLessons();
@@ -151,6 +218,7 @@ const TextbooksManager = () => {
 
   const deleteLesson = async (id: string) => {
     if (!confirm("Smazat lekci?")) return;
+    // Assignments cascade-delete automatically
     await supabase.from("textbook_lessons").delete().eq("id", id);
     fetchLessons();
   };
@@ -178,14 +246,17 @@ const TextbooksManager = () => {
 
   const handleLessonDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
-    if (!over || active.id === over.id) return;
+    if (!over || active.id === over.id || !selectedTopic) return;
     const oldIdx = lessons.findIndex((l) => l.id === active.id);
     const newIdx = lessons.findIndex((l) => l.id === over.id);
     const reordered = arrayMove(lessons, oldIdx, newIdx);
     setLessons(reordered);
-    // Persist order
+    // Update sort_order in junction table
     await Promise.all(reordered.map((l, i) =>
-      supabase.from("textbook_lessons").update({ sort_order: i }).eq("id", l.id)
+      supabase.from("lesson_topic_assignments")
+        .update({ sort_order: i })
+        .eq("lesson_id", l.id)
+        .eq("topic_id", selectedTopic.id)
     ));
   };
 
@@ -235,6 +306,15 @@ const TextbooksManager = () => {
                 <img src={editingLesson.hero_image_url} alt="" className="mt-2 max-h-20 rounded border border-border" />
               )}
             </div>
+          </div>
+
+          {/* Assignments section */}
+          <div className="border-t border-border pt-4">
+            <LessonAssignments
+              lessonId={isNewLesson ? null : editingLesson.id}
+              assignments={assignments}
+              onChange={setAssignments}
+            />
           </div>
 
           <div>
@@ -350,6 +430,13 @@ const TextbooksManager = () => {
                 <Button
                   size="sm"
                   onClick={() => {
+                    setAssignments([{
+                      topic_id: selectedTopic.id,
+                      subject,
+                      grade,
+                      topic_title: selectedTopic.title,
+                      sort_order: 0,
+                    }]);
                     setEditingLesson({
                       id: "", topic_id: selectedTopic.id, title: "",
                       hero_image_url: null, status: "draft", blocks: [],
@@ -367,7 +454,11 @@ const TextbooksManager = () => {
                       <SortableLessonRow
                         key={lesson.id}
                         lesson={lesson}
-                        onEdit={() => { setEditingLesson(lesson); setIsNewLesson(false); }}
+                        onEdit={() => {
+                          setEditingLesson(lesson);
+                          setIsNewLesson(false);
+                          loadAssignments(lesson.id);
+                        }}
                         onDelete={() => deleteLesson(lesson.id)}
                       />
                     ))}

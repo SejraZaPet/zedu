@@ -19,7 +19,6 @@ const TopicPage = () => {
   const { data: topic, isLoading: topicLoading } = useQuery({
     queryKey: ["topic-by-slug", subjectId, grade, topicSlug],
     queryFn: async () => {
-      // Try by ID first
       const { data: byId } = await supabase
         .from("textbook_topics")
         .select("*")
@@ -27,7 +26,6 @@ const TopicPage = () => {
         .maybeSingle();
       if (byId) return byId;
 
-      // Fallback: load all topics for subject+grade and match slug
       const { data: all } = await supabase
         .from("textbook_topics")
         .select("*")
@@ -38,18 +36,32 @@ const TopicPage = () => {
     enabled: !!subjectId && !!topicSlug,
   });
 
-  // Load lessons for topic
+  // Load lessons via junction table
   const { data: lessons, isLoading: lessonsLoading } = useQuery({
-    queryKey: ["topic-lessons", topic?.id],
+    queryKey: ["topic-lessons-via-assignments", topic?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Get lesson IDs from assignments
+      const { data: assignments } = await supabase
+        .from("lesson_topic_assignments")
+        .select("lesson_id, sort_order")
+        .eq("topic_id", topic!.id)
+        .order("sort_order");
+
+      if (!assignments || assignments.length === 0) return [];
+
+      const lessonIds = assignments.map((a: any) => a.lesson_id);
+      const { data: lessonRows, error } = await supabase
         .from("textbook_lessons")
         .select("*")
-        .eq("topic_id", topic!.id)
-        .eq("status", "published")
-        .order("sort_order");
+        .in("id", lessonIds)
+        .eq("status", "published");
+
       if (error) throw error;
-      return data;
+      if (!lessonRows) return [];
+
+      // Sort by assignment sort_order
+      const orderMap = new Map(assignments.map((a: any) => [a.lesson_id, a.sort_order]));
+      return lessonRows.sort((a, b) => (orderMap.get(a.id) ?? 0) - (orderMap.get(b.id) ?? 0));
     },
     enabled: !!topic?.id,
   });
