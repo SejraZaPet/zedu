@@ -50,6 +50,45 @@ export type Database = {
         }
         Relationships: []
       }
+      lesson_topic_assignments: {
+        Row: {
+          created_at: string
+          id: string
+          lesson_id: string
+          sort_order: number
+          topic_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lesson_id: string
+          sort_order?: number
+          topic_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lesson_id?: string
+          sort_order?: number
+          topic_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_topic_assignments_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "textbook_lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lesson_topic_assignments_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "textbook_topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lessons: {
         Row: {
           content: string
