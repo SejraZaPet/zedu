@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, Search, X } from "lucide-react";
+import { Trash2, Search, X, Pencil } from "lucide-react";
+import LessonEditorSheet from "@/components/LessonEditorSheet";
 
 interface AssignmentInfo {
   topic_id: string;
@@ -28,6 +29,7 @@ interface LessonRow {
 const LessonsManager = () => {
   const [lessons, setLessons] = useState<LessonRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingLessonId, setEditingLessonId] = useState<string | null>(null);
 
   // Filters
   const [filterSubject, setFilterSubject] = useState<string>("all");
@@ -221,6 +223,9 @@ const LessonsManager = () => {
                 {lesson.status === "published" ? "Publikováno" : "Koncept"}
               </Badge>
               <div className="flex gap-1 shrink-0">
+                <Button size="icon" variant="ghost" onClick={() => setEditingLessonId(lesson.id)}>
+                  <Pencil className="w-4 h-4" />
+                </Button>
                 <Button size="icon" variant="ghost" onClick={() => deleteLesson(lesson.id)}>
                   <Trash2 className="w-4 h-4 text-destructive" />
                 </Button>
@@ -228,6 +233,18 @@ const LessonsManager = () => {
             </div>
           ))}
         </div>
+      )}
+
+      {editingLessonId && (
+        <LessonEditorSheet
+          lessonId={editingLessonId}
+          open={!!editingLessonId}
+          onOpenChange={(open) => { if (!open) setEditingLessonId(null); }}
+          onSaved={() => {
+            setEditingLessonId(null);
+            fetchLessons();
+          }}
+        />
       )}
     </div>
   );
