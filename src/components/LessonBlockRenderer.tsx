@@ -50,10 +50,18 @@ export const LessonBlock = ({ block }: { block: Block }) => {
     case "card_grid":
       return (
         <div className={`grid gap-4 ${(p.columns || 2) === 3 ? "grid-cols-1 md:grid-cols-3" : "grid-cols-1 md:grid-cols-2"}`}>
-          {(p.cards as { title: string; text: string }[])?.map((card, i) => (
+          {(p.cards as { title: string; text: string; mode?: string; items?: string[] }[])?.map((card, i) => (
             <div key={i} className="rounded-lg border border-border bg-card p-5">
               <h4 className="font-heading text-lg font-semibold mb-2 text-card-foreground">{card.title}</h4>
-              <p className="text-sm text-muted-foreground">{card.text}</p>
+              {card.mode === "bullets" && card.items ? (
+                <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
+                  {card.items.filter(Boolean).map((item, ii) => (
+                    <li key={ii}>{item}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{card.text}</p>
+              )}
             </div>
           ))}
         </div>
