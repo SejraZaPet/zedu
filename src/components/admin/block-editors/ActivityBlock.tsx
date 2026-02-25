@@ -5,7 +5,9 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Upload } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
   block: Block;
@@ -17,6 +19,7 @@ const ACTIVITY_TYPES = [
   { value: "quiz", label: "Kvíz" },
   { value: "matching", label: "Přiřazování A–B" },
   { value: "sorting", label: "Třídění do skupin" },
+  { value: "image_label", label: "Popis obrázku (slepá mapa)" },
 ];
 
 const FlashcardsEditor = ({ props, onChange }: { props: any; onChange: (p: any) => void }) => {
@@ -197,6 +200,121 @@ const SortingEditor = ({ props, onChange }: { props: any; onChange: (p: any) => 
   );
 };
 
+const ImageLabelEditor = ({ props, onChange }: { props: any; onChange: (p: any) => void }) => {
+  const il = props.imageLabel || { imageUrl: "", markers: [], tolerance: 5, shuffleWords: true };
+  const imgRef = React.useRef<HTMLDivElement>(null);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const ext = file.name.split(".").pop();
+    const path = `image-label/${crypto.randomUUID()}.${ext}`;
+    const { error } = await supabase.storage.from("lesson-images").upload(path, file);
+    if (error) return;
+    const { data } = supabase.storage.from("lesson-images").getPublicUrl(path);
+    onChange({ ...props, imageLabel: { ...il, imageUrl: data.publicUrl } });
+  };
+
+  const handleImageClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!imgRef.current) return;
+    const rect = imgRef.current.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    const markers = [...il.markers, { x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, label: "" }];
+    onChange({ ...props, imageLabel: { ...il, markers } });
+  };
+
+  const updateMarker = (idx: number, field: string, val: any) => {
+    const markers = il.markers.map((m: any, i: number) => (i === idx ? { ...m, [field]: val } : m));
+    onChange({ ...props, imageLabel: { ...il, markers } });
+  };
+
+  const removeMarker = (idx: number) => {
+    onChange({ ...props, imageLabel: { ...il, markers: il.markers.filter((_: any, i: number) => i !== idx) } });
+  };
+
+  return (
+    <div className="space-y-3">
+      {/* Image upload */}
+      {!il.imageUrl ? (
+        <label className="flex items-center justify-center border-2 border-dashed border-border rounded-lg p-8 cursor-pointer hover:border-primary/50 transition-colors">
+          <div className="text-center">
+            <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">Nahrát obrázek</span>
+          </div>
+          <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+        </label>
+      ) : (
+        <div className="space-y-2">
+          <p className="text-xs text-muted-foreground">Kliknutím na obrázek přidáte bod:</p>
+          <div ref={imgRef} className="relative cursor-crosshair inline-block w-full" onClick={handleImageClick}>
+            <img src={il.imageUrl} alt="" className="w-full rounded-lg" draggable={false} />
+            {il.markers.map((m: any, i: number) => (
+              <div
+                key={i}
+                className="absolute w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center font-bold transform -translate-x-1/2 -translate-y-1/2 border-2 border-background"
+                style={{ left: `${m.x}%`, top: `${m.y}%` }}
+              >
+                {i + 1}
+              </div>
+            ))}
+          </div>
+          <Button variant="outline" size="sm" onClick={() => onChange({ ...props, imageLabel: { ...il, imageUrl: "" } })}>
+            Změnit obrázek
+          </Button>
+        </div>
+      )}
+
+      {/* Markers list */}
+      {il.markers.length > 0 && (
+        <div className="space-y-2">
+          <Label className="text-xs">Body a popisky</Label>
+          {il.markers.map((m: any, i: number) => (
+            <div key={i} className="flex items-center gap-2">
+              <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center font-bold flex-shrink-0">
+                {i + 1}
+              </span>
+              <Input
+                className="flex-1"
+                placeholder={`Popisek bodu ${i + 1}`}
+                value={m.label}
+                onChange={(e) => updateMarker(i, "label", e.target.value)}
+              />
+              <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => removeMarker(i)}>
+                <Trash2 className="w-3 h-3" />
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Settings */}
+      <div className="flex flex-col gap-3 pt-2 border-t border-border">
+        <div>
+          <Label className="text-xs">Tolerance umístění: {il.tolerance}%</Label>
+          <Slider
+            min={2}
+            max={15}
+            step={1}
+            value={[il.tolerance]}
+            onValueChange={([v]) => onChange({ ...props, imageLabel: { ...il, tolerance: v } })}
+            className="mt-1"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <Checkbox
+            checked={il.shuffleWords !== false}
+            onCheckedChange={(v) => onChange({ ...props, imageLabel: { ...il, shuffleWords: !!v } })}
+          />
+          <Label className="text-xs">Zamíchat pořadí slov</Label>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+import React from "react";
+
 const ActivityBlock = ({ block, onChange }: Props) => {
   const p = block.props;
   const activityType = p.activityType || "flashcards";
@@ -208,7 +326,7 @@ const ActivityBlock = ({ block, onChange }: Props) => {
           <Label className="text-xs">Název aktivity</Label>
           <Input value={p.title || ""} onChange={(e) => onChange({ ...p, title: e.target.value })} />
         </div>
-        <div className="w-48">
+        <div className="w-56">
           <Label className="text-xs">Typ aktivity</Label>
           <Select value={activityType} onValueChange={(v) => onChange({ ...p, activityType: v })}>
             <SelectTrigger><SelectValue /></SelectTrigger>
@@ -225,6 +343,7 @@ const ActivityBlock = ({ block, onChange }: Props) => {
       {activityType === "quiz" && <QuizEditor props={p} onChange={onChange} />}
       {activityType === "matching" && <MatchingEditor props={p} onChange={onChange} />}
       {activityType === "sorting" && <SortingEditor props={p} onChange={onChange} />}
+      {activityType === "image_label" && <ImageLabelEditor props={p} onChange={onChange} />}
     </div>
   );
 };
