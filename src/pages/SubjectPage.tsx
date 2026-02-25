@@ -1,22 +1,32 @@
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { getSubject, getGradesForSubject } from "@/lib/textbook-config";
+import { useSubjects, getSubjectBySlug, getGradeNumbers } from "@/hooks/useSubjects";
 import { slugify } from "@/lib/slugify";
 import { ArrowLeft, Loader2, BookOpen } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 
 const SubjectPage = () => {
   const { subjectId } = useParams<{ subjectId: string }>();
-  const subject = getSubject(subjectId ?? "");
-  const grades = getGradesForSubject(subjectId ?? "");
+  const { data: subjects = [], isLoading: subjectsLoading } = useSubjects(true);
+  const subject = getSubjectBySlug(subjects, subjectId ?? "");
+  const grades = subject ? getGradeNumbers(subject) : [];
   const hasMultipleGrades = grades.length > 1;
 
-  const [selectedGrade, setSelectedGrade] = useState<number | null>(
-    hasMultipleGrades ? null : grades[0] ?? null
-  );
+  const [selectedGrade, setSelectedGrade] = useState<number | null>(null);
+
+  // Auto-select grade when subject loads
+  useEffect(() => {
+    if (subject) {
+      if (grades.length === 1) {
+        setSelectedGrade(grades[0]);
+      } else {
+        setSelectedGrade(null);
+      }
+    }
+  }, [subject?.slug]);
 
   // Load topics
   const { data: topics, isLoading: topicsLoading } = useQuery({
@@ -41,7 +51,6 @@ const SubjectPage = () => {
     queryKey: ["topic-published-map-assignments", topicIds],
     queryFn: async () => {
       if (topicIds.length === 0) return {};
-      // Get assignments for these topics
       const { data: assignments } = await supabase
         .from("lesson_topic_assignments")
         .select("topic_id, lesson_id")
@@ -49,7 +58,6 @@ const SubjectPage = () => {
 
       if (!assignments || assignments.length === 0) return {};
 
-      // Get published lessons
       const lessonIds = [...new Set(assignments.map((a: any) => a.lesson_id))];
       const { data: publishedLessons } = await supabase
         .from("textbook_lessons")
@@ -59,7 +67,6 @@ const SubjectPage = () => {
 
       const publishedSet = new Set((publishedLessons ?? []).map((l: any) => l.id));
 
-      // Map topic -> has published lesson
       const map: Record<string, boolean> = {};
       for (const a of assignments as any[]) {
         if (publishedSet.has(a.lesson_id)) {
@@ -70,6 +77,18 @@ const SubjectPage = () => {
     },
     enabled: topicIds.length > 0,
   });
+
+  if (subjectsLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <SiteHeader />
+        <main className="pt-24 pb-16 px-4 flex items-center justify-center">
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+        </main>
+        <SiteFooter />
+      </div>
+    );
+  }
 
   if (!subject) {
     return (

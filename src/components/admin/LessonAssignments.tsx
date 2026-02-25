@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { SUBJECTS, getGradesForSubject } from "@/lib/textbook-config";
+import { useSubjects, getGradeNumbers } from "@/hooks/useSubjects";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -17,7 +17,7 @@ export interface Assignment {
 }
 
 interface Props {
-  lessonId: string | null; // null for new lessons
+  lessonId: string | null;
   assignments: Assignment[];
   onChange: (assignments: Assignment[]) => void;
 }
@@ -40,10 +40,12 @@ const AssignmentRow = ({
   onChange: (a: Assignment) => void;
   allAssignments: Assignment[];
 }) => {
+  const { data: subjects = [] } = useSubjects(false);
   const [topics, setTopics] = useState<TopicOption[]>([]);
-  const grades = assignment.subject ? getGradesForSubject(assignment.subject) : [];
 
-  // Check for duplicate
+  const currentSubject = subjects.find((s) => s.slug === assignment.subject);
+  const grades = currentSubject ? getGradeNumbers(currentSubject) : [];
+
   const isDuplicate = allAssignments.some(
     (a, i) => i !== index && a.topic_id === assignment.topic_id && a.topic_id !== ""
   );
@@ -70,12 +72,16 @@ const AssignmentRow = ({
       <div className="flex-1 grid grid-cols-3 gap-2">
         <Select
           value={assignment.subject}
-          onValueChange={(v) => onChange({ ...assignment, subject: v, grade: getGradesForSubject(v)[0] ?? 1, topic_id: "", topic_title: "" })}
+          onValueChange={(v) => {
+            const s = subjects.find((s) => s.slug === v);
+            const g = s ? getGradeNumbers(s) : [];
+            onChange({ ...assignment, subject: v, grade: g[0] ?? 1, topic_id: "", topic_title: "" });
+          }}
         >
           <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Předmět" /></SelectTrigger>
           <SelectContent>
-            {SUBJECTS.map((s) => (
-              <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>
+            {subjects.map((s) => (
+              <SelectItem key={s.slug} value={s.slug}>{s.label}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -120,13 +126,17 @@ const AssignmentRow = ({
 };
 
 const LessonAssignments = ({ lessonId, assignments, onChange }: Props) => {
+  const { data: subjects = [] } = useSubjects(false);
+
   const addAssignment = () => {
+    const firstSubject = subjects[0];
+    const firstGrade = firstSubject ? getGradeNumbers(firstSubject)[0] ?? 1 : 1;
     onChange([
       ...assignments,
       {
         topic_id: "",
-        subject: SUBJECTS[0].id,
-        grade: getGradesForSubject(SUBJECTS[0].id)[0],
+        subject: firstSubject?.slug ?? "",
+        grade: firstGrade,
         topic_title: "",
         sort_order: assignments.length,
       },

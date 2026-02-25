@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { SUBJECTS, getGradesForSubject } from "@/lib/textbook-config";
+import { useSubjects } from "@/hooks/useSubjects";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Trash2, Search, X, Pencil } from "lucide-react";
 import LessonEditorSheet from "@/components/LessonEditorSheet";
+import { getGradeNumbers } from "@/hooks/useSubjects";
 
 interface AssignmentInfo {
   topic_id: string;
@@ -27,28 +28,26 @@ interface LessonRow {
 }
 
 const LessonsManager = () => {
+  const { data: subjects = [] } = useSubjects(false);
   const [lessons, setLessons] = useState<LessonRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingLessonId, setEditingLessonId] = useState<string | null>(null);
 
-  // Filters
   const [filterSubject, setFilterSubject] = useState<string>("all");
   const [filterGrade, setFilterGrade] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const availableGrades = filterSubject !== "all" ? getGradesForSubject(filterSubject) : [];
+  const currentSubject = subjects.find((s) => s.slug === filterSubject);
+  const availableGrades = currentSubject ? getGradeNumbers(currentSubject) : [];
 
-  // Reset grade when subject changes
   useEffect(() => {
     setFilterGrade("all");
   }, [filterSubject]);
 
-  // Fetch all lessons with assignments
   const fetchLessons = useCallback(async () => {
     setLoading(true);
 
-    // First get all lessons
     let lessonQuery = supabase
       .from("textbook_lessons")
       .select("id, title, status, sort_order, topic_id, hero_image_url")
@@ -65,14 +64,12 @@ const LessonsManager = () => {
       return;
     }
 
-    // Fetch all assignments with topic info
     const lessonIds = lessonData.map((l: any) => l.id);
     const { data: assignmentData } = await supabase
       .from("lesson_topic_assignments")
       .select("lesson_id, topic_id, textbook_topics(id, title, subject, grade)")
       .in("lesson_id", lessonIds);
 
-    // Build assignment map
     const assignMap: Record<string, AssignmentInfo[]> = {};
     for (const row of (assignmentData ?? []) as any[]) {
       if (!assignMap[row.lesson_id]) assignMap[row.lesson_id] = [];
@@ -89,7 +86,6 @@ const LessonsManager = () => {
       assignments: assignMap[l.id] ?? [],
     }));
 
-    // Filter by subject/grade via assignments
     if (filterSubject !== "all") {
       results = results.filter((l) =>
         l.assignments.some((a) => a.subject === filterSubject)
@@ -101,7 +97,6 @@ const LessonsManager = () => {
       );
     }
 
-    // Client-side name search
     if (searchQuery.trim()) {
       const q = searchQuery.trim().toLowerCase();
       results = results.filter((l) => l.title.toLowerCase().includes(q));
@@ -119,7 +114,7 @@ const LessonsManager = () => {
     fetchLessons();
   };
 
-  const getSubjectLabel = (id: string) => SUBJECTS.find((s) => s.id === id)?.label ?? id;
+  const getSubjectLabel = (slug: string) => subjects.find((s) => s.slug === slug)?.label ?? slug;
 
   const clearFilters = () => {
     setFilterSubject("all");
@@ -141,7 +136,6 @@ const LessonsManager = () => {
         )}
       </div>
 
-      {/* Filters */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         <div>
           <Label className="text-xs">Předmět</Label>
@@ -149,8 +143,8 @@ const LessonsManager = () => {
             <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Všechny</SelectItem>
-              {SUBJECTS.map((s) => (
-                <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>
+              {subjects.map((s) => (
+                <SelectItem key={s.slug} value={s.slug}>{s.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -195,7 +189,6 @@ const LessonsManager = () => {
         </div>
       </div>
 
-      {/* Lessons list */}
       {loading ? (
         <p className="text-sm text-muted-foreground text-center py-8">Načítání…</p>
       ) : lessons.length === 0 ? (

@@ -2,18 +2,13 @@ import { BookOpen } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { SUBJECTS } from "@/lib/textbook-config";
+import { useSubjects } from "@/hooks/useSubjects";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const descriptions: Record<string, string> = {
-  technologie: "Technologické postupy v gastronomii",
-  potraviny: "Suroviny, kvalita a skladování",
-  nauka_o_vyzive: "Principy zdravé výživy a dietologie",
-  svetova_gastronomie: "Kuchyně světa a jejich tradice",
-};
-
 const TextbooksSection = () => {
-  const { data: publishedMap, isLoading } = useQuery({
+  const { data: subjects = [], isLoading: subjectsLoading } = useSubjects(true);
+
+  const { data: publishedMap, isLoading: publishedLoading } = useQuery({
     queryKey: ["subject-published-status"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -31,6 +26,8 @@ const TextbooksSection = () => {
     },
   });
 
+  const isLoading = subjectsLoading || publishedLoading;
+
   return (
     <section id="ucebnice" className="section-padding">
       <div className="container mx-auto max-w-6xl">
@@ -47,13 +44,13 @@ const TextbooksSection = () => {
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {SUBJECTS.map((subject) => {
-            const isPublished = publishedMap?.[subject.id] ?? false;
+          {subjects.map((subject) => {
+            const isPublished = publishedMap?.[subject.slug] ?? false;
 
             return (
               <Link
-                key={subject.id}
-                to={`/ucebnice/${subject.id}`}
+                key={subject.slug}
+                to={`/ucebnice/${subject.slug}`}
                 className={`group rounded-lg p-6 md:p-8 flex flex-col justify-between transition-all duration-300 border ${
                   isPublished
                     ? "border-primary/40 bg-primary/10 hover:border-primary hover:bg-primary/15 hover:shadow-lg hover:shadow-primary/10"
@@ -80,12 +77,14 @@ const TextbooksSection = () => {
                     )}
                   </div>
                   <p className="text-muted-foreground text-sm mb-4">
-                    {descriptions[subject.id] ?? ""}
+                    {subject.description ?? ""}
                   </p>
                   <span className="text-xs text-muted-foreground font-medium">
                     {subject.grades.length > 1
-                      ? `Ročníky ${subject.grades.join(", ")}`
-                      : `${subject.grades[0]}. ročník`}
+                      ? `Ročníky ${subject.grades.map((g) => g.grade_number).join(", ")}`
+                      : subject.grades.length === 1
+                      ? `${subject.grades[0].grade_number}. ročník`
+                      : ""}
                   </span>
                 </div>
                 <div className="mt-6">

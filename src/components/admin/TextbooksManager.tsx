@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { SUBJECTS, getGradesForSubject, type Block } from "@/lib/textbook-config";
+import { useSubjects, getGradeNumbers, type SubjectRecord } from "@/hooks/useSubjects";
+import { type Block } from "@/lib/textbook-config";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -60,7 +61,8 @@ const SortableLessonRow = ({ lesson, onEdit, onDelete }: { lesson: Lesson; onEdi
 
 // === Main Component ===
 const TextbooksManager = () => {
-  const [subject, setSubject] = useState<string>(SUBJECTS[0].id);
+  const { data: subjects = [] } = useSubjects(false);
+  const [subject, setSubject] = useState<string>("");
   const [grade, setGrade] = useState<number>(1);
   const [topics, setTopics] = useState<Topic[]>([]);
   const [editingTopic, setEditingTopic] = useState<Partial<Topic> | null>(null);
@@ -74,16 +76,28 @@ const TextbooksManager = () => {
   const [heroUploading, setHeroUploading] = useState(false);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
 
-  const grades = getGradesForSubject(subject);
+  const currentSubject = subjects.find((s) => s.slug === subject);
+  const grades = currentSubject ? getGradeNumbers(currentSubject) : [];
+
+  // Set initial subject when subjects load
+  useEffect(() => {
+    if (subjects.length > 0 && !subject) {
+      setSubject(subjects[0].slug);
+      const g = getGradeNumbers(subjects[0]);
+      if (g.length > 0) setGrade(g[0]);
+    }
+  }, [subjects]);
 
   // Reset grade when subject changes
   useEffect(() => {
-    const available = getGradesForSubject(subject);
-    if (!available.includes(grade)) setGrade(available[0]);
+    if (!currentSubject) return;
+    const available = getGradeNumbers(currentSubject);
+    if (!available.includes(grade)) setGrade(available[0] ?? 1);
   }, [subject]);
 
   // Fetch topics
   const fetchTopics = useCallback(async () => {
+    if (!subject) return;
     const { data } = await supabase
       .from("textbook_topics")
       .select("*")
@@ -116,7 +130,6 @@ const TextbooksManager = () => {
       .in("id", lessonIds);
 
     if (lessonRows) {
-      // Sort by assignment sort_order
       const orderMap = new Map(assignmentRows.map((a: any) => [a.lesson_id, a.sort_order]));
       const sorted = lessonRows
         .map((d: any) => ({ ...d, blocks: (d.blocks as Block[]) || [], sort_order: orderMap.get(d.id) ?? 0 }))
@@ -171,8 +184,6 @@ const TextbooksManager = () => {
   // === Lesson CRUD ===
   const saveLesson = async () => {
     if (!editingLesson) return;
-
-    // Filter valid assignments
     const validAssignments = assignments.filter((a) => a.topic_id);
     if (validAssignments.length === 0) {
       alert("Lekce musí mít alespoň jedno umístění.");
@@ -180,7 +191,6 @@ const TextbooksManager = () => {
     }
 
     const primaryTopicId = validAssignments[0].topic_id;
-
     const payload = {
       topic_id: primaryTopicId,
       title: editingLesson.title,
@@ -191,7 +201,6 @@ const TextbooksManager = () => {
     };
 
     let lessonId = editingLesson.id;
-
     if (isNewLesson) {
       const { data } = await supabase.from("textbook_lessons").insert(payload).select("id").single();
       if (data) lessonId = data.id;
@@ -199,7 +208,6 @@ const TextbooksManager = () => {
       await supabase.from("textbook_lessons").update(payload).eq("id", lessonId);
     }
 
-    // Sync assignments: delete old, insert new
     await supabase.from("lesson_topic_assignments").delete().eq("lesson_id", lessonId);
     if (validAssignments.length > 0) {
       await supabase.from("lesson_topic_assignments").insert(
@@ -218,7 +226,6 @@ const TextbooksManager = () => {
 
   const deleteLesson = async (id: string) => {
     if (!confirm("Smazat lekci?")) return;
-    // Assignments cascade-delete automatically
     await supabase.from("textbook_lessons").delete().eq("id", id);
     fetchLessons();
   };
@@ -238,7 +245,6 @@ const TextbooksManager = () => {
     setHeroUploading(false);
   };
 
-  // Drag & drop reorder lessons
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -251,7 +257,6 @@ const TextbooksManager = () => {
     const newIdx = lessons.findIndex((l) => l.id === over.id);
     const reordered = arrayMove(lessons, oldIdx, newIdx);
     setLessons(reordered);
-    // Update sort_order in junction table
     await Promise.all(reordered.map((l, i) =>
       supabase.from("lesson_topic_assignments")
         .update({ sort_order: i })
@@ -262,7 +267,7 @@ const TextbooksManager = () => {
 
   // === Lesson Editor View ===
   if (editingLesson) {
-    const subjectLabel = SUBJECTS.find((s) => s.id === subject)?.label ?? subject;
+    const subjectLabel = currentSubject?.label ?? subject;
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-2">
@@ -308,7 +313,6 @@ const TextbooksManager = () => {
             </div>
           </div>
 
-          {/* Assignments section */}
           <div className="border-t border-border pt-4">
             <LessonAssignments
               lessonId={isNewLesson ? null : editingLesson.id}
@@ -342,15 +346,14 @@ const TextbooksManager = () => {
   // === Main View ===
   return (
     <div className="space-y-6">
-      {/* Subject & Grade selector */}
       <div className="flex gap-3 items-end">
         <div className="w-48">
           <Label className="text-xs">Předmět</Label>
           <Select value={subject} onValueChange={(v) => setSubject(v)}>
             <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
             <SelectContent>
-              {SUBJECTS.map((s) => (
-                <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>
+              {subjects.map((s) => (
+                <SelectItem key={s.slug} value={s.slug}>{s.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -467,13 +470,11 @@ const TextbooksManager = () => {
               </DndContext>
 
               {lessons.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-8">Zatím žádné lekce v tomto tématu.</p>
+                <p className="text-xs text-muted-foreground text-center py-4">Zatím žádné lekce v tomto tématu.</p>
               )}
             </>
           ) : (
-            <div className="flex items-center justify-center h-32 text-sm text-muted-foreground">
-              Vyberte téma pro zobrazení lekcí
-            </div>
+            <p className="text-sm text-muted-foreground text-center py-12">Vyberte téma pro zobrazení lekcí.</p>
           )}
         </div>
       </div>
