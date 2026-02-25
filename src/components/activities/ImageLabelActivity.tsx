@@ -21,6 +21,7 @@ const ImageLabelActivity = ({ imageUrl, markers = [], tolerance = 5, shuffleWord
   const [dragging, setDragging] = useState<string | null>(null);
   const [checked, setChecked] = useState(false);
   const [results, setResults] = useState<Record<number, boolean>>({});
+  const [showSolution, setShowSolution] = useState(false);
 
   const allLabels = markers.map((m) => m.label);
   const [shuffled, setShuffled] = useState<string[]>([]);
@@ -76,9 +77,22 @@ const ImageLabelActivity = ({ imageUrl, markers = [], tolerance = 5, shuffleWord
     setPlaced({});
     setResults({});
     setChecked(false);
+    setShowSolution(false);
+  };
+
+  const handleShowSolution = () => {
+    const next: Record<number, string> = {};
+    markers.forEach((m, i) => { next[i] = m.label; });
+    setPlaced(next);
+    const res: Record<number, boolean> = {};
+    markers.forEach((_, i) => { res[i] = true; });
+    setResults(res);
+    setChecked(true);
+    setShowSolution(true);
   };
 
   const correctCount = Object.values(results).filter(Boolean).length;
+  const percentage = markers.length > 0 ? Math.round((correctCount / markers.length) * 100) : 0;
 
   return (
     <div className="space-y-4">
@@ -141,24 +155,46 @@ const ImageLabelActivity = ({ imageUrl, markers = [], tolerance = 5, shuffleWord
         )}
       </div>
 
+      {/* Results banner */}
+      {checked && (
+        <div className={`rounded-lg p-3 flex items-center gap-3 ${
+          percentage === 100
+            ? "bg-green-600/20 border border-green-500/40"
+            : percentage >= 50
+              ? "bg-yellow-600/20 border border-yellow-500/40"
+              : "bg-destructive/20 border border-destructive/40"
+        }`}>
+          {percentage === 100 ? (
+            <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />
+          ) : (
+            <XCircle className="w-5 h-5 text-destructive shrink-0" />
+          )}
+          <span className="text-sm font-medium">
+            {showSolution ? "Zobrazeno řešení" : `${correctCount}/${markers.length} správně (${percentage} %)`}
+          </span>
+        </div>
+      )}
+
       {/* Controls */}
-      <div className="flex items-center gap-3">
-        <Button
-          onClick={handleCheck}
-          disabled={Object.keys(placed).length === 0}
-          className="bg-primary text-primary-foreground hover:bg-primary/90"
-        >
-          Zkontrolovat
-        </Button>
+      <div className="flex items-center gap-3 flex-wrap">
+        {!checked && (
+          <Button
+            onClick={handleCheck}
+            disabled={Object.keys(placed).length === 0}
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            Zkontrolovat odpovědi
+          </Button>
+        )}
+        {checked && !showSolution && (
+          <Button variant="outline" onClick={handleShowSolution}>
+            Zobrazit řešení
+          </Button>
+        )}
         <Button variant="outline" onClick={handleReset}>
           <RotateCcw className="w-4 h-4 mr-1" />
-          Znovu
+          Zkusit znovu
         </Button>
-        {checked && (
-          <span className="text-sm font-medium text-muted-foreground">
-            {correctCount}/{markers.length} správně
-          </span>
-        )}
       </div>
     </div>
   );
