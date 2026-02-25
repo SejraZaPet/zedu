@@ -26,7 +26,8 @@ export type BlockType =
   | "divider"
   | "two_column"
   | "gallery"
-  | "summary";
+  | "summary"
+  | "activity";
 
 export interface Block {
   id: string;
@@ -52,6 +53,7 @@ export const BLOCK_TYPES: { type: BlockType; label: string; icon: string }[] = [
   { type: "two_column", label: "Dva sloupce", icon: "▥" },
   { type: "gallery", label: "Galerie", icon: "🖼️" },
   { type: "summary", label: "Shrnutí lekce", icon: "📋" },
+  { type: "activity", label: "Aktivita", icon: "🎯" },
 ];
 
 export const createDefaultBlock = (type: BlockType): Block => {
@@ -91,6 +93,8 @@ export const createDefaultBlock = (type: BlockType): Block => {
       return { ...base, props: { columns: 3, images: [{ url: "", caption: "" }] } };
     case "summary":
       return { ...base, props: { title: "Shrnutí lekce", text: "" } };
+    case "activity":
+      return { ...base, props: { activityType: "flashcards", title: "Aktivita", flashcards: [{ front: "", back: "" }], quiz: { question: "", answers: [{ text: "", correct: false }], explanation: "" }, matching: { left: [""], right: [""] }, sorting: { groups: ["Skupina 1", "Skupina 2"], items: [{ text: "", group: 0 }] } } };
     default:
       return { ...base, props: {} };
   }

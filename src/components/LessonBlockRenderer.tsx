@@ -1,6 +1,10 @@
 import type { Block } from "@/lib/textbook-config";
 import LessonLinkButton from "@/components/LessonLinkButton";
 import DOMPurify from "dompurify";
+import FlashcardsActivity from "@/components/activities/FlashcardsActivity";
+import QuizActivity from "@/components/activities/QuizActivity";
+import MatchingActivity from "@/components/activities/MatchingActivity";
+import SortingActivity from "@/components/activities/SortingActivity";
 
 const extractYouTubeId = (url: string): string | null => {
   if (!url) return null;
@@ -225,6 +229,18 @@ export const LessonBlock = ({ block }: { block: Block }) => {
           />
         </div>
       );
+    case "activity": {
+      const at = p.activityType || "flashcards";
+      return (
+        <div className="rounded-lg border border-primary/20 bg-card p-5 space-y-3">
+          {p.title && <h3 className="font-heading text-lg text-primary uppercase tracking-wide">{p.title}</h3>}
+          {at === "flashcards" && <FlashcardsActivity cards={p.flashcards || []} />}
+          {at === "quiz" && <QuizActivity quiz={p.quiz} />}
+          {at === "matching" && <MatchingActivity matching={p.matching} />}
+          {at === "sorting" && <SortingActivity sorting={p.sorting} />}
+        </div>
+      );
+    }
     default:
       return null;
   }

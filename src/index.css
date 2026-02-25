@@ -99,3 +99,15 @@
     @apply px-4 py-16 md:px-8 md:py-24 lg:px-16 lg:py-32;
   }
 }
+
+@layer utilities {
+  .perspective-\[600px\] {
+    perspective: 600px;
+  }
+  .transform-style-preserve-3d {
+    transform-style: preserve-3d;
+  }
+  .backface-hidden {
+    backface-visibility: hidden;
+  }
+}
