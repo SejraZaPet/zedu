@@ -314,41 +314,312 @@ const ImageLabelEditor = ({ props, onChange }: { props: any; onChange: (p: any) 
   );
 };
 
-import React from "react";
+import React, { useState, useCallback, useRef } from "react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+
+export type FillBlankToken =
+  | { type: "text"; value: string }
+  | { type: "blank"; answer: string; alternatives: string[] };
+
+/** Convert legacy {{...}} text format to tokens */
+export const legacyTextToTokens = (text: string): FillBlankToken[] => {
+  const tokens: FillBlankToken[] = [];
+  const regex = /\{\{([^}]+)\}\}/g;
+  let last = 0;
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > last) tokens.push({ type: "text", value: text.slice(last, match.index) });
+    const parts = match[1].split("/").map((s) => s.trim());
+    tokens.push({ type: "blank", answer: parts[0], alternatives: parts.slice(1) });
+    last = regex.lastIndex;
+  }
+  if (last < text.length) tokens.push({ type: "text", value: text.slice(last) });
+  return tokens;
+};
+
+/** Tokenize plain text into word-level tokens (split by whitespace, preserving spaces) */
+const textToWordTokens = (text: string): FillBlankToken[] => {
+  if (!text) return [];
+  const tokens: FillBlankToken[] = [];
+  // Split keeping whitespace as separate tokens
+  const parts = text.split(/(\s+)/);
+  for (const part of parts) {
+    if (part) tokens.push({ type: "text", value: part });
+  }
+  return tokens;
+};
+
+/** Merge adjacent text tokens */
+const mergeTextTokens = (tokens: FillBlankToken[]): FillBlankToken[] => {
+  const result: FillBlankToken[] = [];
+  for (const t of tokens) {
+    const prev = result[result.length - 1];
+    if (t.type === "text" && prev?.type === "text") {
+      prev.value += t.value;
+    } else {
+      result.push({ ...t });
+    }
+  }
+  return result;
+};
 
 const FillBlanksEditor = ({ props, onChange }: { props: any; onChange: (p: any) => void }) => {
-  const fb = props.fillBlanks || { text: "", caseSensitive: false, diacriticSensitive: true };
+  const fb = props.fillBlanks || { text: "", tokens: [], caseSensitive: false, diacriticSensitive: true };
+
+  // Migrate legacy format on first render
+  const getTokens = useCallback((): FillBlankToken[] => {
+    if (fb.tokens && fb.tokens.length > 0) return fb.tokens;
+    if (fb.text) return legacyTextToTokens(fb.text);
+    return [];
+  }, [fb.tokens, fb.text]);
+
+  const tokens = getTokens();
+  const [editingText, setEditingText] = useState(false);
+  const [rawText, setRawText] = useState("");
+  const [altPopover, setAltPopover] = useState<number | null>(null);
+
+  const updateTokens = (newTokens: FillBlankToken[]) => {
+    const merged = mergeTextTokens(newTokens);
+    // Also keep a plain text representation for backward compat
+    const plainText = merged.map(t => t.type === "text" ? t.value : `{{${t.answer}${t.alternatives.length ? "/" + t.alternatives.join("/") : ""}}}`).join("");
+    onChange({ ...props, fillBlanks: { ...fb, tokens: merged, text: plainText } });
+  };
+
+  const handleStartEdit = () => {
+    // Flatten tokens to plain text for editing
+    const plain = tokens.map(t => t.type === "text" ? t.value : t.answer).join("");
+    setRawText(plain);
+    setEditingText(true);
+  };
+
+  const handleFinishEdit = () => {
+    // Convert raw text to word-level tokens, preserving existing blanks by matching words
+    const oldBlanks = new Map<string, string[]>();
+    for (const t of tokens) {
+      if (t.type === "blank") oldBlanks.set(t.answer.toLowerCase(), t.alternatives);
+    }
+    const newTokens = textToWordTokens(rawText);
+    // Restore blank status for words that were previously blanks
+    const restored: FillBlankToken[] = newTokens.map(t => {
+      if (t.type === "text" && !t.value.match(/^\s+$/) && oldBlanks.has(t.value.toLowerCase())) {
+        return { type: "blank" as const, answer: t.value, alternatives: oldBlanks.get(t.value.toLowerCase()) || [] };
+      }
+      return t;
+    });
+    updateTokens(restored);
+    setEditingText(false);
+  };
+
+  const toggleBlank = (tokenIndex: number) => {
+    const t = tokens[tokenIndex];
+    if (!t) return;
+    const newTokens = [...tokens];
+    if (t.type === "text") {
+      // Split the text token by words, find clicked word context
+      // For simplicity, if it's just whitespace, ignore
+      if (t.value.match(/^\s+$/)) return;
+      // Toggle entire text token to blank
+      newTokens[tokenIndex] = { type: "blank", answer: t.value, alternatives: [] };
+    } else {
+      // Unmark: convert blank back to text
+      newTokens[tokenIndex] = { type: "text", value: t.answer };
+    }
+    updateTokens(newTokens);
+  };
+
+  const updateAlternatives = (tokenIndex: number, alts: string[]) => {
+    const newTokens = [...tokens];
+    const t = newTokens[tokenIndex];
+    if (t.type === "blank") {
+      newTokens[tokenIndex] = { ...t, alternatives: alts };
+      updateTokens(newTokens);
+    }
+  };
+
+  const blanksCount = tokens.filter(t => t.type === "blank").length;
+
+  // Build word-level display tokens for clicking
+  const displayTokens: { token: FillBlankToken; globalIdx: number; word: string; isWord: boolean }[] = [];
+  tokens.forEach((t, gi) => {
+    if (t.type === "blank") {
+      displayTokens.push({ token: t, globalIdx: gi, word: t.answer, isWord: true });
+    } else {
+      // Split text into words and spaces for granular display
+      const parts = t.value.split(/(\s+)/);
+      for (const part of parts) {
+        displayTokens.push({ token: t, globalIdx: gi, word: part, isWord: !part.match(/^\s*$/) });
+      }
+    }
+  });
+
+  // For word-level clicking in text tokens, we need to split text tokens into individual word tokens
+  const handleWordClick = (globalIdx: number, word: string) => {
+    const t = tokens[globalIdx];
+    if (t.type === "blank") {
+      // Unmark
+      toggleBlank(globalIdx);
+      return;
+    }
+    // Split this text token into parts, marking the clicked word as blank
+    if (t.value.match(/^\s+$/)) return;
+    const parts = t.value.split(/(\s+)/);
+    if (parts.length <= 1) {
+      // Single word, just toggle
+      toggleBlank(globalIdx);
+      return;
+    }
+    // Find the exact occurrence of the clicked word
+    const newTokens: FillBlankToken[] = [];
+    for (let i = 0; i < globalIdx; i++) newTokens.push(tokens[i]);
+    for (const part of parts) {
+      if (part === word && !newTokens.some((nt, ni) => ni >= globalIdx && nt.type === "blank" && nt.answer === word)) {
+        // Check if this specific part is the one clicked (first unmatched occurrence)
+        let alreadyMarked = false;
+        for (const nt of newTokens) {
+          if (nt.type === "blank" && nt.answer === word) { alreadyMarked = true; break; }
+        }
+        if (!alreadyMarked && part === word) {
+          newTokens.push({ type: "blank", answer: part, alternatives: [] });
+          // Push remaining parts
+          const remaining = parts.slice(parts.indexOf(part) + 1).join("");
+          if (remaining) newTokens.push({ type: "text", value: remaining });
+          // Prepend earlier parts
+          const idx = newTokens.length;
+          for (let i = globalIdx + 1; i < tokens.length; i++) newTokens.push(tokens[i]);
+          updateTokens(newTokens);
+          return;
+        }
+      }
+      newTokens.push({ type: "text", value: part });
+    }
+    for (let i = globalIdx + 1; i < tokens.length; i++) newTokens.push(tokens[i]);
+    updateTokens(newTokens);
+  };
+
   return (
     <div className="space-y-3">
-      <div>
-        <Label className="text-xs">Text aktivity</Label>
-        <p className="text-xs text-muted-foreground mb-1">
-          Slova k doplnění označte pomocí {"{{slovo}}"} — alternativní odpovědi oddělte lomítkem: {"{{křehké/krehke}}"}
-        </p>
-        <Textarea
-          value={fb.text}
-          onChange={(e) => onChange({ ...props, fillBlanks: { ...fb, text: e.target.value } })}
-          placeholder="Hlavní město České republiky je {{Praha}}. Nejdelší řeka je {{Vltava/vltava}}."
-          rows={5}
-        />
-      </div>
-      {/* Preview extracted blanks */}
-      {fb.text && (() => {
-        const matches = [...fb.text.matchAll(/\{\{([^}]+)\}\}/g)];
-        if (!matches.length) return null;
-        return (
-          <div className="text-xs text-muted-foreground space-y-1">
-            <Label className="text-xs">Nalezené mezery ({matches.length}):</Label>
-            <div className="flex flex-wrap gap-1.5">
-              {matches.map((m: RegExpMatchArray, i: number) => (
-                <span key={i} className="bg-primary/20 text-primary px-2 py-0.5 rounded text-xs">
-                  {m[1]}
-                </span>
-              ))}
-            </div>
+      {/* Text editing mode */}
+      {editingText ? (
+        <div>
+          <Label className="text-xs">Text aktivity</Label>
+          <Textarea
+            value={rawText}
+            onChange={(e) => setRawText(e.target.value)}
+            placeholder="Napište text aktivity..."
+            rows={5}
+            autoFocus
+          />
+          <div className="flex gap-2 mt-2">
+            <Button size="sm" onClick={handleFinishEdit}>Hotovo</Button>
+            <Button size="sm" variant="outline" onClick={() => setEditingText(false)}>Zrušit</Button>
           </div>
-        );
-      })()}
+        </div>
+      ) : (
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <Label className="text-xs">Text aktivity</Label>
+            <Button size="sm" variant="outline" onClick={handleStartEdit} className="h-6 text-xs px-2">
+              {tokens.length === 0 ? "Napsat text" : "Upravit text"}
+            </Button>
+          </div>
+          {tokens.length === 0 ? (
+            <p className="text-xs text-muted-foreground italic">Zatím žádný text. Klikněte na „Napsat text".</p>
+          ) : (
+            <>
+              <p className="text-xs text-muted-foreground mb-2">Klikněte na slovo pro označení/odznačení jako mezera k doplnění:</p>
+              <div className="bg-muted/30 border border-border rounded-lg p-3 leading-loose text-sm flex flex-wrap items-baseline gap-y-1">
+                {(() => {
+                  // Render word-level clickable tokens
+                  const elements: React.ReactNode[] = [];
+                  let keyIdx = 0;
+                  tokens.forEach((t, gi) => {
+                    if (t.type === "blank") {
+                      const bi = gi;
+                      elements.push(
+                        <Popover key={keyIdx++} open={altPopover === gi} onOpenChange={(open) => setAltPopover(open ? gi : null)}>
+                          <PopoverTrigger asChild>
+                            <span
+                              className="bg-primary/20 text-primary border border-primary/40 rounded px-1.5 py-0.5 cursor-pointer hover:bg-primary/30 transition-colors font-medium"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // Right-click or alt-click for alternatives
+                              }}
+                              onContextMenu={(e) => {
+                                e.preventDefault();
+                                setAltPopover(gi);
+                              }}
+                            >
+                              {t.answer}
+                              <button
+                                className="ml-1 text-muted-foreground hover:text-destructive text-xs"
+                                onClick={(e) => { e.stopPropagation(); toggleBlank(gi); }}
+                                title="Odznačit"
+                              >✕</button>
+                            </span>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-64 p-3 space-y-2" align="start">
+                            <Label className="text-xs font-medium">Alternativní odpovědi pro „{t.answer}"</Label>
+                            <p className="text-xs text-muted-foreground">Každá na nový řádek:</p>
+                            <Textarea
+                              value={t.alternatives.join("\n")}
+                              onChange={(e) => updateAlternatives(gi, e.target.value.split("\n").filter(Boolean))}
+                              rows={3}
+                              placeholder="krehke&#10;krehké"
+                              className="text-xs"
+                            />
+                            <div className="flex justify-between">
+                              <Button size="sm" variant="ghost" className="text-destructive text-xs h-6" onClick={() => toggleBlank(gi)}>
+                                Odznačit slovo
+                              </Button>
+                              <Button size="sm" className="text-xs h-6" onClick={() => setAltPopover(null)}>OK</Button>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      );
+                    } else {
+                      // Split text into words
+                      const parts = t.value.split(/(\s+)/);
+                      for (const part of parts) {
+                        if (part.match(/^\s+$/)) {
+                          elements.push(<span key={keyIdx++}>{part}</span>);
+                        } else if (part) {
+                          elements.push(
+                            <span
+                              key={keyIdx++}
+                              className="cursor-pointer hover:bg-primary/10 rounded px-0.5 transition-colors"
+                              onClick={() => handleWordClick(gi, part)}
+                              title="Klikněte pro označení jako mezera"
+                            >
+                              {part}
+                            </span>
+                          );
+                        }
+                      }
+                    }
+                  });
+                  return elements;
+                })()}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Blanks summary */}
+      {blanksCount > 0 && (
+        <div className="text-xs text-muted-foreground">
+          <Label className="text-xs">Označené mezery ({blanksCount}):</Label>
+          <div className="flex flex-wrap gap-1.5 mt-1">
+            {tokens.filter(t => t.type === "blank").map((t, i) => (
+              <span key={i} className="bg-primary/20 text-primary px-2 py-0.5 rounded text-xs">
+                {(t as any).answer}{(t as any).alternatives?.length ? ` (${(t as any).alternatives.join(", ")})` : ""}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Settings */}
       <div className="flex flex-col gap-3 pt-2 border-t border-border">
         <div className="flex items-center gap-2">
           <Checkbox
