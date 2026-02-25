@@ -1,5 +1,6 @@
 import type { Block } from "@/lib/textbook-config";
 import LessonLinkButton from "@/components/LessonLinkButton";
+import DOMPurify from "dompurify";
 
 const extractYouTubeId = (url: string): string | null => {
   if (!url) return null;
@@ -9,17 +10,50 @@ const extractYouTubeId = (url: string): string | null => {
   return m ? m[1] : null;
 };
 
+const SafeHTML = ({ html, className }: { html: string; className?: string }) => (
+  <div
+    className={className}
+    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(html) }}
+  />
+);
+
+const CALLOUT_STYLES: Record<string, { icon: string; border: string; bg: string }> = {
+  note: { icon: "📝", border: "border-muted-foreground/40", bg: "bg-muted/40" },
+  warning: { icon: "⚠️", border: "border-destructive/40", bg: "bg-destructive/10" },
+  tip: { icon: "💡", border: "border-primary/40", bg: "bg-primary/10" },
+  remember: { icon: "🧠", border: "border-primary/40", bg: "bg-primary/10" },
+};
+
 export const LessonBlock = ({ block }: { block: Block }) => {
   const p = block.props;
 
   switch (block.type) {
     case "heading": {
       const Tag = `h${p.level || 2}` as keyof JSX.IntrinsicElements;
-      return <Tag className="font-heading text-2xl md:text-3xl font-semibold text-foreground">{p.text}</Tag>;
+      const sizeClass = p.level === 1 ? "text-3xl md:text-4xl" : p.level === 3 ? "text-xl md:text-2xl" : p.level === 4 ? "text-lg md:text-xl" : "text-2xl md:text-3xl";
+      // Support rich HTML text
+      const isHtml = typeof p.text === "string" && p.text.includes("<");
+      return isHtml
+        ? <Tag className={`font-heading ${sizeClass} font-semibold text-foreground [&_*]:font-heading`}><SafeHTML html={p.text} className="inline" /></Tag>
+        : <Tag className={`font-heading ${sizeClass} font-semibold text-foreground`}>{p.text}</Tag>;
     }
     case "paragraph":
-      return <p className="text-foreground leading-relaxed whitespace-pre-wrap">{p.text}</p>;
-    case "bullet_list":
+      return (
+        <SafeHTML
+          html={p.text || ""}
+          className="text-foreground leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_mark]:bg-primary/30 [&_mark]:text-foreground [&_p]:mb-2"
+        />
+      );
+    case "bullet_list": {
+      // Support rich HTML content (new) or legacy string[] items
+      if (p.html) {
+        return (
+          <SafeHTML
+            html={p.html}
+            className="text-foreground leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_mark]:bg-primary/30 [&_mark]:text-foreground"
+          />
+        );
+      }
       return (
         <ul className="list-disc list-inside space-y-1 text-foreground">
           {(p.items as string[])?.map((item, i) => (
@@ -27,9 +61,10 @@ export const LessonBlock = ({ block }: { block: Block }) => {
           ))}
         </ul>
       );
+    }
     case "image":
       return (
-        <figure className={`${p.alignment === "center" ? "text-center" : ""}`}>
+        <figure className={`${p.alignment === "center" ? "text-center" : p.alignment === "right" ? "text-right" : ""}`}>
           <img
             src={p.url}
             alt={p.caption || ""}
@@ -130,6 +165,66 @@ export const LessonBlock = ({ block }: { block: Block }) => {
         </figure>
       );
     }
+    case "callout": {
+      const ct = CALLOUT_STYLES[p.calloutType] || CALLOUT_STYLES.note;
+      return (
+        <div className={`rounded-lg border-l-4 ${ct.border} ${ct.bg} p-4 flex gap-3`}>
+          <span className="text-xl flex-shrink-0">{ct.icon}</span>
+          <SafeHTML
+            html={p.text || ""}
+            className="text-foreground text-sm leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-1 [&_mark]:bg-primary/30"
+          />
+        </div>
+      );
+    }
+    case "divider": {
+      if (p.style === "dots") {
+        return <div className="text-center py-4 text-muted-foreground tracking-[1em]">• • •</div>;
+      }
+      if (p.style === "space") {
+        return <div className="py-8" />;
+      }
+      return <hr className="border-border my-2" />;
+    }
+    case "two_column":
+      return (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <SafeHTML
+            html={p.left || ""}
+            className="text-foreground leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_h2]:font-heading [&_h2]:text-xl [&_h2]:uppercase [&_h3]:font-heading [&_h3]:text-lg [&_h3]:uppercase [&_mark]:bg-primary/30 [&_p]:mb-2"
+          />
+          <SafeHTML
+            html={p.right || ""}
+            className="text-foreground leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_h2]:font-heading [&_h2]:text-xl [&_h2]:uppercase [&_h3]:font-heading [&_h3]:text-lg [&_h3]:uppercase [&_mark]:bg-primary/30 [&_p]:mb-2"
+          />
+        </div>
+      );
+    case "gallery": {
+      const cols = p.columns || 3;
+      const colClass = cols === 2 ? "grid-cols-2" : cols === 4 ? "grid-cols-2 md:grid-cols-4" : "grid-cols-2 md:grid-cols-3";
+      return (
+        <div className={`grid gap-3 ${colClass}`}>
+          {(p.images as { url: string; caption: string }[])?.filter(img => img.url).map((img, i) => (
+            <figure key={i} className="text-center">
+              <img src={img.url} alt={img.caption || ""} className="rounded-lg w-full object-cover aspect-square" />
+              {img.caption && <figcaption className="text-xs text-muted-foreground mt-1">{img.caption}</figcaption>}
+            </figure>
+          ))}
+        </div>
+      );
+    }
+    case "summary":
+      return (
+        <div className="rounded-lg border border-primary/30 bg-primary/5 p-6">
+          <h3 className="font-heading text-xl text-primary mb-3 uppercase tracking-wide">
+            {p.title || "Shrnutí lekce"}
+          </h3>
+          <SafeHTML
+            html={p.text || ""}
+            className="text-foreground text-sm leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_mark]:bg-primary/30 [&_p]:mb-2"
+          />
+        </div>
+      );
     default:
       return null;
   }

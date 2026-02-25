@@ -21,7 +21,12 @@ export type BlockType =
   | "accordion"
   | "quote"
   | "lesson_link"
-  | "youtube";
+  | "youtube"
+  | "callout"
+  | "divider"
+  | "two_column"
+  | "gallery"
+  | "summary";
 
 export interface Block {
   id: string;
@@ -42,6 +47,11 @@ export const BLOCK_TYPES: { type: BlockType; label: string; icon: string }[] = [
   { type: "quote", label: "Citace", icon: "❝" },
   { type: "lesson_link", label: "Odkaz na lekci", icon: "🔗" },
   { type: "youtube", label: "YouTube video", icon: "▶" },
+  { type: "callout", label: "Callout box", icon: "📌" },
+  { type: "divider", label: "Oddělovač", icon: "―" },
+  { type: "two_column", label: "Dva sloupce", icon: "▥" },
+  { type: "gallery", label: "Galerie", icon: "🖼️" },
+  { type: "summary", label: "Shrnutí lekce", icon: "📋" },
 ];
 
 export const createDefaultBlock = (type: BlockType): Block => {
@@ -71,6 +81,16 @@ export const createDefaultBlock = (type: BlockType): Block => {
       return { ...base, props: { lessonId: "", buttonText: "" } };
     case "youtube":
       return { ...base, props: { url: "", caption: "", width: "full" } };
+    case "callout":
+      return { ...base, props: { calloutType: "note", text: "" } };
+    case "divider":
+      return { ...base, props: { style: "line" } };
+    case "two_column":
+      return { ...base, props: { left: "", right: "" } };
+    case "gallery":
+      return { ...base, props: { columns: 3, images: [{ url: "", caption: "" }] } };
+    case "summary":
+      return { ...base, props: { title: "Shrnutí lekce", text: "" } };
     default:
       return { ...base, props: {} };
   }
