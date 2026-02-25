@@ -8,8 +8,16 @@ interface Blank {
   alternatives: string[];
 }
 
+interface FillBlankToken {
+  type: "text" | "blank";
+  value?: string;
+  answer?: string;
+  alternatives?: string[];
+}
+
 interface Props {
-  text: string;
+  text?: string;
+  tokens?: FillBlankToken[];
   caseSensitive?: boolean;
   diacriticSensitive?: boolean;
 }
@@ -21,7 +29,8 @@ const normalize = (s: string, caseSensitive: boolean, diacriticSensitive: boolea
   return v;
 };
 
-const parseBlanks = (text: string): { segments: (string | number)[]; blanks: Blank[] } => {
+/** Parse legacy {{...}} format */
+const parseLegacyBlanks = (text: string): { segments: (string | number)[]; blanks: Blank[] } => {
   const blanks: Blank[] = [];
   const segments: (string | number)[] = [];
   const regex = /\{\{([^}]+)\}\}/g;
@@ -39,8 +48,28 @@ const parseBlanks = (text: string): { segments: (string | number)[]; blanks: Bla
   return { segments, blanks };
 };
 
-const FillBlanksActivity = ({ text, caseSensitive = false, diacriticSensitive = true }: Props) => {
-  const { segments, blanks } = useMemo(() => parseBlanks(text || ""), [text]);
+/** Convert token array to segments + blanks */
+const tokensToSegments = (tokens: FillBlankToken[]): { segments: (string | number)[]; blanks: Blank[] } => {
+  const blanks: Blank[] = [];
+  const segments: (string | number)[] = [];
+  for (const t of tokens) {
+    if (t.type === "text") {
+      segments.push(t.value || "");
+    } else {
+      blanks.push({ answer: t.answer || "", alternatives: t.alternatives || [] });
+      segments.push(blanks.length - 1);
+    }
+  }
+  return { segments, blanks };
+};
+
+const FillBlanksActivity = ({ text, tokens, caseSensitive = false, diacriticSensitive = true }: Props) => {
+  const { segments, blanks } = useMemo(() => {
+    // Prefer tokens format, fall back to legacy text
+    if (tokens && tokens.length > 0) return tokensToSegments(tokens);
+    return parseLegacyBlanks(text || "");
+  }, [text, tokens]);
+
   const [answers, setAnswers] = useState<string[]>(() => blanks.map(() => ""));
   const [checked, setChecked] = useState(false);
   const [showSolution, setShowSolution] = useState(false);

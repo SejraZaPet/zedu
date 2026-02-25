@@ -256,6 +256,7 @@ export const LessonBlock = ({ block }: { block: Block }) => {
           {at === "fill_blanks" && p.fillBlanks && (
             <FillBlanksActivity
               text={p.fillBlanks.text || ""}
+              tokens={p.fillBlanks.tokens}
               caseSensitive={p.fillBlanks.caseSensitive}
               diacriticSensitive={p.fillBlanks.diacriticSensitive}
             />
