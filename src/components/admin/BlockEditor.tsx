@@ -48,6 +48,7 @@ import DividerBlock from "./block-editors/DividerBlock";
 import TwoColumnBlock from "./block-editors/TwoColumnBlock";
 import GalleryBlock from "./block-editors/GalleryBlock";
 import SummaryBlock from "./block-editors/SummaryBlock";
+import ActivityBlock from "./block-editors/ActivityBlock";
 
 interface Props {
   blocks: Block[];
@@ -72,6 +73,7 @@ const BlockRenderer = ({ block, onChange }: { block: Block; onChange: (props: Re
     case "two_column": return <TwoColumnBlock block={block} onChange={onChange} />;
     case "gallery": return <GalleryBlock block={block} onChange={onChange} />;
     case "summary": return <SummaryBlock block={block} onChange={onChange} />;
+    case "activity": return <ActivityBlock block={block} onChange={onChange} />;
     default: return <p className="text-muted-foreground text-sm">Neznámý blok</p>;
   }
 };
