@@ -338,6 +338,15 @@ const ActivityBlock = ({ block, onChange }: Props) => {
           </Select>
         </div>
       </div>
+      <div>
+        <Label className="text-xs">Instrukce pro studenta</Label>
+        <Textarea
+          value={p.instructions || ""}
+          onChange={(e) => onChange({ ...p, instructions: e.target.value })}
+          placeholder="Např. Přečti si otázku a otoč kartičku pro zobrazení odpovědi…"
+          rows={2}
+        />
+      </div>
 
       {activityType === "flashcards" && <FlashcardsEditor props={p} onChange={onChange} />}
       {activityType === "quiz" && <QuizEditor props={p} onChange={onChange} />}

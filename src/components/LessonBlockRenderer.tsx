@@ -235,6 +235,11 @@ export const LessonBlock = ({ block }: { block: Block }) => {
       return (
         <div className="rounded-lg border border-primary/20 bg-card p-5 space-y-3">
           {p.title && <h3 className="font-heading text-lg text-primary uppercase tracking-wide">{p.title}</h3>}
+          {p.instructions && (
+            <p className="text-sm text-muted-foreground leading-relaxed bg-muted/30 rounded-md px-4 py-2.5">
+              {p.instructions}
+            </p>
+          )}
           {at === "flashcards" && <FlashcardsActivity cards={p.flashcards || []} />}
           {at === "quiz" && <QuizActivity quiz={p.quiz} />}
           {at === "matching" && <MatchingActivity matching={p.matching} />}
