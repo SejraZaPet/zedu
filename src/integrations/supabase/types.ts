@@ -191,6 +191,41 @@ export type Database = {
         }
         Relationships: []
       }
+      textbook_grades: {
+        Row: {
+          created_at: string | null
+          grade_number: number
+          id: string
+          label: string
+          sort_order: number | null
+          subject_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          grade_number: number
+          id?: string
+          label: string
+          sort_order?: number | null
+          subject_id: string
+        }
+        Update: {
+          created_at?: string | null
+          grade_number?: number
+          id?: string
+          label?: string
+          sort_order?: number | null
+          subject_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "textbook_grades_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "textbook_subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       textbook_lessons: {
         Row: {
           blocks: Json
@@ -234,6 +269,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      textbook_subjects: {
+        Row: {
+          abbreviation: string | null
+          active: boolean | null
+          color: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          label: string
+          slug: string
+          sort_order: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          abbreviation?: string | null
+          active?: boolean | null
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          label: string
+          slug: string
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          abbreviation?: string | null
+          active?: boolean | null
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          label?: string
+          slug?: string
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       textbook_topics: {
         Row: {
