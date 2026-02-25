@@ -1,4 +1,4 @@
-import { Textarea } from "@/components/ui/textarea";
+import MiniRichEditor from "./MiniRichEditor";
 import type { Block } from "@/lib/textbook-config";
 
 interface Props {
@@ -7,11 +7,13 @@ interface Props {
 }
 
 const ParagraphBlock = ({ block, onChange }: Props) => (
-  <Textarea
-    value={block.props.text}
-    onChange={(e) => onChange({ ...block.props, text: e.target.value })}
+  <MiniRichEditor
+    content={block.props.text || ""}
+    onChange={(html) => onChange({ ...block.props, text: html })}
     placeholder="Odstavec textu…"
-    rows={3}
+    showHeadings={false}
+    showLists
+    showAlign
   />
 );
 

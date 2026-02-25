@@ -43,6 +43,11 @@ import AccordionBlock from "./block-editors/AccordionBlock";
 import QuoteBlock from "./block-editors/QuoteBlock";
 import LessonLinkBlock from "./block-editors/LessonLinkBlock";
 import YouTubeBlock from "./block-editors/YouTubeBlock";
+import CalloutBlock from "./block-editors/CalloutBlock";
+import DividerBlock from "./block-editors/DividerBlock";
+import TwoColumnBlock from "./block-editors/TwoColumnBlock";
+import GalleryBlock from "./block-editors/GalleryBlock";
+import SummaryBlock from "./block-editors/SummaryBlock";
 
 interface Props {
   blocks: Block[];
@@ -62,6 +67,11 @@ const BlockRenderer = ({ block, onChange }: { block: Block; onChange: (props: Re
     case "quote": return <QuoteBlock block={block} onChange={onChange} />;
     case "lesson_link": return <LessonLinkBlock block={block} onChange={onChange} />;
     case "youtube": return <YouTubeBlock block={block} onChange={onChange} />;
+    case "callout": return <CalloutBlock block={block} onChange={onChange} />;
+    case "divider": return <DividerBlock block={block} onChange={onChange} />;
+    case "two_column": return <TwoColumnBlock block={block} onChange={onChange} />;
+    case "gallery": return <GalleryBlock block={block} onChange={onChange} />;
+    case "summary": return <SummaryBlock block={block} onChange={onChange} />;
     default: return <p className="text-muted-foreground text-sm">Neznámý blok</p>;
   }
 };
