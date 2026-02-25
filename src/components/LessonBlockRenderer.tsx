@@ -5,6 +5,7 @@ import FlashcardsActivity from "@/components/activities/FlashcardsActivity";
 import QuizActivity from "@/components/activities/QuizActivity";
 import MatchingActivity from "@/components/activities/MatchingActivity";
 import SortingActivity from "@/components/activities/SortingActivity";
+import ImageLabelActivity from "@/components/activities/ImageLabelActivity";
 
 const extractYouTubeId = (url: string): string | null => {
   if (!url) return null;
@@ -238,6 +239,14 @@ export const LessonBlock = ({ block }: { block: Block }) => {
           {at === "quiz" && <QuizActivity quiz={p.quiz} />}
           {at === "matching" && <MatchingActivity matching={p.matching} />}
           {at === "sorting" && <SortingActivity sorting={p.sorting} />}
+          {at === "image_label" && p.imageLabel && (
+            <ImageLabelActivity
+              imageUrl={p.imageLabel.imageUrl}
+              markers={p.imageLabel.markers || []}
+              tolerance={p.imageLabel.tolerance}
+              shuffleWords={p.imageLabel.shuffleWords}
+            />
+          )}
         </div>
       );
     }
