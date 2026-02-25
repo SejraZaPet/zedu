@@ -94,7 +94,7 @@ export const createDefaultBlock = (type: BlockType): Block => {
     case "summary":
       return { ...base, props: { title: "Shrnutí lekce", text: "" } };
     case "activity":
-      return { ...base, props: { activityType: "flashcards", title: "Aktivita", flashcards: [{ front: "", back: "" }], quiz: { question: "", answers: [{ text: "", correct: false }], explanation: "" }, matching: { left: [""], right: [""] }, sorting: { groups: ["Skupina 1", "Skupina 2"], items: [{ text: "", group: 0 }] }, imageLabel: { imageUrl: "", markers: [], tolerance: 5, shuffleWords: true } } };
+      return { ...base, props: { activityType: "flashcards", title: "Aktivita", flashcards: [{ front: "", back: "" }], quiz: { question: "", answers: [{ text: "", correct: false }], explanation: "" }, matching: { left: [""], right: [""] }, sorting: { groups: ["Skupina 1", "Skupina 2"], items: [{ text: "", group: 0 }] }, imageLabel: { imageUrl: "", markers: [], tolerance: 5, shuffleWords: true }, fillBlanks: { text: "", caseSensitive: false, diacriticSensitive: true } } };
     default:
       return { ...base, props: {} };
   }
