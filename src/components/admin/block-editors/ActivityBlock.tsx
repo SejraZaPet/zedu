@@ -20,6 +20,7 @@ const ACTIVITY_TYPES = [
   { value: "matching", label: "Přiřazování A–B" },
   { value: "sorting", label: "Třídění do skupin" },
   { value: "image_label", label: "Popis obrázku (slepá mapa)" },
+  { value: "fill_blanks", label: "Doplň slova" },
 ];
 
 const FlashcardsEditor = ({ props, onChange }: { props: any; onChange: (p: any) => void }) => {
@@ -315,6 +316,59 @@ const ImageLabelEditor = ({ props, onChange }: { props: any; onChange: (p: any) 
 
 import React from "react";
 
+const FillBlanksEditor = ({ props, onChange }: { props: any; onChange: (p: any) => void }) => {
+  const fb = props.fillBlanks || { text: "", caseSensitive: false, diacriticSensitive: true };
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label className="text-xs">Text aktivity</Label>
+        <p className="text-xs text-muted-foreground mb-1">
+          Slova k doplnění označte pomocí {"{{slovo}}"} — alternativní odpovědi oddělte lomítkem: {"{{křehké/krehke}}"}
+        </p>
+        <Textarea
+          value={fb.text}
+          onChange={(e) => onChange({ ...props, fillBlanks: { ...fb, text: e.target.value } })}
+          placeholder="Hlavní město České republiky je {{Praha}}. Nejdelší řeka je {{Vltava/vltava}}."
+          rows={5}
+        />
+      </div>
+      {/* Preview extracted blanks */}
+      {fb.text && (() => {
+        const matches = [...fb.text.matchAll(/\{\{([^}]+)\}\}/g)];
+        if (!matches.length) return null;
+        return (
+          <div className="text-xs text-muted-foreground space-y-1">
+            <Label className="text-xs">Nalezené mezery ({matches.length}):</Label>
+            <div className="flex flex-wrap gap-1.5">
+              {matches.map((m: RegExpMatchArray, i: number) => (
+                <span key={i} className="bg-primary/20 text-primary px-2 py-0.5 rounded text-xs">
+                  {m[1]}
+                </span>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+      <div className="flex flex-col gap-3 pt-2 border-t border-border">
+        <div className="flex items-center gap-2">
+          <Checkbox
+            checked={fb.caseSensitive === true}
+            onCheckedChange={(v) => onChange({ ...props, fillBlanks: { ...fb, caseSensitive: !!v } })}
+          />
+          <Label className="text-xs">Rozlišovat velká/malá písmena</Label>
+        </div>
+        <div className="flex items-center gap-2">
+          <Checkbox
+            checked={fb.diacriticSensitive !== false}
+            onCheckedChange={(v) => onChange({ ...props, fillBlanks: { ...fb, diacriticSensitive: !!v } })}
+          />
+          <Label className="text-xs">Rozlišovat diakritiku</Label>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ActivityBlock = ({ block, onChange }: Props) => {
   const p = block.props;
   const activityType = p.activityType || "flashcards";
@@ -353,6 +407,7 @@ const ActivityBlock = ({ block, onChange }: Props) => {
       {activityType === "matching" && <MatchingEditor props={p} onChange={onChange} />}
       {activityType === "sorting" && <SortingEditor props={p} onChange={onChange} />}
       {activityType === "image_label" && <ImageLabelEditor props={p} onChange={onChange} />}
+      {activityType === "fill_blanks" && <FillBlanksEditor props={p} onChange={onChange} />}
     </div>
   );
 };

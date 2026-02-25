@@ -6,6 +6,7 @@ import QuizActivity from "@/components/activities/QuizActivity";
 import MatchingActivity from "@/components/activities/MatchingActivity";
 import SortingActivity from "@/components/activities/SortingActivity";
 import ImageLabelActivity from "@/components/activities/ImageLabelActivity";
+import FillBlanksActivity from "@/components/activities/FillBlanksActivity";
 
 const extractYouTubeId = (url: string): string | null => {
   if (!url) return null;
@@ -250,6 +251,13 @@ export const LessonBlock = ({ block }: { block: Block }) => {
               markers={p.imageLabel.markers || []}
               tolerance={p.imageLabel.tolerance}
               shuffleWords={p.imageLabel.shuffleWords}
+            />
+          )}
+          {at === "fill_blanks" && p.fillBlanks && (
+            <FillBlanksActivity
+              text={p.fillBlanks.text || ""}
+              caseSensitive={p.fillBlanks.caseSensitive}
+              diacriticSensitive={p.fillBlanks.diacriticSensitive}
             />
           )}
         </div>
