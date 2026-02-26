@@ -9,7 +9,7 @@ const cards = [
   },
   {
     icon: FileText,
-    title: "Odborné články",
+    title: "Ke kávě",
     description: "Postřehy, zkušenosti a tipy z praxe pro pedagogy",
     href: "#clanky",
   },
@@ -46,12 +46,8 @@ const ContentCards = () => {
               className="group block rounded-lg border border-border bg-card p-6 transition-all duration-300 hover:border-primary/30 hover:bg-surface-hover hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-1"
             >
               <card.icon className="w-8 h-8 text-primary mb-4 transition-transform group-hover:scale-110" />
-              <h3 className="font-heading text-lg font-semibold mb-2 text-card-foreground">
-                {card.title}
-              </h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {card.description}
-              </p>
+              <h3 className="font-heading text-lg font-semibold mb-2 text-card-foreground">{card.title}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">{card.description}</p>
             </a>
           ))}
         </div>
