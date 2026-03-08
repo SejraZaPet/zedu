@@ -189,6 +189,70 @@ const TeacherTextbooksManager = () => {
     toast({ title: "Zkopírováno", description: `Kód ${code} zkopírován do schránky.` });
   };
 
+  // === Topic CRUD ===
+  const handleCreateTopic = async () => {
+    if (!newTopicTitle.trim() || !selectedTextbook) return;
+    setSaving(true);
+    const subjectSlug = selectedTextbook.subject;
+    
+    const { data: existingTopics } = await supabase
+      .from("textbook_topics")
+      .select("sort_order")
+      .eq("subject", subjectSlug)
+      .eq("grade", newTopicGrade)
+      .order("sort_order", { ascending: false })
+      .limit(1);
+    
+    const nextOrder = existingTopics && existingTopics.length > 0 ? (existingTopics[0] as any).sort_order + 1 : 0;
+
+    const { error } = await supabase.from("textbook_topics").insert({
+      title: newTopicTitle.trim(),
+      subject: subjectSlug,
+      grade: newTopicGrade,
+      sort_order: nextOrder,
+    });
+
+    if (error) {
+      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Téma vytvořeno" });
+      setNewTopicTitle("");
+      setCreateTopicOpen(false);
+      fetchDetail();
+    }
+    setSaving(false);
+  };
+
+  const handleDeleteTopic = async (topicId: string, lessonCount: number) => {
+    if (lessonCount > 0) {
+      if (!confirm(`Toto téma obsahuje ${lessonCount} lekcí. Opravdu jej chcete odstranit? Lekce budou smazány.`)) return;
+    } else {
+      if (!confirm("Opravdu smazat toto téma?")) return;
+    }
+    // CASCADE will handle lessons
+    const { error } = await supabase.from("textbook_topics").delete().eq("id", topicId);
+    if (error) {
+      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Téma smazáno" });
+      fetchDetail();
+    }
+  };
+
+  const handleRenameTopic = async () => {
+    if (!editingTopic || !editingTopic.title.trim()) return;
+    const { error } = await supabase.from("textbook_topics")
+      .update({ title: editingTopic.title.trim() })
+      .eq("id", editingTopic.id);
+    if (error) {
+      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Téma přejmenováno" });
+      setEditingTopic(null);
+      fetchDetail();
+    }
+  };
+
   // === Teacher Lesson CRUD ===
   const handleCreateLesson = async () => {
     if (!newLessonTitle.trim() || !selectedTextbook) return;
