@@ -19,6 +19,7 @@ const tabs = [
   { id: "subjects", label: "Předměty", icon: Settings },
   { id: "users", label: "Uživatelé", icon: Users },
   { id: "classes", label: "Třídy", icon: School },
+  { id: "results", label: "Výsledky", icon: BarChart3 },
 ] as const;
 
 type Tab = typeof tabs[number]["id"];
