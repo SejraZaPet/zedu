@@ -31,7 +31,7 @@ const Hero = () => {
       }}
     >
       {/* White overlay for readability */}
-      <div className="absolute inset-0 bg-white/75 pointer-events-none" />
+      <div className="absolute inset-0 bg-white/25 pointer-events-none" />
 
       {/* Content */}
       <div className="relative z-10 text-center px-4 max-w-3xl mx-auto">
