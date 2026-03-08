@@ -49,8 +49,8 @@ const ContentCards = () => {
   return (
     <section className="section-padding bg-gradient-surface">
       <div className="container mx-auto max-w-6xl">
-        <h2 className="font-heading text-3xl md:text-4xl font-semibold text-center mb-4">
-          Co tu <span className="text-gradient-gold">najdete</span>
+        <h2 className="font-heading text-2xl md:text-[32px] font-bold text-center mb-4 text-foreground">
+          Co tu <span className="text-gradient-brand">najdete</span>
         </h2>
         <p className="text-muted-foreground text-center max-w-xl mx-auto mb-12 md:mb-16">
           Vše na jednom místě – učebnice, články i inspirace pro moderní výuku gastronomie.
@@ -62,9 +62,11 @@ const ContentCards = () => {
               key={card.title}
               href={card.isRoute ? undefined : card.href}
               onClick={card.isRoute ? handleTextbookAccess : undefined}
-              className="group block rounded-lg border border-border bg-card p-6 transition-all duration-300 hover:border-primary/30 hover:bg-surface-hover hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-1 cursor-pointer"
+              className="group block rounded-2xl border border-border bg-card p-6 md:p-8 transition-all duration-300 hover:border-primary/20 hover:bg-card hover:-translate-y-1 cursor-pointer card-shadow hover:card-shadow-hover"
             >
-              <card.icon className="w-8 h-8 text-primary mb-4 transition-transform group-hover:scale-110" />
+              <div className="w-12 h-12 rounded-xl bg-gradient-brand flex items-center justify-center mb-5">
+                <card.icon className="w-6 h-6 text-primary-foreground" />
+              </div>
               <h3 className="font-heading text-lg font-semibold mb-2 text-card-foreground">{card.title}</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">{card.description}</p>
             </a>
