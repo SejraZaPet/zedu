@@ -1,7 +1,4 @@
-import { Button } from "@/components/ui/button";
 import { BookOpen, Sparkles, Wrench } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import heroLogo from "@/assets/zedu-hero-logo.png";
 
 const features = [
@@ -23,17 +20,6 @@ const features = [
 ];
 
 const Hero = () => {
-  const navigate = useNavigate();
-
-  const handleTextbookAccess = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      navigate("/auth?redirect=%2Fucebnice");
-      return;
-    }
-    navigate("/ucebnice");
-  };
-
   return (
     <>
       <section className="relative min-h-[85vh] flex items-center justify-center overflow-hidden bg-background">
@@ -67,25 +53,12 @@ const Hero = () => {
              <span className="text-foreground">Objevuj</span>
            </h1>
 
-
            <p
-             className="text-base md:text-lg text-muted-foreground max-w-xl mx-auto mb-10 animate-fade-in-up leading-relaxed"
+             className="text-base md:text-lg text-muted-foreground max-w-xl mx-auto animate-fade-in-up leading-relaxed"
              style={{ animationDelay: "0.3s" }}
-          >
-            Interaktivní učebnice, aktivity a procvičování v jedné platformě pro moderní výuku.
-          </p>
-
-           <div
-             className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up"
-             style={{ animationDelay: "0.45s" }}
-          >
-            <Button variant="hero" size="lg" onClick={handleTextbookAccess}>
-              Prozkoumat učebnice
-            </Button>
-            <Button variant="outline-gold" size="lg" asChild>
-              <a href="#o-projektu">O projektu</a>
-            </Button>
-          </div>
+           >
+             Interaktivní učebnice, aktivity a procvičování v jedné platformě pro moderní výuku.
+           </p>
         </div>
       </section>
 
