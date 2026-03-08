@@ -23,6 +23,7 @@ const ACTIVITY_TYPES = [
   { value: "image_label", label: "Popis obrázku (slepá mapa)" },
   { value: "image_hotspot", label: "Klikni na správnou část" },
   { value: "fill_blanks", label: "Doplň slova" },
+  { value: "fill_choice", label: "Doplň z nabídky" },
 ];
 
 const FlashcardsEditor = ({ props, onChange }: { props: any; onChange: (p: any) => void }) => {
@@ -778,6 +779,181 @@ const ImageHotspotEditor = ({ props, onChange }: { props: any; onChange: (p: any
   );
 };
 
+const FillChoiceEditor = ({ props, onChange }: { props: any; onChange: (p: any) => void }) => {
+  const fc = props.fillChoice || { tokens: [], options: [] };
+
+  const getTokens = (): { type: "text" | "blank"; value?: string; answer?: string }[] => {
+    return fc.tokens && fc.tokens.length > 0 ? fc.tokens : [];
+  };
+  const tokens = getTokens();
+
+  const [rawText, setRawText] = useState("");
+  const [editingText, setEditingText] = useState(false);
+
+  const updateTokens = (newTokens: any[]) => {
+    // Auto-collect unique blank answers as options
+    const blankAnswers = newTokens.filter((t: any) => t.type === "blank").map((t: any) => t.answer);
+    const existingOptions = fc.options || [];
+    // Merge: keep existing + add new blank answers
+    const merged = [...new Set([...existingOptions, ...blankAnswers])].filter(Boolean);
+    onChange({ ...props, fillChoice: { ...fc, tokens: newTokens, options: merged } });
+  };
+
+  const handleStartEdit = () => {
+    const text = tokens.map((t: any) => t.type === "text" ? t.value : `{{${t.answer}}}`).join("");
+    setRawText(text);
+    setEditingText(true);
+  };
+
+  const handleFinishEdit = () => {
+    // Parse {{answer}} syntax
+    const newTokens: any[] = [];
+    const regex = /\{\{([^}]+)\}\}/g;
+    let last = 0;
+    let match: RegExpExecArray | null;
+    while ((match = regex.exec(rawText)) !== null) {
+      if (match.index > last) newTokens.push({ type: "text", value: rawText.slice(last, match.index) });
+      newTokens.push({ type: "blank", answer: match[1].trim() });
+      last = regex.lastIndex;
+    }
+    if (last < rawText.length) newTokens.push({ type: "text", value: rawText.slice(last) });
+    updateTokens(newTokens);
+    setEditingText(false);
+  };
+
+  const toggleBlank = (tokenIdx: number) => {
+    const t = tokens[tokenIdx];
+    if (!t) return;
+    if (t.type === "blank") {
+      const newTokens = [...tokens];
+      newTokens[tokenIdx] = { type: "text", value: t.answer || "" };
+      updateTokens(newTokens);
+    }
+  };
+
+  const handleWordClick = (tokenIdx: number, wordStart: number, word: string) => {
+    const t = tokens[tokenIdx];
+    if (!t || t.type !== "text") return;
+    const text = t.value || "";
+    const before = text.slice(0, wordStart);
+    const after = text.slice(wordStart + word.length);
+    const newTokens = [...tokens];
+    const replacement: any[] = [];
+    if (before) replacement.push({ type: "text", value: before });
+    replacement.push({ type: "blank", answer: word });
+    if (after) replacement.push({ type: "text", value: after });
+    newTokens.splice(tokenIdx, 1, ...replacement);
+    updateTokens(newTokens);
+  };
+
+  const blanksCount = tokens.filter((t: any) => t.type === "blank").length;
+
+  return (
+    <div className="space-y-3">
+      {editingText ? (
+        <div className="space-y-2">
+          <Label className="text-xs">Text (mezery označte {"{{slovo}}"})</Label>
+          <Textarea value={rawText} onChange={(e) => setRawText(e.target.value)} rows={4} />
+          <Button size="sm" onClick={handleFinishEdit}>Uložit text</Button>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label className="text-xs">Klikněte na slovo pro vytvoření mezery:</Label>
+            <Button variant="outline" size="sm" onClick={handleStartEdit}>
+              {tokens.length === 0 ? "Zadat text" : "Editovat text"}
+            </Button>
+          </div>
+          {tokens.length > 0 && (
+            <div className="rounded-lg border border-border bg-card/50 p-3 text-sm leading-relaxed flex flex-wrap gap-y-1">
+              {tokens.map((token: any, ti: number) => {
+                if (token.type === "blank") {
+                  return (
+                    <button
+                      key={ti}
+                      onClick={() => toggleBlank(ti)}
+                      className="bg-primary/20 text-primary px-1.5 py-0.5 rounded mx-0.5 text-sm font-medium border border-primary/30 hover:bg-primary/30"
+                      title="Klikni pro zrušení mezery"
+                    >
+                      {token.answer}
+                    </button>
+                  );
+                }
+                const text = token.value || "";
+                const words = text.split(/(\s+)/);
+                let offset = 0;
+                return words.map((word: string, wi: number) => {
+                  const start = offset;
+                  offset += word.length;
+                  if (/^\s+$/.test(word)) return <span key={`${ti}-${wi}`}>{word}</span>;
+                  return (
+                    <button
+                      key={`${ti}-${wi}`}
+                      onClick={() => handleWordClick(ti, start, word)}
+                      className="hover:bg-primary/10 hover:text-primary rounded px-0.5 transition-colors cursor-pointer"
+                      title="Klikni pro označení jako mezera"
+                    >
+                      {word}
+                    </button>
+                  );
+                });
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {blanksCount > 0 && (
+        <div className="text-xs text-muted-foreground">
+          <Label className="text-xs">Mezery ({blanksCount}):</Label>
+          <div className="flex flex-wrap gap-1.5 mt-1">
+            {tokens.filter((t: any) => t.type === "blank").map((t: any, i: number) => (
+              <span key={i} className="bg-primary/20 text-primary px-2 py-0.5 rounded text-xs">
+                {t.answer}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Extra options (distractors) */}
+      <div className="space-y-2 pt-2 border-t border-border">
+        <Label className="text-xs">Nabídka slov (včetně chybných možností)</Label>
+        <p className="text-xs text-muted-foreground">Správná slova se přidávají automaticky. Přidejte zde navíc špatné možnosti (distraktory).</p>
+        <div className="flex flex-wrap gap-1.5">
+          {(fc.options || []).map((opt: string, i: number) => {
+            const isBlankAnswer = tokens.some((t: any) => t.type === "blank" && t.answer === opt);
+            return (
+              <span key={i} className={`px-2 py-0.5 rounded text-xs flex items-center gap-1 ${isBlankAnswer ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>
+                {opt}
+                {!isBlankAnswer && (
+                  <button className="hover:text-destructive" onClick={() => {
+                    const opts = (fc.options || []).filter((_: any, j: number) => j !== i);
+                    onChange({ ...props, fillChoice: { ...fc, options: opts } });
+                  }}>✕</button>
+                )}
+              </span>
+            );
+          })}
+        </div>
+        <div className="flex gap-2">
+          <Input
+            placeholder="Přidat špatnou možnost…"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.target as HTMLInputElement).value.trim()) {
+                const val = (e.target as HTMLInputElement).value.trim();
+                onChange({ ...props, fillChoice: { ...fc, options: [...(fc.options || []), val] } });
+                (e.target as HTMLInputElement).value = "";
+              }
+            }}
+            className="flex-1"
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ActivityBlock = ({ block, onChange }: Props) => {
   const p = block.props;
   const activityType = p.activityType || "flashcards";
@@ -819,6 +995,7 @@ const ActivityBlock = ({ block, onChange }: Props) => {
       {activityType === "image_label" && <ImageLabelEditor props={p} onChange={onChange} />}
       {activityType === "image_hotspot" && <ImageHotspotEditor props={p} onChange={onChange} />}
       {activityType === "fill_blanks" && <FillBlanksEditor props={p} onChange={onChange} />}
+      {activityType === "fill_choice" && <FillChoiceEditor props={p} onChange={onChange} />}
     </div>
   );
 };

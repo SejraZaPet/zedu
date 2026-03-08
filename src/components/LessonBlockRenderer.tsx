@@ -9,6 +9,7 @@ import OrderingActivity from "@/components/activities/OrderingActivity";
 import ImageHotspotActivity from "@/components/activities/ImageHotspotActivity";
 import ImageLabelActivity from "@/components/activities/ImageLabelActivity";
 import FillBlanksActivity from "@/components/activities/FillBlanksActivity";
+import FillChoiceActivity from "@/components/activities/FillChoiceActivity";
 
 const extractYouTubeId = (url: string): string | null => {
   if (!url) return null;
@@ -268,6 +269,12 @@ export const LessonBlock = ({ block }: { block: Block }) => {
               tokens={p.fillBlanks.tokens}
               caseSensitive={p.fillBlanks.caseSensitive}
               diacriticSensitive={p.fillBlanks.diacriticSensitive}
+            />
+          )}
+          {at === "fill_choice" && p.fillChoice && (
+            <FillChoiceActivity
+              tokens={p.fillChoice.tokens || []}
+              options={p.fillChoice.options || []}
             />
           )}
         </div>
