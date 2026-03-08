@@ -341,7 +341,7 @@ const TeacherTextbooksManager = () => {
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="ghost" onClick={() => { setEditingLesson(null); setIsNewLesson(false); }}>
+          <Button size="sm" variant="ghost" onClick={() => { setEditingLesson(null); setIsNewLesson(false); setLessonPlacements([]); }}>
             <ArrowLeft className="w-4 h-4 mr-1" />Zpět
           </Button>
           <span className="text-sm text-muted-foreground">
@@ -371,6 +371,13 @@ const TeacherTextbooksManager = () => {
             </div>
           </div>
 
+          {/* Placement editor */}
+          <LessonPlacementEditor
+            lessonId={isNewLesson ? null : editingLesson.id}
+            placements={lessonPlacements}
+            onChange={setLessonPlacements}
+          />
+
           <div>
             <Label className="mb-2 block">Obsah lekce</Label>
             <BlockEditor
@@ -386,7 +393,7 @@ const TeacherTextbooksManager = () => {
               heroImageUrl={null}
               blocks={editingLesson.blocks}
             />
-            <Button size="sm" variant="ghost" onClick={() => { setEditingLesson(null); setIsNewLesson(false); }}>
+            <Button size="sm" variant="ghost" onClick={() => { setEditingLesson(null); setIsNewLesson(false); setLessonPlacements([]); }}>
               <X className="w-4 h-4 mr-1" />Zrušit
             </Button>
           </div>
