@@ -93,6 +93,13 @@ const emptyForm: SubjectForm = {
   grades: [{ grade_number: 1, label: "1. ročník" }],
 };
 
+function generateCode(length = 6): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code = "";
+  for (let i = 0; i < length; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+
 // ──────────────────── Main Component ────────────────────
 const SubjectsManager = () => {
   const queryClient = useQueryClient();
@@ -166,6 +173,38 @@ const SubjectsManager = () => {
       .replace(/[^a-z0-9]+/g, "_")
       .replace(/^_|_$/g, "");
 
+  const autoCreateTextbook = async (subjectLabel: string, subjectSlug: string) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
+    // Check if textbook for this subject already exists for this teacher
+    const { data: existing } = await supabase
+      .from("teacher_textbooks")
+      .select("id")
+      .eq("teacher_id", session.user.id)
+      .eq("subject", subjectSlug)
+      .maybeSingle();
+
+    if (existing) {
+      console.log("[SubjectsManager] Textbook already exists for subject:", subjectSlug);
+      return;
+    }
+
+    const { error } = await supabase.from("teacher_textbooks").insert({
+      title: subjectLabel,
+      description: `Učebnice předmětu ${subjectLabel}`,
+      subject: subjectSlug,
+      teacher_id: session.user.id,
+      access_code: generateCode(),
+    } as any);
+
+    if (error) {
+      console.error("[SubjectsManager] Auto-create textbook error:", error);
+    } else {
+      console.log("[SubjectsManager] Auto-created textbook for subject:", subjectLabel);
+    }
+  };
+
   const save = async () => {
     if (!form.label.trim()) {
       toast.error("Vyplňte název předmětu.");
@@ -221,7 +260,10 @@ const SubjectsManager = () => {
           );
         }
 
-        toast.success("Předmět vytvořen.");
+        // Auto-create corresponding textbook
+        await autoCreateTextbook(form.label, slug);
+
+        toast.success("Předmět vytvořen a učebnice automaticky založena.");
       } else if (editing) {
         // Update subject
         const { error } = await supabase
@@ -248,6 +290,17 @@ const SubjectsManager = () => {
               sort_order: i,
             }))
           );
+        }
+
+        // Update textbook title if subject label changed
+        if (editing.label !== form.label) {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            await supabase.from("teacher_textbooks")
+              .update({ title: form.label, description: `Učebnice předmětu ${form.label}` } as any)
+              .eq("teacher_id", session.user.id)
+              .eq("subject", editing.slug);
+          }
         }
 
         toast.success("Předmět uložen.");
@@ -277,9 +330,19 @@ const SubjectsManager = () => {
     }
 
     if (!confirm(`Opravdu smazat předmět „${s.label}"?`)) return;
+
+    // Also delete auto-created textbook
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      await supabase.from("teacher_textbooks")
+        .delete()
+        .eq("teacher_id", session.user.id)
+        .eq("subject", s.slug);
+    }
+
     await supabase.from("textbook_subjects").delete().eq("id", s.id);
     queryClient.invalidateQueries({ queryKey: ["textbook-subjects"] });
-    toast.success("Předmět smazán.");
+    toast.success("Předmět a odpovídající učebnice smazány.");
   };
 
   // ──────── Edit / New Form ────────
@@ -355,6 +418,14 @@ const SubjectsManager = () => {
               onChange={(g) => setForm({ ...form, grades: g })}
             />
           </div>
+
+          {isNew && (
+            <div className="bg-muted/50 border border-border rounded-md p-3">
+              <p className="text-xs text-muted-foreground">
+                💡 Po uložení se automaticky vytvoří odpovídající učebnice v sekci „Moje učebnice".
+              </p>
+            </div>
+          )}
 
           <div className="flex gap-2 pt-2 border-t border-border">
             <Button size="sm" onClick={save} disabled={saving}>
