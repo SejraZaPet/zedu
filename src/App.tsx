@@ -14,6 +14,10 @@ import PodcastDetailPage from "./pages/PodcastDetailPage";
 import StudentDashboard from "./pages/StudentDashboard";
 import TextbooksPage from "./pages/TextbooksPage";
 import ProfilePage from "./pages/ProfilePage";
+import TeacherTextbooks from "./pages/TeacherTextbooks";
+import TeacherLessons from "./pages/TeacherLessons";
+import StudentTextbooks from "./pages/StudentTextbooks";
+import StudentTextbookDetail from "./pages/StudentTextbookDetail";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -35,6 +39,12 @@ const App = () => (
           <Route path="/ucebnice/:subjectId" element={<ProtectedRoute><SubjectPage /></ProtectedRoute>} />
           <Route path="/ucebnice/:subjectId/:grade/:topicSlug" element={<ProtectedRoute><TopicPage /></ProtectedRoute>} />
           <Route path="/ucebnice/:subjectId/:grade/:topicSlug/:lessonSlug" element={<ProtectedRoute><LessonPage /></ProtectedRoute>} />
+          {/* Teacher routes */}
+          <Route path="/ucitel/ucebnice" element={<ProtectedRoute><TeacherTextbooks /></ProtectedRoute>} />
+          <Route path="/ucitel/ucebnice/:textbookId/lekce" element={<ProtectedRoute><TeacherLessons /></ProtectedRoute>} />
+          {/* Student teacher-textbook routes */}
+          <Route path="/student/ucebnice" element={<ProtectedRoute><StudentTextbooks /></ProtectedRoute>} />
+          <Route path="/student/ucebnice/:textbookId" element={<ProtectedRoute><StudentTextbookDetail /></ProtectedRoute>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
