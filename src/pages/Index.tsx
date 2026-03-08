@@ -12,7 +12,6 @@ const Index = () => {
       <SiteHeader />
       <main>
         <Hero />
-        <ContentCards />
         
         <ArticlesSection />
         <AboutSection />
