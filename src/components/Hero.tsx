@@ -53,34 +53,27 @@ const Hero = () => {
              />
            </div>
 
-           {/* Brand tagline */}
-           <div className="mb-8 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
-             <p className="text-base md:text-lg font-semibold tracking-wide">
-               <span className="text-gradient-brand">ZEdu</span>
-               <span className="text-muted-foreground mx-2">•</span>
-               <span className="text-foreground">Tvoř</span>
-               <span className="text-muted-foreground mx-2">•</span>
-               <span className="text-foreground">Uč</span>
-               <span className="text-muted-foreground mx-2">•</span>
-               <span className="text-foreground">Objevuj</span>
-             </p>
-           </div>
+           {/* Brand headline */}
+           <h1
+             className="font-heading text-[32px] sm:text-[44px] md:text-[56px] lg:text-[64px] leading-[1.1] font-extrabold tracking-tight mb-8 animate-fade-in-up"
+             style={{ animationDelay: "0.1s" }}
+           >
+             <span className="text-gradient-brand">Zedu</span>
+             <span className="text-muted-foreground mx-2 md:mx-3">•</span>
+             <span className="text-foreground">Tvoř</span>
+             <span className="text-muted-foreground mx-2 md:mx-3">•</span>
+             <span className="text-foreground">Uč</span>
+             <span className="text-muted-foreground mx-2 md:mx-3">•</span>
+             <span className="text-foreground">Objevuj</span>
+           </h1>
 
            <div
-             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/[0.06] border border-primary/10 mb-8 animate-fade-in-up"
-             style={{ animationDelay: "0.15s" }}
+             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/[0.06] border border-primary/10 mb-6 animate-fade-in-up"
+             style={{ animationDelay: "0.2s" }}
            >
              <Sparkles size={14} className="text-primary" />
              <span className="text-sm font-medium text-primary">Moderní vzdělávací platforma</span>
            </div>
-
-           <h1
-             className="font-heading text-[36px] sm:text-[44px] md:text-[56px] lg:text-[64px] leading-[1.1] font-extrabold tracking-tight mb-6 animate-fade-in-up text-foreground"
-             style={{ animationDelay: "0.2s" }}
-          >
-            Tvořte digitální učebnice,{" "}
-            <span className="text-gradient-brand">které učí</span>
-          </h1>
 
            <p
              className="text-base md:text-lg text-muted-foreground max-w-xl mx-auto mb-10 animate-fade-in-up leading-relaxed"
