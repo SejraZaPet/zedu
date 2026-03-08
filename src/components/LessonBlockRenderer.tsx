@@ -37,7 +37,11 @@ const CALLOUT_STYLES: Record<string, { icon: string; border: string; bg: string 
   remember: { icon: "🧠", border: "border-primary/40", bg: "bg-primary/10" },
 };
 
-export const LessonBlock = ({ block }: { block: Block }) => {
+export const LessonBlock = ({ block, blockIndex, onActivityComplete }: { 
+  block: Block; 
+  blockIndex?: number;
+  onActivityComplete?: (activityIndex: number, activityType: string, score: number, maxScore: number) => void;
+}) => {
   const p = block.props;
 
   switch (block.type) {
