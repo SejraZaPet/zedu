@@ -24,8 +24,9 @@ const RolePickerSection = () => {
   return (
     <section className="w-full py-20 md:py-28 bg-gradient-to-br from-[hsl(185,55%,42%)] to-[hsl(260,55%,55%)]">
       <div className="container mx-auto max-w-3xl px-4 text-center">
-        <h2 className="font-heading text-2xl md:text-4xl font-bold text-white mb-4">
-          Nevíte, kde začít? Najdete zde nápovědu a postupy.
+        <h2 className="font-heading text-2xl md:text-4xl font-bold text-white mb-4 leading-tight">
+          Nevíte, kde začít?<br />
+          Najdete zde nápovědu a postupy.
         </h2>
         <p className="text-white/80 text-base md:text-lg max-w-xl mx-auto mb-12 leading-relaxed">
           ZEdu nabízí návody, nápovědu a postupy jak pro učitele, tak pro žáky.
