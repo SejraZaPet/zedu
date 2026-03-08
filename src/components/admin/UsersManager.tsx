@@ -74,10 +74,10 @@ const UsersManager = () => {
 
   useEffect(() => { fetchUsers(); }, []);
 
-  const updateStatus = async (userId: string, status: string) => {
+  const updateStatus = async (userId: string, newStatus: string) => {
     const { error } = await supabase
       .from("profiles")
-      .update({ status })
+      .update({ status: newStatus as any })
       .eq("id", userId);
 
     if (error) {
