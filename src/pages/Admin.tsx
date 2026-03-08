@@ -9,22 +9,28 @@ import ClassResultsManager from "@/components/admin/ClassResultsManager";
 import AdminDashboard from "@/components/admin/AdminDashboard";
 import { Button } from "@/components/ui/button";
 import { BookOpen, LogOut, Home, GraduationCap, Settings, Users, School, BarChart3, LayoutDashboard } from "lucide-react";
+import { useMemo } from "react";
 
-const tabs = [
-  { id: "dashboard", label: "Přehled", icon: LayoutDashboard },
-  { id: "textbooks", label: "Učebnice", icon: GraduationCap },
-  { id: "lessons", label: "Lekce", icon: BookOpen },
-  { id: "subjects", label: "Předměty", icon: Settings },
-  { id: "users", label: "Uživatelé", icon: Users },
-  { id: "classes", label: "Třídy", icon: School },
-  { id: "results", label: "Výsledky", icon: BarChart3 },
+const allTabs = [
+  { id: "dashboard", label: "Přehled", icon: LayoutDashboard, adminOnly: false },
+  { id: "textbooks", label: "Učebnice", icon: GraduationCap, adminOnly: false },
+  { id: "lessons", label: "Lekce", icon: BookOpen, adminOnly: false },
+  { id: "subjects", label: "Předměty", icon: Settings, adminOnly: false },
+  { id: "users", label: "Uživatelé", icon: Users, adminOnly: true },
+  { id: "classes", label: "Třídy", icon: School, adminOnly: false },
+  { id: "results", label: "Výsledky", icon: BarChart3, adminOnly: false },
 ] as const;
 
-type Tab = typeof tabs[number]["id"];
+type Tab = typeof allTabs[number]["id"];
 
 const Admin = () => {
-  const { isAdmin, loading, logout } = useAdmin();
+  const { isAdmin, isTeacher, loading, logout } = useAdmin();
   const [activeTab, setActiveTab] = useState<Tab>("dashboard");
+
+  const tabs = useMemo(
+    () => allTabs.filter((tab) => !tab.adminOnly || !isTeacher),
+    [isTeacher]
+  );
 
   if (loading) {
     return (
@@ -35,6 +41,12 @@ const Admin = () => {
   }
 
   if (!isAdmin) return null;
+
+  // If teacher tries to access users tab directly, redirect to dashboard
+  if (isTeacher && activeTab === "users") {
+    setActiveTab("dashboard");
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -70,11 +82,11 @@ const Admin = () => {
           ))}
         </div>
 
-        {activeTab === "dashboard" && <AdminDashboard onNavigate={(tab) => setActiveTab(tab as Tab)} />}
+        {activeTab === "dashboard" && <AdminDashboard onNavigate={(tab) => setActiveTab(tab as Tab)} isTeacher={isTeacher} />}
         {activeTab === "textbooks" && <TextbooksManager />}
         {activeTab === "lessons" && <LessonsManager />}
         {activeTab === "subjects" && <SubjectsManager />}
-        {activeTab === "users" && <UsersManager />}
+        {!isTeacher && activeTab === "users" && <UsersManager />}
         {activeTab === "classes" && <ClassesManager />}
         {activeTab === "results" && <ClassResultsManager />}
       </div>

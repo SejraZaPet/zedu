@@ -39,7 +39,7 @@ const Auth = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", session.user.id).limit(1);
-        if (roles?.some(r => r.role === "admin")) {
+        if (roles?.some(r => r.role === "admin" || r.role === "teacher")) {
           navigate(redirectTo || "/admin");
         } else {
           navigate(redirectTo || "/student");
@@ -93,7 +93,7 @@ const Auth = () => {
       .eq("user_id", data.user.id)
       .limit(1);
 
-    if (roles?.some(r => r.role === "admin")) {
+    if (roles?.some(r => r.role === "admin" || r.role === "teacher")) {
       navigate(redirectTo || "/admin");
     } else {
       navigate(redirectTo || "/student");
