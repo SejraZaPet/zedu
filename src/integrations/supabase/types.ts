@@ -88,6 +88,8 @@ export type Database = {
       }
       classes: {
         Row: {
+          access_code: string | null
+          access_code_active: boolean
           archived: boolean
           created_at: string
           description: string
@@ -99,6 +101,8 @@ export type Database = {
           year: number | null
         }
         Insert: {
+          access_code?: string | null
+          access_code_active?: boolean
           archived?: boolean
           created_at?: string
           description?: string
@@ -110,6 +114,8 @@ export type Database = {
           year?: number | null
         }
         Update: {
+          access_code?: string | null
+          access_code_active?: boolean
           archived?: boolean
           created_at?: string
           description?: string
@@ -475,6 +481,10 @@ export type Database = {
     Functions: {
       can_access_textbooks: { Args: { _user_id: string }; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
+      join_class_by_code: {
+        Args: { _code: string; _user_id: string }
+        Returns: string
+      }
     }
     Enums: {
       account_status: "pending" | "approved" | "blocked"
