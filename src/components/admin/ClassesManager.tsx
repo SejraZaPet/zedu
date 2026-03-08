@@ -45,6 +45,9 @@ interface ClassItem {
   member_count: number;
   access_code: string | null;
   access_code_active: boolean;
+  pending_count: number;
+  approved_count: number;
+  blocked_count: number;
 }
 
 const ClassesManager = () => {
@@ -84,20 +87,44 @@ const ClassesManager = () => {
       return;
     }
 
-    // Get member counts
+    // Get member counts with status
     const { data: membersData } = await supabase
       .from("class_members")
-      .select("class_id");
+      .select("class_id, user_id");
 
-    const countMap = new Map<string, number>();
+    const memberUserIds = [...new Set(membersData?.map((m: any) => m.user_id) ?? [])];
+    
+    // Fetch profiles for status info
+    let profileStatusMap = new Map<string, string>();
+    if (memberUserIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, status")
+        .in("id", memberUserIds);
+      profiles?.forEach((p: any) => profileStatusMap.set(p.id, p.status));
+    }
+
+    const countMap = new Map<string, { total: number; pending: number; approved: number; blocked: number }>();
     membersData?.forEach((m: any) => {
-      countMap.set(m.class_id, (countMap.get(m.class_id) || 0) + 1);
+      const status = profileStatusMap.get(m.user_id) || "pending";
+      const entry = countMap.get(m.class_id) || { total: 0, pending: 0, approved: 0, blocked: 0 };
+      entry.total++;
+      if (status === "pending") entry.pending++;
+      else if (status === "approved") entry.approved++;
+      else if (status === "blocked") entry.blocked++;
+      countMap.set(m.class_id, entry);
     });
 
-    const enriched: ClassItem[] = (classesData ?? []).map((c: any) => ({
-      ...c,
-      member_count: countMap.get(c.id) || 0,
-    }));
+    const enriched: ClassItem[] = (classesData ?? []).map((c: any) => {
+      const counts = countMap.get(c.id) || { total: 0, pending: 0, approved: 0, blocked: 0 };
+      return {
+        ...c,
+        member_count: counts.total,
+        pending_count: counts.pending,
+        approved_count: counts.approved,
+        blocked_count: counts.blocked,
+      };
+    });
 
     setClasses(enriched);
     setLoading(false);
@@ -272,6 +299,7 @@ const ClassesManager = () => {
               <TableHead>Obor</TableHead>
               <TableHead className="text-center">Ročník</TableHead>
               <TableHead className="text-center">Studenti</TableHead>
+              <TableHead className="text-center">Stav studentů</TableHead>
               <TableHead className="text-center">Kód</TableHead>
               <TableHead className="text-right">Akce</TableHead>
             </TableRow>
@@ -295,6 +323,29 @@ const ClassesManager = () => {
                     <Users className="w-3 h-3 mr-1" />
                     {c.member_count}
                   </Badge>
+                </TableCell>
+                <TableCell className="text-center">
+                  {c.member_count > 0 ? (
+                    <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                      {c.approved_count > 0 && (
+                        <Badge variant="outline" className="text-xs bg-green-500/20 text-green-400 border-green-500/30">
+                          {c.approved_count} ✓
+                        </Badge>
+                      )}
+                      {c.pending_count > 0 && (
+                        <Badge variant="outline" className="text-xs bg-yellow-500/20 text-yellow-400 border-yellow-500/30 cursor-pointer" onClick={() => setMembersClass(c)}>
+                          {c.pending_count} čeká
+                        </Badge>
+                      )}
+                      {c.blocked_count > 0 && (
+                        <Badge variant="outline" className="text-xs bg-red-500/20 text-red-400 border-red-500/30">
+                          {c.blocked_count} ✗
+                        </Badge>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">–</span>
+                  )}
                 </TableCell>
                 <TableCell className="text-center">
                   {c.access_code && c.access_code_active ? (
@@ -363,7 +414,7 @@ const ClassesManager = () => {
             ))}
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                   {showArchived ? "Žádné archivované třídy." : "Žádné třídy. Vytvořte první."}
                 </TableCell>
               </TableRow>

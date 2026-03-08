@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Search, UserPlus, X } from "lucide-react";
+import { Search, UserPlus, X, UserCheck, Ban, CheckCheck } from "lucide-react";
 
 interface ClassItem {
   id: string;
@@ -25,6 +25,7 @@ interface MemberProfile {
   school: string;
   field_of_study: string;
   year: number | null;
+  status: string;
 }
 
 interface Props {
@@ -34,17 +35,29 @@ interface Props {
   onUpdated: () => void;
 }
 
+const statusLabels: Record<string, string> = {
+  pending: "Čeká",
+  approved: "Schválený",
+  blocked: "Blokovaný",
+};
+
+const statusColors: Record<string, string> = {
+  pending: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+  approved: "bg-green-500/20 text-green-400 border-green-500/30",
+  blocked: "bg-red-500/20 text-red-400 border-red-500/30",
+};
+
 const ClassMembersDialog = ({ classItem, open, onOpenChange, onUpdated }: Props) => {
   const { toast } = useToast();
   const [members, setMembers] = useState<MemberProfile[]>([]);
   const [allStudents, setAllStudents] = useState<MemberProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [tab, setTab] = useState<"members" | "add">("members");
 
   const fetchData = async () => {
     setLoading(true);
 
-    // Get current members
     const { data: memberLinks } = await supabase
       .from("class_members")
       .select("user_id")
@@ -52,13 +65,15 @@ const ClassMembersDialog = ({ classItem, open, onOpenChange, onUpdated }: Props)
 
     const memberIds = new Set(memberLinks?.map((m: any) => m.user_id) ?? []);
 
-    // Get all profiles
     const { data: profiles } = await supabase
       .from("profiles")
-      .select("id, first_name, last_name, email, school, field_of_study, year")
+      .select("id, first_name, last_name, email, school, field_of_study, year, status")
       .order("last_name");
 
-    const allProfiles: MemberProfile[] = (profiles ?? []) as MemberProfile[];
+    const allProfiles: MemberProfile[] = (profiles ?? []).map((p: any) => ({
+      ...p,
+      status: p.status as string,
+    }));
 
     setMembers(allProfiles.filter((p) => memberIds.has(p.id)));
     setAllStudents(allProfiles.filter((p) => !memberIds.has(p.id)));
@@ -69,6 +84,7 @@ const ClassMembersDialog = ({ classItem, open, onOpenChange, onUpdated }: Props)
     if (open) {
       fetchData();
       setSearch("");
+      setTab("members");
     }
   }, [open, classItem.id]);
 
@@ -77,12 +93,10 @@ const ClassMembersDialog = ({ classItem, open, onOpenChange, onUpdated }: Props)
       class_id: classItem.id,
       user_id: userId,
     });
-
     if (error) {
       toast({ title: "Chyba", description: error.message, variant: "destructive" });
       return;
     }
-
     fetchData();
     onUpdated();
   };
@@ -93,15 +107,47 @@ const ClassMembersDialog = ({ classItem, open, onOpenChange, onUpdated }: Props)
       .delete()
       .eq("class_id", classItem.id)
       .eq("user_id", userId);
+    if (error) {
+      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+      return;
+    }
+    fetchData();
+    onUpdated();
+  };
+
+  const updateStatus = async (userId: string, newStatus: string) => {
+    const { error } = await supabase
+      .from("profiles")
+      .update({ status: newStatus as any })
+      .eq("id", userId);
+    if (error) {
+      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Uloženo", description: `Stav studenta změněn na: ${statusLabels[newStatus]}` });
+    fetchData();
+    onUpdated();
+  };
+
+  const approveAllPending = async () => {
+    const pendingMembers = members.filter((m) => m.status === "pending");
+    if (pendingMembers.length === 0) return;
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ status: "approved" as any })
+      .in("id", pendingMembers.map((m) => m.id));
 
     if (error) {
       toast({ title: "Chyba", description: error.message, variant: "destructive" });
       return;
     }
-
+    toast({ title: "Uloženo", description: `Schváleno ${pendingMembers.length} studentů.` });
     fetchData();
     onUpdated();
   };
+
+  const pendingCount = members.filter((m) => m.status === "pending").length;
 
   const filteredStudents = useMemo(() => {
     if (!search) return allStudents;
@@ -110,6 +156,14 @@ const ClassMembersDialog = ({ classItem, open, onOpenChange, onUpdated }: Props)
       (p) => `${p.first_name} ${p.last_name} ${p.email}`.toLowerCase().includes(s)
     );
   }, [allStudents, search]);
+
+  const filteredMembers = useMemo(() => {
+    if (!search) return members;
+    const s = search.toLowerCase();
+    return members.filter(
+      (p) => `${p.first_name} ${p.last_name} ${p.email}`.toLowerCase().includes(s)
+    );
+  }, [members, search]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -122,42 +176,107 @@ const ClassMembersDialog = ({ classItem, open, onOpenChange, onUpdated }: Props)
           <p className="text-muted-foreground text-sm py-4">Načítání...</p>
         ) : (
           <div className="flex flex-col gap-4 overflow-hidden">
-            {/* Current members */}
-            <div>
-              <p className="text-sm font-medium mb-2">Členové ({members.length})</p>
-              {members.length === 0 ? (
-                <p className="text-xs text-muted-foreground">Zatím žádní studenti.</p>
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {members.map((m) => (
-                    <Badge key={m.id} variant="secondary" className="text-xs py-1 px-2 gap-1">
-                      {m.first_name} {m.last_name}
-                      <button
-                        onClick={() => removeMember(m.id)}
-                        className="ml-1 hover:text-destructive transition-colors"
-                        title="Odebrat"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-              )}
+            {/* Tabs */}
+            <div className="flex gap-2 border-b border-border pb-2">
+              <Button
+                variant={tab === "members" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setTab("members")}
+              >
+                Členové ({members.length})
+              </Button>
+              <Button
+                variant={tab === "add" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setTab("add")}
+              >
+                <UserPlus className="w-4 h-4 mr-1" /> Přidat
+              </Button>
             </div>
 
-            {/* Add students */}
-            <div className="flex flex-col gap-2 min-h-0">
-              <p className="text-sm font-medium">Přidat studenta</p>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="Hledat jméno nebo e-mail..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="pl-9"
-                />
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Hledat jméno nebo e-mail..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+
+            {tab === "members" && (
+              <div className="flex flex-col gap-2 min-h-0">
+                {/* Approve all pending button */}
+                {pendingCount > 0 && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="self-start text-green-400 border-green-500/30 hover:bg-green-500/10"
+                    onClick={approveAllPending}
+                  >
+                    <CheckCheck className="w-4 h-4 mr-1" />
+                    Schválit všechny čekající ({pendingCount})
+                  </Button>
+                )}
+
+                <div className="overflow-y-auto max-h-[400px] border border-border rounded-md divide-y divide-border">
+                  {filteredMembers.length === 0 ? (
+                    <p className="text-xs text-muted-foreground p-3 text-center">
+                      Zatím žádní studenti.
+                    </p>
+                  ) : (
+                    filteredMembers.map((m) => (
+                      <div key={m.id} className="flex items-center justify-between p-2 px-3 hover:bg-muted/50 gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium truncate">{m.first_name} {m.last_name}</p>
+                          <p className="text-xs text-muted-foreground truncate">{m.email}</p>
+                        </div>
+                        <Badge variant="outline" className={`text-xs shrink-0 ${statusColors[m.status] || ""}`}>
+                          {statusLabels[m.status] || m.status}
+                        </Badge>
+                        <div className="flex gap-1 shrink-0">
+                          {m.status !== "approved" && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => updateStatus(m.id, "approved")}
+                              className="h-7 px-1.5 text-green-400 hover:bg-green-500/10"
+                              title="Schválit"
+                            >
+                              <UserCheck className="w-4 h-4" />
+                            </Button>
+                          )}
+                          {m.status !== "blocked" && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => updateStatus(m.id, "blocked")}
+                              className="h-7 px-1.5 text-red-400 hover:bg-red-500/10"
+                              title="Zablokovat"
+                            >
+                              <Ban className="w-4 h-4" />
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => removeMember(m.id)}
+                            className="h-7 px-1.5 text-muted-foreground hover:text-destructive"
+                            title="Odebrat ze třídy"
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
-              <div className="overflow-y-auto max-h-[300px] border border-border rounded-md divide-y divide-border">
+            )}
+
+            {tab === "add" && (
+              <div className="overflow-y-auto max-h-[400px] border border-border rounded-md divide-y divide-border">
                 {filteredStudents.length === 0 ? (
                   <p className="text-xs text-muted-foreground p-3 text-center">
                     {allStudents.length === 0 ? "Všichni studenti jsou již přiřazeni." : "Žádný student nenalezen."}
@@ -176,7 +295,7 @@ const ClassMembersDialog = ({ classItem, open, onOpenChange, onUpdated }: Props)
                   ))
                 )}
               </div>
-            </div>
+            )}
           </div>
         )}
       </DialogContent>
