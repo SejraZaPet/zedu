@@ -49,7 +49,7 @@ const Hero = () => {
              <img 
                src={heroLogo} 
                alt="Zedu" 
-               className="h-24 md:h-32 w-auto mx-auto"
+               className="h-32 md:h-44 w-auto mx-auto"
              />
            </div>
 
