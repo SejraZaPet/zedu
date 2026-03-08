@@ -30,8 +30,13 @@ const Hero = () => {
         backgroundPosition: "center",
       }}
     >
-      {/* White overlay for readability */}
-      <div className="absolute inset-0 bg-white/25 pointer-events-none" />
+      {/* Dark gradient overlay for readability */}
+      <div 
+        className="absolute inset-0 pointer-events-none" 
+        style={{
+          background: 'linear-gradient(180deg, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.25) 50%, rgba(0,0,0,0.05) 100%)'
+        }}
+      />
 
       {/* Content */}
       <div className="relative z-10 text-center px-4 max-w-3xl mx-auto">
