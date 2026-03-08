@@ -201,6 +201,33 @@ const ClassesManager = () => {
     fetchClasses();
   };
 
+  const generateCode = async (classId: string) => {
+    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const { error } = await supabase
+      .from("classes")
+      .update({ access_code: code, access_code_active: true } as any)
+      .eq("id", classId);
+    if (error) {
+      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Kód vygenerován", description: `Nový kód: ${code}` });
+    fetchClasses();
+  };
+
+  const toggleCodeActive = async (classId: string, active: boolean) => {
+    const { error } = await supabase
+      .from("classes")
+      .update({ access_code_active: active } as any)
+      .eq("id", classId);
+    if (error) {
+      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: active ? "Kód aktivován" : "Kód deaktivován" });
+    fetchClasses();
+  };
+
   if (loading) return <div className="text-muted-foreground p-4">Načítání tříd...</div>;
 
   return (
