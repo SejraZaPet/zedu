@@ -290,6 +290,9 @@ export const LessonBlock = ({ block }: { block: Block }) => {
           {at === "memory_game" && p.memoryGame && (
             <MemoryGameActivity pairs={p.memoryGame.pairs || []} />
           )}
+          {at === "crossword" && p.crossword && (
+            <CrosswordActivity entries={p.crossword.entries || []} />
+          )}
         </div>
       );
     }
