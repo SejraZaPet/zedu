@@ -1,9 +1,15 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { Menu, X, LogIn, LogOut, User } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Menu, X, LogIn, LogOut, User, BookOpen, GraduationCap, LayoutDashboard, Users, BarChart3, HelpCircle, Layers, FolderOpen, Activity, TrendingUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/zedu-logo-new.png";
 import { Button } from "@/components/ui/button";
+
+interface NavItem {
+  label: string;
+  href: string;
+  icon: React.ElementType;
+}
 
 const SiteHeader = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -11,6 +17,7 @@ const SiteHeader = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 50);
@@ -40,23 +47,50 @@ const SiteHeader = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const isTeacher = userRole === "teacher";
-  const isAdmin = userRole === "admin";
-
-  const navItems = [
-    { label: "Učebnice", href: isTeacher ? "/ucitel/ucebnice" : (isLoggedIn ? "/student/ucebnice" : "/ucebnice"), isRoute: true },
-    { label: "Aktivity", href: "#aktivity", isRoute: false },
-    { label: "Nápověda", href: "/napoveda", isRoute: true },
-    ...((isAdmin || isTeacher) ? [{ label: "Administrace", href: "/admin", isRoute: true }] : []),
-  ];
-
-  const handleTextbookAccess = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      navigate("/auth?redirect=%2Fucebnice");
-      return;
+  const getNavItems = (): NavItem[] => {
+    if (userRole === "admin") {
+      return [
+        { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
+        { label: "Učebnice", href: "/ucitel/ucebnice", icon: BookOpen },
+        { label: "Předměty", href: "/admin?tab=subjects", icon: Layers },
+        { label: "Třídy", href: "/admin?tab=classes", icon: FolderOpen },
+        { label: "Uživatelé", href: "/admin?tab=users", icon: Users },
+        { label: "Výsledky", href: "/admin?tab=results", icon: BarChart3 },
+        { label: "Nápověda", href: "/napoveda", icon: HelpCircle },
+      ];
     }
-    navigate(isTeacher ? "/ucitel/ucebnice" : "/ucebnice");
+    if (userRole === "teacher") {
+      return [
+        { label: "Moje učebnice", href: "/ucitel/ucebnice", icon: BookOpen },
+        { label: "Výsledky", href: "/admin?tab=results", icon: BarChart3 },
+        { label: "Nápověda", href: "/napoveda", icon: HelpCircle },
+      ];
+    }
+    if (isLoggedIn) {
+      // student (role = "user")
+      return [
+        { label: "Moje učebnice", href: "/student/ucebnice", icon: BookOpen },
+        { label: "Nápověda", href: "/napoveda", icon: HelpCircle },
+      ];
+    }
+    // not logged in
+    return [
+      { label: "Učebnice", href: "/ucebnice", icon: BookOpen },
+      { label: "Nápověda", href: "/napoveda", icon: HelpCircle },
+    ];
+  };
+
+  const navItems = getNavItems();
+
+  const isActive = (href: string) => {
+    if (href.includes("?tab=")) {
+      const [path, query] = href.split("?");
+      return location.pathname === path && location.search === `?${query}`;
+    }
+    if (href === "/admin") {
+      return location.pathname === "/admin" && !location.search;
+    }
+    return location.pathname.startsWith(href);
   };
 
   const handleLogout = async () => {
@@ -79,22 +113,30 @@ const SiteHeader = () => {
           <img src={logo} alt="Zedu" className="h-9 w-auto" />
         </button>
 
-        <div className="hidden md:flex items-center gap-8">
-          <nav className="flex items-center gap-8">
-            {navItems.map((item) => (
-              <a
-                key={item.label}
-                href={item.isRoute ? undefined : item.href}
-                onClick={item.isRoute ? (e) => { e.preventDefault(); navigate(item.href); } : undefined}
-                className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors duration-200 cursor-pointer"
-              >
-                {item.label}
-              </a>
-            ))}
+        <div className="hidden md:flex items-center gap-6">
+          <nav className="flex items-center gap-1">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const active = isActive(item.href);
+              return (
+                <button
+                  key={item.label}
+                  onClick={() => navigate(item.href)}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                    active
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:text-primary hover:bg-muted/50"
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  {item.label}
+                </button>
+              );
+            })}
           </nav>
           {isLoggedIn ? (
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" onClick={() => navigate("/profil")} className="gap-2 text-muted-foreground hover:text-primary">
+            <div className="flex items-center gap-2 ml-2 border-l border-border pl-4">
+              <Button variant="ghost" size="sm" onClick={() => navigate("/profil")} className={`gap-2 ${location.pathname === "/profil" ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-primary"}`}>
                 <User size={16} />
                 Profil
               </Button>
@@ -104,7 +146,7 @@ const SiteHeader = () => {
               </Button>
             </div>
           ) : (
-            <Button variant="hero" size="sm" onClick={() => navigate("/auth")} className="gap-2">
+            <Button variant="hero" size="sm" onClick={() => navigate("/auth")} className="gap-2 ml-2">
               <LogIn size={16} />
               Přihlásit se
             </Button>
@@ -122,34 +164,41 @@ const SiteHeader = () => {
 
       {menuOpen && (
         <div className="md:hidden bg-card/98 backdrop-blur-md border-b border-border animate-fade-in">
-          <nav className="flex flex-col px-6 py-4 gap-4">
-            {navItems.map((item) => (
-              <a
-                key={item.label}
-                href={item.isRoute ? undefined : item.href}
-                onClick={(e) => {
-                  setMenuOpen(false);
-                  if (item.isRoute) { e.preventDefault(); navigate(item.href); }
-                }}
-                className="text-base font-medium text-muted-foreground hover:text-primary transition-colors cursor-pointer"
-              >
-                {item.label}
-              </a>
-            ))}
-            {isLoggedIn ? (
-              <>
-                <button onClick={() => { setMenuOpen(false); navigate("/profil"); }} className="text-base font-medium text-muted-foreground hover:text-primary transition-colors text-left flex items-center gap-2">
-                  <User size={16} /> Profil
+          <nav className="flex flex-col px-6 py-4 gap-1">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const active = isActive(item.href);
+              return (
+                <button
+                  key={item.label}
+                  onClick={() => { setMenuOpen(false); navigate(item.href); }}
+                  className={`flex items-center gap-3 px-3 py-3 rounded-lg text-base font-medium transition-colors text-left ${
+                    active
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:text-primary hover:bg-muted/50"
+                  }`}
+                >
+                  <Icon className="w-5 h-5" />
+                  {item.label}
                 </button>
-                <button onClick={() => { setMenuOpen(false); handleLogout(); }} className="text-base font-medium text-muted-foreground hover:text-primary transition-colors text-left flex items-center gap-2">
-                  <LogOut size={16} /> Odhlásit
-                </button>
-              </>
-            ) : (
-              <Button variant="hero" size="default" onClick={() => { setMenuOpen(false); navigate("/auth"); }} className="mt-2 w-full justify-center">
-                <LogIn size={16} /> Přihlásit se
-              </Button>
-            )}
+              );
+            })}
+            <div className="border-t border-border mt-2 pt-2">
+              {isLoggedIn ? (
+                <>
+                  <button onClick={() => { setMenuOpen(false); navigate("/profil"); }} className={`flex items-center gap-3 px-3 py-3 rounded-lg text-base font-medium transition-colors text-left w-full ${location.pathname === "/profil" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-primary"}`}>
+                    <User size={18} /> Profil
+                  </button>
+                  <button onClick={() => { setMenuOpen(false); handleLogout(); }} className="flex items-center gap-3 px-3 py-3 rounded-lg text-base font-medium text-muted-foreground hover:text-primary transition-colors text-left w-full">
+                    <LogOut size={18} /> Odhlásit
+                  </button>
+                </>
+              ) : (
+                <Button variant="hero" size="default" onClick={() => { setMenuOpen(false); navigate("/auth"); }} className="mt-2 w-full justify-center">
+                  <LogIn size={16} /> Přihlásit se
+                </Button>
+              )}
+            </div>
           </nav>
         </div>
       )}
