@@ -245,6 +245,7 @@ const ClassesManager = () => {
               <TableHead>Obor</TableHead>
               <TableHead className="text-center">Ročník</TableHead>
               <TableHead className="text-center">Studenti</TableHead>
+              <TableHead className="text-center">Kód</TableHead>
               <TableHead className="text-right">Akce</TableHead>
             </TableRow>
           </TableHeader>
