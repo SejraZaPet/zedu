@@ -6,8 +6,9 @@ import PodcastManager from "@/components/admin/PodcastManager";
 import TextbooksManager from "@/components/admin/TextbooksManager";
 import SubjectsManager from "@/components/admin/SubjectsManager";
 import UsersManager from "@/components/admin/UsersManager";
+import ClassesManager from "@/components/admin/ClassesManager";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Coffee, Mic, LogOut, Home, GraduationCap, Settings, Users } from "lucide-react";
+import { BookOpen, Coffee, Mic, LogOut, Home, GraduationCap, Settings, Users, School } from "lucide-react";
 
 const tabs = [
   { id: "textbooks", label: "Učebnice", icon: GraduationCap },
@@ -16,6 +17,7 @@ const tabs = [
   { id: "podcast", label: "Podcast", icon: Mic },
   { id: "subjects", label: "Předměty", icon: Settings },
   { id: "users", label: "Uživatelé", icon: Users },
+  { id: "classes", label: "Třídy", icon: School },
 ] as const;
 
 type Tab = typeof tabs[number]["id"];
@@ -77,6 +79,7 @@ const Admin = () => {
         {activeTab === "podcast" && <PodcastManager />}
         {activeTab === "subjects" && <SubjectsManager />}
         {activeTab === "users" && <UsersManager />}
+        {activeTab === "classes" && <ClassesManager />}
       </div>
     </div>
   );
