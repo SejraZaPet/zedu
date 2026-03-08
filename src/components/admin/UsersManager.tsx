@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Ban, UserCheck, Shield, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import UserDetailDialog from "./UserDetailDialog";
 import {
   Select,
   SelectContent,
@@ -55,6 +56,8 @@ const UsersManager = () => {
   const [filterSchool, setFilterSchool] = useState<string>("all");
   const [filterField, setFilterField] = useState<string>("all");
   const [filterYear, setFilterYear] = useState<string>("all");
+  const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -197,7 +200,7 @@ const UsersManager = () => {
           </TableHeader>
           <TableBody>
             {filtered.map((user) => (
-              <TableRow key={user.id}>
+              <TableRow key={user.id} className="cursor-pointer hover:bg-muted/50" onClick={() => { setSelectedUser(user); setDetailOpen(true); }}>
                 <TableCell className="font-medium whitespace-nowrap">
                   {user.first_name} {user.last_name}
                 </TableCell>
@@ -252,6 +255,13 @@ const UsersManager = () => {
           </TableBody>
         </Table>
       </div>
+
+      <UserDetailDialog
+        user={selectedUser}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        onUpdated={fetchUsers}
+      />
     </div>
   );
 };
