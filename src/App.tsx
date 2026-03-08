@@ -14,8 +14,6 @@ import PodcastDetailPage from "./pages/PodcastDetailPage";
 import StudentDashboard from "./pages/StudentDashboard";
 import TextbooksPage from "./pages/TextbooksPage";
 import ProtectedRoute from "./components/ProtectedRoute";
-import StudentDashboard from "./pages/StudentDashboard";
-import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
