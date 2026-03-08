@@ -37,7 +37,7 @@ const Hero = () => {
           className="absolute inset-0 pointer-events-none"
           style={{
             background:
-              "linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.35) 30%, rgba(0,0,0,0.20) 55%, rgba(0,0,0,0.10) 100%)",
+              "linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.25) 35%, rgba(0,0,0,0.12) 60%, rgba(0,0,0,0) 100%)",
           }}
         />
 
@@ -77,10 +77,10 @@ const Hero = () => {
       </section>
 
       {/* Cards panel – separate from the hero image */}
-      <div className="relative z-10 px-4 -mt-16">
+      <div className="relative z-10 px-4 -mt-24 md:-mt-28">
         <div
-          className="container mx-auto max-w-4xl bg-card rounded-3xl p-6 md:p-10"
-          style={{ boxShadow: "0 25px 60px rgba(0,0,0,0.12)" }}
+          className="container mx-auto max-w-4xl bg-card p-6 md:p-10"
+          style={{ boxShadow: "0 30px 80px rgba(0,0,0,0.15)", borderRadius: "28px" }}
         >
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {features.map((feature, i) => (
