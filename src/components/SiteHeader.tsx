@@ -1,14 +1,13 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Menu, X } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo.png";
 
 const navItems = [
-  { label: "Učebnice", href: "#ucebnice", protected: true },
-  { label: "Ke kávě", href: "#ke-kave", protected: false },
-  { label: "Podcast", href: "#podcast", protected: false },
-  { label: "O projektu", href: "#o-projektu", protected: false },
+  { label: "Učebnice", href: "/ucebnice", isRoute: true },
+  { label: "Ke kávě", href: "#ke-kave", isRoute: false },
+  { label: "Podcast", href: "#podcast", isRoute: false },
+  { label: "O projektu", href: "#o-projektu", isRoute: false },
 ];
 
 const SiteHeader = () => {
@@ -21,21 +20,6 @@ const SiteHeader = () => {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
-
-  const handleProtectedNav = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-      // Scroll to textbooks section on homepage
-      const el = document.getElementById("ucebnice");
-      if (el) {
-        el.scrollIntoView({ behavior: "smooth" });
-      } else {
-        navigate("/#ucebnice");
-      }
-    } else {
-      navigate("/auth?redirect=%2F%23ucebnice");
-    }
-  };
 
   return (
     <header
@@ -54,9 +38,9 @@ const SiteHeader = () => {
         <nav className="hidden md:flex items-center gap-8">
           {navItems.map((item) => (
             <a
-              key={item.href}
-              href={item.protected ? undefined : item.href}
-              onClick={item.protected ? (e) => { e.preventDefault(); handleProtectedNav(); } : undefined}
+              key={item.label}
+              href={item.isRoute ? undefined : item.href}
+              onClick={item.isRoute ? (e) => { e.preventDefault(); navigate(item.href); } : undefined}
               className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors duration-200 cursor-pointer"
             >
               {item.label}
@@ -78,11 +62,11 @@ const SiteHeader = () => {
           <nav className="flex flex-col px-6 py-4 gap-4">
             {navItems.map((item) => (
               <a
-                key={item.href}
-                href={item.protected ? undefined : item.href}
+                key={item.label}
+                href={item.isRoute ? undefined : item.href}
                 onClick={(e) => {
                   setMenuOpen(false);
-                  if (item.protected) { e.preventDefault(); handleProtectedNav(); }
+                  if (item.isRoute) { e.preventDefault(); navigate(item.href); }
                 }}
                 className="text-base font-medium text-muted-foreground hover:text-primary transition-colors cursor-pointer"
               >
