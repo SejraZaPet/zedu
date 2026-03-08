@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { Menu, X, LogIn, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo.png";
+import { Button } from "@/components/ui/button";
 
 const navItems = [
   { label: "Učebnice", href: "/ucebnice", isRoute: true },
@@ -14,12 +15,23 @@ const navItems = [
 const SiteHeader = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 50);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsLoggedIn(!!session);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsLoggedIn(!!session);
+    });
+    return () => subscription.unsubscribe();
   }, []);
 
   const handleTextbookAccess = async () => {
@@ -29,6 +41,11 @@ const SiteHeader = () => {
       return;
     }
     navigate("/ucebnice");
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/");
   };
 
   return (
@@ -45,18 +62,31 @@ const SiteHeader = () => {
           </span>
         </button>
 
-        <nav className="hidden md:flex items-center gap-8">
-          {navItems.map((item) => (
-            <a
-              key={item.label}
-              href={item.isRoute ? undefined : item.href}
-              onClick={item.isRoute ? (e) => { e.preventDefault(); handleTextbookAccess(); } : undefined}
-              className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors duration-200 cursor-pointer"
-            >
-              {item.label}
-            </a>
-          ))}
-        </nav>
+        <div className="hidden md:flex items-center gap-8">
+          <nav className="flex items-center gap-8">
+            {navItems.map((item) => (
+              <a
+                key={item.label}
+                href={item.isRoute ? undefined : item.href}
+                onClick={item.isRoute ? (e) => { e.preventDefault(); handleTextbookAccess(); } : undefined}
+                className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors duration-200 cursor-pointer"
+              >
+                {item.label}
+              </a>
+            ))}
+          </nav>
+          {isLoggedIn ? (
+            <Button variant="outline" size="sm" onClick={handleLogout} className="gap-2 border-border text-muted-foreground hover:text-primary">
+              <LogOut size={16} />
+              Odhlásit
+            </Button>
+          ) : (
+            <Button variant="outline" size="sm" onClick={() => navigate("/auth")} className="gap-2 border-border text-muted-foreground hover:text-primary">
+              <LogIn size={16} />
+              Přihlásit
+            </Button>
+          )}
+        </div>
 
         <button
           onClick={() => setMenuOpen(!menuOpen)}
@@ -83,6 +113,15 @@ const SiteHeader = () => {
                 {item.label}
               </a>
             ))}
+            {isLoggedIn ? (
+              <button onClick={() => { setMenuOpen(false); handleLogout(); }} className="text-base font-medium text-muted-foreground hover:text-primary transition-colors text-left flex items-center gap-2">
+                <LogOut size={16} /> Odhlásit
+              </button>
+            ) : (
+              <button onClick={() => { setMenuOpen(false); navigate("/auth"); }} className="text-base font-medium text-muted-foreground hover:text-primary transition-colors text-left flex items-center gap-2">
+                <LogIn size={16} /> Přihlásit
+              </button>
+            )}
           </nav>
         </div>
       )}
