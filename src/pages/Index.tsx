@@ -1,5 +1,6 @@
 import SiteHeader from "@/components/SiteHeader";
 import Hero from "@/components/Hero";
+import RolePickerSection from "@/components/RolePickerSection";
 import PodcastSection from "@/components/PodcastSection";
 import SiteFooter from "@/components/SiteFooter";
 import AdminButton from "@/components/AdminButton";
@@ -10,6 +11,7 @@ const Index = () => {
       <SiteHeader />
       <main>
         <Hero />
+        <RolePickerSection />
         <PodcastSection />
       </main>
       <SiteFooter />
