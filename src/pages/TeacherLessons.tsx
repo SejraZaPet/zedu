@@ -7,7 +7,9 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
-import LessonEditorSheet from "@/components/LessonEditorSheet";
+import BlockEditor from "@/components/admin/BlockEditor";
+import type { Block } from "@/lib/textbook-config";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger
 } from "@/components/ui/dialog";
@@ -34,6 +36,7 @@ const TeacherLessons = () => {
   const [newTitle, setNewTitle] = useState("");
   const [saving, setSaving] = useState(false);
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
+  const [editBlocks, setEditBlocks] = useState<Block[]>([]);
   const [textbookTitle, setTextbookTitle] = useState("");
 
   const fetchLessons = async () => {
