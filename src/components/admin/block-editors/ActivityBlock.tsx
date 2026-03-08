@@ -1,4 +1,5 @@
 import { Block } from "@/lib/textbook-config";
+import { generateCrosswordGrid } from "@/lib/crossword-engine";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
