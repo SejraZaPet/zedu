@@ -5,7 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useSubjects } from "@/hooks/useSubjects";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import {
@@ -42,6 +44,7 @@ function generateCode(length = 6): string {
 const TeacherTextbooks = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { data: subjects } = useSubjects(true);
   const [textbooks, setTextbooks] = useState<Textbook[]>([]);
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
@@ -219,7 +222,20 @@ const TeacherTextbooks = () => {
                 </div>
                 <div>
                   <Label>Předmět</Label>
-                  <Input value={subject} onChange={(e) => setSubject(e.target.value)} className="mt-1" placeholder="např. Gastronomie" />
+                  {subjects && subjects.length > 0 ? (
+                    <Select value={subject} onValueChange={setSubject}>
+                      <SelectTrigger className="mt-1"><SelectValue placeholder="Vyberte předmět" /></SelectTrigger>
+                      <SelectContent>
+                        {subjects.map((s) => (
+                          <SelectItem key={s.id} value={s.label}>
+                            {s.label} {s.abbreviation ? `(${s.abbreviation})` : ""}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <p className="text-sm text-muted-foreground mt-1">Nejsou dostupné žádné předměty. Nejprve je vytvořte v administraci.</p>
+                  )}
                 </div>
                 <div>
                   <Label>Popis</Label>
