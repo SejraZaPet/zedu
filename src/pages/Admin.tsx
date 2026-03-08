@@ -8,10 +8,12 @@ import SubjectsManager from "@/components/admin/SubjectsManager";
 import UsersManager from "@/components/admin/UsersManager";
 import ClassesManager from "@/components/admin/ClassesManager";
 import ClassResultsManager from "@/components/admin/ClassResultsManager";
+import AdminDashboard from "@/components/admin/AdminDashboard";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Coffee, Mic, LogOut, Home, GraduationCap, Settings, Users, School, BarChart3 } from "lucide-react";
+import { BookOpen, Coffee, Mic, LogOut, Home, GraduationCap, Settings, Users, School, BarChart3, LayoutDashboard } from "lucide-react";
 
 const tabs = [
+  { id: "dashboard", label: "Přehled", icon: LayoutDashboard },
   { id: "textbooks", label: "Učebnice", icon: GraduationCap },
   { id: "lessons", label: "Lekce", icon: BookOpen },
   { id: "articles", label: "Ke kávě", icon: Coffee },
@@ -26,7 +28,7 @@ type Tab = typeof tabs[number]["id"];
 
 const Admin = () => {
   const { isAdmin, loading, logout } = useAdmin();
-  const [activeTab, setActiveTab] = useState<Tab>("textbooks");
+  const [activeTab, setActiveTab] = useState<Tab>("dashboard");
 
   if (loading) {
     return (
@@ -40,7 +42,6 @@ const Admin = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="border-b border-border bg-card">
         <div className="container mx-auto max-w-5xl flex items-center justify-between h-14 px-4">
           <h1 className="font-heading text-lg">Administrace</h1>
@@ -56,13 +57,12 @@ const Admin = () => {
       </header>
 
       <div className="container mx-auto max-w-5xl px-4 py-6">
-        {/* Tabs */}
-        <div className="flex gap-1 mb-6 border-b border-border">
+        <div className="flex gap-1 mb-6 border-b border-border overflow-x-auto">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                 activeTab === tab.id
                   ? "border-primary text-primary"
                   : "border-transparent text-muted-foreground hover:text-foreground"
@@ -74,7 +74,7 @@ const Admin = () => {
           ))}
         </div>
 
-        {/* Content */}
+        {activeTab === "dashboard" && <AdminDashboard onNavigate={(tab) => setActiveTab(tab as Tab)} />}
         {activeTab === "textbooks" && <TextbooksManager />}
         {activeTab === "lessons" && <LessonsManager />}
         {activeTab === "articles" && <ArticlesManager />}
