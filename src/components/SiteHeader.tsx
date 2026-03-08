@@ -22,6 +22,15 @@ const SiteHeader = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  const handleTextbookAccess = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      navigate("/auth?redirect=%2Fucebnice");
+      return;
+    }
+    navigate("/ucebnice");
+  };
+
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
