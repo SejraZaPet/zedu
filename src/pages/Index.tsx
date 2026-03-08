@@ -1,7 +1,6 @@
 import SiteHeader from "@/components/SiteHeader";
 import Hero from "@/components/Hero";
 import ArticlesSection from "@/components/ArticlesSection";
-import AboutSection from "@/components/AboutSection";
 import PodcastSection from "@/components/PodcastSection";
 import SiteFooter from "@/components/SiteFooter";
 import AdminButton from "@/components/AdminButton";
