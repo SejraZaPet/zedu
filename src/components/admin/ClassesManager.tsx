@@ -300,6 +300,27 @@ const ClassesManager = () => {
                     >
                       {c.archived ? <ArchiveRestore className="w-4 h-4" /> : <Archive className="w-4 h-4" />}
                     </Button>
+                    {/* Access code actions */}
+                    {!c.access_code ? (
+                      <Button size="sm" variant="ghost" onClick={() => generateCode(c.id)} className="h-8 px-2" title="Vytvořit kód">
+                        <Key className="w-4 h-4" />
+                      </Button>
+                    ) : (
+                      <>
+                        <Button size="sm" variant="ghost" onClick={() => generateCode(c.id)} className="h-8 px-2" title="Resetovat kód">
+                          <RefreshCw className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => toggleCodeActive(c.id, !c.access_code_active)}
+                          className="h-8 px-2"
+                          title={c.access_code_active ? "Deaktivovat kód" : "Aktivovat kód"}
+                        >
+                          {c.access_code_active ? <XCircle className="w-4 h-4" /> : <KeyRound className="w-4 h-4" />}
+                        </Button>
+                      </>
+                    )}
                     <Button
                       size="sm"
                       variant="ghost"
