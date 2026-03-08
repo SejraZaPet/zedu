@@ -219,6 +219,7 @@ const UserDetailDialog = ({ user, open, onOpenChange, onUpdated }: Props) => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="user">Student</SelectItem>
+                  <SelectItem value="teacher">Učitel</SelectItem>
                   <SelectItem value="admin">Admin</SelectItem>
                 </SelectContent>
               </Select>
