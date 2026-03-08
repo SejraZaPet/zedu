@@ -82,6 +82,7 @@ const Admin = () => {
         {activeTab === "subjects" && <SubjectsManager />}
         {activeTab === "users" && <UsersManager />}
         {activeTab === "classes" && <ClassesManager />}
+        {activeTab === "results" && <ClassResultsManager />}
       </div>
     </div>
   );
