@@ -64,6 +64,7 @@ const UsersManager = () => {
 
     const enriched = (profiles ?? []).map(p => ({
       ...p,
+      status: p.status as string,
       role: roleMap.get(p.id) || "user",
     }));
 
