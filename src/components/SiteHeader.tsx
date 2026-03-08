@@ -40,8 +40,9 @@ const SiteHeader = () => {
           {navItems.map((item) => (
             <a
               key={item.href}
-              href={item.href}
-              className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors duration-200"
+              href={item.protected ? undefined : item.href}
+              onClick={item.protected ? (e) => { e.preventDefault(); handleProtectedNav(); } : undefined}
+              className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors duration-200 cursor-pointer"
             >
               {item.label}
             </a>
