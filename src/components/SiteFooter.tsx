@@ -1,5 +1,5 @@
 import { Mail } from "lucide-react";
-import logo from "@/assets/zedu-logo.png";
+import logo from "@/assets/zedu-logo-new.png";
 
 const SiteFooter = () => {
   return (
@@ -8,9 +8,8 @@ const SiteFooter = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Brand */}
           <div>
-            <div className="flex items-center gap-2 mb-3">
-              <img src={logo} alt="Zedu" className="h-8 w-auto" />
-              <span className="font-heading text-xl font-bold text-foreground">Zedu</span>
+            <div className="mb-3">
+              <img src={logo} alt="Zedu" className="h-9 w-auto" />
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
               Moderní nástroje pro vzdělávání.
