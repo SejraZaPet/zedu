@@ -128,6 +128,45 @@ export type Database = {
         }
         Relationships: []
       }
+      help_guides: {
+        Row: {
+          blocks: Json
+          category: string
+          created_at: string
+          description: string
+          id: string
+          role: string
+          sort_order: number
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          blocks?: Json
+          category?: string
+          created_at?: string
+          description?: string
+          id?: string
+          role?: string
+          sort_order?: number
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          blocks?: Json
+          category?: string
+          created_at?: string
+          description?: string
+          id?: string
+          role?: string
+          sort_order?: number
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       lesson_placements: {
         Row: {
           class_id: string | null
