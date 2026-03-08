@@ -67,13 +67,6 @@ const Hero = () => {
              <span className="text-foreground">Objevuj</span>
            </h1>
 
-           <div
-             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/[0.06] border border-primary/10 mb-6 animate-fade-in-up"
-             style={{ animationDelay: "0.2s" }}
-           >
-             <Sparkles size={14} className="text-primary" />
-             <span className="text-sm font-medium text-primary">Moderní vzdělávací platforma</span>
-           </div>
 
            <p
              className="text-base md:text-lg text-muted-foreground max-w-xl mx-auto mb-10 animate-fade-in-up leading-relaxed"
