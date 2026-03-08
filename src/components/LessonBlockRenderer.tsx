@@ -6,6 +6,7 @@ import QuizActivity from "@/components/activities/QuizActivity";
 import MatchingActivity from "@/components/activities/MatchingActivity";
 import SortingActivity from "@/components/activities/SortingActivity";
 import OrderingActivity from "@/components/activities/OrderingActivity";
+import ImageHotspotActivity from "@/components/activities/ImageHotspotActivity";
 import ImageLabelActivity from "@/components/activities/ImageLabelActivity";
 import FillBlanksActivity from "@/components/activities/FillBlanksActivity";
 
@@ -253,6 +254,12 @@ export const LessonBlock = ({ block }: { block: Block }) => {
               markers={p.imageLabel.markers || []}
               tolerance={p.imageLabel.tolerance}
               shuffleWords={p.imageLabel.shuffleWords}
+            />
+          )}
+          {at === "image_hotspot" && p.imageHotspot && (
+            <ImageHotspotActivity
+              imageUrl={p.imageHotspot.imageUrl}
+              hotspots={p.imageHotspot.hotspots || []}
             />
           )}
           {at === "fill_blanks" && p.fillBlanks && (
