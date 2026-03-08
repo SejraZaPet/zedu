@@ -13,6 +13,7 @@ import FillChoiceActivity from "@/components/activities/FillChoiceActivity";
 import TrueFalseActivity from "@/components/activities/TrueFalseActivity";
 import RevealCardsActivity from "@/components/activities/RevealCardsActivity";
 import MemoryGameActivity from "@/components/activities/MemoryGameActivity";
+import CrosswordActivity from "@/components/activities/CrosswordActivity";
 
 const extractYouTubeId = (url: string): string | null => {
   if (!url) return null;
