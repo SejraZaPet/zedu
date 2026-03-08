@@ -146,24 +146,7 @@ const MiniRichEditor = ({
         </TB>
 
         {/* Text color */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button type="button" title="Barva textu" className="p-1 rounded text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
-              <Palette className={sz} />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="min-w-[120px]">
-            <DropdownMenuItem onClick={() => editor.chain().focus().unsetColor().run()}>
-              Výchozí
-            </DropdownMenuItem>
-            {TEXT_COLORS.map((c) => (
-              <DropdownMenuItem key={c.label} onClick={() => editor.chain().focus().setColor(c.value).run()}>
-                <span className="w-3 h-3 rounded-full mr-2 border border-border" style={{ backgroundColor: c.value }} />
-                {c.label}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <ColorPicker editor={editor} sz={sz} />
 
         {showHeadings && (
           <>
