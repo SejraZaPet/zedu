@@ -87,6 +87,15 @@ const LessonPage = () => {
   });
 
   const blocks: Block[] = (lesson?.blocks as unknown as Block[]) ?? [];
+  const { trackActivity, trackLessonComplete } = useActivityTracking(lesson?.id);
+
+  // Track activity completion
+  const handleActivityComplete = useCallback(
+    (activityIndex: number, activityType: string, score: number, maxScore: number) => {
+      trackActivity(activityIndex, activityType, score, maxScore);
+    },
+    [trackActivity]
+  );
 
   const handleSaved = () => {
     // Refresh lesson data without full reload
