@@ -4,8 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Search, GraduationCap, BookOpen, ArrowRight } from "lucide-react";
 import type { Block } from "@/lib/textbook-config";
 
@@ -22,11 +20,28 @@ const HelpPage = () => {
   const [guides, setGuides] = useState<HelpGuide[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeRole, setActiveRole] = useState<"teacher" | "student">("student");
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchGuides = async () => {
+    const init = async () => {
+      // Detect user role
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const { data: roles } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", session.user.id)
+          .limit(1);
+        const role = roles?.[0]?.role || "user";
+        setUserRole(role);
+        // Set default tab based on role
+        if (role === "teacher") setActiveRole("teacher");
+        else setActiveRole("student");
+      }
+
+      // Fetch guides
       const { data } = await supabase
         .from("help_guides")
         .select("id, title, role, category, description, blocks")
@@ -35,16 +50,24 @@ const HelpPage = () => {
       if (data) setGuides(data.map(g => ({ ...g, blocks: (g.blocks || []) as unknown as Block[] })));
       setLoading(false);
     };
-    fetchGuides();
+    init();
   }, []);
 
+  const isAdmin = userRole === "admin";
+
   const filtered = guides.filter(g => {
-    if (g.role !== activeRole) return false;
+    if (!isAdmin && g.role !== activeRole) return false;
+    if (isAdmin && g.role !== activeRole) return false;
     if (search && !g.title.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
 
   const categories = [...new Set(filtered.map(g => g.category).filter(Boolean))];
+
+  // Non-admin non-teacher users (students) shouldn't see teacher tab, and vice versa
+  // But admin sees both tabs
+  const showTeacherTab = isAdmin || userRole === "teacher";
+  const showStudentTab = isAdmin || userRole === "user" || userRole === null;
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -54,31 +77,37 @@ const HelpPage = () => {
           <h1 className="text-3xl md:text-4xl font-heading font-bold text-foreground mb-2">Nápověda</h1>
           <p className="text-muted-foreground mb-8">Návody k používání systému ZEdu</p>
 
-          {/* Role tabs */}
-          <div className="flex gap-3 mb-6">
-            <button
-              onClick={() => setActiveRole("teacher")}
-              className={`flex items-center gap-2 px-5 py-3 rounded-xl border-2 transition-all font-medium ${
-                activeRole === "teacher"
-                  ? "border-primary bg-primary/10 text-primary"
-                  : "border-border bg-card text-muted-foreground hover:border-primary/40"
-              }`}
-            >
-              <GraduationCap className="w-5 h-5" />
-              Jsem učitel
-            </button>
-            <button
-              onClick={() => setActiveRole("student")}
-              className={`flex items-center gap-2 px-5 py-3 rounded-xl border-2 transition-all font-medium ${
-                activeRole === "student"
-                  ? "border-primary bg-primary/10 text-primary"
-                  : "border-border bg-card text-muted-foreground hover:border-primary/40"
-              }`}
-            >
-              <BookOpen className="w-5 h-5" />
-              Jsem žák
-            </button>
-          </div>
+          {/* Role tabs - show both for admin, otherwise show relevant one(s) */}
+          {(showTeacherTab || showStudentTab) && (
+            <div className="flex gap-3 mb-6">
+              {showTeacherTab && (
+                <button
+                  onClick={() => setActiveRole("teacher")}
+                  className={`flex items-center gap-2 px-5 py-3 rounded-xl border-2 transition-all font-medium ${
+                    activeRole === "teacher"
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-card text-muted-foreground hover:border-primary/40"
+                  }`}
+                >
+                  <GraduationCap className="w-5 h-5" />
+                  Jsem učitel
+                </button>
+              )}
+              {showStudentTab && (
+                <button
+                  onClick={() => setActiveRole("student")}
+                  className={`flex items-center gap-2 px-5 py-3 rounded-xl border-2 transition-all font-medium ${
+                    activeRole === "student"
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-card text-muted-foreground hover:border-primary/40"
+                  }`}
+                >
+                  <BookOpen className="w-5 h-5" />
+                  Jsem žák
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Search */}
           <div className="relative mb-8">
@@ -97,7 +126,7 @@ const HelpPage = () => {
             <p className="text-muted-foreground">Žádné návody pro tuto sekci.</p>
           ) : (
             <div className="space-y-8">
-              {categories.length > 0 ? (
+              {categories.length > 0 &&
                 categories.map(cat => (
                   <div key={cat}>
                     <h2 className="text-lg font-heading font-semibold mb-3 text-foreground">{cat}</h2>
@@ -108,8 +137,7 @@ const HelpPage = () => {
                     </div>
                   </div>
                 ))
-              ) : null}
-              {/* Guides without category */}
+              }
               {filtered.filter(g => !g.category).length > 0 && (
                 <div className="grid gap-3">
                   {filtered.filter(g => !g.category).map(guide => (
