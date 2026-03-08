@@ -84,7 +84,7 @@ const HelpGuidesManager = () => {
       role,
       category: category.trim(),
       description: description.trim(),
-      blocks: blocks as unknown as Record<string, unknown>[],
+      blocks: JSON.parse(JSON.stringify(blocks)),
       status,
       sort_order: editing?.sort_order ?? guides.length,
     };
