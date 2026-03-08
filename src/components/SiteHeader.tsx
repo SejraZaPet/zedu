@@ -120,9 +120,14 @@ const SiteHeader = () => {
               </a>
             ))}
             {isLoggedIn ? (
-              <button onClick={() => { setMenuOpen(false); handleLogout(); }} className="text-base font-medium text-muted-foreground hover:text-primary transition-colors text-left flex items-center gap-2">
-                <LogOut size={16} /> Odhlásit
-              </button>
+              <>
+                <button onClick={() => { setMenuOpen(false); navigate("/profil"); }} className="text-base font-medium text-muted-foreground hover:text-primary transition-colors text-left flex items-center gap-2">
+                  <User size={16} /> Profil
+                </button>
+                <button onClick={() => { setMenuOpen(false); handleLogout(); }} className="text-base font-medium text-muted-foreground hover:text-primary transition-colors text-left flex items-center gap-2">
+                  <LogOut size={16} /> Odhlásit
+                </button>
+              </>
             ) : (
               <button onClick={() => { setMenuOpen(false); navigate("/auth"); }} className="text-base font-medium text-muted-foreground hover:text-primary transition-colors text-left flex items-center gap-2">
                 <LogIn size={16} /> Přihlásit
