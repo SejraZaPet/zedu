@@ -56,6 +56,8 @@ const UsersManager = () => {
   const [filterSchool, setFilterSchool] = useState<string>("all");
   const [filterField, setFilterField] = useState<string>("all");
   const [filterYear, setFilterYear] = useState<string>("all");
+  const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   const fetchUsers = async () => {
     setLoading(true);
