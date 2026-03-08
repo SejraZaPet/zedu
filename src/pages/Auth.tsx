@@ -4,8 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Lock, UserPlus, LogIn } from "lucide-react";
+import { Lock, UserPlus, LogIn, GraduationCap, BookOpenText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+
+type Role = "student" | "teacher";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -15,6 +17,7 @@ const Auth = () => {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [role, setRole] = useState<Role>("student");
 
   // Login fields
   const [email, setEmail] = useState("");
@@ -59,7 +62,6 @@ const Auth = () => {
       return;
     }
 
-    // Check account status
     const { data: profile } = await supabase
       .from("profiles")
       .select("status")
@@ -80,7 +82,6 @@ const Auth = () => {
       return;
     }
 
-    // Check role and redirect
     const { data: roles } = await supabase
       .from("user_roles")
       .select("role")
@@ -111,18 +112,24 @@ const Auth = () => {
       return;
     }
 
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+    const metadata: Record<string, unknown> = {
+      first_name: firstName,
+      last_name: lastName,
+      school,
+      role_label: role,
+    };
+
+    if (role === "student") {
+      metadata.field_of_study = fieldOfStudy;
+      metadata.year = year || null;
+      metadata.class_code = classCode.trim() || null;
+    }
+
+    const { error: signUpError } = await supabase.auth.signUp({
       email: regEmail,
       password: regPassword,
       options: {
-        data: {
-          first_name: firstName,
-          last_name: lastName,
-          school,
-          field_of_study: fieldOfStudy,
-          year: year || null,
-          class_code: classCode.trim() || null,
-        },
+        data: metadata,
         emailRedirectTo: window.location.origin,
       },
     });
@@ -131,11 +138,6 @@ const Auth = () => {
       setError(signUpError.message);
       setLoading(false);
       return;
-    }
-
-    // If class code was provided, validate it existed
-    if (classCode.trim() && signUpData?.user) {
-      // Code validation happens in the DB trigger; if code is invalid it just won't assign
     }
 
     toast({
@@ -160,7 +162,7 @@ const Auth = () => {
           <p className="text-sm text-muted-foreground mt-1">
             {mode === "login"
               ? "Přihlaste se do svého účtu"
-              : "Vytvořte si studentský účet"}
+              : "Vytvořte si nový účet"}
           </p>
         </div>
 
@@ -204,7 +206,40 @@ const Auth = () => {
             </Button>
           </form>
         ) : (
-          <form onSubmit={handleRegister} className="space-y-4">
+          <form onSubmit={handleRegister} className="space-y-5">
+            {/* Role selector */}
+            <div>
+              <p className="text-sm font-semibold text-foreground mb-2">Vyberte typ účtu</p>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setRole("student")}
+                  className={`flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all duration-200 ${
+                    role === "student"
+                      ? "border-primary bg-primary/[0.06] shadow-sm"
+                      : "border-border bg-card hover:border-muted-foreground/30"
+                  }`}
+                >
+                  <GraduationCap className={`w-6 h-6 ${role === "student" ? "text-primary" : "text-muted-foreground"}`} />
+                  <span className={`text-sm font-semibold ${role === "student" ? "text-primary" : "text-foreground"}`}>Žák</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRole("teacher")}
+                  className={`flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all duration-200 ${
+                    role === "teacher"
+                      ? "border-primary bg-primary/[0.06] shadow-sm"
+                      : "border-border bg-card hover:border-muted-foreground/30"
+                  }`}
+                >
+                  <BookOpenText className={`w-6 h-6 ${role === "teacher" ? "text-primary" : "text-muted-foreground"}`} />
+                  <span className={`text-sm font-semibold ${role === "teacher" ? "text-primary" : "text-foreground"}`}>Učitel</span>
+                </button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">Podle zvolené role se zobrazí odpovídající registrační údaje.</p>
+            </div>
+
+            {/* Common fields */}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label htmlFor="firstName">Jméno</Label>
@@ -223,16 +258,29 @@ const Auth = () => {
               <Label htmlFor="school">Škola</Label>
               <Input id="school" value={school} onChange={(e) => setSchool(e.target.value)} className="mt-1" placeholder="Název školy" />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label htmlFor="fieldOfStudy">Obor</Label>
-                <Input id="fieldOfStudy" value={fieldOfStudy} onChange={(e) => setFieldOfStudy(e.target.value)} className="mt-1" />
-              </div>
-              <div>
-                <Label htmlFor="year">Ročník</Label>
-                <Input id="year" type="number" min="1" max="6" value={year} onChange={(e) => setYear(e.target.value)} className="mt-1" />
-              </div>
-            </div>
+
+            {/* Student-only fields */}
+            {role === "student" && (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="fieldOfStudy">Obor</Label>
+                    <Input id="fieldOfStudy" value={fieldOfStudy} onChange={(e) => setFieldOfStudy(e.target.value)} className="mt-1" />
+                  </div>
+                  <div>
+                    <Label htmlFor="year">Ročník</Label>
+                    <Input id="year" type="number" min="1" max="6" value={year} onChange={(e) => setYear(e.target.value)} className="mt-1" />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="classCode">Kód třídy <span className="text-muted-foreground font-normal">(volitelné)</span></Label>
+                  <Input id="classCode" value={classCode} onChange={(e) => setClassCode(e.target.value)} className="mt-1 font-mono" placeholder="např. AB12CD" maxLength={10} />
+                  <p className="text-xs text-muted-foreground mt-1">Pokud máte kód třídy od učitele, zadejte ho zde.</p>
+                </div>
+              </>
+            )}
+
+            {/* Password */}
             <div>
               <Label htmlFor="regPassword">Heslo</Label>
               <Input id="regPassword" type="password" value={regPassword} onChange={(e) => setRegPassword(e.target.value)} required minLength={6} className="mt-1" />
@@ -241,11 +289,7 @@ const Auth = () => {
               <Label htmlFor="regPasswordConfirm">Heslo znovu</Label>
               <Input id="regPasswordConfirm" type="password" value={regPasswordConfirm} onChange={(e) => setRegPasswordConfirm(e.target.value)} required className="mt-1" />
             </div>
-            <div>
-              <Label htmlFor="classCode">Kód třídy <span className="text-muted-foreground font-normal">(volitelné)</span></Label>
-              <Input id="classCode" value={classCode} onChange={(e) => setClassCode(e.target.value)} className="mt-1 font-mono" placeholder="např. AB12CD" maxLength={10} />
-              <p className="text-xs text-muted-foreground mt-1">Pokud máte kód třídy od učitele, zadejte ho zde.</p>
-            </div>
+
             {error && <p className="text-sm text-destructive">{error}</p>}
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Registrace..." : "Zaregistrovat se"}
