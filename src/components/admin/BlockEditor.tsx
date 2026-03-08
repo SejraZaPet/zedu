@@ -192,9 +192,9 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
         <DropdownMenuTrigger asChild>
           <Button variant="outline" className="w-full"><Plus className="w-4 h-4 mr-2" />Přidat blok</Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="center" className="w-48">
+        <DropdownMenuContent align="center" side="top" className="w-48 max-h-[360px] overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20">
           {BLOCK_TYPES.map((bt) => (
-            <DropdownMenuItem key={bt.type} onClick={() => addBlock(bt.type)}>
+            <DropdownMenuItem key={bt.type} onClick={() => addBlock(bt.type)} className="py-1.5 px-2 text-sm">
               <span className="w-5 text-center mr-2">{bt.icon}</span>{bt.label}
             </DropdownMenuItem>
           ))}
