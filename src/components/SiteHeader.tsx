@@ -46,7 +46,7 @@ const SiteHeader = () => {
   const navItems = [
     { label: "Učebnice", href: isTeacher ? "/ucitel/ucebnice" : (isLoggedIn ? "/student/ucebnice" : "/ucebnice"), isRoute: true },
     { label: "Aktivity", href: "#aktivity", isRoute: false },
-    { label: "Pro žáky", href: "#pro-zaky", isRoute: false },
+    { label: "Nápověda", href: "/napoveda", isRoute: true },
     ...((isAdmin || isTeacher) ? [{ label: "Administrace", href: "/admin", isRoute: true }] : []),
   ];
 
