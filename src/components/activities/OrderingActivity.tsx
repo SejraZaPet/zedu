@@ -75,7 +75,7 @@ const SortableItem = ({
   );
 };
 
-const OrderingActivity = ({ ordering }: { ordering: OrderingData }) => {
+const OrderingActivity = ({ ordering, onComplete }: { ordering: OrderingData; onComplete?: (score: number, maxScore: number) => void }) => {
   const correctOrder = ordering.items;
 
   // Create shuffled order once
