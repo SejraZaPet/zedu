@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 
 interface MatchingData { left: string[]; right: string[]; }
 
-const MatchingActivity = ({ matching }: { matching: MatchingData }) => {
+const MatchingActivity = ({ matching, onComplete }: { matching: MatchingData; onComplete?: (score: number, maxScore: number) => void }) => {
   const [selectedLeft, setSelectedLeft] = useState<number | null>(null);
   const [pairs, setPairs] = useState<[number, number][]>([]);
   const [checked, setChecked] = useState(false);
