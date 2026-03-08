@@ -678,6 +678,106 @@ const OrderingEditor = ({ props, onChange }: { props: any; onChange: (p: any) =>
   );
 };
 
+const ImageHotspotEditor = ({ props, onChange }: { props: any; onChange: (p: any) => void }) => {
+  const hs = props.imageHotspot || { imageUrl: "", hotspots: [] };
+  const imgRef = React.useRef<HTMLDivElement>(null);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const ext = file.name.split(".").pop();
+    const path = `image-hotspot/${crypto.randomUUID()}.${ext}`;
+    const { error } = await supabase.storage.from("lesson-images").upload(path, file);
+    if (error) return;
+    const { data } = supabase.storage.from("lesson-images").getPublicUrl(path);
+    onChange({ ...props, imageHotspot: { ...hs, imageUrl: data.publicUrl } });
+  };
+
+  const handleImageClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!imgRef.current) return;
+    const rect = imgRef.current.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    const hotspots = [...hs.hotspots, { x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, radius: 8, label: "" }];
+    onChange({ ...props, imageHotspot: { ...hs, hotspots } });
+  };
+
+  const updateHotspot = (idx: number, field: string, val: any) => {
+    const hotspots = hs.hotspots.map((h: any, i: number) => (i === idx ? { ...h, [field]: val } : h));
+    onChange({ ...props, imageHotspot: { ...hs, hotspots } });
+  };
+
+  const removeHotspot = (idx: number) => {
+    onChange({ ...props, imageHotspot: { ...hs, hotspots: hs.hotspots.filter((_: any, i: number) => i !== idx) } });
+  };
+
+  return (
+    <div className="space-y-3">
+      {!hs.imageUrl ? (
+        <label className="flex items-center justify-center border-2 border-dashed border-border rounded-lg p-8 cursor-pointer hover:border-primary/50 transition-colors">
+          <div className="text-center">
+            <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">Nahrát obrázek</span>
+          </div>
+          <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+        </label>
+      ) : (
+        <div className="space-y-2">
+          <p className="text-xs text-muted-foreground">Kliknutím na obrázek definujete klikací oblast (hotspot):</p>
+          <div ref={imgRef} className="relative cursor-crosshair inline-block w-full" onClick={handleImageClick}>
+            <img src={hs.imageUrl} alt="" className="w-full rounded-lg" draggable={false} />
+            {hs.hotspots.map((h: any, i: number) => (
+              <div
+                key={i}
+                className="absolute rounded-full border-2 border-primary bg-primary/20 transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center"
+                style={{ left: `${h.x}%`, top: `${h.y}%`, width: `${(h.radius || 8) * 2}%`, height: `${(h.radius || 8) * 2}%` }}
+              >
+                <span className="text-xs font-bold text-primary bg-background/80 px-1 rounded">{i + 1}</span>
+              </div>
+            ))}
+          </div>
+          <Button variant="outline" size="sm" onClick={() => onChange({ ...props, imageHotspot: { ...hs, imageUrl: "" } })}>
+            Změnit obrázek
+          </Button>
+        </div>
+      )}
+
+      {hs.hotspots.length > 0 && (
+        <div className="space-y-2">
+          <Label className="text-xs">Hotspoty (otázky / názvy oblastí)</Label>
+          {hs.hotspots.map((h: any, i: number) => (
+            <div key={i} className="flex items-center gap-2">
+              <span className="w-6 h-6 rounded-full bg-primary/20 text-primary text-xs flex items-center justify-center font-bold flex-shrink-0">
+                {i + 1}
+              </span>
+              <Input
+                className="flex-1"
+                placeholder={`Otázka/název oblasti ${i + 1}`}
+                value={h.label}
+                onChange={(e) => updateHotspot(i, "label", e.target.value)}
+              />
+              <div className="flex items-center gap-1">
+                <Label className="text-xs whitespace-nowrap">R: {h.radius || 8}%</Label>
+                <Slider
+                  min={3}
+                  max={20}
+                  step={1}
+                  value={[h.radius || 8]}
+                  onValueChange={([v]) => updateHotspot(i, "radius", v)}
+                  className="w-20"
+                />
+              </div>
+              <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => removeHotspot(i)}>
+                <Trash2 className="w-3 h-3" />
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const ActivityBlock = ({ block, onChange }: Props) => {
   const p = block.props;
   const activityType = p.activityType || "flashcards";
