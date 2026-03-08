@@ -13,6 +13,7 @@ import FillChoiceActivity from "@/components/activities/FillChoiceActivity";
 import TrueFalseActivity from "@/components/activities/TrueFalseActivity";
 import RevealCardsActivity from "@/components/activities/RevealCardsActivity";
 import MemoryGameActivity from "@/components/activities/MemoryGameActivity";
+import CrosswordActivity from "@/components/activities/CrosswordActivity";
 
 const extractYouTubeId = (url: string): string | null => {
   if (!url) return null;
@@ -288,6 +289,9 @@ export const LessonBlock = ({ block }: { block: Block }) => {
           )}
           {at === "memory_game" && p.memoryGame && (
             <MemoryGameActivity pairs={p.memoryGame.pairs || []} />
+          )}
+          {at === "crossword" && p.crossword && (
+            <CrosswordActivity entries={p.crossword.entries || []} />
           )}
         </div>
       );

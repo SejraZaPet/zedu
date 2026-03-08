@@ -1,4 +1,5 @@
 import { Block } from "@/lib/textbook-config";
+import { generateCrosswordGrid } from "@/lib/crossword-engine";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -23,6 +24,7 @@ const ACTIVITY_TYPES = [
   { value: "ordering", label: "Seřaď pořadí" },
   { value: "reveal_cards", label: "Otevři kartičku" },
   { value: "memory_game", label: "Pexeso" },
+  { value: "crossword", label: "Křížovka" },
   { value: "image_label", label: "Popis obrázku (slepá mapa)" },
   { value: "image_hotspot", label: "Klikni na správnou část" },
   { value: "fill_blanks", label: "Doplň slova" },
@@ -1054,6 +1056,89 @@ const MemoryGameEditor = ({ props, onChange }: { props: any; onChange: (p: any) 
   );
 };
 
+const CrosswordEditor = ({ props, onChange }: { props: any; onChange: (p: any) => void }) => {
+  const cw = props.crossword || { entries: [{ answer: "", clue: "" }] };
+  const [showPreview, setShowPreview] = React.useState(false);
+
+  const updateEntry = (idx: number, field: string, val: string) => {
+    const entries = cw.entries.map((e: any, i: number) => (i === idx ? { ...e, [field]: val } : e));
+    onChange({ ...props, crossword: { ...cw, entries } });
+  };
+
+  const previewGrid = React.useMemo(() => {
+    if (!showPreview) return null;
+    return generateCrosswordGrid(cw.entries.filter((e: any) => e.answer.trim()));
+  }, [showPreview, cw.entries]);
+
+  return (
+    <div className="space-y-3">
+      <p className="text-xs text-muted-foreground">Zadejte slova a nápovědy. Systém automaticky vygeneruje křížovku.</p>
+      {cw.entries.map((entry: any, i: number) => (
+        <div key={i} className="flex items-center gap-2">
+          <span className="w-6 h-6 rounded-full bg-primary/20 text-primary text-xs flex items-center justify-center font-bold flex-shrink-0">
+            {i + 1}
+          </span>
+          <Input
+            className="w-36"
+            placeholder="Slovo (odpověď)"
+            value={entry.answer}
+            onChange={(e) => updateEntry(i, "answer", e.target.value)}
+          />
+          <Input
+            className="flex-1"
+            placeholder="Nápověda / otázka"
+            value={entry.clue}
+            onChange={(e) => updateEntry(i, "clue", e.target.value)}
+          />
+          {cw.entries.length > 1 && (
+            <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => onChange({ ...props, crossword: { ...cw, entries: cw.entries.filter((_: any, j: number) => j !== i) } })}>
+              <Trash2 className="w-3 h-3" />
+            </Button>
+          )}
+        </div>
+      ))}
+      <div className="flex gap-2">
+        <Button variant="outline" size="sm" onClick={() => onChange({ ...props, crossword: { ...cw, entries: [...cw.entries, { answer: "", clue: "" }] } })}>
+          <Plus className="w-3 h-3 mr-1" />Přidat slovo
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => setShowPreview(!showPreview)}>
+          {showPreview ? "Skrýt náhled" : "Zobrazit náhled"}
+        </Button>
+      </div>
+
+      {showPreview && previewGrid && (
+        <div className="border border-border rounded-lg p-3 bg-card/50">
+          <p className="text-xs text-muted-foreground mb-2">Náhled křížovky ({previewGrid.width}×{previewGrid.height}, {previewGrid.words.length}/{cw.entries.filter((e: any) => e.answer.trim()).length} slov umístěno):</p>
+          <div className="overflow-x-auto">
+            <div className="inline-grid gap-0" style={{ gridTemplateColumns: `repeat(${previewGrid.width}, 24px)` }}>
+              {previewGrid.cells.map((row: any, r: number) =>
+                row.map((cell: string | null, c: number) => {
+                  const num = previewGrid.words.find((w: any) => w.row === r && w.col === c)?.number;
+                  return (
+                    <div
+                      key={`${r}-${c}`}
+                      className={`w-6 h-6 text-[9px] font-bold flex items-center justify-center relative ${
+                        cell !== null ? "border border-border bg-card text-foreground" : ""
+                      }`}
+                    >
+                      {num && <span className="absolute top-0 left-0.5 text-[6px] text-primary leading-none">{num}</span>}
+                      {cell}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showPreview && !previewGrid && cw.entries.some((e: any) => e.answer.trim()) && (
+        <p className="text-xs text-destructive">Nepodařilo se vygenerovat křížovku. Zkuste přidat více slov nebo změnit odpovědi.</p>
+      )}
+    </div>
+  );
+};
+
 const ActivityBlock = ({ block, onChange }: Props) => {
   const p = block.props;
   const activityType = p.activityType || "flashcards";
@@ -1099,6 +1184,7 @@ const ActivityBlock = ({ block, onChange }: Props) => {
       {activityType === "true_false" && <TrueFalseEditor props={p} onChange={onChange} />}
       {activityType === "reveal_cards" && <RevealCardsEditor props={p} onChange={onChange} />}
       {activityType === "memory_game" && <MemoryGameEditor props={p} onChange={onChange} />}
+      {activityType === "crossword" && <CrosswordEditor props={p} onChange={onChange} />}
     </div>
   );
 };
