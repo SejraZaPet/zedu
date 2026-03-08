@@ -77,14 +77,14 @@ const StudentDashboard = () => {
       title: "Moje učebnice",
       description: "Spravujte a upravujte své digitální učebnice.",
       button: "Otevřít učebnice",
-      onClick: () => navigate("/ucebnice"),
+      onClick: () => navigate("/ucitel/ucebnice"),
     },
     {
       icon: Sparkles,
       title: "Moje aktivity",
       description: "Vytvářejte kvízy a interaktivní úkoly pro studenty.",
       button: "Otevřít aktivity",
-      onClick: () => navigate("/admin"),
+      onClick: () => navigate("/ucitel/ucebnice"),
     },
     {
       icon: School,
