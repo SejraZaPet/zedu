@@ -11,8 +11,6 @@ import { LessonBlock } from "@/components/LessonBlockRenderer";
 import { Button } from "@/components/ui/button";
 import LessonEditorSheet from "@/components/LessonEditorSheet";
 import { useActivityTracking } from "@/hooks/useActivityTracking";
-import { Button } from "@/components/ui/button";
-import LessonEditorSheet from "@/components/LessonEditorSheet";
 
 const LessonPage = () => {
   const { subjectId, grade, topicSlug, lessonSlug } = useParams<{

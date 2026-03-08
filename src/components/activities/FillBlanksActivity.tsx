@@ -173,7 +173,16 @@ const FillBlanksActivity = ({ text, tokens, caseSensitive = false, diacriticSens
       {/* Controls */}
       <div className="flex flex-wrap gap-2 pt-2">
         {!checked && (
-          <Button size="sm" onClick={() => setChecked(true)} disabled={answers.some((a) => !a.trim())}>
+          <Button size="sm" onClick={() => {
+            setChecked(true);
+            // Calculate score after check
+            const blankResults = blanks.map((blank, i) => {
+              const input = normalize(answers[i], caseSensitive, diacriticSensitive);
+              const accepted = [blank.answer, ...blank.alternatives].map((a) => normalize(a, caseSensitive, diacriticSensitive));
+              return accepted.includes(input);
+            });
+            onComplete?.(blankResults.filter(Boolean).length, blanks.length);
+          }} disabled={answers.some((a) => !a.trim())}>
             <CheckCircle2 className="w-4 h-4 mr-1" />
             Zkontrolovat
           </Button>

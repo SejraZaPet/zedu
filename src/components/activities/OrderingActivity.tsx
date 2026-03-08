@@ -148,7 +148,10 @@ const OrderingActivity = ({ ordering, onComplete }: { ordering: OrderingData; on
 
       {!checked && (
         <button
-          onClick={() => setChecked(true)}
+          onClick={() => {
+            setChecked(true);
+            onComplete?.(score, total);
+          }}
           className="rounded-lg bg-primary px-5 py-2 text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
         >
           Zkontrolovat

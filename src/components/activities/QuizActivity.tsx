@@ -49,7 +49,11 @@ const QuizActivity = ({ quiz, onComplete }: { quiz: QuizData; onComplete?: (scor
       </div>
       {!submitted && selected.size > 0 && (
         <button
-          onClick={() => setSubmitted(true)}
+          onClick={() => {
+            setSubmitted(true);
+            const score = quiz.answers.every((a, i) => a.correct ? selected.has(i) : !selected.has(i)) ? 1 : 0;
+            onComplete?.(score, 1);
+          }}
           className="rounded-lg bg-primary px-5 py-2 text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
         >
           Ověřit odpověď
