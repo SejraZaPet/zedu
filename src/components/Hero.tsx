@@ -80,8 +80,8 @@ const Hero = () => {
                 className="group flex items-start gap-4 rounded-2xl p-5 transition-all duration-300 animate-fade-in-up hover:bg-muted/50"
                 style={{ animationDelay: `${0.5 + i * 0.1}s` }}
               >
-                <div className="w-11 h-11 shrink-0 rounded-xl bg-primary/[0.08] flex items-center justify-center group-hover:bg-primary/[0.12] transition-colors">
-                  <feature.icon size={20} className="text-primary" />
+                <div className="w-12 h-12 shrink-0 rounded-xl bg-gradient-brand flex items-center justify-center group-hover:bg-gradient-brand transition-colors">
+                  <feature.icon size={24} className="text-primary-foreground" />
                 </div>
                 <div>
                   <h3 className="font-heading text-base font-semibold text-foreground mb-1">
