@@ -1,9 +1,20 @@
 import { Button } from "@/components/ui/button";
 import { ArrowDown } from "lucide-react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo.png";
 
 const Hero = () => {
+  const navigate = useNavigate();
+
+  const handleTextbookAccess = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      navigate("/auth?redirect=%2Fucebnice");
+      return;
+    }
+    navigate("/ucebnice");
+  };
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-background">
       {/* Logo watermark */}
@@ -39,8 +50,8 @@ const Hero = () => {
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up" style={{ animationDelay: "0.6s" }}>
-          <Button variant="hero" size="lg" asChild>
-            <Link to="/ucebnice">Prozkoumat učebnice</Link>
+          <Button variant="hero" size="lg" onClick={handleTextbookAccess}>
+            Prozkoumat učebnice
           </Button>
           <Button variant="outline-gold" size="lg" asChild>
             <a href="#o-projektu">O projektu</a>

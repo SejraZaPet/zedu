@@ -1,5 +1,6 @@
 import { BookOpen, FileText, Mic, Lightbulb } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 const cards = [
   {
@@ -35,6 +36,16 @@ const cards = [
 const ContentCards = () => {
   const navigate = useNavigate();
 
+  const handleTextbookAccess = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      navigate("/auth?redirect=%2Fucebnice");
+      return;
+    }
+    navigate("/ucebnice");
+  };
+
   return (
     <section className="section-padding bg-gradient-surface">
       <div className="container mx-auto max-w-6xl">
@@ -50,7 +61,7 @@ const ContentCards = () => {
             <a
               key={card.title}
               href={card.isRoute ? undefined : card.href}
-              onClick={card.isRoute ? (e: React.MouseEvent) => { e.preventDefault(); navigate(card.href); } : undefined}
+              onClick={card.isRoute ? handleTextbookAccess : undefined}
               className="group block rounded-lg border border-border bg-card p-6 transition-all duration-300 hover:border-primary/30 hover:bg-surface-hover hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-1 cursor-pointer"
             >
               <card.icon className="w-8 h-8 text-primary mb-4 transition-transform group-hover:scale-110" />

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Menu, X } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo.png";
 
 const navItems = [
@@ -21,6 +22,15 @@ const SiteHeader = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  const handleTextbookAccess = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      navigate("/auth?redirect=%2Fucebnice");
+      return;
+    }
+    navigate("/ucebnice");
+  };
+
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
@@ -40,7 +50,7 @@ const SiteHeader = () => {
             <a
               key={item.label}
               href={item.isRoute ? undefined : item.href}
-              onClick={item.isRoute ? (e) => { e.preventDefault(); navigate(item.href); } : undefined}
+              onClick={item.isRoute ? (e) => { e.preventDefault(); handleTextbookAccess(); } : undefined}
               className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors duration-200 cursor-pointer"
             >
               {item.label}
@@ -66,7 +76,7 @@ const SiteHeader = () => {
                 href={item.isRoute ? undefined : item.href}
                 onClick={(e) => {
                   setMenuOpen(false);
-                  if (item.isRoute) { e.preventDefault(); navigate(item.href); }
+                  if (item.isRoute) { e.preventDefault(); handleTextbookAccess(); }
                 }}
                 className="text-base font-medium text-muted-foreground hover:text-primary transition-colors cursor-pointer"
               >
