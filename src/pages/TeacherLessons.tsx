@@ -100,18 +100,24 @@ const TeacherLessons = () => {
     fetchLessons();
   };
 
-  const handleSaveBlocks = async (blocks: any[]) => {
+  const handleSaveBlocks = async () => {
     if (!editingLesson) return;
     const { error } = await supabase
       .from("teacher_textbook_lessons")
-      .update({ blocks } as any)
+      .update({ blocks: editBlocks as any } as any)
       .eq("id", editingLesson.id);
     if (error) {
       toast({ title: "Chyba", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "Uloženo" });
+      setEditingLesson(null);
       fetchLessons();
     }
+  };
+
+  const openEditor = (lesson: Lesson) => {
+    setEditingLesson(lesson);
+    setEditBlocks((lesson.blocks || []) as Block[]);
   };
 
   return (
