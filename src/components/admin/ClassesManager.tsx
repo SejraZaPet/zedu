@@ -325,6 +325,29 @@ const ClassesManager = () => {
                   </Badge>
                 </TableCell>
                 <TableCell className="text-center">
+                  {c.member_count > 0 ? (
+                    <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                      {c.approved_count > 0 && (
+                        <Badge variant="outline" className="text-xs bg-green-500/20 text-green-400 border-green-500/30">
+                          {c.approved_count} ✓
+                        </Badge>
+                      )}
+                      {c.pending_count > 0 && (
+                        <Badge variant="outline" className="text-xs bg-yellow-500/20 text-yellow-400 border-yellow-500/30 cursor-pointer" onClick={() => setMembersClass(c)}>
+                          {c.pending_count} čeká
+                        </Badge>
+                      )}
+                      {c.blocked_count > 0 && (
+                        <Badge variant="outline" className="text-xs bg-red-500/20 text-red-400 border-red-500/30">
+                          {c.blocked_count} ✗
+                        </Badge>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">–</span>
+                  )}
+                </TableCell>
+                <TableCell className="text-center">
                   {c.access_code && c.access_code_active ? (
                     <div className="flex items-center justify-center gap-1">
                       <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">{c.access_code}</code>
