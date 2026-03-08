@@ -36,14 +36,14 @@ const Auth = () => {
       if (session) {
         const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", session.user.id).limit(1);
         if (roles?.some(r => r.role === "admin")) {
-          navigate("/admin");
+          navigate(redirectTo || "/admin");
         } else {
-          navigate("/student");
+          navigate(redirectTo || "/student");
         }
       }
     };
     checkSession();
-  }, [navigate]);
+  }, [navigate, redirectTo]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
