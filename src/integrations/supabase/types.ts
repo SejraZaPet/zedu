@@ -444,6 +444,35 @@ export type Database = {
           },
         ]
       }
+      teacher_lesson_completions: {
+        Row: {
+          completed_at: string
+          id: string
+          lesson_id: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string
+          id?: string
+          lesson_id: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string
+          id?: string
+          lesson_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_lesson_completions_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_textbook_lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       teacher_textbook_enrollments: {
         Row: {
           enrolled_at: string
