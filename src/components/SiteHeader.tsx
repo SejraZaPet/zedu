@@ -76,10 +76,16 @@ const SiteHeader = () => {
             ))}
           </nav>
           {isLoggedIn ? (
-            <Button variant="outline" size="sm" onClick={handleLogout} className="gap-2 border-border text-muted-foreground hover:text-primary">
-              <LogOut size={16} />
-              Odhlásit
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" onClick={() => navigate("/profil")} className="gap-2 text-muted-foreground hover:text-primary">
+                <User size={16} />
+                Profil
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleLogout} className="gap-2 border-border text-muted-foreground hover:text-primary">
+                <LogOut size={16} />
+                Odhlásit
+              </Button>
+            </div>
           ) : (
             <Button variant="outline" size="sm" onClick={() => navigate("/auth")} className="gap-2 border-border text-muted-foreground hover:text-primary">
               <LogIn size={16} />
