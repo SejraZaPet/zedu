@@ -6,8 +6,9 @@ import PodcastManager from "@/components/admin/PodcastManager";
 import TextbooksManager from "@/components/admin/TextbooksManager";
 import SubjectsManager from "@/components/admin/SubjectsManager";
 import UsersManager from "@/components/admin/UsersManager";
+import ClassesManager from "@/components/admin/ClassesManager";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Coffee, Mic, LogOut, Home, GraduationCap, Settings, Users } from "lucide-react";
+import { BookOpen, Coffee, Mic, LogOut, Home, GraduationCap, Settings, Users, School } from "lucide-react";
 
 const tabs = [
   { id: "textbooks", label: "Učebnice", icon: GraduationCap },
