@@ -179,8 +179,20 @@ const StudentTextbookDetail = () => {
     fetchData();
   }, [textbookId]);
 
+  const handleMarkComplete = async (lessonId: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { error } = await supabase
+      .from("student_lesson_completions")
+      .insert({ lesson_id: lessonId, user_id: user.id });
+    if (!error) {
+      setCompletedLessonIds(prev => new Set([...prev, lessonId]));
+    }
+  };
+
   // Lesson detail view
   if (selectedLesson) {
+    const isLessonCompleted = completedLessonIds.has(selectedLesson.id);
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <SiteHeader />
@@ -197,6 +209,19 @@ const StudentTextbookDetail = () => {
           {(!selectedLesson.blocks || selectedLesson.blocks.length === 0) && (
             <p className="text-muted-foreground text-center py-8">Tato lekce zatím nemá žádný obsah.</p>
           )}
+          <div className="mt-8 pt-6 border-t flex justify-center">
+            {isLessonCompleted ? (
+              <div className="flex items-center gap-2 text-green-600 font-medium">
+                <CheckCircle2 className="w-5 h-5" />
+                Lekce dokončena
+              </div>
+            ) : (
+              <Button onClick={() => handleMarkComplete(selectedLesson.id)} className="gap-2">
+                <CheckCircle2 className="w-4 h-4" />
+                Označit jako dokončené
+              </Button>
+            )}
+          </div>
         </main>
         <SiteFooter />
       </div>
