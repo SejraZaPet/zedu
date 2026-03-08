@@ -401,6 +401,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_access_textbooks: { Args: { _user_id: string }; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
     }
     Enums: {
