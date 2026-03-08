@@ -6,6 +6,7 @@ import QuizActivity from "@/components/activities/QuizActivity";
 import MatchingActivity from "@/components/activities/MatchingActivity";
 import SortingActivity from "@/components/activities/SortingActivity";
 import OrderingActivity from "@/components/activities/OrderingActivity";
+import ImageHotspotActivity from "@/components/activities/ImageHotspotActivity";
 import ImageLabelActivity from "@/components/activities/ImageLabelActivity";
 import FillBlanksActivity from "@/components/activities/FillBlanksActivity";
 
