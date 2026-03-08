@@ -50,18 +50,15 @@ const SiteHeader = () => {
   const getNavItems = (): NavItem[] => {
     if (userRole === "admin") {
       return [
-        { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
-        { label: "Učebnice", href: "/ucitel/ucebnice", icon: BookOpen },
-        { label: "Předměty", href: "/admin?tab=subjects", icon: Layers },
-        { label: "Třídy", href: "/admin?tab=classes", icon: FolderOpen },
+        { label: "Přehled", href: "/admin", icon: LayoutDashboard },
         { label: "Uživatelé", href: "/admin?tab=users", icon: Users },
-        { label: "Výsledky", href: "/admin?tab=results", icon: BarChart3 },
         { label: "Nápověda", href: "/napoveda", icon: HelpCircle },
       ];
     }
     if (userRole === "teacher") {
       return [
         { label: "Moje učebnice", href: "/ucitel/ucebnice", icon: BookOpen },
+        { label: "Třídy", href: "/admin?tab=classes", icon: FolderOpen },
         { label: "Výsledky", href: "/admin?tab=results", icon: BarChart3 },
         { label: "Nápověda", href: "/napoveda", icon: HelpCircle },
       ];
