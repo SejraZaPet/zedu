@@ -1,7 +1,19 @@
-import { Mail } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Mail, HelpCircle, Shield, FileText } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/zedu-logo-new.png";
 
 const SiteFooter = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => setIsLoggedIn(!!session));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => setIsLoggedIn(!!session));
+    return () => subscription.unsubscribe();
+  }, []);
+
   return (
     <footer className="border-t border-border px-4 py-12 md:px-8 bg-card">
       <div className="container mx-auto max-w-6xl">
@@ -18,12 +30,22 @@ const SiteFooter = () => {
 
           {/* Links */}
           <div>
-            <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4">Navigace</h4>
+            <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4">
+              {isLoggedIn ? "Systém" : "Navigace"}
+            </h4>
             <nav className="flex flex-col gap-2">
-              <a href="#ucebnice" className="text-sm text-muted-foreground hover:text-primary transition-colors">Učebnice</a>
-              <a href="#ke-kave" className="text-sm text-muted-foreground hover:text-primary transition-colors">Ke kávě</a>
-              <a href="#podcast" className="text-sm text-muted-foreground hover:text-primary transition-colors">Podcast</a>
-              <a href="#o-projektu" className="text-sm text-muted-foreground hover:text-primary transition-colors">O projektu</a>
+              {isLoggedIn ? (
+                <>
+                  <button onClick={() => navigate("/napoveda")} className="text-sm text-muted-foreground hover:text-primary transition-colors text-left">Nápověda</button>
+                  <span className="text-sm text-muted-foreground hover:text-primary transition-colors cursor-default">Podmínky používání</span>
+                  <span className="text-sm text-muted-foreground hover:text-primary transition-colors cursor-default">Ochrana osobních údajů</span>
+                </>
+              ) : (
+                <>
+                  <a href="#ucebnice" className="text-sm text-muted-foreground hover:text-primary transition-colors">Učebnice</a>
+                  <a href="#o-projektu" className="text-sm text-muted-foreground hover:text-primary transition-colors">O projektu</a>
+                </>
+              )}
             </nav>
           </div>
 
