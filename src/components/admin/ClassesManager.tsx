@@ -269,6 +269,20 @@ const ClassesManager = () => {
                     {c.member_count}
                   </Badge>
                 </TableCell>
+                <TableCell className="text-center">
+                  {c.access_code && c.access_code_active ? (
+                    <div className="flex items-center justify-center gap-1">
+                      <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">{c.access_code}</code>
+                      <Button size="sm" variant="ghost" className="h-6 w-6 p-0" title="Kopírovat" onClick={() => { navigator.clipboard.writeText(c.access_code!); toast({ title: "Zkopírováno" }); }}>
+                        <Copy className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ) : c.access_code ? (
+                    <span className="text-xs text-muted-foreground">Deaktivován</span>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">–</span>
+                  )}
+                </TableCell>
                 <TableCell className="text-right">
                   <div className="flex gap-1 justify-end">
                     <Button size="sm" variant="ghost" onClick={() => setMembersClass(c)} className="h-8 px-2" title="Studenti">
