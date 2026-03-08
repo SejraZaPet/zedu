@@ -308,6 +308,90 @@ export type Database = {
         }
         Relationships: []
       }
+      student_activity_results: {
+        Row: {
+          activity_index: number
+          activity_type: string
+          completed_at: string
+          id: string
+          lesson_id: string
+          max_score: number
+          score: number
+          user_id: string
+        }
+        Insert: {
+          activity_index?: number
+          activity_type?: string
+          completed_at?: string
+          id?: string
+          lesson_id: string
+          max_score?: number
+          score?: number
+          user_id: string
+        }
+        Update: {
+          activity_index?: number
+          activity_type?: string
+          completed_at?: string
+          id?: string
+          lesson_id?: string
+          max_score?: number
+          score?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_activity_results_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "textbook_lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_activity_results_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_lesson_completions: {
+        Row: {
+          completed_at: string
+          id: string
+          lesson_id: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string
+          id?: string
+          lesson_id: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string
+          id?: string
+          lesson_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_lesson_completions_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "textbook_lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_lesson_completions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       textbook_grades: {
         Row: {
           created_at: string | null
