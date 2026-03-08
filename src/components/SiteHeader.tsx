@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Menu, X, LogIn, LogOut, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import logo from "@/assets/zedu-logo.png";
+import logo from "@/assets/zedu-logo-new.png";
 import { Button } from "@/components/ui/button";
 
 const navItems = [
@@ -59,7 +59,7 @@ const SiteHeader = () => {
     >
       <div className="container mx-auto flex items-center justify-between h-full px-4 md:px-8">
         <button onClick={() => navigate("/")} className="flex items-center gap-2.5 group cursor-pointer bg-transparent border-none p-0">
-          <img src={logo} alt="Zedu" className="h-8 md:h-10 w-auto" />
+          <img src={logo} alt="Zedu" className="h-9 w-auto" />
           <span className="hidden md:inline font-heading text-xl md:text-2xl font-bold text-foreground tracking-tight">
             Zedu
           </span>
