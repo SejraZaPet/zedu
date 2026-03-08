@@ -81,6 +81,12 @@ const TeacherTextbooksManager = () => {
   const [newLessonTitle, setNewLessonTitle] = useState("");
   const [saving, setSaving] = useState(false);
 
+  // Topic management
+  const [createTopicOpen, setCreateTopicOpen] = useState(false);
+  const [newTopicTitle, setNewTopicTitle] = useState("");
+  const [newTopicGrade, setNewTopicGrade] = useState<number>(1);
+  const [editingTopic, setEditingTopic] = useState<{ id: string; title: string } | null>(null);
+
   const fetchTextbooks = async () => {
     setLoading(true);
     const { data, error } = await supabase
@@ -181,6 +187,70 @@ const TeacherTextbooksManager = () => {
   const copyCode = (code: string) => {
     navigator.clipboard.writeText(code);
     toast({ title: "Zkopírováno", description: `Kód ${code} zkopírován do schránky.` });
+  };
+
+  // === Topic CRUD ===
+  const handleCreateTopic = async () => {
+    if (!newTopicTitle.trim() || !selectedTextbook) return;
+    setSaving(true);
+    const subjectSlug = selectedTextbook.subject;
+    
+    const { data: existingTopics } = await supabase
+      .from("textbook_topics")
+      .select("sort_order")
+      .eq("subject", subjectSlug)
+      .eq("grade", newTopicGrade)
+      .order("sort_order", { ascending: false })
+      .limit(1);
+    
+    const nextOrder = existingTopics && existingTopics.length > 0 ? (existingTopics[0] as any).sort_order + 1 : 0;
+
+    const { error } = await supabase.from("textbook_topics").insert({
+      title: newTopicTitle.trim(),
+      subject: subjectSlug,
+      grade: newTopicGrade,
+      sort_order: nextOrder,
+    });
+
+    if (error) {
+      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Téma vytvořeno" });
+      setNewTopicTitle("");
+      setCreateTopicOpen(false);
+      fetchDetail();
+    }
+    setSaving(false);
+  };
+
+  const handleDeleteTopic = async (topicId: string, lessonCount: number) => {
+    if (lessonCount > 0) {
+      if (!confirm(`Toto téma obsahuje ${lessonCount} lekcí. Opravdu jej chcete odstranit? Lekce budou smazány.`)) return;
+    } else {
+      if (!confirm("Opravdu smazat toto téma?")) return;
+    }
+    // CASCADE will handle lessons
+    const { error } = await supabase.from("textbook_topics").delete().eq("id", topicId);
+    if (error) {
+      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Téma smazáno" });
+      fetchDetail();
+    }
+  };
+
+  const handleRenameTopic = async () => {
+    if (!editingTopic || !editingTopic.title.trim()) return;
+    const { error } = await supabase.from("textbook_topics")
+      .update({ title: editingTopic.title.trim() })
+      .eq("id", editingTopic.id);
+    if (error) {
+      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Téma přejmenováno" });
+      setEditingTopic(null);
+      fetchDetail();
+    }
   };
 
   // === Teacher Lesson CRUD ===
@@ -354,9 +424,61 @@ const TeacherTextbooksManager = () => {
             {/* Grade-based structure from global tables */}
             {gradeGroups.length > 0 && (
               <div className="space-y-4">
-                <h3 className="font-heading text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                  Struktura předmětu ({totalLessons} lekcí celkem)
-                </h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="font-heading text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                    Struktura předmětu ({totalLessons} lekcí celkem)
+                  </h3>
+                  <Button size="sm" variant="outline" onClick={() => {
+                    const firstGrade = matchedSubject?.grades[0]?.grade_number ?? 1;
+                    setNewTopicGrade(firstGrade);
+                    setNewTopicTitle("");
+                    setCreateTopicOpen(true);
+                  }}>
+                    <Plus className="w-4 h-4 mr-1" />Přidat téma
+                  </Button>
+                </div>
+
+                {/* Create topic dialog */}
+                <Dialog open={createTopicOpen} onOpenChange={setCreateTopicOpen}>
+                  <DialogContent>
+                    <DialogHeader><DialogTitle>Nové téma</DialogTitle></DialogHeader>
+                    <div className="space-y-4 mt-2">
+                      <div>
+                        <Label>Název tématu</Label>
+                        <Input value={newTopicTitle} onChange={(e) => setNewTopicTitle(e.target.value)} className="mt-1" placeholder="např. Hygiena v kuchyni" />
+                      </div>
+                      <div>
+                        <Label>Ročník</Label>
+                        <Select value={String(newTopicGrade)} onValueChange={(v) => setNewTopicGrade(Number(v))}>
+                          <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {matchedSubject?.grades.map(g => (
+                              <SelectItem key={g.grade_number} value={String(g.grade_number)}>{g.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Button onClick={handleCreateTopic} disabled={saving || !newTopicTitle.trim()} className="w-full">
+                        {saving ? "Vytvářím..." : "Vytvořit téma"}
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+
+                {/* Rename topic dialog */}
+                <Dialog open={!!editingTopic} onOpenChange={(open) => { if (!open) setEditingTopic(null); }}>
+                  <DialogContent>
+                    <DialogHeader><DialogTitle>Přejmenovat téma</DialogTitle></DialogHeader>
+                    <div className="space-y-4 mt-2">
+                      <div>
+                        <Label>Název tématu</Label>
+                        <Input value={editingTopic?.title ?? ""} onChange={(e) => setEditingTopic(editingTopic ? { ...editingTopic, title: e.target.value } : null)} className="mt-1" />
+                      </div>
+                      <Button onClick={handleRenameTopic} disabled={!editingTopic?.title.trim()} className="w-full">Uložit</Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+
                 {gradeGroups.map((group) => (
                   <div key={group.grade} className="border border-border rounded-lg overflow-hidden">
                     <div className="bg-muted/30 px-4 py-2 border-b border-border">
@@ -370,10 +492,16 @@ const TeacherTextbooksManager = () => {
                           <div key={topic.id} className="border border-border rounded-md">
                             <div className="flex items-center gap-2 px-3 py-2 bg-card">
                               <FolderOpen className="w-4 h-4 text-primary" />
-                              <span className="text-sm font-medium">{topic.title}</span>
-                              <Badge variant="secondary" className="text-[10px] ml-auto">
+                              <span className="text-sm font-medium flex-1">{topic.title}</span>
+                              <Badge variant="secondary" className="text-[10px]">
                                 {topic.lessons.length} {topic.lessons.length === 1 ? "lekce" : "lekcí"}
                               </Badge>
+                              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditingTopic({ id: topic.id, title: topic.title })}>
+                                <Pencil className="w-3.5 h-3.5" />
+                              </Button>
+                              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleDeleteTopic(topic.id, topic.lessons.length)}>
+                                <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                              </Button>
                             </div>
                             {topic.lessons.length > 0 && (
                               <div className="border-t border-border divide-y divide-border">
