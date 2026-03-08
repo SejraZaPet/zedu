@@ -10,8 +10,6 @@ const Index = () => {
       <SiteHeader />
       <main>
         <Hero />
-        
-        <ArticlesSection />
         <PodcastSection />
       </main>
       <SiteFooter />
