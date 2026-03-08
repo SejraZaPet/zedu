@@ -98,6 +98,11 @@
   .section-padding {
     @apply px-4 py-16 md:px-8 md:py-24 lg:px-16 lg:py-32;
   }
+
+  /* Hero logo watermark effects */
+  .logo-watermark {
+    filter: invert(1) brightness(0.95) drop-shadow(0 0 20px rgba(255, 255, 255, 0.15));
+  }
 }
 
 @layer utilities {
