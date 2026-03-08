@@ -13,6 +13,7 @@ import LessonPage from "./pages/LessonPage";
 import PodcastDetailPage from "./pages/PodcastDetailPage";
 import StudentDashboard from "./pages/StudentDashboard";
 import TextbooksPage from "./pages/TextbooksPage";
+import ProfilePage from "./pages/ProfilePage";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
