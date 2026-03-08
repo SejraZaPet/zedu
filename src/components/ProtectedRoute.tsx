@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ShieldAlert, Clock, Ban } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -66,9 +66,8 @@ const ProtectedRoute = ({ children }: Props) => {
   }
 
   if (state === "unauthenticated") {
-    // Redirect to auth with return URL
-    navigate(`/auth?redirect=${encodeURIComponent(location.pathname + location.search)}`, { replace: true });
-    return null;
+    const redirectUrl = `/auth?redirect=${encodeURIComponent(location.pathname + location.search)}`;
+    return <Navigate to={redirectUrl} replace />;
   }
 
   if (state === "pending") {
