@@ -282,6 +282,9 @@ export const LessonBlock = ({ block }: { block: Block }) => {
           {at === "true_false" && p.trueFalse && (
             <TrueFalseActivity statements={p.trueFalse.statements || []} />
           )}
+          {at === "reveal_cards" && p.revealCards && (
+            <RevealCardsActivity cards={p.revealCards.cards || []} />
+          )}
         </div>
       );
     }
