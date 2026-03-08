@@ -66,9 +66,7 @@ const ProtectedRoute = ({ children }: Props) => {
   }
 
   if (state === "unauthenticated") {
-    // Redirect to auth with return URL
-    navigate(`/auth?redirect=${encodeURIComponent(location.pathname + location.search)}`, { replace: true });
-    return null;
+    return <UnauthenticatedRedirect />;
   }
 
   if (state === "pending") {
