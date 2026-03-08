@@ -10,7 +10,7 @@ const Hero = () => {
         <img
           src={logo}
           alt=""
-          className="w-[60%] md:w-[50%] lg:w-[40%] max-w-[600px] opacity-[0.08] select-none pointer-events-none"
+          className="w-[70%] md:w-[60%] lg:w-[50%] max-w-[700px] opacity-30 select-none pointer-events-none logo-watermark blur-[1px]"
           loading="eager"
           aria-hidden="true"
         />
