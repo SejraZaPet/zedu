@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 
 interface SortingData { groups: string[]; items: { text: string; group: number }[]; }
 
-const SortingActivity = ({ sorting }: { sorting: SortingData }) => {
+const SortingActivity = ({ sorting, onComplete }: { sorting: SortingData; onComplete?: (score: number, maxScore: number) => void }) => {
   const [assignments, setAssignments] = useState<Record<number, number>>({});
   const [checked, setChecked] = useState(false);
 
@@ -85,7 +85,11 @@ const SortingActivity = ({ sorting }: { sorting: SortingData }) => {
       </div>
 
       {allAssigned && !checked && (
-        <button onClick={() => setChecked(true)} className="rounded-lg bg-primary px-5 py-2 text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
+        <button onClick={() => {
+          setChecked(true);
+          const correct = sorting.items.filter((it, i) => assignments[i] === it.group).length;
+          onComplete?.(correct, sorting.items.length);
+        }} className="rounded-lg bg-primary px-5 py-2 text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
           Ověřit
         </button>
       )}

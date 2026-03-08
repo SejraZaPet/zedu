@@ -9,9 +9,10 @@ interface Statement {
 
 interface Props {
   statements: Statement[];
+  onComplete?: (score: number, maxScore: number) => void;
 }
 
-const TrueFalseActivity = ({ statements = [] }: Props) => {
+const TrueFalseActivity = ({ statements = [], onComplete }: Props) => {
   const [answers, setAnswers] = useState<(boolean | null)[]>(() =>
     statements.map(() => null)
   );
@@ -137,7 +138,11 @@ const TrueFalseActivity = ({ statements = [] }: Props) => {
         {!checked && (
           <Button
             size="sm"
-            onClick={() => setChecked(true)}
+            onClick={() => {
+              setChecked(true);
+              const correct = statements.filter((s, i) => answers[i] === s.isTrue).length;
+              onComplete?.(correct, statements.length);
+            }}
             disabled={answers.some((a) => a === null)}
           >
             <CheckCircle2 className="w-4 h-4 mr-1" />

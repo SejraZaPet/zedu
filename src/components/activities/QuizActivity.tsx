@@ -3,7 +3,7 @@ import { useState } from "react";
 interface Answer { text: string; correct: boolean; }
 interface QuizData { question: string; answers: Answer[]; explanation?: string; }
 
-const QuizActivity = ({ quiz }: { quiz: QuizData }) => {
+const QuizActivity = ({ quiz, onComplete }: { quiz: QuizData; onComplete?: (score: number, maxScore: number) => void }) => {
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [submitted, setSubmitted] = useState(false);
 
@@ -49,7 +49,11 @@ const QuizActivity = ({ quiz }: { quiz: QuizData }) => {
       </div>
       {!submitted && selected.size > 0 && (
         <button
-          onClick={() => setSubmitted(true)}
+          onClick={() => {
+            setSubmitted(true);
+            const score = quiz.answers.every((a, i) => a.correct ? selected.has(i) : !selected.has(i)) ? 1 : 0;
+            onComplete?.(score, 1);
+          }}
           className="rounded-lg bg-primary px-5 py-2 text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
         >
           Ověřit odpověď

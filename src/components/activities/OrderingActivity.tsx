@@ -75,7 +75,7 @@ const SortableItem = ({
   );
 };
 
-const OrderingActivity = ({ ordering }: { ordering: OrderingData }) => {
+const OrderingActivity = ({ ordering, onComplete }: { ordering: OrderingData; onComplete?: (score: number, maxScore: number) => void }) => {
   const correctOrder = ordering.items;
 
   // Create shuffled order once
@@ -148,7 +148,10 @@ const OrderingActivity = ({ ordering }: { ordering: OrderingData }) => {
 
       {!checked && (
         <button
-          onClick={() => setChecked(true)}
+          onClick={() => {
+            setChecked(true);
+            onComplete?.(score, total);
+          }}
           className="rounded-lg bg-primary px-5 py-2 text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
         >
           Zkontrolovat

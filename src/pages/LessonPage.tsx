@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,6 +10,7 @@ import type { Block } from "@/lib/textbook-config";
 import { LessonBlock } from "@/components/LessonBlockRenderer";
 import { Button } from "@/components/ui/button";
 import LessonEditorSheet from "@/components/LessonEditorSheet";
+import { useActivityTracking } from "@/hooks/useActivityTracking";
 
 const LessonPage = () => {
   const { subjectId, grade, topicSlug, lessonSlug } = useParams<{
@@ -84,6 +85,15 @@ const LessonPage = () => {
   });
 
   const blocks: Block[] = (lesson?.blocks as unknown as Block[]) ?? [];
+  const { trackActivity, trackLessonComplete } = useActivityTracking(lesson?.id);
+
+  // Track activity completion
+  const handleActivityComplete = useCallback(
+    (activityIndex: number, activityType: string, score: number, maxScore: number) => {
+      trackActivity(activityIndex, activityType, score, maxScore);
+    },
+    [trackActivity]
+  );
 
   const handleSaved = () => {
     // Refresh lesson data without full reload
@@ -146,8 +156,8 @@ const LessonPage = () => {
               </h1>
 
               <div className="space-y-6">
-                {blocks.filter((b) => b.visible !== false).map((block) => (
-                  <LessonBlock key={block.id} block={block} />
+                {blocks.filter((b) => b.visible !== false).map((block, index) => (
+                  <LessonBlock key={block.id} block={block} blockIndex={index} onActivityComplete={handleActivityComplete} />
                 ))}
               </div>
 

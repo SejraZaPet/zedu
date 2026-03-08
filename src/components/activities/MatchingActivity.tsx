@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 
 interface MatchingData { left: string[]; right: string[]; }
 
-const MatchingActivity = ({ matching }: { matching: MatchingData }) => {
+const MatchingActivity = ({ matching, onComplete }: { matching: MatchingData; onComplete?: (score: number, maxScore: number) => void }) => {
   const [selectedLeft, setSelectedLeft] = useState<number | null>(null);
   const [pairs, setPairs] = useState<[number, number][]>([]);
   const [checked, setChecked] = useState(false);
@@ -76,7 +76,11 @@ const MatchingActivity = ({ matching }: { matching: MatchingData }) => {
         </div>
       </div>
       {pairs.length === matching.left.length && !checked && (
-        <button onClick={() => setChecked(true)} className="rounded-lg bg-primary px-5 py-2 text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
+        <button onClick={() => {
+          setChecked(true);
+          const correct = pairs.filter(([l, r]) => isCorrectPair(l, r)).length;
+          onComplete?.(correct, matching.left.length);
+        }} className="rounded-lg bg-primary px-5 py-2 text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
           Ověřit
         </button>
       )}

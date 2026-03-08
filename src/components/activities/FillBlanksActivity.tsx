@@ -20,6 +20,7 @@ interface Props {
   tokens?: FillBlankToken[];
   caseSensitive?: boolean;
   diacriticSensitive?: boolean;
+  onComplete?: (score: number, maxScore: number) => void;
 }
 
 const normalize = (s: string, caseSensitive: boolean, diacriticSensitive: boolean) => {
@@ -63,7 +64,7 @@ const tokensToSegments = (tokens: FillBlankToken[]): { segments: (string | numbe
   return { segments, blanks };
 };
 
-const FillBlanksActivity = ({ text, tokens, caseSensitive = false, diacriticSensitive = true }: Props) => {
+const FillBlanksActivity = ({ text, tokens, caseSensitive = false, diacriticSensitive = true, onComplete }: Props) => {
   const { segments, blanks } = useMemo(() => {
     // Prefer tokens format, fall back to legacy text
     if (tokens && tokens.length > 0) return tokensToSegments(tokens);
@@ -172,7 +173,16 @@ const FillBlanksActivity = ({ text, tokens, caseSensitive = false, diacriticSens
       {/* Controls */}
       <div className="flex flex-wrap gap-2 pt-2">
         {!checked && (
-          <Button size="sm" onClick={() => setChecked(true)} disabled={answers.some((a) => !a.trim())}>
+          <Button size="sm" onClick={() => {
+            setChecked(true);
+            // Calculate score after check
+            const blankResults = blanks.map((blank, i) => {
+              const input = normalize(answers[i], caseSensitive, diacriticSensitive);
+              const accepted = [blank.answer, ...blank.alternatives].map((a) => normalize(a, caseSensitive, diacriticSensitive));
+              return accepted.includes(input);
+            });
+            onComplete?.(blankResults.filter(Boolean).length, blanks.length);
+          }} disabled={answers.some((a) => !a.trim())}>
             <CheckCircle2 className="w-4 h-4 mr-1" />
             Zkontrolovat
           </Button>

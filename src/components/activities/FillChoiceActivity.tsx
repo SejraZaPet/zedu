@@ -16,9 +16,10 @@ interface FillChoiceToken {
 interface Props {
   tokens: FillChoiceToken[];
   options: string[];
+  onComplete?: (score: number, maxScore: number) => void;
 }
 
-const FillChoiceActivity = ({ tokens = [], options = [] }: Props) => {
+const FillChoiceActivity = ({ tokens = [], options = [], onComplete }: Props) => {
   const blanks = useMemo(
     () => tokens.filter((t) => t.type === "blank"),
     [tokens]
@@ -190,7 +191,11 @@ const FillChoiceActivity = ({ tokens = [], options = [] }: Props) => {
         {!checked && (
           <Button
             size="sm"
-            onClick={() => setChecked(true)}
+            onClick={() => {
+              setChecked(true);
+              const correct = blanks.filter((blank, i) => answers[i]?.trim().toLowerCase() === blank.answer?.trim().toLowerCase()).length;
+              onComplete?.(correct, blanks.length);
+            }}
             disabled={answers.some((a) => a === null)}
           >
             <CheckCircle2 className="w-4 h-4 mr-1" />
