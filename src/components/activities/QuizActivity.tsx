@@ -3,7 +3,7 @@ import { useState } from "react";
 interface Answer { text: string; correct: boolean; }
 interface QuizData { question: string; answers: Answer[]; explanation?: string; }
 
-const QuizActivity = ({ quiz }: { quiz: QuizData }) => {
+const QuizActivity = ({ quiz, onComplete }: { quiz: QuizData; onComplete?: (score: number, maxScore: number) => void }) => {
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [submitted, setSubmitted] = useState(false);
 
