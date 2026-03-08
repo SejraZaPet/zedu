@@ -49,11 +49,15 @@ const SiteHeader = () => {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled ? "bg-card/95 backdrop-blur-md border-b border-border shadow-sm" : "bg-transparent"
-      }`}
+      className="fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b border-border/50"
+      style={{
+        background: "rgba(255,255,255,0.95)",
+        backdropFilter: "blur(6px)",
+        boxShadow: "0 2px 10px rgba(0,0,0,0.08)",
+        height: "70px",
+      }}
     >
-      <div className="container mx-auto flex items-center justify-between h-16 md:h-20 px-4 md:px-8">
+      <div className="container mx-auto flex items-center justify-between h-full px-4 md:px-8">
         <button onClick={() => navigate("/")} className="flex items-center gap-2.5 group cursor-pointer bg-transparent border-none p-0">
           <img src={logo} alt="Zedu" className="h-8 md:h-10 w-auto" />
           <span className="hidden md:inline font-heading text-xl md:text-2xl font-bold text-foreground tracking-tight">
