@@ -678,6 +678,7 @@ const ActivityBlock = ({ block, onChange }: Props) => {
       {activityType === "quiz" && <QuizEditor props={p} onChange={onChange} />}
       {activityType === "matching" && <MatchingEditor props={p} onChange={onChange} />}
       {activityType === "sorting" && <SortingEditor props={p} onChange={onChange} />}
+      {activityType === "ordering" && <OrderingEditor props={p} onChange={onChange} />}
       {activityType === "image_label" && <ImageLabelEditor props={p} onChange={onChange} />}
       {activityType === "fill_blanks" && <FillBlanksEditor props={p} onChange={onChange} />}
     </div>

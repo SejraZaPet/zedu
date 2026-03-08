@@ -246,6 +246,7 @@ export const LessonBlock = ({ block }: { block: Block }) => {
           {at === "quiz" && <QuizActivity quiz={p.quiz} />}
           {at === "matching" && <MatchingActivity matching={p.matching} />}
           {at === "sorting" && <SortingActivity sorting={p.sorting} />}
+          {at === "ordering" && p.ordering && <OrderingActivity ordering={p.ordering} />}
           {at === "image_label" && p.imageLabel && (
             <ImageLabelActivity
               imageUrl={p.imageLabel.imageUrl}
