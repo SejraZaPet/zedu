@@ -690,6 +690,7 @@ export type Database = {
         Returns: string
       }
       is_admin: { Args: never; Returns: boolean }
+      is_admin_or_teacher: { Args: never; Returns: boolean }
       is_enrolled_in_textbook: {
         Args: { _student_id: string; _textbook_id: string }
         Returns: boolean
