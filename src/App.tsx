@@ -11,6 +11,7 @@ import SubjectPage from "./pages/SubjectPage";
 import TopicPage from "./pages/TopicPage";
 import LessonPage from "./pages/LessonPage";
 import PodcastDetailPage from "./pages/PodcastDetailPage";
+import StudentDashboard from "./pages/StudentDashboard";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/student" element={<StudentDashboard />} />
           <Route path="/podcast/:episodeId" element={<PodcastDetailPage />} />
           <Route path="/ucebnice/:subjectId" element={<SubjectPage />} />
           <Route path="/ucebnice/:subjectId/:grade/:topicSlug" element={<TopicPage />} />

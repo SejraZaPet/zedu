@@ -161,6 +161,45 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          field_of_study: string
+          first_name: string
+          id: string
+          last_name: string
+          school: string
+          status: Database["public"]["Enums"]["account_status"]
+          updated_at: string
+          year: number | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string
+          field_of_study?: string
+          first_name?: string
+          id: string
+          last_name?: string
+          school?: string
+          status?: Database["public"]["Enums"]["account_status"]
+          updated_at?: string
+          year?: number | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          field_of_study?: string
+          first_name?: string
+          id?: string
+          last_name?: string
+          school?: string
+          status?: Database["public"]["Enums"]["account_status"]
+          updated_at?: string
+          year?: number | null
+        }
+        Relationships: []
+      }
       section_links: {
         Row: {
           created_at: string
@@ -365,6 +404,7 @@ export type Database = {
       is_admin: { Args: never; Returns: boolean }
     }
     Enums: {
+      account_status: "pending" | "approved" | "blocked"
       app_role: "admin" | "user"
     }
     CompositeTypes: {
@@ -493,6 +533,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      account_status: ["pending", "approved", "blocked"],
       app_role: ["admin", "user"],
     },
   },
