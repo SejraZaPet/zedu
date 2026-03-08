@@ -17,6 +17,7 @@ interface Props {
 const ACTIVITY_TYPES = [
   { value: "flashcards", label: "Otáčecí kartičky" },
   { value: "quiz", label: "Kvíz" },
+  { value: "true_false", label: "Pravda / Nepravda" },
   { value: "matching", label: "Přiřazování A–B" },
   { value: "sorting", label: "Třídění do skupin" },
   { value: "ordering", label: "Seřaď pořadí" },
