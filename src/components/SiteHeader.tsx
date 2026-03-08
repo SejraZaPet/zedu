@@ -62,11 +62,11 @@ const SiteHeader = () => {
           <nav className="flex flex-col px-6 py-4 gap-4">
             {navItems.map((item) => (
               <a
-                key={item.href}
-                href={item.protected ? undefined : item.href}
+                key={item.label}
+                href={item.isRoute ? undefined : item.href}
                 onClick={(e) => {
                   setMenuOpen(false);
-                  if (item.protected) { e.preventDefault(); handleProtectedNav(); }
+                  if (item.isRoute) { e.preventDefault(); navigate(item.href); }
                 }}
                 className="text-base font-medium text-muted-foreground hover:text-primary transition-colors cursor-pointer"
               >

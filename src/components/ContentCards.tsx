@@ -49,8 +49,8 @@ const ContentCards = () => {
           {cards.map((card) => (
             <a
               key={card.title}
-              href={card.protected ? undefined : card.href}
-              onClick={card.protected ? handleProtectedClick : undefined}
+              href={card.isRoute ? undefined : card.href}
+              onClick={card.isRoute ? (e: React.MouseEvent) => { e.preventDefault(); navigate(card.href); } : undefined}
               className="group block rounded-lg border border-border bg-card p-6 transition-all duration-300 hover:border-primary/30 hover:bg-surface-hover hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-1 cursor-pointer"
             >
               <card.icon className="w-8 h-8 text-primary mb-4 transition-transform group-hover:scale-110" />
