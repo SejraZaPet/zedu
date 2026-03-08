@@ -50,7 +50,7 @@ const SiteHeader = () => {
             <a
               key={item.label}
               href={item.isRoute ? undefined : item.href}
-              onClick={item.isRoute ? (e) => { e.preventDefault(); navigate(item.href); } : undefined}
+              onClick={item.isRoute ? (e) => { e.preventDefault(); handleTextbookAccess(); } : undefined}
               className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors duration-200 cursor-pointer"
             >
               {item.label}
