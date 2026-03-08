@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useAdmin } from "@/hooks/useAdmin";
 import LessonsManager from "@/components/admin/LessonsManager";
 import TextbooksManager from "@/components/admin/TextbooksManager";
+import TeacherTextbooksManager from "@/components/admin/TeacherTextbooksManager";
 import SubjectsManager from "@/components/admin/SubjectsManager";
 import UsersManager from "@/components/admin/UsersManager";
 import ClassesManager from "@/components/admin/ClassesManager";
@@ -83,7 +84,7 @@ const Admin = () => {
         </div>
 
         {activeTab === "dashboard" && <AdminDashboard onNavigate={(tab) => setActiveTab(tab as Tab)} isTeacher={isTeacher} />}
-        {activeTab === "textbooks" && <TextbooksManager />}
+        {activeTab === "textbooks" && (isTeacher ? <TeacherTextbooksManager /> : <TextbooksManager />)}
         {activeTab === "lessons" && <LessonsManager />}
         {activeTab === "subjects" && <SubjectsManager />}
         {!isTeacher && activeTab === "users" && <UsersManager />}
