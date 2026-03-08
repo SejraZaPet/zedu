@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo.png";
 
 const navItems = [
-  { label: "Učebnice", href: "#ucebnice" },
-  { label: "Ke kávě", href: "#ke-kave" },
-  { label: "Podcast", href: "#podcast" },
-  { label: "O projektu", href: "#o-projektu" },
+  { label: "Učebnice", href: "#ucebnice", protected: true },
+  { label: "Ke kávě", href: "#ke-kave", protected: false },
+  { label: "Podcast", href: "#podcast", protected: false },
+  { label: "O projektu", href: "#o-projektu", protected: false },
 ];
 
 const SiteHeader = () => {
@@ -20,6 +21,21 @@ const SiteHeader = () => {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  const handleProtectedNav = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      // Scroll to textbooks section on homepage
+      const el = document.getElementById("ucebnice");
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth" });
+      } else {
+        navigate("/#ucebnice");
+      }
+    } else {
+      navigate("/auth?redirect=%2F%23ucebnice");
+    }
+  };
 
   return (
     <header
@@ -39,8 +55,9 @@ const SiteHeader = () => {
           {navItems.map((item) => (
             <a
               key={item.href}
-              href={item.href}
-              className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors duration-200"
+              href={item.protected ? undefined : item.href}
+              onClick={item.protected ? (e) => { e.preventDefault(); handleProtectedNav(); } : undefined}
+              className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors duration-200 cursor-pointer"
             >
               {item.label}
             </a>
@@ -62,9 +79,12 @@ const SiteHeader = () => {
             {navItems.map((item) => (
               <a
                 key={item.href}
-                href={item.href}
-                onClick={() => setMenuOpen(false)}
-                className="text-base font-medium text-muted-foreground hover:text-primary transition-colors"
+                href={item.protected ? undefined : item.href}
+                onClick={(e) => {
+                  setMenuOpen(false);
+                  if (item.protected) { e.preventDefault(); handleProtectedNav(); }
+                }}
+                className="text-base font-medium text-muted-foreground hover:text-primary transition-colors cursor-pointer"
               >
                 {item.label}
               </a>

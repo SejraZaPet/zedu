@@ -1,4 +1,6 @@
 import { BookOpen, FileText, Mic, Lightbulb } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 const cards = [
   {
@@ -6,28 +8,49 @@ const cards = [
     title: "Virtuální učebnice",
     description: "Interaktivní materiály pro výuku gastronomie a hotelnictví",
     href: "#ucebnice",
+    protected: true,
   },
   {
     icon: FileText,
     title: "Ke kávě",
     description: "Postřehy, zkušenosti a tipy z praxe pro pedagogy",
     href: "#clanky",
+    protected: false,
   },
   {
     icon: Mic,
     title: "Podcast",
     description: "Rozhovory o vzdělávání a gastronomii",
     href: "#podcast",
+    protected: false,
   },
   {
     icon: Lightbulb,
     title: "Projekty & inspirace",
     description: "Nápady a materiály pro oživení vaší výuky",
     href: "#ucebnice",
+    protected: false,
   },
 ];
 
 const ContentCards = () => {
+  const navigate = useNavigate();
+
+  const handleProtectedClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      const el = document.getElementById("ucebnice");
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth" });
+      } else {
+        navigate("/#ucebnice");
+      }
+    } else {
+      navigate("/auth?redirect=%2F%23ucebnice");
+    }
+  };
+
   return (
     <section className="section-padding bg-gradient-surface">
       <div className="container mx-auto max-w-6xl">
@@ -42,8 +65,9 @@ const ContentCards = () => {
           {cards.map((card) => (
             <a
               key={card.title}
-              href={card.href}
-              className="group block rounded-lg border border-border bg-card p-6 transition-all duration-300 hover:border-primary/30 hover:bg-surface-hover hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-1"
+              href={card.protected ? undefined : card.href}
+              onClick={card.protected ? handleProtectedClick : undefined}
+              className="group block rounded-lg border border-border bg-card p-6 transition-all duration-300 hover:border-primary/30 hover:bg-surface-hover hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-1 cursor-pointer"
             >
               <card.icon className="w-8 h-8 text-primary mb-4 transition-transform group-hover:scale-110" />
               <h3 className="font-heading text-lg font-semibold mb-2 text-card-foreground">{card.title}</h3>
