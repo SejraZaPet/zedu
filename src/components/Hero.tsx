@@ -1,5 +1,4 @@
 import { BookOpen, Sparkles, GraduationCap } from "lucide-react";
-import heroLogo from "@/assets/zedu-hero-logo.png";
 import heroBg from "@/assets/hero-students.png";
 
 const features = [
@@ -43,13 +42,12 @@ const Hero = () => {
 
         {/* Content */}
         <div className="relative z-10 text-center px-4 max-w-3xl mx-auto py-16 md:py-24">
-          {/* Hero Logo */}
+          {/* Hero Logo – Text */}
           <div className="mb-10 animate-fade-in-up">
-            <img
-              src={heroLogo}
-              alt="Zedu"
-              className="h-24 md:h-32 w-auto mx-auto"
-            />
+            <h2 className="text-[56px] md:text-[64px] font-extrabold tracking-tight text-center">
+              <span className="text-foreground">ZE</span>
+              <span className="text-gradient-brand">du</span>
+            </h2>
           </div>
 
           {/* Brand headline */}
