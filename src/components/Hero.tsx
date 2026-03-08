@@ -79,25 +79,27 @@ const Hero = () => {
       {/* Cards panel – separate from the hero image */}
       <div className="relative z-10 px-4 -mt-24 md:-mt-28">
         <div
-          className="container mx-auto max-w-4xl bg-card p-6 md:p-10"
-          style={{ boxShadow: "0 30px 80px rgba(0,0,0,0.15)", borderRadius: "28px" }}
+          className="mx-auto bg-card p-6 md:p-10"
+          style={{ maxWidth: "1100px", boxShadow: "0 30px 80px rgba(0,0,0,0.15)", borderRadius: "28px" }}
         >
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {features.map((feature, i) => (
               <div
                 key={feature.title}
-                className="group rounded-2xl p-6 transition-all duration-300 animate-fade-in-up hover:bg-muted/50"
+                className="group flex items-start gap-4 rounded-2xl p-5 transition-all duration-300 animate-fade-in-up hover:bg-muted/50"
                 style={{ animationDelay: `${0.5 + i * 0.1}s` }}
               >
-                <div className="w-10 h-10 rounded-xl bg-primary/[0.08] flex items-center justify-center mb-4 group-hover:bg-primary/[0.12] transition-colors">
+                <div className="w-11 h-11 shrink-0 rounded-xl bg-primary/[0.08] flex items-center justify-center group-hover:bg-primary/[0.12] transition-colors">
                   <feature.icon size={20} className="text-primary" />
                 </div>
-                <h3 className="font-heading text-base font-semibold text-foreground mb-1.5">
-                  {feature.title}
-                </h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {feature.description}
-                </p>
+                <div>
+                  <h3 className="font-heading text-base font-semibold text-foreground mb-1">
+                    {feature.title}
+                  </h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {feature.description}
+                  </p>
+                </div>
               </div>
             ))}
           </div>
