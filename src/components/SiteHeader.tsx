@@ -1,14 +1,13 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Menu, X } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo.png";
 
 const navItems = [
-  { label: "Učebnice", href: "#ucebnice", protected: true },
-  { label: "Ke kávě", href: "#ke-kave", protected: false },
-  { label: "Podcast", href: "#podcast", protected: false },
-  { label: "O projektu", href: "#o-projektu", protected: false },
+  { label: "Učebnice", href: "/ucebnice", isRoute: true },
+  { label: "Ke kávě", href: "#ke-kave", isRoute: false },
+  { label: "Podcast", href: "#podcast", isRoute: false },
+  { label: "O projektu", href: "#o-projektu", isRoute: false },
 ];
 
 const SiteHeader = () => {
@@ -21,21 +20,6 @@ const SiteHeader = () => {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
-
-  const handleProtectedNav = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-      // Scroll to textbooks section on homepage
-      const el = document.getElementById("ucebnice");
-      if (el) {
-        el.scrollIntoView({ behavior: "smooth" });
-      } else {
-        navigate("/#ucebnice");
-      }
-    } else {
-      navigate("/auth?redirect=%2F%23ucebnice");
-    }
-  };
 
   return (
     <header
