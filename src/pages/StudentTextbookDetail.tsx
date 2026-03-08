@@ -167,7 +167,7 @@ const StudentTextbookDetail = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user && lessonIds.length > 0) {
         const { data: completions } = await supabase
-          .from("student_lesson_completions")
+          .from("teacher_lesson_completions" as any)
           .select("lesson_id")
           .eq("user_id", user.id)
           .in("lesson_id", lessonIds);
@@ -183,7 +183,7 @@ const StudentTextbookDetail = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     const { error } = await supabase
-      .from("student_lesson_completions")
+      .from("teacher_lesson_completions" as any)
       .insert({ lesson_id: lessonId, user_id: user.id });
     if (!error) {
       setCompletedLessonIds(prev => new Set([...prev, lessonId]));
