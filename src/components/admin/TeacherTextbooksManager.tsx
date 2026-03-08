@@ -81,6 +81,12 @@ const TeacherTextbooksManager = () => {
   const [newLessonTitle, setNewLessonTitle] = useState("");
   const [saving, setSaving] = useState(false);
 
+  // Topic management
+  const [createTopicOpen, setCreateTopicOpen] = useState(false);
+  const [newTopicTitle, setNewTopicTitle] = useState("");
+  const [newTopicGrade, setNewTopicGrade] = useState<number>(1);
+  const [editingTopic, setEditingTopic] = useState<{ id: string; title: string } | null>(null);
+
   const fetchTextbooks = async () => {
     setLoading(true);
     const { data, error } = await supabase
