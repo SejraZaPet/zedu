@@ -79,7 +79,86 @@ const COLOR_GROUPS: { label: string; colors: { name: string; value: string }[] }
   },
 ];
 
-const MiniRichEditor = ({
+const ColorPicker = ({ editor, sz }: { editor: any; sz: string }) => {
+  const [open, setOpen] = useState(false);
+  const [customColor, setCustomColor] = useState("#000000");
+  const currentColor = editor.getAttributes("textStyle").color;
+
+  const apply = (val: string | null) => {
+    if (val) editor.chain().focus().setColor(val).run();
+    else editor.chain().focus().unsetColor().run();
+    setOpen(false);
+  };
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          title="Barva textu"
+          className="p-1 rounded text-muted-foreground hover:bg-muted hover:text-foreground transition-colors relative"
+        >
+          <Palette className={sz} />
+          {currentColor && (
+            <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3 h-0.5 rounded-full" style={{ backgroundColor: currentColor }} />
+          )}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-[220px] p-3 space-y-2">
+        <button
+          type="button"
+          onClick={() => apply(null)}
+          className="flex items-center gap-2 w-full text-xs px-1.5 py-1 rounded hover:bg-muted transition-colors"
+        >
+          <X className="w-3 h-3" />
+          <span>Výchozí barva</span>
+        </button>
+
+        {COLOR_GROUPS.map((group) => (
+          <div key={group.label}>
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">{group.label}</p>
+            <div className="flex flex-wrap gap-1">
+              {group.colors.map((c) => (
+                <button
+                  key={c.value}
+                  type="button"
+                  title={c.name}
+                  onClick={() => apply(c.value)}
+                  className={`w-6 h-6 rounded border transition-all hover:scale-110 ${
+                    currentColor === c.value ? "ring-2 ring-primary ring-offset-1 ring-offset-background" : "border-border"
+                  }`}
+                  style={{ backgroundColor: c.value }}
+                />
+              ))}
+            </div>
+          </div>
+        ))}
+
+        <div>
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Vlastní barva</p>
+          <div className="flex items-center gap-2">
+            <input
+              type="color"
+              value={customColor}
+              onChange={(e) => setCustomColor(e.target.value)}
+              className="w-6 h-6 rounded border border-border cursor-pointer p-0 bg-transparent"
+            />
+            <span className="text-xs text-muted-foreground font-mono">{customColor}</span>
+            <button
+              type="button"
+              onClick={() => apply(customColor)}
+              className="ml-auto text-xs px-2 py-0.5 rounded bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+            >
+              Použít
+            </button>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+};
+
+
   content,
   onChange,
   placeholder = "Začněte psát…",
