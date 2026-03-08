@@ -392,6 +392,127 @@ export type Database = {
           },
         ]
       }
+      teacher_textbook_enrollments: {
+        Row: {
+          enrolled_at: string
+          id: string
+          student_id: string
+          textbook_id: string
+        }
+        Insert: {
+          enrolled_at?: string
+          id?: string
+          student_id: string
+          textbook_id: string
+        }
+        Update: {
+          enrolled_at?: string
+          id?: string
+          student_id?: string
+          textbook_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_textbook_enrollments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_textbook_enrollments_textbook_id_fkey"
+            columns: ["textbook_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_textbooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teacher_textbook_lessons: {
+        Row: {
+          blocks: Json
+          created_at: string
+          id: string
+          sort_order: number
+          status: string
+          textbook_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          blocks?: Json
+          created_at?: string
+          id?: string
+          sort_order?: number
+          status?: string
+          textbook_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          blocks?: Json
+          created_at?: string
+          id?: string
+          sort_order?: number
+          status?: string
+          textbook_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_textbook_lessons_textbook_id_fkey"
+            columns: ["textbook_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_textbooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teacher_textbooks: {
+        Row: {
+          access_code: string
+          created_at: string
+          description: string
+          id: string
+          subject: string
+          teacher_id: string
+          title: string
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          access_code: string
+          created_at?: string
+          description?: string
+          id?: string
+          subject?: string
+          teacher_id: string
+          title: string
+          updated_at?: string
+          visibility?: string
+        }
+        Update: {
+          access_code?: string
+          created_at?: string
+          description?: string
+          id?: string
+          subject?: string
+          teacher_id?: string
+          title?: string
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_textbooks_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       textbook_grades: {
         Row: {
           created_at: string | null
@@ -564,6 +685,10 @@ export type Database = {
     }
     Functions: {
       can_access_textbooks: { Args: { _user_id: string }; Returns: boolean }
+      enroll_by_textbook_code: {
+        Args: { _code: string; _student_id: string }
+        Returns: string
+      }
       is_admin: { Args: never; Returns: boolean }
       join_class_by_code: {
         Args: { _code: string; _user_id: string }
