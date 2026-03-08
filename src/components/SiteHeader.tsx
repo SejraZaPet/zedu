@@ -25,9 +25,15 @@ const SiteHeader = () => {
   const handleProtectedNav = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (session) {
-      navigate("/ucebnice");
+      // Scroll to textbooks section on homepage
+      const el = document.getElementById("ucebnice");
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth" });
+      } else {
+        navigate("/#ucebnice");
+      }
     } else {
-      navigate("/auth?redirect=%2Fucebnice");
+      navigate("/auth?redirect=%2F%23ucebnice");
     }
   };
 

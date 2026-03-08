@@ -40,9 +40,14 @@ const ContentCards = () => {
     e.preventDefault();
     const { data: { session } } = await supabase.auth.getSession();
     if (session) {
-      navigate("/ucebnice");
+      const el = document.getElementById("ucebnice");
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth" });
+      } else {
+        navigate("/#ucebnice");
+      }
     } else {
-      navigate("/auth?redirect=%2Fucebnice");
+      navigate("/auth?redirect=%2F%23ucebnice");
     }
   };
 
