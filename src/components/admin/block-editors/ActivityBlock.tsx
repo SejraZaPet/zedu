@@ -23,6 +23,7 @@ const ACTIVITY_TYPES = [
   { value: "image_label", label: "Popis obrázku (slepá mapa)" },
   { value: "image_hotspot", label: "Klikni na správnou část" },
   { value: "fill_blanks", label: "Doplň slova" },
+  { value: "fill_choice", label: "Doplň z nabídky" },
 ];
 
 const FlashcardsEditor = ({ props, onChange }: { props: any; onChange: (p: any) => void }) => {
