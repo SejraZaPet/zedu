@@ -16,9 +16,10 @@ interface FillChoiceToken {
 interface Props {
   tokens: FillChoiceToken[];
   options: string[];
+  onComplete?: (score: number, maxScore: number) => void;
 }
 
-const FillChoiceActivity = ({ tokens = [], options = [] }: Props) => {
+const FillChoiceActivity = ({ tokens = [], options = [], onComplete }: Props) => {
   const blanks = useMemo(
     () => tokens.filter((t) => t.type === "blank"),
     [tokens]
