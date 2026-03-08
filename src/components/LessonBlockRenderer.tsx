@@ -278,6 +278,9 @@ export const LessonBlock = ({ block }: { block: Block }) => {
               options={p.fillChoice.options || []}
             />
           )}
+          {at === "true_false" && p.trueFalse && (
+            <TrueFalseActivity statements={p.trueFalse.statements || []} />
+          )}
         </div>
       );
     }

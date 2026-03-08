@@ -1037,6 +1037,7 @@ const ActivityBlock = ({ block, onChange }: Props) => {
       {activityType === "image_hotspot" && <ImageHotspotEditor props={p} onChange={onChange} />}
       {activityType === "fill_blanks" && <FillBlanksEditor props={p} onChange={onChange} />}
       {activityType === "fill_choice" && <FillChoiceEditor props={p} onChange={onChange} />}
+      {activityType === "true_false" && <TrueFalseEditor props={p} onChange={onChange} />}
     </div>
   );
 };
