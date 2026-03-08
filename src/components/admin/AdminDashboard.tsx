@@ -76,7 +76,6 @@ const AdminDashboard = ({ onNavigate, isTeacher = false }: Props) => {
   const fetchDashboard = async () => {
     setLoading(true);
 
-    // Fetch all data in parallel
     const [
       { data: profiles },
       { data: classes },
@@ -111,7 +110,6 @@ const AdminDashboard = ({ onNavigate, isTeacher = false }: Props) => {
 
     setRecentRegistrations((recentProfiles ?? []).map((p: any) => ({ ...p, status: p.status as string })));
 
-    // Recent activities with user names
     if (activities && activities.length > 0) {
       const sorted = [...activities].sort((a: any, b: any) =>
         new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime()
@@ -170,23 +168,92 @@ const AdminDashboard = ({ onNavigate, isTeacher = false }: Props) => {
 
   if (loading) return <div className="text-muted-foreground p-4">Načítání dashboardu...</div>;
 
+  // Admin-only dashboard: just users + pending
+  if (!isTeacher) {
+    return (
+      <div className="space-y-6">
+        {/* Admin stats - only user-related */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <StatCard
+            icon={Users}
+            label="Uživatelé"
+            value={stats.totalStudents}
+            onClick={() => onNavigate("users")}
+          />
+          <StatCard
+            icon={UserCheck}
+            label="Čekající na schválení"
+            value={stats.pendingStudents}
+            highlight={stats.pendingStudents > 0}
+            onClick={() => onNavigate("users")}
+          />
+          <StatCard
+            icon={Activity}
+            label="Dokončené aktivity"
+            value={stats.completedActivities}
+          />
+        </div>
+
+        {/* Quick actions */}
+        <div>
+          <h2 className="text-sm font-medium text-muted-foreground mb-3 uppercase tracking-wide">Rychlé akce</h2>
+          <div className="flex flex-wrap gap-2">
+            {stats.pendingStudents > 0 && (
+              <Button size="sm" variant="outline" className="gap-1.5 border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10" onClick={approveAllPending}>
+                <CheckCheck className="w-4 h-4" />
+                Schválit čekající ({stats.pendingStudents})
+              </Button>
+            )}
+            <Button size="sm" variant="outline" className="gap-1.5" onClick={() => onNavigate("users")}>
+              <Users className="w-4 h-4" /> Spravovat uživatele
+            </Button>
+            <Button size="sm" variant="outline" className="gap-1.5" onClick={() => onNavigate("help")}>
+              <BookOpen className="w-4 h-4" /> Spravovat nápovědu
+            </Button>
+          </div>
+        </div>
+
+        {/* Recent registrations */}
+        <div className="border border-border rounded-lg overflow-hidden">
+          <div className="bg-card px-4 py-3 border-b border-border flex items-center justify-between">
+            <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
+              <Clock className="w-4 h-4 text-muted-foreground" />
+              Poslední registrace
+            </h3>
+            <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => onNavigate("users")}>
+              Vše
+            </Button>
+          </div>
+          <div className="divide-y divide-border">
+            {recentRegistrations.length === 0 ? (
+              <p className="text-xs text-muted-foreground p-4 text-center">Žádné registrace.</p>
+            ) : (
+              recentRegistrations.map((s) => (
+                <div key={s.id} className="flex items-center justify-between px-4 py-2.5 hover:bg-muted/30">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{s.first_name} {s.last_name}</p>
+                    <p className="text-xs text-muted-foreground truncate">{s.email}</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Badge variant="outline" className={`text-xs ${statusColors[s.status] || ""}`}>
+                      {statusLabels[s.status] || s.status}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">{formatDate(s.created_at)}</span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Teacher dashboard: content-focused
   return (
     <div className="space-y-6">
-      {/* Stats grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <StatCard
-          icon={Users}
-          label="Studenti"
-          value={stats.totalStudents}
-          onClick={() => onNavigate("users")}
-        />
-        <StatCard
-          icon={UserCheck}
-          label="Čekající"
-          value={stats.pendingStudents}
-          highlight={stats.pendingStudents > 0}
-          onClick={() => onNavigate("users")}
-        />
+        <StatCard icon={Users} label="Studenti" value={stats.totalStudents} />
         <StatCard
           icon={School}
           label="Třídy"
@@ -218,14 +285,8 @@ const AdminDashboard = ({ onNavigate, isTeacher = false }: Props) => {
       <div>
         <h2 className="text-sm font-medium text-muted-foreground mb-3 uppercase tracking-wide">Rychlé akce</h2>
         <div className="flex flex-wrap gap-2">
-          {!isTeacher && stats.pendingStudents > 0 && (
-            <Button size="sm" variant="outline" className="gap-1.5 border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10" onClick={approveAllPending}>
-              <CheckCheck className="w-4 h-4" />
-              Schválit čekající ({stats.pendingStudents})
-            </Button>
-          )}
           <Button size="sm" variant="outline" className="gap-1.5" onClick={() => onNavigate("textbooks")}>
-            <Plus className="w-4 h-4" /> Přidat lekci
+            <Plus className="w-4 h-4" /> Přidat učebnici
           </Button>
           <Button size="sm" variant="outline" className="gap-1.5" onClick={() => onNavigate("classes")}>
             <School className="w-4 h-4" /> Spravovat třídy
@@ -233,75 +294,37 @@ const AdminDashboard = ({ onNavigate, isTeacher = false }: Props) => {
         </div>
       </div>
 
-      {/* Two columns: recent registrations + recent activities */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Recent registrations */}
-        <div className="border border-border rounded-lg overflow-hidden">
-          <div className="bg-card px-4 py-3 border-b border-border flex items-center justify-between">
-            <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
-              <Clock className="w-4 h-4 text-muted-foreground" />
-              Poslední registrace
-            </h3>
-            {!isTeacher && (
-              <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => onNavigate("users")}>
-                Vše
-              </Button>
-            )}
-          </div>
-          <div className="divide-y divide-border">
-            {recentRegistrations.length === 0 ? (
-              <p className="text-xs text-muted-foreground p-4 text-center">Žádné registrace.</p>
-            ) : (
-              recentRegistrations.map((s) => (
-                <div key={s.id} className="flex items-center justify-between px-4 py-2.5 hover:bg-muted/30">
+      {/* Recent activities */}
+      <div className="border border-border rounded-lg overflow-hidden">
+        <div className="bg-card px-4 py-3 border-b border-border flex items-center justify-between">
+          <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-muted-foreground" />
+            Poslední aktivity studentů
+          </h3>
+          <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => onNavigate("results")}>
+            Vše
+          </Button>
+        </div>
+        <div className="divide-y divide-border">
+          {recentActivities.length === 0 ? (
+            <p className="text-xs text-muted-foreground p-4 text-center">Zatím žádné aktivity.</p>
+          ) : (
+            recentActivities.map((a, i) => {
+              const pct = a.max_score > 0 ? Math.round((a.score / a.max_score) * 100) : 0;
+              return (
+                <div key={i} className="flex items-center justify-between px-4 py-2.5 hover:bg-muted/30">
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{s.first_name} {s.last_name}</p>
-                    <p className="text-xs text-muted-foreground truncate">{s.email}</p>
+                    <p className="text-sm font-medium text-foreground truncate">{a.user_name}</p>
+                    <p className="text-xs text-muted-foreground">{activityTypeLabels[a.activity_type] || a.activity_type}</p>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Badge variant="outline" className={`text-xs ${statusColors[s.status] || ""}`}>
-                      {statusLabels[s.status] || s.status}
-                    </Badge>
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">{formatDate(s.created_at)}</span>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className={`text-sm font-medium ${successColor(pct)}`}>{pct} %</span>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">{formatDate(a.completed_at)}</span>
                   </div>
                 </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* Recent activities */}
-        <div className="border border-border rounded-lg overflow-hidden">
-          <div className="bg-card px-4 py-3 border-b border-border flex items-center justify-between">
-            <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-muted-foreground" />
-              Poslední aktivity studentů
-            </h3>
-            <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => onNavigate("results")}>
-              Vše
-            </Button>
-          </div>
-          <div className="divide-y divide-border">
-            {recentActivities.length === 0 ? (
-              <p className="text-xs text-muted-foreground p-4 text-center">Zatím žádné aktivity.</p>
-            ) : (
-              recentActivities.map((a, i) => {
-                const pct = a.max_score > 0 ? Math.round((a.score / a.max_score) * 100) : 0;
-                return (
-                  <div key={i} className="flex items-center justify-between px-4 py-2.5 hover:bg-muted/30">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">{a.user_name}</p>
-                      <p className="text-xs text-muted-foreground">{activityTypeLabels[a.activity_type] || a.activity_type}</p>
-                    </div>
-                    <div className="flex items-center gap-3 shrink-0">
-                      <span className={`text-sm font-medium ${successColor(pct)}`}>{pct} %</span>
-                      <span className="text-xs text-muted-foreground whitespace-nowrap">{formatDate(a.completed_at)}</span>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
+              );
+            })
+          )}
         </div>
       </div>
     </div>

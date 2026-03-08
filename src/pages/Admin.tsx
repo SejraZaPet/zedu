@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useAdmin } from "@/hooks/useAdmin";
 import LessonsManager from "@/components/admin/LessonsManager";
 import TextbooksManager from "@/components/admin/TextbooksManager";
@@ -11,29 +12,37 @@ import ClassResultsManager from "@/components/admin/ClassResultsManager";
 import AdminDashboard from "@/components/admin/AdminDashboard";
 import { Button } from "@/components/ui/button";
 import { BookOpen, LogOut, Home, GraduationCap, Settings, Users, School, BarChart3, LayoutDashboard, HelpCircle } from "lucide-react";
-import { useMemo } from "react";
 
-const allTabs = [
-  { id: "dashboard", label: "Přehled", icon: LayoutDashboard, adminOnly: false },
-  { id: "textbooks", label: "Učebnice", icon: GraduationCap, adminOnly: false },
-  { id: "lessons", label: "Lekce", icon: BookOpen, adminOnly: false },
-  { id: "subjects", label: "Předměty", icon: Settings, adminOnly: false },
-  { id: "users", label: "Uživatelé", icon: Users, adminOnly: true },
-  { id: "classes", label: "Třídy", icon: School, adminOnly: false },
-  { id: "results", label: "Výsledky", icon: BarChart3, adminOnly: false },
-  { id: "help", label: "Nápověda", icon: HelpCircle, adminOnly: false },
+const adminTabs = [
+  { id: "dashboard", label: "Přehled", icon: LayoutDashboard },
+  { id: "users", label: "Uživatelé", icon: Users },
+  { id: "help", label: "Nápověda", icon: HelpCircle },
 ] as const;
 
-type Tab = typeof allTabs[number]["id"];
+const teacherTabs = [
+  { id: "dashboard", label: "Přehled", icon: LayoutDashboard },
+  { id: "textbooks", label: "Učebnice", icon: GraduationCap },
+  { id: "lessons", label: "Lekce", icon: BookOpen },
+  { id: "subjects", label: "Předměty", icon: Settings },
+  { id: "classes", label: "Třídy", icon: School },
+  { id: "results", label: "Výsledky", icon: BarChart3 },
+  { id: "help", label: "Nápověda", icon: HelpCircle },
+] as const;
+
+type Tab = "dashboard" | "textbooks" | "lessons" | "subjects" | "users" | "classes" | "results" | "help";
 
 const Admin = () => {
   const { isAdmin, isTeacher, loading, logout } = useAdmin();
-  const [activeTab, setActiveTab] = useState<Tab>("dashboard");
+  const [searchParams] = useSearchParams();
+  const initialTab = (searchParams.get("tab") as Tab) || "dashboard";
+  const [activeTab, setActiveTab] = useState<Tab>(initialTab);
 
-  const tabs = useMemo(
-    () => allTabs.filter((tab) => !tab.adminOnly || !isTeacher),
-    [isTeacher]
-  );
+  const isAdminOnly = isAdmin && !isTeacher; // pure admin (not teacher)
+
+  const tabs = useMemo(() => {
+    if (isTeacher) return teacherTabs;
+    return adminTabs;
+  }, [isTeacher]);
 
   if (loading) {
     return (
@@ -45,8 +54,9 @@ const Admin = () => {
 
   if (!isAdmin) return null;
 
-  // If teacher tries to access users tab directly, redirect to dashboard
-  if (isTeacher && activeTab === "users") {
+  // Ensure activeTab is valid for current role
+  const validIds = tabs.map(t => t.id) as readonly string[];
+  if (!validIds.includes(activeTab)) {
     setActiveTab("dashboard");
     return null;
   }
@@ -72,7 +82,7 @@ const Admin = () => {
           {tabs.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => setActiveTab(tab.id as Tab)}
               className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                 activeTab === tab.id
                   ? "border-primary text-primary"
@@ -86,12 +96,12 @@ const Admin = () => {
         </div>
 
         {activeTab === "dashboard" && <AdminDashboard onNavigate={(tab) => setActiveTab(tab as Tab)} isTeacher={isTeacher} />}
-        {activeTab === "textbooks" && (isTeacher ? <TeacherTextbooksManager /> : <TextbooksManager />)}
-        {activeTab === "lessons" && <LessonsManager />}
-        {activeTab === "subjects" && <SubjectsManager />}
-        {!isTeacher && activeTab === "users" && <UsersManager />}
-        {activeTab === "classes" && <ClassesManager />}
-        {activeTab === "results" && <ClassResultsManager />}
+        {activeTab === "textbooks" && isTeacher && <TeacherTextbooksManager />}
+        {activeTab === "lessons" && isTeacher && <LessonsManager />}
+        {activeTab === "subjects" && isTeacher && <SubjectsManager />}
+        {activeTab === "users" && !isTeacher && <UsersManager />}
+        {activeTab === "classes" && isTeacher && <ClassesManager />}
+        {activeTab === "results" && isTeacher && <ClassResultsManager />}
         {activeTab === "help" && <HelpGuidesManager />}
       </div>
     </div>
