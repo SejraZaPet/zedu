@@ -256,6 +256,12 @@ export const LessonBlock = ({ block }: { block: Block }) => {
               shuffleWords={p.imageLabel.shuffleWords}
             />
           )}
+          {at === "image_hotspot" && p.imageHotspot && (
+            <ImageHotspotActivity
+              imageUrl={p.imageHotspot.imageUrl}
+              hotspots={p.imageHotspot.hotspots || []}
+            />
+          )}
           {at === "fill_blanks" && p.fillBlanks && (
             <FillBlanksActivity
               text={p.fillBlanks.text || ""}
