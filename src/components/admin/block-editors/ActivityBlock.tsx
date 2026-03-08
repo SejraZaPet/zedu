@@ -19,6 +19,7 @@ const ACTIVITY_TYPES = [
   { value: "quiz", label: "Kvíz" },
   { value: "matching", label: "Přiřazování A–B" },
   { value: "sorting", label: "Třídění do skupin" },
+  { value: "ordering", label: "Seřaď pořadí" },
   { value: "image_label", label: "Popis obrázku (slepá mapa)" },
   { value: "fill_blanks", label: "Doplň slova" },
 ];
@@ -640,6 +641,42 @@ const FillBlanksEditor = ({ props, onChange }: { props: any; onChange: (p: any) 
   );
 };
 
+const OrderingEditor = ({ props, onChange }: { props: any; onChange: (p: any) => void }) => {
+  const ordering = props.ordering || { items: [""] };
+  const updateItem = (idx: number, val: string) => {
+    const items = ordering.items.map((it: string, i: number) => (i === idx ? val : it));
+    onChange({ ...props, ordering: { ...ordering, items } });
+  };
+  return (
+    <div className="space-y-3">
+      <p className="text-xs text-muted-foreground">Pořadí položek zde definuje správné řešení. Student je uvidí zamíchané.</p>
+      <div className="space-y-1">
+        {ordering.items.map((item: string, i: number) => (
+          <div key={i} className="flex items-center gap-2">
+            <span className="w-6 h-6 rounded-full bg-primary/20 text-primary text-xs flex items-center justify-center font-bold flex-shrink-0">
+              {i + 1}
+            </span>
+            <Input
+              className="flex-1"
+              value={item}
+              onChange={(e) => updateItem(i, e.target.value)}
+              placeholder={`Krok ${i + 1}`}
+            />
+            {ordering.items.length > 1 && (
+              <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => onChange({ ...props, ordering: { ...ordering, items: ordering.items.filter((_: any, j: number) => j !== i) } })}>
+                <Trash2 className="w-3 h-3" />
+              </Button>
+            )}
+          </div>
+        ))}
+      </div>
+      <Button variant="outline" size="sm" onClick={() => onChange({ ...props, ordering: { ...ordering, items: [...ordering.items, ""] } })}>
+        <Plus className="w-3 h-3 mr-1" />Přidat položku
+      </Button>
+    </div>
+  );
+};
+
 const ActivityBlock = ({ block, onChange }: Props) => {
   const p = block.props;
   const activityType = p.activityType || "flashcards";
@@ -677,6 +714,7 @@ const ActivityBlock = ({ block, onChange }: Props) => {
       {activityType === "quiz" && <QuizEditor props={p} onChange={onChange} />}
       {activityType === "matching" && <MatchingEditor props={p} onChange={onChange} />}
       {activityType === "sorting" && <SortingEditor props={p} onChange={onChange} />}
+      {activityType === "ordering" && <OrderingEditor props={p} onChange={onChange} />}
       {activityType === "image_label" && <ImageLabelEditor props={p} onChange={onChange} />}
       {activityType === "fill_blanks" && <FillBlanksEditor props={p} onChange={onChange} />}
     </div>
