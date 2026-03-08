@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ShieldAlert, Clock, Ban } from "lucide-react";
 import { Button } from "@/components/ui/button";
