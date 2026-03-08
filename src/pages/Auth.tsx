@@ -130,7 +130,7 @@ const Auth = () => {
       metadata.class_code = classCode.trim() || null;
     }
 
-    const { error: signUpError } = await supabase.auth.signUp({
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email: regEmail,
       password: regPassword,
       options: {
@@ -143,6 +143,24 @@ const Auth = () => {
       setError(signUpError.message);
       setLoading(false);
       return;
+    }
+
+    // Verify profile was created by the trigger
+    if (signUpData?.user?.id) {
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("id", signUpData.user.id)
+        .maybeSingle();
+
+      if (profileError || !profile) {
+        console.error("Profil nebyl vytvořen triggerem:", profileError?.message || "záznam nenalezen", "user_id:", signUpData.user.id);
+        toast({
+          title: "Upozornění",
+          description: "Registrace proběhla, ale profil se nemusel vytvořit správně. Kontaktujte administrátora.",
+          variant: "destructive",
+        });
+      }
     }
 
     toast({
