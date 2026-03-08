@@ -24,7 +24,7 @@ const Hero = () => {
     <div>
       {/* Hero with background image */}
       <section
-        className="relative min-h-[60vh] flex flex-col items-center justify-center overflow-hidden"
+        className="relative min-h-[75vh] flex flex-col items-center justify-center overflow-hidden"
         style={{
           backgroundImage: `url(${heroBg})`,
           backgroundSize: "cover",
@@ -68,7 +68,7 @@ const Hero = () => {
       </section>
 
       {/* Cards panel – separate from the hero image */}
-      <div className="relative z-10 px-4 -mt-24 md:-mt-28">
+      <div className="relative z-10 px-4 mt-[120px]">
         <div
           className="mx-auto bg-card p-6 md:p-10"
           style={{ maxWidth: "1100px", boxShadow: "0 30px 80px rgba(0,0,0,0.15)", borderRadius: "28px" }}
