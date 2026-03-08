@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Users, UserCheck, School, BookOpen, Activity, TrendingUp,
-  Clock, Plus, CheckCheck, Coffee, Mic, Sparkles,
+  Clock, Plus, CheckCheck, Sparkles,
 } from "lucide-react";
 
 interface DashboardStats {
