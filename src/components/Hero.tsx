@@ -40,7 +40,7 @@ const Hero = () => {
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up" style={{ animationDelay: "0.6s" }}>
           <Button variant="hero" size="lg" asChild>
-            <a href="#ucebnice">Prozkoumat učebnice</a>
+            <Link to="/ucebnice">Prozkoumat učebnice</Link>
           </Button>
           <Button variant="outline-gold" size="lg" asChild>
             <a href="#o-projektu">O projektu</a>
