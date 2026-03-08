@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { BookOpen, Sparkles, Wrench } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import heroLogo from "@/assets/zedu-hero-logo.png";
 
 const features = [
   {
@@ -41,33 +42,56 @@ const Hero = () => {
         <div className="absolute bottom-[10%] right-[10%] w-[450px] h-[450px] rounded-full bg-brand-purple/8 blur-[140px] pointer-events-none" />
         <div className="absolute top-[40%] right-[30%] w-[300px] h-[300px] rounded-full bg-brand-periwinkle/6 blur-[120px] pointer-events-none" />
 
-        {/* Content */}
-        <div className="relative z-10 text-center px-4 max-w-3xl mx-auto">
-          <div
-            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/[0.06] border border-primary/10 mb-8 animate-fade-in-up"
-          >
-            <Sparkles size={14} className="text-primary" />
-            <span className="text-sm font-medium text-primary">Moderní vzdělávací platforma</span>
-          </div>
+         {/* Content */}
+         <div className="relative z-10 text-center px-4 max-w-3xl mx-auto">
+           {/* Hero Logo */}
+           <div className="mb-10 animate-fade-in-up">
+             <img 
+               src={heroLogo} 
+               alt="Zedu" 
+               className="h-24 md:h-32 w-auto mx-auto"
+             />
+           </div>
 
-          <h1
-            className="font-heading text-[36px] sm:text-[44px] md:text-[56px] lg:text-[64px] leading-[1.1] font-extrabold tracking-tight mb-6 animate-fade-in-up text-foreground"
-            style={{ animationDelay: "0.1s" }}
+           {/* Brand tagline */}
+           <div className="mb-8 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
+             <p className="text-base md:text-lg font-semibold tracking-wide">
+               <span className="text-gradient-brand">ZEdu</span>
+               <span className="text-muted-foreground mx-2">•</span>
+               <span className="text-foreground">Tvoř</span>
+               <span className="text-muted-foreground mx-2">•</span>
+               <span className="text-foreground">Uč</span>
+               <span className="text-muted-foreground mx-2">•</span>
+               <span className="text-foreground">Objevuj</span>
+             </p>
+           </div>
+
+           <div
+             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/[0.06] border border-primary/10 mb-8 animate-fade-in-up"
+             style={{ animationDelay: "0.15s" }}
+           >
+             <Sparkles size={14} className="text-primary" />
+             <span className="text-sm font-medium text-primary">Moderní vzdělávací platforma</span>
+           </div>
+
+           <h1
+             className="font-heading text-[36px] sm:text-[44px] md:text-[56px] lg:text-[64px] leading-[1.1] font-extrabold tracking-tight mb-6 animate-fade-in-up text-foreground"
+             style={{ animationDelay: "0.2s" }}
           >
             Tvořte digitální učebnice,{" "}
             <span className="text-gradient-brand">které učí</span>
           </h1>
 
-          <p
-            className="text-base md:text-lg text-muted-foreground max-w-xl mx-auto mb-10 animate-fade-in-up leading-relaxed"
-            style={{ animationDelay: "0.25s" }}
+           <p
+             className="text-base md:text-lg text-muted-foreground max-w-xl mx-auto mb-10 animate-fade-in-up leading-relaxed"
+             style={{ animationDelay: "0.3s" }}
           >
             Interaktivní učebnice, aktivity a procvičování v jedné platformě pro moderní výuku.
           </p>
 
-          <div
-            className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up"
-            style={{ animationDelay: "0.4s" }}
+           <div
+             className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up"
+             style={{ animationDelay: "0.45s" }}
           >
             <Button variant="hero" size="lg" onClick={handleTextbookAccess}>
               Prozkoumat učebnice
