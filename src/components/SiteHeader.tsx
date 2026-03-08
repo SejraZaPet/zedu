@@ -5,16 +5,11 @@ import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/zedu-logo-new.png";
 import { Button } from "@/components/ui/button";
 
-const navItems = [
-  { label: "Učebnice", href: "/ucebnice", isRoute: true },
-  { label: "Aktivity", href: "#aktivity", isRoute: false },
-  { label: "Pro žáky", href: "#pro-zaky", isRoute: false },
-];
-
 const SiteHeader = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -24,14 +19,36 @@ const SiteHeader = () => {
   }, []);
 
   useEffect(() => {
+    const loadRole = async (userId: string) => {
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .limit(1);
+      setUserRole(data?.[0]?.role || "user");
+    };
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setIsLoggedIn(!!session);
+      if (session) loadRole(session.user.id);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setIsLoggedIn(!!session);
+      if (session) loadRole(session.user.id);
+      else setUserRole(null);
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  const isTeacher = userRole === "teacher";
+  const isAdmin = userRole === "admin";
+
+  const navItems = [
+    { label: "Učebnice", href: isTeacher ? "/ucitel/ucebnice" : "/ucebnice", isRoute: true },
+    { label: "Aktivity", href: "#aktivity", isRoute: false },
+    { label: "Pro žáky", href: "#pro-zaky", isRoute: false },
+    ...(isTeacher || isAdmin ? [{ label: "Administrace", href: "/admin", isRoute: true }] : []),
+  ];
 
   const handleTextbookAccess = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -39,7 +56,7 @@ const SiteHeader = () => {
       navigate("/auth?redirect=%2Fucebnice");
       return;
     }
-    navigate("/ucebnice");
+    navigate(isTeacher ? "/ucitel/ucebnice" : "/ucebnice");
   };
 
   const handleLogout = async () => {
