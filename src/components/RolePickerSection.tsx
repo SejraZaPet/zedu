@@ -1,16 +1,16 @@
-import { BookOpen, GraduationCap } from "lucide-react";
+import { UserRound, Backpack } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const roles = [
   {
-    icon: BookOpen,
+    icon: UserRound,
     title: "Jsem učitel",
     description:
       "Chci vytvářet digitální učebnice, aktivity a vlastní výukové materiály.",
     to: "/admin",
   },
   {
-    icon: GraduationCap,
+    icon: Backpack,
     title: "Jsem žák",
     description:
       "Chci procvičovat učivo, řešit interaktivní úkoly a sledovat svůj pokrok.",
