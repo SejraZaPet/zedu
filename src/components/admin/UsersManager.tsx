@@ -255,6 +255,13 @@ const UsersManager = () => {
           </TableBody>
         </Table>
       </div>
+
+      <UserDetailDialog
+        user={selectedUser}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        onUpdated={fetchUsers}
+      />
     </div>
   );
 };
