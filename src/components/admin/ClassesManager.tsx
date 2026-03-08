@@ -87,20 +87,44 @@ const ClassesManager = () => {
       return;
     }
 
-    // Get member counts
+    // Get member counts with status
     const { data: membersData } = await supabase
       .from("class_members")
-      .select("class_id");
+      .select("class_id, user_id");
 
-    const countMap = new Map<string, number>();
+    const memberUserIds = [...new Set(membersData?.map((m: any) => m.user_id) ?? [])];
+    
+    // Fetch profiles for status info
+    let profileStatusMap = new Map<string, string>();
+    if (memberUserIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, status")
+        .in("id", memberUserIds);
+      profiles?.forEach((p: any) => profileStatusMap.set(p.id, p.status));
+    }
+
+    const countMap = new Map<string, { total: number; pending: number; approved: number; blocked: number }>();
     membersData?.forEach((m: any) => {
-      countMap.set(m.class_id, (countMap.get(m.class_id) || 0) + 1);
+      const status = profileStatusMap.get(m.user_id) || "pending";
+      const entry = countMap.get(m.class_id) || { total: 0, pending: 0, approved: 0, blocked: 0 };
+      entry.total++;
+      if (status === "pending") entry.pending++;
+      else if (status === "approved") entry.approved++;
+      else if (status === "blocked") entry.blocked++;
+      countMap.set(m.class_id, entry);
     });
 
-    const enriched: ClassItem[] = (classesData ?? []).map((c: any) => ({
-      ...c,
-      member_count: countMap.get(c.id) || 0,
-    }));
+    const enriched: ClassItem[] = (classesData ?? []).map((c: any) => {
+      const counts = countMap.get(c.id) || { total: 0, pending: 0, approved: 0, blocked: 0 };
+      return {
+        ...c,
+        member_count: counts.total,
+        pending_count: counts.pending,
+        approved_count: counts.approved,
+        blocked_count: counts.blocked,
+      };
+    });
 
     setClasses(enriched);
     setLoading(false);
