@@ -127,11 +127,17 @@ const TeacherTextbooksManager = () => {
       tbLessons = data ?? [];
     }
 
+    // 2b. Load lessons placed via lesson_placements for this subject
+    const { data: placementData } = await supabase
+      .from("lesson_placements")
+      .select("*, teacher_textbook_lessons(id, title, status, blocks, sort_order)")
+      .eq("subject_slug", subjectSlug);
+
     // 3. Load subject grades
     const matchedSubject = subjects?.find(s => s.slug === subjectSlug);
     const grades = matchedSubject?.grades ?? [];
 
-    // 4. Build grade groups - only from textbook_lessons (single source of truth)
+    // 4. Build grade groups
     const groups: GradeGroup[] = grades.map(g => {
       const gradeTopics = (topics ?? [])
         .filter((t: any) => t.grade === g.grade_number)
@@ -146,12 +152,29 @@ const TeacherTextbooksManager = () => {
               blocks: (l.blocks as Block[]) ?? [],
             }));
 
+          // Add lessons from placements for this topic+grade
+          const placedLessons = (placementData ?? [])
+            .filter((p: any) => p.topic_id === t.id && p.grade_number === g.grade_number && p.teacher_textbook_lessons)
+            .map((p: any) => ({
+              id: p.teacher_textbook_lessons.id,
+              title: p.teacher_textbook_lessons.title,
+              sort_order: p.teacher_textbook_lessons.sort_order ?? 0,
+              status: p.teacher_textbook_lessons.status ?? "draft",
+              blocks: (p.teacher_textbook_lessons.blocks as Block[]) ?? [],
+            }));
+
+          // Deduplicate by id
+          const allLessons = [...topicLessons];
+          for (const pl of placedLessons) {
+            if (!allLessons.some(l => l.id === pl.id)) allLessons.push(pl);
+          }
+
           return {
             id: t.id,
             title: t.title,
             grade: t.grade,
             sort_order: t.sort_order ?? 0,
-            lessons: topicLessons,
+            lessons: allLessons,
           } as TopicWithLessons;
         });
 
