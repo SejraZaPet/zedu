@@ -424,9 +424,61 @@ const TeacherTextbooksManager = () => {
             {/* Grade-based structure from global tables */}
             {gradeGroups.length > 0 && (
               <div className="space-y-4">
-                <h3 className="font-heading text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                  Struktura předmětu ({totalLessons} lekcí celkem)
-                </h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="font-heading text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                    Struktura předmětu ({totalLessons} lekcí celkem)
+                  </h3>
+                  <Button size="sm" variant="outline" onClick={() => {
+                    const firstGrade = matchedSubject?.grades[0]?.grade_number ?? 1;
+                    setNewTopicGrade(firstGrade);
+                    setNewTopicTitle("");
+                    setCreateTopicOpen(true);
+                  }}>
+                    <Plus className="w-4 h-4 mr-1" />Přidat téma
+                  </Button>
+                </div>
+
+                {/* Create topic dialog */}
+                <Dialog open={createTopicOpen} onOpenChange={setCreateTopicOpen}>
+                  <DialogContent>
+                    <DialogHeader><DialogTitle>Nové téma</DialogTitle></DialogHeader>
+                    <div className="space-y-4 mt-2">
+                      <div>
+                        <Label>Název tématu</Label>
+                        <Input value={newTopicTitle} onChange={(e) => setNewTopicTitle(e.target.value)} className="mt-1" placeholder="např. Hygiena v kuchyni" />
+                      </div>
+                      <div>
+                        <Label>Ročník</Label>
+                        <Select value={String(newTopicGrade)} onValueChange={(v) => setNewTopicGrade(Number(v))}>
+                          <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {matchedSubject?.grades.map(g => (
+                              <SelectItem key={g.grade_number} value={String(g.grade_number)}>{g.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Button onClick={handleCreateTopic} disabled={saving || !newTopicTitle.trim()} className="w-full">
+                        {saving ? "Vytvářím..." : "Vytvořit téma"}
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+
+                {/* Rename topic dialog */}
+                <Dialog open={!!editingTopic} onOpenChange={(open) => { if (!open) setEditingTopic(null); }}>
+                  <DialogContent>
+                    <DialogHeader><DialogTitle>Přejmenovat téma</DialogTitle></DialogHeader>
+                    <div className="space-y-4 mt-2">
+                      <div>
+                        <Label>Název tématu</Label>
+                        <Input value={editingTopic?.title ?? ""} onChange={(e) => setEditingTopic(editingTopic ? { ...editingTopic, title: e.target.value } : null)} className="mt-1" />
+                      </div>
+                      <Button onClick={handleRenameTopic} disabled={!editingTopic?.title.trim()} className="w-full">Uložit</Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+
                 {gradeGroups.map((group) => (
                   <div key={group.grade} className="border border-border rounded-lg overflow-hidden">
                     <div className="bg-muted/30 px-4 py-2 border-b border-border">
@@ -440,10 +492,16 @@ const TeacherTextbooksManager = () => {
                           <div key={topic.id} className="border border-border rounded-md">
                             <div className="flex items-center gap-2 px-3 py-2 bg-card">
                               <FolderOpen className="w-4 h-4 text-primary" />
-                              <span className="text-sm font-medium">{topic.title}</span>
-                              <Badge variant="secondary" className="text-[10px] ml-auto">
+                              <span className="text-sm font-medium flex-1">{topic.title}</span>
+                              <Badge variant="secondary" className="text-[10px]">
                                 {topic.lessons.length} {topic.lessons.length === 1 ? "lekce" : "lekcí"}
                               </Badge>
+                              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditingTopic({ id: topic.id, title: topic.title })}>
+                                <Pencil className="w-3.5 h-3.5" />
+                              </Button>
+                              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleDeleteTopic(topic.id, topic.lessons.length)}>
+                                <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                              </Button>
                             </div>
                             {topic.lessons.length > 0 && (
                               <div className="border-t border-border divide-y divide-border">
