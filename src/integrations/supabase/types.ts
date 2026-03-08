@@ -50,6 +50,78 @@ export type Database = {
         }
         Relationships: []
       }
+      class_members: {
+        Row: {
+          class_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_members_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      classes: {
+        Row: {
+          archived: boolean
+          created_at: string
+          description: string
+          field_of_study: string
+          id: string
+          name: string
+          school: string
+          updated_at: string
+          year: number | null
+        }
+        Insert: {
+          archived?: boolean
+          created_at?: string
+          description?: string
+          field_of_study?: string
+          id?: string
+          name: string
+          school?: string
+          updated_at?: string
+          year?: number | null
+        }
+        Update: {
+          archived?: boolean
+          created_at?: string
+          description?: string
+          field_of_study?: string
+          id?: string
+          name?: string
+          school?: string
+          updated_at?: string
+          year?: number | null
+        }
+        Relationships: []
+      }
       lesson_topic_assignments: {
         Row: {
           created_at: string
