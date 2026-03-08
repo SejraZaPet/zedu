@@ -20,6 +20,7 @@ interface Props {
   tokens?: FillBlankToken[];
   caseSensitive?: boolean;
   diacriticSensitive?: boolean;
+  onComplete?: (score: number, maxScore: number) => void;
 }
 
 const normalize = (s: string, caseSensitive: boolean, diacriticSensitive: boolean) => {
