@@ -34,7 +34,7 @@ const Hero = () => {
       <div 
         className="absolute inset-0 pointer-events-none" 
         style={{
-          background: 'linear-gradient(180deg, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.25) 50%, rgba(0,0,0,0.05) 100%)'
+          background: 'linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.35) 30%, rgba(0,0,0,0.20) 55%, rgba(0,0,0,0.05) 100%)'
         }}
       />
 
@@ -45,7 +45,7 @@ const Hero = () => {
           <img
             src={heroLogo}
             alt="Zedu"
-            className="h-32 md:h-44 w-auto mx-auto"
+            className="h-24 md:h-32 w-auto mx-auto"
           />
         </div>
 
@@ -78,8 +78,11 @@ const Hero = () => {
             {features.map((feature, i) => (
               <div
                 key={feature.title}
-                className="group bg-card/90 backdrop-blur-sm border border-border rounded-2xl p-6 card-shadow hover:card-shadow-hover transition-all duration-300 animate-fade-in-up"
-                style={{ animationDelay: `${0.5 + i * 0.1}s` }}
+                className="group bg-card/80 backdrop-blur-md border border-border rounded-2xl p-6 transition-all duration-300 animate-fade-in-up hover:shadow-lg"
+                style={{ 
+                  animationDelay: `${0.5 + i * 0.1}s`,
+                  boxShadow: '0 20px 40px rgba(0,0,0,0.15)'
+                }}
               >
                 <div className="w-10 h-10 rounded-xl bg-primary/[0.08] flex items-center justify-center mb-4 group-hover:bg-primary/[0.12] transition-colors">
                   <feature.icon size={20} className="text-primary" />
