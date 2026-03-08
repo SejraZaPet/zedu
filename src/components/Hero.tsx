@@ -1,4 +1,4 @@
-import { BookOpen, Sparkles, Wrench } from "lucide-react";
+import { BookOpen, Sparkles, GraduationCap } from "lucide-react";
 import heroLogo from "@/assets/zedu-hero-logo.png";
 
 const features = [
@@ -13,9 +13,9 @@ const features = [
     description: "Přidávejte kvízy, procvičování a interaktivní prvky.",
   },
   {
-    icon: Wrench,
-    title: "Nástroje pro učitele",
-    description: "Jednoduché nástroje navržené pro moderní výuku.",
+    icon: GraduationCap,
+    title: "Pro žáky",
+    description: "Procvičujte učivo, řešte interaktivní úkoly a sledujte svůj pokrok.",
   },
 ];
 
