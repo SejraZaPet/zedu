@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Menu, X, LogIn, LogOut } from "lucide-react";
+import { Menu, X, LogIn, LogOut, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo.png";
 import { Button } from "@/components/ui/button";
@@ -76,10 +76,16 @@ const SiteHeader = () => {
             ))}
           </nav>
           {isLoggedIn ? (
-            <Button variant="outline" size="sm" onClick={handleLogout} className="gap-2 border-border text-muted-foreground hover:text-primary">
-              <LogOut size={16} />
-              Odhlásit
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" onClick={() => navigate("/profil")} className="gap-2 text-muted-foreground hover:text-primary">
+                <User size={16} />
+                Profil
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleLogout} className="gap-2 border-border text-muted-foreground hover:text-primary">
+                <LogOut size={16} />
+                Odhlásit
+              </Button>
+            </div>
           ) : (
             <Button variant="outline" size="sm" onClick={() => navigate("/auth")} className="gap-2 border-border text-muted-foreground hover:text-primary">
               <LogIn size={16} />
@@ -114,9 +120,14 @@ const SiteHeader = () => {
               </a>
             ))}
             {isLoggedIn ? (
-              <button onClick={() => { setMenuOpen(false); handleLogout(); }} className="text-base font-medium text-muted-foreground hover:text-primary transition-colors text-left flex items-center gap-2">
-                <LogOut size={16} /> Odhlásit
-              </button>
+              <>
+                <button onClick={() => { setMenuOpen(false); navigate("/profil"); }} className="text-base font-medium text-muted-foreground hover:text-primary transition-colors text-left flex items-center gap-2">
+                  <User size={16} /> Profil
+                </button>
+                <button onClick={() => { setMenuOpen(false); handleLogout(); }} className="text-base font-medium text-muted-foreground hover:text-primary transition-colors text-left flex items-center gap-2">
+                  <LogOut size={16} /> Odhlásit
+                </button>
+              </>
             ) : (
               <button onClick={() => { setMenuOpen(false); navigate("/auth"); }} className="text-base font-medium text-muted-foreground hover:text-primary transition-colors text-left flex items-center gap-2">
                 <LogIn size={16} /> Přihlásit
