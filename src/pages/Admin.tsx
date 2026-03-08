@@ -1,8 +1,6 @@
 import { useState } from "react";
 import { useAdmin } from "@/hooks/useAdmin";
 import LessonsManager from "@/components/admin/LessonsManager";
-import ArticlesManager from "@/components/admin/ArticlesManager";
-import PodcastManager from "@/components/admin/PodcastManager";
 import TextbooksManager from "@/components/admin/TextbooksManager";
 import SubjectsManager from "@/components/admin/SubjectsManager";
 import UsersManager from "@/components/admin/UsersManager";
@@ -10,14 +8,12 @@ import ClassesManager from "@/components/admin/ClassesManager";
 import ClassResultsManager from "@/components/admin/ClassResultsManager";
 import AdminDashboard from "@/components/admin/AdminDashboard";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Coffee, Mic, LogOut, Home, GraduationCap, Settings, Users, School, BarChart3, LayoutDashboard } from "lucide-react";
+import { BookOpen, LogOut, Home, GraduationCap, Settings, Users, School, BarChart3, LayoutDashboard } from "lucide-react";
 
 const tabs = [
   { id: "dashboard", label: "Přehled", icon: LayoutDashboard },
   { id: "textbooks", label: "Učebnice", icon: GraduationCap },
   { id: "lessons", label: "Lekce", icon: BookOpen },
-  { id: "articles", label: "Ke kávě", icon: Coffee },
-  { id: "podcast", label: "Podcast", icon: Mic },
   { id: "subjects", label: "Předměty", icon: Settings },
   { id: "users", label: "Uživatelé", icon: Users },
   { id: "classes", label: "Třídy", icon: School },
@@ -77,8 +73,6 @@ const Admin = () => {
         {activeTab === "dashboard" && <AdminDashboard onNavigate={(tab) => setActiveTab(tab as Tab)} />}
         {activeTab === "textbooks" && <TextbooksManager />}
         {activeTab === "lessons" && <LessonsManager />}
-        {activeTab === "articles" && <ArticlesManager />}
-        {activeTab === "podcast" && <PodcastManager />}
         {activeTab === "subjects" && <SubjectsManager />}
         {activeTab === "users" && <UsersManager />}
         {activeTab === "classes" && <ClassesManager />}

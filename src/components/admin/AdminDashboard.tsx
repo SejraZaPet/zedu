@@ -226,12 +226,6 @@ const AdminDashboard = ({ onNavigate }: Props) => {
           <Button size="sm" variant="outline" className="gap-1.5" onClick={() => onNavigate("textbooks")}>
             <Plus className="w-4 h-4" /> Přidat lekci
           </Button>
-          <Button size="sm" variant="outline" className="gap-1.5" onClick={() => onNavigate("articles")}>
-            <Coffee className="w-4 h-4" /> Přidat článek
-          </Button>
-          <Button size="sm" variant="outline" className="gap-1.5" onClick={() => onNavigate("podcast")}>
-            <Mic className="w-4 h-4" /> Přidat epizodu
-          </Button>
           <Button size="sm" variant="outline" className="gap-1.5" onClick={() => onNavigate("classes")}>
             <School className="w-4 h-4" /> Spravovat třídy
           </Button>
