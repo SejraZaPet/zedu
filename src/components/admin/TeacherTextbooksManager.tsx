@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import BlockEditor from "./BlockEditor";
 import LessonPreviewDialog from "./LessonPreviewDialog";
+import LessonPlacementEditor, { savePlacements, type Placement } from "./LessonPlacementEditor";
 import { useSubjects, type SubjectRecord } from "@/hooks/useSubjects";
 import type { Block } from "@/lib/textbook-config";
 import {
