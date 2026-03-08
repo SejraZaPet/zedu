@@ -45,6 +45,9 @@ interface ClassItem {
   member_count: number;
   access_code: string | null;
   access_code_active: boolean;
+  pending_count: number;
+  approved_count: number;
+  blocked_count: number;
 }
 
 const ClassesManager = () => {
