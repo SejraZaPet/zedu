@@ -189,7 +189,7 @@ const TeacherLessons = () => {
                   <Button size="sm" variant="ghost" onClick={() => toggleStatus(lesson)} title={lesson.status === "published" ? "Skrýt" : "Publikovat"}>
                     {lesson.status === "published" ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </Button>
-                  <Button size="sm" variant="ghost" onClick={() => setEditingLesson(lesson)}>
+                  <Button size="sm" variant="ghost" onClick={() => openEditor(lesson)}>
                     <Pencil className="w-4 h-4" />
                   </Button>
                   <Button size="sm" variant="ghost" onClick={() => handleDelete(lesson.id)}>
@@ -204,13 +204,17 @@ const TeacherLessons = () => {
       <SiteFooter />
 
       {editingLesson && (
-        <LessonEditorSheet
-          open={!!editingLesson}
-          onOpenChange={(open) => { if (!open) setEditingLesson(null); }}
-          lessonTitle={editingLesson.title}
-          blocks={editingLesson.blocks || []}
-          onSave={handleSaveBlocks}
-        />
+        <Sheet open={!!editingLesson} onOpenChange={(open) => { if (!open) setEditingLesson(null); }}>
+          <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+            <SheetHeader>
+              <SheetTitle>Úprava: {editingLesson.title}</SheetTitle>
+            </SheetHeader>
+            <div className="mt-4 space-y-4">
+              <BlockEditor blocks={editBlocks} onChange={setEditBlocks} />
+              <Button onClick={handleSaveBlocks} className="w-full">Uložit bloky</Button>
+            </div>
+          </SheetContent>
+        </Sheet>
       )}
     </div>
   );
