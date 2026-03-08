@@ -111,7 +111,7 @@ const Auth = () => {
       return;
     }
 
-    const { error: signUpError } = await supabase.auth.signUp({
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email: regEmail,
       password: regPassword,
       options: {
@@ -121,6 +121,7 @@ const Auth = () => {
           school,
           field_of_study: fieldOfStudy,
           year: year || null,
+          class_code: classCode.trim() || null,
         },
         emailRedirectTo: window.location.origin,
       },
