@@ -29,6 +29,7 @@ const Auth = () => {
   const [school, setSchool] = useState("");
   const [fieldOfStudy, setFieldOfStudy] = useState("");
   const [year, setYear] = useState("");
+  const [classCode, setClassCode] = useState("");
 
   useEffect(() => {
     const checkSession = async () => {
