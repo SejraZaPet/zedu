@@ -132,6 +132,13 @@ const Auth = () => {
       return;
     }
 
+    // If class code provided, try to join class
+    if (classCode.trim()) {
+      // We need to wait for the user to be created, then call the function
+      // The join will happen via the edge function or we store it for post-confirmation
+      // Since user might not be confirmed yet, store code in metadata
+    }
+
     toast({
       title: "Registrace úspěšná",
       description: "Potvrďte svůj e-mail a vyčkejte na schválení účtu administrátorem.",
