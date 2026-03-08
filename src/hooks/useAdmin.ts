@@ -21,14 +21,15 @@ export const useAdmin = () => {
         return;
       }
 
-      // Check account status
+      // Check account status (if profile exists; legacy admins may not have one)
       const { data: profile } = await supabase
         .from("profiles")
         .select("status")
         .eq("id", session.user.id)
         .single();
 
-      if (profile?.status !== "approved") {
+      // If profile exists and is not approved, block access (except if no profile = legacy admin)
+      if (profile && profile.status !== "approved") {
         await supabase.auth.signOut();
         navigate("/auth");
         return;
