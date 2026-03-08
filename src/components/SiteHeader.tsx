@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo.png";
 
 const navItems = [
-  { label: "Učebnice", href: "#ucebnice" },
-  { label: "Ke kávě", href: "#ke-kave" },
-  { label: "Podcast", href: "#podcast" },
-  { label: "O projektu", href: "#o-projektu" },
+  { label: "Učebnice", href: "#ucebnice", protected: true },
+  { label: "Ke kávě", href: "#ke-kave", protected: false },
+  { label: "Podcast", href: "#podcast", protected: false },
+  { label: "O projektu", href: "#o-projektu", protected: false },
 ];
 
 const SiteHeader = () => {
