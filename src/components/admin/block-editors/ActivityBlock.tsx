@@ -19,6 +19,7 @@ const ACTIVITY_TYPES = [
   { value: "quiz", label: "Kvíz" },
   { value: "matching", label: "Přiřazování A–B" },
   { value: "sorting", label: "Třídění do skupin" },
+  { value: "ordering", label: "Seřaď pořadí" },
   { value: "image_label", label: "Popis obrázku (slepá mapa)" },
   { value: "fill_blanks", label: "Doplň slova" },
 ];
