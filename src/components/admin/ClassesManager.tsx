@@ -43,6 +43,8 @@ interface ClassItem {
   archived: boolean;
   created_at: string;
   member_count: number;
+  access_code: string | null;
+  access_code_active: boolean;
 }
 
 const ClassesManager = () => {
