@@ -9,9 +9,10 @@ interface Statement {
 
 interface Props {
   statements: Statement[];
+  onComplete?: (score: number, maxScore: number) => void;
 }
 
-const TrueFalseActivity = ({ statements = [] }: Props) => {
+const TrueFalseActivity = ({ statements = [], onComplete }: Props) => {
   const [answers, setAnswers] = useState<(boolean | null)[]>(() =>
     statements.map(() => null)
   );
