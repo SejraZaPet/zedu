@@ -5,6 +5,7 @@ import FlashcardsActivity from "@/components/activities/FlashcardsActivity";
 import QuizActivity from "@/components/activities/QuizActivity";
 import MatchingActivity from "@/components/activities/MatchingActivity";
 import SortingActivity from "@/components/activities/SortingActivity";
+import OrderingActivity from "@/components/activities/OrderingActivity";
 import ImageLabelActivity from "@/components/activities/ImageLabelActivity";
 import FillBlanksActivity from "@/components/activities/FillBlanksActivity";
 
