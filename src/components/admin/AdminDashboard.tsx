@@ -52,9 +52,10 @@ const activityTypeLabels: Record<string, string> = {
 
 interface Props {
   onNavigate: (tab: string) => void;
+  isTeacher?: boolean;
 }
 
-const AdminDashboard = ({ onNavigate }: Props) => {
+const AdminDashboard = ({ onNavigate, isTeacher = false }: Props) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats>({
