@@ -1026,6 +1026,34 @@ const RevealCardsEditor = ({ props, onChange }: { props: any; onChange: (p: any)
   );
 };
 
+const MemoryGameEditor = ({ props, onChange }: { props: any; onChange: (p: any) => void }) => {
+  const mg = props.memoryGame || { pairs: [{ left: "", right: "" }] };
+  const updatePair = (idx: number, field: string, val: string) => {
+    const pairs = mg.pairs.map((p: any, i: number) => (i === idx ? { ...p, [field]: val } : p));
+    onChange({ ...props, memoryGame: { ...mg, pairs } });
+  };
+  return (
+    <div className="space-y-3">
+      <p className="text-xs text-muted-foreground">Zadejte dvojice – např. pojem a jeho definici. Student hledá shodné páry.</p>
+      {mg.pairs.map((pair: any, i: number) => (
+        <div key={i} className="flex items-center gap-2">
+          <Input className="flex-1" placeholder={`Pojem ${i + 1}`} value={pair.left} onChange={(e) => updatePair(i, "left", e.target.value)} />
+          <span className="text-muted-foreground text-xs">↔</span>
+          <Input className="flex-1" placeholder={`Definice ${i + 1}`} value={pair.right} onChange={(e) => updatePair(i, "right", e.target.value)} />
+          {mg.pairs.length > 1 && (
+            <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => onChange({ ...props, memoryGame: { ...mg, pairs: mg.pairs.filter((_: any, j: number) => j !== i) } })}>
+              <Trash2 className="w-3 h-3" />
+            </Button>
+          )}
+        </div>
+      ))}
+      <Button variant="outline" size="sm" onClick={() => onChange({ ...props, memoryGame: { ...mg, pairs: [...mg.pairs, { left: "", right: "" }] } })}>
+        <Plus className="w-3 h-3 mr-1" />Přidat pár
+      </Button>
+    </div>
+  );
+};
+
 const ActivityBlock = ({ block, onChange }: Props) => {
   const p = block.props;
   const activityType = p.activityType || "flashcards";
