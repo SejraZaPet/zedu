@@ -128,6 +128,58 @@ export type Database = {
         }
         Relationships: []
       }
+      lesson_placements: {
+        Row: {
+          class_id: string | null
+          created_at: string
+          grade_number: number
+          id: string
+          lesson_id: string
+          subject_slug: string
+          topic_id: string | null
+        }
+        Insert: {
+          class_id?: string | null
+          created_at?: string
+          grade_number: number
+          id?: string
+          lesson_id: string
+          subject_slug: string
+          topic_id?: string | null
+        }
+        Update: {
+          class_id?: string | null
+          created_at?: string
+          grade_number?: number
+          id?: string
+          lesson_id?: string
+          subject_slug?: string
+          topic_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_placements_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lesson_placements_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_textbook_lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lesson_placements_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "textbook_topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lesson_topic_assignments: {
         Row: {
           created_at: string
