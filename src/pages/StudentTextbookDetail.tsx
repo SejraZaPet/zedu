@@ -57,7 +57,7 @@ const StudentTextbookDetail = () => {
           <h1 className="font-heading text-2xl font-bold mb-6">{selectedLesson.title}</h1>
           <div className="space-y-6">
             {(selectedLesson.blocks || []).map((block: any, idx: number) => (
-              <LessonBlockRenderer key={idx} block={block} lessonId={selectedLesson.id} blockIndex={idx} />
+              <LessonBlockRenderer key={idx} block={block} blockIndex={idx} />
             ))}
           </div>
           {(!selectedLesson.blocks || selectedLesson.blocks.length === 0) && (
