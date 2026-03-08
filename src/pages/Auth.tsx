@@ -87,9 +87,9 @@ const Auth = () => {
       .limit(1);
 
     if (roles?.some(r => r.role === "admin")) {
-      navigate("/admin");
+      navigate(redirectTo || "/admin");
     } else {
-      navigate("/student");
+      navigate(redirectTo || "/student");
     }
   };
 
