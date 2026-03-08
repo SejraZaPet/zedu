@@ -271,6 +271,12 @@ export const LessonBlock = ({ block }: { block: Block }) => {
               diacriticSensitive={p.fillBlanks.diacriticSensitive}
             />
           )}
+          {at === "fill_choice" && p.fillChoice && (
+            <FillChoiceActivity
+              tokens={p.fillChoice.tokens || []}
+              options={p.fillChoice.options || []}
+            />
+          )}
         </div>
       );
     }

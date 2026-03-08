@@ -94,7 +94,7 @@ export const createDefaultBlock = (type: BlockType): Block => {
     case "summary":
       return { ...base, props: { title: "Shrnutí lekce", text: "" } };
     case "activity":
-      return { ...base, props: { activityType: "flashcards", title: "Aktivita", flashcards: [{ front: "", back: "" }], quiz: { question: "", answers: [{ text: "", correct: false }], explanation: "" }, matching: { left: [""], right: [""] }, sorting: { groups: ["Skupina 1", "Skupina 2"], items: [{ text: "", group: 0 }] }, ordering: { items: [""] }, imageLabel: { imageUrl: "", markers: [], tolerance: 5, shuffleWords: true }, imageHotspot: { imageUrl: "", hotspots: [] }, fillBlanks: { text: "", caseSensitive: false, diacriticSensitive: true } } };
+      return { ...base, props: { activityType: "flashcards", title: "Aktivita", flashcards: [{ front: "", back: "" }], quiz: { question: "", answers: [{ text: "", correct: false }], explanation: "" }, matching: { left: [""], right: [""] }, sorting: { groups: ["Skupina 1", "Skupina 2"], items: [{ text: "", group: 0 }] }, ordering: { items: [""] }, imageLabel: { imageUrl: "", markers: [], tolerance: 5, shuffleWords: true }, imageHotspot: { imageUrl: "", hotspots: [] }, fillBlanks: { text: "", caseSensitive: false, diacriticSensitive: true }, fillChoice: { tokens: [], options: [] } } };
     default:
       return { ...base, props: {} };
   }
