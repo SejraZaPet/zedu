@@ -57,7 +57,12 @@ const Auth = () => {
     const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
 
     if (authError) {
-      setError("Nesprávné přihlašovací údaje.");
+      // Supabase returns "Email not confirmed" when email is not verified
+      if (authError.message?.toLowerCase().includes("email not confirmed")) {
+        setError("Nejprve potvrďte svůj e-mail prostřednictvím odkazu, který jsme vám poslali.");
+      } else {
+        setError("Nesprávné přihlašovací údaje.");
+      }
       setLoading(false);
       return;
     }
