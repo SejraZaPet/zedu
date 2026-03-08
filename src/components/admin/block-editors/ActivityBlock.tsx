@@ -16,19 +16,19 @@ interface Props {
 }
 
 const ACTIVITY_TYPES = [
-  { value: "flashcards", label: "Otáčecí kartičky" },
+  { value: "fill_choice", label: "Doplň z nabídky" },
+  { value: "fill_blanks", label: "Doplň slova" },
+  { value: "image_hotspot", label: "Klikni na správnou část" },
+  { value: "crossword", label: "Křížovka" },
   { value: "quiz", label: "Kvíz" },
-  { value: "true_false", label: "Pravda / Nepravda" },
-  { value: "matching", label: "Přiřazování A–B" },
-  { value: "sorting", label: "Třídění do skupin" },
-  { value: "ordering", label: "Seřaď pořadí" },
+  { value: "flashcards", label: "Otáčecí kartičky" },
   { value: "reveal_cards", label: "Otevři kartičku" },
   { value: "memory_game", label: "Pexeso" },
-  { value: "crossword", label: "Křížovka" },
   { value: "image_label", label: "Popis obrázku (slepá mapa)" },
-  { value: "image_hotspot", label: "Klikni na správnou část" },
-  { value: "fill_blanks", label: "Doplň slova" },
-  { value: "fill_choice", label: "Doplň z nabídky" },
+  { value: "true_false", label: "Pravda / Nepravda" },
+  { value: "matching", label: "Přiřazování A–B" },
+  { value: "ordering", label: "Seřaď pořadí" },
+  { value: "sorting", label: "Třídění do skupin" },
 ];
 
 const FlashcardsEditor = ({ props, onChange }: { props: any; onChange: (p: any) => void }) => {
