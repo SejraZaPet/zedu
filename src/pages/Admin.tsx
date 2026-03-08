@@ -79,6 +79,7 @@ const Admin = () => {
         {activeTab === "podcast" && <PodcastManager />}
         {activeTab === "subjects" && <SubjectsManager />}
         {activeTab === "users" && <UsersManager />}
+        {activeTab === "classes" && <ClassesManager />}
       </div>
     </div>
   );
