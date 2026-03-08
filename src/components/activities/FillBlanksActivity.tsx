@@ -64,7 +64,7 @@ const tokensToSegments = (tokens: FillBlankToken[]): { segments: (string | numbe
   return { segments, blanks };
 };
 
-const FillBlanksActivity = ({ text, tokens, caseSensitive = false, diacriticSensitive = true }: Props) => {
+const FillBlanksActivity = ({ text, tokens, caseSensitive = false, diacriticSensitive = true, onComplete }: Props) => {
   const { segments, blanks } = useMemo(() => {
     // Prefer tokens format, fall back to legacy text
     if (tokens && tokens.length > 0) return tokensToSegments(tokens);
