@@ -12,6 +12,7 @@ import TopicPage from "./pages/TopicPage";
 import LessonPage from "./pages/LessonPage";
 import PodcastDetailPage from "./pages/PodcastDetailPage";
 import StudentDashboard from "./pages/StudentDashboard";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -25,11 +26,11 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/admin" element={<Admin />} />
-          <Route path="/student" element={<StudentDashboard />} />
+          <Route path="/student" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
           <Route path="/podcast/:episodeId" element={<PodcastDetailPage />} />
-          <Route path="/ucebnice/:subjectId" element={<SubjectPage />} />
-          <Route path="/ucebnice/:subjectId/:grade/:topicSlug" element={<TopicPage />} />
-          <Route path="/ucebnice/:subjectId/:grade/:topicSlug/:lessonSlug" element={<LessonPage />} />
+          <Route path="/ucebnice/:subjectId" element={<ProtectedRoute><SubjectPage /></ProtectedRoute>} />
+          <Route path="/ucebnice/:subjectId/:grade/:topicSlug" element={<ProtectedRoute><TopicPage /></ProtectedRoute>} />
+          <Route path="/ucebnice/:subjectId/:grade/:topicSlug/:lessonSlug" element={<ProtectedRoute><LessonPage /></ProtectedRoute>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

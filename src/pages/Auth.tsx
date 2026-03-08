@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,8 @@ import { useToast } from "@/hooks/use-toast";
 
 const Auth = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectTo = searchParams.get("redirect");
   const { toast } = useToast();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [loading, setLoading] = useState(false);
@@ -34,14 +36,14 @@ const Auth = () => {
       if (session) {
         const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", session.user.id).limit(1);
         if (roles?.some(r => r.role === "admin")) {
-          navigate("/admin");
+          navigate(redirectTo || "/admin");
         } else {
-          navigate("/student");
+          navigate(redirectTo || "/student");
         }
       }
     };
     checkSession();
-  }, [navigate]);
+  }, [navigate, redirectTo]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,9 +87,9 @@ const Auth = () => {
       .limit(1);
 
     if (roles?.some(r => r.role === "admin")) {
-      navigate("/admin");
+      navigate(redirectTo || "/admin");
     } else {
-      navigate("/student");
+      navigate(redirectTo || "/student");
     }
   };
 
