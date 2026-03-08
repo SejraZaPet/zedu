@@ -996,6 +996,35 @@ const TrueFalseEditor = ({ props, onChange }: { props: any; onChange: (p: any) =
   );
 };
 
+const RevealCardsEditor = ({ props, onChange }: { props: any; onChange: (p: any) => void }) => {
+  const rc = props.revealCards || { cards: [{ title: "", content: "" }] };
+  const updateCard = (idx: number, field: string, val: string) => {
+    const cards = rc.cards.map((c: any, i: number) => (i === idx ? { ...c, [field]: val } : c));
+    onChange({ ...props, revealCards: { ...rc, cards } });
+  };
+  return (
+    <div className="space-y-3">
+      {rc.cards.map((card: any, i: number) => (
+        <div key={i} className="border border-border rounded-lg p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-muted-foreground">Kartička {i + 1}</span>
+            {rc.cards.length > 1 && (
+              <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive" onClick={() => onChange({ ...props, revealCards: { ...rc, cards: rc.cards.filter((_: any, j: number) => j !== i) } })}>
+                <Trash2 className="w-3 h-3" />
+              </Button>
+            )}
+          </div>
+          <Input placeholder="Název kartičky" value={card.title} onChange={(e) => updateCard(i, "title", e.target.value)} />
+          <Textarea placeholder="Obsah (otázka, úkol, text…)" value={card.content} onChange={(e) => updateCard(i, "content", e.target.value)} rows={2} />
+        </div>
+      ))}
+      <Button variant="outline" size="sm" onClick={() => onChange({ ...props, revealCards: { ...rc, cards: [...rc.cards, { title: "", content: "" }] } })}>
+        <Plus className="w-3 h-3 mr-1" />Přidat kartičku
+      </Button>
+    </div>
+  );
+};
+
 const ActivityBlock = ({ block, onChange }: Props) => {
   const p = block.props;
   const activityType = p.activityType || "flashcards";
