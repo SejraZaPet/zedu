@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 export const useAdmin = () => {
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isTeacher, setIsTeacher] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -41,13 +42,20 @@ export const useAdmin = () => {
         .eq("user_id", session.user.id)
         .limit(1);
 
-      if (!roles || roles.length === 0 || roles[0].role !== "admin") {
+      const userRole = roles?.[0]?.role;
+
+      if (userRole === "admin") {
+        setIsAdmin(true);
+        setIsTeacher(false);
+      } else if (userRole === "teacher") {
+        setIsAdmin(true); // grants access to admin panel
+        setIsTeacher(true);
+      } else {
         await supabase.auth.signOut();
         navigate("/auth");
         return;
       }
 
-      setIsAdmin(true);
       setLoading(false);
     };
 
@@ -60,5 +68,5 @@ export const useAdmin = () => {
     navigate("/");
   };
 
-  return { isAdmin, loading, logout };
+  return { isAdmin, isTeacher, loading, logout };
 };
