@@ -7,9 +7,8 @@ import { Button } from "@/components/ui/button";
 
 const navItems = [
   { label: "Učebnice", href: "/ucebnice", isRoute: true },
-  { label: "Ke kávě", href: "#ke-kave", isRoute: false },
-  { label: "Podcast", href: "#podcast", isRoute: false },
-  { label: "O projektu", href: "#o-projektu", isRoute: false },
+  { label: "Aktivity", href: "#aktivity", isRoute: false },
+  { label: "Pro žáky", href: "#pro-zaky", isRoute: false },
 ];
 
 const SiteHeader = () => {
