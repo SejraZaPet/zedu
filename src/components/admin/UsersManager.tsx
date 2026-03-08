@@ -200,7 +200,7 @@ const UsersManager = () => {
           </TableHeader>
           <TableBody>
             {filtered.map((user) => (
-              <TableRow key={user.id}>
+              <TableRow key={user.id} className="cursor-pointer hover:bg-muted/50" onClick={() => { setSelectedUser(user); setDetailOpen(true); }}>
                 <TableCell className="font-medium whitespace-nowrap">
                   {user.first_name} {user.last_name}
                 </TableCell>
