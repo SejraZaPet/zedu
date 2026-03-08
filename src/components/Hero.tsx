@@ -34,7 +34,7 @@ const Hero = () => {
       <div 
         className="absolute inset-0 pointer-events-none" 
         style={{
-          background: 'linear-gradient(180deg, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.25) 50%, rgba(0,0,0,0.05) 100%)'
+          background: 'linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.35) 30%, rgba(0,0,0,0.20) 55%, rgba(0,0,0,0.05) 100%)'
         }}
       />
 
@@ -45,7 +45,7 @@ const Hero = () => {
           <img
             src={heroLogo}
             alt="Zedu"
-            className="h-32 md:h-44 w-auto mx-auto"
+            className="h-24 md:h-32 w-auto mx-auto"
           />
         </div>
 
