@@ -33,10 +33,12 @@ const PodcastSection = () => {
     <section id="podcast" className="section-padding bg-gradient-surface">
       <div className="container mx-auto max-w-4xl">
         <div className="flex items-center gap-3 mb-4">
-          <Mic className="w-6 h-6 text-primary" />
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+            <Mic className="w-5 h-5 text-primary" />
+          </div>
           <span className="text-sm font-medium uppercase tracking-widest text-primary">Podcast</span>
         </div>
-        <h2 className="font-heading text-3xl md:text-4xl font-semibold mb-12">
+        <h2 className="font-heading text-2xl md:text-[32px] font-bold mb-12 text-foreground">
           Rozhovory & epizody
         </h2>
 
@@ -45,10 +47,10 @@ const PodcastSection = () => {
             <Link
               key={ep.id}
               to={`/podcast/${ep.id}`}
-              className="group flex items-center gap-4 rounded-lg border border-border bg-card p-4 md:p-5 transition-all duration-300 hover:border-primary/30 hover:bg-surface-hover cursor-pointer"
+              className="group flex items-center gap-4 rounded-2xl border border-border bg-card p-4 md:p-5 transition-all duration-300 hover:border-primary/20 hover:-translate-y-0.5 cursor-pointer card-shadow hover:card-shadow-hover"
             >
-              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                <Play className="w-4 h-4 text-primary ml-0.5" />
+              <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-brand flex items-center justify-center">
+                <Play className="w-4 h-4 text-primary-foreground ml-0.5" />
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="font-medium text-card-foreground text-sm md:text-base truncate group-hover:text-primary transition-colors">

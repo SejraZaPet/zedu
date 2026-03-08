@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Menu, X, LogIn, LogOut, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/zedu-logo.png";
 import { Button } from "@/components/ui/button";
 
 const navItems = [
@@ -51,14 +51,14 @@ const SiteHeader = () => {
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled ? "bg-background/95 backdrop-blur-md border-b border-border" : "bg-transparent"
+        isScrolled ? "bg-card/95 backdrop-blur-md border-b border-border shadow-sm" : "bg-transparent"
       }`}
     >
       <div className="container mx-auto flex items-center justify-between h-16 md:h-20 px-4 md:px-8">
-        <button onClick={() => navigate("/")} className="flex items-center gap-2 group cursor-pointer bg-transparent border-none p-0">
-          <img src={logo} alt="Sejra za pět" className="h-8 md:h-10 w-auto invert brightness-200" />
-          <span className="font-heading text-xl md:text-2xl font-semibold text-foreground tracking-wide group-hover:text-primary transition-colors">
-            Sejra<span className="text-primary"> za pět</span>
+        <button onClick={() => navigate("/")} className="flex items-center gap-2.5 group cursor-pointer bg-transparent border-none p-0">
+          <img src={logo} alt="Zedu" className="h-8 md:h-10 w-auto" />
+          <span className="font-heading text-xl md:text-2xl font-bold text-foreground tracking-tight">
+            Zedu
           </span>
         </button>
 
@@ -81,15 +81,15 @@ const SiteHeader = () => {
                 <User size={16} />
                 Profil
               </Button>
-              <Button variant="outline" size="sm" onClick={handleLogout} className="gap-2 border-border text-muted-foreground hover:text-primary">
+              <Button variant="outline" size="sm" onClick={handleLogout} className="gap-2">
                 <LogOut size={16} />
                 Odhlásit
               </Button>
             </div>
           ) : (
-            <Button variant="outline" size="sm" onClick={() => navigate("/auth")} className="gap-2 border-border text-muted-foreground hover:text-primary">
+            <Button variant="hero" size="sm" onClick={() => navigate("/auth")} className="gap-2">
               <LogIn size={16} />
-              Přihlásit
+              Přihlásit se
             </Button>
           )}
         </div>
@@ -104,7 +104,7 @@ const SiteHeader = () => {
       </div>
 
       {menuOpen && (
-        <div className="md:hidden bg-background/98 backdrop-blur-md border-b border-border animate-fade-in">
+        <div className="md:hidden bg-card/98 backdrop-blur-md border-b border-border animate-fade-in">
           <nav className="flex flex-col px-6 py-4 gap-4">
             {navItems.map((item) => (
               <a
@@ -129,9 +129,9 @@ const SiteHeader = () => {
                 </button>
               </>
             ) : (
-              <button onClick={() => { setMenuOpen(false); navigate("/auth"); }} className="text-base font-medium text-muted-foreground hover:text-primary transition-colors text-left flex items-center gap-2">
-                <LogIn size={16} /> Přihlásit
-              </button>
+              <Button variant="hero" size="default" onClick={() => { setMenuOpen(false); navigate("/auth"); }} className="mt-2 w-full justify-center">
+                <LogIn size={16} /> Přihlásit se
+              </Button>
             )}
           </nav>
         </div>

@@ -1,17 +1,19 @@
 import { Mail } from "lucide-react";
+import logo from "@/assets/zedu-logo.png";
 
 const SiteFooter = () => {
   return (
-    <footer className="border-t border-border px-4 py-12 md:px-8">
+    <footer className="border-t border-border px-4 py-12 md:px-8 bg-card">
       <div className="container mx-auto max-w-6xl">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Brand */}
           <div>
-            <h3 className="font-heading text-lg font-semibold mb-2">
-              Sejra <span className="text-primary">za pět</span>
-            </h3>
+            <div className="flex items-center gap-2 mb-3">
+              <img src={logo} alt="Zedu" className="h-8 w-auto" />
+              <span className="font-heading text-xl font-bold text-foreground">Zedu</span>
+            </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              S láskou ke gastronomii do učitelské sborovny.
+              Moderní nástroje pro vzdělávání.
             </p>
           </div>
 
@@ -30,18 +32,18 @@ const SiteFooter = () => {
           <div>
             <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4">Kontakt</h4>
             <a
-              href="mailto:info@sejrazapet.cz"
+              href="mailto:info@zedu.cz"
               className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
             >
               <Mail className="w-4 h-4" />
-              info@sejrazapet.cz
+              info@zedu.cz
             </a>
           </div>
         </div>
 
         <div className="border-t border-border mt-10 pt-6 text-center">
           <p className="text-xs text-muted-foreground">
-            © {new Date().getFullYear()} Sejra za pět. Všechna práva vyhrazena.
+            © {new Date().getFullYear()} Zedu. Všechna práva vyhrazena.
           </p>
         </div>
       </div>
