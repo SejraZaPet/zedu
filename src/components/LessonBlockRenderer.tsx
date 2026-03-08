@@ -244,6 +244,11 @@ export const LessonBlock = ({ block, blockIndex, onActivityComplete }: {
       );
     case "activity": {
       const at = p.activityType || "flashcards";
+      const handleComplete = (score: number, maxScore: number) => {
+        if (onActivityComplete && blockIndex !== undefined) {
+          onActivityComplete(blockIndex, at, score, maxScore);
+        }
+      };
       return (
         <div className="rounded-lg border border-primary/20 bg-card p-5 space-y-3">
           {p.title && <h3 className="font-heading text-lg text-primary uppercase tracking-wide">{p.title}</h3>}
@@ -253,10 +258,10 @@ export const LessonBlock = ({ block, blockIndex, onActivityComplete }: {
             </p>
           )}
           {at === "flashcards" && <FlashcardsActivity cards={p.flashcards || []} />}
-          {at === "quiz" && <QuizActivity quiz={p.quiz} />}
-          {at === "matching" && <MatchingActivity matching={p.matching} />}
-          {at === "sorting" && <SortingActivity sorting={p.sorting} />}
-          {at === "ordering" && p.ordering && <OrderingActivity ordering={p.ordering} />}
+          {at === "quiz" && <QuizActivity quiz={p.quiz} onComplete={handleComplete} />}
+          {at === "matching" && <MatchingActivity matching={p.matching} onComplete={handleComplete} />}
+          {at === "sorting" && <SortingActivity sorting={p.sorting} onComplete={handleComplete} />}
+          {at === "ordering" && p.ordering && <OrderingActivity ordering={p.ordering} onComplete={handleComplete} />}
           {at === "image_label" && p.imageLabel && (
             <ImageLabelActivity
               imageUrl={p.imageLabel.imageUrl}
@@ -277,16 +282,18 @@ export const LessonBlock = ({ block, blockIndex, onActivityComplete }: {
               tokens={p.fillBlanks.tokens}
               caseSensitive={p.fillBlanks.caseSensitive}
               diacriticSensitive={p.fillBlanks.diacriticSensitive}
+              onComplete={handleComplete}
             />
           )}
           {at === "fill_choice" && p.fillChoice && (
             <FillChoiceActivity
               tokens={p.fillChoice.tokens || []}
               options={p.fillChoice.options || []}
+              onComplete={handleComplete}
             />
           )}
           {at === "true_false" && p.trueFalse && (
-            <TrueFalseActivity statements={p.trueFalse.statements || []} />
+            <TrueFalseActivity statements={p.trueFalse.statements || []} onComplete={handleComplete} />
           )}
           {at === "reveal_cards" && p.revealCards && (
             <RevealCardsActivity cards={p.revealCards.cards || []} />

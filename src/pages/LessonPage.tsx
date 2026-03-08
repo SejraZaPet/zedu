@@ -158,8 +158,8 @@ const LessonPage = () => {
               </h1>
 
               <div className="space-y-6">
-                {blocks.filter((b) => b.visible !== false).map((block) => (
-                  <LessonBlock key={block.id} block={block} />
+                {blocks.filter((b) => b.visible !== false).map((block, index) => (
+                  <LessonBlock key={block.id} block={block} blockIndex={index} onActivityComplete={handleActivityComplete} />
                 ))}
               </div>
 
