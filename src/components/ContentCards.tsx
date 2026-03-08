@@ -1,55 +1,39 @@
 import { BookOpen, FileText, Mic, Lightbulb } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 
 const cards = [
   {
     icon: BookOpen,
     title: "Virtuální učebnice",
     description: "Interaktivní materiály pro výuku gastronomie a hotelnictví",
-    href: "#ucebnice",
-    protected: true,
+    href: "/ucebnice",
+    isRoute: true,
   },
   {
     icon: FileText,
     title: "Ke kávě",
     description: "Postřehy, zkušenosti a tipy z praxe pro pedagogy",
     href: "#clanky",
-    protected: false,
+    isRoute: false,
   },
   {
     icon: Mic,
     title: "Podcast",
     description: "Rozhovory o vzdělávání a gastronomii",
     href: "#podcast",
-    protected: false,
+    isRoute: false,
   },
   {
     icon: Lightbulb,
     title: "Projekty & inspirace",
     description: "Nápady a materiály pro oživení vaší výuky",
     href: "#ucebnice",
-    protected: false,
+    isRoute: false,
   },
 ];
 
 const ContentCards = () => {
   const navigate = useNavigate();
-
-  const handleProtectedClick = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-      const el = document.getElementById("ucebnice");
-      if (el) {
-        el.scrollIntoView({ behavior: "smooth" });
-      } else {
-        navigate("/#ucebnice");
-      }
-    } else {
-      navigate("/auth?redirect=%2F%23ucebnice");
-    }
-  };
 
   return (
     <section className="section-padding bg-gradient-surface">
