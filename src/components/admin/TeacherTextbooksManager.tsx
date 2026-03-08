@@ -299,16 +299,19 @@ const TeacherTextbooksManager = () => {
       blocks: editingLesson.blocks as any,
     };
 
+    let savedLessonId = editingLesson.id;
+
     if (isNewLesson) {
-      const { error } = await supabase.from("teacher_textbook_lessons").insert({
+      const { data, error } = await supabase.from("teacher_textbook_lessons").insert({
         ...payload,
         textbook_id: selectedTextbook!.id,
         sort_order: teacherLessons.length,
-      } as any);
+      } as any).select("id").single();
       if (error) {
         toast({ title: "Chyba", description: error.message, variant: "destructive" });
         return;
       }
+      savedLessonId = (data as any).id;
     } else {
       const { error } = await supabase.from("teacher_textbook_lessons")
         .update(payload as any)
@@ -318,9 +321,18 @@ const TeacherTextbooksManager = () => {
         return;
       }
     }
+
+    // Save placements
+    try {
+      await savePlacements(savedLessonId, lessonPlacements);
+    } catch (err: any) {
+      toast({ title: "Chyba při ukládání umístění", description: err.message, variant: "destructive" });
+    }
+
     toast({ title: "Uloženo" });
     setEditingLesson(null);
     setIsNewLesson(false);
+    setLessonPlacements([]);
     fetchDetail();
   };
 
