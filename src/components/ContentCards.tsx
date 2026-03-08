@@ -36,6 +36,16 @@ const cards = [
 const ContentCards = () => {
   const navigate = useNavigate();
 
+  const handleTextbookAccess = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      navigate("/auth?redirect=%2Fucebnice");
+      return;
+    }
+    navigate("/ucebnice");
+  };
+
   return (
     <section className="section-padding bg-gradient-surface">
       <div className="container mx-auto max-w-6xl">
