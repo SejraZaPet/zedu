@@ -690,9 +690,17 @@ export type Database = {
         Returns: string
       }
       is_admin: { Args: never; Returns: boolean }
+      is_enrolled_in_textbook: {
+        Args: { _student_id: string; _textbook_id: string }
+        Returns: boolean
+      }
       join_class_by_code: {
         Args: { _code: string; _user_id: string }
         Returns: string
+      }
+      owns_textbook: {
+        Args: { _teacher_id: string; _textbook_id: string }
+        Returns: boolean
       }
     }
     Enums: {
