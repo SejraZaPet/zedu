@@ -1,0 +1,1 @@
+ALTER TABLE public.teacher_textbooks ENABLE ROW LEVEL SECURITY;
