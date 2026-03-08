@@ -42,20 +42,13 @@ const Hero = () => {
 
         {/* Content */}
         <div className="relative z-10 text-center px-4 max-w-3xl mx-auto py-16 md:py-24">
-          {/* Hero Logo – Text */}
-          <div className="mb-10 animate-fade-in-up">
-            <h2 className="text-[56px] md:text-[64px] font-extrabold tracking-tight text-center">
-              <span className="text-foreground">ZE</span>
-              <span className="text-gradient-brand">du</span>
-            </h2>
-          </div>
 
           {/* Brand headline */}
           <h1
             className="font-heading text-[32px] sm:text-[44px] md:text-[56px] lg:text-[64px] leading-[1.1] font-extrabold tracking-tight mb-8 animate-fade-in-up text-white"
             style={{ animationDelay: "0.1s" }}
           >
-            <span className="text-gradient-brand">Zedu</span>
+            <span className="text-gradient-brand">ZEdu</span>
             <span className="text-white/60 mx-2 md:mx-3">•</span>
             <span className="text-white">Tvoř</span>
             <span className="text-white/60 mx-2 md:mx-3">•</span>
