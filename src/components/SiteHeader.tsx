@@ -76,7 +76,7 @@ const SiteHeader = () => {
                 href={item.isRoute ? undefined : item.href}
                 onClick={(e) => {
                   setMenuOpen(false);
-                  if (item.isRoute) { e.preventDefault(); navigate(item.href); }
+                  if (item.isRoute) { e.preventDefault(); handleTextbookAccess(); }
                 }}
                 className="text-base font-medium text-muted-foreground hover:text-primary transition-colors cursor-pointer"
               >

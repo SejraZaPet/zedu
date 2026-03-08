@@ -50,8 +50,8 @@ const Hero = () => {
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up" style={{ animationDelay: "0.6s" }}>
-          <Button variant="hero" size="lg" asChild>
-            <Link to="/ucebnice">Prozkoumat učebnice</Link>
+          <Button variant="hero" size="lg" onClick={handleTextbookAccess}>
+            Prozkoumat učebnice
           </Button>
           <Button variant="outline-gold" size="lg" asChild>
             <a href="#o-projektu">O projektu</a>
