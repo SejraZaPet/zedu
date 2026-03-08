@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Ban, UserCheck, Shield, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import UserDetailDialog from "./UserDetailDialog";
 import {
   Select,
   SelectContent,
