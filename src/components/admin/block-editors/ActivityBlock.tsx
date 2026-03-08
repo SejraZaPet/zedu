@@ -1098,6 +1098,7 @@ const ActivityBlock = ({ block, onChange }: Props) => {
       {activityType === "fill_choice" && <FillChoiceEditor props={p} onChange={onChange} />}
       {activityType === "true_false" && <TrueFalseEditor props={p} onChange={onChange} />}
       {activityType === "reveal_cards" && <RevealCardsEditor props={p} onChange={onChange} />}
+      {activityType === "memory_game" && <MemoryGameEditor props={p} onChange={onChange} />}
     </div>
   );
 };

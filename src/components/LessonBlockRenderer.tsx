@@ -286,6 +286,9 @@ export const LessonBlock = ({ block }: { block: Block }) => {
           {at === "reveal_cards" && p.revealCards && (
             <RevealCardsActivity cards={p.revealCards.cards || []} />
           )}
+          {at === "memory_game" && p.memoryGame && (
+            <MemoryGameActivity pairs={p.memoryGame.pairs || []} />
+          )}
         </div>
       );
     }
