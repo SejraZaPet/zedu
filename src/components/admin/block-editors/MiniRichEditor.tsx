@@ -158,7 +158,7 @@ const ColorPicker = ({ editor, sz }: { editor: any; sz: string }) => {
   );
 };
 
-
+const MiniRichEditor = ({
   content,
   onChange,
   placeholder = "Začněte psát…",
