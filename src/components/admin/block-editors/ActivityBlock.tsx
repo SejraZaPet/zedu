@@ -1065,13 +1065,9 @@ const CrosswordEditor = ({ props, onChange }: { props: any; onChange: (p: any) =
     onChange({ ...props, crossword: { ...cw, entries } });
   };
 
-  // Dynamic import for preview
   const previewGrid = React.useMemo(() => {
     if (!showPreview) return null;
-    try {
-      const { generateCrosswordGrid } = require("@/lib/crossword-engine");
-      return generateCrosswordGrid(cw.entries.filter((e: any) => e.answer.trim()));
-    } catch { return null; }
+    return generateCrosswordGrid(cw.entries.filter((e: any) => e.answer.trim()));
   }, [showPreview, cw.entries]);
 
   return (
