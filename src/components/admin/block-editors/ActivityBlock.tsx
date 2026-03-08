@@ -22,6 +22,7 @@ const ACTIVITY_TYPES = [
   { value: "sorting", label: "Třídění do skupin" },
   { value: "ordering", label: "Seřaď pořadí" },
   { value: "reveal_cards", label: "Otevři kartičku" },
+  { value: "memory_game", label: "Pexeso" },
   { value: "image_label", label: "Popis obrázku (slepá mapa)" },
   { value: "image_hotspot", label: "Klikni na správnou část" },
   { value: "fill_blanks", label: "Doplň slova" },
