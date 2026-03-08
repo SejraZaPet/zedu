@@ -10,6 +10,7 @@ import ImageHotspotActivity from "@/components/activities/ImageHotspotActivity";
 import ImageLabelActivity from "@/components/activities/ImageLabelActivity";
 import FillBlanksActivity from "@/components/activities/FillBlanksActivity";
 import FillChoiceActivity from "@/components/activities/FillChoiceActivity";
+import TrueFalseActivity from "@/components/activities/TrueFalseActivity";
 
 const extractYouTubeId = (url: string): string | null => {
   if (!url) return null;
