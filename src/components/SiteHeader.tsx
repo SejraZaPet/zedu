@@ -38,9 +38,9 @@ const SiteHeader = () => {
         <nav className="hidden md:flex items-center gap-8">
           {navItems.map((item) => (
             <a
-              key={item.href}
-              href={item.protected ? undefined : item.href}
-              onClick={item.protected ? (e) => { e.preventDefault(); handleProtectedNav(); } : undefined}
+              key={item.label}
+              href={item.isRoute ? undefined : item.href}
+              onClick={item.isRoute ? (e) => { e.preventDefault(); navigate(item.href); } : undefined}
               className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors duration-200 cursor-pointer"
             >
               {item.label}
