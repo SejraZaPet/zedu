@@ -87,6 +87,7 @@ const TeacherTextbooksManager = () => {
   const [newTopicTitle, setNewTopicTitle] = useState("");
   const [newTopicGrade, setNewTopicGrade] = useState<number>(1);
   const [editingTopic, setEditingTopic] = useState<{ id: string; title: string } | null>(null);
+  const [lessonPlacements, setLessonPlacements] = useState<Placement[]>([]);
 
   const fetchTextbooks = async () => {
     setLoading(true);
