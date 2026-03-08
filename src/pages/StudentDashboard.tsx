@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { LogOut, BookOpen, User, GraduationCap, School, BarChart3, Sparkles } from "lucide-react";
+import { LogOut, BookOpen, User, GraduationCap, School, BarChart3, Sparkles, KeyRound } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 
@@ -200,19 +200,19 @@ const StudentDashboard = () => {
               </div>
             </div>
 
-            {/* Quick actions */}
+            {/* Teacher textbooks (via code) */}
             <div className="bg-card border border-border rounded-xl p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <BookOpen className="w-5 h-5 text-primary" />
+                  <KeyRound className="w-5 h-5 text-primary" />
                 </div>
-                <h2 className="font-heading text-lg font-semibold">Učebnice</h2>
+                <h2 className="font-heading text-lg font-semibold">Učebnice od učitelů</h2>
               </div>
               <p className="text-sm text-muted-foreground mb-4">
-                Pokračuj ve studiu z virtuálních učebnic.
+                Přidejte si učebnici pomocí kódu od učitele nebo si prohlédněte své zapsané učebnice.
               </p>
-              <Button onClick={() => navigate("/ucebnice")} variant="outline" className="w-full">
-                Přejít na učebnice
+              <Button onClick={() => navigate("/student/ucebnice")} variant="outline" className="w-full">
+                Moje učebnice
               </Button>
             </div>
           </div>
