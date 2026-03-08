@@ -107,58 +107,28 @@ const TeacherTextbooksManager = () => {
       .eq("subject", subjectSlug)
       .order("sort_order");
 
-    // 2. Load global lessons via topic assignments
+    // 2. Load textbook_lessons directly (single source of truth)
     const topicIds = (topics ?? []).map((t: any) => t.id);
-    let globalLessons: any[] = [];
+    let tbLessons: any[] = [];
     if (topicIds.length > 0) {
-      const { data: assignments } = await supabase
-        .from("lesson_topic_assignments")
-        .select("topic_id, lesson_id")
-        .in("topic_id", topicIds);
-
-      const lessonIds = (assignments ?? []).map((a: any) => a.lesson_id);
-      if (lessonIds.length > 0) {
-        const { data: lessons } = await supabase
-          .from("lessons")
-          .select("*")
-          .in("id", lessonIds);
-        
-        // Map lessons to topics
-        globalLessons = (assignments ?? []).map((a: any) => {
-          const lesson = (lessons ?? []).find((l: any) => l.id === a.lesson_id);
-          return lesson ? { ...lesson, topic_id: a.topic_id } : null;
-        }).filter(Boolean);
-      }
+      const { data } = await supabase
+        .from("textbook_lessons")
+        .select("*")
+        .in("topic_id", topicIds)
+        .order("sort_order");
+      tbLessons = data ?? [];
     }
 
-    // 3. Also load textbook_lessons (newer system)
-    const { data: tbLessons } = await supabase
-      .from("textbook_lessons")
-      .select("*")
-      .in("topic_id", topicIds.length > 0 ? topicIds : ["__none__"])
-      .order("sort_order");
-
-    // 4. Load subject grades
+    // 3. Load subject grades
     const matchedSubject = subjects?.find(s => s.slug === subjectSlug);
     const grades = matchedSubject?.grades ?? [];
 
-    // 5. Build grade groups
+    // 4. Build grade groups - only from textbook_lessons (single source of truth)
     const groups: GradeGroup[] = grades.map(g => {
       const gradeTopics = (topics ?? [])
         .filter((t: any) => t.grade === g.grade_number)
         .map((t: any) => {
-          // Combine lessons from both systems
-          const topicGlobalLessons = globalLessons
-            .filter((l: any) => l.topic_id === t.id)
-            .map((l: any) => ({
-              id: l.id,
-              title: l.title,
-              sort_order: l.sort_order ?? 0,
-              status: "published",
-              blocks: [],
-            }));
-
-          const topicTbLessons = (tbLessons ?? [])
+          const topicLessons = tbLessons
             .filter((l: any) => l.topic_id === t.id)
             .map((l: any) => ({
               id: l.id,
@@ -173,7 +143,7 @@ const TeacherTextbooksManager = () => {
             title: t.title,
             grade: t.grade,
             sort_order: t.sort_order ?? 0,
-            lessons: [...topicGlobalLessons, ...topicTbLessons],
+            lessons: topicLessons,
           } as TopicWithLessons;
         });
 
@@ -182,7 +152,7 @@ const TeacherTextbooksManager = () => {
 
     setGradeGroups(groups);
 
-    // 6. Also load teacher-specific lessons (teacher_textbook_lessons)
+    // 5. Also load teacher-specific lessons (teacher_textbook_lessons)
     const { data: tLessons } = await supabase
       .from("teacher_textbook_lessons")
       .select("*")
