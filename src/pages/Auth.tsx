@@ -133,11 +133,9 @@ const Auth = () => {
       return;
     }
 
-    // If class code provided, try to join class
-    if (classCode.trim()) {
-      // We need to wait for the user to be created, then call the function
-      // The join will happen via the edge function or we store it for post-confirmation
-      // Since user might not be confirmed yet, store code in metadata
+    // If class code was provided, validate it existed
+    if (classCode.trim() && signUpData?.user) {
+      // Code validation happens in the DB trigger; if code is invalid it just won't assign
     }
 
     toast({
