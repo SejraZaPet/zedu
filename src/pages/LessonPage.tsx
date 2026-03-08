@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,6 +8,9 @@ import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import type { Block } from "@/lib/textbook-config";
 import { LessonBlock } from "@/components/LessonBlockRenderer";
+import { Button } from "@/components/ui/button";
+import LessonEditorSheet from "@/components/LessonEditorSheet";
+import { useActivityTracking } from "@/hooks/useActivityTracking";
 import { Button } from "@/components/ui/button";
 import LessonEditorSheet from "@/components/LessonEditorSheet";
 
