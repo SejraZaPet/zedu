@@ -3,13 +3,14 @@ import { useAdmin } from "@/hooks/useAdmin";
 import LessonsManager from "@/components/admin/LessonsManager";
 import TextbooksManager from "@/components/admin/TextbooksManager";
 import TeacherTextbooksManager from "@/components/admin/TeacherTextbooksManager";
+import HelpGuidesManager from "@/components/admin/HelpGuidesManager";
 import SubjectsManager from "@/components/admin/SubjectsManager";
 import UsersManager from "@/components/admin/UsersManager";
 import ClassesManager from "@/components/admin/ClassesManager";
 import ClassResultsManager from "@/components/admin/ClassResultsManager";
 import AdminDashboard from "@/components/admin/AdminDashboard";
 import { Button } from "@/components/ui/button";
-import { BookOpen, LogOut, Home, GraduationCap, Settings, Users, School, BarChart3, LayoutDashboard } from "lucide-react";
+import { BookOpen, LogOut, Home, GraduationCap, Settings, Users, School, BarChart3, LayoutDashboard, HelpCircle } from "lucide-react";
 import { useMemo } from "react";
 
 const allTabs = [
@@ -20,6 +21,7 @@ const allTabs = [
   { id: "users", label: "Uživatelé", icon: Users, adminOnly: true },
   { id: "classes", label: "Třídy", icon: School, adminOnly: false },
   { id: "results", label: "Výsledky", icon: BarChart3, adminOnly: false },
+  { id: "help", label: "Nápověda", icon: HelpCircle, adminOnly: false },
 ] as const;
 
 type Tab = typeof allTabs[number]["id"];
@@ -90,6 +92,7 @@ const Admin = () => {
         {!isTeacher && activeTab === "users" && <UsersManager />}
         {activeTab === "classes" && <ClassesManager />}
         {activeTab === "results" && <ClassResultsManager />}
+        {activeTab === "help" && <HelpGuidesManager />}
       </div>
     </div>
   );
