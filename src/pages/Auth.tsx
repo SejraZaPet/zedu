@@ -117,6 +117,9 @@ const Auth = () => {
         data: {
           first_name: firstName,
           last_name: lastName,
+          school,
+          field_of_study: fieldOfStudy,
+          year: year || null,
         },
         emailRedirectTo: window.location.origin,
       },
@@ -126,18 +129,6 @@ const Auth = () => {
       setError(signUpError.message);
       setLoading(false);
       return;
-    }
-
-    // Update profile with additional fields
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-      await supabase.from("profiles").update({
-        school,
-        field_of_study: fieldOfStudy,
-        year: year ? parseInt(year) : null,
-      }).eq("id", session.user.id);
-
-      await supabase.auth.signOut();
     }
 
     toast({
