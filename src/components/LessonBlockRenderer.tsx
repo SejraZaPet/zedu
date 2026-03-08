@@ -10,6 +10,7 @@ import ImageHotspotActivity from "@/components/activities/ImageHotspotActivity";
 import ImageLabelActivity from "@/components/activities/ImageLabelActivity";
 import FillBlanksActivity from "@/components/activities/FillBlanksActivity";
 import FillChoiceActivity from "@/components/activities/FillChoiceActivity";
+import TrueFalseActivity from "@/components/activities/TrueFalseActivity";
 
 const extractYouTubeId = (url: string): string | null => {
   if (!url) return null;
@@ -276,6 +277,9 @@ export const LessonBlock = ({ block }: { block: Block }) => {
               tokens={p.fillChoice.tokens || []}
               options={p.fillChoice.options || []}
             />
+          )}
+          {at === "true_false" && p.trueFalse && (
+            <TrueFalseActivity statements={p.trueFalse.statements || []} />
           )}
         </div>
       );

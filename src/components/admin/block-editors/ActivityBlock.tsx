@@ -17,6 +17,7 @@ interface Props {
 const ACTIVITY_TYPES = [
   { value: "flashcards", label: "Otáčecí kartičky" },
   { value: "quiz", label: "Kvíz" },
+  { value: "true_false", label: "Pravda / Nepravda" },
   { value: "matching", label: "Přiřazování A–B" },
   { value: "sorting", label: "Třídění do skupin" },
   { value: "ordering", label: "Seřaď pořadí" },
@@ -954,6 +955,46 @@ const FillChoiceEditor = ({ props, onChange }: { props: any; onChange: (p: any) 
   );
 };
 
+const TrueFalseEditor = ({ props, onChange }: { props: any; onChange: (p: any) => void }) => {
+  const tf = props.trueFalse || { statements: [{ text: "", isTrue: true }] };
+  const updateStatement = (idx: number, field: string, val: any) => {
+    const statements = tf.statements.map((s: any, i: number) => (i === idx ? { ...s, [field]: val } : s));
+    onChange({ ...props, trueFalse: { ...tf, statements } });
+  };
+  return (
+    <div className="space-y-3">
+      <p className="text-xs text-muted-foreground">Zadejte tvrzení a označte, zda je pravdivé nebo nepravdivé.</p>
+      {tf.statements.map((s: any, i: number) => (
+        <div key={i} className="flex items-center gap-2 border border-border rounded-lg p-3">
+          <Input
+            className="flex-1"
+            value={s.text}
+            onChange={(e) => updateStatement(i, "text", e.target.value)}
+            placeholder={`Tvrzení ${i + 1}`}
+          />
+          <Select value={s.isTrue ? "true" : "false"} onValueChange={(v) => updateStatement(i, "isTrue", v === "true")}>
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="true">Pravda</SelectItem>
+              <SelectItem value="false">Nepravda</SelectItem>
+            </SelectContent>
+          </Select>
+          {tf.statements.length > 1 && (
+            <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => onChange({ ...props, trueFalse: { ...tf, statements: tf.statements.filter((_: any, j: number) => j !== i) } })}>
+              <Trash2 className="w-3 h-3" />
+            </Button>
+          )}
+        </div>
+      ))}
+      <Button variant="outline" size="sm" onClick={() => onChange({ ...props, trueFalse: { ...tf, statements: [...tf.statements, { text: "", isTrue: true }] } })}>
+        <Plus className="w-3 h-3 mr-1" />Přidat tvrzení
+      </Button>
+    </div>
+  );
+};
+
 const ActivityBlock = ({ block, onChange }: Props) => {
   const p = block.props;
   const activityType = p.activityType || "flashcards";
@@ -996,6 +1037,7 @@ const ActivityBlock = ({ block, onChange }: Props) => {
       {activityType === "image_hotspot" && <ImageHotspotEditor props={p} onChange={onChange} />}
       {activityType === "fill_blanks" && <FillBlanksEditor props={p} onChange={onChange} />}
       {activityType === "fill_choice" && <FillChoiceEditor props={p} onChange={onChange} />}
+      {activityType === "true_false" && <TrueFalseEditor props={p} onChange={onChange} />}
     </div>
   );
 };
