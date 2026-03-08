@@ -30,7 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Pencil, Archive, ArchiveRestore, Trash2, Users, Search } from "lucide-react";
+import { Plus, Pencil, Archive, ArchiveRestore, Trash2, Users, Search, Key, KeyRound, Copy, RefreshCw, XCircle } from "lucide-react";
 import ClassMembersDialog from "./ClassMembersDialog";
 
 interface ClassItem {
@@ -43,6 +43,8 @@ interface ClassItem {
   archived: boolean;
   created_at: string;
   member_count: number;
+  access_code: string | null;
+  access_code_active: boolean;
 }
 
 const ClassesManager = () => {
@@ -199,6 +201,33 @@ const ClassesManager = () => {
     fetchClasses();
   };
 
+  const generateCode = async (classId: string) => {
+    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const { error } = await supabase
+      .from("classes")
+      .update({ access_code: code, access_code_active: true } as any)
+      .eq("id", classId);
+    if (error) {
+      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Kód vygenerován", description: `Nový kód: ${code}` });
+    fetchClasses();
+  };
+
+  const toggleCodeActive = async (classId: string, active: boolean) => {
+    const { error } = await supabase
+      .from("classes")
+      .update({ access_code_active: active } as any)
+      .eq("id", classId);
+    if (error) {
+      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: active ? "Kód aktivován" : "Kód deaktivován" });
+    fetchClasses();
+  };
+
   if (loading) return <div className="text-muted-foreground p-4">Načítání tříd...</div>;
 
   return (
@@ -243,6 +272,7 @@ const ClassesManager = () => {
               <TableHead>Obor</TableHead>
               <TableHead className="text-center">Ročník</TableHead>
               <TableHead className="text-center">Studenti</TableHead>
+              <TableHead className="text-center">Kód</TableHead>
               <TableHead className="text-right">Akce</TableHead>
             </TableRow>
           </TableHeader>
@@ -266,6 +296,20 @@ const ClassesManager = () => {
                     {c.member_count}
                   </Badge>
                 </TableCell>
+                <TableCell className="text-center">
+                  {c.access_code && c.access_code_active ? (
+                    <div className="flex items-center justify-center gap-1">
+                      <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">{c.access_code}</code>
+                      <Button size="sm" variant="ghost" className="h-6 w-6 p-0" title="Kopírovat" onClick={() => { navigator.clipboard.writeText(c.access_code!); toast({ title: "Zkopírováno" }); }}>
+                        <Copy className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ) : c.access_code ? (
+                    <span className="text-xs text-muted-foreground">Deaktivován</span>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">–</span>
+                  )}
+                </TableCell>
                 <TableCell className="text-right">
                   <div className="flex gap-1 justify-end">
                     <Button size="sm" variant="ghost" onClick={() => setMembersClass(c)} className="h-8 px-2" title="Studenti">
@@ -283,6 +327,27 @@ const ClassesManager = () => {
                     >
                       {c.archived ? <ArchiveRestore className="w-4 h-4" /> : <Archive className="w-4 h-4" />}
                     </Button>
+                    {/* Access code actions */}
+                    {!c.access_code ? (
+                      <Button size="sm" variant="ghost" onClick={() => generateCode(c.id)} className="h-8 px-2" title="Vytvořit kód">
+                        <Key className="w-4 h-4" />
+                      </Button>
+                    ) : (
+                      <>
+                        <Button size="sm" variant="ghost" onClick={() => generateCode(c.id)} className="h-8 px-2" title="Resetovat kód">
+                          <RefreshCw className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => toggleCodeActive(c.id, !c.access_code_active)}
+                          className="h-8 px-2"
+                          title={c.access_code_active ? "Deaktivovat kód" : "Aktivovat kód"}
+                        >
+                          {c.access_code_active ? <XCircle className="w-4 h-4" /> : <KeyRound className="w-4 h-4" />}
+                        </Button>
+                      </>
+                    )}
                     <Button
                       size="sm"
                       variant="ghost"
@@ -298,7 +363,7 @@ const ClassesManager = () => {
             ))}
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                   {showArchived ? "Žádné archivované třídy." : "Žádné třídy. Vytvořte první."}
                 </TableCell>
               </TableRow>

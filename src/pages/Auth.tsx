@@ -29,6 +29,7 @@ const Auth = () => {
   const [school, setSchool] = useState("");
   const [fieldOfStudy, setFieldOfStudy] = useState("");
   const [year, setYear] = useState("");
+  const [classCode, setClassCode] = useState("");
 
   useEffect(() => {
     const checkSession = async () => {
@@ -110,7 +111,7 @@ const Auth = () => {
       return;
     }
 
-    const { error: signUpError } = await supabase.auth.signUp({
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email: regEmail,
       password: regPassword,
       options: {
@@ -120,6 +121,7 @@ const Auth = () => {
           school,
           field_of_study: fieldOfStudy,
           year: year || null,
+          class_code: classCode.trim() || null,
         },
         emailRedirectTo: window.location.origin,
       },
@@ -129,6 +131,11 @@ const Auth = () => {
       setError(signUpError.message);
       setLoading(false);
       return;
+    }
+
+    // If class code was provided, validate it existed
+    if (classCode.trim() && signUpData?.user) {
+      // Code validation happens in the DB trigger; if code is invalid it just won't assign
     }
 
     toast({
@@ -233,6 +240,11 @@ const Auth = () => {
             <div>
               <Label htmlFor="regPasswordConfirm">Heslo znovu</Label>
               <Input id="regPasswordConfirm" type="password" value={regPasswordConfirm} onChange={(e) => setRegPasswordConfirm(e.target.value)} required className="mt-1" />
+            </div>
+            <div>
+              <Label htmlFor="classCode">Kód třídy <span className="text-muted-foreground font-normal">(volitelné)</span></Label>
+              <Input id="classCode" value={classCode} onChange={(e) => setClassCode(e.target.value)} className="mt-1 font-mono" placeholder="např. AB12CD" maxLength={10} />
+              <p className="text-xs text-muted-foreground mt-1">Pokud máte kód třídy od učitele, zadejte ho zde.</p>
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
             <Button type="submit" className="w-full" disabled={loading}>
