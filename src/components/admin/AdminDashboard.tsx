@@ -218,7 +218,7 @@ const AdminDashboard = ({ onNavigate, isTeacher = false }: Props) => {
       <div>
         <h2 className="text-sm font-medium text-muted-foreground mb-3 uppercase tracking-wide">Rychlé akce</h2>
         <div className="flex flex-wrap gap-2">
-          {stats.pendingStudents > 0 && (
+          {!isTeacher && stats.pendingStudents > 0 && (
             <Button size="sm" variant="outline" className="gap-1.5 border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10" onClick={approveAllPending}>
               <CheckCheck className="w-4 h-4" />
               Schválit čekající ({stats.pendingStudents})
@@ -242,9 +242,11 @@ const AdminDashboard = ({ onNavigate, isTeacher = false }: Props) => {
               <Clock className="w-4 h-4 text-muted-foreground" />
               Poslední registrace
             </h3>
-            <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => onNavigate("users")}>
-              Vše
-            </Button>
+            {!isTeacher && (
+              <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => onNavigate("users")}>
+                Vše
+              </Button>
+            )}
           </div>
           <div className="divide-y divide-border">
             {recentRegistrations.length === 0 ? (
