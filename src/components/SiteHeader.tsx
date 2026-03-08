@@ -44,10 +44,10 @@ const SiteHeader = () => {
   const isAdmin = userRole === "admin";
 
   const navItems = [
-    { label: "Učebnice", href: isTeacher ? "/ucitel/ucebnice" : "/ucebnice", isRoute: true },
+    { label: "Učebnice", href: isTeacher ? "/ucitel/ucebnice" : (isLoggedIn ? "/student/ucebnice" : "/ucebnice"), isRoute: true },
     { label: "Aktivity", href: "#aktivity", isRoute: false },
     { label: "Pro žáky", href: "#pro-zaky", isRoute: false },
-    ...(isTeacher || isAdmin ? [{ label: "Administrace", href: "/admin", isRoute: true }] : []),
+    ...(isAdmin ? [{ label: "Administrace", href: "/admin", isRoute: true }] : []),
   ];
 
   const handleTextbookAccess = async () => {
@@ -85,7 +85,7 @@ const SiteHeader = () => {
               <a
                 key={item.label}
                 href={item.isRoute ? undefined : item.href}
-                onClick={item.isRoute ? (e) => { e.preventDefault(); handleTextbookAccess(); } : undefined}
+                onClick={item.isRoute ? (e) => { e.preventDefault(); navigate(item.href); } : undefined}
                 className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors duration-200 cursor-pointer"
               >
                 {item.label}
@@ -129,7 +129,7 @@ const SiteHeader = () => {
                 href={item.isRoute ? undefined : item.href}
                 onClick={(e) => {
                   setMenuOpen(false);
-                  if (item.isRoute) { e.preventDefault(); handleTextbookAccess(); }
+                  if (item.isRoute) { e.preventDefault(); navigate(item.href); }
                 }}
                 className="text-base font-medium text-muted-foreground hover:text-primary transition-colors cursor-pointer"
               >
