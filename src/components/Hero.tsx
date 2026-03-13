@@ -1,4 +1,5 @@
 import { BookOpen, Sparkles, GraduationCap } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import heroBg from "@/assets/hero-students.png";
 
 const features = [
@@ -6,20 +7,24 @@ const features = [
     icon: BookOpen,
     title: "Digitální učebnice",
     description: "Vytvářejte kapitoly, výukový obsah a strukturované materiály.",
+    href: null as string | null,
   },
   {
     icon: Sparkles,
     title: "Interaktivní aktivity",
     description: "Přidávejte kvízy, procvičování a interaktivní prvky.",
+    href: "/aktivity",
   },
   {
     icon: GraduationCap,
     title: "Pro žáky",
     description: "Procvičujte učivo, řešte interaktivní úkoly a sledujte svůj pokrok.",
+    href: null as string | null,
   },
 ];
 
 const Hero = () => {
+  const navigate = useNavigate();
   return (
     <div>
       {/* Hero with background image */}
@@ -77,8 +82,10 @@ const Hero = () => {
             {features.map((feature, i) => (
               <div
                 key={feature.title}
-                className="group flex items-start gap-4 rounded-2xl p-5 transition-all duration-300 animate-fade-in-up hover:bg-muted/50"
+                className={`group flex items-start gap-4 rounded-2xl p-5 transition-all duration-300 animate-fade-in-up hover:bg-muted/50 ${feature.href ? "cursor-pointer" : ""}`}
                 style={{ animationDelay: `${0.5 + i * 0.1}s` }}
+                onClick={() => feature.href && navigate(feature.href)}
+                role={feature.href ? "link" : undefined}
               >
                 <div className="w-12 h-12 shrink-0 rounded-xl bg-gradient-brand flex items-center justify-center group-hover:bg-gradient-brand transition-colors">
                   <feature.icon size={24} className="text-primary-foreground" />

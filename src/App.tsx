@@ -20,6 +20,7 @@ import TeacherTextbooks from "./pages/TeacherTextbooks";
 import TeacherLessons from "./pages/TeacherLessons";
 import StudentTextbooks from "./pages/StudentTextbooks";
 import StudentTextbookDetail from "./pages/StudentTextbookDetail";
+import ActivitiesPage from "./pages/ActivitiesPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -47,6 +48,7 @@ const App = () => (
           {/* Student teacher-textbook routes */}
           <Route path="/student/ucebnice" element={<ProtectedRoute><StudentTextbooks /></ProtectedRoute>} />
           <Route path="/student/ucebnice/:textbookId" element={<ProtectedRoute><StudentTextbookDetail /></ProtectedRoute>} />
+          <Route path="/aktivity" element={<ActivitiesPage />} />
           <Route path="/napoveda" element={<HelpPage />} />
           <Route path="/napoveda/:guideId" element={<HelpDetailPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
