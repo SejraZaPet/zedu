@@ -1,6 +1,7 @@
 import { BookOpen, Sparkles, GraduationCap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import heroBg from "@/assets/hero-students.png";
+import heroLogo from "@/assets/zedu-hero-logo-text.png";
 
 const features = [
   {
