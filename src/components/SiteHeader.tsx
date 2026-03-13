@@ -73,6 +73,7 @@ const SiteHeader = () => {
     // not logged in
     return [
       { label: "Učebnice", href: "/ucebnice", icon: BookOpen },
+      { label: "Aktivity", href: "/aktivity", icon: Activity },
       { label: "Nápověda", href: "/napoveda", icon: HelpCircle },
     ];
   };
