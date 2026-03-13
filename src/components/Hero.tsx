@@ -51,16 +51,20 @@ const Hero = () => {
 
           {/* Brand headline */}
           <h1
-            className="font-heading text-[32px] sm:text-[44px] md:text-[56px] lg:text-[64px] leading-[1.1] font-extrabold tracking-tight mb-8 animate-fade-in-up text-white"
+            className="flex items-center justify-center flex-wrap gap-3 sm:gap-4 md:gap-5 font-heading font-extrabold tracking-tight mb-8 animate-fade-in-up"
             style={{ animationDelay: "0.1s" }}
           >
-            <img src={heroLogo} alt="ZEdu" className="inline-block h-[1.1em] mr-1 align-baseline" style={{ verticalAlign: "baseline" }} />
-            <span className="text-white/60 mx-2 md:mx-3">•</span>
-            <span className="text-white">Tvoř</span>
-            <span className="text-white/60 mx-2 md:mx-3">•</span>
-            <span className="text-white">Uč</span>
-            <span className="text-white/60 mx-2 md:mx-3">•</span>
-            <span className="text-white">Objevuj</span>
+            <img
+              src={heroLogo}
+              alt="ZEdu"
+              className="h-[36px] sm:h-[48px] md:h-[58px] lg:h-[66px] w-auto object-contain block"
+            />
+            <span className="text-white/60 text-[32px] sm:text-[44px] md:text-[56px] lg:text-[64px] leading-none">•</span>
+            <span className="text-white text-[32px] sm:text-[44px] md:text-[56px] lg:text-[64px] leading-none">Tvoř</span>
+            <span className="text-white/60 text-[32px] sm:text-[44px] md:text-[56px] lg:text-[64px] leading-none">•</span>
+            <span className="text-white text-[32px] sm:text-[44px] md:text-[56px] lg:text-[64px] leading-none">Uč</span>
+            <span className="text-white/60 text-[32px] sm:text-[44px] md:text-[56px] lg:text-[64px] leading-none">•</span>
+            <span className="text-white text-[32px] sm:text-[44px] md:text-[56px] lg:text-[64px] leading-none">Objevuj</span>
           </h1>
 
           <p
