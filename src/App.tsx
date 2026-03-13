@@ -20,6 +20,7 @@ import TeacherTextbooks from "./pages/TeacherTextbooks";
 import TeacherLessons from "./pages/TeacherLessons";
 import StudentTextbooks from "./pages/StudentTextbooks";
 import StudentTextbookDetail from "./pages/StudentTextbookDetail";
+import ActivitiesPage from "./pages/ActivitiesPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
