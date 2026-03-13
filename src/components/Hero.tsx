@@ -7,16 +7,19 @@ const features = [
     icon: BookOpen,
     title: "Digitální učebnice",
     description: "Vytvářejte kapitoly, výukový obsah a strukturované materiály.",
+    href: null as string | null,
   },
   {
     icon: Sparkles,
     title: "Interaktivní aktivity",
     description: "Přidávejte kvízy, procvičování a interaktivní prvky.",
+    href: "/aktivity",
   },
   {
     icon: GraduationCap,
     title: "Pro žáky",
     description: "Procvičujte učivo, řešte interaktivní úkoly a sledujte svůj pokrok.",
+    href: null as string | null,
   },
 ];
 
