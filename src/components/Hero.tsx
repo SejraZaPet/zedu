@@ -21,6 +21,7 @@ const features = [
 ];
 
 const Hero = () => {
+  const navigate = useNavigate();
   return (
     <div>
       {/* Hero with background image */}
