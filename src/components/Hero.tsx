@@ -48,7 +48,7 @@ const Hero = () => {
             className="font-heading text-[32px] sm:text-[44px] md:text-[56px] lg:text-[64px] leading-[1.1] font-extrabold tracking-tight mb-8 animate-fade-in-up text-white"
             style={{ animationDelay: "0.1s" }}
           >
-            <span className="text-gradient-brand">ZEdu</span>
+            <span style={{ background: "linear-gradient(90deg, #6EC6D9, #9B6CFF)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>ZEdu</span>
             <span className="text-white/60 mx-2 md:mx-3">•</span>
             <span className="text-white">Tvoř</span>
             <span className="text-white/60 mx-2 md:mx-3">•</span>
