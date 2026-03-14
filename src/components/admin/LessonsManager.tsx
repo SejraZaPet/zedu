@@ -32,9 +32,11 @@ interface LessonRow {
 
 const LessonsManager = () => {
   const { data: subjects = [] } = useSubjects(false);
+  const { toast } = useToast();
   const [lessons, setLessons] = useState<LessonRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingLessonId, setEditingLessonId] = useState<string | null>(null);
+  const [creatingLesson, setCreatingLesson] = useState(false);
 
   const [filterSubject, setFilterSubject] = useState<string>("all");
   const [filterGrade, setFilterGrade] = useState<string>("all");
