@@ -18,6 +18,11 @@ import {
   Plus, Pencil, Trash2, Copy, ArrowLeft, Save, X, Eye, EyeOff, GripVertical, BookOpen,
   ChevronRight, FolderOpen,
 } from "lucide-react";
+import LessonEditorSheet from "@/components/LessonEditorSheet";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Textbook {
   id: string;
@@ -88,6 +93,10 @@ const TeacherTextbooksManager = () => {
   const [newTopicGrade, setNewTopicGrade] = useState<number>(1);
   const [editingTopic, setEditingTopic] = useState<{ id: string; title: string } | null>(null);
   const [lessonPlacements, setLessonPlacements] = useState<Placement[]>([]);
+
+  // Global lesson editor (LessonEditorSheet for textbook_lessons)
+  const [globalEditLessonId, setGlobalEditLessonId] = useState<string | null>(null);
+  const [deletingGlobalLesson, setDeletingGlobalLesson] = useState<GlobalLesson | null>(null);
 
   const fetchTextbooks = async () => {
     setLoading(true);
@@ -431,7 +440,8 @@ const TeacherTextbooksManager = () => {
     const totalLessons = gradeGroups.reduce((sum, g) => sum + g.topics.reduce((s, t) => s + t.lessons.length, 0), 0) + teacherLessons.length;
 
     return (
-      <div className="space-y-6">
+      <>
+        <div className="space-y-6">
         <div className="flex items-center gap-2">
           <Button size="sm" variant="ghost" onClick={() => { setSelectedTextbook(null); setGradeGroups([]); setTeacherLessons([]); }}>
             <ArrowLeft className="w-4 h-4 mr-1" />Zpět na učebnice
@@ -550,12 +560,26 @@ const TeacherTextbooksManager = () => {
                             {topic.lessons.length > 0 && (
                               <div className="border-t border-border divide-y divide-border">
                                 {topic.lessons.map((lesson) => (
-                                  <div key={lesson.id} className="flex items-center gap-2 px-3 py-2 text-sm">
-                                    <ChevronRight className="w-3 h-3 text-muted-foreground" />
-                                    <span className="flex-1 truncate">{lesson.title}</span>
-                                    <Badge variant={lesson.status === "published" ? "default" : "secondary"} className="text-[10px]">
+                                  <div key={lesson.id} className="flex items-center gap-2 px-3 py-2 text-sm group hover:bg-muted/10 transition-colors">
+                                    <ChevronRight className="w-3 h-3 text-muted-foreground shrink-0" />
+                                    <button
+                                      className="flex-1 text-left truncate hover:text-primary transition-colors cursor-pointer"
+                                      onClick={() => setGlobalEditLessonId(lesson.id)}
+                                    >
+                                      {lesson.title}
+                                    </button>
+                                    <Badge variant={lesson.status === "published" ? "default" : "secondary"} className="text-[10px] shrink-0">
                                       {lesson.status === "published" ? "Pub" : "Konc"}
                                     </Badge>
+                                    <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setGlobalEditLessonId(lesson.id)} title="Upravit">
+                                        <Pencil className="w-3.5 h-3.5" />
+                                      </Button>
+                                      <LessonPreviewDialog title={lesson.title} heroImageUrl={null} blocks={lesson.blocks} />
+                                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setDeletingGlobalLesson(lesson)} title="Smazat">
+                                        <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                                      </Button>
+                                    </div>
                                   </div>
                                 ))}
                               </div>
@@ -632,75 +656,160 @@ const TeacherTextbooksManager = () => {
             </div>
           </>
         )}
-      </div>
+        </div>
+
+        {/* Global lesson editor sheet (shared) */}
+        {globalEditLessonId && (
+          <LessonEditorSheet
+            lessonId={globalEditLessonId}
+            open={!!globalEditLessonId}
+            onOpenChange={(open) => { if (!open) setGlobalEditLessonId(null); }}
+            onSaved={() => { setGlobalEditLessonId(null); fetchDetail(); }}
+          />
+        )}
+
+        {/* Delete global lesson confirmation */}
+        <AlertDialog open={!!deletingGlobalLesson} onOpenChange={(open) => { if (!open) setDeletingGlobalLesson(null); }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Smazat lekci</AlertDialogTitle>
+              <AlertDialogDescription>
+                Opravdu chcete smazat lekci „{deletingGlobalLesson?.title}"? Tuto akci nelze vrátit zpět.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Zrušit</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={async () => {
+                  if (!deletingGlobalLesson) return;
+                  const { error } = await supabase.from("textbook_lessons").delete().eq("id", deletingGlobalLesson.id);
+                  if (error) {
+                    toast({ title: "Chyba", description: error.message, variant: "destructive" });
+                  } else {
+                    toast({ title: "Lekce smazána" });
+                    fetchDetail();
+                  }
+                  setDeletingGlobalLesson(null);
+                }}
+              >
+                Smazat
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </>
     );
   }
 
   // === Textbooks List ===
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="font-heading text-xl font-bold">Moje učebnice</h2>
-        <p className="text-sm text-muted-foreground">
-          Učebnice se automaticky vytvářejí při přidání předmětu v sekci Předměty.
-        </p>
-      </div>
-
-      {loading ? (
-        <p className="text-muted-foreground">Načítání...</p>
-      ) : textbooks.length === 0 ? (
-        <div className="text-center py-16 border border-dashed border-border rounded-lg">
-          <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="font-heading text-lg font-semibold mb-2">Zatím nemáte žádné učebnice</h3>
-          <p className="text-muted-foreground mb-2">Učebnice se vytvoří automaticky, když přidáte nový předmět v sekci „Předměty".</p>
-          <p className="text-xs text-muted-foreground">Přejděte na tab Předměty a vytvořte svůj první předmět.</p>
+    <>
+      <div className="space-y-6">
+        <div>
+          <h2 className="font-heading text-xl font-bold">Moje učebnice</h2>
+          <p className="text-sm text-muted-foreground">
+            Učebnice se automaticky vytvářejí při přidání předmětu v sekci Předměty.
+          </p>
         </div>
-      ) : (
-        <div className="space-y-3">
-          {textbooks.map((tb) => {
-            const matchedSubject = subjects?.find(s => s.slug === tb.subject);
-            return (
-              <div key={tb.id} className="flex items-center gap-4 border border-border rounded-lg p-4 bg-card hover:shadow-sm transition-shadow">
-                {matchedSubject && (
-                  <div className="w-3 h-10 rounded-full shrink-0" style={{ backgroundColor: matchedSubject.color }} />
-                )}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-heading font-semibold truncate">{tb.title}</h3>
-                    {matchedSubject?.abbreviation && (
-                      <Badge variant="outline" className="text-[10px]">{matchedSubject.abbreviation}</Badge>
-                    )}
-                  </div>
+
+        {loading ? (
+          <p className="text-muted-foreground">Načítání...</p>
+        ) : textbooks.length === 0 ? (
+          <div className="text-center py-16 border border-dashed border-border rounded-lg">
+            <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="font-heading text-lg font-semibold mb-2">Zatím nemáte žádné učebnice</h3>
+            <p className="text-muted-foreground mb-2">Učebnice se vytvoří automaticky, když přidáte nový předmět v sekci „Předměty".</p>
+            <p className="text-xs text-muted-foreground">Přejděte na tab Předměty a vytvořte svůj první předmět.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {textbooks.map((tb) => {
+              const matchedSubject = subjects?.find(s => s.slug === tb.subject);
+              return (
+                <div key={tb.id} className="flex items-center gap-4 border border-border rounded-lg p-4 bg-card hover:shadow-sm transition-shadow">
                   {matchedSubject && (
-                    <div className="flex gap-1 mt-1">
-                      {matchedSubject.grades.map(g => (
-                        <Badge key={g.id} variant="secondary" className="text-[10px] px-1.5 py-0">{g.label}</Badge>
-                      ))}
-                    </div>
+                    <div className="w-3 h-10 rounded-full shrink-0" style={{ backgroundColor: matchedSubject.color }} />
                   )}
-                  {tb.description && <p className="text-sm text-muted-foreground mt-1 line-clamp-1">{tb.description}</p>}
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <div className="flex items-center gap-1 bg-primary/10 rounded-md px-2 py-1">
-                    <span className="text-xs text-muted-foreground">Kód:</span>
-                    <span className="font-mono text-sm font-bold text-primary">{tb.access_code}</span>
-                    <Button size="sm" variant="ghost" className="h-5 w-5 p-0" onClick={() => copyCode(tb.access_code)}>
-                      <Copy className="w-3 h-3" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-heading font-semibold truncate">{tb.title}</h3>
+                      {matchedSubject?.abbreviation && (
+                        <Badge variant="outline" className="text-[10px]">{matchedSubject.abbreviation}</Badge>
+                      )}
+                    </div>
+                    {matchedSubject && (
+                      <div className="flex gap-1 mt-1">
+                        {matchedSubject.grades.map(g => (
+                          <Badge key={g.id} variant="secondary" className="text-[10px] px-1.5 py-0">{g.label}</Badge>
+                        ))}
+                      </div>
+                    )}
+                    {tb.description && <p className="text-sm text-muted-foreground mt-1 line-clamp-1">{tb.description}</p>}
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-1 bg-primary/10 rounded-md px-2 py-1">
+                      <span className="text-xs text-muted-foreground">Kód:</span>
+                      <span className="font-mono text-sm font-bold text-primary">{tb.access_code}</span>
+                      <Button size="sm" variant="ghost" className="h-5 w-5 p-0" onClick={() => copyCode(tb.access_code)}>
+                        <Copy className="w-3 h-3" />
+                      </Button>
+                    </div>
+                    <Button size="sm" variant="outline" onClick={() => setSelectedTextbook(tb)} className="gap-1">
+                      <Pencil className="w-4 h-4" />Otevřít
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => handleDelete(tb.id)}>
+                      <Trash2 className="w-4 h-4 text-destructive" />
                     </Button>
                   </div>
-                  <Button size="sm" variant="outline" onClick={() => setSelectedTextbook(tb)} className="gap-1">
-                    <Pencil className="w-4 h-4" />Otevřít
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={() => handleDelete(tb.id)}>
-                    <Trash2 className="w-4 h-4 text-destructive" />
-                  </Button>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Global lesson editor sheet (shared) */}
+      {globalEditLessonId && (
+        <LessonEditorSheet
+          lessonId={globalEditLessonId}
+          open={!!globalEditLessonId}
+          onOpenChange={(open) => { if (!open) setGlobalEditLessonId(null); }}
+          onSaved={() => { setGlobalEditLessonId(null); fetchDetail(); }}
+        />
       )}
-    </div>
+
+      {/* Delete global lesson confirmation */}
+      <AlertDialog open={!!deletingGlobalLesson} onOpenChange={(open) => { if (!open) setDeletingGlobalLesson(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Smazat lekci</AlertDialogTitle>
+            <AlertDialogDescription>
+              Opravdu chcete smazat lekci „{deletingGlobalLesson?.title}"? Tuto akci nelze vrátit zpět.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Zrušit</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => {
+                if (!deletingGlobalLesson) return;
+                const { error } = await supabase.from("textbook_lessons").delete().eq("id", deletingGlobalLesson.id);
+                if (error) {
+                  toast({ title: "Chyba", description: error.message, variant: "destructive" });
+                } else {
+                  toast({ title: "Lekce smazána" });
+                  fetchDetail();
+                }
+                setDeletingGlobalLesson(null);
+              }}
+            >
+              Smazat
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
 
