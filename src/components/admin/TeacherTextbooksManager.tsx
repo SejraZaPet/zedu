@@ -559,12 +559,26 @@ const TeacherTextbooksManager = () => {
                             {topic.lessons.length > 0 && (
                               <div className="border-t border-border divide-y divide-border">
                                 {topic.lessons.map((lesson) => (
-                                  <div key={lesson.id} className="flex items-center gap-2 px-3 py-2 text-sm">
-                                    <ChevronRight className="w-3 h-3 text-muted-foreground" />
-                                    <span className="flex-1 truncate">{lesson.title}</span>
-                                    <Badge variant={lesson.status === "published" ? "default" : "secondary"} className="text-[10px]">
+                                  <div key={lesson.id} className="flex items-center gap-2 px-3 py-2 text-sm group hover:bg-muted/10 transition-colors">
+                                    <ChevronRight className="w-3 h-3 text-muted-foreground shrink-0" />
+                                    <button
+                                      className="flex-1 text-left truncate hover:text-primary transition-colors cursor-pointer"
+                                      onClick={() => setGlobalEditLessonId(lesson.id)}
+                                    >
+                                      {lesson.title}
+                                    </button>
+                                    <Badge variant={lesson.status === "published" ? "default" : "secondary"} className="text-[10px] shrink-0">
                                       {lesson.status === "published" ? "Pub" : "Konc"}
                                     </Badge>
+                                    <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setGlobalEditLessonId(lesson.id)} title="Upravit">
+                                        <Pencil className="w-3.5 h-3.5" />
+                                      </Button>
+                                      <LessonPreviewDialog title={lesson.title} heroImageUrl={null} blocks={lesson.blocks} />
+                                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setDeletingGlobalLesson(lesson)} title="Smazat">
+                                        <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                                      </Button>
+                                    </div>
                                   </div>
                                 ))}
                               </div>
