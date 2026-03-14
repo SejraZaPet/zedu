@@ -260,10 +260,11 @@ const LessonsManager = () => {
                 {lesson.status === "published" ? "Publikováno" : "Koncept"}
               </Badge>
               <div className="flex gap-1 shrink-0">
-                <Button size="icon" variant="ghost" onClick={() => setEditingLessonId(lesson.id)}>
+                <Button size="icon" variant="ghost" onClick={() => setEditingLessonId(lesson.id)} title="Upravit">
                   <Pencil className="w-4 h-4" />
                 </Button>
-                <Button size="icon" variant="ghost" onClick={() => deleteLesson(lesson.id)}>
+                <LessonPreviewDialog title={lesson.title} heroImageUrl={lesson.hero_image_url} blocks={lesson.blocks} />
+                <Button size="icon" variant="ghost" onClick={() => deleteLesson(lesson.id)} title="Smazat">
                   <Trash2 className="w-4 h-4 text-destructive" />
                 </Button>
               </div>
