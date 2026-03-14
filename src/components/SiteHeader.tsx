@@ -1,9 +1,16 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Menu, X, LogIn, LogOut, User, BookOpen, GraduationCap, LayoutDashboard, Users, BarChart3, HelpCircle, Layers, FolderOpen, Activity, TrendingUp, Gamepad2 } from "lucide-react";
+import { Menu, X, LogIn, LogOut, User, BookOpen, GraduationCap, LayoutDashboard, Users, BarChart3, HelpCircle, Layers, FolderOpen, Activity, TrendingUp, Gamepad2, Settings } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/zedu-logo-new.png";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface NavItem {
   label: string;
@@ -47,6 +54,8 @@ const SiteHeader = () => {
     return () => subscription.unsubscribe();
   }, []);
 
+  const canAccessAdmin = userRole === "admin" || userRole === "teacher";
+
   const getNavItems = (): NavItem[] => {
     if (userRole === "admin") {
       return [
@@ -65,14 +74,12 @@ const SiteHeader = () => {
       ];
     }
     if (isLoggedIn) {
-      // student (role = "user")
       return [
         { label: "Moje učebnice", href: "/student/ucebnice", icon: BookOpen },
         { label: "Připojit se do hry", href: "/hra/pripojit", icon: Gamepad2 },
         { label: "Nápověda", href: "/napoveda", icon: HelpCircle },
       ];
     }
-    // not logged in
     return [
       { label: "Učebnice", href: "/ucebnice", icon: BookOpen },
       { label: "Aktivity", href: "/aktivity", icon: Activity },
@@ -136,14 +143,31 @@ const SiteHeader = () => {
           </nav>
           {isLoggedIn ? (
             <div className="flex items-center gap-2 ml-2 border-l border-border pl-4">
-              <Button variant="ghost" size="sm" onClick={() => navigate("/profil")} className={`gap-2 ${location.pathname === "/profil" ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-primary"}`}>
-                <User size={16} />
-                Profil
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleLogout} className="gap-2">
-                <LogOut size={16} />
-                Odhlásit
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className={`gap-2 ${location.pathname === "/profil" || location.pathname === "/admin" ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-primary"}`}>
+                    <User size={16} />
+                    Profil
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={() => navigate("/profil")} className="gap-2 cursor-pointer">
+                    <User size={16} />
+                    Profil
+                  </DropdownMenuItem>
+                  {canAccessAdmin && (
+                    <DropdownMenuItem onClick={() => navigate("/admin")} className="gap-2 cursor-pointer">
+                      <Settings size={16} />
+                      Administrace
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="gap-2 cursor-pointer">
+                    <LogOut size={16} />
+                    Odhlásit
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           ) : (
             <Button variant="hero" size="sm" onClick={() => navigate("/auth")} className="gap-2 ml-2">
@@ -189,6 +213,11 @@ const SiteHeader = () => {
                   <button onClick={() => { setMenuOpen(false); navigate("/profil"); }} className={`flex items-center gap-3 px-3 py-3 rounded-lg text-base font-medium transition-colors text-left w-full ${location.pathname === "/profil" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-primary"}`}>
                     <User size={18} /> Profil
                   </button>
+                  {canAccessAdmin && (
+                    <button onClick={() => { setMenuOpen(false); navigate("/admin"); }} className={`flex items-center gap-3 px-3 py-3 rounded-lg text-base font-medium transition-colors text-left w-full ${location.pathname === "/admin" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-primary"}`}>
+                      <Settings size={18} /> Administrace
+                    </button>
+                  )}
                   <button onClick={() => { setMenuOpen(false); handleLogout(); }} className="flex items-center gap-3 px-3 py-3 rounded-lg text-base font-medium text-muted-foreground hover:text-primary transition-colors text-left w-full">
                     <LogOut size={18} /> Odhlásit
                   </button>
