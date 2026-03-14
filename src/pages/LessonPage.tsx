@@ -22,9 +22,10 @@ const LessonPage = () => {
 
   const queryClient = useQueryClient();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isTeacherOrAdmin, setIsTeacherOrAdmin] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
 
-  // Check admin status
+  // Check admin/teacher status
   useEffect(() => {
     const check = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -33,8 +34,9 @@ const LessonPage = () => {
         .from("user_roles")
         .select("role")
         .limit(1);
-      if (roles && roles.length > 0 && roles[0].role === "admin") {
-        setIsAdmin(true);
+      if (roles && roles.length > 0) {
+        if (roles[0].role === "admin") setIsAdmin(true);
+        if (roles[0].role === "admin" || roles[0].role === "teacher") setIsTeacherOrAdmin(true);
       }
     };
     check();
