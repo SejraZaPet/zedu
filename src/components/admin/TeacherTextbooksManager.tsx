@@ -94,6 +94,10 @@ const TeacherTextbooksManager = () => {
   const [editingTopic, setEditingTopic] = useState<{ id: string; title: string } | null>(null);
   const [lessonPlacements, setLessonPlacements] = useState<Placement[]>([]);
 
+  // Global lesson editor (LessonEditorSheet for textbook_lessons)
+  const [globalEditLessonId, setGlobalEditLessonId] = useState<string | null>(null);
+  const [deletingGlobalLesson, setDeletingGlobalLesson] = useState<GlobalLesson | null>(null);
+
   const fetchTextbooks = async () => {
     setLoading(true);
     const { data, error } = await supabase
