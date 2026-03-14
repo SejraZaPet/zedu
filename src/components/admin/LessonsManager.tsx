@@ -6,9 +6,12 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, Search, X, Pencil } from "lucide-react";
+import { Trash2, Search, X, Pencil, Plus, Eye } from "lucide-react";
 import LessonEditorSheet from "@/components/LessonEditorSheet";
+import LessonPreviewDialog from "./LessonPreviewDialog";
 import { getGradeNumbers } from "@/hooks/useSubjects";
+import { useToast } from "@/hooks/use-toast";
+import type { Block } from "@/lib/textbook-config";
 
 interface AssignmentInfo {
   topic_id: string;
