@@ -3,13 +3,31 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useSubjects } from "@/hooks/useSubjects";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
+import BlockEditor from "@/components/admin/BlockEditor";
+import LessonPreviewDialog from "@/components/admin/LessonPreviewDialog";
+import LessonPlacementEditor, { savePlacements, type Placement } from "@/components/admin/LessonPlacementEditor";
+import type { Block } from "@/lib/textbook-config";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle,
+} from "@/components/ui/sheet";
 import {
   BookOpen, Users, ArrowLeft, Copy, Eye, FolderOpen, ChevronRight,
+  Pencil, Trash2, Plus, Save, Loader2, X,
 } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Textbook {
   id: string;
@@ -28,10 +46,26 @@ interface Enrollment {
   profiles: { first_name: string; last_name: string; email: string } | null;
 }
 
+interface LessonItem {
+  id: string;
+  title: string;
+  sort_order: number;
+  status: string;
+  blocks: Block[];
+  source: "textbook_lessons" | "teacher_textbook_lessons";
+  topic_id?: string;
+}
+
+interface TopicItem {
+  id: string;
+  title: string;
+  lessons: LessonItem[];
+}
+
 interface GradeGroup {
   grade: number;
   label: string;
-  topics: { id: string; title: string; lessonCount: number }[];
+  topics: TopicItem[];
 }
 
 const TeacherTextbooks = () => {
@@ -45,6 +79,27 @@ const TeacherTextbooks = () => {
   const [selectedTextbook, setSelectedTextbook] = useState<Textbook | null>(null);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [gradeGroups, setGradeGroups] = useState<GradeGroup[]>([]);
+  const [detailLoading, setDetailLoading] = useState(false);
+
+  // Lesson editor sheet
+  const [editingLesson, setEditingLesson] = useState<LessonItem | null>(null);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [lessonPlacements, setLessonPlacements] = useState<Placement[]>([]);
+  const [saving, setSaving] = useState(false);
+
+  // Delete confirmation
+  const [deletingLesson, setDeletingLesson] = useState<LessonItem | null>(null);
+
+  // Create lesson dialog
+  const [createLessonOpen, setCreateLessonOpen] = useState(false);
+  const [newLessonTitle, setNewLessonTitle] = useState("");
+  const [newLessonTopicId, setNewLessonTopicId] = useState<string>("");
+
+  // Topic management
+  const [createTopicOpen, setCreateTopicOpen] = useState(false);
+  const [newTopicTitle, setNewTopicTitle] = useState("");
+  const [newTopicGrade, setNewTopicGrade] = useState<number>(1);
+  const [editingTopic, setEditingTopic] = useState<{ id: string; title: string } | null>(null);
 
   const fetchTextbooks = async () => {
     const { data } = await supabase
@@ -57,8 +112,8 @@ const TeacherTextbooks = () => {
 
   useEffect(() => { fetchTextbooks(); }, []);
 
-  const openDetail = useCallback(async (tb: Textbook) => {
-    setSelectedTextbook(tb);
+  const fetchDetail = useCallback(async (tb: Textbook) => {
+    setDetailLoading(true);
 
     // Load enrollments
     const { data: enrollData } = await supabase
@@ -68,9 +123,9 @@ const TeacherTextbooks = () => {
       .order("enrolled_at", { ascending: false });
     if (enrollData) setEnrollments(enrollData as unknown as Enrollment[]);
 
-    // Load grade structure from global tables
+    // Load grade structure
     const matchedSubject = subjects?.find(s => s.slug === tb.subject);
-    if (!matchedSubject) { setGradeGroups([]); return; }
+    if (!matchedSubject) { setGradeGroups([]); setDetailLoading(false); return; }
 
     const { data: topics } = await supabase
       .from("textbook_topics")
@@ -79,38 +134,236 @@ const TeacherTextbooks = () => {
       .order("sort_order");
 
     const topicIds = (topics ?? []).map((t: any) => t.id);
-    let lessonCountMap: Record<string, number> = {};
+    let tbLessons: any[] = [];
     if (topicIds.length > 0) {
-      const { data: tbLessons } = await supabase
+      const { data } = await supabase
         .from("textbook_lessons")
-        .select("topic_id")
-        .in("topic_id", topicIds);
-      for (const l of (tbLessons ?? []) as any[]) {
-        lessonCountMap[l.topic_id] = (lessonCountMap[l.topic_id] ?? 0) + 1;
-      }
+        .select("*")
+        .in("topic_id", topicIds)
+        .order("sort_order");
+      tbLessons = data ?? [];
     }
 
-    const groups: GradeGroup[] = matchedSubject.grades.map(g => ({
-      grade: g.grade_number,
-      label: g.label,
-      topics: (topics ?? [])
+    // Load lessons placed via lesson_placements
+    const { data: placementData } = await supabase
+      .from("lesson_placements")
+      .select("*, teacher_textbook_lessons(id, title, status, blocks, sort_order)")
+      .eq("subject_slug", tb.subject);
+
+    const groups: GradeGroup[] = matchedSubject.grades.map(g => {
+      const gradeTopics = (topics ?? [])
         .filter((t: any) => t.grade === g.grade_number)
-        .map((t: any) => ({
-          id: t.id,
-          title: t.title,
-          lessonCount: lessonCountMap[t.id] ?? 0,
-        })),
-    }));
+        .map((t: any) => {
+          const topicLessons: LessonItem[] = tbLessons
+            .filter((l: any) => l.topic_id === t.id)
+            .map((l: any) => ({
+              id: l.id,
+              title: l.title,
+              sort_order: l.sort_order ?? 0,
+              status: l.status ?? "draft",
+              blocks: (l.blocks as Block[]) ?? [],
+              source: "textbook_lessons" as const,
+              topic_id: t.id,
+            }));
+
+          const placedLessons: LessonItem[] = (placementData ?? [])
+            .filter((p: any) => p.topic_id === t.id && p.grade_number === g.grade_number && p.teacher_textbook_lessons)
+            .map((p: any) => ({
+              id: p.teacher_textbook_lessons.id,
+              title: p.teacher_textbook_lessons.title,
+              sort_order: p.teacher_textbook_lessons.sort_order ?? 0,
+              status: p.teacher_textbook_lessons.status ?? "draft",
+              blocks: (p.teacher_textbook_lessons.blocks as Block[]) ?? [],
+              source: "teacher_textbook_lessons" as const,
+              topic_id: t.id,
+            }));
+
+          const allLessons = [...topicLessons];
+          for (const pl of placedLessons) {
+            if (!allLessons.some(l => l.id === pl.id)) allLessons.push(pl);
+          }
+
+          return { id: t.id, title: t.title, lessons: allLessons } as TopicItem;
+        });
+
+      return { grade: g.grade_number, label: g.label, topics: gradeTopics };
+    });
+
     setGradeGroups(groups);
+    setDetailLoading(false);
   }, [subjects]);
+
+  const openDetail = useCallback(async (tb: Textbook) => {
+    setSelectedTextbook(tb);
+    fetchDetail(tb);
+  }, [fetchDetail]);
+
+  const refreshDetail = useCallback(() => {
+    if (selectedTextbook) fetchDetail(selectedTextbook);
+  }, [selectedTextbook, fetchDetail]);
 
   const copyCode = (code: string) => {
     navigator.clipboard.writeText(code);
     toast({ title: "Zkopírováno", description: `Kód ${code} zkopírován do schránky.` });
   };
 
+  // === Lesson actions ===
+  const openLessonEditor = (lesson: LessonItem) => {
+    setEditingLesson({ ...lesson });
+    setEditorOpen(true);
+    setLessonPlacements([]);
+  };
+
+  const saveLessonEdit = async () => {
+    if (!editingLesson) return;
+    setSaving(true);
+
+    const table = editingLesson.source;
+    const payload: any = {
+      title: editingLesson.title,
+      status: editingLesson.status,
+      blocks: editingLesson.blocks as any,
+    };
+
+    const { error } = await supabase.from(table).update(payload).eq("id", editingLesson.id);
+    if (error) {
+      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+    } else {
+      // Save placements if teacher lesson
+      if (table === "teacher_textbook_lessons" && lessonPlacements.length > 0) {
+        try {
+          await savePlacements(editingLesson.id, lessonPlacements);
+        } catch (err: any) {
+          toast({ title: "Chyba při ukládání umístění", description: err.message, variant: "destructive" });
+        }
+      }
+      toast({ title: "Lekce uložena" });
+      setEditorOpen(false);
+      setEditingLesson(null);
+      refreshDetail();
+    }
+    setSaving(false);
+  };
+
+  const confirmDeleteLesson = async () => {
+    if (!deletingLesson) return;
+    const table = deletingLesson.source;
+    const { error } = await supabase.from(table).delete().eq("id", deletingLesson.id);
+    if (error) {
+      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Lekce smazána" });
+      refreshDetail();
+    }
+    setDeletingLesson(null);
+  };
+
+  // === Topic CRUD ===
+  const handleCreateTopic = async () => {
+    if (!newTopicTitle.trim() || !selectedTextbook) return;
+    setSaving(true);
+
+    const { data: existingTopics } = await supabase
+      .from("textbook_topics")
+      .select("sort_order")
+      .eq("subject", selectedTextbook.subject)
+      .eq("grade", newTopicGrade)
+      .order("sort_order", { ascending: false })
+      .limit(1);
+
+    const nextOrder = existingTopics && existingTopics.length > 0 ? (existingTopics[0] as any).sort_order + 1 : 0;
+
+    const { error } = await supabase.from("textbook_topics").insert({
+      title: newTopicTitle.trim(),
+      subject: selectedTextbook.subject,
+      grade: newTopicGrade,
+      sort_order: nextOrder,
+    });
+
+    if (error) {
+      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Téma vytvořeno" });
+      setNewTopicTitle("");
+      setCreateTopicOpen(false);
+      refreshDetail();
+    }
+    setSaving(false);
+  };
+
+  const handleDeleteTopic = async (topicId: string, lessonCount: number) => {
+    const msg = lessonCount > 0
+      ? `Toto téma obsahuje ${lessonCount} lekcí. Opravdu jej chcete odstranit?`
+      : "Opravdu smazat toto téma?";
+    if (!confirm(msg)) return;
+    const { error } = await supabase.from("textbook_topics").delete().eq("id", topicId);
+    if (error) {
+      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Téma smazáno" });
+      refreshDetail();
+    }
+  };
+
+  const handleRenameTopic = async () => {
+    if (!editingTopic || !editingTopic.title.trim()) return;
+    const { error } = await supabase.from("textbook_topics")
+      .update({ title: editingTopic.title.trim() })
+      .eq("id", editingTopic.id);
+    if (error) {
+      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Téma přejmenováno" });
+      setEditingTopic(null);
+      refreshDetail();
+    }
+  };
+
+  // === Create lesson ===
+  const handleCreateLesson = async () => {
+    if (!newLessonTitle.trim() || !newLessonTopicId) return;
+    setSaving(true);
+
+    const { data: existingLessons } = await supabase
+      .from("textbook_lessons")
+      .select("sort_order")
+      .eq("topic_id", newLessonTopicId)
+      .order("sort_order", { ascending: false })
+      .limit(1);
+
+    const nextOrder = existingLessons && existingLessons.length > 0 ? (existingLessons[0] as any).sort_order + 1 : 0;
+
+    const { error } = await supabase.from("textbook_lessons").insert({
+      title: newLessonTitle.trim(),
+      topic_id: newLessonTopicId,
+      sort_order: nextOrder,
+      blocks: [],
+      status: "draft",
+    });
+
+    if (error) {
+      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Lekce vytvořena" });
+      setNewLessonTitle("");
+      setCreateLessonOpen(false);
+      refreshDetail();
+    }
+    setSaving(false);
+  };
+
+  // All topics flat for select
+  const allTopics = gradeGroups.flatMap(g =>
+    g.topics.map(t => ({ ...t, gradeLabel: g.label }))
+  );
+
+  // === DETAIL VIEW ===
   if (selectedTextbook) {
     const matchedSubject = subjects?.find(s => s.slug === selectedTextbook.subject);
+    const totalLessons = gradeGroups.reduce((sum, g) =>
+      sum + g.topics.reduce((s, t) => s + t.lessons.length, 0), 0
+    );
+
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <SiteHeader />
@@ -141,67 +394,294 @@ const TeacherTextbooks = () => {
             </div>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-2">
-            {/* Structure */}
-            <div className="bg-card border border-border rounded-xl p-6 md:col-span-2">
-              <h2 className="font-heading text-lg font-semibold flex items-center gap-2 mb-4">
+          {/* Structure */}
+          <div className="bg-card border border-border rounded-xl p-6 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-heading text-lg font-semibold flex items-center gap-2">
                 <BookOpen className="w-5 h-5 text-primary" /> Struktura učebnice
+                <Badge variant="secondary" className="text-xs">{totalLessons} lekcí</Badge>
               </h2>
-              {gradeGroups.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Žádná struktura. Přidejte témata a lekce v administraci.</p>
-              ) : (
-                <div className="space-y-3">
-                  {gradeGroups.map((group) => (
-                    <div key={group.grade} className="border border-border rounded-lg overflow-hidden">
-                      <div className="bg-muted/30 px-4 py-2 border-b border-border">
-                        <h4 className="text-sm font-semibold">{group.label}</h4>
-                      </div>
-                      <div className="p-2 space-y-1">
-                        {group.topics.length === 0 ? (
-                          <p className="text-xs text-muted-foreground py-2 text-center">Žádná témata</p>
-                        ) : group.topics.map((topic) => (
-                          <div key={topic.id} className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-muted/20">
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={() => {
+                  const firstGrade = matchedSubject?.grades[0]?.grade_number ?? 1;
+                  setNewTopicGrade(firstGrade);
+                  setNewTopicTitle("");
+                  setCreateTopicOpen(true);
+                }}>
+                  <Plus className="w-4 h-4 mr-1" /> Téma
+                </Button>
+                {allTopics.length > 0 && (
+                  <Button size="sm" onClick={() => {
+                    setNewLessonTitle("");
+                    setNewLessonTopicId(allTopics[0]?.id ?? "");
+                    setCreateLessonOpen(true);
+                  }}>
+                    <Plus className="w-4 h-4 mr-1" /> Lekce
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {detailLoading ? (
+              <p className="text-sm text-muted-foreground">Načítání obsahu...</p>
+            ) : gradeGroups.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Žádná struktura. Přidejte témata a lekce.</p>
+            ) : (
+              <div className="space-y-3">
+                {gradeGroups.map((group) => (
+                  <div key={group.grade} className="border border-border rounded-lg overflow-hidden">
+                    <div className="bg-muted/30 px-4 py-2 border-b border-border">
+                      <h4 className="text-sm font-semibold">{group.label}</h4>
+                    </div>
+                    <div className="p-2 space-y-2">
+                      {group.topics.length === 0 ? (
+                        <p className="text-xs text-muted-foreground py-2 text-center">Žádná témata</p>
+                      ) : group.topics.map((topic) => (
+                        <div key={topic.id} className="border border-border rounded-md">
+                          {/* Topic header */}
+                          <div className="flex items-center gap-2 px-3 py-2 bg-muted/10">
                             <FolderOpen className="w-4 h-4 text-primary" />
-                            <span className="text-sm flex-1">{topic.title}</span>
-                            <Badge variant="secondary" className="text-[10px]">{topic.lessonCount} lekcí</Badge>
+                            <span className="text-sm font-medium flex-1">{topic.title}</span>
+                            <Badge variant="secondary" className="text-[10px]">
+                              {topic.lessons.length} {topic.lessons.length === 1 ? "lekce" : "lekcí"}
+                            </Badge>
+                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditingTopic({ id: topic.id, title: topic.title })}>
+                              <Pencil className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleDeleteTopic(topic.id, topic.lessons.length)}>
+                              <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                            </Button>
                           </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
 
-              <Button size="sm" className="mt-4" onClick={() => navigate(`/ucitel/ucebnice/${selectedTextbook.id}/lekce`)}>
-                Spravovat lekce
-              </Button>
-            </div>
+                          {/* Lessons */}
+                          {topic.lessons.length > 0 && (
+                            <div className="border-t border-border divide-y divide-border">
+                              {topic.lessons.map((lesson) => (
+                                <div key={lesson.id} className="flex items-center gap-2 px-3 py-2 text-sm group hover:bg-muted/10 transition-colors">
+                                  <ChevronRight className="w-3 h-3 text-muted-foreground shrink-0" />
+                                  <button
+                                    className="flex-1 text-left truncate hover:text-primary transition-colors cursor-pointer"
+                                    onClick={() => openLessonEditor(lesson)}
+                                  >
+                                    {lesson.title}
+                                  </button>
+                                  <Badge
+                                    variant={lesson.status === "published" ? "default" : "secondary"}
+                                    className="text-[10px] shrink-0"
+                                  >
+                                    {lesson.status === "published" ? "Pub" : "Konc"}
+                                  </Badge>
+                                  <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openLessonEditor(lesson)} title="Upravit">
+                                      <Pencil className="w-3.5 h-3.5" />
+                                    </Button>
+                                    <LessonPreviewDialog title={lesson.title} heroImageUrl={null} blocks={lesson.blocks} />
+                                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setDeletingLesson(lesson)} title="Smazat">
+                                      <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
 
-            {/* Enrolled students */}
-            <div className="bg-card border border-border rounded-xl p-6 md:col-span-2">
-              <h2 className="font-heading text-lg font-semibold flex items-center gap-2 mb-4">
-                <Users className="w-5 h-5 text-primary" /> Zapsaní studenti ({enrollments.length})
-              </h2>
-              {enrollments.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Zatím žádní studenti. Sdílejte kód učebnice.</p>
-              ) : (
-                <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {enrollments.map((e) => (
-                    <div key={e.id} className="flex items-center justify-between text-sm border-b border-border pb-2">
-                      <span>{e.profiles?.first_name} {e.profiles?.last_name}</span>
-                      <span className="text-muted-foreground text-xs">{e.profiles?.email}</span>
+                          {/* Quick add lesson to this topic */}
+                          <div className="border-t border-border px-3 py-1.5">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-xs h-7 gap-1 text-muted-foreground hover:text-foreground"
+                              onClick={() => {
+                                setNewLessonTitle("");
+                                setNewLessonTopicId(topic.id);
+                                setCreateLessonOpen(true);
+                              }}
+                            >
+                              <Plus className="w-3 h-3" /> Přidat lekci
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Enrolled students */}
+          <div className="bg-card border border-border rounded-xl p-6">
+            <h2 className="font-heading text-lg font-semibold flex items-center gap-2 mb-4">
+              <Users className="w-5 h-5 text-primary" /> Zapsaní studenti ({enrollments.length})
+            </h2>
+            {enrollments.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Zatím žádní studenti. Sdílejte kód učebnice.</p>
+            ) : (
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {enrollments.map((e) => (
+                  <div key={e.id} className="flex items-center justify-between text-sm border-b border-border pb-2">
+                    <span>{e.profiles?.first_name} {e.profiles?.last_name}</span>
+                    <span className="text-muted-foreground text-xs">{e.profiles?.email}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </main>
         <SiteFooter />
+
+        {/* === Lesson Editor Sheet === */}
+        <Sheet open={editorOpen} onOpenChange={(open) => {
+          if (!open) { setEditorOpen(false); setEditingLesson(null); setLessonPlacements([]); }
+        }}>
+          <SheetContent side="right" className="w-full sm:max-w-2xl lg:max-w-4xl overflow-y-auto">
+            <SheetHeader>
+              <SheetTitle>Upravit lekci</SheetTitle>
+            </SheetHeader>
+            {editingLesson && (
+              <div className="space-y-4 mt-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2">
+                    <Label>Název lekce</Label>
+                    <Input
+                      value={editingLesson.title}
+                      onChange={(e) => setEditingLesson({ ...editingLesson, title: e.target.value })}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label>Stav</Label>
+                    <Select value={editingLesson.status} onValueChange={(v) => setEditingLesson({ ...editingLesson, status: v })}>
+                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="draft">Koncept</SelectItem>
+                        <SelectItem value="published">Publikováno</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {editingLesson.source === "teacher_textbook_lessons" && (
+                  <LessonPlacementEditor
+                    lessonId={editingLesson.id}
+                    placements={lessonPlacements}
+                    onChange={setLessonPlacements}
+                  />
+                )}
+
+                <div>
+                  <Label className="mb-2 block">Obsah lekce</Label>
+                  <BlockEditor
+                    blocks={editingLesson.blocks}
+                    onChange={(blocks) => setEditingLesson({ ...editingLesson, blocks })}
+                  />
+                </div>
+
+                <div className="flex gap-2 pt-2 border-t border-border sticky bottom-0 bg-background pb-4">
+                  <Button size="sm" onClick={saveLessonEdit} disabled={saving}>
+                    {saving ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />}
+                    Uložit změny
+                  </Button>
+                  <LessonPreviewDialog title={editingLesson.title} heroImageUrl={null} blocks={editingLesson.blocks} />
+                  <Button size="sm" variant="ghost" onClick={() => { setEditorOpen(false); setEditingLesson(null); }}>
+                    <X className="w-4 h-4 mr-1" /> Zavřít
+                  </Button>
+                </div>
+              </div>
+            )}
+          </SheetContent>
+        </Sheet>
+
+        {/* === Delete Confirmation === */}
+        <AlertDialog open={!!deletingLesson} onOpenChange={(open) => { if (!open) setDeletingLesson(null); }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Smazat lekci</AlertDialogTitle>
+              <AlertDialogDescription>
+                Opravdu chcete smazat lekci „{deletingLesson?.title}"? Tuto akci nelze vrátit zpět.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Zrušit</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDeleteLesson} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Smazat
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* === Create Topic Dialog === */}
+        <Dialog open={createTopicOpen} onOpenChange={setCreateTopicOpen}>
+          <DialogContent>
+            <DialogHeader><DialogTitle>Nové téma</DialogTitle></DialogHeader>
+            <div className="space-y-4 mt-2">
+              <div>
+                <Label>Název tématu</Label>
+                <Input value={newTopicTitle} onChange={(e) => setNewTopicTitle(e.target.value)} className="mt-1" placeholder="např. Hygiena v kuchyni" />
+              </div>
+              <div>
+                <Label>Ročník</Label>
+                <Select value={String(newTopicGrade)} onValueChange={(v) => setNewTopicGrade(Number(v))}>
+                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {matchedSubject?.grades.map(g => (
+                      <SelectItem key={g.grade_number} value={String(g.grade_number)}>{g.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button onClick={handleCreateTopic} disabled={saving || !newTopicTitle.trim()} className="w-full">
+                {saving ? "Vytvářím..." : "Vytvořit téma"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* === Rename Topic Dialog === */}
+        <Dialog open={!!editingTopic} onOpenChange={(open) => { if (!open) setEditingTopic(null); }}>
+          <DialogContent>
+            <DialogHeader><DialogTitle>Přejmenovat téma</DialogTitle></DialogHeader>
+            <div className="space-y-4 mt-2">
+              <div>
+                <Label>Název tématu</Label>
+                <Input value={editingTopic?.title ?? ""} onChange={(e) => setEditingTopic(editingTopic ? { ...editingTopic, title: e.target.value } : null)} className="mt-1" />
+              </div>
+              <Button onClick={handleRenameTopic} disabled={!editingTopic?.title.trim()} className="w-full">Uložit</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* === Create Lesson Dialog === */}
+        <Dialog open={createLessonOpen} onOpenChange={setCreateLessonOpen}>
+          <DialogContent>
+            <DialogHeader><DialogTitle>Nová lekce</DialogTitle></DialogHeader>
+            <div className="space-y-4 mt-2">
+              <div>
+                <Label>Název lekce</Label>
+                <Input value={newLessonTitle} onChange={(e) => setNewLessonTitle(e.target.value)} className="mt-1" placeholder="např. Úvod do hygieny" />
+              </div>
+              <div>
+                <Label>Téma</Label>
+                <Select value={newLessonTopicId} onValueChange={setNewLessonTopicId}>
+                  <SelectTrigger className="mt-1"><SelectValue placeholder="Vyberte téma" /></SelectTrigger>
+                  <SelectContent>
+                    {allTopics.map(t => (
+                      <SelectItem key={t.id} value={t.id}>{t.gradeLabel} → {t.title}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button onClick={handleCreateLesson} disabled={saving || !newLessonTitle.trim() || !newLessonTopicId} className="w-full">
+                {saving ? "Vytvářím..." : "Vytvořit lekci"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
 
+  // === LIST VIEW ===
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <SiteHeader />
