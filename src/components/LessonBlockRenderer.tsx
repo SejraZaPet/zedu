@@ -38,10 +38,11 @@ const CALLOUT_STYLES: Record<string, { icon: string; border: string; bg: string 
   remember: { icon: "🧠", border: "border-primary/40", bg: "bg-primary/10" },
 };
 
-export const LessonBlock = ({ block, blockIndex, onActivityComplete }: { 
+export const LessonBlock = ({ block, blockIndex, onActivityComplete, isTeacher }: { 
   block: Block; 
   blockIndex?: number;
   onActivityComplete?: (activityIndex: number, activityType: string, score: number, maxScore: number) => void;
+  isTeacher?: boolean;
 }) => {
   const p = block.props;
 
