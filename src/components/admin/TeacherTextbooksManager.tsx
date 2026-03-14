@@ -441,7 +441,7 @@ const TeacherTextbooksManager = () => {
 
     return (
       <>
-      <div className="space-y-6">
+        <div className="space-y-6">
         <div className="flex items-center gap-2">
           <Button size="sm" variant="ghost" onClick={() => { setSelectedTextbook(null); setGradeGroups([]); setTeacherLessons([]); }}>
             <ArrowLeft className="w-4 h-4 mr-1" />Zpět na učebnice
