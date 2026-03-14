@@ -656,7 +656,47 @@ const TeacherTextbooksManager = () => {
             </div>
           </>
         )}
-      </div>
+      {/* Global lesson editor sheet (shared) */}
+      {globalEditLessonId && (
+        <LessonEditorSheet
+          lessonId={globalEditLessonId}
+          open={!!globalEditLessonId}
+          onOpenChange={(open) => { if (!open) setGlobalEditLessonId(null); }}
+          onSaved={() => { setGlobalEditLessonId(null); fetchDetail(); }}
+        />
+      )}
+
+      {/* Delete global lesson confirmation */}
+      <AlertDialog open={!!deletingGlobalLesson} onOpenChange={(open) => { if (!open) setDeletingGlobalLesson(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Smazat lekci</AlertDialogTitle>
+            <AlertDialogDescription>
+              Opravdu chcete smazat lekci „{deletingGlobalLesson?.title}"? Tuto akci nelze vrátit zpět.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Zrušit</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => {
+                if (!deletingGlobalLesson) return;
+                const { error } = await supabase.from("textbook_lessons").delete().eq("id", deletingGlobalLesson.id);
+                if (error) {
+                  toast({ title: "Chyba", description: error.message, variant: "destructive" });
+                } else {
+                  toast({ title: "Lekce smazána" });
+                  fetchDetail();
+                }
+                setDeletingGlobalLesson(null);
+              }}
+            >
+              Smazat
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      </>
     );
   }
 
