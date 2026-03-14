@@ -130,15 +130,52 @@ const LessonsManager = () => {
 
   const hasFilters = filterSubject !== "all" || filterGrade !== "all" || filterStatus !== "all" || searchQuery.trim() !== "";
 
+  const handleCreateLesson = async () => {
+    setCreatingLesson(true);
+    // We need a topic_id (required FK). Get first available topic.
+    const { data: firstTopic } = await supabase
+      .from("textbook_topics")
+      .select("id")
+      .limit(1)
+      .single();
+
+    if (!firstTopic) {
+      toast({ title: "Chyba", description: "Nejdříve vytvořte alespoň jedno téma v sekci Předměty.", variant: "destructive" });
+      setCreatingLesson(false);
+      return;
+    }
+
+    const { data, error } = await supabase.from("textbook_lessons").insert({
+      title: "Nová lekce",
+      topic_id: (firstTopic as any).id,
+      sort_order: 0,
+      blocks: [],
+      status: "draft",
+    }).select("id").single();
+
+    if (error) {
+      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+    } else if (data) {
+      setEditingLessonId((data as any).id);
+      fetchLessons();
+    }
+    setCreatingLesson(false);
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-heading text-xl">Všechny lekce</h2>
-        {hasFilters && (
-          <Button size="sm" variant="ghost" onClick={clearFilters}>
-            <X className="w-4 h-4 mr-1" /> Zrušit filtry
+        <div className="flex gap-2">
+          {hasFilters && (
+            <Button size="sm" variant="ghost" onClick={clearFilters}>
+              <X className="w-4 h-4 mr-1" /> Zrušit filtry
+            </Button>
+          )}
+          <Button size="sm" onClick={handleCreateLesson} disabled={creatingLesson}>
+            <Plus className="w-4 h-4 mr-1" /> {creatingLesson ? "Vytvářím…" : "Přidat lekci"}
           </Button>
-        )}
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
