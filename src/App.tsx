@@ -22,6 +22,10 @@ import StudentTextbooks from "./pages/StudentTextbooks";
 import StudentTextbookDetail from "./pages/StudentTextbookDetail";
 import ActivitiesPage from "./pages/ActivitiesPage";
 import ProtectedRoute from "./components/ProtectedRoute";
+import TeacherGameScreen from "./pages/TeacherGameScreen";
+import StudentGameJoin from "./pages/StudentGameJoin";
+import StudentGamePlay from "./pages/StudentGamePlay";
+import TeacherGames from "./pages/TeacherGames";
 
 const queryClient = new QueryClient();
 
@@ -49,6 +53,11 @@ const App = () => (
           <Route path="/student/ucebnice" element={<ProtectedRoute><StudentTextbooks /></ProtectedRoute>} />
           <Route path="/student/ucebnice/:textbookId" element={<ProtectedRoute><StudentTextbookDetail /></ProtectedRoute>} />
           <Route path="/aktivity" element={<ActivitiesPage />} />
+          {/* Live game routes */}
+          <Route path="/hra/ucitel/:sessionId" element={<ProtectedRoute><TeacherGameScreen /></ProtectedRoute>} />
+          <Route path="/hra/pripojit" element={<StudentGameJoin />} />
+          <Route path="/hra/hrac/:sessionId" element={<StudentGamePlay />} />
+          <Route path="/ucitel/hry" element={<ProtectedRoute><TeacherGames /></ProtectedRoute>} />
           <Route path="/napoveda" element={<HelpPage />} />
           <Route path="/napoveda/:guideId" element={<HelpDetailPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

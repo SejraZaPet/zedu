@@ -128,6 +128,141 @@ export type Database = {
         }
         Relationships: []
       }
+      game_players: {
+        Row: {
+          created_at: string
+          id: string
+          nickname: string
+          session_id: string
+          total_score: number
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nickname: string
+          session_id: string
+          total_score?: number
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nickname?: string
+          session_id?: string
+          total_score?: number
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_players_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "game_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_players_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      game_responses: {
+        Row: {
+          answer: Json
+          created_at: string
+          id: string
+          is_correct: boolean
+          player_id: string
+          question_index: number
+          response_time_ms: number
+          score: number
+          session_id: string
+        }
+        Insert: {
+          answer?: Json
+          created_at?: string
+          id?: string
+          is_correct?: boolean
+          player_id: string
+          question_index?: number
+          response_time_ms?: number
+          score?: number
+          session_id: string
+        }
+        Update: {
+          answer?: Json
+          created_at?: string
+          id?: string
+          is_correct?: boolean
+          player_id?: string
+          question_index?: number
+          response_time_ms?: number
+          score?: number
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_responses_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "game_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_responses_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "game_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      game_sessions: {
+        Row: {
+          activity_data: Json
+          created_at: string
+          current_question_index: number
+          game_code: string
+          id: string
+          question_started_at: string | null
+          settings: Json
+          status: string
+          teacher_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          activity_data?: Json
+          created_at?: string
+          current_question_index?: number
+          game_code: string
+          id?: string
+          question_started_at?: string | null
+          settings?: Json
+          status?: string
+          teacher_id: string
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          activity_data?: Json
+          created_at?: string
+          current_question_index?: number
+          game_code?: string
+          id?: string
+          question_started_at?: string | null
+          settings?: Json
+          status?: string
+          teacher_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       help_guides: {
         Row: {
           blocks: Json
@@ -809,6 +944,7 @@ export type Database = {
         Args: { _code: string; _student_id: string }
         Returns: string
       }
+      generate_game_code: { Args: never; Returns: string }
       is_admin: { Args: never; Returns: boolean }
       is_admin_or_teacher: { Args: never; Returns: boolean }
       is_enrolled_in_textbook: {

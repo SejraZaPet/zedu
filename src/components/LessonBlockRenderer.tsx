@@ -14,7 +14,8 @@ import TrueFalseActivity from "@/components/activities/TrueFalseActivity";
 import RevealCardsActivity from "@/components/activities/RevealCardsActivity";
 import MemoryGameActivity from "@/components/activities/MemoryGameActivity";
 import CrosswordActivity from "@/components/activities/CrosswordActivity";
-
+import { LiveGameButton } from "@/components/game/LiveGameButton";
+import type { GameQuestion } from "@/lib/game-types";
 const extractYouTubeId = (url: string): string | null => {
   if (!url) return null;
   const m = url.match(
@@ -37,10 +38,11 @@ const CALLOUT_STYLES: Record<string, { icon: string; border: string; bg: string 
   remember: { icon: "🧠", border: "border-primary/40", bg: "bg-primary/10" },
 };
 
-export const LessonBlock = ({ block, blockIndex, onActivityComplete }: { 
+export const LessonBlock = ({ block, blockIndex, onActivityComplete, isTeacher }: { 
   block: Block; 
   blockIndex?: number;
   onActivityComplete?: (activityIndex: number, activityType: string, score: number, maxScore: number) => void;
+  isTeacher?: boolean;
 }) => {
   const p = block.props;
 
@@ -249,6 +251,38 @@ export const LessonBlock = ({ block, blockIndex, onActivityComplete }: {
           onActivityComplete(blockIndex, at, score, maxScore);
         }
       };
+
+      // Build game questions for live game support
+      const supportsLiveGame = ["quiz", "true_false", "fill_choice", "matching"].includes(at);
+      let gameQuestions: GameQuestion[] = [];
+      if (supportsLiveGame) {
+        if (at === "quiz" && p.quiz) {
+          gameQuestions = [{
+            question: p.quiz.question,
+            answers: p.quiz.answers,
+            type: "quiz",
+            explanation: p.quiz.explanation,
+          }];
+        } else if (at === "true_false" && p.trueFalse?.statements) {
+          gameQuestions = p.trueFalse.statements.map((s: any) => ({
+            question: s.statement,
+            answers: [
+              { text: "Pravda", correct: s.correct === true },
+              { text: "Nepravda", correct: s.correct === false },
+            ],
+            type: "true_false" as const,
+          }));
+        } else if (at === "fill_choice" && p.fillChoice) {
+          gameQuestions = [{
+            question: "Doplňte správné odpovědi",
+            answers: (p.fillChoice.options || []).map((o: any, i: number) => ({
+              text: o, correct: i === 0,
+            })),
+            type: "fill_choice" as const,
+          }];
+        }
+      }
+
       return (
         <div className="rounded-lg border border-primary/20 bg-card p-5 space-y-3">
           {p.title && <h3 className="font-heading text-lg text-primary uppercase tracking-wide">{p.title}</h3>}
@@ -303,6 +337,12 @@ export const LessonBlock = ({ block, blockIndex, onActivityComplete }: {
           )}
           {at === "crossword" && p.crossword && (
             <CrosswordActivity entries={p.crossword.entries || []} />
+          )}
+          {/* Live Game Button for teachers */}
+          {isTeacher && supportsLiveGame && gameQuestions.length > 0 && (
+            <div className="pt-3 border-t border-border">
+              <LiveGameButton title={p.title || "Živá hra"} questions={gameQuestions} />
+            </div>
           )}
         </div>
       );
