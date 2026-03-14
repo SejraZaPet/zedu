@@ -56,7 +56,7 @@ const LessonsManager = () => {
 
     let lessonQuery = supabase
       .from("textbook_lessons")
-      .select("id, title, status, sort_order, topic_id, hero_image_url")
+      .select("id, title, status, sort_order, topic_id, hero_image_url, blocks")
       .order("sort_order");
 
     if (filterStatus !== "all") {
