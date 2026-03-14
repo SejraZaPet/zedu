@@ -19,7 +19,6 @@ import {
   ChevronRight, FolderOpen,
 } from "lucide-react";
 import LessonEditorSheet from "@/components/LessonEditorSheet";
-import LessonPreviewDialog from "./LessonPreviewDialog";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
