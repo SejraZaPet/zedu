@@ -89,6 +89,7 @@ const LessonsManager = () => {
 
     let results: LessonRow[] = lessonData.map((l: any) => ({
       ...l,
+      blocks: (l.blocks as Block[]) ?? [],
       assignments: assignMap[l.id] ?? [],
     }));
 
