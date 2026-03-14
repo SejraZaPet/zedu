@@ -14,7 +14,8 @@ import TrueFalseActivity from "@/components/activities/TrueFalseActivity";
 import RevealCardsActivity from "@/components/activities/RevealCardsActivity";
 import MemoryGameActivity from "@/components/activities/MemoryGameActivity";
 import CrosswordActivity from "@/components/activities/CrosswordActivity";
-
+import { LiveGameButton } from "@/components/game/LiveGameButton";
+import type { GameQuestion } from "@/lib/game-types";
 const extractYouTubeId = (url: string): string | null => {
   if (!url) return null;
   const m = url.match(
