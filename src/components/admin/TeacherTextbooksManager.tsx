@@ -440,6 +440,7 @@ const TeacherTextbooksManager = () => {
     const totalLessons = gradeGroups.reduce((sum, g) => sum + g.topics.reduce((s, t) => s + t.lessons.length, 0), 0) + teacherLessons.length;
 
     return (
+      <>
       <div className="space-y-6">
         <div className="flex items-center gap-2">
           <Button size="sm" variant="ghost" onClick={() => { setSelectedTextbook(null); setGradeGroups([]); setTeacherLessons([]); }}>
