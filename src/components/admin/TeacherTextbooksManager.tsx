@@ -18,6 +18,12 @@ import {
   Plus, Pencil, Trash2, Copy, ArrowLeft, Save, X, Eye, EyeOff, GripVertical, BookOpen,
   ChevronRight, FolderOpen,
 } from "lucide-react";
+import LessonEditorSheet from "@/components/LessonEditorSheet";
+import LessonPreviewDialog from "./LessonPreviewDialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Textbook {
   id: string;
