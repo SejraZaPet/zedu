@@ -27,6 +27,7 @@ interface LessonRow {
   sort_order: number;
   topic_id: string;
   hero_image_url: string | null;
+  blocks: Block[];
   assignments: AssignmentInfo[];
 }
 
