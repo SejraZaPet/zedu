@@ -68,6 +68,7 @@ const SiteHeader = () => {
       // student (role = "user")
       return [
         { label: "Moje učebnice", href: "/student/ucebnice", icon: BookOpen },
+        { label: "Připojit se do hry", href: "/hra/pripojit", icon: Gamepad2 },
         { label: "Nápověda", href: "/napoveda", icon: HelpCircle },
       ];
     }
