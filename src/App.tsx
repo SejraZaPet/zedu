@@ -22,6 +22,10 @@ import StudentTextbooks from "./pages/StudentTextbooks";
 import StudentTextbookDetail from "./pages/StudentTextbookDetail";
 import ActivitiesPage from "./pages/ActivitiesPage";
 import ProtectedRoute from "./components/ProtectedRoute";
+import TeacherGameScreen from "./pages/TeacherGameScreen";
+import StudentGameJoin from "./pages/StudentGameJoin";
+import StudentGamePlay from "./pages/StudentGamePlay";
+import TeacherGames from "./pages/TeacherGames";
 
 const queryClient = new QueryClient();
 
