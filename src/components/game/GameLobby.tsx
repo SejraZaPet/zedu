@@ -87,7 +87,7 @@ export const GameLobby = ({ session, players, onStart, isTeacher }: Props) => {
             className="text-lg px-10 py-6 gap-3"
           >
             <Play className="w-6 h-6" />
-            Začít hru
+            {t("teacher.buttons.startInClass")}
           </Button>
         )}
 
