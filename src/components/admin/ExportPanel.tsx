@@ -254,7 +254,7 @@ const ExportPanel = ({ lessonPlanId, planTitle, planSlides, mode = "live" }: Pro
     const fileBase = planTitle.replace(/\s+/g, "_");
     const fileName = exportTarget === "student" ? `${fileBase}_handout.pptx` : `${fileBase}_teacher.pptx`;
     await pptx.writeFile({ fileName });
-    toast({ title: "PPTX stažen" });
+    toast({ title: EXPORT_COPY.toasts.exportSucceededPptx.title, description: EXPORT_COPY.toasts.exportSucceededPptx.description });
   };
 
   const formatConfigs = [
