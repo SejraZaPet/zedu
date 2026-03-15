@@ -98,7 +98,7 @@ const StudentGamePlay = () => {
   const currentQ = session.activity_data[session.current_question_index];
   const hasAnswered = answered.has(session.current_question_index);
   const timeLimit = (session.settings?.timePerQuestion || 20) * 1000;
-  const questionStarted = session.question_started_at ? new Date(session.question_started_at).getTime() : Date.now();
+  const questionStarted = session.question_started_at ? serverTsToClientMs(session.question_started_at) : Date.now();
 
   return (
     <>
