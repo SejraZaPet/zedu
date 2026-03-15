@@ -6,6 +6,7 @@ import { GameLeaderboardFinal } from "@/components/game/GameLeaderboardFinal";
 import { ConnectionStatusBanner } from "@/components/game/ConnectionStatusBanner";
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { serverTsToClientMs } from "@/lib/clock-sync";
 
 const StudentGamePlay = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
