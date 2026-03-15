@@ -302,7 +302,7 @@ const ExportPanel = ({ lessonPlanId, planTitle, planSlides, mode = "live" }: Pro
           <div className="flex items-center gap-2">
             <RadioGroupItem value="teacher" id="target-teacher" />
             <Label htmlFor="target-teacher" className="text-xs flex items-center gap-1 cursor-pointer">
-              <Users className="w-3.5 h-3.5" /> Učitel (klíč)
+              <Users className="w-3.5 h-3.5" /> {EXPORT_COPY.modals.targetTeacher}
             </Label>
           </div>
         </RadioGroup>
