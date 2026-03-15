@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { GameSession, GamePlayer, GameResponse, GameSettings } from "@/lib/game-types";
 import type { RealtimeChannel } from "@supabase/supabase-js";
+import { syncClock, getClockOffset } from "@/lib/clock-sync";
 
 export type ConnectionStatus = "connecting" | "connected" | "reconnecting" | "disconnected";
 
