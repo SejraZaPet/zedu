@@ -73,7 +73,7 @@ const StudentGameJoin = () => {
             <div className="mx-auto w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
               <Gamepad2 className="w-8 h-8 text-primary" />
             </div>
-            <CardTitle className="text-2xl">Připojit se do hry</CardTitle>
+            <CardTitle className="text-2xl">{t("student.buttons.join")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
