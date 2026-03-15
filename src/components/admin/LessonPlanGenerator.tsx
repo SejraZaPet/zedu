@@ -418,7 +418,7 @@ const LessonPlanGenerator = ({ lessonId, lessonTitle, lessonBlocks }: Props) => 
               )}
 
               {/* Activity generator for practice/activity/exit slides */}
-              {["practice", "activity", "exit"].includes(currentSlide.type) && (
+              {["practice", "activity", "exit", "checkpoint"].includes(currentSlide.type) && (
                 <ActivitySpecGenerator
                   slideContext={{
                     headline: currentSlide.projector.headline,
@@ -426,6 +426,7 @@ const LessonPlanGenerator = ({ lessonId, lessonTitle, lessonBlocks }: Props) => 
                     type: currentSlide.type,
                   }}
                   gradeBand={plan.gradeBand}
+                  deliveryMode={plan.mode === "student-paced" ? "student_paced" : "live"}
                 />
               )}
 
