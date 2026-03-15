@@ -27,6 +27,9 @@ import StudentGameJoin from "./pages/StudentGameJoin";
 import StudentGamePlay from "./pages/StudentGamePlay";
 import TeacherGames from "./pages/TeacherGames";
 import LiveTeacherScreen from "./pages/LiveTeacherScreen";
+import TeacherAssignments from "./pages/TeacherAssignments";
+import StudentAssignments from "./pages/StudentAssignments";
+import StudentAssignmentPlayer from "./pages/StudentAssignmentPlayer";
 
 const queryClient = new QueryClient();
 
@@ -50,9 +53,12 @@ const App = () => (
           {/* Teacher routes */}
           <Route path="/ucitel/ucebnice" element={<ProtectedRoute><TeacherTextbooks /></ProtectedRoute>} />
           <Route path="/ucitel/ucebnice/:textbookId/lekce" element={<ProtectedRoute><TeacherLessons /></ProtectedRoute>} />
+          <Route path="/ucitel/ulohy" element={<ProtectedRoute><TeacherAssignments /></ProtectedRoute>} />
           {/* Student teacher-textbook routes */}
           <Route path="/student/ucebnice" element={<ProtectedRoute><StudentTextbooks /></ProtectedRoute>} />
           <Route path="/student/ucebnice/:textbookId" element={<ProtectedRoute><StudentTextbookDetail /></ProtectedRoute>} />
+          <Route path="/student/ulohy" element={<ProtectedRoute><StudentAssignments /></ProtectedRoute>} />
+          <Route path="/student/ulohy/:assignmentId" element={<ProtectedRoute><StudentAssignmentPlayer /></ProtectedRoute>} />
           <Route path="/aktivity" element={<ActivitiesPage />} />
           {/* Live game routes */}
           <Route path="/hra/ucitel/:sessionId" element={<ProtectedRoute><TeacherGameScreen /></ProtectedRoute>} />
