@@ -5,8 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Sparkles, Monitor, Smartphone, StickyNote, ChevronLeft, ChevronRight, Save } from "lucide-react";
+import { Loader2, Sparkles, Monitor, Smartphone, StickyNote, ChevronLeft, ChevronRight, Save, Zap } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import ActivitySpecGenerator from "./ActivitySpecGenerator";
 
 interface Slide {
   slideId: string;
@@ -269,6 +270,18 @@ const LessonPlanGenerator = ({ lessonId, lessonTitle, lessonBlocks }: Props) => 
                   </div>
                   <p className="text-xs text-muted-foreground whitespace-pre-wrap">{currentSlide.teacherNotes}</p>
                 </div>
+              )}
+
+              {/* Activity generator for practice/activity/exit slides */}
+              {["practice", "activity", "exit"].includes(currentSlide.type) && (
+                <ActivitySpecGenerator
+                  slideContext={{
+                    headline: currentSlide.projector.headline,
+                    body: currentSlide.projector.body,
+                    type: currentSlide.type,
+                  }}
+                  gradeBand={plan.gradeBand}
+                />
               )}
 
               {/* Navigation */}
