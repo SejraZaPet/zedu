@@ -214,183 +214,21 @@ export default function WorksheetPlayer({
     toast({ title: t("student.toasts.saved.title"), description: t("student.toasts.saved.description") });
   };
 
-  // ── Item Renderers ──
-
-  const renderMCQ = (it: WorksheetItem) => (
-    <RadioGroup
-      value={answers[it.id] ?? ""}
-      onValueChange={(v) => setAnswer(it.id, v)}
-      disabled={submitted}
-      className="space-y-2"
-    >
-      {(it.choices ?? []).map((choice, i) => {
-        const val = CHOICE_LETTERS[i];
-        const isCorrect = showResults && results && String(answerKey.find((k) => k.itemId === it.id)?.correctAnswer) === val;
-        return (
-          <div
-            key={i}
-            className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
-              submitted && isCorrect ? "border-green-500 bg-green-50" : "border-border"
-            } ${submitted && answers[it.id] === val && !isCorrect ? "border-red-300 bg-red-50" : ""}`}
-          >
-            <RadioGroupItem value={val} id={`${it.id}-${val}`} />
-            <Label htmlFor={`${it.id}-${val}`} className="flex-1 cursor-pointer text-sm">
-              <span className="font-semibold mr-2 text-muted-foreground">{val}.</span>
-              {choice}
-            </Label>
-          </div>
-        );
-      })}
-    </RadioGroup>
-  );
-
-  const renderTrueFalse = (it: WorksheetItem) => (
-    <RadioGroup
-      value={answers[it.id] ?? ""}
-      onValueChange={(v) => setAnswer(it.id, v)}
-      disabled={submitted}
-      className="flex gap-4"
-    >
-      {["true", "false"].map((val) => (
-        <div key={val} className="flex items-center gap-2 p-3 rounded-lg border border-border">
-          <RadioGroupItem value={val} id={`${it.id}-${val}`} />
-          <Label htmlFor={`${it.id}-${val}`} className="cursor-pointer">
-            {val === "true" ? "Pravda" : "Nepravda"}
-          </Label>
-        </div>
-      ))}
-    </RadioGroup>
-  );
-
-  const renderFillBlank = (it: WorksheetItem) => {
-    const blanks = (it.blankText ?? "").split("___");
-    const blankCount = blanks.length - 1;
-    const currentAnswers = Array.isArray(answers[it.id]) ? answers[it.id] : Array(blankCount).fill("");
-
-    return (
-      <div className="space-y-2">
-        <p className="text-sm leading-relaxed">
-          {blanks.map((segment, i) => (
-            <span key={i}>
-              {segment}
-              {i < blankCount && (
-                <Input
-                  className="inline-block w-32 mx-1 h-8 text-sm"
-                  value={currentAnswers[i] ?? ""}
-                  disabled={submitted}
-                  placeholder={`(${i + 1})`}
-                  onChange={(e) => {
-                    const next = [...currentAnswers];
-                    next[i] = e.target.value;
-                    setAnswer(it.id, next);
-                  }}
-                />
-              )}
-            </span>
-          ))}
-        </p>
-      </div>
-    );
-  };
-
-  const renderMatching = (it: WorksheetItem) => {
-    const pairs = it.matchPairs ?? [];
-    const rights = pairs.map((p) => p.right);
-    const currentAnswers = Array.isArray(answers[it.id]) ? answers[it.id] : Array(pairs.length).fill("");
-
-    return (
-      <div className="space-y-3">
-        {pairs.map((pair, i) => (
-          <div key={i} className="flex items-center gap-3">
-            <span className="text-sm font-medium min-w-[120px]">{pair.left}</span>
-            <span className="text-muted-foreground">→</span>
-            <Select
-              value={currentAnswers[i] ?? ""}
-              onValueChange={(v) => {
-                const next = [...currentAnswers];
-                next[i] = v;
-                setAnswer(it.id, next);
-              }}
-              disabled={submitted}
-            >
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Vyberte…" />
-              </SelectTrigger>
-              <SelectContent>
-                {rights.map((r, ri) => (
-                  <SelectItem key={ri} value={r}>
-                    {r}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        ))}
-      </div>
-    );
-  };
-
-  const renderOrdering = (it: WorksheetItem) => {
-    const orderItems = it.orderItems ?? [];
-    const currentOrder = Array.isArray(answers[it.id]) ? answers[it.id] : Array(orderItems.length).fill("");
-
-    return (
-      <div className="space-y-2">
-        <p className="text-xs text-muted-foreground mb-2">Přiřaďte pořadí (1, 2, 3…) ke každé položce:</p>
-        {orderItems.map((text, i) => (
-          <div key={i} className="flex items-center gap-3">
-            <Input
-              className="w-14 h-8 text-center text-sm"
-              type="number"
-              min={1}
-              max={orderItems.length}
-              value={currentOrder[i] ?? ""}
-              disabled={submitted}
-              onChange={(e) => {
-                const next = [...currentOrder];
-                next[i] = e.target.value;
-                setAnswer(it.id, next);
-              }}
-            />
-            <span className="text-sm">{text}</span>
-          </div>
-        ))}
-      </div>
-    );
-  };
-
-  const renderShortAnswer = (it: WorksheetItem) => (
-    <Input
-      value={answers[it.id] ?? ""}
-      onChange={(e) => setAnswer(it.id, e.target.value)}
-      disabled={submitted}
-      placeholder="Vaše odpověď…"
-      className="max-w-md"
-    />
-  );
-
-  const renderOpenAnswer = (it: WorksheetItem) => (
-    <Textarea
-      value={answers[it.id] ?? ""}
-      onChange={(e) => setAnswer(it.id, e.target.value)}
-      disabled={submitted}
-      placeholder="Rozepište svou odpověď…"
-      rows={5}
-      className="max-w-lg"
-    />
-  );
+  // ── Item Renderer (delegated to registry) ──
 
   const renderItemBody = (it: WorksheetItem) => {
-    switch (it.type) {
-      case "mcq": return renderMCQ(it);
-      case "true_false": return renderTrueFalse(it);
-      case "fill_blank": return renderFillBlank(it);
-      case "matching": return renderMatching(it);
-      case "ordering": return renderOrdering(it);
-      case "short_answer": return renderShortAnswer(it);
-      case "open_answer": return renderOpenAnswer(it);
-      default: return <p className="text-muted-foreground text-sm">Nepodporovaný typ úlohy.</p>;
-    }
+    const Renderer = ITEM_RENDERERS[it.type];
+    if (!Renderer) return <p className="text-muted-foreground text-sm">Nepodporovaný typ úlohy.</p>;
+    return (
+      <Renderer
+        item={it}
+        value={answers[it.id]}
+        onChange={(v) => setAnswer(it.id, v)}
+        disabled={submitted}
+        showResults={showResults && !!results}
+        answerKeyEntry={answerKey.find((k) => k.itemId === it.id)}
+      />
+    );
   };
 
   // ── Layout ──
