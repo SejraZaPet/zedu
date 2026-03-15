@@ -232,6 +232,49 @@ const LessonPlanGenerator = ({ lessonId, lessonTitle, lessonBlocks }: Props) => 
             </div>
           </div>
 
+          {/* Mode selector */}
+          <div className="space-y-2 p-3 border border-border rounded-lg bg-background">
+            <Label className="text-xs font-medium">Režim výuky</Label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setPlanMode("teacher-led")}
+                className={`flex items-center gap-2 p-2 rounded-lg border text-xs transition-colors ${
+                  planMode === "teacher-led"
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border bg-background text-muted-foreground hover:bg-muted/50"
+                }`}
+              >
+                <Users className="w-4 h-4" />
+                <div className="text-left">
+                  <div className="font-medium">Řízená výuka</div>
+                  <div className="text-[10px] opacity-70">Učitel řídí tempo</div>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPlanMode("student-paced")}
+                className={`flex items-center gap-2 p-2 rounded-lg border text-xs transition-colors ${
+                  planMode === "student-paced"
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border bg-background text-muted-foreground hover:bg-muted/50"
+                }`}
+              >
+                <User className="w-4 h-4" />
+                <div className="text-left">
+                  <div className="font-medium">Samostudium</div>
+                  <div className="text-[10px] opacity-70">Žák postupuje sám</div>
+                </div>
+              </button>
+            </div>
+            {planMode === "student-paced" && (
+              <div className="flex items-center gap-2 mt-2">
+                <Switch checked={allowImmediateFeedback} onCheckedChange={setAllowImmediateFeedback} id="feedback-switch" />
+                <Label htmlFor="feedback-switch" className="text-xs text-muted-foreground">Okamžitá zpětná vazba u checkpointů</Label>
+              </div>
+            )}
+          </div>
+
           <Button onClick={handleGenerate} disabled={generating} className="w-full">
             {generating ? (
               <>
