@@ -9,15 +9,17 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Loader2, Plus, CalendarIcon, Trash2, Send, Clock, Users, Shuffle, RotateCcw, Eye, EyeOff } from "lucide-react";
+import { Loader2, Plus, CalendarIcon, Trash2, Send, Clock, Users, Shuffle, RotateCcw, Eye, EyeOff, BarChart3 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
+import AssignmentResultsDashboard from "@/components/admin/AssignmentResultsDashboard";
 
 interface Assignment {
   id: string;
@@ -38,6 +40,7 @@ const TeacherAssignments = () => {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [classes, setClasses] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [showForm, setShowForm] = useState(false);
 
@@ -56,6 +59,8 @@ const TeacherAssignments = () => {
 
   const loadData = async () => {
     setLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) setUserId(user.id);
     const [assignmentsRes, classesRes] = await Promise.all([
       supabase.from("assignments" as any).select("*").order("created_at", { ascending: false }),
       supabase.from("classes").select("id, name").eq("archived", false),
@@ -139,11 +144,25 @@ const TeacherAssignments = () => {
             <h1 className="text-2xl font-bold">Úlohy pro žáky</h1>
             <p className="text-sm text-muted-foreground">Vytvářej a spravuj zadání úloh</p>
           </div>
-          <Button onClick={() => setShowForm(!showForm)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Nová úloha
-          </Button>
         </div>
+
+        <Tabs defaultValue="assignments" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="assignments">
+              <Plus className="w-3.5 h-3.5 mr-1.5" /> Úlohy
+            </TabsTrigger>
+            <TabsTrigger value="results">
+              <BarChart3 className="w-3.5 h-3.5 mr-1.5" /> Výsledky
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="assignments" className="space-y-4">
+            <div className="flex justify-end">
+              <Button onClick={() => setShowForm(!showForm)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Nová úloha
+              </Button>
+            </div>
 
         {/* Create form */}
         {showForm && (
@@ -287,6 +306,12 @@ const TeacherAssignments = () => {
             ))}
           </div>
         )}
+          </TabsContent>
+
+          <TabsContent value="results">
+            {userId && <AssignmentResultsDashboard teacherId={userId} />}
+          </TabsContent>
+        </Tabs>
       </main>
       <SiteFooter />
     </div>
