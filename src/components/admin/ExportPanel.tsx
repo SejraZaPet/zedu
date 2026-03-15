@@ -296,7 +296,7 @@ const ExportPanel = ({ lessonPlanId, planTitle, planSlides, mode = "live" }: Pro
           <div className="flex items-center gap-2">
             <RadioGroupItem value="student" id="target-student" />
             <Label htmlFor="target-student" className="text-xs flex items-center gap-1 cursor-pointer">
-              <GraduationCap className="w-3.5 h-3.5" /> Žák (handout)
+              <GraduationCap className="w-3.5 h-3.5" /> {EXPORT_COPY.modals.targetStudent}
             </Label>
           </div>
           <div className="flex items-center gap-2">
