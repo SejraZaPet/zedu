@@ -16,18 +16,19 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
+  ChevronLeft,
+  ChevronRight,
+  Send,
+  Save,
+  Loader2,
+  CheckCircle2,
+  Clock,
+} from "lucide-react";
+import { toast } from "@/hooks/use-toast";
+import { useWorksheetAutosave, type WorksheetAnswers } from "@/hooks/useWorksheetAutosave";
+import { t } from "@/lib/t";
+import { ITEM_RENDERERS } from "@/components/worksheet-items";
   ChevronLeft,
   ChevronRight,
   Send,
