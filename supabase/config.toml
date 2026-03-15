@@ -8,3 +8,9 @@ verify_jwt = false
 
 [functions.create-live-session]
 verify_jwt = false
+
+[functions.export-session-csv]
+verify_jwt = false
+
+[functions.export-session-report]
+verify_jwt = false
