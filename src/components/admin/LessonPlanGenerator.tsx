@@ -233,11 +233,15 @@ const LessonPlanGenerator = ({ lessonId, lessonTitle, lessonBlocks }: Props) => 
               <h3 className="font-semibold text-sm">{plan.title}</h3>
               <p className="text-xs text-muted-foreground">{plan.subject} · {plan.gradeBand} · {plan.slides.length} slidů</p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Button size="sm" variant="outline" onClick={() => setPlan(null)}>Nový plán</Button>
               <Button size="sm" onClick={handleSave} disabled={saving}>
                 {saving ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />}
                 Uložit
+              </Button>
+              <Button size="sm" variant="default" onClick={handleLaunchLive} disabled={launching} className="bg-green-600 hover:bg-green-700 text-white">
+                {launching ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Play className="w-4 h-4 mr-1" />}
+                Spustit live výuku
               </Button>
             </div>
           </div>
