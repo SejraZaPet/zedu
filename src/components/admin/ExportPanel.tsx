@@ -8,6 +8,7 @@ import { Loader2, FileDown, Globe, Printer, Presentation, ExternalLink, CheckCir
 import { toast } from "@/hooks/use-toast";
 import pptxgen from "pptxgenjs";
 import { toSlideSpecDocument, getActivityTransformRule, buildSpeakerNotesWithAnswers, resolveTemplate, regionToInches, applyOverflow, type SlideSpecDocument, type SlideSpec as SlideSpecType } from "@/lib/slide-spec";
+import { EXPORT_COPY } from "@/lib/export-microcopy";
 
 interface Props {
   lessonPlanId: string;
