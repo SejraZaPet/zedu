@@ -5,8 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Sparkles, Monitor, Smartphone, StickyNote, ChevronLeft, ChevronRight, Save } from "lucide-react";
+import { Loader2, Sparkles, Monitor, Smartphone, StickyNote, ChevronLeft, ChevronRight, Save, Zap } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import ActivitySpecGenerator from "./ActivitySpecGenerator";
 
 interface Slide {
   slideId: string;
