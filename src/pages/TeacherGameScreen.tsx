@@ -78,6 +78,7 @@ const TeacherGameScreen = () => {
       onNext={handleNext}
       onEnd={endGame}
     />
+    </>
   );
 };
 
