@@ -10,6 +10,7 @@ import { Loader2, Sparkles, Monitor, Smartphone, StickyNote, ChevronLeft, Chevro
 import { toast } from "@/hooks/use-toast";
 import ActivitySpecGenerator from "./ActivitySpecGenerator";
 import ExportPanel from "./ExportPanel";
+import WorksheetPanel from "./WorksheetPanel";
 
 interface Slide {
   slideId: string;
