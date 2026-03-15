@@ -120,7 +120,7 @@ function scoreWorksheet(
 
 // ────────────────── Component ──────────────────
 
-const CHOICE_LETTERS = "ABCDEFGHIJKLMNOP";
+const TYPE_LABELS: Record<string, string> = {
   mcq: "Výběr z možností",
   fill_blank: "Doplňovačka",
   true_false: "Pravda / Nepravda",
