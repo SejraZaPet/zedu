@@ -140,12 +140,12 @@ export const GameProjector = ({ session, players, responses, countdown, onShowRe
                 {isLast ? (
                   <>
                     <Trophy className="w-5 h-5" />
-                    Zobrazit výsledky
+                    {t("projector.finalResults")}
                   </>
                 ) : (
                   <>
                     <ArrowRight className="w-5 h-5" />
-                    Další otázka
+                    {t("teacher.buttons.nextQuestion")}
                   </>
                 )}
               </Button>
