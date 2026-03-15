@@ -346,7 +346,7 @@ serve(async (req) => {
 
     try {
       if (format === "html" || format === "pdf") {
-        const html = generateFullHtml(slides, title, exportOptions);
+        const html = generateFullHtml(slides, title, exportOptions, paper as "A4" | "16:9");
 
         const fileName = `${user.id}/${jobId || crypto.randomUUID()}_${title.replace(/\s+/g, "_")}${targetSuffix}.html`;
         const { error: uploadErr } = await supabase.storage
