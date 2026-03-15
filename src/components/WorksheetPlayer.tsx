@@ -547,7 +547,7 @@ export default function WorksheetPlayer({
             disabled={submitted}
             onClick={handleSubmit}
           >
-            <Send className="h-4 w-4 mr-1" /> Odevzdat
+            <Send className="h-4 w-4 mr-1" /> {t("student.buttons.finishWorksheet")}
           </Button>
         )}
       </div>
