@@ -9,6 +9,7 @@ import SiteFooter from "@/components/SiteFooter";
 import { Gamepad2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { t } from "@/lib/t";
 
 const StudentGameJoin = () => {
   const [code, setCode] = useState("");
