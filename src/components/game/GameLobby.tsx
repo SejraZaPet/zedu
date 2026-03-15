@@ -72,7 +72,7 @@ export const GameLobby = ({ session, players, onStart, isTeacher }: Props) => {
               </div>
             ))}
             {players.length === 0 && (
-              <p className="text-sm text-muted-foreground italic">Zatím se nikdo nepřipojil...</p>
+              <p className="text-sm text-muted-foreground italic">{t("projector.waitingForPlayers")}</p>
             )}
           </div>
         </div>
