@@ -19,7 +19,7 @@ export const GameLobby = ({ session, players, onStart, isTeacher }: Props) => {
   const copyCode = () => {
     navigator.clipboard.writeText(session.game_code);
     setCopied(true);
-    toast({ title: "Kód zkopírován" });
+    toast({ title: t("student.toasts.joined.title") });
     setTimeout(() => setCopied(false), 2000);
   };
 
