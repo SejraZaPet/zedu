@@ -29,17 +29,6 @@ import { toast } from "@/hooks/use-toast";
 import { useWorksheetAutosave, type WorksheetAnswers } from "@/hooks/useWorksheetAutosave";
 import { t } from "@/lib/t";
 import { ITEM_RENDERERS } from "@/components/worksheet-items";
-  ChevronLeft,
-  ChevronRight,
-  Send,
-  Save,
-  Loader2,
-  CheckCircle2,
-  Clock,
-} from "lucide-react";
-import { toast } from "@/hooks/use-toast";
-import { useWorksheetAutosave, type WorksheetAnswers } from "@/hooks/useWorksheetAutosave";
-import { t } from "@/lib/t";
 import type {
   WorksheetSpec,
   WorksheetVariant,
