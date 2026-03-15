@@ -14,14 +14,21 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const { lessonPlanId, gradeBand, numItems = 10, variants = ["A", "B"] } = await req.json();
+    const {
+      lessonPlanId,
+      gradeBand,
+      numItems = 10,
+      variants = ["A", "B"],
+      worksheetMode = "classwork", // "classwork" | "homework"
+      deadline,
+    } = await req.json();
+
     if (!lessonPlanId) {
       return new Response(JSON.stringify({ error: "Missing lessonPlanId" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Fetch lesson plan from DB
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const sb = createClient(supabaseUrl, supabaseKey);
@@ -46,30 +53,52 @@ serve(async (req) => {
     const seedA = Math.floor(Math.random() * 900000) + 100000;
     const seedB = Math.floor(Math.random() * 900000) + 100000;
 
+    const clampedItems = Math.max(5, Math.min(20, numItems));
+
+    // Mode-specific instructions
+    const homeworkRules = worksheetMode === "homework"
+      ? `
+DOMÁCÍ ÚLOHA – speciální pravidla:
+- Všechny úlohy musí být řešitelné SAMOSTATNĚ žákem doma, BEZ učitele a BEZ projektoru
+- Preferuj typy: mcq, fill_blank, short_answer, true_false (samostatně řešitelné)
+- Matching a ordering používej max 2× celkem
+- Žádná úloha nesmí vyžadovat skupinovou práci nebo přístup ke speciálnímu vybavení
+- Instrukce musí být jednoznačné a kompletní – žák musí pochopit zadání sám
+- Přidej ke každé úloze "difficulty" (easy/medium/hard) – začni jednoduššími
+- Celková obtížnost: ~40% easy, ~40% medium, ~20% hard
+${deadline ? `- Deadline: ${deadline} – uveď v metadatech` : ""}
+`
+      : `
+TŘÍDNÍ PRÁCE – standardní pravidla:
+- Mix všech typů úloh
+- Minimálně 3 různé typy úloh
+`;
+
     const systemPrompt = `Jsi zkušený český pedagog. Tvoříš pracovní listy (worksheets) pro tisk i online použití.
 
 PRAVIDLA:
-- Přesně ${numItems} úloh (items), NE více, NE méně
-- Mix typů: mcq (výběr z možností), fill_blank (doplňovačka), true_false (pravda/nepravda), matching (spojování), ordering (seřazení), short_answer (krátká odpověď)
-- Minimálně 3 různé typy úloh
-- Každá úloha má: itemNumber, type, question, options (kde relevantní), correctAnswer
-- Vytvoř DVOUVARIANTNÍ verzi (A a B):
+- Přesně ${clampedItems} úloh (items), NE více, NE méně
+- Typy: mcq (výběr z možností), fill_blank (doplňovačka), true_false (pravda/nepravda), matching (spojování), ordering (seřazení), short_answer (krátká odpověď)
+${homeworkRules}
+- Každá úloha má: itemNumber, type, question, options (kde relevantní), correctAnswer, difficulty
+- Vytvoř DVOUVARIANTNÍ verzi (${variants.join(" a ")}):
   - Varianta A: seed ${seedA} – originální pořadí
   - Varianta B: seed ${seedB} – přeházené pořadí úloh + u MCQ přeházené možnosti
 - Answer key musí být konzistentní se změněným pořadím
 - Vše česky (cs-CZ)
 - Ročník: ${gradeBand || plan.grade_band || "nespecifikováno"}`;
 
-    const userPrompt = `Vytvoř pracovní list na základě tohoto plánu lekce:
+    const userPrompt = `Vytvoř ${worksheetMode === "homework" ? "domácí úlohu" : "pracovní list"} na základě tohoto plánu lekce:
 
 Název: ${plan.title}
 Předmět: ${plan.subject}
 Ročník: ${gradeBand || plan.grade_band}
+${deadline ? `Deadline: ${deadline}` : ""}
 
 Obsah slidů:
 ${slidesSummary}
 
-Požadavek: ${numItems} úloh, varianty: ${variants.join(", ")}`;
+Požadavek: ${clampedItems} úloh, varianty: ${variants.join(", ")}`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -94,6 +123,8 @@ Požadavek: ${numItems} úloh, varianty: ${variants.join(", ")}`;
                 title: { type: "string", description: "Název pracovního listu" },
                 subject: { type: "string" },
                 gradeBand: { type: "string" },
+                worksheetMode: { type: "string", enum: ["classwork", "homework"] },
+                deadline: { type: "string", description: "ISO deadline pokud zadán" },
                 variants: {
                   type: "array",
                   items: {
@@ -124,8 +155,9 @@ Požadavek: ${numItems} úloh, varianty: ${variants.join(", ")}`;
                               description: "Páry pro matching typ"
                             },
                             points: { type: "number", description: "Body za úlohu" },
+                            difficulty: { type: "string", enum: ["easy", "medium", "hard"] },
                           },
-                          required: ["itemNumber", "type", "question", "points"],
+                          required: ["itemNumber", "type", "question", "points", "difficulty"],
                         },
                       },
                     },
@@ -174,6 +206,14 @@ Požadavek: ${numItems} úloh, varianty: ${variants.join(", ")}`;
                   },
                 },
                 totalPoints: { type: "number" },
+                difficultyDistribution: {
+                  type: "object",
+                  properties: {
+                    easy: { type: "number" },
+                    medium: { type: "number" },
+                    hard: { type: "number" },
+                  },
+                },
               },
               required: ["title", "variants", "answerKeys", "randomizationRules", "totalPoints"],
               additionalProperties: false,
