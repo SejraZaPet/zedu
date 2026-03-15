@@ -268,6 +268,7 @@ export type Database = {
           started_at: string | null
           status: string
           teacher_id: string
+          worker_id: string | null
         }
         Insert: {
           attempt?: number
@@ -283,6 +284,7 @@ export type Database = {
           started_at?: string | null
           status?: string
           teacher_id: string
+          worker_id?: string | null
         }
         Update: {
           attempt?: number
@@ -298,6 +300,7 @@ export type Database = {
           started_at?: string | null
           status?: string
           teacher_id?: string
+          worker_id?: string | null
         }
         Relationships: [
           {
@@ -1174,6 +1177,31 @@ export type Database = {
     }
     Functions: {
       can_access_textbooks: { Args: { _user_id: string }; Returns: boolean }
+      claim_export_job: {
+        Args: { _worker_id: string }
+        Returns: {
+          attempt: number
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          format: string
+          id: string
+          lesson_plan_id: string | null
+          max_attempts: number
+          options: Json
+          output_url: string | null
+          started_at: string | null
+          status: string
+          teacher_id: string
+          worker_id: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "export_jobs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       enroll_by_textbook_code: {
         Args: { _code: string; _student_id: string }
         Returns: string
@@ -1197,6 +1225,7 @@ export type Database = {
         Args: { _teacher_id: string; _textbook_id: string }
         Returns: boolean
       }
+      reap_stale_export_jobs: { Args: never; Returns: number }
     }
     Enums: {
       account_status: "pending" | "approved" | "blocked"
