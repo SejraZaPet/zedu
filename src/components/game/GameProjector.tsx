@@ -54,7 +54,7 @@ export const GameProjector = ({ session, players, responses, countdown, onShowRe
       {/* Top bar */}
       <div className="flex items-center justify-between px-6 py-3 bg-card border-b border-border">
         <span className="text-sm font-medium text-muted-foreground">
-          Otázka {qi + 1} / {totalQ}
+          {t("projector.questionOf", qi + 1, totalQ)}
         </span>
         <span className="text-sm text-muted-foreground">
           {answeredCount} / {players.length} odpovědí
