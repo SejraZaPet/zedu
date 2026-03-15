@@ -151,6 +151,30 @@ const LessonPlanGenerator = ({ lessonId, lessonTitle, lessonBlocks }: Props) => 
     }
   };
 
+  const handleLaunchLive = async () => {
+    if (!plan) return;
+    setLaunching(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-live-session", {
+        body: {
+          lessonPlanId: lessonId,
+          title: plan.title,
+          slides: plan.slides,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      toast({ title: "Live session vytvořena", description: `Kód: ${data.gameCode}` });
+      navigate(`/live/ucitel/${data.sessionId}`);
+    } catch (e: any) {
+      console.error("Launch error:", e);
+      toast({ title: "Chyba", description: e.message, variant: "destructive" });
+    } finally {
+      setLaunching(false);
+    }
+  };
+
   const currentSlide = plan?.slides?.[activeSlide];
 
   return (
