@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.export-lesson]
 verify_jwt = false
+
+[functions.generate-worksheet]
+verify_jwt = false

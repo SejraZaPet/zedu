@@ -10,6 +10,7 @@ import { Loader2, Sparkles, Monitor, Smartphone, StickyNote, ChevronLeft, Chevro
 import { toast } from "@/hooks/use-toast";
 import ActivitySpecGenerator from "./ActivitySpecGenerator";
 import ExportPanel from "./ExportPanel";
+import WorksheetPanel from "./WorksheetPanel";
 
 interface Slide {
   slideId: string;
@@ -327,6 +328,17 @@ const LessonPlanGenerator = ({ lessonId, lessonTitle, lessonBlocks }: Props) => 
                   Další <ChevronRight className="w-4 h-4 ml-1" />
                 </Button>
               </div>
+            </div>
+          )}
+
+          {/* Worksheet panel - shown after save */}
+          {savedPlanId && (
+            <div className="border-t border-border pt-4">
+              <WorksheetPanel
+                lessonPlanId={savedPlanId}
+                planTitle={plan.title}
+                gradeBand={plan.gradeBand}
+              />
             </div>
           )}
 
