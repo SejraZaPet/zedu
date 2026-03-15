@@ -1,5 +1,6 @@
 import { useParams } from "react-router-dom";
 import { useGameSession, useTeacherGameControls } from "@/hooks/useGameSession";
+import { ConnectionStatusBanner } from "@/components/game/ConnectionStatusBanner";
 import { GameLobby } from "@/components/game/GameLobby";
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
