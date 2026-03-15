@@ -5,6 +5,7 @@ import { GameProjector } from "@/components/game/GameProjector";
 import { GameLeaderboardFinal } from "@/components/game/GameLeaderboardFinal";
 import { ConnectionStatusBanner } from "@/components/game/ConnectionStatusBanner";
 import { useState, useEffect, useCallback } from "react";
+import { serverTsToClientMs } from "@/lib/clock-sync";
 
 const TeacherGameScreen = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
