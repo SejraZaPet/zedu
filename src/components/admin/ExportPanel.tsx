@@ -7,7 +7,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Loader2, FileDown, Globe, Printer, Presentation, ExternalLink, CheckCircle, XCircle, Users, GraduationCap } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import pptxgen from "pptxgenjs";
-import { toSlideSpecDocument, type SlideSpecDocument, type SlideSpec as SlideSpecType } from "@/lib/slide-spec";
+import { toSlideSpecDocument, getActivityTransformRule, buildSpeakerNotesWithAnswers, type SlideSpecDocument, type SlideSpec as SlideSpecType } from "@/lib/slide-spec";
 
 interface Props {
   lessonPlanId: string;

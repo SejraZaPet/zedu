@@ -278,6 +278,166 @@ function convertSlide(raw: RawSlide, index: number): SlideSpec {
   };
 }
 
+// ────────────────── Activity Transform Rules ──────────────────
+
+export interface ActivityTransformRule {
+  activityType: string;
+  pptx: {
+    renderChoices: boolean;
+    correctInSpeakerNotes: boolean;
+    showQr: boolean;
+    fallbackText: string;
+  };
+  pdf: {
+    renderChoices: boolean;
+    showQr: boolean;
+    fallbackText: string;
+  };
+  html: {
+    embedInteractive: boolean;
+    offlineFallbackText: string;
+  };
+}
+
+const ACTIVITY_TRANSFORM_RULES: ActivityTransformRule[] = [
+  {
+    activityType: "mcq",
+    pptx: { renderChoices: true, correctInSpeakerNotes: true, showQr: true, fallbackText: "Odpovězte na otázku na svém zařízení." },
+    pdf: { renderChoices: true, showQr: true, fallbackText: "Zakroužkujte správnou odpověď." },
+    html: { embedInteractive: true, offlineFallbackText: "Kvíz – otevřete online verzi pro interaktivní odpovídání." },
+  },
+  {
+    activityType: "matching",
+    pptx: { renderChoices: true, correctInSpeakerNotes: true, showQr: true, fallbackText: "Spojte dvojice na svém zařízení." },
+    pdf: { renderChoices: true, showQr: false, fallbackText: "Spojte levý sloupec s pravým." },
+    html: { embedInteractive: true, offlineFallbackText: "Spojování – otevřete online verzi." },
+  },
+  {
+    activityType: "hotspot",
+    pptx: { renderChoices: false, correctInSpeakerNotes: true, showQr: true, fallbackText: "Označte správné oblasti na obrázku (v aplikaci)." },
+    pdf: { renderChoices: false, showQr: true, fallbackText: "Popište, které oblasti na obrázku jsou správné. (Viz obrázek výše.)" },
+    html: { embedInteractive: true, offlineFallbackText: "Hotspot aktivita – pro interakci otevřete online verzi. Popis: Označte správné oblasti na obrázku." },
+  },
+  {
+    activityType: "video",
+    pptx: { renderChoices: false, correctInSpeakerNotes: true, showQr: true, fallbackText: "Přehrajte video a odpovězte na kontrolní otázky." },
+    pdf: { renderChoices: false, showQr: true, fallbackText: "Video – kontrolní otázky jsou uvedeny níže jako textové úlohy." },
+    html: { embedInteractive: true, offlineFallbackText: "Video aktivita – pro přehrání otevřete online verzi. Kontrolní otázky jsou uvedeny jako text." },
+  },
+  {
+    activityType: "fill_blank",
+    pptx: { renderChoices: false, correctInSpeakerNotes: true, showQr: false, fallbackText: "Doplňte chybějící slova." },
+    pdf: { renderChoices: false, showQr: false, fallbackText: "Doplňte chybějící slova do textu." },
+    html: { embedInteractive: true, offlineFallbackText: "Doplňovačka – otevřete online verzi." },
+  },
+  {
+    activityType: "true_false",
+    pptx: { renderChoices: true, correctInSpeakerNotes: true, showQr: false, fallbackText: "Rozhodněte: pravda nebo nepravda?" },
+    pdf: { renderChoices: true, showQr: false, fallbackText: "Zakroužkujte Pravda / Nepravda." },
+    html: { embedInteractive: true, offlineFallbackText: "Pravda/Nepravda – otevřete online verzi." },
+  },
+  {
+    activityType: "ordering",
+    pptx: { renderChoices: true, correctInSpeakerNotes: true, showQr: false, fallbackText: "Seřaďte kroky ve správném pořadí." },
+    pdf: { renderChoices: true, showQr: false, fallbackText: "Očíslujte kroky ve správném pořadí." },
+    html: { embedInteractive: true, offlineFallbackText: "Řazení – otevřete online verzi." },
+  },
+];
+
+const DEFAULT_RULE: ActivityTransformRule = {
+  activityType: "unknown",
+  pptx: { renderChoices: false, correctInSpeakerNotes: false, showQr: true, fallbackText: "Vypracujte aktivitu v aplikaci ZEdu." },
+  pdf: { renderChoices: false, showQr: true, fallbackText: "Vypracujte aktivitu v aplikaci ZEdu." },
+  html: { embedInteractive: false, offlineFallbackText: "Aktivita – otevřete online verzi." },
+};
+
+/**
+ * Get the transform rule for a given activity type.
+ */
+export function getActivityTransformRule(activityType: string): ActivityTransformRule {
+  return ACTIVITY_TRANSFORM_RULES.find(r => r.activityType === activityType) || { ...DEFAULT_RULE, activityType };
+}
+
+/**
+ * Get all transform rules as a JSON-serialisable object.
+ */
+export function getTransformRules(opts: { includeTeacherAnswers: boolean }): {
+  transformRules: Array<{
+    activityType: string;
+    pptx: ActivityTransformRule["pptx"];
+    pdf: ActivityTransformRule["pdf"];
+    html: ActivityTransformRule["html"];
+  }>;
+} {
+  return {
+    transformRules: ACTIVITY_TRANSFORM_RULES.map(r => ({
+      activityType: r.activityType,
+      pptx: {
+        ...r.pptx,
+        correctInSpeakerNotes: opts.includeTeacherAnswers && r.pptx.correctInSpeakerNotes,
+      },
+      pdf: { ...r.pdf },
+      html: { ...r.html },
+    })),
+  };
+}
+
+/**
+ * Build speaker notes with answer key appended (for teacher exports).
+ */
+export function buildSpeakerNotesWithAnswers(
+  slide: SlideSpec,
+  includeTeacherAnswers: boolean,
+): string {
+  let notes = slide.speakerNotes || "";
+  if (!includeTeacherAnswers || !slide.interactivePlaceholder) return notes;
+
+  const rule = getActivityTransformRule(slide.interactivePlaceholder.activityType);
+  if (!rule.pptx.correctInSpeakerNotes) return notes;
+
+  const model = slide.interactivePlaceholder.model;
+  if (!model) return notes;
+
+  const answerLines: string[] = ["\n--- KLÍČ ODPOVĚDÍ ---"];
+  const type = slide.interactivePlaceholder.activityType;
+
+  if (type === "mcq" && model.choices && model.correctIndex !== undefined) {
+    answerLines.push(`Správná odpověď: ${(model.choices as string[])[model.correctIndex as number]}`);
+  } else if (type === "matching" && model.pairs) {
+    answerLines.push("Správné páry:");
+    (model.pairs as Array<{ left: string; right: string }>).forEach(p => {
+      answerLines.push(`  ${p.left} → ${p.right}`);
+    });
+  } else if (type === "hotspot" && model.correctAreas) {
+    answerLines.push("Správné oblasti:");
+    (model.correctAreas as Array<{ label: string }>).forEach(a => {
+      answerLines.push(`  • ${a.label}`);
+    });
+  } else if (type === "video" && model.checkpoints) {
+    answerLines.push("Kontrolní otázky (checkpoints):");
+    (model.checkpoints as Array<{ time: string; question: string; answer: string }>).forEach(cp => {
+      answerLines.push(`  [${cp.time}] ${cp.question} → ${cp.answer}`);
+    });
+  } else if (type === "true_false") {
+    answerLines.push(`Správná odpověď: ${model.correctAnswer === true ? "Pravda" : "Nepravda"}`);
+  } else if (type === "ordering" && model.correctOrder) {
+    answerLines.push("Správné pořadí:");
+    (model.correctOrder as string[]).forEach((item, i) => {
+      answerLines.push(`  ${i + 1}. ${item}`);
+    });
+  } else if (type === "fill_blank" && model.answers) {
+    answerLines.push("Správné odpovědi:");
+    (model.answers as string[]).forEach((a, i) => {
+      answerLines.push(`  ${i + 1}. ${a}`);
+    });
+  }
+
+  if (answerLines.length > 1) {
+    notes += answerLines.join("\n");
+  }
+  return notes;
+}
+
 // ────────────────── Example document (for documentation) ──────────────────
 
 export const SLIDE_SPEC_EXAMPLE: SlideSpecDocument = {
