@@ -6,9 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import BlockEditor from "@/components/admin/BlockEditor";
 import LessonAssignments, { type Assignment } from "@/components/admin/LessonAssignments";
-import { Save, Upload, Loader2 } from "lucide-react";
+import LessonPlanGenerator from "@/components/admin/LessonPlanGenerator";
+import { Save, Upload, Loader2, Sparkles } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 interface Props {
