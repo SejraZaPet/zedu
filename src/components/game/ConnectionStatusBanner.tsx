@@ -36,7 +36,7 @@ export function ConnectionStatusBanner({ status, onReconnect }: ConnectionStatus
       className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-center gap-3 px-4 py-2.5 text-sm font-medium transition-all ${
         status === "disconnected"
           ? "bg-destructive text-destructive-foreground"
-          : "bg-warning text-warning-foreground"
+          : "bg-muted text-muted-foreground"
       }`}
     >
       {status === "reconnecting" ? (
