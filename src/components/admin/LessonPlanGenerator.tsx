@@ -79,6 +79,9 @@ const LessonPlanGenerator = ({ lessonId, lessonTitle, lessonBlocks }: Props) => 
   const [savedPlanId, setSavedPlanId] = useState<string | null>(null);
   const [plan, setPlan] = useState<LessonPlan | null>(null);
   const [activeSlide, setActiveSlide] = useState(0);
+  const [planMode, setPlanMode] = useState<PlanMode>("teacher-led");
+  const [allowImmediateFeedback, setAllowImmediateFeedback] = useState(true);
+  const [showCheckpointAnswers, setShowCheckpointAnswers] = useState(false);
 
   // Extract source text from lesson blocks
   const extractSourceText = (): string => {
