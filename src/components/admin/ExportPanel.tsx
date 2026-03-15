@@ -261,20 +261,20 @@ const ExportPanel = ({ lessonPlanId, planTitle, planSlides, mode = "live" }: Pro
     {
       key: "pptx", label: "PPTX", icon: Presentation,
       desc: exportTarget === "student"
-        ? "Handout: výklad + placeholdery aktivit"
-        : "Učitelská verze s klíčem a poznámkami",
+        ? EXPORT_COPY.modals.formatPptxStudent
+        : EXPORT_COPY.modals.formatPptx,
     },
     {
       key: "pdf", label: "PDF", icon: Printer,
       desc: exportTarget === "student"
-        ? "Žákovský handout (bez odpovědí)"
-        : "Učitelský klíč odpovědí (Ctrl+P)",
+        ? EXPORT_COPY.modals.formatPdfStudent
+        : EXPORT_COPY.modals.formatPdf,
     },
     {
       key: "html", label: "HTML", icon: Globe,
-      desc: isStudentPaced
-        ? "Offline balíček (storage: nespecifikováno)"
-        : "Interaktivní prezentace v prohlížeči",
+      desc: exportTarget === "student"
+        ? EXPORT_COPY.modals.formatHtmlStudent
+        : EXPORT_COPY.modals.formatHtml,
     },
   ];
 
