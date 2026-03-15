@@ -306,6 +306,12 @@ const TeacherAssignments = () => {
             ))}
           </div>
         )}
+          </TabsContent>
+
+          <TabsContent value="results">
+            {userId && <AssignmentResultsDashboard teacherId={userId} />}
+          </TabsContent>
+        </Tabs>
       </main>
       <SiteFooter />
     </div>
