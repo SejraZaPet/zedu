@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { GameSession, GamePlayer, GameResponse, GameSettings } from "@/lib/game-types";
 import type { RealtimeChannel } from "@supabase/supabase-js";
+import { syncClock, getClockOffset } from "@/lib/clock-sync";
 
 export type ConnectionStatus = "connecting" | "connected" | "reconnecting" | "disconnected";
 
@@ -25,8 +26,13 @@ export function useGameSession(sessionId: string | undefined) {
   const mountedRef = useRef(true);
 
   // Full data fetch (used for initial load and resync)
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (resyncClock = false) => {
     if (!sessionId) return;
+
+    // Sync clock on initial load or after reconnect
+    if (resyncClock) {
+      await syncClock(true);
+    }
 
     const [sessionRes, playersRes, responsesRes] = await Promise.all([
       supabase.from("game_sessions").select("*").eq("id", sessionId).single(),
@@ -101,8 +107,8 @@ export function useGameSession(sessionId: string | undefined) {
             setConnectionStatus("connected");
             // Reset reconnect counter on success
             if (reconnectAttemptRef.current > 0) {
-              // Resync data after reconnect
-              fetchData();
+              // Resync data + clock after reconnect
+              fetchData(true);
             }
             reconnectAttemptRef.current = 0;
             break;
@@ -152,11 +158,13 @@ export function useGameSession(sessionId: string | undefined) {
     subscribe();
   }, [subscribe]);
 
-  // Initial fetch + subscribe
+  // Initial fetch + subscribe + clock sync
   useEffect(() => {
     mountedRef.current = true;
 
-    fetchData();
+    syncClock(true).then(() => {
+      if (mountedRef.current) fetchData();
+    });
     subscribe();
 
     return () => {

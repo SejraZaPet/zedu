@@ -6,6 +6,7 @@ import { GameLeaderboardFinal } from "@/components/game/GameLeaderboardFinal";
 import { ConnectionStatusBanner } from "@/components/game/ConnectionStatusBanner";
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { serverTsToClientMs } from "@/lib/clock-sync";
 
 const StudentGamePlay = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -98,7 +99,7 @@ const StudentGamePlay = () => {
   const currentQ = session.activity_data[session.current_question_index];
   const hasAnswered = answered.has(session.current_question_index);
   const timeLimit = (session.settings?.timePerQuestion || 20) * 1000;
-  const questionStarted = session.question_started_at ? new Date(session.question_started_at).getTime() : Date.now();
+  const questionStarted = session.question_started_at ? serverTsToClientMs(session.question_started_at) : Date.now();
 
   return (
     <>
