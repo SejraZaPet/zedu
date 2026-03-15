@@ -158,11 +158,13 @@ export function useGameSession(sessionId: string | undefined) {
     subscribe();
   }, [subscribe]);
 
-  // Initial fetch + subscribe
+  // Initial fetch + subscribe + clock sync
   useEffect(() => {
     mountedRef.current = true;
 
-    fetchData();
+    syncClock(true).then(() => {
+      if (mountedRef.current) fetchData();
+    });
     subscribe();
 
     return () => {
