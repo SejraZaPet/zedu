@@ -77,6 +77,8 @@ const LiveTeacherScreen = () => {
 
   // Playing: show current slide
   return (
+    <>
+    <ConnectionStatusBanner status={connectionStatus} onReconnect={reconnect} />
     <div className="min-h-screen bg-background p-6 max-w-4xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
