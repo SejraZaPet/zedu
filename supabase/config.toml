@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.submit-answer]
 verify_jwt = false
+
+[functions.get-export-url]
+verify_jwt = false
