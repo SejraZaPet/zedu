@@ -287,7 +287,7 @@ const ExportPanel = ({ lessonPlanId, planTitle, planSlides, mode = "live" }: Pro
 
       {/* Export target selector */}
       <div className="p-3 border border-border rounded-lg bg-muted/30 space-y-3">
-        <Label className="text-xs font-medium text-muted-foreground">Export pro:</Label>
+        <Label className="text-xs font-medium text-muted-foreground">{EXPORT_COPY.modals.targetLabel}</Label>
         <RadioGroup
           value={exportTarget}
           onValueChange={(v) => setExportTarget(v as ExportTarget)}
