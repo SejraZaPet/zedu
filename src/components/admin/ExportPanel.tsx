@@ -3,8 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Loader2, FileDown, Globe, Printer, Presentation, ExternalLink, CheckCircle, XCircle } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Loader2, FileDown, Globe, Printer, Presentation, ExternalLink, CheckCircle, XCircle, Users, GraduationCap } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import pptxgen from "pptxgenjs";
 
@@ -12,6 +12,7 @@ interface Props {
   lessonPlanId: string;
   planTitle: string;
   planSlides: any[];
+  mode?: "live" | "student_paced";
 }
 
 interface ExportResult {
@@ -20,6 +21,8 @@ interface ExportResult {
   status: "idle" | "running" | "succeeded" | "failed";
   error?: string;
 }
+
+type ExportTarget = "teacher" | "student";
 
 const TYPE_COLORS: Record<string, string> = {
   intro: "3B82F6", objective: "8B5CF6", explain: "F59E0B",
@@ -31,14 +34,20 @@ const TYPE_LABELS: Record<string, string> = {
   practice: "Procvičení", activity: "Aktivita", summary: "Shrnutí", exit: "Exit ticket",
 };
 
-const ExportPanel = ({ lessonPlanId, planTitle, planSlides }: Props) => {
+const ExportPanel = ({ lessonPlanId, planTitle, planSlides, mode = "live" }: Props) => {
+  const isStudentPaced = mode === "student_paced";
+  const [exportTarget, setExportTarget] = useState<ExportTarget>(isStudentPaced ? "student" : "teacher");
   const [includeNotes, setIncludeNotes] = useState(true);
-  const [includeAnswerKey, setIncludeAnswerKey] = useState(false);
   const [exports, setExports] = useState<Record<string, ExportResult>>({
     html: { format: "html", status: "idle" },
     pdf: { format: "pdf", status: "idle" },
     pptx: { format: "pptx", status: "idle" },
   });
+
+  // Derived: answer key only for teacher target
+  const includeAnswerKey = exportTarget === "teacher";
+  // Teacher notes only when teacher target AND switch is on
+  const effectiveIncludeNotes = exportTarget === "teacher" && includeNotes;
 
   const updateExport = (format: string, update: Partial<ExportResult>) => {
     setExports((prev) => ({ ...prev, [format]: { ...prev[format], ...update } }));
@@ -58,7 +67,12 @@ const ExportPanel = ({ lessonPlanId, planTitle, planSlides }: Props) => {
         body: {
           lessonPlanId,
           format,
-          options: { includeTeacherNotes: includeNotes, includeAnswerKey },
+          options: {
+            includeTeacherNotes: effectiveIncludeNotes,
+            includeAnswerKey,
+            exportTarget,
+            mode,
+          },
         },
       });
 
@@ -68,7 +82,6 @@ const ExportPanel = ({ lessonPlanId, planTitle, planSlides }: Props) => {
       updateExport(format, { status: "succeeded", url: data.url });
 
       if (format === "pdf" && data.url) {
-        // Open in new tab for printing
         window.open(data.url, "_blank");
         toast({ title: "PDF připraven", description: "Použijte Ctrl+P pro tisk do PDF." });
       } else if (data.url) {
@@ -83,7 +96,8 @@ const ExportPanel = ({ lessonPlanId, planTitle, planSlides }: Props) => {
 
   const generatePptxClient = async () => {
     const pptx = new pptxgen();
-    pptx.title = planTitle;
+    const suffix = exportTarget === "student" ? " (žák)" : " (učitel)";
+    pptx.title = planTitle + suffix;
     pptx.author = "ZEdu";
     pptx.layout = "LAYOUT_WIDE";
 
@@ -103,64 +117,105 @@ const ExportPanel = ({ lessonPlanId, planTitle, planSlides }: Props) => {
         color: "FFFFFF", fontSize: 11, bold: true, align: "center",
       });
 
-      // Headline
-      s.addText(slide.projector?.headline || "", {
+      // Headline — student-paced uses device instructions as primary content
+      const headline = isStudentPaced
+        ? (slide.device?.headline || slide.projector?.headline || "")
+        : (slide.projector?.headline || "");
+
+      s.addText(headline, {
         x: 0.5, y: 0.9, w: 12, h: 0.8,
         fontSize: 28, bold: true, color: "1E293B",
       });
 
       // Body
-      s.addText(slide.projector?.body || "", {
+      const body = isStudentPaced
+        ? (slide.device?.instructions || slide.projector?.body || "")
+        : (slide.projector?.body || "");
+
+      s.addText(body, {
         x: 0.5, y: 1.8, w: 8, h: 2.5,
         fontSize: 16, color: "475569", valign: "top",
       });
 
-      // Device section
-      s.addShape(pptx.ShapeType.roundRect, {
-        x: 0.5, y: 4.5, w: 8, h: 1.2,
-        fill: { color: "F1F5F9" },
-        rectRadius: 0.1,
-        line: { color: "E2E8F0", width: 1 },
-      });
-      s.addText(`📱 Žák: ${slide.device?.instructions || ""}`, {
-        x: 0.7, y: 4.6, w: 7.6, h: 1,
-        fontSize: 13, color: "475569", valign: "top",
-      });
-
-      // Activity preview
-      if (slide.activitySpec?.type === "mcq" && slide.activitySpec.model?.choices) {
-        const choices = slide.activitySpec.model.choices;
-        const correctIdx = slide.activitySpec.model.correctIndex;
-        choices.forEach((choice: string, i: number) => {
-          const isCorrect = i === correctIdx && includeAnswerKey;
+      // Activity placeholder
+      if (slide.activitySpec) {
+        if (slide.activitySpec.type === "mcq" && slide.activitySpec.model?.choices) {
+          const choices = slide.activitySpec.model.choices;
+          const correctIdx = slide.activitySpec.model.correctIndex;
+          choices.forEach((choice: string, i: number) => {
+            const isCorrect = i === correctIdx && includeAnswerKey;
+            s.addShape(pptx.ShapeType.roundRect, {
+              x: 9, y: 1.8 + i * 0.6, w: 3.5, h: 0.45,
+              fill: { color: isCorrect ? "F0FDF4" : "FFFFFF" },
+              line: { color: isCorrect ? "22C55E" : "E2E8F0", width: 1 },
+              rectRadius: 0.08,
+            });
+            s.addText(`${isCorrect ? "✓ " : "○ "}${choice}`, {
+              x: 9.1, y: 1.8 + i * 0.6, w: 3.3, h: 0.45,
+              fontSize: 11, color: isCorrect ? "166534" : "475569",
+              bold: isCorrect,
+            });
+          });
+        } else if (exportTarget === "student") {
+          // Generic activity placeholder for student handout
           s.addShape(pptx.ShapeType.roundRect, {
-            x: 9, y: 1.8 + i * 0.6, w: 3.5, h: 0.45,
-            fill: { color: isCorrect ? "F0FDF4" : "FFFFFF" },
-            line: { color: isCorrect ? "22C55E" : "E2E8F0", width: 1 },
-            rectRadius: 0.08,
+            x: 9, y: 1.8, w: 3.5, h: 2,
+            fill: { color: "FEF9C3" },
+            line: { color: "EAB308", width: 1 },
+            rectRadius: 0.1,
           });
-          s.addText(`${isCorrect ? "✓ " : "○ "}${choice}`, {
-            x: 9.1, y: 1.8 + i * 0.6, w: 3.3, h: 0.45,
-            fontSize: 11, color: isCorrect ? "166534" : "475569",
-            bold: isCorrect,
+          s.addText(`🎯 ${slide.activitySpec.type?.toUpperCase() || "Aktivita"}\n\nVypracuj v aplikaci`, {
+            x: 9.1, y: 1.9, w: 3.3, h: 1.8,
+            fontSize: 12, color: "92400E", align: "center", valign: "middle",
           });
+        }
+      }
+
+      // Device section — only in teacher export (student already has it as main content)
+      if (exportTarget === "teacher" && !isStudentPaced) {
+        s.addShape(pptx.ShapeType.roundRect, {
+          x: 0.5, y: 4.5, w: 8, h: 1.2,
+          fill: { color: "F1F5F9" },
+          rectRadius: 0.1,
+          line: { color: "E2E8F0", width: 1 },
+        });
+        s.addText(`📱 Žák: ${slide.device?.instructions || ""}`, {
+          x: 0.7, y: 4.6, w: 7.6, h: 1,
+          fontSize: 13, color: "475569", valign: "top",
         });
       }
 
       // Teacher notes
-      if (includeNotes && slide.teacherNotes) {
+      if (effectiveIncludeNotes && slide.teacherNotes) {
         s.addNotes(slide.teacherNotes);
       }
     }
 
-    await pptx.writeFile({ fileName: `${planTitle.replace(/\s+/g, "_")}.pptx` });
+    const fileBase = planTitle.replace(/\s+/g, "_");
+    const fileName = exportTarget === "student" ? `${fileBase}_handout.pptx` : `${fileBase}_teacher.pptx`;
+    await pptx.writeFile({ fileName });
     toast({ title: "PPTX stažen" });
   };
 
   const formatConfigs = [
-    { key: "html", label: "HTML", icon: Globe, desc: "Interaktivní prezentace v prohlížeči" },
-    { key: "pdf", label: "PDF", icon: Printer, desc: "Tisknutelný formát (Ctrl+P)" },
-    { key: "pptx", label: "PPTX", icon: Presentation, desc: "PowerPoint / Google Slides" },
+    {
+      key: "pptx", label: "PPTX", icon: Presentation,
+      desc: exportTarget === "student"
+        ? "Handout: výklad + placeholdery aktivit"
+        : "Učitelská verze s klíčem a poznámkami",
+    },
+    {
+      key: "pdf", label: "PDF", icon: Printer,
+      desc: exportTarget === "student"
+        ? "Žákovský handout (bez odpovědí)"
+        : "Učitelský klíč odpovědí (Ctrl+P)",
+    },
+    {
+      key: "html", label: "HTML", icon: Globe,
+      desc: isStudentPaced
+        ? "Offline balíček (storage: nespecifikováno)"
+        : "Interaktivní prezentace v prohlížeči",
+    },
   ];
 
   return (
@@ -170,16 +225,35 @@ const ExportPanel = ({ lessonPlanId, planTitle, planSlides }: Props) => {
         Export plánu lekce
       </h3>
 
-      {/* Options */}
-      <div className="flex flex-wrap gap-4 p-3 border border-border rounded-lg bg-muted/30">
-        <div className="flex items-center gap-2">
-          <Switch checked={includeNotes} onCheckedChange={setIncludeNotes} id="exp-notes" />
-          <Label htmlFor="exp-notes" className="text-xs">Poznámky učitele</Label>
-        </div>
-        <div className="flex items-center gap-2">
-          <Switch checked={includeAnswerKey} onCheckedChange={setIncludeAnswerKey} id="exp-key" />
-          <Label htmlFor="exp-key" className="text-xs">Klíč odpovědí</Label>
-        </div>
+      {/* Export target selector */}
+      <div className="p-3 border border-border rounded-lg bg-muted/30 space-y-3">
+        <Label className="text-xs font-medium text-muted-foreground">Export pro:</Label>
+        <RadioGroup
+          value={exportTarget}
+          onValueChange={(v) => setExportTarget(v as ExportTarget)}
+          className="flex gap-4"
+        >
+          <div className="flex items-center gap-2">
+            <RadioGroupItem value="student" id="target-student" />
+            <Label htmlFor="target-student" className="text-xs flex items-center gap-1 cursor-pointer">
+              <GraduationCap className="w-3.5 h-3.5" /> Žák (handout)
+            </Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <RadioGroupItem value="teacher" id="target-teacher" />
+            <Label htmlFor="target-teacher" className="text-xs flex items-center gap-1 cursor-pointer">
+              <Users className="w-3.5 h-3.5" /> Učitel (klíč)
+            </Label>
+          </div>
+        </RadioGroup>
+
+        {/* Teacher-only options */}
+        {exportTarget === "teacher" && (
+          <div className="flex items-center gap-2 pt-1">
+            <Switch checked={includeNotes} onCheckedChange={setIncludeNotes} id="exp-notes" />
+            <Label htmlFor="exp-notes" className="text-xs">Poznámky učitele</Label>
+          </div>
+        )}
       </div>
 
       {/* Format buttons */}

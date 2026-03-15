@@ -18,30 +18,54 @@ function renderSlideToHtml(slide: any, index: number, options: any): string {
     practice: "#22c55e", activity: "#f43f5e", summary: "#14b8a6", exit: "#f97316",
   };
 
-  const headline = slide.projector?.headline || "";
-  const body = slide.projector?.body || "";
+  const isStudentPaced = options.mode === "student_paced";
+  const isStudent = options.exportTarget === "student";
+
+  // Student-paced: use device content as primary
+  const headline = isStudentPaced
+    ? (slide.device?.headline || slide.projector?.headline || "")
+    : (slide.projector?.headline || "");
+  const body = isStudentPaced
+    ? (slide.device?.instructions || slide.projector?.body || "")
+    : (slide.projector?.body || "");
   const deviceInstructions = slide.device?.instructions || "";
   const notes = slide.teacherNotes || "";
   const typeColor = typeColors[slide.type] || "#6b7280";
   const typeLabel = typeLabels[slide.type] || slide.type;
 
-  // Activity placeholder
+  // Activity rendering
   let activityHtml = "";
   if (slide.activitySpec) {
     const spec = slide.activitySpec;
     if (spec.type === "mcq" && spec.model?.choices) {
       activityHtml = `<div class="activity-box">
         <h4>📝 ${spec.prompt || ""}</h4>
-        <ul>${spec.model.choices.map((c: string, i: number) => 
+        <ul>${spec.model.choices.map((c: string, i: number) =>
           `<li${i === spec.model.correctIndex && options.includeAnswerKey ? ' class="correct"' : ""}>${c}</li>`
         ).join("")}</ul>
       </div>`;
     } else if (spec.type === "matching" && spec.model?.pairs) {
-      activityHtml = `<div class="activity-box">
-        <h4>🔗 ${spec.prompt || "Spojování"}</h4>
-        <table class="matching"><tbody>
-          ${spec.model.pairs.map((p: any) => `<tr><td>${p.left}</td><td>→</td><td>${p.right}</td></tr>`).join("")}
-        </tbody></table>
+      if (isStudent) {
+        // Student handout: show only left column, right column shuffled or blank
+        activityHtml = `<div class="activity-box">
+          <h4>🔗 ${spec.prompt || "Spojování"}</h4>
+          <table class="matching"><tbody>
+            ${spec.model.pairs.map((p: any) => `<tr><td>${p.left}</td><td>→</td><td>___________</td></tr>`).join("")}
+          </tbody></table>
+        </div>`;
+      } else {
+        activityHtml = `<div class="activity-box">
+          <h4>🔗 ${spec.prompt || "Spojování"}</h4>
+          <table class="matching"><tbody>
+            ${spec.model.pairs.map((p: any) => `<tr><td>${p.left}</td><td>→</td><td>${p.right}</td></tr>`).join("")}
+          </tbody></table>
+        </div>`;
+      }
+    } else if (isStudent) {
+      // Generic placeholder for student handout
+      activityHtml = `<div class="activity-box activity-placeholder">
+        <h4>🎯 Aktivita: ${spec.type?.toUpperCase() || "–"}</h4>
+        <p>Vypracuj v aplikaci ZEdu.</p>
       </div>`;
     }
   }
@@ -51,12 +75,17 @@ function renderSlideToHtml(slide: any, index: number, options: any): string {
     ? `<div class="qr-placeholder"><div class="qr-box">QR</div><p>Připojte se na: <strong>${options.joinCode || "______"}</strong></p></div>`
     : "";
 
-  // Teacher notes
-  const notesHtml = options.includeTeacherNotes && notes
+  // Device section — only for teacher in live mode
+  const deviceHtml = (!isStudentPaced && !isStudent && deviceInstructions)
+    ? `<div class="device-section"><h4>📱 Zařízení žáka</h4><p>${deviceInstructions}</p></div>`
+    : "";
+
+  // Teacher notes — never in student export
+  const notesHtml = options.includeTeacherNotes && !isStudent && notes
     ? `<div class="teacher-notes"><strong>📋 Poznámky:</strong> ${notes}</div>`
     : "";
 
-  return `<section class="slide" data-slide="${index + 1}">
+  return `<section class="slide" data-slide="${index + 1}" role="region" aria-label="Slide ${index + 1}: ${headline}">
     <div class="slide-header">
       <span class="slide-badge" style="background:${typeColor}">${typeLabel}</span>
       <span class="slide-number">${index + 1}</span>
@@ -66,24 +95,23 @@ function renderSlideToHtml(slide: any, index: number, options: any): string {
       <p class="body-text">${body}</p>
       ${qrHtml}
       ${activityHtml}
-      <div class="device-section">
-        <h4>📱 Zařízení žáka</h4>
-        <p>${deviceInstructions}</p>
-      </div>
+      ${deviceHtml}
     </div>
     ${notesHtml}
   </section>`;
 }
 
 function generateFullHtml(slides: any[], title: string, options: any): string {
+  const isStudent = options.exportTarget === "student";
+  const subtitle = isStudent ? "Žákovský handout" : "Učitelský export";
   const slidesHtml = slides.map((s, i) => renderSlideToHtml(s, i, options)).join("\n");
-  
+
   return `<!DOCTYPE html>
 <html lang="cs">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${title}</title>
+<title>${title} – ${subtitle}</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; color: #1e293b; }
@@ -106,6 +134,7 @@ function generateFullHtml(slides: any[], title: string, options: any): string {
   .activity-box ul { list-style: none; padding: 0; }
   .activity-box li { padding: 6px 12px; margin: 4px 0; background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px; }
   .activity-box li.correct { border-color: #22c55e; background: #f0fdf4; font-weight: 600; }
+  .activity-placeholder { text-align: center; background: #fef9c3; border-color: #eab308; }
   .matching td { padding: 4px 12px; font-size: 14px; }
   .qr-placeholder { text-align: center; margin: 20px 0; }
   .qr-box { display: inline-block; width: 120px; height: 120px; border: 2px dashed #94a3b8; border-radius: 8px; line-height: 120px; color: #94a3b8; font-size: 24px; font-weight: bold; }
@@ -114,7 +143,6 @@ function generateFullHtml(slides: any[], title: string, options: any): string {
     .slide { border: none; box-shadow: none; page-break-after: always; }
     .header { position: static; }
   }
-  /* Presentation mode */
   body.present .header, body.present .teacher-notes { display: none; }
   body.present .slides { max-width: 100%; padding: 0; margin: 0; }
   body.present .slide { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; border: none; border-radius: 0; margin: 0; scroll-snap-align: start; }
@@ -124,7 +152,7 @@ function generateFullHtml(slides: any[], title: string, options: any): string {
 <body>
 <div class="header">
   <h1>${title}</h1>
-  <p>${slides.length} slidů · ZEdu Live Export</p>
+  <p>${slides.length} slidů · ${subtitle} · ZEdu Export</p>
 </div>
 <div class="slides">
 ${slidesHtml}
@@ -137,46 +165,6 @@ ${slidesHtml}
 </script>
 </body>
 </html>`;
-}
-
-// ── PPTX generator (simplified, no external dep) ──────────
-function generatePptxXml(slides: any[], title: string, options: any): { files: Record<string, string> } {
-  // Generate a minimal PPTX-compatible Open XML
-  // PPTX is a ZIP of XML files. We'll generate the minimal set.
-  // For a real PPTX we'd need a proper library, but in Deno edge functions
-  // we'll generate a simplified version that works in PowerPoint/Google Slides.
-  
-  const slideXmls: Record<string, string> = {};
-  
-  slides.forEach((slide, i) => {
-    const headline = (slide.projector?.headline || "").replace(/&/g, "&amp;").replace(/</g, "&lt;");
-    const body = (slide.projector?.body || "").replace(/&/g, "&amp;").replace(/</g, "&lt;");
-    const deviceText = (slide.device?.instructions || "").replace(/&/g, "&amp;").replace(/</g, "&lt;");
-    const notes = (slide.teacherNotes || "").replace(/&/g, "&amp;").replace(/</g, "&lt;");
-    
-    slideXmls[`ppt/slides/slide${i + 1}.xml`] = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
-  <p:cSld>
-    <p:spTree>
-      <p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>
-      <p:grpSpPr/>
-      <p:sp>
-        <p:nvSpPr><p:cNvPr id="2" name="Title"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr><p:ph type="title"/></p:nvPr></p:nvSpPr>
-        <p:spPr/>
-        <p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr lang="cs-CZ" dirty="0"/><a:t>${headline}</a:t></a:r></a:p></p:txBody>
-      </p:sp>
-      <p:sp>
-        <p:nvSpPr><p:cNvPr id="3" name="Content"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr><p:ph idx="1"/></p:nvPr></p:nvSpPr>
-        <p:spPr/>
-        <p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr lang="cs-CZ" dirty="0"/><a:t>${body}</a:t></a:r></a:p><a:p><a:r><a:rPr lang="cs-CZ" dirty="0"/><a:t></a:t></a:r></a:p><a:p><a:r><a:rPr lang="cs-CZ" dirty="0" b="1"/><a:t>📱 Žák: </a:t></a:r><a:r><a:rPr lang="cs-CZ" dirty="0"/><a:t>${deviceText}</a:t></a:r></a:p></p:txBody>
-      </p:sp>
-    </p:spTree>
-  </p:cSld>
-  ${options.includeTeacherNotes && notes ? `<p:notes><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/><p:sp><p:nvSpPr><p:cNvPr id="2" name="Notes"/><p:cNvSpPr/><p:nvPr><p:ph type="body" idx="1"/></p:nvPr></p:nvSpPr><p:spPr/><p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr lang="cs-CZ"/><a:t>${notes}</a:t></a:r></a:p></p:txBody></p:sp></p:spTree></p:cSld></p:notes>` : ""}
-</p:sld>`;
-  });
-
-  return { files: slideXmls };
 }
 
 serve(async (req) => {
@@ -205,11 +193,16 @@ serve(async (req) => {
 
     const { lessonPlanId, format = "html", options = {} } = await req.json();
 
+    const exportTarget = options.exportTarget || "teacher";
+    const exportMode = options.mode || "live";
+
     const exportOptions = {
-      includeTeacherNotes: options.includeTeacherNotes ?? true,
-      includeAnswerKey: options.includeAnswerKey ?? false,
-      includeQrCodes: options.includeQrCodes ?? true,
+      includeTeacherNotes: exportTarget === "teacher" && (options.includeTeacherNotes ?? true),
+      includeAnswerKey: exportTarget === "teacher" && (options.includeAnswerKey ?? true),
+      includeQrCodes: options.includeQrCodes ?? (exportTarget === "teacher"),
       joinCode: options.joinCode || "",
+      exportTarget,
+      mode: exportMode,
     };
 
     // Fetch lesson plan
@@ -230,7 +223,7 @@ serve(async (req) => {
     const title = (plan as any).title || "Plán lekce";
 
     // Create export job
-    const { data: job, error: jobErr } = await supabase
+    const { data: job } = await supabase
       .from("export_jobs" as any)
       .insert({
         lesson_plan_id: lessonPlanId,
@@ -244,49 +237,14 @@ serve(async (req) => {
       .select("id")
       .single();
 
-    if (jobErr) {
-      console.error("Job creation error:", jobErr);
-    }
-
     const jobId = (job as any)?.id;
+    const targetSuffix = exportTarget === "student" ? "_handout" : "_teacher";
 
     try {
-      if (format === "html") {
+      if (format === "html" || format === "pdf") {
         const html = generateFullHtml(slides, title, exportOptions);
-        
-        // Upload to storage
-        const fileName = `${user.id}/${jobId || crypto.randomUUID()}_${title.replace(/\s+/g, "_")}.html`;
-        const { error: uploadErr } = await supabase.storage
-          .from("exports")
-          .upload(fileName, new Blob([html], { type: "text/html" }), { contentType: "text/html", upsert: true });
 
-        if (uploadErr) throw uploadErr;
-
-        const { data: urlData } = supabase.storage.from("exports").getPublicUrl(fileName);
-
-        // Update job
-        if (jobId) {
-          await supabase.from("export_jobs" as any).update({
-            status: "succeeded",
-            output_url: urlData.publicUrl,
-            completed_at: new Date().toISOString(),
-          } as any).eq("id", jobId);
-        }
-
-        return new Response(JSON.stringify({ 
-          format: "html",
-          url: urlData.publicUrl,
-          jobId,
-        }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      if (format === "pdf") {
-        // PDF: Return HTML optimized for print (client will use window.print())
-        const html = generateFullHtml(slides, title, exportOptions);
-        
-        const fileName = `${user.id}/${jobId || crypto.randomUUID()}_${title.replace(/\s+/g, "_")}_print.html`;
+        const fileName = `${user.id}/${jobId || crypto.randomUUID()}_${title.replace(/\s+/g, "_")}${targetSuffix}.html`;
         const { error: uploadErr } = await supabase.storage
           .from("exports")
           .upload(fileName, new Blob([html], { type: "text/html" }), { contentType: "text/html", upsert: true });
@@ -303,20 +261,23 @@ serve(async (req) => {
           } as any).eq("id", jobId);
         }
 
-        return new Response(JSON.stringify({
-          format: "pdf",
+        const responsePayload: any = {
+          format,
           url: urlData.publicUrl,
-          printInstructions: "Otevřete URL a použijte Ctrl+P pro tisk do PDF",
           jobId,
-        }), {
+          exportTarget,
+        };
+
+        if (format === "pdf") {
+          responsePayload.printInstructions = "Otevřete URL a použijte Ctrl+P pro tisk do PDF";
+        }
+
+        return new Response(JSON.stringify(responsePayload), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
       if (format === "pptx") {
-        // Generate PPTX XML structure info (simplified)
-        // Full PPTX generation would require ZIP library
-        // Instead, return structured data for client-side PPTX generation
         const pptxData = {
           slides: slides.map((slide: any, i: number) => ({
             index: i + 1,
@@ -325,9 +286,9 @@ serve(async (req) => {
             content: slide.projector?.body || "",
             deviceInstructions: slide.device?.instructions || "",
             teacherNotes: exportOptions.includeTeacherNotes ? (slide.teacherNotes || "") : "",
-            activitySpec: slide.activitySpec || null,
+            activitySpec: exportOptions.includeAnswerKey ? (slide.activitySpec || null) : stripAnswers(slide.activitySpec),
           })),
-          metadata: { title, slideCount: slides.length },
+          metadata: { title, slideCount: slides.length, exportTarget },
         };
 
         if (jobId) {
@@ -341,6 +302,7 @@ serve(async (req) => {
           format: "pptx",
           data: pptxData,
           jobId,
+          exportTarget,
           note: "PPTX se generuje na straně klienta pomocí pptxgenjs",
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -349,14 +311,10 @@ serve(async (req) => {
 
       throw new Error(`Nepodporovaný formát: ${format}`);
     } catch (exportError) {
-      // Update job as failed
       if (jobId) {
-        const attempt = 1;
-        const maxAttempts = 3;
         await supabase.from("export_jobs" as any).update({
-          status: attempt >= maxAttempts ? "failed" : "queued",
+          status: "failed",
           error_message: exportError instanceof Error ? exportError.message : "Unknown error",
-          attempt,
         } as any).eq("id", jobId);
       }
       throw exportError;
@@ -369,3 +327,21 @@ serve(async (req) => {
     );
   }
 });
+
+/** Strip answer keys from activitySpec for student exports */
+function stripAnswers(spec: any): any {
+  if (!spec) return null;
+  const stripped = { ...spec };
+  if (stripped.model) {
+    const m = { ...stripped.model };
+    delete m.correctIndex;
+    delete m.correctAnswer;
+    delete m.answers;
+    // For matching, remove right-side mapping
+    if (stripped.type === "matching" && m.pairs) {
+      m.pairs = m.pairs.map((p: any) => ({ left: p.left, right: "___" }));
+    }
+    stripped.model = m;
+  }
+  return stripped;
+}
