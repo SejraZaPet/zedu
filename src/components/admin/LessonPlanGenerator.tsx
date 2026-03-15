@@ -272,6 +272,18 @@ const LessonPlanGenerator = ({ lessonId, lessonTitle, lessonBlocks }: Props) => 
                 </div>
               )}
 
+              {/* Activity generator for practice/activity/exit slides */}
+              {["practice", "activity", "exit"].includes(currentSlide.type) && (
+                <ActivitySpecGenerator
+                  slideContext={{
+                    headline: currentSlide.projector.headline,
+                    body: currentSlide.projector.body,
+                    type: currentSlide.type,
+                  }}
+                  gradeBand={plan.gradeBand}
+                />
+              )}
+
               {/* Navigation */}
               <div className="flex justify-between">
                 <Button size="sm" variant="outline" disabled={activeSlide === 0} onClick={() => setActiveSlide((p) => p - 1)}>
