@@ -1,5 +1,6 @@
 import { useParams } from "react-router-dom";
 import { useGameSession, useTeacherGameControls } from "@/hooks/useGameSession";
+import { ConnectionStatusBanner } from "@/components/game/ConnectionStatusBanner";
 import { GameLobby } from "@/components/game/GameLobby";
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
@@ -22,7 +23,7 @@ const SLIDE_TYPE_LABELS: Record<string, string> = {
 
 const LiveTeacherScreen = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
-  const { session, players, responses, loading } = useGameSession(sessionId);
+  const { session, players, responses, loading, connectionStatus, reconnect } = useGameSession(sessionId);
   const { startGame, nextQuestion, endGame } = useTeacherGameControls(sessionId);
 
   const slides: SlideData[] = (session?.activity_data as any[]) || [];
@@ -76,6 +77,8 @@ const LiveTeacherScreen = () => {
 
   // Playing: show current slide
   return (
+    <>
+    <ConnectionStatusBanner status={connectionStatus} onReconnect={reconnect} />
     <div className="min-h-screen bg-background p-6 max-w-4xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -164,6 +167,7 @@ const LiveTeacherScreen = () => {
         </div>
       )}
     </div>
+    </>
   );
 };
 

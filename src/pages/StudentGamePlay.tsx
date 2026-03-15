@@ -3,6 +3,7 @@ import { useGameSession } from "@/hooks/useGameSession";
 import { GameLobby } from "@/components/game/GameLobby";
 import { StudentGameQuestion } from "@/components/game/StudentGameQuestion";
 import { GameLeaderboardFinal } from "@/components/game/GameLeaderboardFinal";
+import { ConnectionStatusBanner } from "@/components/game/ConnectionStatusBanner";
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -18,7 +19,7 @@ const StudentGamePlay = () => {
     };
   }, [sessionId]);
 
-  const { session, players, responses, loading } = useGameSession(sessionId);
+  const { session, players, responses, loading, connectionStatus, reconnect } = useGameSession(sessionId);
   const [answered, setAnswered] = useState<Set<number>>(new Set());
   const [lastResult, setLastResult] = useState<{ correct: boolean; score: number } | null>(null);
 
@@ -100,17 +101,20 @@ const StudentGamePlay = () => {
   const questionStarted = session.question_started_at ? new Date(session.question_started_at).getTime() : Date.now();
 
   return (
-    <StudentGameQuestion
-      question={currentQ}
-      questionIndex={session.current_question_index}
-      totalQuestions={session.activity_data.length}
-      hasAnswered={hasAnswered}
-      lastResult={lastResult}
-      onAnswer={handleAnswer}
-      timeLimit={timeLimit}
-      questionStarted={questionStarted}
-      status={session.status}
-    />
+    <>
+      <ConnectionStatusBanner status={connectionStatus} onReconnect={reconnect} />
+      <StudentGameQuestion
+        question={currentQ}
+        questionIndex={session.current_question_index}
+        totalQuestions={session.activity_data.length}
+        hasAnswered={hasAnswered}
+        lastResult={lastResult}
+        onAnswer={handleAnswer}
+        timeLimit={timeLimit}
+        questionStarted={questionStarted}
+        status={session.status}
+      />
+    </>
   );
 };
 
