@@ -109,7 +109,7 @@ const StudentGameJoin = () => {
               size="lg"
               variant="hero"
             >
-              {joining ? "Připojování..." : "Připojit se"}
+              {joining ? t("student.states.connecting") : t("student.buttons.join")}
             </Button>
           </CardContent>
         </Card>

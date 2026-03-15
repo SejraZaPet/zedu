@@ -570,7 +570,7 @@ export default function WorksheetPlayer({
       {!submitted && (
         <div className="flex justify-center">
           <Button variant="ghost" size="sm" onClick={handleSaveNow}>
-            <Save className="h-4 w-4 mr-1" /> Uložit nyní
+            <Save className="h-4 w-4 mr-1" /> {t("student.toasts.saved.title")}
           </Button>
         </div>
       )}

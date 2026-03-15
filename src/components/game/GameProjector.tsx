@@ -157,7 +157,7 @@ export const GameProjector = ({ session, players, responses, countdown, onShowRe
         {!isResults && (
           <Button onClick={onShowResults} variant="outline" size="sm" className="gap-2">
             <SkipForward className="w-4 h-4" />
-            Ukončit otázku
+            {t("teacher.buttons.showLeaderboard")}
           </Button>
         )}
       </div>
