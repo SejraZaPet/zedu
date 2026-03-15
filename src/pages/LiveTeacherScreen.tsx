@@ -23,7 +23,7 @@ const SLIDE_TYPE_LABELS: Record<string, string> = {
 
 const LiveTeacherScreen = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
-  const { session, players, responses, loading } = useGameSession(sessionId);
+  const { session, players, responses, loading, connectionStatus, reconnect } = useGameSession(sessionId);
   const { startGame, nextQuestion, endGame } = useTeacherGameControls(sessionId);
 
   const slides: SlideData[] = (session?.activity_data as any[]) || [];

@@ -101,15 +101,24 @@ const StudentGamePlay = () => {
   const questionStarted = session.question_started_at ? new Date(session.question_started_at).getTime() : Date.now();
 
   return (
-    <StudentGameQuestion
-      question={currentQ}
-      questionIndex={session.current_question_index}
-      totalQuestions={session.activity_data.length}
-      hasAnswered={hasAnswered}
-      lastResult={lastResult}
-      onAnswer={handleAnswer}
-      timeLimit={timeLimit}
-      questionStarted={questionStarted}
+    <>
+      <ConnectionStatusBanner status={connectionStatus} onReconnect={reconnect} />
+      <StudentGameQuestion
+        question={currentQ}
+        questionIndex={session.current_question_index}
+        totalQuestions={session.activity_data.length}
+        hasAnswered={hasAnswered}
+        lastResult={lastResult}
+        onAnswer={handleAnswer}
+        timeLimit={timeLimit}
+        questionStarted={questionStarted}
+        status={session.status}
+      />
+    </>
+  );
+};
+
+export default StudentGamePlay;
       status={session.status}
     />
   );
