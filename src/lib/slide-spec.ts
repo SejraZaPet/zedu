@@ -438,6 +438,155 @@ export function buildSpeakerNotesWithAnswers(
   return notes;
 }
 
+// ────────────────── Slide Templates ──────────────────
+
+/**
+ * All coordinates are in % of slide area (0–100) for responsive rendering.
+ * PPTX renderers convert % → inches based on aspect ratio.
+ * HTML/PDF renderers use % directly.
+ */
+
+export interface TemplateRegion {
+  x: number; y: number; w: number; h: number;
+}
+
+export interface SlideTemplate {
+  id: string;
+  label: string;
+  aspectRatio: "16:9" | "4:3";
+  regions: {
+    badge: TemplateRegion;
+    title: TemplateRegion;
+    content: TemplateRegion;
+    secondary: TemplateRegion | null;
+    deviceBar: TemplateRegion | null;
+    qrArea: TemplateRegion | null;
+  };
+  overflow: {
+    titleMaxChars: number;
+    contentMaxChars: number;
+    minFontSizePt: number;
+    truncationSuffix: string;
+  };
+}
+
+const TEMPLATE_EXPLAIN: SlideTemplate = {
+  id: "explain", label: "Výklad (2 sloupce)", aspectRatio: "16:9",
+  regions: {
+    badge:     { x: 3.7, y: 4,  w: 11.5, h: 5.2 },
+    title:     { x: 3.7, y: 12, w: 92.6, h: 12 },
+    content:   { x: 3.7, y: 26, w: 55,   h: 54 },
+    secondary: { x: 62,  y: 26, w: 34.3, h: 54 },
+    deviceBar: { x: 3.7, y: 82, w: 55,   h: 15 },
+    qrArea:    null,
+  },
+  overflow: { titleMaxChars: 60, contentMaxChars: 600, minFontSizePt: 11, truncationSuffix: "…" },
+};
+
+const TEMPLATE_PRACTICE: SlideTemplate = {
+  id: "practice", label: "Procvičení (otázka + prostor)", aspectRatio: "16:9",
+  regions: {
+    badge:     { x: 3.7, y: 4,  w: 11.5, h: 5.2 },
+    title:     { x: 3.7, y: 12, w: 92.6, h: 12 },
+    content:   { x: 3.7, y: 26, w: 60,   h: 20 },
+    secondary: { x: 3.7, y: 48, w: 92.6, h: 34 },
+    deviceBar: { x: 3.7, y: 84, w: 60,   h: 13 },
+    qrArea:    { x: 68,  y: 26, w: 28.3, h: 20 },
+  },
+  overflow: { titleMaxChars: 50, contentMaxChars: 300, minFontSizePt: 12, truncationSuffix: "…" },
+};
+
+const TEMPLATE_EXIT: SlideTemplate = {
+  id: "exit", label: "Exit ticket (1 otázka)", aspectRatio: "16:9",
+  regions: {
+    badge:     { x: 3.7, y: 4,  w: 11.5, h: 5.2 },
+    title:     { x: 3.7, y: 12, w: 92.6, h: 12 },
+    content:   { x: 8,   y: 30, w: 84,   h: 20 },
+    secondary: { x: 8,   y: 54, w: 84,   h: 30 },
+    deviceBar: null,
+    qrArea:    { x: 75,  y: 84, w: 21.3, h: 13 },
+  },
+  overflow: { titleMaxChars: 40, contentMaxChars: 200, minFontSizePt: 14, truncationSuffix: "…" },
+};
+
+const TEMPLATE_DEFAULT: SlideTemplate = {
+  id: "default", label: "Výchozí (1 sloupec)", aspectRatio: "16:9",
+  regions: {
+    badge:     { x: 3.7, y: 4,  w: 11.5, h: 5.2 },
+    title:     { x: 3.7, y: 12, w: 92.6, h: 12 },
+    content:   { x: 3.7, y: 26, w: 60,   h: 56 },
+    secondary: { x: 67,  y: 26, w: 29.3, h: 40 },
+    deviceBar: { x: 3.7, y: 84, w: 60,   h: 13 },
+    qrArea:    { x: 67,  y: 68, w: 29.3, h: 22 },
+  },
+  overflow: { titleMaxChars: 60, contentMaxChars: 500, minFontSizePt: 11, truncationSuffix: "…" },
+};
+
+export const SLIDE_TEMPLATES: SlideTemplate[] = [
+  TEMPLATE_EXPLAIN, TEMPLATE_PRACTICE, TEMPLATE_EXIT, TEMPLATE_DEFAULT,
+];
+
+// ────────────────── Mapping Rules ──────────────────
+
+export interface TemplateMappingRule {
+  slideTypes: SlideType[];
+  templateId: string;
+  priority: number;
+  requiresImages?: boolean;
+  requiresActivity?: boolean;
+}
+
+export const TEMPLATE_MAPPING_RULES: TemplateMappingRule[] = [
+  { slideTypes: ["explain", "objective"],          templateId: "explain",  priority: 10 },
+  { slideTypes: ["practice", "activity"],          templateId: "practice", priority: 10 },
+  { slideTypes: ["exit"],                          templateId: "exit",     priority: 10 },
+  { slideTypes: ["intro", "summary"],              templateId: "default",  priority: 5  },
+  { slideTypes: ["explain", "objective", "intro", "summary", "practice", "activity", "exit"],
+    templateId: "explain", priority: 15, requiresImages: true },
+  { slideTypes: ["intro", "objective", "explain", "practice", "activity", "summary", "exit"],
+    templateId: "default",  priority: 0 },
+];
+
+export function resolveTemplate(slide: SlideSpec): SlideTemplate {
+  const candidates = TEMPLATE_MAPPING_RULES
+    .filter(r => {
+      if (!r.slideTypes.includes(slide.type)) return false;
+      if (r.requiresImages && slide.images.length === 0) return false;
+      if (r.requiresActivity && !slide.interactivePlaceholder) return false;
+      return true;
+    })
+    .sort((a, b) => b.priority - a.priority);
+  const templateId = candidates[0]?.templateId || "default";
+  return SLIDE_TEMPLATES.find(t => t.id === templateId) || TEMPLATE_DEFAULT;
+}
+
+export function applyOverflow(
+  text: string, maxChars: number, baseFontPt: number, minFontPt: number, suffix = "…",
+): { text: string; fontSize: number } {
+  if (text.length <= maxChars) return { text, fontSize: baseFontPt };
+  const ratio = maxChars / text.length;
+  const reduced = Math.max(Math.round(baseFontPt * Math.sqrt(ratio)), minFontPt);
+  const effectiveMax = Math.round(maxChars * (baseFontPt / reduced));
+  if (text.length > effectiveMax) {
+    return { text: text.slice(0, effectiveMax - suffix.length) + suffix, fontSize: reduced };
+  }
+  return { text, fontSize: reduced };
+}
+
+export function regionToInches(region: TemplateRegion, slideWidthIn = 13.33, slideHeightIn = 7.5) {
+  return {
+    x: +(region.x / 100 * slideWidthIn).toFixed(2),
+    y: +(region.y / 100 * slideHeightIn).toFixed(2),
+    w: +(region.w / 100 * slideWidthIn).toFixed(2),
+    h: +(region.h / 100 * slideHeightIn).toFixed(2),
+  };
+}
+
+export const SLIDE_TEMPLATES_SPEC = {
+  templates: SLIDE_TEMPLATES.map(t => ({ id: t.id, label: t.label, aspectRatio: t.aspectRatio, layout: t.regions, overflow: t.overflow })),
+  mappingRules: TEMPLATE_MAPPING_RULES.map(r => ({ slideTypes: r.slideTypes, templateId: r.templateId, priority: r.priority, ...(r.requiresImages ? { requiresImages: true } : {}), ...(r.requiresActivity ? { requiresActivity: true } : {}) })),
+} as const;
+
 // ────────────────── Example document (for documentation) ──────────────────
 
 export const SLIDE_SPEC_EXAMPLE: SlideSpecDocument = {
