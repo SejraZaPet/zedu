@@ -539,7 +539,7 @@ export default function WorksheetPlayer({
             size="sm"
             onClick={() => setCurrentIndex(currentIndex + 1)}
           >
-            Další <ChevronRight className="h-4 w-4 ml-1" />
+            {t("student.buttons.nextItem")} <ChevronRight className="h-4 w-4 ml-1" />
           </Button>
         ) : (
           <Button
