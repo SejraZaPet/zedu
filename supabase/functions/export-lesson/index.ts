@@ -33,39 +33,74 @@ function renderSlideToHtml(slide: any, index: number, options: any): string {
   const typeColor = typeColors[slide.type] || "#6b7280";
   const typeLabel = typeLabels[slide.type] || slide.type;
 
-  // Activity rendering
+  // Activity rendering — per-type transform rules
   let activityHtml = "";
   if (slide.activitySpec) {
     const spec = slide.activitySpec;
-    if (spec.type === "mcq" && spec.model?.choices) {
+    const aType = spec.type || "unknown";
+
+    if (aType === "mcq" && spec.model?.choices) {
       activityHtml = `<div class="activity-box">
         <h4>📝 ${spec.prompt || ""}</h4>
         <ul>${spec.model.choices.map((c: string, i: number) =>
           `<li${i === spec.model.correctIndex && options.includeAnswerKey ? ' class="correct"' : ""}>${c}</li>`
         ).join("")}</ul>
       </div>`;
-    } else if (spec.type === "matching" && spec.model?.pairs) {
-      if (isStudent) {
-        // Student handout: show only left column, right column shuffled or blank
-        activityHtml = `<div class="activity-box">
-          <h4>🔗 ${spec.prompt || "Spojování"}</h4>
-          <table class="matching"><tbody>
-            ${spec.model.pairs.map((p: any) => `<tr><td>${p.left}</td><td>→</td><td>___________</td></tr>`).join("")}
-          </tbody></table>
-        </div>`;
-      } else {
-        activityHtml = `<div class="activity-box">
-          <h4>🔗 ${spec.prompt || "Spojování"}</h4>
-          <table class="matching"><tbody>
-            ${spec.model.pairs.map((p: any) => `<tr><td>${p.left}</td><td>→</td><td>${p.right}</td></tr>`).join("")}
-          </tbody></table>
-        </div>`;
+    } else if (aType === "matching" && spec.model?.pairs) {
+      activityHtml = `<div class="activity-box">
+        <h4>🔗 ${spec.prompt || "Spojování"}</h4>
+        <table class="matching"><tbody>
+          ${spec.model.pairs.map((p: any) => `<tr><td>${p.left}</td><td>→</td><td>${isStudent ? "___________" : p.right}</td></tr>`).join("")}
+        </tbody></table>
+      </div>`;
+    } else if (aType === "hotspot") {
+      // Hotspot: fallback text description for print
+      const areas = (!isStudent && options.includeAnswerKey && spec.model?.correctAreas)
+        ? `<ul>${spec.model.correctAreas.map((a: any) => `<li>${a.label || a.description || "oblast"}</li>`).join("")}</ul>`
+        : `<p>Označte správné oblasti na obrázku (v aplikaci ZEdu).</p>`;
+      activityHtml = `<div class="activity-box">
+        <h4>📍 ${spec.prompt || "Hotspot"}</h4>
+        ${spec.model?.imageUrl ? `<img src="${spec.model.imageUrl}" alt="Hotspot obrázek" style="max-width:100%;border-radius:8px;margin:8px 0">` : ""}
+        ${areas}
+      </div>`;
+    } else if (aType === "video") {
+      // Video: checkpoints as text questions
+      let checkpointsHtml = "";
+      if (spec.model?.checkpoints) {
+        checkpointsHtml = `<ol>${spec.model.checkpoints.map((cp: any) =>
+          `<li><strong>[${cp.time || ""}]</strong> ${cp.question || ""}${!isStudent && options.includeAnswerKey && cp.answer ? ` <em class="correct">(${cp.answer})</em>` : ""}</li>`
+        ).join("")}</ol>`;
       }
-    } else if (isStudent) {
-      // Generic placeholder for student handout
+      activityHtml = `<div class="activity-box">
+        <h4>🎬 ${spec.prompt || "Video"}</h4>
+        <p>${spec.model?.videoUrl ? `URL: ${spec.model.videoUrl}` : "Přehrajte video v aplikaci."}</p>
+        ${checkpointsHtml ? `<h5>Kontrolní otázky:</h5>${checkpointsHtml}` : ""}
+      </div>`;
+    } else if (aType === "true_false") {
+      const showAnswer = !isStudent && options.includeAnswerKey;
+      activityHtml = `<div class="activity-box">
+        <h4>✅ ${spec.prompt || "Pravda / Nepravda"}</h4>
+        <p>○ Pravda ${showAnswer && spec.model?.correctAnswer === true ? '<span class="correct">✓</span>' : ""}
+           ○ Nepravda ${showAnswer && spec.model?.correctAnswer === false ? '<span class="correct">✓</span>' : ""}</p>
+      </div>`;
+    } else if (aType === "ordering" && spec.model?.items) {
+      const items = isStudent ? spec.model.items : (spec.model.correctOrder || spec.model.items);
+      activityHtml = `<div class="activity-box">
+        <h4>🔢 ${spec.prompt || "Seřaďte"}</h4>
+        <ol>${items.map((item: string, i: number) => `<li>${isStudent ? `☐ ${item}` : `${item}`}</li>`).join("")}</ol>
+      </div>`;
+    } else if (aType === "fill_blank") {
+      const showAnswers = !isStudent && options.includeAnswerKey;
+      activityHtml = `<div class="activity-box">
+        <h4>✏️ ${spec.prompt || "Doplňte"}</h4>
+        <p>${spec.model?.text || "Doplňte chybějící slova."}</p>
+        ${showAnswers && spec.model?.answers ? `<p class="correct"><strong>Odpovědi:</strong> ${spec.model.answers.join(", ")}</p>` : ""}
+      </div>`;
+    } else {
+      // Generic fallback
       activityHtml = `<div class="activity-box activity-placeholder">
-        <h4>🎯 Aktivita: ${spec.type?.toUpperCase() || "–"}</h4>
-        <p>Vypracuj v aplikaci ZEdu.</p>
+        <h4>🎯 Aktivita: ${aType.toUpperCase()}</h4>
+        <p>${isStudent ? "Vypracuj v aplikaci ZEdu." : (spec.prompt || "")}</p>
       </div>`;
     }
   }
