@@ -1,45 +1,65 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { GameSession, GamePlayer, GameResponse, GameSettings } from "@/lib/game-types";
+import type { RealtimeChannel } from "@supabase/supabase-js";
+
+export type ConnectionStatus = "connecting" | "connected" | "reconnecting" | "disconnected";
+
+const MAX_RECONNECT_ATTEMPTS = 8;
+const BASE_DELAY_MS = 1000; // 1s, 2s, 4s, 8s, 16s, 32s, 64s, 128s
+
+function backoffDelay(attempt: number): number {
+  return Math.min(BASE_DELAY_MS * Math.pow(2, attempt), 128_000);
+}
 
 export function useGameSession(sessionId: string | undefined) {
   const [session, setSession] = useState<GameSession | null>(null);
   const [players, setPlayers] = useState<GamePlayer[]>([]);
   const [responses, setResponses] = useState<GameResponse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>("connecting");
 
-  // Fetch initial data
-  useEffect(() => {
+  const channelRef = useRef<RealtimeChannel | null>(null);
+  const reconnectAttemptRef = useRef(0);
+  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mountedRef = useRef(true);
+
+  // Full data fetch (used for initial load and resync)
+  const fetchData = useCallback(async () => {
     if (!sessionId) return;
 
-    const fetchData = async () => {
-      const [sessionRes, playersRes, responsesRes] = await Promise.all([
-        supabase.from("game_sessions").select("*").eq("id", sessionId).single(),
-        supabase.from("game_players").select("*").eq("session_id", sessionId).order("total_score", { ascending: false }),
-        supabase.from("game_responses").select("*").eq("session_id", sessionId),
-      ]);
+    const [sessionRes, playersRes, responsesRes] = await Promise.all([
+      supabase.from("game_sessions").select("*").eq("id", sessionId).single(),
+      supabase.from("game_players").select("*").eq("session_id", sessionId).order("total_score", { ascending: false }),
+      supabase.from("game_responses").select("*").eq("session_id", sessionId),
+    ]);
 
-      if (sessionRes.data) {
-        setSession({
-          ...sessionRes.data,
-          activity_data: sessionRes.data.activity_data as any,
-          settings: sessionRes.data.settings as any,
-        } as GameSession);
-      }
-      if (playersRes.data) setPlayers(playersRes.data as GamePlayer[]);
-      if (responsesRes.data) setResponses(responsesRes.data as GameResponse[]);
-      setLoading(false);
-    };
+    if (!mountedRef.current) return;
 
-    fetchData();
+    if (sessionRes.data) {
+      setSession({
+        ...sessionRes.data,
+        activity_data: sessionRes.data.activity_data as any,
+        settings: sessionRes.data.settings as any,
+      } as GameSession);
+    }
+    if (playersRes.data) setPlayers(playersRes.data as GamePlayer[]);
+    if (responsesRes.data) setResponses(responsesRes.data as GameResponse[]);
+    setLoading(false);
   }, [sessionId]);
 
-  // Real-time subscriptions
-  useEffect(() => {
-    if (!sessionId) return;
+  // Subscribe to realtime with reconnect logic
+  const subscribe = useCallback(() => {
+    if (!sessionId || !mountedRef.current) return;
+
+    // Clean up previous channel
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
 
     const channel = supabase
-      .channel(`game-${sessionId}`)
+      .channel(`game-${sessionId}-${Date.now()}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "game_sessions", filter: `id=eq.${sessionId}` }, (payload) => {
         if (payload.new) {
           setSession({
@@ -50,20 +70,97 @@ export function useGameSession(sessionId: string | undefined) {
         }
       })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "game_players", filter: `session_id=eq.${sessionId}` }, (payload) => {
-        setPlayers((prev) => [...prev, payload.new as GamePlayer]);
+        setPlayers((prev) => {
+          if (prev.some((p) => p.id === (payload.new as any).id)) return prev;
+          return [...prev, payload.new as GamePlayer];
+        });
       })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "game_players", filter: `session_id=eq.${sessionId}` }, (payload) => {
         setPlayers((prev) => prev.map((p) => (p.id === (payload.new as any).id ? (payload.new as GamePlayer) : p)));
       })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "game_responses", filter: `session_id=eq.${sessionId}` }, (payload) => {
-        setResponses((prev) => [...prev, payload.new as GameResponse]);
+        setResponses((prev) => {
+          if (prev.some((r) => r.id === (payload.new as any).id)) return prev;
+          return [...prev, payload.new as GameResponse];
+        });
       })
-      .subscribe();
+      .subscribe((status, err) => {
+        if (!mountedRef.current) return;
 
-    return () => { supabase.removeChannel(channel); };
-  }, [sessionId]);
+        switch (status) {
+          case "SUBSCRIBED":
+            setConnectionStatus("connected");
+            // Reset reconnect counter on success
+            if (reconnectAttemptRef.current > 0) {
+              // Resync data after reconnect
+              fetchData();
+            }
+            reconnectAttemptRef.current = 0;
+            break;
 
-  return { session, players, responses, loading, setSession, setPlayers };
+          case "CHANNEL_ERROR":
+          case "TIMED_OUT":
+            console.warn(`Realtime ${status}:`, err);
+            setConnectionStatus("reconnecting");
+            scheduleReconnect();
+            break;
+
+          case "CLOSED":
+            // Only reconnect if still mounted (not intentional cleanup)
+            if (mountedRef.current) {
+              setConnectionStatus("reconnecting");
+              scheduleReconnect();
+            }
+            break;
+        }
+      });
+
+    channelRef.current = channel;
+  }, [sessionId, fetchData]);
+
+  const scheduleReconnect = useCallback(() => {
+    if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+
+    if (reconnectAttemptRef.current >= MAX_RECONNECT_ATTEMPTS) {
+      setConnectionStatus("disconnected");
+      return;
+    }
+
+    const delay = backoffDelay(reconnectAttemptRef.current);
+    reconnectAttemptRef.current += 1;
+
+    reconnectTimerRef.current = setTimeout(() => {
+      if (mountedRef.current) {
+        subscribe();
+      }
+    }, delay);
+  }, [subscribe]);
+
+  // Manual reconnect (exposed for UI retry button)
+  const reconnect = useCallback(() => {
+    reconnectAttemptRef.current = 0;
+    setConnectionStatus("connecting");
+    subscribe();
+  }, [subscribe]);
+
+  // Initial fetch + subscribe
+  useEffect(() => {
+    mountedRef.current = true;
+
+    fetchData();
+    subscribe();
+
+    return () => {
+      mountedRef.current = false;
+      if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+    };
+  }, [fetchData, subscribe]);
+
+  return { session, players, responses, loading, connectionStatus, reconnect, setSession, setPlayers };
 }
 
 export function useTeacherGameControls(sessionId: string | undefined) {
