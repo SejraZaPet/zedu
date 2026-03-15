@@ -1,10 +1,11 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useNavigate, useLocation, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { ShieldAlert, Clock, Ban } from "lucide-react";
+import { Clock, Ban } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Props {
   children: ReactNode;
@@ -13,31 +14,27 @@ interface Props {
 const ProtectedRoute = ({ children }: Props) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [state, setState] = useState<"loading" | "ok" | "pending" | "blocked" | "unauthenticated">("loading");
+  const { isLoggedIn, user, role, loading: authLoading } = useAuth();
+  const [state, setState] = useState<"loading" | "ok" | "pending" | "blocked">("loading");
 
   useEffect(() => {
-    const check = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+    if (authLoading) return;
 
-      if (!session) {
-        setState("unauthenticated");
-        return;
-      }
+    if (!isLoggedIn || !user) {
+      setState("loading"); // will redirect below
+      return;
+    }
 
+    const checkStatus = async () => {
       const { data: profile } = await supabase
         .from("profiles")
         .select("status")
-        .eq("id", session.user.id)
+        .eq("id", user.id)
         .single();
 
-      // Legacy admin without profile — allow
       if (!profile) {
-        const { data: roles } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", session.user.id)
-          .limit(1);
-        if (roles?.some(r => r.role === "admin")) {
+        // Legacy admin without profile
+        if (role === "admin") {
           setState("ok");
           return;
         }
@@ -45,19 +42,15 @@ const ProtectedRoute = ({ children }: Props) => {
         return;
       }
 
-      if (profile.status === "approved") {
-        setState("ok");
-      } else if (profile.status === "blocked") {
-        setState("blocked");
-      } else {
-        setState("pending");
-      }
+      if (profile.status === "approved") setState("ok");
+      else if (profile.status === "blocked") setState("blocked");
+      else setState("pending");
     };
 
-    check();
-  }, []);
+    checkStatus();
+  }, [authLoading, isLoggedIn, user, role]);
 
-  if (state === "loading") {
+  if (authLoading || (state === "loading" && isLoggedIn)) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-pulse text-muted-foreground">Ověřování přístupu...</div>
@@ -65,7 +58,7 @@ const ProtectedRoute = ({ children }: Props) => {
     );
   }
 
-  if (state === "unauthenticated") {
+  if (!isLoggedIn) {
     const redirectUrl = `/auth?redirect=${encodeURIComponent(location.pathname + location.search)}`;
     return <Navigate to={redirectUrl} replace />;
   }

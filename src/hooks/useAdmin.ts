@@ -1,57 +1,45 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const useAdmin = () => {
   const navigate = useNavigate();
+  const { isLoggedIn, user, role, loading: authLoading, signOut } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
   const [isTeacher, setIsTeacher] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session) {
-        navigate("/auth");
-      }
-    });
+    if (authLoading) return;
+
+    if (!isLoggedIn || !user) {
+      navigate("/auth");
+      return;
+    }
 
     const checkAdmin = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate("/auth");
-        return;
-      }
-
-      // Check account status (if profile exists; legacy admins may not have one)
+      // Check account status
       const { data: profile } = await supabase
         .from("profiles")
         .select("status")
-        .eq("id", session.user.id)
+        .eq("id", user.id)
         .single();
 
-      // If profile exists and is not approved, block access (except if no profile = legacy admin)
       if (profile && profile.status !== "approved") {
-        await supabase.auth.signOut();
+        await signOut();
         navigate("/auth");
         return;
       }
 
-      const { data: roles } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", session.user.id)
-        .limit(1);
-
-      const userRole = roles?.[0]?.role;
-
-      if (userRole === "admin") {
+      if (role === "admin") {
         setIsAdmin(true);
         setIsTeacher(false);
-      } else if (userRole === "teacher") {
-        setIsAdmin(true); // grants access to admin panel
+      } else if (role === "teacher") {
+        setIsAdmin(true);
         setIsTeacher(true);
       } else {
-        await supabase.auth.signOut();
+        await signOut();
         navigate("/auth");
         return;
       }
@@ -60,11 +48,10 @@ export const useAdmin = () => {
     };
 
     checkAdmin();
-    return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [authLoading, isLoggedIn, user, role, navigate, signOut]);
 
   const logout = async () => {
-    await supabase.auth.signOut();
+    await signOut();
     navigate("/");
   };
 
