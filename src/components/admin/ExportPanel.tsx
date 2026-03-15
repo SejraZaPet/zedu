@@ -282,7 +282,7 @@ const ExportPanel = ({ lessonPlanId, planTitle, planSlides, mode = "live" }: Pro
     <div className="space-y-4">
       <h3 className="font-semibold text-sm flex items-center gap-2">
         <FileDown className="w-4 h-4" />
-        Export plánu lekce
+        {EXPORT_COPY.modals.exportTitle}
       </h3>
 
       {/* Export target selector */}
