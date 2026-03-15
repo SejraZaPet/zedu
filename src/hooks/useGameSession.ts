@@ -76,7 +76,16 @@ export function useGameSession(sessionId: string | undefined) {
         });
       })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "game_players", filter: `session_id=eq.${sessionId}` }, (payload) => {
-        setPlayers((prev) => prev.map((p) => (p.id === (payload.new as any).id ? (payload.new as GamePlayer) : p)));
+        const updated = payload.new as GamePlayer;
+        setPlayers((prev) => {
+          const next = prev.map((p) => {
+            if (p.id !== updated.id) return p;
+            // Only accept if score is >= current (guards against out-of-order events)
+            return updated.total_score >= p.total_score ? updated : { ...p, total_score: Math.max(p.total_score, updated.total_score) };
+          });
+          // Re-sort by authoritative total_score descending
+          return next.sort((a, b) => b.total_score - a.total_score);
+        });
       })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "game_responses", filter: `session_id=eq.${sessionId}` }, (payload) => {
         setResponses((prev) => {
