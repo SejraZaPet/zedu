@@ -223,7 +223,7 @@ export default function WorksheetPlayer({
 
   const handleSaveNow = async () => {
     await flushNow();
-    toast({ title: "Uloženo", description: "Odpovědi byly uloženy." });
+    toast({ title: t("student.toasts.saved.title"), description: t("student.toasts.saved.description") });
   };
 
   // ── Item Renderers ──
