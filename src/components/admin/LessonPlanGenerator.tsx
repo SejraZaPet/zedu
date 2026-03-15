@@ -53,6 +53,7 @@ const SLIDE_TYPE_LABELS: Record<string, string> = {
   activity: "Aktivita",
   summary: "Shrnutí",
   exit: "Exit ticket",
+  checkpoint: "Checkpoint",
 };
 
 const SLIDE_TYPE_COLORS: Record<string, string> = {
@@ -63,6 +64,7 @@ const SLIDE_TYPE_COLORS: Record<string, string> = {
   activity: "bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-200",
   summary: "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200",
   exit: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
+  checkpoint: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200",
 };
 
 const LessonPlanGenerator = ({ lessonId, lessonTitle, lessonBlocks }: Props) => {
