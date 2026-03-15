@@ -6,11 +6,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Sparkles, Monitor, Smartphone, StickyNote, ChevronLeft, ChevronRight, Save, Zap, Play } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Loader2, Sparkles, Monitor, Smartphone, StickyNote, ChevronLeft, ChevronRight, Save, Zap, Play, CheckCircle2, User, Users } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import ActivitySpecGenerator from "./ActivitySpecGenerator";
 import ExportPanel from "./ExportPanel";
 import WorksheetPanel from "./WorksheetPanel";
+
+interface Checkpoint {
+  question: string;
+  expectedAnswer: string;
+  explanation: string;
+  feedback?: string;
+}
 
 interface Slide {
   slideId: string;
@@ -18,12 +26,16 @@ interface Slide {
   projector: { headline: string; body: string; assetRefs?: string[] };
   device: { instructions: string; activityRefs?: string[] };
   teacherNotes: string;
+  checkpoints?: Checkpoint[];
 }
+
+type PlanMode = "teacher-led" | "student-paced";
 
 interface LessonPlan {
   title: string;
   subject: string;
   gradeBand: string;
+  mode?: PlanMode;
   slides: Slide[];
 }
 
@@ -41,6 +53,7 @@ const SLIDE_TYPE_LABELS: Record<string, string> = {
   activity: "Aktivita",
   summary: "Shrnutí",
   exit: "Exit ticket",
+  checkpoint: "Checkpoint",
 };
 
 const SLIDE_TYPE_COLORS: Record<string, string> = {
@@ -51,6 +64,7 @@ const SLIDE_TYPE_COLORS: Record<string, string> = {
   activity: "bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-200",
   summary: "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200",
   exit: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
+  checkpoint: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200",
 };
 
 const LessonPlanGenerator = ({ lessonId, lessonTitle, lessonBlocks }: Props) => {
@@ -65,6 +79,9 @@ const LessonPlanGenerator = ({ lessonId, lessonTitle, lessonBlocks }: Props) => 
   const [savedPlanId, setSavedPlanId] = useState<string | null>(null);
   const [plan, setPlan] = useState<LessonPlan | null>(null);
   const [activeSlide, setActiveSlide] = useState(0);
+  const [planMode, setPlanMode] = useState<PlanMode>("teacher-led");
+  const [allowImmediateFeedback, setAllowImmediateFeedback] = useState(true);
+  const [showCheckpointAnswers, setShowCheckpointAnswers] = useState(false);
 
   // Extract source text from lesson blocks
   const extractSourceText = (): string => {
@@ -107,6 +124,8 @@ const LessonPlanGenerator = ({ lessonId, lessonTitle, lessonBlocks }: Props) => 
           },
           style: "přehledný, školní, minimalistický",
           language: "cs-CZ",
+          mode: planMode,
+          allowImmediateFeedback,
         },
       });
 
@@ -213,6 +232,49 @@ const LessonPlanGenerator = ({ lessonId, lessonTitle, lessonBlocks }: Props) => 
             </div>
           </div>
 
+          {/* Mode selector */}
+          <div className="space-y-2 p-3 border border-border rounded-lg bg-background">
+            <Label className="text-xs font-medium">Režim výuky</Label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setPlanMode("teacher-led")}
+                className={`flex items-center gap-2 p-2 rounded-lg border text-xs transition-colors ${
+                  planMode === "teacher-led"
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border bg-background text-muted-foreground hover:bg-muted/50"
+                }`}
+              >
+                <Users className="w-4 h-4" />
+                <div className="text-left">
+                  <div className="font-medium">Řízená výuka</div>
+                  <div className="text-[10px] opacity-70">Učitel řídí tempo</div>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPlanMode("student-paced")}
+                className={`flex items-center gap-2 p-2 rounded-lg border text-xs transition-colors ${
+                  planMode === "student-paced"
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border bg-background text-muted-foreground hover:bg-muted/50"
+                }`}
+              >
+                <User className="w-4 h-4" />
+                <div className="text-left">
+                  <div className="font-medium">Samostudium</div>
+                  <div className="text-[10px] opacity-70">Žák postupuje sám</div>
+                </div>
+              </button>
+            </div>
+            {planMode === "student-paced" && (
+              <div className="flex items-center gap-2 mt-2">
+                <Switch checked={allowImmediateFeedback} onCheckedChange={setAllowImmediateFeedback} id="feedback-switch" />
+                <Label htmlFor="feedback-switch" className="text-xs text-muted-foreground">Okamžitá zpětná vazba u checkpointů</Label>
+              </div>
+            )}
+          </div>
+
           <Button onClick={handleGenerate} disabled={generating} className="w-full">
             {generating ? (
               <>
@@ -234,7 +296,14 @@ const LessonPlanGenerator = ({ lessonId, lessonTitle, lessonBlocks }: Props) => 
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-semibold text-sm">{plan.title}</h3>
+              <h3 className="font-semibold text-sm flex items-center gap-2">
+                {plan.title}
+                {plan.mode === "student-paced" && (
+                  <Badge variant="outline" className="text-[10px] font-normal border-emerald-300 text-emerald-700 dark:text-emerald-300">
+                    <User className="w-3 h-3 mr-1" /> Samostudium
+                  </Badge>
+                )}
+              </h3>
               <p className="text-xs text-muted-foreground">{plan.subject} · {plan.gradeBand} · {plan.slides.length} slidů</p>
             </div>
             <div className="flex gap-2 flex-wrap">
@@ -304,6 +373,47 @@ const LessonPlanGenerator = ({ lessonId, lessonTitle, lessonBlocks }: Props) => 
                     POZNÁMKY PRO UČITELE
                   </div>
                   <p className="text-xs text-muted-foreground whitespace-pre-wrap">{currentSlide.teacherNotes}</p>
+                </div>
+              )}
+
+              {/* Checkpoints */}
+              {currentSlide.checkpoints && currentSlide.checkpoints.length > 0 && (
+                <div className="border border-border rounded-lg p-4 bg-emerald-50/50 dark:bg-emerald-950/20">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      CHECKPOINT – Ověření porozumění ({currentSlide.checkpoints.length} otázek)
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowCheckpointAnswers(!showCheckpointAnswers)}
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {showCheckpointAnswers ? "Skrýt odpovědi" : "Zobrazit odpovědi"}
+                    </button>
+                  </div>
+                  <div className="space-y-3">
+                    {currentSlide.checkpoints.map((cp, idx) => (
+                      <div key={idx} className="space-y-1">
+                        <p className="text-sm font-medium">{idx + 1}. {cp.question}</p>
+                        {showCheckpointAnswers && (
+                          <div className="ml-4 space-y-1">
+                            <p className="text-xs text-emerald-700 dark:text-emerald-300">
+                              <span className="font-medium">Odpověď:</span> {cp.expectedAnswer}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              <span className="font-medium">Vysvětlení:</span> {cp.explanation}
+                            </p>
+                            {cp.feedback && (
+                              <p className="text-xs text-muted-foreground italic">
+                                <span className="font-medium">Zpětná vazba:</span> {cp.feedback}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
