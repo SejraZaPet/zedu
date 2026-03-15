@@ -115,7 +115,7 @@ export const GameProjector = ({ session, players, responses, countdown, onShowRe
               <div className="bg-card border border-border rounded-2xl p-6">
                 <div className="flex items-center gap-2 mb-4">
                   <Trophy className="w-5 h-5 text-primary" />
-                  <h3 className="font-heading font-bold text-lg text-foreground">Průběžné pořadí</h3>
+                  <h3 className="font-heading font-bold text-lg text-foreground">{t("projector.leaderboard")}</h3>
                 </div>
                 <div className="space-y-2">
                   {leaderboard.map((player, i) => (
