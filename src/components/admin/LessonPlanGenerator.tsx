@@ -61,6 +61,7 @@ const LessonPlanGenerator = ({ lessonId, lessonTitle, lessonBlocks }: Props) => 
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [launching, setLaunching] = useState(false);
+  const [savedPlanId, setSavedPlanId] = useState<string | null>(null);
   const [plan, setPlan] = useState<LessonPlan | null>(null);
   const [activeSlide, setActiveSlide] = useState(0);
 
