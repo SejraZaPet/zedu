@@ -20,8 +20,9 @@ const TeacherGameScreen = () => {
       return;
     }
     const timeLimit = (session.settings?.timePerQuestion || 20) * 1000;
+    const startedAtMs = serverTsToClientMs(session.question_started_at!);
     const interval = setInterval(() => {
-      const elapsed = Date.now() - new Date(session.question_started_at!).getTime();
+      const elapsed = Date.now() - startedAtMs;
       const remaining = Math.max(0, Math.ceil((timeLimit - elapsed) / 1000));
       setCountdown(remaining);
       if (remaining <= 0) {

@@ -1,6 +1,7 @@
 import { GameQuestion } from "@/lib/game-types";
 import { useState, useEffect } from "react";
 import { CheckCircle2, XCircle } from "lucide-react";
+import { serverTsToClientMs } from "@/lib/clock-sync";
 
 interface Props {
   question: GameQuestion;
