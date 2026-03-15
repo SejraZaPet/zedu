@@ -58,13 +58,20 @@ export const GameLobby = ({ session, players, onStart, isTeacher }: Props) => {
         <div className="space-y-4">
           <div className="flex items-center justify-center gap-2 text-muted-foreground">
             <Users className="w-5 h-5" />
-            <span className="font-medium">{t("projector.playerCount", players.length)}</span>
+            <span className="font-medium" aria-live="polite">{t("projector.playerCount", players.length)}</span>
           </div>
 
-          <div className="flex flex-wrap justify-center gap-2 max-h-40 overflow-y-auto">
+          <div
+            className="flex flex-wrap justify-center gap-2 max-h-40 overflow-y-auto"
+            role="list"
+            aria-label={t("a11y.lobby.playerListLabel")}
+            aria-live="polite"
+            aria-relevant="additions"
+          >
             {players.map((player, i) => (
               <div
                 key={player.id}
+                role="listitem"
                 className="bg-card border border-border rounded-xl px-4 py-2 text-sm font-medium text-foreground animate-scale-in"
                 style={{ animationDelay: `${i * 0.05}s` }}
               >
