@@ -151,66 +151,84 @@ const LessonEditorSheet = ({ lessonId, open, onOpenChange, onSaved }: Props) => 
         ) : !lesson ? (
           <p className="text-muted-foreground py-8">Lekce nenalezena.</p>
         ) : (
-          <div className="space-y-4 mt-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2">
-                <Label>Název lekce</Label>
-                <Input value={lesson.title} onChange={(e) => setLesson({ ...lesson, title: e.target.value })} className="mt-1" />
-              </div>
-              <div>
-                <Label>Stav</Label>
-                <Select value={lesson.status} onValueChange={(v) => setLesson({ ...lesson, status: v })}>
-                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="draft">Koncept</SelectItem>
-                    <SelectItem value="published">Publikováno</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Hero obrázek</Label>
-                <div className="flex gap-2 mt-1">
-                  <Input
-                    value={lesson.hero_image_url ?? ""}
-                    onChange={(e) => setLesson({ ...lesson, hero_image_url: e.target.value })}
-                    placeholder="URL…"
-                    className="flex-1"
-                  />
-                  <Button size="sm" variant="outline" className="relative" disabled={heroUploading}>
-                    <Upload className="w-4 h-4 mr-1" />{heroUploading ? "…" : "Nahrát"}
-                    <input type="file" accept="image/*" onChange={handleHeroUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
-                  </Button>
+          <Tabs defaultValue="content" className="mt-4">
+            <TabsList className="mb-4">
+              <TabsTrigger value="content">Obsah</TabsTrigger>
+              <TabsTrigger value="plan" className="flex items-center gap-1">
+                <Sparkles className="w-3.5 h-3.5" />
+                Plán lekce
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="content" className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2">
+                  <Label>Název lekce</Label>
+                  <Input value={lesson.title} onChange={(e) => setLesson({ ...lesson, title: e.target.value })} className="mt-1" />
                 </div>
-                {lesson.hero_image_url && (
-                  <img src={lesson.hero_image_url} alt="" className="mt-2 max-h-20 rounded border border-border" />
-                )}
+                <div>
+                  <Label>Stav</Label>
+                  <Select value={lesson.status} onValueChange={(v) => setLesson({ ...lesson, status: v })}>
+                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="draft">Koncept</SelectItem>
+                      <SelectItem value="published">Publikováno</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Hero obrázek</Label>
+                  <div className="flex gap-2 mt-1">
+                    <Input
+                      value={lesson.hero_image_url ?? ""}
+                      onChange={(e) => setLesson({ ...lesson, hero_image_url: e.target.value })}
+                      placeholder="URL…"
+                      className="flex-1"
+                    />
+                    <Button size="sm" variant="outline" className="relative" disabled={heroUploading}>
+                      <Upload className="w-4 h-4 mr-1" />{heroUploading ? "…" : "Nahrát"}
+                      <input type="file" accept="image/*" onChange={handleHeroUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
+                    </Button>
+                  </div>
+                  {lesson.hero_image_url && (
+                    <img src={lesson.hero_image_url} alt="" className="mt-2 max-h-20 rounded border border-border" />
+                  )}
+                </div>
               </div>
-            </div>
 
-            <div className="border-t border-border pt-4">
-              <LessonAssignments
+              <div className="border-t border-border pt-4">
+                <LessonAssignments
+                  lessonId={lesson.id}
+                  assignments={assignments}
+                  onChange={setAssignments}
+                />
+              </div>
+
+              <div>
+                <Label className="mb-2 block">Obsah lekce</Label>
+                <BlockEditor
+                  blocks={lesson.blocks}
+                  onChange={(blocks) => setLesson({ ...lesson, blocks })}
+                />
+              </div>
+
+              <div className="flex gap-2 pt-2 border-t border-border sticky bottom-0 bg-background pb-4">
+                <Button size="sm" onClick={saveLesson} disabled={saving}>
+                  {saving ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />}
+                  Uložit změny
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => onOpenChange(false)}>Zavřít</Button>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="plan">
+              <LessonPlanGenerator
                 lessonId={lesson.id}
-                assignments={assignments}
-                onChange={setAssignments}
+                lessonTitle={lesson.title}
+                lessonBlocks={lesson.blocks}
               />
-            </div>
-
-            <div>
-              <Label className="mb-2 block">Obsah lekce</Label>
-              <BlockEditor
-                blocks={lesson.blocks}
-                onChange={(blocks) => setLesson({ ...lesson, blocks })}
-              />
-            </div>
-
-            <div className="flex gap-2 pt-2 border-t border-border sticky bottom-0 bg-background pb-4">
-              <Button size="sm" onClick={saveLesson} disabled={saving}>
-                {saving ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />}
-                Uložit změny
-              </Button>
-              <Button size="sm" variant="ghost" onClick={() => onOpenChange(false)}>Zavřít</Button>
-            </div>
-          </div>
+            </TabsContent>
+          </Tabs>
         )}
       </SheetContent>
     </Sheet>
