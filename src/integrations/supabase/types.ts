@@ -50,6 +50,131 @@ export type Database = {
         }
         Relationships: []
       }
+      assignment_attempts: {
+        Row: {
+          answers: Json
+          assignment_id: string
+          attempt_number: number
+          created_at: string
+          id: string
+          last_saved_at: string
+          max_score: number | null
+          progress: Json
+          score: number | null
+          started_at: string
+          status: string
+          student_id: string
+          submitted_at: string | null
+        }
+        Insert: {
+          answers?: Json
+          assignment_id: string
+          attempt_number?: number
+          created_at?: string
+          id?: string
+          last_saved_at?: string
+          max_score?: number | null
+          progress?: Json
+          score?: number | null
+          started_at?: string
+          status?: string
+          student_id: string
+          submitted_at?: string | null
+        }
+        Update: {
+          answers?: Json
+          assignment_id?: string
+          attempt_number?: number
+          created_at?: string
+          id?: string
+          last_saved_at?: string
+          max_score?: number | null
+          progress?: Json
+          score?: number | null
+          started_at?: string
+          status?: string
+          student_id?: string
+          submitted_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignment_attempts_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "assignments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assignments: {
+        Row: {
+          activity_data: Json
+          class_id: string | null
+          created_at: string
+          deadline: string | null
+          description: string
+          id: string
+          lesson_plan_id: string | null
+          max_attempts: number
+          randomize_choices: boolean
+          randomize_order: boolean
+          settings: Json
+          status: string
+          teacher_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          activity_data?: Json
+          class_id?: string | null
+          created_at?: string
+          deadline?: string | null
+          description?: string
+          id?: string
+          lesson_plan_id?: string | null
+          max_attempts?: number
+          randomize_choices?: boolean
+          randomize_order?: boolean
+          settings?: Json
+          status?: string
+          teacher_id: string
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          activity_data?: Json
+          class_id?: string | null
+          created_at?: string
+          deadline?: string | null
+          description?: string
+          id?: string
+          lesson_plan_id?: string | null
+          max_attempts?: number
+          randomize_choices?: boolean
+          randomize_order?: boolean
+          settings?: Json
+          status?: string
+          teacher_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignments_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignments_lesson_plan_id_fkey"
+            columns: ["lesson_plan_id"]
+            isOneToOne: false
+            referencedRelation: "lesson_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       class_members: {
         Row: {
           class_id: string
