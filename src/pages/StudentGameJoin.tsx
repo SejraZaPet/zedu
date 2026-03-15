@@ -8,27 +8,24 @@ import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { Gamepad2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 const StudentGameJoin = () => {
   const [code, setCode] = useState("");
   const [nickname, setNickname] = useState("");
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState("");
   const [joining, setJoining] = useState(false);
+  const { isLoggedIn, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setIsLoggedIn(true);
-        supabase.from("profiles").select("first_name, last_name").eq("id", session.user.id).single()
-          .then(({ data }) => {
-            if (data) setUserName(`${data.first_name} ${data.last_name}`.trim());
-          });
-      }
-    });
-  }, []);
+    if (!user) return;
+    supabase.from("profiles").select("first_name, last_name").eq("id", user.id).single()
+      .then(({ data }) => {
+        if (data) setUserName(`${data.first_name} ${data.last_name}`.trim());
+      });
+  }, [user]);
 
   const handleJoin = async () => {
     const trimmedCode = code.trim().toUpperCase();
@@ -41,7 +38,6 @@ const StudentGameJoin = () => {
 
     setJoining(true);
     try {
-      // Find session
       const { data: sessions } = await supabase
         .from("game_sessions")
         .select("id, status")
@@ -56,12 +52,10 @@ const StudentGameJoin = () => {
       }
 
       const sessionData = sessions[0];
-      const { data: { session: authSession } } = await supabase.auth.getSession();
 
-      // Insert player
       const { data: player, error } = await supabase.from("game_players").insert({
         session_id: sessionData.id,
-        user_id: authSession?.user?.id || null,
+        user_id: user?.id || null,
         nickname: playerName,
       }).select().single();
 
@@ -71,7 +65,6 @@ const StudentGameJoin = () => {
         return;
       }
 
-      // Navigate to player screen
       navigate(`/hra/hrac/${sessionData.id}?playerId=${player.id}`);
     } catch {
       toast({ title: "Chyba při připojování", variant: "destructive" });

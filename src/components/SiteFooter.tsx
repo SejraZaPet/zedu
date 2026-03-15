@@ -1,24 +1,16 @@
-import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Mail, HelpCircle, Shield, FileText } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { Mail } from "lucide-react";
 import logo from "@/assets/zedu-logo-new.png";
+import { useAuth } from "@/contexts/AuthContext";
 
 const SiteFooter = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { isLoggedIn } = useAuth();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => setIsLoggedIn(!!session));
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => setIsLoggedIn(!!session));
-    return () => subscription.unsubscribe();
-  }, []);
 
   return (
     <footer className="border-t border-border px-4 py-12 md:px-8 bg-card">
       <div className="container mx-auto max-w-6xl">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Brand */}
           <div>
             <div className="mb-3">
               <img src={logo} alt="Zedu" className="h-9 w-auto" />
@@ -28,7 +20,6 @@ const SiteFooter = () => {
             </p>
           </div>
 
-          {/* Links */}
           <div>
             <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4">
               {isLoggedIn ? "Systém" : "Navigace"}
@@ -49,7 +40,6 @@ const SiteFooter = () => {
             </nav>
           </div>
 
-          {/* Contact */}
           <div>
             <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4">Kontakt</h4>
             <a
