@@ -192,26 +192,13 @@ export function createSupabaseQueueAdapter(supabase: any, retryPolicy: RetryPoli
     },
 
     async dequeue() {
-      // Use RPC or a raw query for atomic claim in production.
-      // Simplified version: select + update (acceptable for low-concurrency edge fn).
-      const { data: jobs, error } = await supabase
-        .from("export_jobs")
-        .select("*")
-        .eq("status", "queued")
-        .order("created_at", { ascending: true })
-        .limit(1);
+      // Atomic claim using FOR UPDATE SKIP LOCKED via RPC
+      const workerId = `w_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      const { data, error } = await supabase
+        .rpc("claim_export_job", { _worker_id: workerId });
       if (error) throw error;
-      if (!jobs || jobs.length === 0) return null;
-
-      const job = jobs[0];
-      const { error: updateErr } = await supabase
-        .from("export_jobs")
-        .update({ status: "running", started_at: new Date().toISOString(), attempt: job.attempt + 1 })
-        .eq("id", job.id)
-        .eq("status", "queued"); // optimistic lock
-      if (updateErr) throw updateErr;
-
-      return { ...job, status: "running" as JobStatus, attempt: job.attempt + 1 };
+      if (!data || data.length === 0) return null;
+      return data[0] as ExportJobRecord;
     },
 
     async complete(jobId, outputUrl) {
