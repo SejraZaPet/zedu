@@ -67,6 +67,8 @@ const TeacherGameScreen = () => {
 
   // playing or question_results
   return (
+    <>
+    <ConnectionStatusBanner status={connectionStatus} onReconnect={reconnect} />
     <GameProjector
       session={session}
       players={players}
