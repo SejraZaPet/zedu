@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, FileText, Printer, Eye, EyeOff, CheckCircle2, XCircle, ArrowRightLeft } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Loader2, FileText, Printer, Eye, EyeOff, CheckCircle2, ArrowRightLeft, Home, BookOpen, Calendar } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 interface WorksheetItem {
@@ -15,6 +16,7 @@ interface WorksheetItem {
   options?: string[];
   matchPairs?: { left: string; right: string }[];
   points: number;
+  difficulty?: "easy" | "medium" | "hard";
 }
 
 interface AnswerKeyItem {
@@ -33,10 +35,13 @@ interface WorksheetData {
   title: string;
   subject?: string;
   gradeBand?: string;
+  worksheetMode?: "classwork" | "homework";
+  deadline?: string;
   variants: WorksheetVariant[];
   answerKeys: Record<string, AnswerKeyItem[]>;
   randomizationRules: { rule: string; appliedTo: string }[];
   totalPoints: number;
+  difficultyDistribution?: { easy: number; medium: number; hard: number };
 }
 
 interface Props {
@@ -58,12 +63,20 @@ const TYPE_ICONS: Record<string, string> = {
   mcq: "🔘", fill_blank: "✏️", true_false: "✓✗", matching: "🔗", ordering: "📋", short_answer: "💬",
 };
 
+const DIFFICULTY_LABELS: Record<string, { label: string; class: string }> = {
+  easy: { label: "Snadné", class: "text-green-600 bg-green-500/10 border-green-500/30" },
+  medium: { label: "Střední", class: "text-amber-600 bg-amber-500/10 border-amber-500/30" },
+  hard: { label: "Těžké", class: "text-red-600 bg-red-500/10 border-red-500/30" },
+};
+
 const WorksheetPanel = ({ lessonPlanId, planTitle, gradeBand }: Props) => {
   const [generating, setGenerating] = useState(false);
   const [worksheet, setWorksheet] = useState<WorksheetData | null>(null);
   const [activeVariant, setActiveVariant] = useState("A");
   const [showAnswerKey, setShowAnswerKey] = useState(false);
   const [numItems, setNumItems] = useState(10);
+  const [worksheetMode, setWorksheetMode] = useState<"classwork" | "homework">("classwork");
+  const [deadline, setDeadline] = useState("");
   const printRef = useRef<HTMLDivElement>(null);
 
   const handleGenerate = async () => {
@@ -71,7 +84,14 @@ const WorksheetPanel = ({ lessonPlanId, planTitle, gradeBand }: Props) => {
     setWorksheet(null);
     try {
       const { data, error } = await supabase.functions.invoke("generate-worksheet", {
-        body: { lessonPlanId, gradeBand, numItems, variants: ["A", "B"] },
+        body: {
+          lessonPlanId,
+          gradeBand,
+          numItems,
+          variants: ["A", "B"],
+          worksheetMode,
+          ...(worksheetMode === "homework" && deadline ? { deadline } : {}),
+        },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -79,7 +99,10 @@ const WorksheetPanel = ({ lessonPlanId, planTitle, gradeBand }: Props) => {
         setWorksheet(data.worksheet);
         setActiveVariant("A");
         setShowAnswerKey(false);
-        toast({ title: "Pracovní list vygenerován", description: `${data.worksheet.variants?.[0]?.items?.length || 0} úloh, ${data.worksheet.totalPoints} bodů` });
+        toast({
+          title: worksheetMode === "homework" ? "Domácí úloha vygenerována" : "Pracovní list vygenerován",
+          description: `${data.worksheet.variants?.[0]?.items?.length || 0} úloh, ${data.worksheet.totalPoints} bodů`,
+        });
       }
     } catch (e: any) {
       console.error("Worksheet error:", e);
@@ -92,10 +115,11 @@ const WorksheetPanel = ({ lessonPlanId, planTitle, gradeBand }: Props) => {
   const handlePrint = () => {
     const content = printRef.current;
     if (!content) return;
+    const modeLabel = worksheet?.worksheetMode === "homework" ? "Domácí úloha" : "Pracovní list";
     const win = window.open("", "_blank");
     if (!win) return;
     win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8">
-      <title>${worksheet?.title || "Pracovní list"} – Varianta ${activeVariant}</title>
+      <title>${worksheet?.title || modeLabel} – Varianta ${activeVariant}</title>
       <style>
         body { font-family: 'Segoe UI', sans-serif; padding: 2rem; color: #1a1a1a; max-width: 800px; margin: 0 auto; }
         h1 { font-size: 1.4rem; margin-bottom: 0.25rem; }
@@ -103,6 +127,10 @@ const WorksheetPanel = ({ lessonPlanId, planTitle, gradeBand }: Props) => {
         .item { margin-bottom: 1.2rem; page-break-inside: avoid; }
         .item-header { font-weight: 600; margin-bottom: 0.3rem; }
         .item-type { color: #888; font-size: 0.75rem; }
+        .difficulty { font-size: 0.7rem; padding: 1px 6px; border-radius: 4px; }
+        .difficulty-easy { background: #f0fdf4; color: #16a34a; }
+        .difficulty-medium { background: #fffbeb; color: #d97706; }
+        .difficulty-hard { background: #fef2f2; color: #dc2626; }
         .options { list-style: upper-alpha; padding-left: 1.5rem; }
         .options li { margin: 0.2rem 0; }
         .match-table { border-collapse: collapse; width: 100%; margin: 0.3rem 0; }
@@ -111,6 +139,7 @@ const WorksheetPanel = ({ lessonPlanId, planTitle, gradeBand }: Props) => {
         .answer-section { margin-top: 2rem; border-top: 2px solid #333; padding-top: 1rem; }
         .answer-item { margin-bottom: 0.5rem; font-size: 0.9rem; }
         .points { float: right; color: #888; font-size: 0.8rem; }
+        .deadline-notice { background: #fefce8; border: 1px solid #eab308; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.85rem; margin-bottom: 1rem; }
         @media print { body { padding: 1rem; } }
       </style>
     </head><body>${content.innerHTML}</body></html>`);
@@ -131,9 +160,33 @@ const WorksheetPanel = ({ lessonPlanId, planTitle, gradeBand }: Props) => {
       {!worksheet ? (
         <div className="space-y-3">
           <p className="text-xs text-muted-foreground">
-            AI vygeneruje pracovní list s variantami A/B na základě plánu lekce. Každá varianta má jiné pořadí úloh a možností.
+            AI vygeneruje pracovní list s variantami A/B na základě plánu lekce.
           </p>
-          <div className="flex items-end gap-3">
+
+          {/* Mode selector */}
+          <div className="space-y-2">
+            <Label className="text-xs font-medium text-muted-foreground">Typ:</Label>
+            <RadioGroup
+              value={worksheetMode}
+              onValueChange={(v) => setWorksheetMode(v as "classwork" | "homework")}
+              className="flex gap-4"
+            >
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="classwork" id="mode-classwork" />
+                <Label htmlFor="mode-classwork" className="text-xs flex items-center gap-1 cursor-pointer">
+                  <BookOpen className="w-3.5 h-3.5" /> Třídní práce
+                </Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="homework" id="mode-homework" />
+                <Label htmlFor="mode-homework" className="text-xs flex items-center gap-1 cursor-pointer">
+                  <Home className="w-3.5 h-3.5" /> Domácí úloha
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
+
+          <div className="flex items-end gap-3 flex-wrap">
             <div>
               <Label className="text-xs">Počet úloh</Label>
               <Input
@@ -145,6 +198,19 @@ const WorksheetPanel = ({ lessonPlanId, planTitle, gradeBand }: Props) => {
                 className="mt-1 w-24 h-8 text-xs"
               />
             </div>
+            {worksheetMode === "homework" && (
+              <div>
+                <Label className="text-xs flex items-center gap-1">
+                  <Calendar className="w-3 h-3" /> Deadline
+                </Label>
+                <Input
+                  type="datetime-local"
+                  value={deadline}
+                  onChange={(e) => setDeadline(e.target.value)}
+                  className="mt-1 w-48 h-8 text-xs"
+                />
+              </div>
+            )}
             <Button size="sm" onClick={handleGenerate} disabled={generating} className="h-8">
               {generating ? (
                 <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Generuji…</>
@@ -173,6 +239,11 @@ const WorksheetPanel = ({ lessonPlanId, planTitle, gradeBand }: Props) => {
               <Badge variant="secondary" className="text-xs">
                 {worksheet.totalPoints} b.
               </Badge>
+              {worksheet.worksheetMode === "homework" && (
+                <Badge variant="outline" className="text-xs">
+                  <Home className="w-3 h-3 mr-1" /> DÚ
+                </Badge>
+              )}
             </div>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1.5">
@@ -195,6 +266,20 @@ const WorksheetPanel = ({ lessonPlanId, planTitle, gradeBand }: Props) => {
             </div>
           </div>
 
+          {/* Difficulty distribution */}
+          {worksheet.difficultyDistribution && (
+            <div className="flex gap-2 text-[10px]">
+              {Object.entries(worksheet.difficultyDistribution).map(([key, count]) => {
+                const cfg = DIFFICULTY_LABELS[key];
+                return cfg && count > 0 ? (
+                  <span key={key} className={`px-1.5 py-0.5 rounded border ${cfg.class}`}>
+                    {cfg.label}: {count}
+                  </span>
+                ) : null;
+              })}
+            </div>
+          )}
+
           {/* Randomization rules */}
           {worksheet.randomizationRules?.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
@@ -212,12 +297,21 @@ const WorksheetPanel = ({ lessonPlanId, planTitle, gradeBand }: Props) => {
             <h1 style={{ display: "none" }}>{worksheet.title} – Varianta {activeVariant}</h1>
             <div style={{ display: "none" }} className="meta">
               {worksheet.subject} · {worksheet.gradeBand} · {worksheet.totalPoints} bodů · Varianta {activeVariant}
+              {worksheet.worksheetMode === "homework" ? " · Domácí úloha" : ""}
             </div>
+
+            {/* Deadline notice for print */}
+            {worksheet.deadline && (
+              <div style={{ display: "none" }} className="deadline-notice">
+                📅 Odevzdání do: <strong>{new Date(worksheet.deadline).toLocaleDateString("cs-CZ", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}</strong>
+              </div>
+            )}
 
             {/* Items */}
             <div className="space-y-3">
               {currentVariant?.items?.map((item) => {
                 const answer = currentAnswerKey?.find((a) => a.itemNumber === item.itemNumber);
+                const diffCfg = item.difficulty ? DIFFICULTY_LABELS[item.difficulty] : null;
                 return (
                   <div key={item.itemNumber} className="border border-border rounded-lg p-3 bg-background">
                     <div className="flex items-start justify-between gap-2 mb-1.5">
@@ -226,6 +320,11 @@ const WorksheetPanel = ({ lessonPlanId, planTitle, gradeBand }: Props) => {
                         <Badge variant="outline" className="text-[10px]">
                           {TYPE_ICONS[item.type] || "?"} {TYPE_LABELS[item.type] || item.type}
                         </Badge>
+                        {diffCfg && (
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded border ${diffCfg.class}`}>
+                            {diffCfg.label}
+                          </span>
+                        )}
                       </div>
                       <span className="text-[10px] text-muted-foreground">{item.points} b.</span>
                     </div>
