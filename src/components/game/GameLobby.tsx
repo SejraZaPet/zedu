@@ -29,10 +29,10 @@ export const GameLobby = ({ session, players, onStart, isTeacher }: Props) => {
         {/* Title */}
         <div className="space-y-2">
           <h1 className="text-3xl md:text-4xl font-heading font-bold text-foreground">
-            {session.title || "Živá hra"}
+            {session.title || t("projector.headline")}
           </h1>
           <p className="text-muted-foreground">
-            {isTeacher ? "Sdílejte kód hry se žáky" : "Čekáme na start hry..."}
+            {isTeacher ? t("projector.body") : t("student.states.waitingForTeacher")}
           </p>
         </div>
 
