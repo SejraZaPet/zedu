@@ -88,9 +88,8 @@ const ProfilePage = () => {
   }, [authLoading, isLoggedIn, user, navigate, toast]);
 
   const handleSaveProfile = async () => {
+    if (!user) return;
     setSaving(true);
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
 
     const { error } = await supabase
       .from("profiles")
@@ -99,7 +98,7 @@ const ProfilePage = () => {
         field_of_study: fieldOfStudy,
         year: year ? parseInt(year, 10) : null,
       })
-      .eq("id", session.user.id);
+      .eq("id", user.id);
 
     setSaving(false);
 
