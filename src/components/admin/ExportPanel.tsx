@@ -311,7 +311,7 @@ const ExportPanel = ({ lessonPlanId, planTitle, planSlides, mode = "live" }: Pro
         {exportTarget === "teacher" && (
           <div className="flex items-center gap-2 pt-1">
             <Switch checked={includeNotes} onCheckedChange={setIncludeNotes} id="exp-notes" />
-            <Label htmlFor="exp-notes" className="text-xs">Poznámky učitele</Label>
+            <Label htmlFor="exp-notes" className="text-xs">{EXPORT_COPY.buttons.includeNotes}</Label>
           </div>
         )}
       </div>
