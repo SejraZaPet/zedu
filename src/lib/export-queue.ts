@@ -270,9 +270,10 @@ export function createSupabaseQueueAdapter(supabase: any, retryPolicy: RetryPoli
 export function createSupabaseStorageAdapter(supabase: any, bucket = "exports"): StorageAdapter {
   return {
     async upload(path, data, contentType) {
+      const blob = data instanceof Blob ? data : new Blob([data as BlobPart], { type: contentType });
       const { error } = await supabase.storage
         .from(bucket)
-        .upload(path, data instanceof Blob ? data : new Blob([data], { type: contentType }), {
+        .upload(path, blob, {
           contentType,
           upsert: true,
         });
