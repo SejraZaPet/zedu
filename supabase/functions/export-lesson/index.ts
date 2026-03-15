@@ -295,7 +295,7 @@ serve(async (req) => {
       });
     }
 
-    const { lessonPlanId, format = "html", options = {} } = await req.json();
+    const { lessonPlanId, format = "html", options = {}, paper = "A4" } = await req.json();
 
     const exportTarget = options.exportTarget || "teacher";
     const exportMode = options.mode || "live";
