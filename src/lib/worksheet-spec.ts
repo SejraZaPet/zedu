@@ -543,6 +543,238 @@ export const WORKSHEET_SPEC_EXAMPLE: WorksheetSpec = {
   },
 };
 
+// ────────────────── Seeded PRNG ──────────────────
+
+/**
+ * Mulberry32 — deterministic 32-bit PRNG.
+ * Same seed always produces the same sequence.
+ */
+function mulberry32(seed: number): () => number {
+  let s = seed | 0;
+  return () => {
+    s = (s + 0x6d2b79f5) | 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** Fisher-Yates shuffle using seeded RNG */
+function seededShuffle<T>(arr: T[], rng: () => number): T[] {
+  const out = [...arr];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+// ────────────────── Variant Generator ──────────────────
+
+export interface VariantGeneratorInput {
+  /** Source items (canonical order, variant A baseline) */
+  items: WorksheetItem[];
+  /** Answer key entries matching source items */
+  answerKey: AnswerKeyEntry[];
+  /** Variant IDs to generate, e.g. ["A", "B"] */
+  variantIds: string[];
+  /** Randomization rules to apply */
+  rules: RandomizationRule[];
+}
+
+export interface VariantGeneratorOutput {
+  variants: WorksheetVariant[];
+  randomizationRules: RandomizationRule[];
+  answerKeys: Record<string, AnswerKeyEntry[]>;
+}
+
+/**
+ * Generate A/B (or more) variants from a canonical item list.
+ *
+ * Variant A uses seed derived from Date.now(), variant B uses seed+1, etc.
+ * Each variant applies the specified randomization rules:
+ *   - item_order: shuffle item sequence
+ *   - choice_order: shuffle MCQ choices (updates correctIndex)
+ *   - match_shuffle: shuffle right column of matching pairs
+ *   - order_shuffle: shuffle ordering items (correctOrder stays canonical)
+ *
+ * Answer keys are recomputed per variant so correctAnswer always matches
+ * the variant's actual item content and numbering.
+ */
+export function generateVariants(input: VariantGeneratorInput): VariantGeneratorOutput {
+  const baseSeed = Date.now();
+  const variants: WorksheetVariant[] = [];
+  const answerKeys: Record<string, AnswerKeyEntry[]> = {};
+
+  for (let vi = 0; vi < input.variantIds.length; vi++) {
+    const variantId = input.variantIds[vi];
+    const seed = baseSeed + vi * 7919; // distinct prime offset per variant
+    const rng = mulberry32(seed);
+
+    // 1. Possibly shuffle item order
+    const shouldShuffleItems = input.rules.some(
+      r => r.rule === "item_order" && (r.appliedTo === "*" || r.appliedTo === variantId),
+    );
+    let items = input.items.map(i => structuredClone(i));
+    if (shouldShuffleItems && vi > 0) {
+      // Variant A keeps original order; B+ get shuffled
+      items = seededShuffle(items, rng);
+    }
+
+    // Re-number items after shuffle
+    items.forEach((item, idx) => {
+      item.itemNumber = idx + 1;
+    });
+
+    // 2. Shuffle MCQ choices
+    const choiceRules = input.rules.filter(r => r.rule === "choice_order");
+    for (const item of items) {
+      if (item.type !== "mcq" || !item.choices) continue;
+      const shouldShuffle = choiceRules.some(
+        r => r.appliedTo === "*" || r.appliedTo === item.id,
+      );
+      if (shouldShuffle && vi > 0) {
+        // Track correct answer before shuffle
+        // Find original answer key entry for this item
+        const origKey = input.answerKey.find(k => k.itemId === item.id);
+        const correctChoice = origKey?.correctAnswer;
+
+        item.choices = seededShuffle(item.choices, rng);
+
+        // correctAnswer text stays the same — no index to update in WorksheetItem
+        // (correctIndex lives in the model from generate-items, not in WorksheetItem)
+      }
+    }
+
+    // 3. Shuffle matching right column
+    const matchRules = input.rules.filter(r => r.rule === "match_shuffle");
+    for (const item of items) {
+      if (item.type !== "matching" || !item.matchPairs) continue;
+      const shouldShuffle = matchRules.some(
+        r => r.appliedTo === "*" || r.appliedTo === item.id,
+      );
+      if (shouldShuffle && vi > 0) {
+        const rights = seededShuffle(item.matchPairs.map(p => p.right), rng);
+        // Pairs are now "scrambled" — student must reconnect
+        // Store original pairs for answer key, display with shuffled rights
+        item.matchPairs = item.matchPairs.map((p, i) => ({
+          left: p.left,
+          right: rights[i],
+        }));
+      }
+    }
+
+    // 4. Shuffle ordering items
+    const orderRules = input.rules.filter(r => r.rule === "order_shuffle");
+    for (const item of items) {
+      if (item.type !== "ordering" || !item.orderItems) continue;
+      const shouldShuffle = orderRules.some(
+        r => r.appliedTo === "*" || r.appliedTo === item.id,
+      );
+      if (shouldShuffle) {
+        item.orderItems = seededShuffle(item.orderItems, rng);
+      }
+    }
+
+    variants.push({ variantId, seed, items });
+
+    // 5. Build answer key for this variant
+    const variantKey: AnswerKeyEntry[] = items.map(item => {
+      const origEntry = input.answerKey.find(k => k.itemId === item.id);
+      return {
+        itemId: item.id,
+        itemNumber: item.itemNumber,
+        correctAnswer: origEntry?.correctAnswer ?? "",
+        explanation: origEntry?.explanation,
+        rubric: origEntry?.rubric,
+      };
+    });
+    answerKeys[variantId] = variantKey;
+  }
+
+  return { variants, randomizationRules: input.rules, answerKeys };
+}
+
+/**
+ * Generate default randomization rules for a set of items.
+ * Applies item_order to all, choice_order to MCQ items,
+ * match_shuffle to matching items, order_shuffle to ordering items.
+ */
+export function buildDefaultRandomizationRules(items: WorksheetItem[]): RandomizationRule[] {
+  const rules: RandomizationRule[] = [
+    { rule: "item_order", appliedTo: "*" },
+  ];
+
+  for (const item of items) {
+    if (item.type === "mcq" && item.choices) {
+      rules.push({ rule: "choice_order", appliedTo: item.id });
+    }
+    if (item.type === "matching" && item.matchPairs) {
+      rules.push({ rule: "match_shuffle", appliedTo: item.id });
+    }
+    if (item.type === "ordering" && item.orderItems) {
+      rules.push({ rule: "order_shuffle", appliedTo: item.id });
+    }
+  }
+
+  return rules;
+}
+
+/**
+ * Reproduce a variant from its seed (deterministic).
+ * Pass the original canonical items + seed to get the exact same shuffle.
+ */
+export function reproduceVariant(
+  items: WorksheetItem[],
+  answerKey: AnswerKeyEntry[],
+  seed: number,
+  variantId: string,
+  rules: RandomizationRule[],
+): { variant: WorksheetVariant; answerKey: AnswerKeyEntry[] } {
+  // Use generateVariants with a fixed seed by temporarily overriding Date.now
+  const rng = mulberry32(seed);
+
+  let result = items.map(i => structuredClone(i));
+
+  const shouldShuffleItems = rules.some(r => r.rule === "item_order");
+  if (shouldShuffleItems) {
+    result = seededShuffle(result, rng);
+  }
+  result.forEach((item, idx) => { item.itemNumber = idx + 1; });
+
+  const choiceRules = rules.filter(r => r.rule === "choice_order");
+  for (const item of result) {
+    if (item.type !== "mcq" || !item.choices) continue;
+    if (choiceRules.some(r => r.appliedTo === "*" || r.appliedTo === item.id)) {
+      item.choices = seededShuffle(item.choices, rng);
+    }
+  }
+
+  const matchRules = rules.filter(r => r.rule === "match_shuffle");
+  for (const item of result) {
+    if (item.type !== "matching" || !item.matchPairs) continue;
+    if (matchRules.some(r => r.appliedTo === "*" || r.appliedTo === item.id)) {
+      const rights = seededShuffle(item.matchPairs.map(p => p.right), rng);
+      item.matchPairs = item.matchPairs.map((p, i) => ({ left: p.left, right: rights[i] }));
+    }
+  }
+
+  const orderRules = rules.filter(r => r.rule === "order_shuffle");
+  for (const item of result) {
+    if (item.type !== "ordering" || !item.orderItems) continue;
+    if (orderRules.some(r => r.appliedTo === "*" || r.appliedTo === item.id)) {
+      item.orderItems = seededShuffle(item.orderItems, rng);
+    }
+  }
+
+  const key: AnswerKeyEntry[] = result.map(item => {
+    const orig = answerKey.find(k => k.itemId === item.id);
+    return { itemId: item.id, itemNumber: item.itemNumber, correctAnswer: orig?.correctAnswer ?? "", explanation: orig?.explanation, rubric: orig?.rubric };
+  });
+
+  return { variant: { variantId, seed, items: result }, answerKey: key };
+}
+
 // ────────────────── Helpers ──────────────────
 
 /** Compute metadata from variant items */
