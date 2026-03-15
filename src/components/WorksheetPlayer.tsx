@@ -512,7 +512,7 @@ export default function WorksheetPlayer({
           disabled={currentIndex === 0}
           onClick={() => setCurrentIndex(currentIndex - 1)}
         >
-          <ChevronLeft className="h-4 w-4 mr-1" /> Předchozí
+          <ChevronLeft className="h-4 w-4 mr-1" /> {t("student.buttons.previousItem")}
         </Button>
 
         <div className="flex gap-1 overflow-x-auto max-w-[200px]">
