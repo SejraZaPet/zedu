@@ -41,39 +41,47 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     let mounted = true;
 
+    const applySession = (session: Session | null) => {
+      if (!mounted) return;
+      if (session) {
+        // Set basic auth state immediately (non-blocking)
+        setState(prev => ({
+          ...prev,
+          session,
+          user: session.user,
+          isLoggedIn: true,
+          loading: false,
+          error: null,
+        }));
+        // Fetch role in background (fire-and-forget)
+        fetchRole(session.user.id).then(role => {
+          if (mounted) {
+            setState(prev => ({ ...prev, role }));
+          }
+        });
+      } else {
+        setState({ session: null, user: null, role: null, isLoggedIn: false, loading: false, error: null });
+      }
+    };
+
+    // Set up listener BEFORE getSession (Supabase best practice)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        applySession(session);
+      }
+    );
+
     const bootstrap = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error) throw error;
-        if (!mounted) return;
-
-        if (session) {
-          const role = await fetchRole(session.user.id);
-          if (!mounted) return;
-          setState({ session, user: session.user, role, isLoggedIn: true, loading: false, error: null });
-        } else {
-          setState({ session: null, user: null, role: null, isLoggedIn: false, loading: false, error: null });
-        }
+        applySession(session);
       } catch (err: any) {
         if (mounted) {
           setState(prev => ({ ...prev, loading: false, error: err.message ?? "Auth error" }));
         }
       }
     };
-
-    // Set up listener BEFORE getSession (Supabase best practice)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        if (!mounted) return;
-        if (session) {
-          const role = await fetchRole(session.user.id);
-          if (!mounted) return;
-          setState({ session, user: session.user, role, isLoggedIn: true, loading: false, error: null });
-        } else {
-          setState({ session: null, user: null, role: null, isLoggedIn: false, loading: false, error: null });
-        }
-      }
-    );
 
     bootstrap();
 
