@@ -3,11 +3,12 @@ import { useGameSession, useTeacherGameControls } from "@/hooks/useGameSession";
 import { GameLobby } from "@/components/game/GameLobby";
 import { GameProjector } from "@/components/game/GameProjector";
 import { GameLeaderboardFinal } from "@/components/game/GameLeaderboardFinal";
+import { ConnectionStatusBanner } from "@/components/game/ConnectionStatusBanner";
 import { useState, useEffect, useCallback } from "react";
 
 const TeacherGameScreen = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
-  const { session, players, responses, loading } = useGameSession(sessionId);
+  const { session, players, responses, loading, connectionStatus, reconnect } = useGameSession(sessionId);
   const { startGame, nextQuestion, showResults, endGame } = useTeacherGameControls(sessionId);
   const [countdown, setCountdown] = useState<number | null>(null);
 
