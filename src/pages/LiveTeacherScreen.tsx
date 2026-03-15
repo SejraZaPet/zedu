@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Monitor, Smartphone, StickyNote, ChevronLeft, ChevronRight, Users, StopCircle } from "lucide-react";
+import SessionExports from "@/components/live/SessionExports";
 
 interface SlideData {
   slideId: string;
