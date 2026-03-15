@@ -331,6 +331,17 @@ const LessonPlanGenerator = ({ lessonId, lessonTitle, lessonBlocks }: Props) => 
             </div>
           )}
 
+          {/* Worksheet panel - shown after save */}
+          {savedPlanId && (
+            <div className="border-t border-border pt-4">
+              <WorksheetPanel
+                lessonPlanId={savedPlanId}
+                planTitle={plan.title}
+                gradeBand={plan.gradeBand}
+              />
+            </div>
+          )}
+
           {/* Export panel - shown after save */}
           {savedPlanId && (
             <div className="border-t border-border pt-4">
