@@ -33,7 +33,7 @@ const StudentGameJoin = () => {
     if (!trimmedCode) return;
     const playerName = isLoggedIn ? userName : nickname.trim();
     if (!playerName) {
-      toast({ title: "Zadejte přezdívku", variant: "destructive" });
+      toast({ title: t("student.errors.joinFailed"), variant: "destructive" });
       return;
     }
 
