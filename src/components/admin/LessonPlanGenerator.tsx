@@ -296,7 +296,14 @@ const LessonPlanGenerator = ({ lessonId, lessonTitle, lessonBlocks }: Props) => 
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-semibold text-sm">{plan.title}</h3>
+              <h3 className="font-semibold text-sm flex items-center gap-2">
+                {plan.title}
+                {plan.mode === "student-paced" && (
+                  <Badge variant="outline" className="text-[10px] font-normal border-emerald-300 text-emerald-700 dark:text-emerald-300">
+                    <User className="w-3 h-3 mr-1" /> Samostudium
+                  </Badge>
+                )}
+              </h3>
               <p className="text-xs text-muted-foreground">{plan.subject} · {plan.gradeBand} · {plan.slides.length} slidů</p>
             </div>
             <div className="flex gap-2 flex-wrap">
