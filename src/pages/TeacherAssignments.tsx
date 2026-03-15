@@ -40,6 +40,7 @@ const TeacherAssignments = () => {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [classes, setClasses] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [showForm, setShowForm] = useState(false);
 
