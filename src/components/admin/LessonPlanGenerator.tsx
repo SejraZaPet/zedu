@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Sparkles, Monitor, Smartphone, StickyNote, ChevronLeft, ChevronRight, Save, Zap, Play } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import ActivitySpecGenerator from "./ActivitySpecGenerator";
+import ExportPanel from "./ExportPanel";
 
 interface Slide {
   slideId: string;
@@ -60,6 +61,7 @@ const LessonPlanGenerator = ({ lessonId, lessonTitle, lessonBlocks }: Props) => 
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [launching, setLaunching] = useState(false);
+  const [savedPlanId, setSavedPlanId] = useState<string | null>(null);
   const [plan, setPlan] = useState<LessonPlan | null>(null);
   const [activeSlide, setActiveSlide] = useState(0);
 
@@ -131,7 +133,7 @@ const LessonPlanGenerator = ({ lessonId, lessonTitle, lessonBlocks }: Props) => 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Nepřihlášen");
 
-      const { error } = await supabase.from("lesson_plans" as any).insert({
+      const { data: inserted, error } = await supabase.from("lesson_plans" as any).insert({
         lesson_id: lessonId,
         teacher_id: user.id,
         title: plan.title,
@@ -139,9 +141,10 @@ const LessonPlanGenerator = ({ lessonId, lessonTitle, lessonBlocks }: Props) => 
         grade_band: plan.gradeBand,
         slides: plan.slides,
         input_data: { keyConcepts: keyConcepts.split(",").map((s) => s.trim()).filter(Boolean), durationMin },
-      } as any);
+      } as any).select("id").single();
 
       if (error) throw error;
+      setSavedPlanId((inserted as any)?.id || null);
       toast({ title: "Plán uložen", description: "Plán lekce byl uložen do databáze." });
     } catch (e: any) {
       console.error("Save error:", e);
@@ -324,6 +327,17 @@ const LessonPlanGenerator = ({ lessonId, lessonTitle, lessonBlocks }: Props) => 
                   Další <ChevronRight className="w-4 h-4 ml-1" />
                 </Button>
               </div>
+            </div>
+          )}
+
+          {/* Export panel - shown after save */}
+          {savedPlanId && (
+            <div className="border-t border-border pt-4">
+              <ExportPanel
+                lessonPlanId={savedPlanId}
+                planTitle={plan.title}
+                planSlides={plan.slides}
+              />
             </div>
           )}
         </div>
