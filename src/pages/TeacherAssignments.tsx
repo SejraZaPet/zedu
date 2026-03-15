@@ -20,12 +20,6 @@ import { cn } from "@/lib/utils";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import AssignmentResultsDashboard from "@/components/admin/AssignmentResultsDashboard";
-import { toast } from "@/hooks/use-toast";
-import { format } from "date-fns";
-import { cs } from "date-fns/locale";
-import { cn } from "@/lib/utils";
-import SiteHeader from "@/components/SiteHeader";
-import SiteFooter from "@/components/SiteFooter";
 
 interface Assignment {
   id: string;
