@@ -52,12 +52,14 @@ const SLIDE_TYPE_COLORS: Record<string, string> = {
 };
 
 const LessonPlanGenerator = ({ lessonId, lessonTitle, lessonBlocks }: Props) => {
+  const navigate = useNavigate();
   const [subject, setSubject] = useState("");
   const [gradeBand, setGradeBand] = useState("");
   const [durationMin, setDurationMin] = useState(45);
   const [keyConcepts, setKeyConcepts] = useState("");
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [launching, setLaunching] = useState(false);
   const [plan, setPlan] = useState<LessonPlan | null>(null);
   const [activeSlide, setActiveSlide] = useState(0);
 
