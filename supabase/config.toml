@@ -2,3 +2,6 @@ project_id = "rnndtpfmkanxbckdbflm"
 
 [functions.generate-lesson-plan]
 verify_jwt = false
+
+[functions.generate-activity-spec]
+verify_jwt = false
