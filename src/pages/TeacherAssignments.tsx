@@ -144,11 +144,25 @@ const TeacherAssignments = () => {
             <h1 className="text-2xl font-bold">Úlohy pro žáky</h1>
             <p className="text-sm text-muted-foreground">Vytvářej a spravuj zadání úloh</p>
           </div>
-          <Button onClick={() => setShowForm(!showForm)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Nová úloha
-          </Button>
         </div>
+
+        <Tabs defaultValue="assignments" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="assignments">
+              <Plus className="w-3.5 h-3.5 mr-1.5" /> Úlohy
+            </TabsTrigger>
+            <TabsTrigger value="results">
+              <BarChart3 className="w-3.5 h-3.5 mr-1.5" /> Výsledky
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="assignments" className="space-y-4">
+            <div className="flex justify-end">
+              <Button onClick={() => setShowForm(!showForm)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Nová úloha
+              </Button>
+            </div>
 
         {/* Create form */}
         {showForm && (
