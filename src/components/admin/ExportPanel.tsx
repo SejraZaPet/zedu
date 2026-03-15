@@ -8,6 +8,7 @@ import { Loader2, FileDown, Globe, Printer, Presentation, ExternalLink, CheckCir
 import { toast } from "@/hooks/use-toast";
 import pptxgen from "pptxgenjs";
 import { toSlideSpecDocument, getActivityTransformRule, buildSpeakerNotesWithAnswers, resolveTemplate, regionToInches, applyOverflow, type SlideSpecDocument, type SlideSpec as SlideSpecType } from "@/lib/slide-spec";
+import { EXPORT_COPY } from "@/lib/export-microcopy";
 
 interface Props {
   lessonPlanId: string;
@@ -84,14 +85,14 @@ const ExportPanel = ({ lessonPlanId, planTitle, planSlides, mode = "live" }: Pro
 
       if (format === "pdf" && data.url) {
         window.open(data.url, "_blank");
-        toast({ title: "PDF připraven", description: "Použijte Ctrl+P pro tisk do PDF." });
+        toast({ title: EXPORT_COPY.toasts.exportSucceededPdf.title, description: EXPORT_COPY.toasts.exportSucceededPdf.description });
       } else if (data.url) {
-        toast({ title: `${format.toUpperCase()} exportován` });
+        toast({ title: EXPORT_COPY.toasts.exportSucceededHtml.title, description: EXPORT_COPY.toasts.exportSucceededHtml.description });
       }
     } catch (e: any) {
       console.error(`Export ${format} error:`, e);
       updateExport(format, { status: "failed", error: e.message });
-      toast({ title: "Chyba exportu", description: e.message, variant: "destructive" });
+      toast({ title: EXPORT_COPY.toasts.exportFailed.title, description: e.message || EXPORT_COPY.toasts.exportFailed.description, variant: "destructive" });
     }
   };
 
@@ -253,27 +254,27 @@ const ExportPanel = ({ lessonPlanId, planTitle, planSlides, mode = "live" }: Pro
     const fileBase = planTitle.replace(/\s+/g, "_");
     const fileName = exportTarget === "student" ? `${fileBase}_handout.pptx` : `${fileBase}_teacher.pptx`;
     await pptx.writeFile({ fileName });
-    toast({ title: "PPTX stažen" });
+    toast({ title: EXPORT_COPY.toasts.exportSucceededPptx.title, description: EXPORT_COPY.toasts.exportSucceededPptx.description });
   };
 
   const formatConfigs = [
     {
       key: "pptx", label: "PPTX", icon: Presentation,
       desc: exportTarget === "student"
-        ? "Handout: výklad + placeholdery aktivit"
-        : "Učitelská verze s klíčem a poznámkami",
+        ? EXPORT_COPY.modals.formatPptxStudent
+        : EXPORT_COPY.modals.formatPptx,
     },
     {
       key: "pdf", label: "PDF", icon: Printer,
       desc: exportTarget === "student"
-        ? "Žákovský handout (bez odpovědí)"
-        : "Učitelský klíč odpovědí (Ctrl+P)",
+        ? EXPORT_COPY.modals.formatPdfStudent
+        : EXPORT_COPY.modals.formatPdf,
     },
     {
       key: "html", label: "HTML", icon: Globe,
-      desc: isStudentPaced
-        ? "Offline balíček (storage: nespecifikováno)"
-        : "Interaktivní prezentace v prohlížeči",
+      desc: exportTarget === "student"
+        ? EXPORT_COPY.modals.formatHtmlStudent
+        : EXPORT_COPY.modals.formatHtml,
     },
   ];
 
@@ -281,12 +282,12 @@ const ExportPanel = ({ lessonPlanId, planTitle, planSlides, mode = "live" }: Pro
     <div className="space-y-4">
       <h3 className="font-semibold text-sm flex items-center gap-2">
         <FileDown className="w-4 h-4" />
-        Export plánu lekce
+        {EXPORT_COPY.modals.exportTitle}
       </h3>
 
       {/* Export target selector */}
       <div className="p-3 border border-border rounded-lg bg-muted/30 space-y-3">
-        <Label className="text-xs font-medium text-muted-foreground">Export pro:</Label>
+        <Label className="text-xs font-medium text-muted-foreground">{EXPORT_COPY.modals.targetLabel}</Label>
         <RadioGroup
           value={exportTarget}
           onValueChange={(v) => setExportTarget(v as ExportTarget)}
@@ -295,13 +296,13 @@ const ExportPanel = ({ lessonPlanId, planTitle, planSlides, mode = "live" }: Pro
           <div className="flex items-center gap-2">
             <RadioGroupItem value="student" id="target-student" />
             <Label htmlFor="target-student" className="text-xs flex items-center gap-1 cursor-pointer">
-              <GraduationCap className="w-3.5 h-3.5" /> Žák (handout)
+              <GraduationCap className="w-3.5 h-3.5" /> {EXPORT_COPY.modals.targetStudent}
             </Label>
           </div>
           <div className="flex items-center gap-2">
             <RadioGroupItem value="teacher" id="target-teacher" />
             <Label htmlFor="target-teacher" className="text-xs flex items-center gap-1 cursor-pointer">
-              <Users className="w-3.5 h-3.5" /> Učitel (klíč)
+              <Users className="w-3.5 h-3.5" /> {EXPORT_COPY.modals.targetTeacher}
             </Label>
           </div>
         </RadioGroup>
@@ -310,7 +311,7 @@ const ExportPanel = ({ lessonPlanId, planTitle, planSlides, mode = "live" }: Pro
         {exportTarget === "teacher" && (
           <div className="flex items-center gap-2 pt-1">
             <Switch checked={includeNotes} onCheckedChange={setIncludeNotes} id="exp-notes" />
-            <Label htmlFor="exp-notes" className="text-xs">Poznámky učitele</Label>
+            <Label htmlFor="exp-notes" className="text-xs">{EXPORT_COPY.buttons.includeNotes}</Label>
           </div>
         )}
       </div>
@@ -343,7 +344,7 @@ const ExportPanel = ({ lessonPlanId, planTitle, planSlides, mode = "live" }: Pro
                   ) : (
                     <FileDown className="w-3 h-3 mr-1" />
                   )}
-                  {exp.status === "succeeded" ? "Znovu" : "Exportovat"}
+                  {exp.status === "succeeded" ? EXPORT_COPY.buttons.reExport : EXPORT_COPY.buttons.chooseFormat.split(" ")[0]}
                 </Button>
                 {exp.url && (
                   <Button size="sm" variant="ghost" className="h-7 text-xs" asChild>
