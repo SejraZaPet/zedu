@@ -107,8 +107,8 @@ export function useGameSession(sessionId: string | undefined) {
             setConnectionStatus("connected");
             // Reset reconnect counter on success
             if (reconnectAttemptRef.current > 0) {
-              // Resync data after reconnect
-              fetchData();
+              // Resync data + clock after reconnect
+              fetchData(true);
             }
             reconnectAttemptRef.current = 0;
             break;
