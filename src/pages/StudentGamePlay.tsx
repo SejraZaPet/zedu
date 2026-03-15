@@ -19,7 +19,7 @@ const StudentGamePlay = () => {
     };
   }, [sessionId]);
 
-  const { session, players, responses, loading } = useGameSession(sessionId);
+  const { session, players, responses, loading, connectionStatus, reconnect } = useGameSession(sessionId);
   const [answered, setAnswered] = useState<Set<number>>(new Set());
   const [lastResult, setLastResult] = useState<{ correct: boolean; score: number } | null>(null);
 
