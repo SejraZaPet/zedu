@@ -208,6 +208,9 @@ export const UI_COPY = {
       playerListLabel: "Seznam připojených hráčů",
       playerJoined: (name: string) => `Hráč ${name} se připojil`,
       gameCodeLabel: "Kód hry",
+      qrAlt: (code: string) => `QR kód pro připojení ke hře ${code}`,
+      qrHint: "Naskenujte QR kód nebo zadejte kód ručně",
+      joinUrl: "Odkaz pro připojení",
     },
     export: {
       panelLabel: "Panel exportu lekce",

@@ -1,9 +1,10 @@
 import { GameSession, GamePlayer } from "@/lib/game-types";
 import { Button } from "@/components/ui/button";
 import { Users, Play, Copy, Check } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { t } from "@/lib/t";
+import { QRCodeSVG } from "qrcode.react";
 
 interface Props {
   session: GameSession;
@@ -15,6 +16,11 @@ interface Props {
 export const GameLobby = ({ session, players, onStart, isTeacher }: Props) => {
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
+
+  const joinUrl = useMemo(() => {
+    const base = window.location.origin;
+    return `${base}/game/join?code=${session.game_code}`;
+  }, [session.game_code]);
 
   const copyCode = () => {
     navigator.clipboard.writeText(session.game_code);
@@ -36,24 +42,51 @@ export const GameLobby = ({ session, players, onStart, isTeacher }: Props) => {
           </p>
         </div>
 
-        {/* Game Code */}
-        <div className="space-y-3">
-          <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider" id="game-code-label">{t("projector.headline")}</p>
-          <button
-            onClick={copyCode}
-            aria-label={`${t("a11y.lobby.gameCodeLabel")}: ${session.game_code}`}
-            aria-describedby="game-code-label"
-            className="inline-flex items-center gap-3 bg-card border-2 border-primary/30 rounded-2xl px-8 py-5 hover:border-primary/60 transition-colors group"
-          >
-            <span className="text-5xl md:text-6xl font-mono font-bold tracking-[0.3em] text-primary" aria-hidden="true">
-              {session.game_code}
-            </span>
-            {copied ? (
-              <Check className="w-6 h-6 text-green-500" />
-            ) : (
-              <Copy className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
-            )}
-          </button>
+        {/* QR Code + Game Code */}
+        <div className="space-y-4">
+          {/* QR */}
+          <div className="flex justify-center">
+            <div
+              className="bg-white p-4 rounded-2xl shadow-sm border border-border inline-block"
+              role="img"
+              aria-label={t("a11y.lobby.qrAlt", session.game_code)}
+            >
+              <QRCodeSVG
+                value={joinUrl}
+                size={180}
+                level="M"
+                bgColor="#ffffff"
+                fgColor="#000000"
+                includeMargin={false}
+              />
+            </div>
+          </div>
+
+          <p className="text-xs text-muted-foreground">
+            {t("a11y.lobby.qrHint")}
+          </p>
+
+          {/* Text code fallback */}
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider" id="game-code-label">
+              {t("projector.headline")}
+            </p>
+            <button
+              onClick={copyCode}
+              aria-label={`${t("a11y.lobby.gameCodeLabel")}: ${session.game_code}`}
+              aria-describedby="game-code-label"
+              className="inline-flex items-center gap-3 bg-card border-2 border-primary/30 rounded-2xl px-8 py-5 hover:border-primary/60 transition-colors group"
+            >
+              <span className="text-5xl md:text-6xl font-mono font-bold tracking-[0.3em] text-primary" aria-hidden="true">
+                {session.game_code}
+              </span>
+              {copied ? (
+                <Check className="w-6 h-6 text-green-500" />
+              ) : (
+                <Copy className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Players */}
