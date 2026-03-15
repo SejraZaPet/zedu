@@ -124,6 +124,8 @@ const LessonPlanGenerator = ({ lessonId, lessonTitle, lessonBlocks }: Props) => 
           },
           style: "přehledný, školní, minimalistický",
           language: "cs-CZ",
+          mode: planMode,
+          allowImmediateFeedback,
         },
       });
 
