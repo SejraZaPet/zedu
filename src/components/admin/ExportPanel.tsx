@@ -140,10 +140,12 @@ const ExportPanel = ({ lessonPlanId, planTitle, planSlides, mode = "live" }: Pro
         fontSize: 16, color: "475569", valign: "top",
       });
 
-      // Interactive placeholder from spec
+      // Interactive placeholder — driven by transform rules
       if (spec.interactivePlaceholder) {
         const placeholder = spec.interactivePlaceholder;
-        if (placeholder.activityType === "mcq" && placeholder.model?.choices) {
+        const rule = getActivityTransformRule(placeholder.activityType);
+
+        if (rule.pptx.renderChoices && placeholder.activityType === "mcq" && placeholder.model?.choices) {
           const choices = placeholder.model.choices as string[];
           const correctIdx = placeholder.model.correctIndex as number;
           choices.forEach((choice: string, i: number) => {
@@ -160,30 +162,63 @@ const ExportPanel = ({ lessonPlanId, planTitle, planSlides, mode = "live" }: Pro
               bold: isCorrect,
             });
           });
-        } else if (exportTarget === "student") {
+        } else if (rule.pptx.renderChoices && placeholder.activityType === "matching" && placeholder.model?.pairs) {
+          const pairs = placeholder.model.pairs as Array<{ left: string; right: string }>;
+          pairs.forEach((pair, i) => {
+            s.addText(`${pair.left}  →  ${includeAnswerKey ? pair.right : "___________"}`, {
+              x: 9, y: 1.8 + i * 0.5, w: 3.5, h: 0.4,
+              fontSize: 11, color: "475569",
+            });
+          });
+        } else if (rule.pptx.renderChoices && placeholder.activityType === "true_false") {
+          s.addText(`${placeholder.prompt || ""}\n\n○ Pravda    ○ Nepravda`, {
+            x: 9, y: 1.8, w: 3.5, h: 1.5,
+            fontSize: 12, color: "475569",
+          });
+        } else if (rule.pptx.renderChoices && placeholder.activityType === "ordering" && placeholder.model?.items) {
+          const items = placeholder.model.items as string[];
+          items.forEach((item, i) => {
+            s.addText(`☐ ${item}`, {
+              x: 9, y: 1.8 + i * 0.45, w: 3.5, h: 0.4,
+              fontSize: 11, color: "475569",
+            });
+          });
+        } else {
+          // Generic placeholder with fallback text from rule
           s.addShape(pptx.ShapeType.roundRect, {
             x: 9, y: 1.8, w: 3.5, h: 2,
             fill: { color: "FEF9C3" },
             line: { color: "EAB308", width: 1 },
             rectRadius: 0.1,
           });
-          s.addText(`🎯 ${placeholder.activityType.toUpperCase()}\n\nVypracuj v aplikaci`, {
+          s.addText(`🎯 ${placeholder.activityType.toUpperCase()}\n\n${rule.pptx.fallbackText}`, {
             x: 9.1, y: 1.9, w: 3.3, h: 1.8,
             fontSize: 12, color: "92400E", align: "center", valign: "middle",
           });
         }
 
-        // QR placeholder for join slides
-        if (placeholder.showQr && placeholder.joinCode) {
+        // QR placeholder
+        if (rule.pptx.showQr) {
           s.addShape(pptx.ShapeType.roundRect, {
             x: 10, y: 4, w: 2.5, h: 1.5,
             fill: { color: "F8FAFC" },
             line: { color: "94A3B8", width: 1, dashType: "dash" },
             rectRadius: 0.1,
           });
-          s.addText(`QR\n${placeholder.joinCode}`, {
+          s.addText(`QR\n${placeholder.joinCode || "scan"}`, {
             x: 10, y: 4, w: 2.5, h: 1.5,
             fontSize: 14, color: "94A3B8", align: "center", valign: "middle",
+          });
+        }
+
+        // Video checkpoints as text
+        if (placeholder.activityType === "video" && placeholder.model?.checkpoints) {
+          const cps = placeholder.model.checkpoints as Array<{ time: string; question: string }>;
+          cps.forEach((cp, i) => {
+            s.addText(`[${cp.time}] ${cp.question}`, {
+              x: 0.5, y: 4.5 + i * 0.35, w: 8, h: 0.3,
+              fontSize: 10, color: "64748B",
+            });
           });
         }
       }
@@ -205,9 +240,10 @@ const ExportPanel = ({ lessonPlanId, planTitle, planSlides, mode = "live" }: Pro
         }
       }
 
-      // Speaker notes from spec
-      if (effectiveIncludeNotes && spec.speakerNotes) {
-        s.addNotes(spec.speakerNotes);
+      // Speaker notes with answer key from transform rules
+      if (effectiveIncludeNotes || includeAnswerKey) {
+        const enrichedNotes = buildSpeakerNotesWithAnswers(spec, includeAnswerKey);
+        if (enrichedNotes) s.addNotes(enrichedNotes);
       }
     }
 
