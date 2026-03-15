@@ -38,7 +38,7 @@ export const GameLobby = ({ session, players, onStart, isTeacher }: Props) => {
 
         {/* Game Code */}
         <div className="space-y-3">
-          <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Kód hry</p>
+          <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{t("projector.headline")}</p>
           <button
             onClick={copyCode}
             className="inline-flex items-center gap-3 bg-card border-2 border-primary/30 rounded-2xl px-8 py-5 hover:border-primary/60 transition-colors group"
