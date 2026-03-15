@@ -59,6 +59,8 @@ const TeacherAssignments = () => {
 
   const loadData = async () => {
     setLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) setUserId(user.id);
     const [assignmentsRes, classesRes] = await Promise.all([
       supabase.from("assignments" as any).select("*").order("created_at", { ascending: false }),
       supabase.from("classes").select("id, name").eq("archived", false),
