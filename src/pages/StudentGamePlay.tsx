@@ -3,6 +3,7 @@ import { useGameSession } from "@/hooks/useGameSession";
 import { GameLobby } from "@/components/game/GameLobby";
 import { StudentGameQuestion } from "@/components/game/StudentGameQuestion";
 import { GameLeaderboardFinal } from "@/components/game/GameLeaderboardFinal";
+import { ConnectionStatusBanner } from "@/components/game/ConnectionStatusBanner";
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
