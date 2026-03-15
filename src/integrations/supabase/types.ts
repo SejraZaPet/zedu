@@ -354,6 +354,53 @@ export type Database = {
           },
         ]
       }
+      lesson_plans: {
+        Row: {
+          created_at: string
+          grade_band: string
+          id: string
+          input_data: Json
+          lesson_id: string
+          slides: Json
+          subject: string
+          teacher_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          grade_band?: string
+          id?: string
+          input_data?: Json
+          lesson_id: string
+          slides?: Json
+          subject?: string
+          teacher_id: string
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          grade_band?: string
+          id?: string
+          input_data?: Json
+          lesson_id?: string
+          slides?: Json
+          subject?: string
+          teacher_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_plans_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "textbook_lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lesson_topic_assignments: {
         Row: {
           created_at: string
