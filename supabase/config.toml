@@ -29,3 +29,7 @@ verify_jwt = false
 
 [functions.get-export-url]
 verify_jwt = false
+
+[functions.reap-stale-jobs]
+verify_jwt = false
+verify_jwt = false
