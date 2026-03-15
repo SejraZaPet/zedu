@@ -38,12 +38,14 @@ export const GameLobby = ({ session, players, onStart, isTeacher }: Props) => {
 
         {/* Game Code */}
         <div className="space-y-3">
-          <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{t("projector.headline")}</p>
+          <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider" id="game-code-label">{t("projector.headline")}</p>
           <button
             onClick={copyCode}
+            aria-label={`${t("a11y.lobby.gameCodeLabel")}: ${session.game_code}`}
+            aria-describedby="game-code-label"
             className="inline-flex items-center gap-3 bg-card border-2 border-primary/30 rounded-2xl px-8 py-5 hover:border-primary/60 transition-colors group"
           >
-            <span className="text-5xl md:text-6xl font-mono font-bold tracking-[0.3em] text-primary">
+            <span className="text-5xl md:text-6xl font-mono font-bold tracking-[0.3em] text-primary" aria-hidden="true">
               {session.game_code}
             </span>
             {copied ? (

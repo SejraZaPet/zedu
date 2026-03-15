@@ -199,6 +199,46 @@ export const UI_COPY = {
     noResults: "Žádné výsledky",
     connectionLost: "Připojení ztraceno. Zkontroluj internet a zkus to znovu.",
   },
+
+  // ═══════════════════════════════════════
+  //  ACCESSIBILITY
+  // ═══════════════════════════════════════
+  a11y: {
+    lobby: {
+      playerListLabel: "Seznam připojených hráčů",
+      playerJoined: (name: string) => `Hráč ${name} se připojil`,
+      gameCodeLabel: "Kód hry",
+    },
+    export: {
+      panelLabel: "Panel exportu lekce",
+      statusSuccess: "Export byl úspěšný",
+      statusFailed: "Export se nezdařil",
+      statusRunning: "Export probíhá…",
+    },
+    matching: {
+      instruction: "Ke každé položce vlevo vyberte odpovídající položku vpravo.",
+      leftItemLabel: (item: string) => `Položka: ${item}`,
+      selectMatch: (item: string) => `Vyberte pár pro: ${item}`,
+      chooseOption: "Vyberte odpověď",
+      paired: "Spárováno",
+      checkAnswers: "Ověřit odpovědi",
+      allCorrect: "Všechny páry jsou správně!",
+      someWrong: "Některé páry jsou špatně.",
+      tryAgain: "Zkusit znovu",
+    },
+    hotspot: {
+      instruction: "Vyberte oblast na obrázku, která odpovídá zadání.",
+      selectArea: "Vyberte oblast",
+      areaOption: (label: string) => `Oblast: ${label}`,
+      correct: "Správně!",
+      wrong: "Špatně – správná oblast je vyznačena.",
+      next: "Další",
+      showResults: "Zobrazit výsledky",
+      result: (correct: number, total: number, pct: number) =>
+        `${correct} z ${total} správně (${pct} %)`,
+      retry: "Zkusit znovu",
+    },
+  },
 } as const;
 
 export type UiCopy = typeof UI_COPY;
