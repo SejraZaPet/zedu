@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +37,7 @@ interface Profile {
 const ProfilePage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user, isLoggedIn, loading: authLoading } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -52,21 +54,23 @@ const ProfilePage = () => {
   const [changingPassword, setChangingPassword] = useState(false);
 
   useEffect(() => {
-    const loadProfile = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate("/auth?redirect=%2Fprofil");
-        return;
-      }
+    if (authLoading) return;
 
+    if (!isLoggedIn || !user) {
+      navigate("/auth?redirect=%2Fprofil");
+      return;
+    }
+
+    const loadProfile = async () => {
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
-        .eq("id", session.user.id)
+        .eq("id", user.id)
         .single();
 
       if (error || !data) {
         toast({ title: "Chyba", description: "Nepodařilo se načíst profil.", variant: "destructive" });
+        setLoading(false);
         return;
       }
 
@@ -81,12 +85,11 @@ const ProfilePage = () => {
     };
 
     loadProfile();
-  }, [navigate, toast]);
+  }, [authLoading, isLoggedIn, user, navigate, toast]);
 
   const handleSaveProfile = async () => {
+    if (!user) return;
     setSaving(true);
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
 
     const { error } = await supabase
       .from("profiles")
@@ -95,7 +98,7 @@ const ProfilePage = () => {
         field_of_study: fieldOfStudy,
         year: year ? parseInt(year, 10) : null,
       })
-      .eq("id", session.user.id);
+      .eq("id", user.id);
 
     setSaving(false);
 
