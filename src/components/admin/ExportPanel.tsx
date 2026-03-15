@@ -96,16 +96,24 @@ const ExportPanel = ({ lessonPlanId, planTitle, planSlides, mode = "live" }: Pro
   };
 
   const generatePptxClient = async () => {
+    // Convert raw slides to SlideSpec v1 intermediate format
+    const specDoc = toSlideSpecDocument(planSlides, {
+      title: planTitle,
+      subject: "",
+      gradeBand: "",
+      mode: isStudentPaced ? "student_paced" : "teacher-led",
+    });
+
     const pptx = new pptxgen();
     const suffix = exportTarget === "student" ? " (žák)" : " (učitel)";
     pptx.title = planTitle + suffix;
     pptx.author = "ZEdu";
     pptx.layout = "LAYOUT_WIDE";
 
-    for (const slide of planSlides) {
+    for (const spec of specDoc.slides) {
       const s = pptx.addSlide();
-      const typeColor = TYPE_COLORS[slide.type] || "6B7280";
-      const typeLabel = TYPE_LABELS[slide.type] || slide.type;
+      const typeColor = TYPE_COLORS[spec.type] || "6B7280";
+      const typeLabel = TYPE_LABELS[spec.type] || spec.type;
 
       // Type badge
       s.addShape(pptx.ShapeType.roundRect, {
@@ -118,31 +126,26 @@ const ExportPanel = ({ lessonPlanId, planTitle, planSlides, mode = "live" }: Pro
         color: "FFFFFF", fontSize: 11, bold: true, align: "center",
       });
 
-      // Headline — student-paced uses device instructions as primary content
-      const headline = isStudentPaced
-        ? (slide.device?.headline || slide.projector?.headline || "")
-        : (slide.projector?.headline || "");
-
-      s.addText(headline, {
+      // Title from spec
+      s.addText(spec.title, {
         x: 0.5, y: 0.9, w: 12, h: 0.8,
         fontSize: 28, bold: true, color: "1E293B",
       });
 
-      // Body
-      const body = isStudentPaced
-        ? (slide.device?.instructions || slide.projector?.body || "")
-        : (slide.projector?.body || "");
-
-      s.addText(body, {
+      // Body text blocks
+      const bodyBlocks = spec.textBlocks.filter(b => b.role === "body" || (isStudentPaced && b.role === "device_instruction"));
+      const bodyText = bodyBlocks.map(b => b.text).join("\n\n");
+      s.addText(bodyText, {
         x: 0.5, y: 1.8, w: 8, h: 2.5,
         fontSize: 16, color: "475569", valign: "top",
       });
 
-      // Activity placeholder
-      if (slide.activitySpec) {
-        if (slide.activitySpec.type === "mcq" && slide.activitySpec.model?.choices) {
-          const choices = slide.activitySpec.model.choices;
-          const correctIdx = slide.activitySpec.model.correctIndex;
+      // Interactive placeholder from spec
+      if (spec.interactivePlaceholder) {
+        const placeholder = spec.interactivePlaceholder;
+        if (placeholder.activityType === "mcq" && placeholder.model?.choices) {
+          const choices = placeholder.model.choices as string[];
+          const correctIdx = placeholder.model.correctIndex as number;
           choices.forEach((choice: string, i: number) => {
             const isCorrect = i === correctIdx && includeAnswerKey;
             s.addShape(pptx.ShapeType.roundRect, {
@@ -158,37 +161,53 @@ const ExportPanel = ({ lessonPlanId, planTitle, planSlides, mode = "live" }: Pro
             });
           });
         } else if (exportTarget === "student") {
-          // Generic activity placeholder for student handout
           s.addShape(pptx.ShapeType.roundRect, {
             x: 9, y: 1.8, w: 3.5, h: 2,
             fill: { color: "FEF9C3" },
             line: { color: "EAB308", width: 1 },
             rectRadius: 0.1,
           });
-          s.addText(`🎯 ${slide.activitySpec.type?.toUpperCase() || "Aktivita"}\n\nVypracuj v aplikaci`, {
+          s.addText(`🎯 ${placeholder.activityType.toUpperCase()}\n\nVypracuj v aplikaci`, {
             x: 9.1, y: 1.9, w: 3.3, h: 1.8,
             fontSize: 12, color: "92400E", align: "center", valign: "middle",
           });
         }
+
+        // QR placeholder for join slides
+        if (placeholder.showQr && placeholder.joinCode) {
+          s.addShape(pptx.ShapeType.roundRect, {
+            x: 10, y: 4, w: 2.5, h: 1.5,
+            fill: { color: "F8FAFC" },
+            line: { color: "94A3B8", width: 1, dashType: "dash" },
+            rectRadius: 0.1,
+          });
+          s.addText(`QR\n${placeholder.joinCode}`, {
+            x: 10, y: 4, w: 2.5, h: 1.5,
+            fontSize: 14, color: "94A3B8", align: "center", valign: "middle",
+          });
+        }
       }
 
-      // Device section — only in teacher export (student already has it as main content)
+      // Device instructions — only in teacher export for live mode
       if (exportTarget === "teacher" && !isStudentPaced) {
-        s.addShape(pptx.ShapeType.roundRect, {
-          x: 0.5, y: 4.5, w: 8, h: 1.2,
-          fill: { color: "F1F5F9" },
-          rectRadius: 0.1,
-          line: { color: "E2E8F0", width: 1 },
-        });
-        s.addText(`📱 Žák: ${slide.device?.instructions || ""}`, {
-          x: 0.7, y: 4.6, w: 7.6, h: 1,
-          fontSize: 13, color: "475569", valign: "top",
-        });
+        const deviceBlock = spec.textBlocks.find(b => b.role === "device_instruction");
+        if (deviceBlock) {
+          s.addShape(pptx.ShapeType.roundRect, {
+            x: 0.5, y: 4.5, w: 8, h: 1.2,
+            fill: { color: "F1F5F9" },
+            rectRadius: 0.1,
+            line: { color: "E2E8F0", width: 1 },
+          });
+          s.addText(`📱 Žák: ${deviceBlock.text}`, {
+            x: 0.7, y: 4.6, w: 7.6, h: 1,
+            fontSize: 13, color: "475569", valign: "top",
+          });
+        }
       }
 
-      // Teacher notes
-      if (effectiveIncludeNotes && slide.teacherNotes) {
-        s.addNotes(slide.teacherNotes);
+      // Speaker notes from spec
+      if (effectiveIncludeNotes && spec.speakerNotes) {
+        s.addNotes(spec.speakerNotes);
       }
     }
 
