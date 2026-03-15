@@ -128,6 +128,62 @@ export type Database = {
         }
         Relationships: []
       }
+      export_jobs: {
+        Row: {
+          attempt: number
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          format: string
+          id: string
+          lesson_plan_id: string | null
+          max_attempts: number
+          options: Json
+          output_url: string | null
+          started_at: string | null
+          status: string
+          teacher_id: string
+        }
+        Insert: {
+          attempt?: number
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          format?: string
+          id?: string
+          lesson_plan_id?: string | null
+          max_attempts?: number
+          options?: Json
+          output_url?: string | null
+          started_at?: string | null
+          status?: string
+          teacher_id: string
+        }
+        Update: {
+          attempt?: number
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          format?: string
+          id?: string
+          lesson_plan_id?: string | null
+          max_attempts?: number
+          options?: Json
+          output_url?: string | null
+          started_at?: string | null
+          status?: string
+          teacher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "export_jobs_lesson_plan_id_fkey"
+            columns: ["lesson_plan_id"]
+            isOneToOne: false
+            referencedRelation: "lesson_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       game_players: {
         Row: {
           created_at: string
