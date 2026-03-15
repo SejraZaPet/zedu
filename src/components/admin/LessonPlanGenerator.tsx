@@ -133,7 +133,7 @@ const LessonPlanGenerator = ({ lessonId, lessonTitle, lessonBlocks }: Props) => 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Nepřihlášen");
 
-      const { error } = await supabase.from("lesson_plans" as any).insert({
+      const { data: inserted, error } = await supabase.from("lesson_plans" as any).insert({
         lesson_id: lessonId,
         teacher_id: user.id,
         title: plan.title,
@@ -141,9 +141,10 @@ const LessonPlanGenerator = ({ lessonId, lessonTitle, lessonBlocks }: Props) => 
         grade_band: plan.gradeBand,
         slides: plan.slides,
         input_data: { keyConcepts: keyConcepts.split(",").map((s) => s.trim()).filter(Boolean), durationMin },
-      } as any);
+      } as any).select("id").single();
 
       if (error) throw error;
+      setSavedPlanId((inserted as any)?.id || null);
       toast({ title: "Plán uložen", description: "Plán lekce byl uložen do databáze." });
     } catch (e: any) {
       console.error("Save error:", e);
