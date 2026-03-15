@@ -51,20 +51,20 @@ const Hero = () => {
 
           {/* Brand headline */}
           <h1
-            className="flex items-center justify-center flex-wrap gap-3 sm:gap-4 md:gap-5 font-heading font-extrabold tracking-tight mb-8 animate-fade-in-up"
+            className="flex items-center justify-center whitespace-nowrap gap-2 sm:gap-3 md:gap-4 font-heading font-extrabold tracking-tight mb-8 animate-fade-in-up"
             style={{ animationDelay: "0.1s" }}
           >
             <img
               src={heroLogo}
               alt="ZEdu"
-              className="h-[36px] sm:h-[48px] md:h-[58px] lg:h-[66px] w-auto object-contain block"
+              className="h-[28px] sm:h-[40px] md:h-[52px] lg:h-[60px] w-auto object-contain block"
             />
-            <span className="text-white/60 text-[32px] sm:text-[44px] md:text-[56px] lg:text-[64px] leading-none">•</span>
-            <span className="text-white text-[32px] sm:text-[44px] md:text-[56px] lg:text-[64px] leading-none">Tvoř</span>
-            <span className="text-white/60 text-[32px] sm:text-[44px] md:text-[56px] lg:text-[64px] leading-none">•</span>
-            <span className="text-white text-[32px] sm:text-[44px] md:text-[56px] lg:text-[64px] leading-none">Uč</span>
-            <span className="text-white/60 text-[32px] sm:text-[44px] md:text-[56px] lg:text-[64px] leading-none">•</span>
-            <span className="text-white text-[32px] sm:text-[44px] md:text-[56px] lg:text-[64px] leading-none">Objevuj</span>
+            <span className="text-white/60 text-[24px] sm:text-[36px] md:text-[48px] lg:text-[56px] leading-none">•</span>
+            <span className="text-white text-[24px] sm:text-[36px] md:text-[48px] lg:text-[56px] leading-none">Tvoř</span>
+            <span className="text-white/60 text-[24px] sm:text-[36px] md:text-[48px] lg:text-[56px] leading-none">•</span>
+            <span className="text-white text-[24px] sm:text-[36px] md:text-[48px] lg:text-[56px] leading-none">Uč</span>
+            <span className="text-white/60 text-[24px] sm:text-[36px] md:text-[48px] lg:text-[56px] leading-none">•</span>
+            <span className="text-white text-[24px] sm:text-[36px] md:text-[48px] lg:text-[56px] leading-none">Objevuj</span>
           </h1>
 
           <p
