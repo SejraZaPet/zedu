@@ -136,10 +136,20 @@ function renderSlideToHtml(slide: any, index: number, options: any): string {
   </section>`;
 }
 
-function generateFullHtml(slides: any[], title: string, options: any): string {
+function generateFullHtml(slides: any[], title: string, options: any, paper: "A4" | "16:9" = "A4"): string {
   const isStudent = options.exportTarget === "student";
   const subtitle = isStudent ? "Žákovský handout" : "Učitelský export";
   const slidesHtml = slides.map((s, i) => renderSlideToHtml(s, i, options)).join("\n");
+
+  // ── Paper config ──
+  const paperConfigs: Record<string, { widthMm: number; heightMm: number; contentWidthMm: number; contentHeightMm: number; orientation: string; margin: string }> = {
+    "A4": { widthMm: 210, heightMm: 297, contentWidthMm: 178, contentHeightMm: 259, orientation: "portrait", margin: "18mm 16mm 20mm 16mm" },
+    "16:9": { widthMm: 254, heightMm: 143, contentWidthMm: 226, contentHeightMm: 121, orientation: "landscape", margin: "10mm 14mm 12mm 14mm" },
+  };
+  const pc = paperConfigs[paper] || paperConfigs["A4"];
+  const pageSize = paper === "A4" ? "A4 portrait" : `${pc.widthMm}mm ${pc.heightMm}mm landscape`;
+
+  const dateStr = new Date().toLocaleDateString("cs-CZ");
 
   return `<!DOCTYPE html>
 <html lang="cs">
@@ -148,50 +158,109 @@ function generateFullHtml(slides: any[], title: string, options: any): string {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${title} – ${subtitle}</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; color: #1e293b; }
-  .header { background: #fff; border-bottom: 1px solid #e2e8f0; padding: 24px 40px; }
-  .header h1 { font-size: 24px; }
-  .header p { color: #64748b; font-size: 14px; }
-  .slides { max-width: 900px; margin: 32px auto; padding: 0 20px; }
-  .slide { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 32px; margin-bottom: 24px; break-inside: avoid; }
-  .slide-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-  .slide-badge { color: #fff; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
-  .slide-number { color: #94a3b8; font-size: 14px; font-weight: 600; }
-  .slide-content h2 { font-size: 22px; margin-bottom: 12px; }
-  .body-text { color: #475569; line-height: 1.6; white-space: pre-wrap; }
-  .device-section { margin-top: 20px; padding: 16px; background: #f1f5f9; border-radius: 8px; }
-  .device-section h4 { font-size: 13px; color: #64748b; margin-bottom: 8px; }
-  .device-section p { font-size: 14px; }
-  .teacher-notes { margin-top: 16px; padding: 12px 16px; border: 1px dashed #cbd5e1; border-radius: 8px; font-size: 13px; color: #64748b; }
-  .activity-box { margin-top: 16px; padding: 16px; border: 2px solid #e2e8f0; border-radius: 8px; background: #fefce8; }
-  .activity-box h4 { font-size: 14px; margin-bottom: 8px; }
-  .activity-box ul { list-style: none; padding: 0; }
-  .activity-box li { padding: 6px 12px; margin: 4px 0; background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px; }
-  .activity-box li.correct { border-color: #22c55e; background: #f0fdf4; font-weight: 600; }
-  .activity-placeholder { text-align: center; background: #fef9c3; border-color: #eab308; }
-  .matching td { padding: 4px 12px; font-size: 14px; }
-  .qr-placeholder { text-align: center; margin: 20px 0; }
-  .qr-box { display: inline-block; width: 120px; height: 120px; border: 2px dashed #94a3b8; border-radius: 8px; line-height: 120px; color: #94a3b8; font-size: 24px; font-weight: bold; }
-  @media print {
-    body { background: #fff; }
-    .slide { border: none; box-shadow: none; page-break-after: always; }
-    .header { position: static; }
+  /* ═══ ZEdu PDF Export – ${paper} ═══ */
+  @page {
+    size: ${pageSize};
+    margin: ${pc.margin};
+    @bottom-center { content: counter(page) " / " counter(pages); font-size: 8pt; color: #94a3b8; }
   }
-  body.present .header, body.present .teacher-notes { display: none; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  body {
+    font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+    font-size: 11pt; line-height: 1.55; color: #1e293b; background: #fff;
+    max-width: ${pc.contentWidthMm}mm; margin: 0 auto;
+  }
+  h1 { font-size: 18pt; font-weight: 700; margin-bottom: 4pt; }
+  h2 { font-size: 14pt; font-weight: 700; margin-bottom: 3pt; color: #0f172a; }
+  h3 { font-size: 12pt; font-weight: 600; color: #334155; }
+  h4 { font-size: 10pt; font-weight: 600; color: #475569; }
+  p  { margin-bottom: 6pt; }
+
+  .doc-header { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 2pt solid #0f172a; padding-bottom: 6pt; margin-bottom: 14pt; }
+  .doc-header h1 { flex: 1; }
+  .doc-header .meta { font-size: 9pt; color: #64748b; text-align: right; }
+
+  .slides { }
+  .slide { border: 0.75pt solid #e2e8f0; border-radius: 6pt; padding: 12pt 14pt; margin-bottom: 10pt; background: #fff; break-inside: avoid; page-break-inside: avoid; }
+  .slide-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8pt; }
+  .slide-badge { color: #fff; padding: 1.5pt 8pt; border-radius: 10pt; font-size: 7.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+  .slide-number { color: #94a3b8; font-size: 8pt; font-weight: 600; }
+  .slide-content h2 { font-size: 13pt; margin-bottom: 4pt; }
+  .body-text { font-size: 10.5pt; color: #334155; line-height: 1.55; white-space: pre-wrap; }
+
+  /* Pagination rules */
+  .activity-box, .slide { break-inside: avoid; page-break-inside: avoid; }
+  h2, h3, h4 { break-after: avoid; page-break-after: avoid; orphans: 2; widows: 2; }
+  img, figure { break-inside: avoid; page-break-inside: avoid; }
+  table { break-inside: avoid; page-break-inside: avoid; }
+  .slide[data-type='intro'] { break-after: page; page-break-after: always; }
+  p, li { orphans: 2; widows: 2; }
+
+  .device-section { margin-top: 8pt; padding: 6pt 10pt; background: #f1f5f9; border-radius: 4pt; font-size: 9pt; }
+  .device-section h4 { font-size: 8pt; color: #64748b; margin-bottom: 2pt; }
+  .teacher-notes { margin-top: 6pt; padding: 6pt 10pt; border-left: 3pt solid #6366f1; background: #f8fafc; font-size: 9pt; color: #64748b; }
+
+  .activity-box { margin-top: 8pt; padding: 10pt 12pt; border: 1.5pt solid #e2e8f0; border-radius: 5pt; background: #fefce8; }
+  .activity-box h4 { font-size: 10pt; margin-bottom: 4pt; }
+  .activity-box ul { list-style: none; padding: 0; }
+  .activity-box li { padding: 3pt 0; font-size: 10pt; }
+  .activity-box li.correct { font-weight: 700; color: #15803d; }
+  .activity-placeholder { text-align: center; background: #fef9c3; border-color: #eab308; }
+  .matching td { padding: 3pt 8pt; font-size: 10pt; border-bottom: 0.5pt solid #e2e8f0; }
+
+  .qr-placeholder { text-align: center; margin: 8pt 0; }
+  .qr-box { display: inline-block; width: 60pt; height: 60pt; border: 1.5pt dashed #94a3b8; border-radius: 4pt; line-height: 60pt; font-size: 14pt; font-weight: 700; color: #94a3b8; }
+
+  .answer-space { min-height: ${paper === "A4" ? "60pt" : "36pt"}; border: 1pt dashed #cbd5e1; border-radius: 4pt; margin-top: 6pt; }
+
+  .doc-footer { margin-top: 20pt; padding-top: 6pt; border-top: 0.5pt solid #e2e8f0; font-size: 7pt; color: #94a3b8; text-align: center; }
+
+  ${isStudent ? ".teacher-notes { display: none !important; }" : ""}
+
+  /* 16:9 handout specifics */
+  ${paper === "16:9" ? `
+  .slide { min-height: 103mm; display: flex; flex-direction: column; justify-content: center; break-after: page; page-break-after: always; }
+  .slide-content h2 { font-size: 16pt; }
+  .body-text { font-size: 12pt; }
+  ` : ""}
+
+  @media screen {
+    body { padding: 20px; max-width: 900px; }
+    .slide { box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  }
+  @media print {
+    body { background: #fff; max-width: none; }
+    .slide { box-shadow: none; }
+    a { color: inherit; text-decoration: none; }
+  }
+  body.present .doc-header, body.present .teacher-notes, body.present .doc-footer { display: none; }
   body.present .slides { max-width: 100%; padding: 0; margin: 0; }
   body.present .slide { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; border: none; border-radius: 0; margin: 0; scroll-snap-align: start; }
   body.present { scroll-snap-type: y mandatory; overflow-y: scroll; }
 </style>
 </head>
 <body>
-<div class="header">
-  <h1>${title}</h1>
-  <p>${slides.length} slidů · ${subtitle} · ZEdu Export</p>
+
+<div class="doc-header">
+  <div>
+    <h1>${title}</h1>
+    <p style="color:#64748b;font-size:9pt;">${slides.length} slidů · ${subtitle}</p>
+  </div>
+  <div class="meta">
+    <div>ZEdu Export</div>
+    <div>${dateStr}</div>
+  </div>
 </div>
+
 <div class="slides">
 ${slidesHtml}
 </div>
+
+<div class="doc-footer">
+  ZEdu · ${title} · ${dateStr}
+</div>
+
 <script>
   document.addEventListener('keydown', (e) => {
     if (e.key === 'p') document.body.classList.toggle('present');
@@ -226,7 +295,7 @@ serve(async (req) => {
       });
     }
 
-    const { lessonPlanId, format = "html", options = {} } = await req.json();
+    const { lessonPlanId, format = "html", options = {}, paper = "A4" } = await req.json();
 
     const exportTarget = options.exportTarget || "teacher";
     const exportMode = options.mode || "live";
@@ -277,7 +346,7 @@ serve(async (req) => {
 
     try {
       if (format === "html" || format === "pdf") {
-        const html = generateFullHtml(slides, title, exportOptions);
+        const html = generateFullHtml(slides, title, exportOptions, paper as "A4" | "16:9");
 
         const fileName = `${user.id}/${jobId || crypto.randomUUID()}_${title.replace(/\s+/g, "_")}${targetSuffix}.html`;
         const { error: uploadErr } = await supabase.storage
