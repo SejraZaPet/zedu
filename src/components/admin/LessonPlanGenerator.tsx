@@ -6,11 +6,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Sparkles, Monitor, Smartphone, StickyNote, ChevronLeft, ChevronRight, Save, Zap, Play } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Loader2, Sparkles, Monitor, Smartphone, StickyNote, ChevronLeft, ChevronRight, Save, Zap, Play, CheckCircle2, User, Users } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import ActivitySpecGenerator from "./ActivitySpecGenerator";
 import ExportPanel from "./ExportPanel";
 import WorksheetPanel from "./WorksheetPanel";
+
+interface Checkpoint {
+  question: string;
+  expectedAnswer: string;
+  explanation: string;
+  feedback?: string;
+}
 
 interface Slide {
   slideId: string;
@@ -18,12 +26,16 @@ interface Slide {
   projector: { headline: string; body: string; assetRefs?: string[] };
   device: { instructions: string; activityRefs?: string[] };
   teacherNotes: string;
+  checkpoints?: Checkpoint[];
 }
+
+type PlanMode = "teacher-led" | "student-paced";
 
 interface LessonPlan {
   title: string;
   subject: string;
   gradeBand: string;
+  mode?: PlanMode;
   slides: Slide[];
 }
 
