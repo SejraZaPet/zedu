@@ -167,6 +167,7 @@ const LiveTeacherScreen = () => {
         </div>
       )}
     </div>
+    </>
   );
 };
 
