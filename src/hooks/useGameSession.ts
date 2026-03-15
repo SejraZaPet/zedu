@@ -26,8 +26,13 @@ export function useGameSession(sessionId: string | undefined) {
   const mountedRef = useRef(true);
 
   // Full data fetch (used for initial load and resync)
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (resyncClock = false) => {
     if (!sessionId) return;
+
+    // Sync clock on initial load or after reconnect
+    if (resyncClock) {
+      await syncClock(true);
+    }
 
     const [sessionRes, playersRes, responsesRes] = await Promise.all([
       supabase.from("game_sessions").select("*").eq("id", sessionId).single(),
