@@ -59,7 +59,7 @@ const StudentGameJoin = () => {
 
       navigate(`/hra/hrac/${data.sessionId}`);
     } catch {
-      toast({ title: "Chyba při připojování", variant: "destructive" });
+      toast({ title: t("student.errors.joinFailed"), variant: "destructive" });
       setJoining(false);
     }
   };
