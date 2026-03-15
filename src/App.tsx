@@ -26,6 +26,7 @@ import TeacherGameScreen from "./pages/TeacherGameScreen";
 import StudentGameJoin from "./pages/StudentGameJoin";
 import StudentGamePlay from "./pages/StudentGamePlay";
 import TeacherGames from "./pages/TeacherGames";
+import LiveTeacherScreen from "./pages/LiveTeacherScreen";
 
 const queryClient = new QueryClient();
 
