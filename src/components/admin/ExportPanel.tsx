@@ -85,14 +85,14 @@ const ExportPanel = ({ lessonPlanId, planTitle, planSlides, mode = "live" }: Pro
 
       if (format === "pdf" && data.url) {
         window.open(data.url, "_blank");
-        toast({ title: "PDF připraven", description: "Použijte Ctrl+P pro tisk do PDF." });
+        toast({ title: EXPORT_COPY.toasts.exportSucceededPdf.title, description: EXPORT_COPY.toasts.exportSucceededPdf.description });
       } else if (data.url) {
-        toast({ title: `${format.toUpperCase()} exportován` });
+        toast({ title: EXPORT_COPY.toasts.exportSucceededHtml.title, description: EXPORT_COPY.toasts.exportSucceededHtml.description });
       }
     } catch (e: any) {
       console.error(`Export ${format} error:`, e);
       updateExport(format, { status: "failed", error: e.message });
-      toast({ title: "Chyba exportu", description: e.message, variant: "destructive" });
+      toast({ title: EXPORT_COPY.toasts.exportFailed.title, description: e.message || EXPORT_COPY.toasts.exportFailed.description, variant: "destructive" });
     }
   };
 
