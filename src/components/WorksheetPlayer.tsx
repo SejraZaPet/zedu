@@ -38,6 +38,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useWorksheetAutosave, type WorksheetAnswers } from "@/hooks/useWorksheetAutosave";
+import { t } from "@/lib/t";
 import type {
   WorksheetSpec,
   WorksheetVariant,
