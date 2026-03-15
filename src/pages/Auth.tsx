@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,10 +15,12 @@ const Auth = () => {
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get("redirect");
   const { toast } = useToast();
+  const { isLoggedIn, role: authRole, loading: authLoading } = useAuth();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [role, setRole] = useState<Role>("student");
+  const [pendingLogin, setPendingLogin] = useState(false);
 
   // Login fields
   const [email, setEmail] = useState("");
@@ -34,30 +37,29 @@ const Auth = () => {
   const [year, setYear] = useState("");
   const [classCode, setClassCode] = useState("");
 
+  // React to auth state changes - redirect when logged in
   useEffect(() => {
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", session.user.id).limit(1);
-        if (roles?.some(r => r.role === "admin" || r.role === "teacher")) {
-          navigate(redirectTo || "/admin");
-        } else {
-          navigate(redirectTo || "/student");
-        }
-      }
-    };
-    checkSession();
-  }, [navigate, redirectTo]);
+    if (authLoading) return;
+    if (!isLoggedIn) return;
+
+    // Wait for role to be resolved before redirecting
+    if (authRole === null) return;
+
+    if (authRole === "admin" || authRole === "teacher") {
+      navigate(redirectTo || "/admin", { replace: true });
+    } else {
+      navigate(redirectTo || "/student", { replace: true });
+    }
+  }, [authLoading, isLoggedIn, authRole, navigate, redirectTo]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-    const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
+    const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
 
     if (authError) {
-      // Supabase returns "Email not confirmed" when email is not verified
       if (authError.message?.toLowerCase().includes("email not confirmed")) {
         setError("Nejprve potvrďte svůj e-mail prostřednictvím odkazu, který jsme vám poslali.");
       } else {
@@ -67,37 +69,33 @@ const Auth = () => {
       return;
     }
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("status")
-      .eq("id", data.user.id)
-      .single();
+    // Check profile status after successful auth
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("status")
+        .eq("id", session.user.id)
+        .single();
 
-    if (profile?.status === "pending") {
-      await supabase.auth.signOut();
-      setError("Váš účet čeká na schválení administrátorem.");
-      setLoading(false);
-      return;
+      if (profile?.status === "pending") {
+        await supabase.auth.signOut();
+        setError("Váš účet čeká na schválení administrátorem.");
+        setLoading(false);
+        return;
+      }
+
+      if (profile?.status === "blocked") {
+        await supabase.auth.signOut();
+        setError("Váš účet byl zablokován.");
+        setLoading(false);
+        return;
+      }
     }
 
-    if (profile?.status === "blocked") {
-      await supabase.auth.signOut();
-      setError("Váš účet byl zablokován.");
-      setLoading(false);
-      return;
-    }
-
-    const { data: roles } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", data.user.id)
-      .limit(1);
-
-    if (roles?.some(r => r.role === "admin" || r.role === "teacher")) {
-      navigate(redirectTo || "/admin");
-    } else {
-      navigate(redirectTo || "/student");
-    }
+    // Auth state change will trigger redirect via the useEffect above
+    setPendingLogin(true);
+    // Don't setLoading(false) — keep button disabled until redirect happens
   };
 
   const handleRegister = async (e: React.FormEvent) => {
