@@ -26,6 +26,7 @@ import TeacherGameScreen from "./pages/TeacherGameScreen";
 import StudentGameJoin from "./pages/StudentGameJoin";
 import StudentGamePlay from "./pages/StudentGamePlay";
 import TeacherGames from "./pages/TeacherGames";
+import LiveTeacherScreen from "./pages/LiveTeacherScreen";
 
 const queryClient = new QueryClient();
 
@@ -58,6 +59,10 @@ const App = () => (
           <Route path="/hra/pripojit" element={<StudentGameJoin />} />
           <Route path="/hra/hrac/:sessionId" element={<StudentGamePlay />} />
           <Route path="/ucitel/hry" element={<ProtectedRoute><TeacherGames /></ProtectedRoute>} />
+          {/* Live lesson routes */}
+          <Route path="/live/ucitel/:sessionId" element={<ProtectedRoute><LiveTeacherScreen /></ProtectedRoute>} />
+          <Route path="/live/pripojit" element={<StudentGameJoin />} />
+          <Route path="/live/student/:sessionId" element={<StudentGamePlay />} />
           <Route path="/napoveda" element={<HelpPage />} />
           <Route path="/napoveda/:guideId" element={<HelpDetailPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -1,11 +1,12 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Sparkles, Monitor, Smartphone, StickyNote, ChevronLeft, ChevronRight, Save, Zap } from "lucide-react";
+import { Loader2, Sparkles, Monitor, Smartphone, StickyNote, ChevronLeft, ChevronRight, Save, Zap, Play } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import ActivitySpecGenerator from "./ActivitySpecGenerator";
 
@@ -51,12 +52,14 @@ const SLIDE_TYPE_COLORS: Record<string, string> = {
 };
 
 const LessonPlanGenerator = ({ lessonId, lessonTitle, lessonBlocks }: Props) => {
+  const navigate = useNavigate();
   const [subject, setSubject] = useState("");
   const [gradeBand, setGradeBand] = useState("");
   const [durationMin, setDurationMin] = useState(45);
   const [keyConcepts, setKeyConcepts] = useState("");
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [launching, setLaunching] = useState(false);
   const [plan, setPlan] = useState<LessonPlan | null>(null);
   const [activeSlide, setActiveSlide] = useState(0);
 
@@ -148,6 +151,30 @@ const LessonPlanGenerator = ({ lessonId, lessonTitle, lessonBlocks }: Props) => 
     }
   };
 
+  const handleLaunchLive = async () => {
+    if (!plan) return;
+    setLaunching(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-live-session", {
+        body: {
+          lessonPlanId: lessonId,
+          title: plan.title,
+          slides: plan.slides,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      toast({ title: "Live session vytvořena", description: `Kód: ${data.gameCode}` });
+      navigate(`/live/ucitel/${data.sessionId}`);
+    } catch (e: any) {
+      console.error("Launch error:", e);
+      toast({ title: "Chyba", description: e.message, variant: "destructive" });
+    } finally {
+      setLaunching(false);
+    }
+  };
+
   const currentSlide = plan?.slides?.[activeSlide];
 
   return (
@@ -206,11 +233,15 @@ const LessonPlanGenerator = ({ lessonId, lessonTitle, lessonBlocks }: Props) => 
               <h3 className="font-semibold text-sm">{plan.title}</h3>
               <p className="text-xs text-muted-foreground">{plan.subject} · {plan.gradeBand} · {plan.slides.length} slidů</p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Button size="sm" variant="outline" onClick={() => setPlan(null)}>Nový plán</Button>
               <Button size="sm" onClick={handleSave} disabled={saving}>
                 {saving ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />}
                 Uložit
+              </Button>
+              <Button size="sm" variant="default" onClick={handleLaunchLive} disabled={launching} className="bg-green-600 hover:bg-green-700 text-white">
+                {launching ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Play className="w-4 h-4 mr-1" />}
+                Spustit live výuku
               </Button>
             </div>
           </div>
