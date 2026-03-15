@@ -369,6 +369,47 @@ const LessonPlanGenerator = ({ lessonId, lessonTitle, lessonBlocks }: Props) => 
                 </div>
               )}
 
+              {/* Checkpoints */}
+              {currentSlide.checkpoints && currentSlide.checkpoints.length > 0 && (
+                <div className="border border-border rounded-lg p-4 bg-emerald-50/50 dark:bg-emerald-950/20">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      CHECKPOINT – Ověření porozumění ({currentSlide.checkpoints.length} otázek)
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowCheckpointAnswers(!showCheckpointAnswers)}
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {showCheckpointAnswers ? "Skrýt odpovědi" : "Zobrazit odpovědi"}
+                    </button>
+                  </div>
+                  <div className="space-y-3">
+                    {currentSlide.checkpoints.map((cp, idx) => (
+                      <div key={idx} className="space-y-1">
+                        <p className="text-sm font-medium">{idx + 1}. {cp.question}</p>
+                        {showCheckpointAnswers && (
+                          <div className="ml-4 space-y-1">
+                            <p className="text-xs text-emerald-700 dark:text-emerald-300">
+                              <span className="font-medium">Odpověď:</span> {cp.expectedAnswer}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              <span className="font-medium">Vysvětlení:</span> {cp.explanation}
+                            </p>
+                            {cp.feedback && (
+                              <p className="text-xs text-muted-foreground italic">
+                                <span className="font-medium">Zpětná vazba:</span> {cp.feedback}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Activity generator for practice/activity/exit slides */}
               {["practice", "activity", "exit"].includes(currentSlide.type) && (
                 <ActivitySpecGenerator
