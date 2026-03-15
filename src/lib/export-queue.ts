@@ -265,8 +265,8 @@ export function createSupabaseStorageAdapter(supabase: any, bucket = "exports"):
           upsert: true,
         });
       if (error) throw error;
-      const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(path);
-      return urlData.publicUrl;
+      // Return storage path (not public URL) — signed URLs are generated on demand
+      return path;
     },
 
     async delete(path) {

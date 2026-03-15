@@ -355,21 +355,29 @@ serve(async (req) => {
 
         if (uploadErr) throw uploadErr;
 
-        const { data: urlData } = supabase.storage.from("exports").getPublicUrl(fileName);
-
+        // Store path (not public URL) for signed URL generation
         if (jobId) {
           await supabase.from("export_jobs" as any).update({
             status: "succeeded",
-            output_url: urlData.publicUrl,
+            output_url: fileName,
             completed_at: new Date().toISOString(),
           } as any).eq("id", jobId);
         }
 
+        // Generate signed URL for immediate download
+        const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+        const adminClient = createClient(supabaseUrl, serviceRoleKey);
+        const { data: signedData } = await adminClient.storage
+          .from("exports")
+          .createSignedUrl(fileName, 900);
+
         const responsePayload: any = {
           format,
-          url: urlData.publicUrl,
+          url: signedData?.signedUrl || null,
           jobId,
           exportTarget,
+          storagePath: fileName,
         };
 
         if (format === "pdf") {
