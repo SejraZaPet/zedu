@@ -344,7 +344,7 @@ const ExportPanel = ({ lessonPlanId, planTitle, planSlides, mode = "live" }: Pro
                   ) : (
                     <FileDown className="w-3 h-3 mr-1" />
                   )}
-                  {exp.status === "succeeded" ? "Znovu" : "Exportovat"}
+                  {exp.status === "succeeded" ? EXPORT_COPY.buttons.reExport : EXPORT_COPY.buttons.chooseFormat.split(" ")[0]}
                 </Button>
                 {exp.url && (
                   <Button size="sm" variant="ghost" className="h-7 text-xs" asChild>
