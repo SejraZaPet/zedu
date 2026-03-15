@@ -1,10 +1,10 @@
 import { useState, useMemo } from "react";
+import { t } from "@/lib/t";
 
 interface MatchingData { left: string[]; right: string[]; }
 
 const MatchingActivity = ({ matching, onComplete }: { matching: MatchingData; onComplete?: (score: number, maxScore: number) => void }) => {
-  const [selectedLeft, setSelectedLeft] = useState<number | null>(null);
-  const [pairs, setPairs] = useState<[number, number][]>([]);
+  const [selections, setSelections] = useState<Record<number, number | null>>({});
   const [checked, setChecked] = useState(false);
 
   // Shuffle right side once
@@ -20,76 +20,98 @@ const MatchingActivity = ({ matching, onComplete }: { matching: MatchingData; on
 
   if (!matching?.left?.length) return null;
 
-  const pairedLeft = new Set(pairs.map((p) => p[0]));
-  const pairedRight = new Set(pairs.map((p) => p[1]));
+  const allPaired = matching.left.every((_, i) => selections[i] != null);
+  const isCorrectPair = (l: number, r: number) => l === r;
 
-  const handleRight = (rightIdx: number) => {
-    if (checked || pairedRight.has(rightIdx) || selectedLeft === null) return;
-    setPairs((p) => [...p, [selectedLeft, rightIdx]]);
-    setSelectedLeft(null);
+  const handleSelect = (leftIdx: number, rightOrigIdx: number) => {
+    if (checked) return;
+    setSelections((prev) => ({ ...prev, [leftIdx]: rightOrigIdx }));
   };
 
-  const isCorrectPair = (l: number, r: number) => l === r; // correct when indices match (left[i] pairs with right[i])
+  const handleCheck = () => {
+    setChecked(true);
+    const correct = matching.left.filter((_, i) => selections[i] != null && isCorrectPair(i, selections[i]!)).length;
+    onComplete?.(correct, matching.left.length);
+  };
 
-  const allCorrect = checked && pairs.length === matching.left.length && pairs.every(([l, r]) => isCorrectPair(l, r));
+  const handleReset = () => {
+    setChecked(false);
+    setSelections({});
+  };
+
+  const allCorrect = checked && allPaired && matching.left.every((_, i) => isCorrectPair(i, selections[i]!));
+
+  // Collect already-selected right indices so they can be shown as disabled
+  const usedRight = new Set(Object.values(selections).filter((v): v is number => v != null));
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          {matching.left.map((item, i) => (
-            <button
-              key={i}
-              onClick={() => !checked && !pairedLeft.has(i) && setSelectedLeft(i)}
-              className={`w-full text-left rounded-lg border p-3 text-sm transition-colors ${
-                pairedLeft.has(i)
-                  ? checked
-                    ? pairs.find((p) => p[0] === i && isCorrectPair(p[0], p[1]))
-                      ? "border-green-500/60 bg-green-500/10"
-                      : "border-destructive/60 bg-destructive/10"
-                    : "border-primary/40 bg-primary/5 opacity-60"
-                  : selectedLeft === i
-                    ? "border-primary bg-primary/10"
-                    : "border-border bg-card hover:border-primary/50"
+    <div className="space-y-4" role="group" aria-label={t("a11y.matching.instruction")}>
+      <p className="text-sm text-muted-foreground sr-only">{t("a11y.matching.instruction")}</p>
+
+      <div className="space-y-3">
+        {matching.left.map((item, leftIdx) => {
+          const selectedRight = selections[leftIdx];
+          const pairCorrect = checked && selectedRight != null && isCorrectPair(leftIdx, selectedRight);
+          const pairWrong = checked && selectedRight != null && !isCorrectPair(leftIdx, selectedRight);
+
+          return (
+            <div
+              key={leftIdx}
+              className={`flex flex-col sm:flex-row items-start sm:items-center gap-2 rounded-lg border p-3 transition-colors ${
+                pairCorrect
+                  ? "border-green-500/60 bg-green-500/10"
+                  : pairWrong
+                    ? "border-destructive/60 bg-destructive/10"
+                    : "border-border bg-card"
               }`}
             >
-              <span className="text-foreground">{item}</span>
-            </button>
-          ))}
-        </div>
-        <div className="space-y-2">
-          {shuffledRight.map((origIdx) => (
-            <button
-              key={origIdx}
-              onClick={() => handleRight(origIdx)}
-              className={`w-full text-left rounded-lg border p-3 text-sm transition-colors ${
-                pairedRight.has(origIdx)
-                  ? "border-primary/40 bg-primary/5 opacity-60"
-                  : selectedLeft !== null
-                    ? "border-border bg-card hover:border-primary/50 cursor-pointer"
-                    : "border-border bg-card cursor-default"
-              }`}
-            >
-              <span className="text-foreground">{matching.right[origIdx]}</span>
-            </button>
-          ))}
-        </div>
+              <span className="text-sm font-medium text-foreground min-w-0 flex-1">
+                {item}
+              </span>
+
+              <select
+                aria-label={t("a11y.matching.selectMatch", item)}
+                value={selectedRight != null ? String(selectedRight) : ""}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  handleSelect(leftIdx, val === "" ? null as any : Number(val));
+                }}
+                disabled={checked}
+                className="w-full sm:w-48 rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
+              >
+                <option value="">{t("a11y.matching.chooseOption")}</option>
+                {shuffledRight.map((origIdx) => {
+                  const isUsedElsewhere = usedRight.has(origIdx) && selections[leftIdx] !== origIdx;
+                  return (
+                    <option key={origIdx} value={String(origIdx)} disabled={isUsedElsewhere}>
+                      {matching.right[origIdx]}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+          );
+        })}
       </div>
-      {pairs.length === matching.left.length && !checked && (
-        <button onClick={() => {
-          setChecked(true);
-          const correct = pairs.filter(([l, r]) => isCorrectPair(l, r)).length;
-          onComplete?.(correct, matching.left.length);
-        }} className="rounded-lg bg-primary px-5 py-2 text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
-          Ověřit
+
+      {allPaired && !checked && (
+        <button
+          onClick={handleCheck}
+          className="rounded-lg bg-primary px-5 py-2 text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+        >
+          {t("a11y.matching.checkAnswers")}
         </button>
       )}
+
       {checked && (
-        <div className={`rounded-lg p-3 text-sm ${allCorrect ? "bg-green-500/10 text-green-400" : "bg-destructive/10 text-destructive"}`}>
-          {allCorrect ? "✓ Všechny páry jsou správně!" : "✗ Některé páry jsou špatně."}
+        <div
+          role="alert"
+          className={`rounded-lg p-3 text-sm ${allCorrect ? "bg-green-500/10 text-green-400" : "bg-destructive/10 text-destructive"}`}
+        >
+          {allCorrect ? `✓ ${t("a11y.matching.allCorrect")}` : `✗ ${t("a11y.matching.someWrong")}`}
           {!allCorrect && (
-            <button className="ml-3 underline text-xs" onClick={() => { setChecked(false); setPairs([]); setSelectedLeft(null); }}>
-              Zkusit znovu
+            <button className="ml-3 underline text-xs" onClick={handleReset}>
+              {t("a11y.matching.tryAgain")}
             </button>
           )}
         </div>

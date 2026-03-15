@@ -279,9 +279,9 @@ const ExportPanel = ({ lessonPlanId, planTitle, planSlides, mode = "live" }: Pro
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" role="region" aria-label={EXPORT_COPY.modals.exportTitle}>
       <h3 className="font-semibold text-sm flex items-center gap-2">
-        <FileDown className="w-4 h-4" />
+        <FileDown className="w-4 h-4" aria-hidden="true" />
         {EXPORT_COPY.modals.exportTitle}
       </h3>
 
@@ -327,8 +327,8 @@ const ExportPanel = ({ lessonPlanId, planTitle, planSlides, mode = "live" }: Pro
                   <Icon className="w-4 h-4 text-muted-foreground" />
                   <span className="font-medium text-sm">{label}</span>
                 </div>
-                {exp.status === "succeeded" && <CheckCircle className="w-4 h-4 text-green-500" />}
-                {exp.status === "failed" && <XCircle className="w-4 h-4 text-red-500" />}
+                {exp.status === "succeeded" && <CheckCircle className="w-4 h-4 text-green-500" aria-label="Export úspěšný" />}
+                {exp.status === "failed" && <XCircle className="w-4 h-4 text-red-500" aria-label="Export selhal" />}
               </div>
               <p className="text-xs text-muted-foreground">{desc}</p>
               <div className="flex gap-2">

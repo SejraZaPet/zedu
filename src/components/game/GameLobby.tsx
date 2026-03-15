@@ -38,12 +38,14 @@ export const GameLobby = ({ session, players, onStart, isTeacher }: Props) => {
 
         {/* Game Code */}
         <div className="space-y-3">
-          <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{t("projector.headline")}</p>
+          <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider" id="game-code-label">{t("projector.headline")}</p>
           <button
             onClick={copyCode}
+            aria-label={`${t("a11y.lobby.gameCodeLabel")}: ${session.game_code}`}
+            aria-describedby="game-code-label"
             className="inline-flex items-center gap-3 bg-card border-2 border-primary/30 rounded-2xl px-8 py-5 hover:border-primary/60 transition-colors group"
           >
-            <span className="text-5xl md:text-6xl font-mono font-bold tracking-[0.3em] text-primary">
+            <span className="text-5xl md:text-6xl font-mono font-bold tracking-[0.3em] text-primary" aria-hidden="true">
               {session.game_code}
             </span>
             {copied ? (
@@ -58,13 +60,20 @@ export const GameLobby = ({ session, players, onStart, isTeacher }: Props) => {
         <div className="space-y-4">
           <div className="flex items-center justify-center gap-2 text-muted-foreground">
             <Users className="w-5 h-5" />
-            <span className="font-medium">{t("projector.playerCount", players.length)}</span>
+            <span className="font-medium" aria-live="polite">{t("projector.playerCount", players.length)}</span>
           </div>
 
-          <div className="flex flex-wrap justify-center gap-2 max-h-40 overflow-y-auto">
+          <div
+            className="flex flex-wrap justify-center gap-2 max-h-40 overflow-y-auto"
+            role="list"
+            aria-label={t("a11y.lobby.playerListLabel")}
+            aria-live="polite"
+            aria-relevant="additions"
+          >
             {players.map((player, i) => (
               <div
                 key={player.id}
+                role="listitem"
                 className="bg-card border border-border rounded-xl px-4 py-2 text-sm font-medium text-foreground animate-scale-in"
                 style={{ animationDelay: `${i * 0.05}s` }}
               >
