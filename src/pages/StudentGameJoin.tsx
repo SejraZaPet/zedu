@@ -38,34 +38,25 @@ const StudentGameJoin = () => {
 
     setJoining(true);
     try {
-      const { data: sessions } = await supabase
-        .from("game_sessions")
-        .select("id, status")
-        .eq("game_code", trimmedCode)
-        .neq("status", "finished")
-        .limit(1);
+      // Call secure join-game edge function
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
 
-      if (!sessions?.length) {
-        toast({ title: "Hra s tímto kódem neexistuje", variant: "destructive" });
+      const { data, error } = await supabase.functions.invoke("join-game", {
+        body: { gameCode: trimmedCode, nickname: playerName },
+      });
+
+      if (error || data?.error) {
+        const msg = data?.error || error?.message || "Nepodařilo se připojit";
+        toast({ title: msg, variant: "destructive" });
         setJoining(false);
         return;
       }
 
-      const sessionData = sessions[0];
+      // Store join token in sessionStorage (not URL)
+      sessionStorage.setItem(`game_token_${data.sessionId}`, data.joinToken);
+      sessionStorage.setItem(`game_player_${data.sessionId}`, data.playerId);
 
-      const { data: player, error } = await supabase.from("game_players").insert({
-        session_id: sessionData.id,
-        user_id: user?.id || null,
-        nickname: playerName,
-      }).select().single();
-
-      if (error) {
-        toast({ title: "Nepodařilo se připojit", description: error.message, variant: "destructive" });
-        setJoining(false);
-        return;
-      }
-
-      navigate(`/hra/hrac/${sessionData.id}?playerId=${player.id}`);
+      navigate(`/hra/hrac/${data.sessionId}`);
     } catch {
       toast({ title: "Chyba při připojování", variant: "destructive" });
       setJoining(false);

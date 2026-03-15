@@ -313,24 +313,30 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          join_token: string | null
           nickname: string
           session_id: string
+          token_expires_at: string | null
           total_score: number
           user_id: string | null
         }
         Insert: {
           created_at?: string
           id?: string
+          join_token?: string | null
           nickname: string
           session_id: string
+          token_expires_at?: string | null
           total_score?: number
           user_id?: string | null
         }
         Update: {
           created_at?: string
           id?: string
+          join_token?: string | null
           nickname?: string
           session_id?: string
+          token_expires_at?: string | null
           total_score?: number
           user_id?: string | null
         }
@@ -1173,6 +1179,10 @@ export type Database = {
         Returns: string
       }
       generate_game_code: { Args: never; Returns: string }
+      increment_player_score: {
+        Args: { _player_id: string; _score_delta: number }
+        Returns: undefined
+      }
       is_admin: { Args: never; Returns: boolean }
       is_admin_or_teacher: { Args: never; Returns: boolean }
       is_enrolled_in_textbook: {

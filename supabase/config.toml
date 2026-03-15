@@ -20,3 +20,9 @@ verify_jwt = false
 
 [functions.generate-worksheet]
 verify_jwt = false
+
+[functions.join-game]
+verify_jwt = false
+
+[functions.submit-answer]
+verify_jwt = false

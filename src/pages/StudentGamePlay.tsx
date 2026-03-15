@@ -1,16 +1,23 @@
-import { useParams, useSearchParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useGameSession } from "@/hooks/useGameSession";
 import { GameLobby } from "@/components/game/GameLobby";
 import { StudentGameQuestion } from "@/components/game/StudentGameQuestion";
 import { GameLeaderboardFinal } from "@/components/game/GameLeaderboardFinal";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { calculateScore } from "@/lib/game-types";
 
 const StudentGamePlay = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
-  const [searchParams] = useSearchParams();
-  const playerId = searchParams.get("playerId") || "";
+
+  // Read player identity from sessionStorage (set by secure join flow)
+  const { playerId, joinToken } = useMemo(() => {
+    if (!sessionId) return { playerId: "", joinToken: "" };
+    return {
+      playerId: sessionStorage.getItem(`game_player_${sessionId}`) || "",
+      joinToken: sessionStorage.getItem(`game_token_${sessionId}`) || "",
+    };
+  }, [sessionId]);
+
   const { session, players, responses, loading } = useGameSession(sessionId);
   const [answered, setAnswered] = useState<Set<number>>(new Set());
   const [lastResult, setLastResult] = useState<{ correct: boolean; score: number } | null>(null);
@@ -32,39 +39,27 @@ const StudentGamePlay = () => {
   }, [session?.current_question_index, session?.status]);
 
   const handleAnswer = async (answerIndex: number) => {
-    if (!session || !playerId) return;
+    if (!session || !joinToken) return;
     const qi = session.current_question_index;
     if (answered.has(qi)) return;
 
-    const question = session.activity_data[qi];
-    const isCorrect = question.answers[answerIndex]?.correct || false;
-    const timeLimitMs = (session.settings?.timePerQuestion || 20) * 1000;
-    const elapsed = session.question_started_at
-      ? Date.now() - new Date(session.question_started_at).getTime()
-      : timeLimitMs;
-    const score = calculateScore(isCorrect, elapsed, timeLimitMs);
-
-    // Save response
-    await supabase.from("game_responses").insert({
-      session_id: session.id,
-      player_id: playerId,
-      question_index: qi,
-      answer: { index: answerIndex },
-      is_correct: isCorrect,
-      response_time_ms: Math.round(elapsed),
-      score,
+    // Submit answer via secure edge function (server validates token & computes score)
+    const { data, error } = await supabase.functions.invoke("submit-answer", {
+      body: { joinToken, answerIndex },
     });
 
-    // Update player total score
-    const currentPlayer = players.find((p) => p.id === playerId);
-    if (currentPlayer) {
-      await supabase.from("game_players").update({
-        total_score: currentPlayer.total_score + score,
-      }).eq("id", playerId);
+    if (error || data?.error) {
+      // If already answered (409), just mark as answered
+      if (data?.alreadyAnswered) {
+        setAnswered((prev) => new Set(prev).add(qi));
+        return;
+      }
+      console.error("submit-answer error:", data?.error || error?.message);
+      return;
     }
 
     setAnswered((prev) => new Set(prev).add(qi));
-    setLastResult({ correct: isCorrect, score });
+    setLastResult({ correct: data.correct, score: data.score });
   };
 
   if (loading) {
@@ -79,6 +74,14 @@ const StudentGamePlay = () => {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <p className="text-destructive text-lg">Hra nebyla nalezena.</p>
+      </div>
+    );
+  }
+
+  if (!joinToken || !playerId) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-destructive text-lg">Neplatná session. Připojte se znovu přes kód hry.</p>
       </div>
     );
   }
