@@ -9,6 +9,7 @@ import SiteFooter from "@/components/SiteFooter";
 import { Gamepad2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { t } from "@/lib/t";
 
 const StudentGameJoin = () => {
   const [code, setCode] = useState("");
@@ -32,7 +33,7 @@ const StudentGameJoin = () => {
     if (!trimmedCode) return;
     const playerName = isLoggedIn ? userName : nickname.trim();
     if (!playerName) {
-      toast({ title: "Zadejte přezdívku", variant: "destructive" });
+      toast({ title: t("student.errors.joinFailed"), variant: "destructive" });
       return;
     }
 
@@ -58,7 +59,7 @@ const StudentGameJoin = () => {
 
       navigate(`/hra/hrac/${data.sessionId}`);
     } catch {
-      toast({ title: "Chyba při připojování", variant: "destructive" });
+      toast({ title: t("student.errors.joinFailed"), variant: "destructive" });
       setJoining(false);
     }
   };
@@ -72,7 +73,7 @@ const StudentGameJoin = () => {
             <div className="mx-auto w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
               <Gamepad2 className="w-8 h-8 text-primary" />
             </div>
-            <CardTitle className="text-2xl">Připojit se do hry</CardTitle>
+            <CardTitle className="text-2xl">{t("student.buttons.join")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
@@ -108,7 +109,7 @@ const StudentGameJoin = () => {
               size="lg"
               variant="hero"
             >
-              {joining ? "Připojování..." : "Připojit se"}
+              {joining ? t("student.states.connecting") : t("student.buttons.join")}
             </Button>
           </CardContent>
         </Card>

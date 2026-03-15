@@ -38,6 +38,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useWorksheetAutosave, type WorksheetAnswers } from "@/hooks/useWorksheetAutosave";
+import { t } from "@/lib/t";
 import type {
   WorksheetSpec,
   WorksheetVariant,
@@ -215,14 +216,14 @@ export default function WorksheetPlayer({
     setSubmitted(true);
     onSubmit?.(answers, res.score, res.maxScore);
     toast({
-      title: "Odesláno",
-      description: `Skóre: ${res.score}/${res.maxScore} bodů`,
+      title: t("student.toasts.submitted.title"),
+      description: t("student.states.scoreResult", res.score, res.maxScore),
     });
   };
 
   const handleSaveNow = async () => {
     await flushNow();
-    toast({ title: "Uloženo", description: "Odpovědi byly uloženy." });
+    toast({ title: t("student.toasts.saved.title"), description: t("student.toasts.saved.description") });
   };
 
   // ── Item Renderers ──
@@ -511,7 +512,7 @@ export default function WorksheetPlayer({
           disabled={currentIndex === 0}
           onClick={() => setCurrentIndex(currentIndex - 1)}
         >
-          <ChevronLeft className="h-4 w-4 mr-1" /> Předchozí
+          <ChevronLeft className="h-4 w-4 mr-1" /> {t("student.buttons.previousItem")}
         </Button>
 
         <div className="flex gap-1 overflow-x-auto max-w-[200px]">
@@ -538,7 +539,7 @@ export default function WorksheetPlayer({
             size="sm"
             onClick={() => setCurrentIndex(currentIndex + 1)}
           >
-            Další <ChevronRight className="h-4 w-4 ml-1" />
+            {t("student.buttons.nextItem")} <ChevronRight className="h-4 w-4 ml-1" />
           </Button>
         ) : (
           <Button
@@ -546,7 +547,7 @@ export default function WorksheetPlayer({
             disabled={submitted}
             onClick={handleSubmit}
           >
-            <Send className="h-4 w-4 mr-1" /> Odevzdat
+            <Send className="h-4 w-4 mr-1" /> {t("student.buttons.finishWorksheet")}
           </Button>
         )}
       </div>
@@ -569,7 +570,7 @@ export default function WorksheetPlayer({
       {!submitted && (
         <div className="flex justify-center">
           <Button variant="ghost" size="sm" onClick={handleSaveNow}>
-            <Save className="h-4 w-4 mr-1" /> Uložit nyní
+            <Save className="h-4 w-4 mr-1" /> {t("student.toasts.saved.title")}
           </Button>
         </div>
       )}

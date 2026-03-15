@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { ArrowRight, Trophy, SkipForward } from "lucide-react";
 import { useMemo } from "react";
+import { t } from "@/lib/t";
 
 interface Props {
   session: GameSession;
@@ -53,7 +54,7 @@ export const GameProjector = ({ session, players, responses, countdown, onShowRe
       {/* Top bar */}
       <div className="flex items-center justify-between px-6 py-3 bg-card border-b border-border">
         <span className="text-sm font-medium text-muted-foreground">
-          Otázka {qi + 1} / {totalQ}
+          {t("projector.questionOf", qi + 1, totalQ)}
         </span>
         <span className="text-sm text-muted-foreground">
           {answeredCount} / {players.length} odpovědí
@@ -114,7 +115,7 @@ export const GameProjector = ({ session, players, responses, countdown, onShowRe
               <div className="bg-card border border-border rounded-2xl p-6">
                 <div className="flex items-center gap-2 mb-4">
                   <Trophy className="w-5 h-5 text-primary" />
-                  <h3 className="font-heading font-bold text-lg text-foreground">Průběžné pořadí</h3>
+                  <h3 className="font-heading font-bold text-lg text-foreground">{t("projector.leaderboard")}</h3>
                 </div>
                 <div className="space-y-2">
                   {leaderboard.map((player, i) => (
@@ -139,12 +140,12 @@ export const GameProjector = ({ session, players, responses, countdown, onShowRe
                 {isLast ? (
                   <>
                     <Trophy className="w-5 h-5" />
-                    Zobrazit výsledky
+                    {t("projector.finalResults")}
                   </>
                 ) : (
                   <>
                     <ArrowRight className="w-5 h-5" />
-                    Další otázka
+                    {t("teacher.buttons.nextQuestion")}
                   </>
                 )}
               </Button>
@@ -156,7 +157,7 @@ export const GameProjector = ({ session, players, responses, countdown, onShowRe
         {!isResults && (
           <Button onClick={onShowResults} variant="outline" size="sm" className="gap-2">
             <SkipForward className="w-4 h-4" />
-            Ukončit otázku
+            {t("teacher.buttons.showLeaderboard")}
           </Button>
         )}
       </div>

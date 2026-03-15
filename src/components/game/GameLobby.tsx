@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Users, Play, Copy, Check } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { t } from "@/lib/t";
 
 interface Props {
   session: GameSession;
@@ -18,7 +19,7 @@ export const GameLobby = ({ session, players, onStart, isTeacher }: Props) => {
   const copyCode = () => {
     navigator.clipboard.writeText(session.game_code);
     setCopied(true);
-    toast({ title: "Kód zkopírován" });
+    toast({ title: t("student.toasts.joined.title") });
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -28,16 +29,16 @@ export const GameLobby = ({ session, players, onStart, isTeacher }: Props) => {
         {/* Title */}
         <div className="space-y-2">
           <h1 className="text-3xl md:text-4xl font-heading font-bold text-foreground">
-            {session.title || "Živá hra"}
+            {session.title || t("projector.headline")}
           </h1>
           <p className="text-muted-foreground">
-            {isTeacher ? "Sdílejte kód hry se žáky" : "Čekáme na start hry..."}
+            {isTeacher ? t("projector.body") : t("student.states.waitingForTeacher")}
           </p>
         </div>
 
         {/* Game Code */}
         <div className="space-y-3">
-          <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Kód hry</p>
+          <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{t("projector.headline")}</p>
           <button
             onClick={copyCode}
             className="inline-flex items-center gap-3 bg-card border-2 border-primary/30 rounded-2xl px-8 py-5 hover:border-primary/60 transition-colors group"
@@ -57,7 +58,7 @@ export const GameLobby = ({ session, players, onStart, isTeacher }: Props) => {
         <div className="space-y-4">
           <div className="flex items-center justify-center gap-2 text-muted-foreground">
             <Users className="w-5 h-5" />
-            <span className="font-medium">{players.length} {players.length === 1 ? "hráč" : players.length < 5 ? "hráči" : "hráčů"}</span>
+            <span className="font-medium">{t("projector.playerCount", players.length)}</span>
           </div>
 
           <div className="flex flex-wrap justify-center gap-2 max-h-40 overflow-y-auto">
@@ -71,7 +72,7 @@ export const GameLobby = ({ session, players, onStart, isTeacher }: Props) => {
               </div>
             ))}
             {players.length === 0 && (
-              <p className="text-sm text-muted-foreground italic">Zatím se nikdo nepřipojil...</p>
+              <p className="text-sm text-muted-foreground italic">{t("projector.waitingForPlayers")}</p>
             )}
           </div>
         </div>
@@ -86,14 +87,14 @@ export const GameLobby = ({ session, players, onStart, isTeacher }: Props) => {
             className="text-lg px-10 py-6 gap-3"
           >
             <Play className="w-6 h-6" />
-            Začít hru
+            {t("teacher.buttons.startInClass")}
           </Button>
         )}
 
         {!isTeacher && (
           <div className="flex items-center justify-center gap-2">
             <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-            <span className="text-sm text-muted-foreground">Čekáme na učitele...</span>
+            <span className="text-sm text-muted-foreground">{t("student.states.waitingForTeacher")}</span>
           </div>
         )}
       </div>
