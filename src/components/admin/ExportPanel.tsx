@@ -7,7 +7,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Loader2, FileDown, Globe, Printer, Presentation, ExternalLink, CheckCircle, XCircle, Users, GraduationCap } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import pptxgen from "pptxgenjs";
-import { toSlideSpecDocument, getActivityTransformRule, buildSpeakerNotesWithAnswers, type SlideSpecDocument, type SlideSpec as SlideSpecType } from "@/lib/slide-spec";
+import { toSlideSpecDocument, getActivityTransformRule, buildSpeakerNotesWithAnswers, resolveTemplate, regionToInches, applyOverflow, type SlideSpecDocument, type SlideSpec as SlideSpecType } from "@/lib/slide-spec";
 
 interface Props {
   lessonPlanId: string;
@@ -115,108 +115,113 @@ const ExportPanel = ({ lessonPlanId, planTitle, planSlides, mode = "live" }: Pro
       const typeColor = TYPE_COLORS[spec.type] || "6B7280";
       const typeLabel = TYPE_LABELS[spec.type] || spec.type;
 
+      // Resolve template for this slide type
+      const tmpl = resolveTemplate(spec);
+      const badge = regionToInches(tmpl.regions.badge);
+      const titleR = regionToInches(tmpl.regions.title);
+      const contentR = regionToInches(tmpl.regions.content);
+      const secondaryR = tmpl.regions.secondary ? regionToInches(tmpl.regions.secondary) : null;
+      const deviceR = tmpl.regions.deviceBar ? regionToInches(tmpl.regions.deviceBar) : null;
+      const qrR = tmpl.regions.qrArea ? regionToInches(tmpl.regions.qrArea) : null;
+
       // Type badge
       s.addShape(pptx.ShapeType.roundRect, {
-        x: 0.5, y: 0.3, w: 1.5, h: 0.35,
-        fill: { color: typeColor },
-        rectRadius: 0.15,
+        x: badge.x, y: badge.y, w: badge.w, h: badge.h,
+        fill: { color: typeColor }, rectRadius: 0.15,
       });
       s.addText(typeLabel, {
-        x: 0.5, y: 0.3, w: 1.5, h: 0.35,
+        x: badge.x, y: badge.y, w: badge.w, h: badge.h,
         color: "FFFFFF", fontSize: 11, bold: true, align: "center",
       });
 
-      // Title from spec
-      s.addText(spec.title, {
-        x: 0.5, y: 0.9, w: 12, h: 0.8,
-        fontSize: 28, bold: true, color: "1E293B",
+      // Title with overflow protection
+      const titleOf = applyOverflow(spec.title, tmpl.overflow.titleMaxChars, 28, tmpl.overflow.minFontSizePt, tmpl.overflow.truncationSuffix);
+      s.addText(titleOf.text, {
+        x: titleR.x, y: titleR.y, w: titleR.w, h: titleR.h,
+        fontSize: titleOf.fontSize, bold: true, color: "1E293B",
       });
 
-      // Body text blocks
+      // Body text blocks with overflow
       const bodyBlocks = spec.textBlocks.filter(b => b.role === "body" || (isStudentPaced && b.role === "device_instruction"));
       const bodyText = bodyBlocks.map(b => b.text).join("\n\n");
-      s.addText(bodyText, {
-        x: 0.5, y: 1.8, w: 8, h: 2.5,
-        fontSize: 16, color: "475569", valign: "top",
+      const bodyOf = applyOverflow(bodyText, tmpl.overflow.contentMaxChars, 16, tmpl.overflow.minFontSizePt, tmpl.overflow.truncationSuffix);
+      s.addText(bodyOf.text, {
+        x: contentR.x, y: contentR.y, w: contentR.w, h: contentR.h,
+        fontSize: bodyOf.fontSize, color: "475569", valign: "top",
       });
 
-      // Interactive placeholder — driven by transform rules
-      if (spec.interactivePlaceholder) {
+      // Interactive placeholder in secondary region
+      if (spec.interactivePlaceholder && secondaryR) {
         const placeholder = spec.interactivePlaceholder;
         const rule = getActivityTransformRule(placeholder.activityType);
 
         if (rule.pptx.renderChoices && placeholder.activityType === "mcq" && placeholder.model?.choices) {
           const choices = placeholder.model.choices as string[];
           const correctIdx = placeholder.model.correctIndex as number;
+          const itemH = Math.min(secondaryR.h / choices.length - 0.05, 0.5);
           choices.forEach((choice: string, i: number) => {
             const isCorrect = i === correctIdx && includeAnswerKey;
             s.addShape(pptx.ShapeType.roundRect, {
-              x: 9, y: 1.8 + i * 0.6, w: 3.5, h: 0.45,
+              x: secondaryR.x, y: secondaryR.y + i * (itemH + 0.1), w: secondaryR.w, h: itemH,
               fill: { color: isCorrect ? "F0FDF4" : "FFFFFF" },
               line: { color: isCorrect ? "22C55E" : "E2E8F0", width: 1 },
               rectRadius: 0.08,
             });
             s.addText(`${isCorrect ? "✓ " : "○ "}${choice}`, {
-              x: 9.1, y: 1.8 + i * 0.6, w: 3.3, h: 0.45,
-              fontSize: 11, color: isCorrect ? "166534" : "475569",
-              bold: isCorrect,
+              x: secondaryR.x + 0.1, y: secondaryR.y + i * (itemH + 0.1), w: secondaryR.w - 0.2, h: itemH,
+              fontSize: 11, color: isCorrect ? "166534" : "475569", bold: isCorrect,
             });
           });
         } else if (rule.pptx.renderChoices && placeholder.activityType === "matching" && placeholder.model?.pairs) {
           const pairs = placeholder.model.pairs as Array<{ left: string; right: string }>;
           pairs.forEach((pair, i) => {
             s.addText(`${pair.left}  →  ${includeAnswerKey ? pair.right : "___________"}`, {
-              x: 9, y: 1.8 + i * 0.5, w: 3.5, h: 0.4,
+              x: secondaryR.x, y: secondaryR.y + i * 0.5, w: secondaryR.w, h: 0.4,
               fontSize: 11, color: "475569",
             });
           });
         } else if (rule.pptx.renderChoices && placeholder.activityType === "true_false") {
           s.addText(`${placeholder.prompt || ""}\n\n○ Pravda    ○ Nepravda`, {
-            x: 9, y: 1.8, w: 3.5, h: 1.5,
+            x: secondaryR.x, y: secondaryR.y, w: secondaryR.w, h: secondaryR.h * 0.5,
             fontSize: 12, color: "475569",
           });
         } else if (rule.pptx.renderChoices && placeholder.activityType === "ordering" && placeholder.model?.items) {
           const items = placeholder.model.items as string[];
           items.forEach((item, i) => {
             s.addText(`☐ ${item}`, {
-              x: 9, y: 1.8 + i * 0.45, w: 3.5, h: 0.4,
+              x: secondaryR.x, y: secondaryR.y + i * 0.45, w: secondaryR.w, h: 0.4,
               fontSize: 11, color: "475569",
             });
           });
         } else {
-          // Generic placeholder with fallback text from rule
           s.addShape(pptx.ShapeType.roundRect, {
-            x: 9, y: 1.8, w: 3.5, h: 2,
-            fill: { color: "FEF9C3" },
-            line: { color: "EAB308", width: 1 },
-            rectRadius: 0.1,
+            x: secondaryR.x, y: secondaryR.y, w: secondaryR.w, h: secondaryR.h,
+            fill: { color: "FEF9C3" }, line: { color: "EAB308", width: 1 }, rectRadius: 0.1,
           });
           s.addText(`🎯 ${placeholder.activityType.toUpperCase()}\n\n${rule.pptx.fallbackText}`, {
-            x: 9.1, y: 1.9, w: 3.3, h: 1.8,
+            x: secondaryR.x + 0.1, y: secondaryR.y + 0.1, w: secondaryR.w - 0.2, h: secondaryR.h - 0.2,
             fontSize: 12, color: "92400E", align: "center", valign: "middle",
           });
         }
 
-        // QR placeholder
-        if (rule.pptx.showQr) {
+        // QR placeholder in template region
+        if (rule.pptx.showQr && qrR) {
           s.addShape(pptx.ShapeType.roundRect, {
-            x: 10, y: 4, w: 2.5, h: 1.5,
-            fill: { color: "F8FAFC" },
-            line: { color: "94A3B8", width: 1, dashType: "dash" },
-            rectRadius: 0.1,
+            x: qrR.x, y: qrR.y, w: qrR.w, h: qrR.h,
+            fill: { color: "F8FAFC" }, line: { color: "94A3B8", width: 1, dashType: "dash" }, rectRadius: 0.1,
           });
           s.addText(`QR\n${placeholder.joinCode || "scan"}`, {
-            x: 10, y: 4, w: 2.5, h: 1.5,
+            x: qrR.x, y: qrR.y, w: qrR.w, h: qrR.h,
             fontSize: 14, color: "94A3B8", align: "center", valign: "middle",
           });
         }
 
-        // Video checkpoints as text
-        if (placeholder.activityType === "video" && placeholder.model?.checkpoints) {
+        // Video checkpoints
+        if (placeholder.activityType === "video" && placeholder.model?.checkpoints && deviceR) {
           const cps = placeholder.model.checkpoints as Array<{ time: string; question: string }>;
           cps.forEach((cp, i) => {
             s.addText(`[${cp.time}] ${cp.question}`, {
-              x: 0.5, y: 4.5 + i * 0.35, w: 8, h: 0.3,
+              x: deviceR.x, y: deviceR.y + i * 0.35, w: deviceR.w, h: 0.3,
               fontSize: 10, color: "64748B",
             });
           });
@@ -224,23 +229,21 @@ const ExportPanel = ({ lessonPlanId, planTitle, planSlides, mode = "live" }: Pro
       }
 
       // Device instructions — only in teacher export for live mode
-      if (exportTarget === "teacher" && !isStudentPaced) {
+      if (exportTarget === "teacher" && !isStudentPaced && deviceR) {
         const deviceBlock = spec.textBlocks.find(b => b.role === "device_instruction");
         if (deviceBlock) {
           s.addShape(pptx.ShapeType.roundRect, {
-            x: 0.5, y: 4.5, w: 8, h: 1.2,
-            fill: { color: "F1F5F9" },
-            rectRadius: 0.1,
-            line: { color: "E2E8F0", width: 1 },
+            x: deviceR.x, y: deviceR.y, w: deviceR.w, h: deviceR.h,
+            fill: { color: "F1F5F9" }, rectRadius: 0.1, line: { color: "E2E8F0", width: 1 },
           });
           s.addText(`📱 Žák: ${deviceBlock.text}`, {
-            x: 0.7, y: 4.6, w: 7.6, h: 1,
+            x: deviceR.x + 0.1, y: deviceR.y + 0.05, w: deviceR.w - 0.2, h: deviceR.h - 0.1,
             fontSize: 13, color: "475569", valign: "top",
           });
         }
       }
 
-      // Speaker notes with answer key from transform rules
+      // Speaker notes with answer key
       if (effectiveIncludeNotes || includeAnswerKey) {
         const enrichedNotes = buildSpeakerNotesWithAnswers(spec, includeAnswerKey);
         if (enrichedNotes) s.addNotes(enrichedNotes);
