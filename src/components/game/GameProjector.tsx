@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { ArrowRight, Trophy, SkipForward } from "lucide-react";
 import { useMemo } from "react";
+import { t } from "@/lib/t";
 
 interface Props {
   session: GameSession;
