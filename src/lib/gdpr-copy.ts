@@ -17,7 +17,7 @@ export const GDPR_COPY = {
           label: "Anonymní režim",
           badge: "Bez jmen",
           description:
-            "Žáci se zobrazují pod pseudonymem (např. „Hráč 7"). Výsledky nelze zpětně přiřadit ke konkrétnímu žákovi.",
+            "Žáci se zobrazují pod pseudonymem (např. \u201EHráč 7\u201C). Výsledky nelze zpětně přiřadit ke konkrétnímu žákovi.",
           hint: "Vhodné pro procvičování, formativní hodnocení a hry bez známkování.",
         },
         identifiedMode: {
