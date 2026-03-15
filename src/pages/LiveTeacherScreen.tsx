@@ -64,9 +64,12 @@ const LiveTeacherScreen = () => {
 
   if (isFinished) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center flex-col gap-4">
-        <h1 className="text-2xl font-bold">Výuka ukončena</h1>
-        <p className="text-muted-foreground">{slides.length} slidů · {players.length} účastníků</p>
+      <div className="min-h-screen bg-background p-6 max-w-4xl mx-auto space-y-6">
+        <div className="text-center space-y-2">
+          <h1 className="text-2xl font-bold">Výuka ukončena</h1>
+          <p className="text-muted-foreground">{slides.length} slidů · {players.length} účastníků</p>
+        </div>
+        <SessionExports sessionId={sessionId!} sessionTitle={session.title} />
       </div>
     );
   }
