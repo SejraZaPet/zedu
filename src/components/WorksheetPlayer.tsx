@@ -216,8 +216,8 @@ export default function WorksheetPlayer({
     setSubmitted(true);
     onSubmit?.(answers, res.score, res.maxScore);
     toast({
-      title: "Odesláno",
-      description: `Skóre: ${res.score}/${res.maxScore} bodů`,
+      title: t("student.toasts.submitted.title"),
+      description: t("student.states.scoreResult", res.score, res.maxScore),
     });
   };
 
