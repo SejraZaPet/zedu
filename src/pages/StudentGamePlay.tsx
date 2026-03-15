@@ -119,9 +119,3 @@ const StudentGamePlay = () => {
 };
 
 export default StudentGamePlay;
-      status={session.status}
-    />
-  );
-};
-
-export default StudentGamePlay;
