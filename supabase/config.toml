@@ -32,4 +32,6 @@ verify_jwt = false
 
 [functions.reap-stale-jobs]
 verify_jwt = false
+
+[functions.generate-lesson-outline]
 verify_jwt = false
