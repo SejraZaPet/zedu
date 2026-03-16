@@ -31,7 +31,7 @@ const teacherTabs = [
   { id: "help", label: "Nápověda", icon: HelpCircle },
 ] as const;
 
-type Tab = "dashboard" | "textbooks" | "lessons" | "subjects" | "users" | "classes" | "results" | "help";
+type Tab = "dashboard" | "textbooks" | "lessons" | "outline" | "subjects" | "users" | "classes" | "results" | "help";
 
 const Admin = () => {
   const { isAdmin, isTeacher, loading, logout } = useAdmin();
