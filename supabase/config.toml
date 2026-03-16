@@ -38,3 +38,6 @@ verify_jwt = false
 
 [functions.generate-mcq]
 verify_jwt = false
+
+[functions.generate-matching]
+verify_jwt = false
