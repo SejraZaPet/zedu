@@ -100,6 +100,7 @@ const Admin = () => {
         {activeTab === "dashboard" && <AdminDashboard onNavigate={(tab) => setActiveTab(tab as Tab)} isTeacher={isTeacher} />}
         {activeTab === "textbooks" && isTeacher && <TeacherTextbooksManager />}
         {activeTab === "lessons" && isTeacher && <LessonsManager />}
+        {activeTab === "outline" && isTeacher && <LessonOutlineGenerator />}
         {activeTab === "subjects" && isTeacher && <SubjectsManager />}
         {activeTab === "users" && !isTeacher && <UsersManager />}
         {activeTab === "classes" && isTeacher && <ClassesManager />}
