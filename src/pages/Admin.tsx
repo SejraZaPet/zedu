@@ -28,6 +28,7 @@ const teacherTabs = [
   { id: "lessons", label: "Lekce", icon: BookOpen },
   { id: "outline", label: "Osnova AI", icon: ListTree },
   { id: "mcq", label: "MCQ AI", icon: CircleHelp },
+  { id: "matching", label: "Matching AI", icon: Link2 },
   { id: "subjects", label: "Předměty", icon: Settings },
   { id: "classes", label: "Třídy", icon: School },
   { id: "results", label: "Výsledky", icon: BarChart3 },
