@@ -24,6 +24,7 @@ const teacherTabs = [
   { id: "dashboard", label: "Přehled", icon: LayoutDashboard },
   { id: "textbooks", label: "Učebnice", icon: GraduationCap },
   { id: "lessons", label: "Lekce", icon: BookOpen },
+  { id: "outline", label: "Osnova AI", icon: ListTree },
   { id: "subjects", label: "Předměty", icon: Settings },
   { id: "classes", label: "Třídy", icon: School },
   { id: "results", label: "Výsledky", icon: BarChart3 },
