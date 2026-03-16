@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.generate-matching]
 verify_jwt = false
+
+[functions.edit-slide]
+verify_jwt = false
