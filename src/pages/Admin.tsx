@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAdmin } from "@/hooks/useAdmin";
 import LessonOutlineGenerator from "@/components/admin/LessonOutlineGenerator";
+import MCQGenerator from "@/components/admin/MCQGenerator";
 import LessonsManager from "@/components/admin/LessonsManager";
 import TextbooksManager from "@/components/admin/TextbooksManager";
 import TeacherTextbooksManager from "@/components/admin/TeacherTextbooksManager";
