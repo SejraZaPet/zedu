@@ -103,6 +103,7 @@ const Admin = () => {
         {activeTab === "textbooks" && isTeacher && <TeacherTextbooksManager />}
         {activeTab === "lessons" && isTeacher && <LessonsManager />}
         {activeTab === "outline" && isTeacher && <LessonOutlineGenerator />}
+        {activeTab === "mcq" && isTeacher && <MCQGenerator />}
         {activeTab === "subjects" && isTeacher && <SubjectsManager />}
         {activeTab === "users" && !isTeacher && <UsersManager />}
         {activeTab === "classes" && isTeacher && <ClassesManager />}
