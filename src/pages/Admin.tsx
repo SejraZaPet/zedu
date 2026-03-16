@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { useAdmin } from "@/hooks/useAdmin";
 import LessonOutlineGenerator from "@/components/admin/LessonOutlineGenerator";
 import MCQGenerator from "@/components/admin/MCQGenerator";
+import MatchingGenerator from "@/components/admin/MatchingGenerator";
 import LessonsManager from "@/components/admin/LessonsManager";
 import TextbooksManager from "@/components/admin/TextbooksManager";
 import TeacherTextbooksManager from "@/components/admin/TeacherTextbooksManager";
@@ -13,7 +14,7 @@ import ClassesManager from "@/components/admin/ClassesManager";
 import ClassResultsManager from "@/components/admin/ClassResultsManager";
 import AdminDashboard from "@/components/admin/AdminDashboard";
 import { Button } from "@/components/ui/button";
-import { BookOpen, LogOut, Home, GraduationCap, Settings, Users, School, BarChart3, LayoutDashboard, HelpCircle, ListTree, CircleHelp } from "lucide-react";
+import { BookOpen, LogOut, Home, GraduationCap, Settings, Users, School, BarChart3, LayoutDashboard, HelpCircle, ListTree, CircleHelp, Link2 } from "lucide-react";
 
 const adminTabs = [
   { id: "dashboard", label: "Přehled", icon: LayoutDashboard },
@@ -27,13 +28,14 @@ const teacherTabs = [
   { id: "lessons", label: "Lekce", icon: BookOpen },
   { id: "outline", label: "Osnova AI", icon: ListTree },
   { id: "mcq", label: "MCQ AI", icon: CircleHelp },
+  { id: "matching", label: "Matching AI", icon: Link2 },
   { id: "subjects", label: "Předměty", icon: Settings },
   { id: "classes", label: "Třídy", icon: School },
   { id: "results", label: "Výsledky", icon: BarChart3 },
   { id: "help", label: "Nápověda", icon: HelpCircle },
 ] as const;
 
-type Tab = "dashboard" | "textbooks" | "lessons" | "outline" | "mcq" | "subjects" | "users" | "classes" | "results" | "help";
+type Tab = "dashboard" | "textbooks" | "lessons" | "outline" | "mcq" | "matching" | "subjects" | "users" | "classes" | "results" | "help";
 
 const Admin = () => {
   const { isAdmin, isTeacher, loading, logout } = useAdmin();
@@ -104,6 +106,7 @@ const Admin = () => {
         {activeTab === "lessons" && isTeacher && <LessonsManager />}
         {activeTab === "outline" && isTeacher && <LessonOutlineGenerator />}
         {activeTab === "mcq" && isTeacher && <MCQGenerator />}
+        {activeTab === "matching" && isTeacher && <MatchingGenerator />}
         {activeTab === "subjects" && isTeacher && <SubjectsManager />}
         {activeTab === "users" && !isTeacher && <UsersManager />}
         {activeTab === "classes" && isTeacher && <ClassesManager />}
