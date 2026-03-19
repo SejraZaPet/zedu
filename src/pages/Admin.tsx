@@ -5,6 +5,7 @@ import LessonOutlineGenerator from "@/components/admin/LessonOutlineGenerator";
 import MCQGenerator from "@/components/admin/MCQGenerator";
 import MatchingGenerator from "@/components/admin/MatchingGenerator";
 import SlideEditor from "@/components/admin/SlideEditor";
+import VideoCheckpointGenerator from "@/components/admin/VideoCheckpointGenerator";
 import LessonsManager from "@/components/admin/LessonsManager";
 import TextbooksManager from "@/components/admin/TextbooksManager";
 import TeacherTextbooksManager from "@/components/admin/TeacherTextbooksManager";
@@ -15,7 +16,7 @@ import ClassesManager from "@/components/admin/ClassesManager";
 import ClassResultsManager from "@/components/admin/ClassResultsManager";
 import AdminDashboard from "@/components/admin/AdminDashboard";
 import { Button } from "@/components/ui/button";
-import { BookOpen, LogOut, Home, GraduationCap, Settings, Users, School, BarChart3, LayoutDashboard, HelpCircle, ListTree, CircleHelp, Link2, Pencil } from "lucide-react";
+import { BookOpen, LogOut, Home, GraduationCap, Settings, Users, School, BarChart3, LayoutDashboard, HelpCircle, ListTree, CircleHelp, Link2, Pencil, Video } from "lucide-react";
 
 const adminTabs = [
   { id: "dashboard", label: "Přehled", icon: LayoutDashboard },
@@ -31,13 +32,14 @@ const teacherTabs = [
   { id: "mcq", label: "MCQ AI", icon: CircleHelp },
   { id: "matching", label: "Matching AI", icon: Link2 },
   { id: "slide-edit", label: "Editor AI", icon: Pencil },
+  { id: "video-ai", label: "Video AI", icon: Video },
   { id: "subjects", label: "Předměty", icon: Settings },
   { id: "classes", label: "Třídy", icon: School },
   { id: "results", label: "Výsledky", icon: BarChart3 },
   { id: "help", label: "Nápověda", icon: HelpCircle },
 ] as const;
 
-type Tab = "dashboard" | "textbooks" | "lessons" | "outline" | "mcq" | "matching" | "slide-edit" | "subjects" | "users" | "classes" | "results" | "help";
+type Tab = "dashboard" | "textbooks" | "lessons" | "outline" | "mcq" | "matching" | "slide-edit" | "video-ai" | "subjects" | "users" | "classes" | "results" | "help";
 
 const Admin = () => {
   const { isAdmin, isTeacher, loading, logout } = useAdmin();
@@ -110,6 +112,7 @@ const Admin = () => {
         {activeTab === "mcq" && isTeacher && <MCQGenerator />}
         {activeTab === "matching" && isTeacher && <MatchingGenerator />}
         {activeTab === "slide-edit" && isTeacher && <SlideEditor />}
+        {activeTab === "video-ai" && isTeacher && <VideoCheckpointGenerator />}
         {activeTab === "subjects" && isTeacher && <SubjectsManager />}
         {activeTab === "users" && !isTeacher && <UsersManager />}
         {activeTab === "classes" && isTeacher && <ClassesManager />}
