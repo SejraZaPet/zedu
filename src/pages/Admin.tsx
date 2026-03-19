@@ -112,6 +112,7 @@ const Admin = () => {
         {activeTab === "mcq" && isTeacher && <MCQGenerator />}
         {activeTab === "matching" && isTeacher && <MatchingGenerator />}
         {activeTab === "slide-edit" && isTeacher && <SlideEditor />}
+        {activeTab === "video-ai" && isTeacher && <VideoCheckpointGenerator />}
         {activeTab === "subjects" && isTeacher && <SubjectsManager />}
         {activeTab === "users" && !isTeacher && <UsersManager />}
         {activeTab === "classes" && isTeacher && <ClassesManager />}
