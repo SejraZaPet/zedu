@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.edit-slide]
 verify_jwt = false
+
+[functions.generate-video-checkpoints]
+verify_jwt = false
