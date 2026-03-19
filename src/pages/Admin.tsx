@@ -5,6 +5,7 @@ import LessonOutlineGenerator from "@/components/admin/LessonOutlineGenerator";
 import MCQGenerator from "@/components/admin/MCQGenerator";
 import MatchingGenerator from "@/components/admin/MatchingGenerator";
 import SlideEditor from "@/components/admin/SlideEditor";
+import VideoCheckpointGenerator from "@/components/admin/VideoCheckpointGenerator";
 import LessonsManager from "@/components/admin/LessonsManager";
 import TextbooksManager from "@/components/admin/TextbooksManager";
 import TeacherTextbooksManager from "@/components/admin/TeacherTextbooksManager";
