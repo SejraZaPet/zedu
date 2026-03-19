@@ -32,6 +32,7 @@ const teacherTabs = [
   { id: "mcq", label: "MCQ AI", icon: CircleHelp },
   { id: "matching", label: "Matching AI", icon: Link2 },
   { id: "slide-edit", label: "Editor AI", icon: Pencil },
+  { id: "video-ai", label: "Video AI", icon: Video },
   { id: "subjects", label: "Předměty", icon: Settings },
   { id: "classes", label: "Třídy", icon: School },
   { id: "results", label: "Výsledky", icon: BarChart3 },
