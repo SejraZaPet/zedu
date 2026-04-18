@@ -228,8 +228,9 @@ const StudentTextbookDetail = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     const { error } = await supabase
-      .from("teacher_lesson_completions" as any)
+      .from("student_lesson_completions")
       .insert({ lesson_id: lessonId, user_id: user.id });
+    if (error) console.error("Mark complete error:", error);
     if (!error) {
       setCompletedLessonIds(prev => new Set([...prev, lessonId]));
     }
