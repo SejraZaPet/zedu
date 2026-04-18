@@ -68,14 +68,14 @@ const TeacherDashboard = () => {
       title: "Moje třídy",
       description: "Spravujte třídy a sledujte pokrok studentů.",
       button: "Spravovat třídy",
-      onClick: () => navigate("/admin?tab=classes"),
+      onClick: () => navigate("/ucitel/tridy"),
     },
     {
       icon: BarChart3,
       title: "Výsledky studentů",
       description: "Sledujte úspěšnost a dokončené aktivity.",
       button: "Zobrazit výsledky",
-      onClick: () => navigate("/admin?tab=results"),
+      onClick: () => navigate("/ucitel/vysledky"),
     },
   ];
 
