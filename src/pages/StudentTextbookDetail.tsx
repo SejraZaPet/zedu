@@ -57,61 +57,99 @@ const StudentTextbookDetail = () => {
         .eq("id", textbookId)
         .single();
       if (!tb) { setLoading(false); return; }
-      setTextbookTitle((tb as any).title);
-      setTextbookDescription((tb as any).description || "");
+      const tbAny = tb as any;
+      setTextbookTitle(tbAny.title);
+      setTextbookDescription(tbAny.description || "");
 
-      // Fetch all lessons for this textbook
+      // 1) Lekce z teacher_textbook_lessons (učitelský systém)
       const { data: allLessons } = await supabase
         .from("teacher_textbook_lessons")
         .select("*")
         .eq("textbook_id", textbookId)
         .eq("status", "published")
         .order("sort_order", { ascending: true });
-      const lessons = (allLessons || []) as LessonData[];
-      console.log("DEBUG textbookId:", textbookId);
-      console.log("DEBUG allLessons:", allLessons);
-      console.log("DEBUG lessons count:", lessons.length);
-      const lessonMap = new Map(lessons.map(l => [l.id, l]));
+      const teacherLessons = (allLessons || []) as LessonData[];
+      const lessonMap = new Map(teacherLessons.map(l => [l.id, l]));
 
-      // Fetch placements for these lessons
-      const lessonIds = lessons.map(l => l.id);
+      // Placements pro učitelské lekce
+      const teacherLessonIds = teacherLessons.map(l => l.id);
       let placements: any[] = [];
-      if (lessonIds.length > 0) {
+      if (teacherLessonIds.length > 0) {
         const { data: pl } = await supabase
           .from("lesson_placements")
           .select("lesson_id, subject_slug, grade_number, topic_id")
-          .in("lesson_id", lessonIds);
+          .in("lesson_id", teacherLessonIds);
         placements = pl || [];
       }
-      console.log("DEBUG placements:", placements);
 
-      // Fetch topics referenced by placements
-      const topicIds = [...new Set(placements.filter(p => p.topic_id).map(p => p.topic_id))];
-      let topicsMap = new Map<string, { id: string; title: string; sort_order: number; grade: number; subject: string }>();
-      if (topicIds.length > 0) {
-        const { data: topics } = await supabase
-          .from("textbook_topics")
-          .select("id, title, sort_order, grade, subject")
-          .in("id", topicIds);
-        (topics || []).forEach((t: any) => topicsMap.set(t.id, t));
+      // 2) Lekce z globálního systému (textbook_lessons → topics → subject = slug učebnice)
+      // Slug odvozujeme primárně z tb.subject; jako fallback ze slugify(title)
+      const slugFromTitle = (tbAny.title || "")
+        .toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+      const subjectSlug = (tbAny.subject && tbAny.subject.trim()) || slugFromTitle;
+
+      const { data: globalTopics } = await supabase
+        .from("textbook_topics")
+        .select("id, title, sort_order, grade, subject")
+        .eq("subject", subjectSlug);
+      const globalTopicIds = (globalTopics || []).map((t: any) => t.id);
+
+      let globalLessons: any[] = [];
+      if (globalTopicIds.length > 0) {
+        const { data: gl } = await supabase
+          .from("textbook_lessons")
+          .select("id, title, blocks, sort_order, status, topic_id")
+          .in("topic_id", globalTopicIds)
+          .eq("status", "published")
+          .order("sort_order", { ascending: true });
+        globalLessons = gl || [];
       }
 
-      // Build grade → topic → lessons structure from placements
-      const gradeMap = new Map<number, Map<string, Set<string>>>();
+      // Topics pro placements + globální topics — společná mapa
+      const topicsMap = new Map<string, { id: string; title: string; sort_order: number; grade: number; subject: string }>();
+      (globalTopics || []).forEach((t: any) => topicsMap.set(t.id, t));
+      const placementTopicIds = [...new Set(placements.filter(p => p.topic_id && !topicsMap.has(p.topic_id)).map(p => p.topic_id))];
+      if (placementTopicIds.length > 0) {
+        const { data: extra } = await supabase
+          .from("textbook_topics")
+          .select("id, title, sort_order, grade, subject")
+          .in("id", placementTopicIds);
+        (extra || []).forEach((t: any) => topicsMap.set(t.id, t));
+      }
 
+      // Sjednocená struktura: grade → topic → lessons
+      const gradeMap = new Map<number, Map<string, LessonData[]>>();
+
+      // a) Učitelské lekce přes placements
       for (const p of placements) {
-        if (!lessonMap.has(p.lesson_id)) continue;
+        const lesson = lessonMap.get(p.lesson_id);
+        if (!lesson) continue;
         const grade = p.grade_number;
         if (!gradeMap.has(grade)) gradeMap.set(grade, new Map());
         const topicKey = p.topic_id || "__no_topic__";
         const gm = gradeMap.get(grade)!;
-        if (!gm.has(topicKey)) gm.set(topicKey, new Set());
-        gm.get(topicKey)!.add(p.lesson_id);
+        if (!gm.has(topicKey)) gm.set(topicKey, []);
+        gm.get(topicKey)!.push(lesson);
       }
 
-      // Also include lessons without placements in a fallback group
-      const placedLessonIds = new Set(placements.map(p => p.lesson_id));
-      const unplacedLessons = lessons.filter(l => !placedLessonIds.has(l.id));
+      // b) Globální lekce přes topic_id
+      for (const gl of globalLessons) {
+        const topic = topicsMap.get(gl.topic_id);
+        if (!topic) continue;
+        const grade = topic.grade;
+        if (!gradeMap.has(grade)) gradeMap.set(grade, new Map());
+        const gm = gradeMap.get(grade)!;
+        if (!gm.has(gl.topic_id)) gm.set(gl.topic_id, []);
+        gm.get(gl.topic_id)!.push({
+          id: gl.id,
+          title: gl.title,
+          blocks: gl.blocks || [],
+          sort_order: gl.sort_order || 0,
+          status: gl.status,
+        });
+      }
 
       const gradeGroups: GradeGroup[] = [];
       const sortedGrades = [...gradeMap.keys()].sort((a, b) => a - b);
@@ -119,7 +157,6 @@ const StudentTextbookDetail = () => {
       for (const gradeNum of sortedGrades) {
         const topicMap = gradeMap.get(gradeNum)!;
         const topics: TopicWithLessons[] = [];
-
         const sortedTopicKeys = [...topicMap.keys()].sort((a, b) => {
           if (a === "__no_topic__") return 1;
           if (b === "__no_topic__") return -1;
@@ -127,14 +164,8 @@ const StudentTextbookDetail = () => {
           const tb2 = topicsMap.get(b);
           return (ta?.sort_order || 0) - (tb2?.sort_order || 0);
         });
-
         for (const topicKey of sortedTopicKeys) {
-          const lessonIdsInTopic = [...topicMap.get(topicKey)!];
-          const topicLessons = lessonIdsInTopic
-            .map(id => lessonMap.get(id)!)
-            .filter(Boolean)
-            .sort((a, b) => a.sort_order - b.sort_order);
-
+          const topicLessons = [...topicMap.get(topicKey)!].sort((a, b) => a.sort_order - b.sort_order);
           const topicInfo = topicKey !== "__no_topic__" ? topicsMap.get(topicKey) : null;
           topics.push({
             id: topicKey,
@@ -143,7 +174,6 @@ const StudentTextbookDetail = () => {
             lessons: topicLessons,
           });
         }
-
         gradeGroups.push({
           grade_number: gradeNum,
           label: `${gradeNum}. ročník`,
@@ -151,6 +181,9 @@ const StudentTextbookDetail = () => {
         });
       }
 
+      // Učitelské lekce bez placement → fallback skupina
+      const placedLessonIds = new Set(placements.map(p => p.lesson_id));
+      const unplacedLessons = teacherLessons.filter(l => !placedLessonIds.has(l.id));
       if (unplacedLessons.length > 0) {
         gradeGroups.push({
           grade_number: 0,
@@ -166,15 +199,24 @@ const StudentTextbookDetail = () => {
 
       setGrades(gradeGroups);
 
-      // Fetch completions
+      // Completions (učitelské + studentské)
+      const allLessonIds = [
+        ...teacherLessonIds,
+        ...globalLessons.map((l: any) => l.id),
+      ];
       const { data: { user } } = await supabase.auth.getUser();
-      if (user && lessonIds.length > 0) {
-        const { data: completions } = await supabase
-          .from("teacher_lesson_completions" as any)
-          .select("lesson_id")
-          .eq("user_id", user.id)
-          .in("lesson_id", lessonIds);
-        setCompletedLessonIds(new Set((completions || []).map((c: any) => c.lesson_id)));
+      if (user && allLessonIds.length > 0) {
+        const [{ data: tc }, { data: sc }] = await Promise.all([
+          supabase.from("teacher_lesson_completions" as any)
+            .select("lesson_id").eq("user_id", user.id).in("lesson_id", allLessonIds),
+          supabase.from("student_lesson_completions")
+            .select("lesson_id").eq("user_id", user.id).in("lesson_id", allLessonIds),
+        ]);
+        const ids = new Set<string>([
+          ...((tc || []).map((c: any) => c.lesson_id)),
+          ...((sc || []).map((c: any) => c.lesson_id)),
+        ]);
+        setCompletedLessonIds(ids);
       }
 
       setLoading(false);
