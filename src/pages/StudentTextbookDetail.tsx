@@ -147,14 +147,13 @@ const StudentTextbookDetail = () => {
         });
       }
 
-      // Add unplaced lessons as a separate section if any
       if (unplacedLessons.length > 0) {
         gradeGroups.push({
           grade_number: 0,
-          label: "Ostatní lekce",
+          label: "Obsah učebnice",
           topics: [{
             id: "__unplaced__",
-            title: "Bez přiřazení",
+            title: "Lekce",
             sort_order: 0,
             lessons: unplacedLessons,
           }],
