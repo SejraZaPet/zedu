@@ -206,16 +206,12 @@ const StudentTextbookDetail = () => {
       ];
       const { data: { user } } = await supabase.auth.getUser();
       if (user && allLessonIds.length > 0) {
-        const [{ data: tc }, { data: sc }] = await Promise.all([
-          supabase.from("teacher_lesson_completions" as any)
-            .select("lesson_id").eq("user_id", user.id).in("lesson_id", allLessonIds),
-          supabase.from("student_lesson_completions")
-            .select("lesson_id").eq("user_id", user.id).in("lesson_id", allLessonIds),
-        ]);
-        const ids = new Set<string>([
-          ...((tc || []).map((c: any) => c.lesson_id)),
-          ...((sc || []).map((c: any) => c.lesson_id)),
-        ]);
+        const { data: completions } = await supabase
+          .from("student_lesson_completions")
+          .select("lesson_id")
+          .eq("user_id", user.id)
+          .in("lesson_id", allLessonIds);
+        const ids = new Set<string>((completions || []).map((c) => c.lesson_id));
         setCompletedLessonIds(ids);
       }
 
