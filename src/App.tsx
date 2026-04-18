@@ -32,6 +32,8 @@ import LiveTeacherScreen from "./pages/LiveTeacherScreen";
 import TeacherAssignments from "./pages/TeacherAssignments";
 import StudentAssignments from "./pages/StudentAssignments";
 import StudentAssignmentPlayer from "./pages/StudentAssignmentPlayer";
+import TeacherClasses from "./pages/TeacherClasses";
+import TeacherResults from "./pages/TeacherResults";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +50,8 @@ const App = () => (
             <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
             <Route path="/student" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
             <Route path="/ucitel" element={<ProtectedRoute><TeacherDashboard /></ProtectedRoute>} />
+            <Route path="/ucitel/tridy" element={<ProtectedRoute><TeacherClasses /></ProtectedRoute>} />
+            <Route path="/ucitel/vysledky" element={<ProtectedRoute><TeacherResults /></ProtectedRoute>} />
             <Route path="/profil" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
             <Route path="/podcast/:episodeId" element={<PodcastDetailPage />} />
             <Route path="/ucebnice" element={<ProtectedRoute><TextbooksPage /></ProtectedRoute>} />
