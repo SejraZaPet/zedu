@@ -163,6 +163,21 @@ const LessonPage = () => {
                 ))}
               </div>
 
+              {!isTeacherOrAdmin && blocks.length > 0 && (
+                <div className="mt-10 pt-8 border-t border-border flex justify-center">
+                  <Button
+                    onClick={() => {
+                      trackLessonComplete();
+                      window.history.back();
+                    }}
+                    variant="hero"
+                    className="gap-2"
+                  >
+                    ✓ Označit lekci jako dokončenou
+                  </Button>
+                </div>
+              )}
+
               {blocks.length === 0 && (
                 <p className="text-muted-foreground">Obsah lekce se připravuje.</p>
               )}
