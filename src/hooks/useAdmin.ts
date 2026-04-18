@@ -22,9 +22,17 @@ export const useAdmin = () => {
       return;
     }
 
-    const hasAccess = role === "admin" || role === "teacher" || role === "lektor";
-    if (!hasAccess) {
-      navigate("/student");
+    if (role !== "admin") {
+      if (role === "teacher" || role === "lektor") {
+        navigate("/ucitel");
+        return;
+      }
+      if (role === "user") {
+        navigate("/student");
+        return;
+      }
+      // fallback
+      navigate("/auth");
       return;
     }
 
