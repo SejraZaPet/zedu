@@ -68,6 +68,9 @@ const StudentTextbookDetail = () => {
         .eq("status", "published")
         .order("sort_order", { ascending: true });
       const lessons = (allLessons || []) as LessonData[];
+      console.log("DEBUG textbookId:", textbookId);
+      console.log("DEBUG allLessons:", allLessons);
+      console.log("DEBUG lessons count:", lessons.length);
       const lessonMap = new Map(lessons.map(l => [l.id, l]));
 
       // Fetch placements for these lessons
@@ -80,6 +83,7 @@ const StudentTextbookDetail = () => {
           .in("lesson_id", lessonIds);
         placements = pl || [];
       }
+      console.log("DEBUG placements:", placements);
 
       // Fetch topics referenced by placements
       const topicIds = [...new Set(placements.filter(p => p.topic_id).map(p => p.topic_id))];
