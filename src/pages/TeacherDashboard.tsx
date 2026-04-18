@@ -75,7 +75,7 @@ const TeacherDashboard = () => {
       title: "Výsledky studentů",
       description: "Sledujte úspěšnost a dokončené aktivity.",
       button: "Zobrazit výsledky",
-      onClick: () => navigate("/admin?tab=results"),
+      onClick: () => navigate("/ucitel/vysledky"),
     },
   ];
 
