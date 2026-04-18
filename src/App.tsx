@@ -32,6 +32,8 @@ import LiveTeacherScreen from "./pages/LiveTeacherScreen";
 import TeacherAssignments from "./pages/TeacherAssignments";
 import StudentAssignments from "./pages/StudentAssignments";
 import StudentAssignmentPlayer from "./pages/StudentAssignmentPlayer";
+import TeacherClasses from "./pages/TeacherClasses";
+import TeacherResults from "./pages/TeacherResults";
 
 const queryClient = new QueryClient();
 
