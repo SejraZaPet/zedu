@@ -22,8 +22,7 @@ export const useAdmin = () => {
       return;
     }
 
-    const hasAccess = role === "admin" || role === "teacher" || role === "lektor";
-    if (!hasAccess) {
+    if (role !== "admin") {
       if (role === "teacher" || role === "lektor") {
         navigate("/ucitel");
         return;
