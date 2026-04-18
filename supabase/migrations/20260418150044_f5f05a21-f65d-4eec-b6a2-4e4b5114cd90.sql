@@ -1,0 +1,2 @@
+UPDATE public.profiles SET status='approved' WHERE email='admin@test.zedu.cz';
+DELETE FROM public.user_roles WHERE user_id=(SELECT id FROM public.profiles WHERE email='admin@test.zedu.cz') AND role='user';
