@@ -45,8 +45,10 @@ const Auth = () => {
     // Wait for role to be resolved before redirecting
     if (authRole === null) return;
 
-    if (authRole === "admin" || authRole === "teacher") {
+    if (authRole === "admin") {
       navigate(redirectTo || "/admin", { replace: true });
+    } else if (authRole === "teacher" || authRole === "lektor") {
+      navigate(redirectTo || "/ucitel", { replace: true });
     } else {
       navigate(redirectTo || "/student", { replace: true });
     }
