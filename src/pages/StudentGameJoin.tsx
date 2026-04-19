@@ -57,7 +57,7 @@ const StudentGameJoin = () => {
       sessionStorage.setItem(`game_token_${data.sessionId}`, data.joinToken);
       sessionStorage.setItem(`game_player_${data.sessionId}`, data.playerId);
 
-      navigate(`/hra/hrac/${data.sessionId}`);
+      navigate(`/live/student/${data.sessionId}`);
     } catch {
       toast({ title: t("student.errors.joinFailed"), variant: "destructive" });
       setJoining(false);
