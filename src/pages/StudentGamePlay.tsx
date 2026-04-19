@@ -108,7 +108,14 @@ const StudentGamePlay = () => {
   }
 
   if (session.status === "lobby") {
-    return <GameLobby session={session} players={players} isTeacher={false} />;
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+        <div className="text-center space-y-3">
+          <div className="animate-pulse text-muted-foreground text-lg">Čekej na učitele...</div>
+          <p className="text-sm text-muted-foreground">Hra začne, jakmile učitel spustí prezentaci.</p>
+        </div>
+      </div>
+    );
   }
 
   if (session.status === "finished") {
