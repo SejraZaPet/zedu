@@ -1,0 +1,1 @@
+ALTER TABLE public.textbook_lessons ADD COLUMN IF NOT EXISTS require_activities boolean NOT NULL DEFAULT false;

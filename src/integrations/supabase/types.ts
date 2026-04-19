@@ -1049,6 +1049,7 @@ export type Database = {
           created_at: string
           hero_image_url: string | null
           id: string
+          require_activities: boolean
           sort_order: number
           status: string
           title: string
@@ -1060,6 +1061,7 @@ export type Database = {
           created_at?: string
           hero_image_url?: string | null
           id?: string
+          require_activities?: boolean
           sort_order?: number
           status?: string
           title: string
@@ -1071,6 +1073,7 @@ export type Database = {
           created_at?: string
           hero_image_url?: string | null
           id?: string
+          require_activities?: boolean
           sort_order?: number
           status?: string
           title?: string
