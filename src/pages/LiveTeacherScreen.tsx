@@ -205,6 +205,45 @@ const LiveTeacherScreen = () => {
             )}
           </div>
 
+          {currentSlide.type === "activity" && (
+            <div className="mt-4 space-y-3">
+              <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                    <span className="text-sm text-primary font-medium">Žáci plní aktivitu</span>
+                  </div>
+                  <span className="text-sm font-medium">{responses.filter(r => r.question_index === currentIndex).length} / {players.length} odpovědí</span>
+                </div>
+                {players.length > 0 && (
+                  <div className="w-full bg-muted rounded-full h-2">
+                    <div
+                      className="bg-primary h-2 rounded-full transition-all"
+                      style={{ width: `${Math.round((responses.filter(r => r.question_index === currentIndex).length / players.length) * 100)}%` }}
+                    />
+                  </div>
+                )}
+              </div>
+              {responses.filter(r => r.question_index === currentIndex).length > 0 && (
+                <div className="p-3 border border-border rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-2">Výsledky třídy</p>
+                  <div className="flex items-center gap-4">
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-green-600">
+                        {Math.round((responses.filter(r => r.question_index === currentIndex && r.is_correct).length / Math.max(responses.filter(r => r.question_index === currentIndex).length, 1)) * 100)}%
+                      </p>
+                      <p className="text-xs text-muted-foreground">správně</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold">{responses.filter(r => r.question_index === currentIndex).length}</p>
+                      <p className="text-xs text-muted-foreground">odpovědělo</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Device preview */}
           <div className="border border-border rounded-lg p-4 bg-muted/30">
             <div className="flex items-center gap-2 mb-2 text-xs font-medium text-muted-foreground">
