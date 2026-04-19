@@ -208,6 +208,23 @@ const LessonEditorSheet = ({ lessonId, open, onOpenChange, onSaved }: Props) => 
                 />
               </div>
 
+              <div className="flex items-start gap-2 p-3 border border-border rounded-md bg-muted/30">
+                <Checkbox
+                  id="require_activities"
+                  checked={lesson.require_activities}
+                  onCheckedChange={(v) => setLesson({ ...lesson, require_activities: !!v })}
+                  className="mt-0.5"
+                />
+                <div className="flex-1">
+                  <Label htmlFor="require_activities" className="cursor-pointer text-sm font-medium">
+                    Vyžadovat splnění aktivit před dokončením
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Student bude moci lekci označit jako dokončenou až po splnění alespoň jedné aktivity.
+                  </p>
+                </div>
+              </div>
+
               <div>
                 <Label className="mb-2 block">Obsah lekce</Label>
                 <BlockEditor
