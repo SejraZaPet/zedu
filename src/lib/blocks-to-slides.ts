@@ -1,8 +1,10 @@
 export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
+  console.log("[blocksToSlides] input:", { lessonTitle, blockCount: blocks?.length, blocks });
+
   const slides: any[] = [];
 
   slides.push({
-    slideId: `slide-intro`,
+    slideId: "slide-intro",
     type: "intro",
     projector: { headline: lessonTitle, body: "Připojte se pomocí kódu níže." },
     device: { instructions: "Naskenujte QR kód nebo zadejte kód pro připojení." },
@@ -10,47 +12,82 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
   });
 
   let slideIndex = 1;
-  for (const block of blocks || []) {
+  for (const block of (blocks || [])) {
     if (!block || block.visible === false) continue;
-    if (block.type === "heading") {
+    const type = block.type;
+    const props = block.props || {};
+    console.log("[blocksToSlides] block:", { type, props });
+
+    if (type === "heading") {
+      const text = props.text || props.content || props.value || "";
+      if (!text) continue;
       slides.push({
         slideId: `slide-${slideIndex++}`,
         type: "explain",
-        projector: { headline: block.props?.text || "", body: "" },
+        projector: { headline: text, body: "" },
         device: { instructions: "Sledujte výklad." },
         teacherNotes: "",
       });
-    } else if (block.type === "paragraph") {
+    } else if (type === "paragraph") {
+      const text = props.text || props.content || props.value || "";
+      if (!text) continue;
       slides.push({
         slideId: `slide-${slideIndex++}`,
         type: "explain",
-        projector: { headline: "", body: block.props?.text || "" },
+        projector: { headline: "", body: text },
         device: { instructions: "Sledujte výklad." },
         teacherNotes: "",
       });
-    } else if (block.type === "activity") {
+    } else if (type === "bullet_list" || type === "bulletList") {
+      const items = props.items || props.bullets || [];
+      const title = props.title || props.heading || "";
+      const body = Array.isArray(items) ? items.map((i: any) => `• ${typeof i === "string" ? i : i.text || i}`).join("\n") : "";
+      if (!title && !body) continue;
+      slides.push({
+        slideId: `slide-${slideIndex++}`,
+        type: "explain",
+        projector: { headline: title, body },
+        device: { instructions: "Sledujte výklad." },
+        teacherNotes: "",
+      });
+    } else if (type === "activity") {
+      const title = props.title || props.activityType || "Aktivita";
+      const instructions = props.instructions || "";
       slides.push({
         slideId: `slide-${slideIndex++}`,
         type: "activity",
-        projector: { headline: block.props?.title || "Aktivita", body: block.props?.instructions || "" },
-        device: { instructions: block.props?.instructions || "Splňte aktivitu na svém zařízení." },
+        projector: { headline: title, body: instructions },
+        device: { instructions: instructions || "Splňte aktivitu na svém zařízení." },
         teacherNotes: "",
-        activitySpec: block.props,
+        activitySpec: props,
       });
-    } else if (block.type === "image") {
+    } else if (type === "image") {
+      const caption = props.caption || props.alt || "";
+      const url = props.url || props.src || "";
       slides.push({
         slideId: `slide-${slideIndex++}`,
         type: "explain",
-        projector: { headline: block.props?.caption || "", body: "", assetRefs: [block.props?.url].filter(Boolean) },
+        projector: { headline: caption, body: "", assetRefs: url ? [url] : [] },
         device: { instructions: "Prohlédněte si obrázek." },
         teacherNotes: "",
       });
-    } else if (block.type === "bullet_list") {
-      const items = (block.props?.items || []).join("\n• ");
+    } else if (type === "callout" || type === "quote") {
+      const text = props.text || props.content || props.value || "";
+      if (!text) continue;
       slides.push({
         slideId: `slide-${slideIndex++}`,
         type: "explain",
-        projector: { headline: block.props?.title || "", body: items ? `• ${items}` : "" },
+        projector: { headline: "", body: text },
+        device: { instructions: "Sledujte výklad." },
+        teacherNotes: "",
+      });
+    } else if (type === "two_column" || type === "twoColumn") {
+      const left = props.leftText || props.left || "";
+      const right = props.rightText || props.right || "";
+      slides.push({
+        slideId: `slide-${slideIndex++}`,
+        type: "explain",
+        projector: { headline: props.title || "", body: `${left}\n\n${right}`.trim() },
         device: { instructions: "Sledujte výklad." },
         teacherNotes: "",
       });
@@ -58,12 +95,13 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
   }
 
   slides.push({
-    slideId: `slide-summary`,
+    slideId: "slide-summary",
     type: "summary",
     projector: { headline: "Shrnutí", body: `Lekce: ${lessonTitle}` },
-    device: { instructions: "Lekce ukončena. Děkujeme!" },
+    device: { instructions: "Zkontrolujte si znalosti." },
     teacherNotes: "",
   });
 
+  console.log("[blocksToSlides] output slides:", slides.length, slides);
   return slides;
 }
