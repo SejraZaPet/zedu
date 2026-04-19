@@ -6,6 +6,8 @@ export const useAdmin = () => {
   const navigate = useNavigate();
   const { isLoggedIn, role, status, loading: authLoading, signOut } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isTeacher, setIsTeacher] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -22,27 +24,32 @@ export const useAdmin = () => {
       return;
     }
 
-    const hasAccess = role === "admin" || role === "teacher" || role === "lektor";
-
-    if (!hasAccess) {
-      if (role === "rodic") {
-        navigate("/rodic");
-      } else {
-        navigate("/student");
-      }
+    if (role === "admin") {
+      setIsAdmin(true);
+      setIsTeacher(false);
+      setLoading(false);
       return;
     }
 
-    setLoading(false);
+    if (role === "teacher" || role === "lektor") {
+      // Teachers have their own panel at /ucitel, not /admin
+      navigate("/ucitel");
+      return;
+    }
+
+    if (role === "rodic") {
+      navigate("/rodic");
+      return;
+    }
+
+    // Everyone else (user) goes to student dashboard
+    navigate("/student");
   }, [authLoading, isLoggedIn, role, status, navigate, signOut]);
 
   const logout = async () => {
     await signOut();
     navigate("/");
   };
-
-  const isAdmin = role === "admin";
-  const isTeacher = role === "teacher" || role === "lektor";
 
   return { isAdmin, isTeacher, role, loading, logout };
 };
