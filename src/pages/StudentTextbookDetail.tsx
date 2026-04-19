@@ -388,7 +388,7 @@ const StudentTextbookDetail = () => {
                                 return (
                                   <button
                                     key={lesson.id}
-                                    onClick={() => setSelectedLesson(lesson)}
+                                    onClick={() => { setCompletedActivityIndices(new Set()); setSelectedLesson(lesson); }}
                                     className="w-full flex items-center gap-3 p-3 rounded-md hover:bg-accent/50 transition-colors text-left group"
                                   >
                                     {isCompleted ? (
