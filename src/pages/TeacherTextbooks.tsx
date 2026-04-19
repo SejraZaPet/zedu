@@ -107,6 +107,8 @@ const TeacherTextbooks = () => {
   const [presentationLesson, setPresentationLesson] = useState<LessonItem | null>(null);
   const [pendingSlides, setPendingSlides] = useState<any[]>([]);
   const [editingSlideIndex, setEditingSlideIndex] = useState(0);
+  const [existingSession, setExistingSession] = useState<{ id: string; title: string } | null>(null);
+  const [pendingLaunchData, setPendingLaunchData] = useState<{ lesson: LessonItem; slides: any[] } | null>(null);
 
   const launchLiveSession = async (lesson: LessonItem, prebuiltSlides?: any[]) => {
     try {
@@ -114,13 +116,15 @@ const TeacherTextbooks = () => {
       if (session?.user) {
         const { data: existing } = await supabase
           .from("game_sessions")
-          .select("id, status")
+          .select("id, title, status")
           .eq("teacher_id", session.user.id)
           .eq("title", lesson.title)
           .in("status", ["lobby", "playing"])
           .maybeSingle();
         if (existing) {
-          navigate(`/live/ucitel/${existing.id}`);
+          const slides = prebuiltSlides || blocksToSlides(lesson.blocks || [], lesson.title);
+          setExistingSession(existing);
+          setPendingLaunchData({ lesson, slides });
           return;
         }
       }
