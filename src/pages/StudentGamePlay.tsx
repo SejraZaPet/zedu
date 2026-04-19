@@ -7,6 +7,7 @@ import { ConnectionStatusBanner } from "@/components/game/ConnectionStatusBanner
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { serverTsToClientMs } from "@/lib/clock-sync";
+import LessonBlockRenderer from "@/components/LessonBlockRenderer";
 
 const StudentGamePlay = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -162,6 +163,18 @@ const StudentGamePlay = () => {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+            {currentSlideData.activitySpec && (
+              <div className="mt-4">
+                <LessonBlockRenderer
+                  block={{
+                    id: `live-activity-${currentSlideData.slideId}`,
+                    type: "activity",
+                    props: currentSlideData.activitySpec,
+                    visible: true,
+                  } as any}
+                />
               </div>
             )}
             {currentSlideData.device?.instructions && currentSlideData.device.instructions !== "Sledujte výklad." && (
