@@ -803,130 +803,29 @@ const TeacherTextbooks = () => {
       </main>
       <SiteFooter />
 
-      <Dialog open={!!presentationLesson} onOpenChange={(open) => { if (!open) { setPresentationLesson(null); setPendingSlides([]); } }}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Upravit prezentaci{presentationLesson ? ` – ${presentationLesson.title}` : ""}</DialogTitle>
-          </DialogHeader>
-
-          <div className="flex gap-1 flex-wrap mb-4">
-            {pendingSlides.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setEditingSlideIndex(i)}
-                className={`w-8 h-8 rounded text-xs font-medium ${i === editingSlideIndex ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}
-              >
-                {i + 1}
-              </button>
-            ))}
-          </div>
-
-          {pendingSlides[editingSlideIndex] && (
-            <div className="space-y-3">
-              <div>
-                <Label className="text-xs">Nadpis (projektor)</Label>
-                <Input
-                  value={pendingSlides[editingSlideIndex].projector?.headline || ""}
-                  onChange={(e) => {
-                    const updated = [...pendingSlides];
-                    updated[editingSlideIndex] = {
-                      ...updated[editingSlideIndex],
-                      projector: { ...updated[editingSlideIndex].projector, headline: e.target.value },
-                    };
-                    setPendingSlides(updated);
-                  }}
-                />
-              </div>
-              <div>
-                <Label className="text-xs">Text (projektor)</Label>
-                <Textarea
-                  rows={4}
-                  value={pendingSlides[editingSlideIndex].projector?.body || ""}
-                  onChange={(e) => {
-                    const updated = [...pendingSlides];
-                    updated[editingSlideIndex] = {
-                      ...updated[editingSlideIndex],
-                      projector: { ...updated[editingSlideIndex].projector, body: e.target.value },
-                    };
-                    setPendingSlides(updated);
-                  }}
-                />
-              </div>
-              <div>
-                <Label className="text-xs">Instrukce pro žáka</Label>
-                <Input
-                  value={pendingSlides[editingSlideIndex].device?.instructions || ""}
-                  onChange={(e) => {
-                    const updated = [...pendingSlides];
-                    updated[editingSlideIndex] = {
-                      ...updated[editingSlideIndex],
-                      device: { ...updated[editingSlideIndex].device, instructions: e.target.value },
-                    };
-                    setPendingSlides(updated);
-                  }}
-                />
-              </div>
-            </div>
-          )}
-
-          <DialogFooter className="gap-2 mt-4">
-            <Button variant="outline" onClick={() => setPresentationLesson(null)}>Zrušit</Button>
-            <Button
-              onClick={async () => {
-                const lesson = presentationLesson;
-                const slides = pendingSlides;
-                setPresentationLesson(null);
-                if (lesson) await launchLiveSession(lesson, slides);
-              }}
-              className="gap-2"
-            >
-              <Monitor className="w-4 h-4" />
-              Spustit prezentaci
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={!!existingSession} onOpenChange={(open) => { if (!open) { setExistingSession(null); setPendingLaunchData(null); } }}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Existující prezentace</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">Máte rozdělanou prezentaci pro tuto lekci. Chcete pokračovat nebo začít novou?</p>
-          <DialogFooter className="gap-2 mt-4 flex-col sm:flex-row">
-            <Button variant="outline" className="w-full" onClick={() => {
-              navigate(`/live/ucitel/${existingSession!.id}`);
-              setExistingSession(null);
-              setPendingLaunchData(null);
-            }}>
-              Pokračovat v rozběhlé
-            </Button>
-            <Button className="w-full" onClick={async () => {
-              const data = pendingLaunchData;
-              setExistingSession(null);
-              setPendingLaunchData(null);
-              if (!data) return;
-              const { data: { session } } = await supabase.auth.getSession();
-              if (!session?.user) return;
-              const gameCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-              const { data: newSession, error } = await supabase.from("game_sessions").insert({
-                teacher_id: session.user.id,
-                title: data.lesson.title,
-                game_code: gameCode,
-                activity_data: data.slides as any,
-                settings: { timePerQuestion: 30, shuffleQuestions: false, shuffleAnswers: false, showLeaderboardAfterEach: false },
-                status: "lobby",
-                current_question_index: -1,
-              }).select().single();
-              if (!error && newSession?.id) {
-                navigate(`/live/ucitel/${newSession.id}`);
-              }
-            }}>
-              Spustit novou
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <PresentationEditorDialog
+        presentationLesson={presentationLesson}
+        pendingSlides={pendingSlides}
+        setPendingSlides={setPendingSlides}
+        editingSlideIndex={editingSlideIndex}
+        setEditingSlideIndex={setEditingSlideIndex}
+        onClose={() => { setPresentationLesson(null); setPendingSlides([]); }}
+        onLaunch={async (slides) => {
+          const lesson = presentationLesson!;
+          setPresentationLesson(null);
+          setPendingSlides([]);
+          await launchLiveSession(lesson, slides);
+        }}
+        existingSession={existingSession}
+        onContinueExisting={() => {
+          const id = existingSession!.id;
+          setExistingSession(null);
+          setPendingLaunchData(null);
+          navigate(`/live/ucitel/${id}`);
+        }}
+        onLaunchNew={launchNew}
+        onCloseExisting={() => { setExistingSession(null); setPendingLaunchData(null); }}
+      />
     </div>
   );
 };
