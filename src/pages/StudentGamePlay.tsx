@@ -174,6 +174,23 @@ const StudentGamePlay = () => {
                     props: currentSlideData.activitySpec,
                     visible: true,
                   } as any}
+                  blockIndex={session?.current_question_index ?? 0}
+                  onActivityComplete={async (_activityIndex: number, _activityType: string, score: number, maxScore: number) => {
+                    if (!sessionId || !playerId) return;
+                    try {
+                      await supabase.from("game_responses").insert({
+                        session_id: sessionId,
+                        player_id: playerId,
+                        question_index: session?.current_question_index ?? 0,
+                        answer: {},
+                        is_correct: maxScore > 0 && score >= maxScore,
+                        score: score,
+                        response_time_ms: 0,
+                      });
+                    } catch (e) {
+                      console.error("Failed to save activity result:", e);
+                    }
+                  }}
                 />
               </div>
             )}
