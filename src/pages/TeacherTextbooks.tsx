@@ -828,6 +828,48 @@ const TeacherTextbooks = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+        <Dialog open={!!existingSession} onOpenChange={(open) => { if (!open) { setExistingSession(null); setPendingLaunchData(null); } }}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Existující prezentace</DialogTitle>
+            </DialogHeader>
+            <p className="text-sm text-muted-foreground">Máte rozdělanou prezentaci pro tuto lekci. Chcete pokračovat nebo začít novou?</p>
+            <DialogFooter className="gap-2 mt-4 flex-col sm:flex-row">
+              <Button variant="outline" className="w-full" onClick={() => {
+                const id = existingSession!.id;
+                setExistingSession(null);
+                setPendingLaunchData(null);
+                navigate(`/live/ucitel/${id}`);
+              }}>
+                Pokračovat v rozběhlé
+              </Button>
+              <Button className="w-full" onClick={async () => {
+                const data = pendingLaunchData;
+                setExistingSession(null);
+                setPendingLaunchData(null);
+                if (!data) return;
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session?.user) return;
+                const gameCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+                const { data: newSession, error } = await supabase.from("game_sessions").insert({
+                  teacher_id: session.user.id,
+                  title: data.lesson.title,
+                  game_code: gameCode,
+                  activity_data: data.slides as any,
+                  settings: { timePerQuestion: 30, shuffleQuestions: false, shuffleAnswers: false, showLeaderboardAfterEach: false },
+                  status: "lobby",
+                  current_question_index: -1,
+                }).select().single();
+                if (!error && newSession?.id) {
+                  navigate(`/live/ucitel/${newSession.id}`);
+                }
+              }}>
+                Spustit novou
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
