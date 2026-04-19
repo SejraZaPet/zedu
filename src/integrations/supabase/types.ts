@@ -657,6 +657,27 @@ export type Database = {
         }
         Relationships: []
       }
+      parent_student_links: {
+        Row: {
+          created_at: string | null
+          id: string
+          parent_id: string
+          student_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          parent_id: string
+          student_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          parent_id?: string
+          student_id?: string
+        }
+        Relationships: []
+      }
       podcast_episodes: {
         Row: {
           audio_url: string | null
@@ -1235,7 +1256,7 @@ export type Database = {
     }
     Enums: {
       account_status: "pending" | "approved" | "blocked"
-      app_role: "admin" | "user" | "teacher"
+      app_role: "admin" | "user" | "teacher" | "rodic"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1364,7 +1385,7 @@ export const Constants = {
   public: {
     Enums: {
       account_status: ["pending", "approved", "blocked"],
-      app_role: ["admin", "user", "teacher"],
+      app_role: ["admin", "user", "teacher", "rodic"],
     },
   },
 } as const
