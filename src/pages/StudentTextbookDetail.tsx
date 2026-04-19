@@ -158,6 +158,7 @@ const StudentTextbookDetail = () => {
           blocks: gl.blocks || [],
           sort_order: gl.sort_order || 0,
           status: gl.status,
+          require_activities: gl.require_activities ?? false,
         });
       }
 
