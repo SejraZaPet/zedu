@@ -71,7 +71,14 @@ const StudentTextbookDetail = () => {
         .eq("textbook_id", textbookId)
         .eq("status", "published")
         .order("sort_order", { ascending: true });
-      const teacherLessons = (allLessons || []) as LessonData[];
+      const teacherLessons = ((allLessons || []) as any[]).map((l) => ({
+        id: l.id,
+        title: l.title,
+        blocks: l.blocks || [],
+        sort_order: l.sort_order || 0,
+        status: l.status,
+        require_activities: l.require_activities ?? false,
+      })) as LessonData[];
       const lessonMap = new Map(teacherLessons.map(l => [l.id, l]));
 
       // Placements pro učitelské lekce
