@@ -123,7 +123,6 @@ export const GameLobby = ({ session, players, onStart, isTeacher }: Props) => {
         {isTeacher && onStart && (
           <Button
             onClick={onStart}
-            disabled={players.length === 0}
             size="lg"
             variant="hero"
             className="text-lg px-10 py-6 gap-3"
