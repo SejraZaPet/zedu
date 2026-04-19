@@ -69,7 +69,7 @@ const TeacherGames = () => {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <SiteHeader />
-      <main className="flex-1 pt-[90px] pb-16 px-4 md:px-8">
+      <main className="flex-1 pb-16 px-4 md:px-8" style={{ paddingTop: "calc(70px + 1.5rem)" }}>
         <div className="max-w-4xl mx-auto space-y-6">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl md:text-3xl font-heading font-bold text-foreground flex items-center gap-3">
