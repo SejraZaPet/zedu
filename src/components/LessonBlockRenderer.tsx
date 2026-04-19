@@ -349,20 +349,25 @@ export const LessonBlock = ({ block, blockIndex, onActivityComplete, isTeacher }
 
       if (p.required === true) {
         return (
-          <div className="relative rounded-xl overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-brand opacity-10 pointer-events-none rounded-xl" />
-            <div className="relative border-2 border-primary/30 rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-5 h-5 rounded-full bg-gradient-brand flex items-center justify-center flex-shrink-0">
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                  </svg>
-                </div>
-                <span className="text-xs font-medium text-primary">Povinná aktivita</span>
+          <div
+            className="p-4"
+            style={{
+              background:
+                "linear-gradient(white, white) padding-box, linear-gradient(135deg, hsl(184 52% 60%), hsl(222 51% 70%), hsl(274 62% 60%)) border-box",
+              border: "2px solid transparent",
+              borderRadius: "12px",
+            }}
+          >
+            <div className="flex items-center gap-2 mb-3 pb-3 border-b border-primary/20">
+              <div className="w-6 h-6 rounded-full bg-gradient-brand flex items-center justify-center flex-shrink-0">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
               </div>
-              {activityInner}
+              <span className="text-sm font-semibold text-primary">Povinná aktivita</span>
             </div>
+            {activityInner}
           </div>
         );
       }
