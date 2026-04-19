@@ -1,3 +1,20 @@
+function stripHtml(html: string): string {
+  if (!html) return "";
+  return html
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n")
+    .replace(/<\/li>/gi, "\n")
+    .replace(/<li[^>]*>/gi, "• ")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
   console.log("[blocksToSlides] input:", { lessonTitle, blockCount: blocks?.length, blocks });
 
@@ -19,7 +36,7 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
     console.log("[blocksToSlides] block:", { type, props });
 
     if (type === "heading") {
-      const text = props.text || props.content || props.value || "";
+      const text = props.text || stripHtml(props.html || "") || props.content || props.value || "";
       if (!text) continue;
       slides.push({
         slideId: `slide-${slideIndex++}`,
@@ -29,7 +46,7 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
         teacherNotes: "",
       });
     } else if (type === "paragraph") {
-      const text = props.text || props.content || props.value || "";
+      const text = props.text || stripHtml(props.html || "") || props.content || props.value || "";
       if (!text) continue;
       slides.push({
         slideId: `slide-${slideIndex++}`,
@@ -39,9 +56,12 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
         teacherNotes: "",
       });
     } else if (type === "bullet_list" || type === "bulletList") {
-      const items = props.items || props.bullets || [];
+      const rawItems = props.items || props.bullets || [];
+      const itemsText = Array.isArray(rawItems) && rawItems.filter((i: any) => (typeof i === "string" ? i.trim() : i)).length > 0
+        ? rawItems.map((i: any) => `• ${typeof i === "string" ? i : i.text || i}`).join("\n")
+        : stripHtml(props.html || "");
       const title = props.title || props.heading || "";
-      const body = Array.isArray(items) ? items.map((i: any) => `• ${typeof i === "string" ? i : i.text || i}`).join("\n") : "";
+      const body = itemsText;
       if (!title && !body) continue;
       slides.push({
         slideId: `slide-${slideIndex++}`,
@@ -72,7 +92,7 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
         teacherNotes: "",
       });
     } else if (type === "callout" || type === "quote") {
-      const text = props.text || props.content || props.value || "";
+      const text = props.text || stripHtml(props.html || "") || props.content || props.value || "";
       if (!text) continue;
       slides.push({
         slideId: `slide-${slideIndex++}`,
