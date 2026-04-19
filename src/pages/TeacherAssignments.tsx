@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,15 +37,18 @@ interface Assignment {
 
 const TeacherAssignments = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const prefillLessonId = searchParams.get("lessonId");
+  const prefillLessonTitle = searchParams.get("lessonTitle") || "";
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [classes, setClasses] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(!!prefillLessonId);
 
   // Form state
-  const [title, setTitle] = useState("");
+  const [title, setTitle] = useState(prefillLessonTitle ? `Pracovní list – ${prefillLessonTitle}` : "");
   const [description, setDescription] = useState("");
   const [deadline, setDeadline] = useState<Date | undefined>();
   const [maxAttempts, setMaxAttempts] = useState(1);
