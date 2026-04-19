@@ -122,7 +122,7 @@ const StudentGamePlay = () => {
     return <GameLeaderboardFinal session={session} players={players} responses={responses} highlightPlayerId={playerId} />;
   }
 
-  const currentQ = session.activity_data[session.current_question_index];
+  const currentQ = session?.activity_data?.[session?.current_question_index ?? -1];
   const hasAnswered = answered.has(session.current_question_index);
   const timeLimit = (session.settings?.timePerQuestion || 20) * 1000;
   const questionStarted = session.question_started_at ? serverTsToClientMs(session.question_started_at) : Date.now();
@@ -160,7 +160,7 @@ const StudentGamePlay = () => {
         <StudentGameQuestion
           question={currentQ}
           questionIndex={session.current_question_index}
-          totalQuestions={session.activity_data.length}
+          totalQuestions={session?.activity_data?.length ?? 0}
           hasAnswered={hasAnswered}
           lastResult={lastResult}
           onAnswer={handleAnswer}
