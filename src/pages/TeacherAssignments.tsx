@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import AssignmentResultsDashboard from "@/components/admin/AssignmentResultsDashboard";
+import LessonWorksheetGenerator, { type GeneratedQuestion } from "@/components/admin/LessonWorksheetGenerator";
 
 interface Assignment {
   id: string;
@@ -55,10 +56,30 @@ const TeacherAssignments = () => {
   const [randomizeChoices, setRandomizeChoices] = useState(false);
   const [randomizeOrder, setRandomizeOrder] = useState(false);
   const [selectedClassId, setSelectedClassId] = useState<string>("");
+  const [generatedQuestions, setGeneratedQuestions] = useState<GeneratedQuestion[]>([]);
+  const [lessonBlocks, setLessonBlocks] = useState<any[]>([]);
+  const [lessonLoaded, setLessonLoaded] = useState(false);
 
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    if (!prefillLessonId) return;
+    let cancelled = false;
+    (async () => {
+      // Try teacher_textbook_lessons first, then textbook_lessons
+      const [teacherRes, globalRes] = await Promise.all([
+        supabase.from("teacher_textbook_lessons").select("blocks").eq("id", prefillLessonId).maybeSingle(),
+        supabase.from("textbook_lessons").select("blocks").eq("id", prefillLessonId).maybeSingle(),
+      ]);
+      if (cancelled) return;
+      const blocks = (teacherRes.data?.blocks ?? globalRes.data?.blocks ?? []) as any[];
+      setLessonBlocks(Array.isArray(blocks) ? blocks : []);
+      setLessonLoaded(true);
+    })();
+    return () => { cancelled = true; };
+  }, [prefillLessonId]);
 
   const loadData = async () => {
     setLoading(true);
@@ -93,7 +114,7 @@ const TeacherAssignments = () => {
         randomize_order: randomizeOrder,
         class_id: selectedClassId || null,
         status: "draft",
-        activity_data: [],
+        activity_data: generatedQuestions as any,
       } as any);
 
       if (error) throw error;
@@ -116,6 +137,7 @@ const TeacherAssignments = () => {
     setRandomizeChoices(false);
     setRandomizeOrder(false);
     setSelectedClassId("");
+    setGeneratedQuestions([]);
   };
 
   const handlePublish = async (id: string) => {
@@ -246,6 +268,21 @@ const TeacherAssignments = () => {
                   <Switch checked={randomizeChoices} onCheckedChange={setRandomizeChoices} />
                 </div>
               </div>
+
+              {prefillLessonId && lessonLoaded && (
+                <LessonWorksheetGenerator
+                  lessonId={prefillLessonId}
+                  lessonTitle={prefillLessonTitle}
+                  blocks={lessonBlocks}
+                  onGenerated={(qs) => setGeneratedQuestions(qs)}
+                />
+              )}
+
+              {generatedQuestions.length > 0 && (
+                <div className="text-xs text-muted-foreground">
+                  ✓ {generatedQuestions.length} otázek bude uloženo s úlohou.
+                </div>
+              )}
 
               <div className="flex gap-2">
                 <Button onClick={handleCreate} disabled={creating}>
