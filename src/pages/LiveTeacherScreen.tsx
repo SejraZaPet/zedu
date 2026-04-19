@@ -239,6 +239,25 @@ const LiveTeacherScreen = () => {
                       <p className="text-xs text-muted-foreground">odpovědělo</p>
                     </div>
                   </div>
+                  {responses.filter(r => r.question_index === currentIndex).length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-border space-y-1">
+                      <p className="text-xs text-muted-foreground mb-2">Výsledky žáků</p>
+                      {responses
+                        .filter(r => r.question_index === currentIndex)
+                        .map(r => {
+                          const player = players.find(p => p.id === r.player_id);
+                          return (
+                            <div key={r.id} className="flex items-center justify-between text-sm">
+                              <span className="text-foreground">{player?.nickname || "Žák"}</span>
+                              <span className={r.is_correct ? "text-green-600 font-medium" : "text-muted-foreground"}>
+                                {r.score ?? 0} b. {r.is_correct ? "✓" : ""}
+                              </span>
+                            </div>
+                          );
+                        })
+                      }
+                    </div>
+                  )}
                 </div>
               )}
             </div>
