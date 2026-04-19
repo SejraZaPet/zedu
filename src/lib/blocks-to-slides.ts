@@ -94,7 +94,8 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
         teacherNotes: "",
       });
     } else if (type === "callout" || type === "quote") {
-      const text = props.text || stripHtml(props.html || "") || props.content || props.value || "";
+      const raw = props.text || props.html || props.content || props.value || "";
+      const text = stripHtml(raw);
       if (!text) continue;
       slides.push({
         slideId: `slide-${slideIndex++}`,
