@@ -104,7 +104,7 @@ const TeacherTextbooks = () => {
   const [editingTopic, setEditingTopic] = useState<{ id: string; title: string } | null>(null);
 
   // Presentation editor
-  const [editingLesson, setEditingLesson] = useState<LessonItem | null>(null);
+  const [presentationLesson, setPresentationLesson] = useState<LessonItem | null>(null);
   const [pendingSlides, setPendingSlides] = useState<any[]>([]);
   const [editingSlideIndex, setEditingSlideIndex] = useState(0);
 
