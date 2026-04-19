@@ -18,13 +18,13 @@ import type { Block } from "@/lib/textbook-config";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
+
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from "@/components/ui/sheet";
 import {
   BookOpen, Users, ArrowLeft, Copy, Eye, FolderOpen, ChevronRight,
-  Pencil, Trash2, Plus, Save, Loader2, X, FileText, Play, Monitor,
+  Pencil, Trash2, Plus, Save, Loader2, X, FileText, Play,
 } from "lucide-react";
 import { blocksToSlides } from "@/lib/blocks-to-slides";
 import { usePresentationLauncher } from "@/hooks/usePresentationLauncher";
