@@ -103,6 +103,7 @@ const LessonEditorSheet = ({ lessonId, open, onOpenChange, onSaved }: Props) => 
       status: lesson.status,
       blocks: lesson.blocks as any,
       sort_order: lesson.sort_order,
+      require_activities: lesson.require_activities,
     };
 
     await supabase.from("textbook_lessons").update(payload).eq("id", lesson.id);
