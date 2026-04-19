@@ -118,23 +118,23 @@ const TeacherTextbooks = () => {
           return;
         }
       }
-      console.log("DEBUG lesson:", lesson.title);
-      console.log("DEBUG lesson.blocks:", JSON.stringify(lesson.blocks?.slice(0, 2)));
       const rawBlocks = lesson.blocks || [];
-      console.log("BLOCKS COUNT:", rawBlocks.length);
-      console.log("BLOCK TYPES:", rawBlocks.map((b: any) => b?.type));
-      console.log("BLOCK[0] FULL:", JSON.stringify(rawBlocks[0]));
-      console.log("BLOCK[1] FULL:", JSON.stringify(rawBlocks[1]));
       const slides = blocksToSlides(rawBlocks, lesson.title);
-      console.log("SLIDES COUNT:", slides.length);
-      console.log("SLIDE[1]:", JSON.stringify(slides[1]));
-      const { data, error } = await supabase.functions.invoke("create-live-session", {
-        body: { lessonPlanId: null, title: lesson.title, slides },
-      });
+      if (!session?.user) throw new Error("Není přihlášen");
+      const gameCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const { data, error } = await supabase.from("game_sessions").insert({
+        teacher_id: session.user.id,
+        title: lesson.title,
+        game_code: gameCode,
+        activity_data: slides as any,
+        settings: { timePerQuestion: 30, shuffleQuestions: false, shuffleAnswers: false, showLeaderboardAfterEach: false },
+        status: "lobby",
+        current_question_index: -1,
+      }).select().single();
       if (error) throw error;
-      if (!data?.sessionId) throw new Error("Chybí ID session");
-      toast({ title: "Prezentace spuštěna", description: `Kód: ${data.gameCode}` });
-      navigate(`/live/ucitel/${data.sessionId}`);
+      if (!data?.id) throw new Error("Chybí ID session");
+      toast({ title: "Prezentace spuštěna", description: `Kód: ${gameCode}` });
+      navigate(`/live/ucitel/${data.id}`);
     } catch (e: any) {
       toast({ title: "Chyba", description: e?.message || "Nepodařilo se spustit prezentaci", variant: "destructive" });
     }
