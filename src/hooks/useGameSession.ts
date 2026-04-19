@@ -45,7 +45,7 @@ export function useGameSession(sessionId: string | undefined, refetchTrigger?: n
     if (sessionRes.data) {
       setSession({
         ...sessionRes.data,
-        activity_data: sessionRes.data.activity_data as any,
+        activity_data: (sessionRes.data.activity_data as any) ?? [],
         settings: sessionRes.data.settings as any,
       } as GameSession);
     }
@@ -70,7 +70,7 @@ export function useGameSession(sessionId: string | undefined, refetchTrigger?: n
         if (payload.new) {
           setSession({
             ...payload.new,
-            activity_data: (payload.new as any).activity_data as any,
+            activity_data: ((payload.new as any).activity_data as any) ?? [],
             settings: (payload.new as any).settings as any,
           } as GameSession);
         }
