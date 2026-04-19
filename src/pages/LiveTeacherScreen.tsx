@@ -88,11 +88,16 @@ const LiveTeacherScreen = () => {
     <div className="min-h-screen bg-background p-6 max-w-4xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-bold">{session.title}</h1>
-          <p className="text-sm text-muted-foreground">
-            Kód: <span className="font-mono font-bold">{gameCode}</span> · <Users className="w-3.5 h-3.5 inline" /> {players.length}
-          </p>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="ghost" onClick={() => navigate("/ucitel/ucebnice")} className="gap-1.5">
+            <ArrowLeft className="w-4 h-4" /> Učebnice
+          </Button>
+          <div>
+            <h1 className="text-lg font-bold">{session.title}</h1>
+            <p className="text-sm text-muted-foreground">
+              Kód: <span className="font-mono font-bold">{gameCode}</span> · <Users className="w-3.5 h-3.5 inline" /> {players.length}
+            </p>
+          </div>
         </div>
         <div className="flex gap-2">
           <Badge variant="outline">Slide {currentIndex + 1} / {slides.length}</Badge>
