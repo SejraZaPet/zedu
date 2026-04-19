@@ -239,10 +239,10 @@ const TeacherAssignments = () => {
                 {/* Class */}
                 <div>
                   <Label>Třída (volitelné)</Label>
-                  <Select value={selectedClassId} onValueChange={setSelectedClassId}>
+                  <Select value={selectedClassId || "__all__"} onValueChange={(v) => setSelectedClassId(v === "__all__" ? "" : v)}>
                     <SelectTrigger className="mt-1"><SelectValue placeholder="Všichni žáci" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Všichni žáci</SelectItem>
+                      <SelectItem value="__all__">Všichni žáci</SelectItem>
                       {classes.map((c) => (
                         <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                       ))}
