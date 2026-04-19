@@ -535,11 +535,8 @@ const TeacherTextbooks = () => {
                                       size="sm"
                                       variant="outline"
                                       className="h-7 gap-1.5"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        console.log("[Prezentace] clicked", lesson.title, "blocks:", lesson.blocks?.length);
+                                      onClick={() => {
                                         const slides = blocksToSlides(lesson.blocks || [], lesson.title);
-                                        console.log("[Prezentace] slides generated:", slides.length);
                                         setPendingSlides(slides);
                                         setPresentationLesson(lesson);
                                         setEditingSlideIndex(0);
@@ -818,90 +815,88 @@ const TeacherTextbooks = () => {
       </main>
       <SiteFooter />
 
-      <Dialog open={!!presentationLesson && pendingSlides.length > 0} onOpenChange={(open) => { if (!open) { setPresentationLesson(null); setPendingSlides([]); } }}>
-        {presentationLesson && pendingSlides.length > 0 && (
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Upravit prezentaci – {presentationLesson.title}</DialogTitle>
-            </DialogHeader>
+      <Dialog open={!!presentationLesson} onOpenChange={(open) => { if (!open) { setPresentationLesson(null); setPendingSlides([]); } }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Upravit prezentaci{presentationLesson ? ` – ${presentationLesson.title}` : ""}</DialogTitle>
+          </DialogHeader>
 
-            <div className="flex gap-1 flex-wrap mb-4">
-              {pendingSlides.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setEditingSlideIndex(i)}
-                  className={`w-8 h-8 rounded text-xs font-medium ${i === editingSlideIndex ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}
-                >
-                  {i + 1}
-                </button>
-              ))}
-            </div>
-
-            {pendingSlides[editingSlideIndex] && (
-              <div className="space-y-3">
-                <div>
-                  <Label className="text-xs">Nadpis (projektor)</Label>
-                  <Input
-                    value={pendingSlides[editingSlideIndex].projector?.headline || ""}
-                    onChange={(e) => {
-                      const updated = [...pendingSlides];
-                      updated[editingSlideIndex] = {
-                        ...updated[editingSlideIndex],
-                        projector: { ...updated[editingSlideIndex].projector, headline: e.target.value },
-                      };
-                      setPendingSlides(updated);
-                    }}
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs">Text (projektor)</Label>
-                  <Textarea
-                    rows={4}
-                    value={pendingSlides[editingSlideIndex].projector?.body || ""}
-                    onChange={(e) => {
-                      const updated = [...pendingSlides];
-                      updated[editingSlideIndex] = {
-                        ...updated[editingSlideIndex],
-                        projector: { ...updated[editingSlideIndex].projector, body: e.target.value },
-                      };
-                      setPendingSlides(updated);
-                    }}
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs">Instrukce pro žáka</Label>
-                  <Input
-                    value={pendingSlides[editingSlideIndex].device?.instructions || ""}
-                    onChange={(e) => {
-                      const updated = [...pendingSlides];
-                      updated[editingSlideIndex] = {
-                        ...updated[editingSlideIndex],
-                        device: { ...updated[editingSlideIndex].device, instructions: e.target.value },
-                      };
-                      setPendingSlides(updated);
-                    }}
-                  />
-                </div>
-              </div>
-            )}
-
-            <DialogFooter className="gap-2 mt-4">
-              <Button variant="outline" onClick={() => setPresentationLesson(null)}>Zrušit</Button>
-              <Button
-                onClick={async () => {
-                  const lesson = presentationLesson;
-                  const slides = pendingSlides;
-                  setPresentationLesson(null);
-                  await launchLiveSession(lesson, slides);
-                }}
-                className="gap-2"
+          <div className="flex gap-1 flex-wrap mb-4">
+            {pendingSlides.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setEditingSlideIndex(i)}
+                className={`w-8 h-8 rounded text-xs font-medium ${i === editingSlideIndex ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}
               >
-                <Monitor className="w-4 h-4" />
-                Spustit prezentaci
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        )}
+                {i + 1}
+              </button>
+            ))}
+          </div>
+
+          {pendingSlides[editingSlideIndex] && (
+            <div className="space-y-3">
+              <div>
+                <Label className="text-xs">Nadpis (projektor)</Label>
+                <Input
+                  value={pendingSlides[editingSlideIndex].projector?.headline || ""}
+                  onChange={(e) => {
+                    const updated = [...pendingSlides];
+                    updated[editingSlideIndex] = {
+                      ...updated[editingSlideIndex],
+                      projector: { ...updated[editingSlideIndex].projector, headline: e.target.value },
+                    };
+                    setPendingSlides(updated);
+                  }}
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Text (projektor)</Label>
+                <Textarea
+                  rows={4}
+                  value={pendingSlides[editingSlideIndex].projector?.body || ""}
+                  onChange={(e) => {
+                    const updated = [...pendingSlides];
+                    updated[editingSlideIndex] = {
+                      ...updated[editingSlideIndex],
+                      projector: { ...updated[editingSlideIndex].projector, body: e.target.value },
+                    };
+                    setPendingSlides(updated);
+                  }}
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Instrukce pro žáka</Label>
+                <Input
+                  value={pendingSlides[editingSlideIndex].device?.instructions || ""}
+                  onChange={(e) => {
+                    const updated = [...pendingSlides];
+                    updated[editingSlideIndex] = {
+                      ...updated[editingSlideIndex],
+                      device: { ...updated[editingSlideIndex].device, instructions: e.target.value },
+                    };
+                    setPendingSlides(updated);
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 mt-4">
+            <Button variant="outline" onClick={() => setPresentationLesson(null)}>Zrušit</Button>
+            <Button
+              onClick={async () => {
+                const lesson = presentationLesson;
+                const slides = pendingSlides;
+                setPresentationLesson(null);
+                if (lesson) await launchLiveSession(lesson, slides);
+              }}
+              className="gap-2"
+            >
+              <Monitor className="w-4 h-4" />
+              Spustit prezentaci
+            </Button>
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
     </div>
   );
