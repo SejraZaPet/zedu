@@ -898,8 +898,8 @@ const TeacherTextbooks = () => {
               </Button>
             </DialogFooter>
           </DialogContent>
-        </Dialog>
-      )}
+        )}
+      </Dialog>
     </div>
   );
 };
