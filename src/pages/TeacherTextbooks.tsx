@@ -113,18 +113,20 @@ const TeacherTextbooks = () => {
   const launchLiveSession = async (lesson: LessonItem, prebuiltSlides?: any[]) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      console.log("[LIVE] launching for lesson:", lesson.title);
       if (session?.user) {
-        const { data: existing } = await supabase
+        const { data: existing, error: existingErr } = await supabase
           .from("game_sessions")
           .select("id, title, status")
           .eq("teacher_id", session.user.id)
           .eq("title", lesson.title)
           .in("status", ["lobby", "playing"])
           .maybeSingle();
+        console.log("[LIVE] existing query:", { existing, existingErr });
         if (existing) {
           const slides = prebuiltSlides || blocksToSlides(lesson.blocks || [], lesson.title);
           setPendingLaunchData({ lesson, slides });
-          // Defer to next tick so the editor Dialog can fully unmount before opening the conflict Dialog
+          console.log("[LIVE] opening conflict dialog for:", existing.id);
           setTimeout(() => setExistingSession(existing), 150);
           return;
         }
