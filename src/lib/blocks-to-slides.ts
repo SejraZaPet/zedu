@@ -56,9 +56,12 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
         teacherNotes: "",
       });
     } else if (type === "bullet_list" || type === "bulletList") {
-      const items = props.items || props.bullets || [];
+      const rawItems = props.items || props.bullets || [];
+      const itemsText = Array.isArray(rawItems) && rawItems.filter((i: any) => (typeof i === "string" ? i.trim() : i)).length > 0
+        ? rawItems.map((i: any) => `• ${typeof i === "string" ? i : i.text || i}`).join("\n")
+        : stripHtml(props.html || "");
       const title = props.title || props.heading || "";
-      const body = Array.isArray(items) ? items.map((i: any) => `• ${typeof i === "string" ? i : i.text || i}`).join("\n") : "";
+      const body = itemsText;
       if (!title && !body) continue;
       slides.push({
         slideId: `slide-${slideIndex++}`,
