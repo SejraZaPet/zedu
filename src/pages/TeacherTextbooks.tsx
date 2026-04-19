@@ -701,6 +701,32 @@ const TeacherTextbooks = () => {
                 </button>
               ))}
             </div>
+            <div className="flex gap-2 mb-4">
+              <Button size="sm" variant="outline" className="gap-1" onClick={() => {
+                const newSlide = {
+                  slideId: `slide-custom-${Date.now()}`,
+                  type: "explain",
+                  projector: { headline: "", body: "" },
+                  device: { instructions: "Sledujte výklad." },
+                  teacherNotes: "",
+                };
+                const updated = [...pendingSlides];
+                updated.splice(editingSlideIndex + 1, 0, newSlide);
+                setPendingSlides(updated);
+                setEditingSlideIndex(editingSlideIndex + 1);
+              }}>
+                <Plus className="w-3.5 h-3.5" /> Přidat slide
+              </Button>
+              {pendingSlides.length > 1 && (
+                <Button size="sm" variant="outline" className="gap-1 text-destructive" onClick={() => {
+                  const updated = pendingSlides.filter((_, i) => i !== editingSlideIndex);
+                  setPendingSlides(updated);
+                  setEditingSlideIndex(Math.min(editingSlideIndex, updated.length - 1));
+                }}>
+                  <Trash2 className="w-3.5 h-3.5" /> Smazat slide
+                </Button>
+              )}
+            </div>
             {pendingSlides[editingSlideIndex] && (
               <div className="space-y-3">
                 <div>
@@ -726,6 +752,31 @@ const TeacherTextbooks = () => {
                     }}
                   />
                 </div>
+                {(pendingSlides[editingSlideIndex] as any)?.tableData && (
+                  <div>
+                    <Label className="text-xs">Tabulka (náhled)</Label>
+                    <div className="overflow-x-auto mt-1 border border-border rounded-lg">
+                      <table className="w-full text-xs border-collapse">
+                        <thead>
+                          <tr>
+                            {(pendingSlides[editingSlideIndex] as any).tableData.headers.map((h: string, i: number) => (
+                              <th key={i} className="border border-border bg-muted px-2 py-1 text-left font-semibold">{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(pendingSlides[editingSlideIndex] as any).tableData.rows.map((row: string[], ri: number) => (
+                            <tr key={ri}>
+                              {row.map((cell: string, ci: number) => (
+                                <td key={ci} className="border border-border px-2 py-1">{cell}</td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
                 <div>
                   <Label className="text-xs">Instrukce pro žáka</Label>
                   <Input

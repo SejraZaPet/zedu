@@ -168,7 +168,9 @@ const LiveTeacherScreen = () => {
               <Monitor className="w-4 h-4" /> PROJEKTOR
             </div>
             <h2 className="text-2xl font-bold">{currentSlide.projector.headline}</h2>
-            <p className="text-base text-muted-foreground mt-2 whitespace-pre-wrap">{currentSlide.projector.body}</p>
+            {!(currentSlide as any).tableData && currentSlide.projector.body && (
+              <p className="text-base text-muted-foreground mt-2 whitespace-pre-wrap">{currentSlide.projector.body}</p>
+            )}
             {(currentSlide as any).tableData && (
               <div className="overflow-x-auto mt-3">
                 <table className="w-full text-sm border-collapse">
