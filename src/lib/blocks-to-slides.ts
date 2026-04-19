@@ -36,7 +36,7 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
     console.log("[blocksToSlides] block:", { type, props });
 
     if (type === "heading") {
-      const text = props.text || props.content || props.value || "";
+      const text = props.text || stripHtml(props.html || "") || props.content || props.value || "";
       if (!text) continue;
       slides.push({
         slideId: `slide-${slideIndex++}`,
@@ -46,7 +46,7 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
         teacherNotes: "",
       });
     } else if (type === "paragraph") {
-      const text = props.text || props.content || props.value || "";
+      const text = props.text || stripHtml(props.html || "") || props.content || props.value || "";
       if (!text) continue;
       slides.push({
         slideId: `slide-${slideIndex++}`,
