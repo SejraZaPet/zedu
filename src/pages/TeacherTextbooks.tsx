@@ -103,6 +103,11 @@ const TeacherTextbooks = () => {
   const [newTopicGrade, setNewTopicGrade] = useState<number>(1);
   const [editingTopic, setEditingTopic] = useState<{ id: string; title: string } | null>(null);
 
+  // Presentation editor
+  const [editingLesson, setEditingLesson] = useState<LessonItem | null>(null);
+  const [pendingSlides, setPendingSlides] = useState<any[]>([]);
+  const [editingSlideIndex, setEditingSlideIndex] = useState(0);
+
   const launchLiveSession = async (lesson: LessonItem) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
