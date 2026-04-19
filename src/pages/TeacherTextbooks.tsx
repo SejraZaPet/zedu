@@ -12,6 +12,7 @@ import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import BlockEditor from "@/components/admin/BlockEditor";
 import LessonPreviewDialog from "@/components/admin/LessonPreviewDialog";
+import PresentationEditorDialog from "@/components/admin/PresentationEditorDialog";
 import LessonPlacementEditor, { savePlacements, type Placement } from "@/components/admin/LessonPlacementEditor";
 import type { Block } from "@/lib/textbook-config";
 import {
@@ -643,240 +644,29 @@ const TeacherTextbooks = () => {
           </AlertDialogContent>
         </AlertDialog>
 
-        {/* === Presentation Editor Dialog === */}
-        <Dialog open={!!presentationLesson && pendingSlides.length > 0} onOpenChange={(open) => { if (!open) { setPresentationLesson(null); setPendingSlides([]); } }}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Upravit prezentaci – {presentationLesson?.title}</DialogTitle>
-            </DialogHeader>
-            <div className="flex gap-1 flex-wrap mb-4">
-              {pendingSlides.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setEditingSlideIndex(i)}
-                  className={`w-8 h-8 rounded text-xs font-medium ${i === editingSlideIndex ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}
-                >
-                  {i + 1}
-                </button>
-              ))}
-            </div>
-            <div className="flex gap-2 mb-4">
-              <Button size="sm" variant="outline" className="gap-1" onClick={() => {
-                const newSlide = {
-                  slideId: `slide-custom-${Date.now()}`,
-                  type: "explain",
-                  projector: { headline: "", body: "" },
-                  device: { instructions: "Sledujte výklad." },
-                  teacherNotes: "",
-                };
-                const updated = [...pendingSlides];
-                updated.splice(editingSlideIndex + 1, 0, newSlide);
-                setPendingSlides(updated);
-                setEditingSlideIndex(editingSlideIndex + 1);
-              }}>
-                <Plus className="w-3.5 h-3.5" /> Přidat slide
-              </Button>
-              {pendingSlides.length > 1 && (
-                <Button size="sm" variant="outline" className="gap-1 text-destructive" onClick={() => {
-                  const updated = pendingSlides.filter((_, i) => i !== editingSlideIndex);
-                  setPendingSlides(updated);
-                  setEditingSlideIndex(Math.min(editingSlideIndex, updated.length - 1));
-                }}>
-                  <Trash2 className="w-3.5 h-3.5" /> Smazat slide
-                </Button>
-              )}
-            </div>
-            {pendingSlides[editingSlideIndex] && (
-              <div className="space-y-3">
-                <div>
-                  <Label className="text-xs">Nadpis (projektor)</Label>
-                  <Input
-                    value={pendingSlides[editingSlideIndex].projector?.headline || ""}
-                    onChange={(e) => {
-                      const updated = [...pendingSlides];
-                      updated[editingSlideIndex] = { ...updated[editingSlideIndex], projector: { ...updated[editingSlideIndex].projector, headline: e.target.value } };
-                      setPendingSlides(updated);
-                    }}
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs">Text (projektor)</Label>
-                  <Textarea
-                    rows={4}
-                    value={pendingSlides[editingSlideIndex].projector?.body || ""}
-                    onChange={(e) => {
-                      const updated = [...pendingSlides];
-                      updated[editingSlideIndex] = { ...updated[editingSlideIndex], projector: { ...updated[editingSlideIndex].projector, body: e.target.value } };
-                      setPendingSlides(updated);
-                    }}
-                  />
-                </div>
-                {(pendingSlides[editingSlideIndex] as any)?.tableData && (
-                  <div>
-                    <Label className="text-xs">Tabulka (náhled)</Label>
-                    <div className="overflow-x-auto mt-1 border border-border rounded-lg">
-                      <table className="w-full text-xs border-collapse">
-                        <thead>
-                          <tr>
-                            {(pendingSlides[editingSlideIndex] as any).tableData.headers.map((h: string, i: number) => (
-                              <th key={i} className="border border-border bg-muted px-2 py-1 text-left font-semibold">{h}</th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {(pendingSlides[editingSlideIndex] as any).tableData.rows.map((row: string[], ri: number) => (
-                            <tr key={ri}>
-                              {row.map((cell: string, ci: number) => (
-                                <td key={ci} className="border border-border px-2 py-1">{cell}</td>
-                              ))}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
-                <div>
-                  <Label className="text-xs">Instrukce pro žáka</Label>
-                  <Input
-                    value={pendingSlides[editingSlideIndex].device?.instructions || ""}
-                    onChange={(e) => {
-                      const updated = [...pendingSlides];
-                      updated[editingSlideIndex] = { ...updated[editingSlideIndex], device: { ...updated[editingSlideIndex].device, instructions: e.target.value } };
-                      setPendingSlides(updated);
-                    }}
-                  />
-                </div>
-              </div>
-            )}
-            <DialogFooter className="gap-2 mt-4">
-              <Button variant="outline" onClick={() => setPresentationLesson(null)}>Zrušit</Button>
-              <Button
-                onClick={async () => {
-                  const lesson = presentationLesson!;
-                  const slides = [...pendingSlides];
-                  setPresentationLesson(null);
-                  setPendingSlides([]);
-                  await launchLiveSession(lesson, slides);
-                }}
-                className="gap-2"
-              >
-                <Monitor className="w-4 h-4" />
-                Spustit prezentaci
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* === Create Topic Dialog === */}
-        <Dialog open={createTopicOpen} onOpenChange={setCreateTopicOpen}>
-          <DialogContent>
-            <DialogHeader><DialogTitle>Nové téma</DialogTitle></DialogHeader>
-            <div className="space-y-4 mt-2">
-              <div>
-                <Label>Název tématu</Label>
-                <Input value={newTopicTitle} onChange={(e) => setNewTopicTitle(e.target.value)} className="mt-1" placeholder="např. Hygiena v kuchyni" />
-              </div>
-              <div>
-                <Label>Ročník</Label>
-                <Select value={String(newTopicGrade)} onValueChange={(v) => setNewTopicGrade(Number(v))}>
-                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {matchedSubject?.grades.map(g => (
-                      <SelectItem key={g.grade_number} value={String(g.grade_number)}>{g.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button onClick={handleCreateTopic} disabled={saving || !newTopicTitle.trim()} className="w-full">
-                {saving ? "Vytvářím..." : "Vytvořit téma"}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* === Rename Topic Dialog === */}
-        <Dialog open={!!editingTopic} onOpenChange={(open) => { if (!open) setEditingTopic(null); }}>
-          <DialogContent>
-            <DialogHeader><DialogTitle>Přejmenovat téma</DialogTitle></DialogHeader>
-            <div className="space-y-4 mt-2">
-              <div>
-                <Label>Název tématu</Label>
-                <Input value={editingTopic?.title ?? ""} onChange={(e) => setEditingTopic(editingTopic ? { ...editingTopic, title: e.target.value } : null)} className="mt-1" />
-              </div>
-              <Button onClick={handleRenameTopic} disabled={!editingTopic?.title.trim()} className="w-full">Uložit</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* === Create Lesson Dialog === */}
-        <Dialog open={createLessonOpen} onOpenChange={setCreateLessonOpen}>
-          <DialogContent>
-            <DialogHeader><DialogTitle>Nová lekce</DialogTitle></DialogHeader>
-            <div className="space-y-4 mt-2">
-              <div>
-                <Label>Název lekce</Label>
-                <Input value={newLessonTitle} onChange={(e) => setNewLessonTitle(e.target.value)} className="mt-1" placeholder="např. Úvod do hygieny" />
-              </div>
-              <div>
-                <Label>Téma</Label>
-                <Select value={newLessonTopicId} onValueChange={setNewLessonTopicId}>
-                  <SelectTrigger className="mt-1"><SelectValue placeholder="Vyberte téma" /></SelectTrigger>
-                  <SelectContent>
-                    {allTopics.map(t => (
-                      <SelectItem key={t.id} value={t.id}>{t.gradeLabel} → {t.title}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button onClick={handleCreateLesson} disabled={saving || !newLessonTitle.trim() || !newLessonTopicId} className="w-full">
-                {saving ? "Vytvářím..." : "Vytvořit lekci"}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        <Dialog open={!!existingSession} onOpenChange={(open) => { if (!open) { setExistingSession(null); setPendingLaunchData(null); } }}>
-          <DialogContent className="max-w-sm">
-            <DialogHeader>
-              <DialogTitle>Existující prezentace</DialogTitle>
-            </DialogHeader>
-            <p className="text-sm text-muted-foreground">Máte rozdělanou prezentaci pro tuto lekci. Chcete pokračovat nebo začít novou?</p>
-            <DialogFooter className="gap-2 mt-4 flex-col sm:flex-row">
-              <Button variant="outline" className="w-full" onClick={() => {
-                const id = existingSession!.id;
-                setExistingSession(null);
-                setPendingLaunchData(null);
-                navigate(`/live/ucitel/${id}`);
-              }}>
-                Pokračovat v rozběhlé
-              </Button>
-              <Button className="w-full" onClick={async () => {
-                const data = pendingLaunchData;
-                setExistingSession(null);
-                setPendingLaunchData(null);
-                if (!data) return;
-                const { data: { session } } = await supabase.auth.getSession();
-                if (!session?.user) return;
-                const gameCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-                const { data: newSession, error } = await supabase.from("game_sessions").insert({
-                  teacher_id: session.user.id,
-                  title: data.lesson.title,
-                  game_code: gameCode,
-                  activity_data: data.slides as any,
-                  settings: { timePerQuestion: 30, shuffleQuestions: false, shuffleAnswers: false, showLeaderboardAfterEach: false },
-                  status: "lobby",
-                  current_question_index: -1,
-                }).select().single();
-                if (!error && newSession?.id) {
-                  navigate(`/live/ucitel/${newSession.id}`);
-                }
-              }}>
-                Spustit novou
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <PresentationEditorDialog
+          presentationLesson={presentationLesson}
+          pendingSlides={pendingSlides}
+          setPendingSlides={setPendingSlides}
+          editingSlideIndex={editingSlideIndex}
+          setEditingSlideIndex={setEditingSlideIndex}
+          onClose={() => { setPresentationLesson(null); setPendingSlides([]); }}
+          onLaunch={async (slides) => {
+            const lesson = presentationLesson!;
+            setPresentationLesson(null);
+            setPendingSlides([]);
+            await launchLiveSession(lesson, slides);
+          }}
+          existingSession={existingSession}
+          onContinueExisting={() => {
+            const id = existingSession!.id;
+            setExistingSession(null);
+            setPendingLaunchData(null);
+            navigate(`/live/ucitel/${id}`);
+          }}
+          onLaunchNew={launchNew}
+          onCloseExisting={() => { setExistingSession(null); setPendingLaunchData(null); }}
+        />
       </div>
     );
   }
