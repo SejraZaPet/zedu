@@ -13,6 +13,7 @@ import SiteFooter from "@/components/SiteFooter";
 import BlockEditor from "@/components/admin/BlockEditor";
 import LessonPreviewDialog from "@/components/admin/LessonPreviewDialog";
 import PresentationEditorDialog from "@/components/admin/PresentationEditorDialog";
+import TextbookGradeGroups from "@/components/admin/TextbookGradeGroups";
 import LessonPlacementEditor, { savePlacements, type Placement } from "@/components/admin/LessonPlacementEditor";
 import type { Block } from "@/lib/textbook-config";
 import {
