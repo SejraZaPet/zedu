@@ -107,6 +107,8 @@ const TeacherTextbooks = () => {
   const [presentationLesson, setPresentationLesson] = useState<LessonItem | null>(null);
   const [pendingSlides, setPendingSlides] = useState<any[]>([]);
   const [editingSlideIndex, setEditingSlideIndex] = useState(0);
+  const [existingSession, setExistingSession] = useState<{ id: string; title: string } | null>(null);
+  const [pendingLaunchData, setPendingLaunchData] = useState<{ lesson: LessonItem; slides: any[] } | null>(null);
 
   const launchLiveSession = async (lesson: LessonItem, prebuiltSlides?: any[]) => {
     try {
@@ -114,13 +116,15 @@ const TeacherTextbooks = () => {
       if (session?.user) {
         const { data: existing } = await supabase
           .from("game_sessions")
-          .select("id, status")
+          .select("id, title, status")
           .eq("teacher_id", session.user.id)
           .eq("title", lesson.title)
           .in("status", ["lobby", "playing"])
           .maybeSingle();
         if (existing) {
-          navigate(`/live/ucitel/${existing.id}`);
+          const slides = prebuiltSlides || blocksToSlides(lesson.blocks || [], lesson.title);
+          setExistingSession(existing);
+          setPendingLaunchData({ lesson, slides });
           return;
         }
       }
@@ -968,6 +972,47 @@ const TeacherTextbooks = () => {
             >
               <Monitor className="w-4 h-4" />
               Spustit prezentaci
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!existingSession} onOpenChange={(open) => { if (!open) { setExistingSession(null); setPendingLaunchData(null); } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Existující prezentace</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">Máte rozdělanou prezentaci pro tuto lekci. Chcete pokračovat nebo začít novou?</p>
+          <DialogFooter className="gap-2 mt-4 flex-col sm:flex-row">
+            <Button variant="outline" className="w-full" onClick={() => {
+              navigate(`/live/ucitel/${existingSession!.id}`);
+              setExistingSession(null);
+              setPendingLaunchData(null);
+            }}>
+              Pokračovat v rozběhlé
+            </Button>
+            <Button className="w-full" onClick={async () => {
+              const data = pendingLaunchData;
+              setExistingSession(null);
+              setPendingLaunchData(null);
+              if (!data) return;
+              const { data: { session } } = await supabase.auth.getSession();
+              if (!session?.user) return;
+              const gameCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+              const { data: newSession, error } = await supabase.from("game_sessions").insert({
+                teacher_id: session.user.id,
+                title: data.lesson.title,
+                game_code: gameCode,
+                activity_data: data.slides as any,
+                settings: { timePerQuestion: 30, shuffleQuestions: false, shuffleAnswers: false, showLeaderboardAfterEach: false },
+                status: "lobby",
+                current_question_index: -1,
+              }).select().single();
+              if (!error && newSession?.id) {
+                navigate(`/live/ucitel/${newSession.id}`);
+              }
+            }}>
+              Spustit novou
             </Button>
           </DialogFooter>
         </DialogContent>
