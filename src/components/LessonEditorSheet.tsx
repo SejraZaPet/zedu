@@ -29,6 +29,7 @@ interface LessonData {
   blocks: Block[];
   sort_order: number;
   topic_id: string;
+  require_activities: boolean;
 }
 
 const LessonEditorSheet = ({ lessonId, open, onOpenChange, onSaved }: Props) => {
