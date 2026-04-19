@@ -22,8 +22,9 @@ import {
 } from "@/components/ui/sheet";
 import {
   BookOpen, Users, ArrowLeft, Copy, Eye, FolderOpen, ChevronRight,
-  Pencil, Trash2, Plus, Save, Loader2, X, FileText,
+  Pencil, Trash2, Plus, Save, Loader2, X, FileText, Play,
 } from "lucide-react";
+import { blocksToSlides } from "@/lib/blocks-to-slides";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
