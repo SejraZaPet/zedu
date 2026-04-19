@@ -51,7 +51,8 @@ const LessonEditorSheet = ({ lessonId, open, onOpenChange, onSaved }: Props) => 
     if (data) {
       setLesson({
         ...data,
-        blocks: (data.blocks as unknown as Block[]) ?? [],
+        blocks: ((data as any).blocks as unknown as Block[]) ?? [],
+        require_activities: (data as any).require_activities ?? false,
       } as LessonData);
     }
     setLoading(false);
