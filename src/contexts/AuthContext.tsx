@@ -20,13 +20,24 @@ interface AuthContextValue extends AuthState {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+// Priority order: highest-privilege / most-specific role wins when a user has multiple rows.
+const ROLE_PRIORITY: Record<string, number> = {
+  admin: 5,
+  teacher: 4,
+  lektor: 3,
+  rodic: 2,
+  user: 1,
+};
+
 const fetchRoleAndStatus = async (userId: string): Promise<{ role: AppRole; status: string | null }> => {
   const [rolesRes, profileRes] = await Promise.all([
-    supabase.from("user_roles").select("role").eq("user_id", userId).limit(1),
+    supabase.from("user_roles").select("role").eq("user_id", userId),
     supabase.from("profiles").select("status").eq("id", userId).single(),
   ]);
+  const roles = (rolesRes.data ?? []).map((r: any) => r.role as string);
+  const best = roles.sort((a, b) => (ROLE_PRIORITY[b] ?? 0) - (ROLE_PRIORITY[a] ?? 0))[0];
   return {
-    role: (rolesRes.data?.[0]?.role as AppRole) || "user",
+    role: (best as AppRole) || "user",
     status: profileRes.data?.status ?? null,
   };
 };
