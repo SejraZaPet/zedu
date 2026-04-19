@@ -102,6 +102,21 @@ const TeacherTextbooks = () => {
   const [newTopicGrade, setNewTopicGrade] = useState<number>(1);
   const [editingTopic, setEditingTopic] = useState<{ id: string; title: string } | null>(null);
 
+  const launchLiveSession = async (lesson: LessonItem) => {
+    try {
+      const slides = blocksToSlides(lesson.blocks || [], lesson.title);
+      const { data, error } = await supabase.functions.invoke("create-live-session", {
+        body: { lessonPlanId: null, title: lesson.title, slides },
+      });
+      if (error) throw error;
+      if (!data?.sessionId) throw new Error("Chybí ID session");
+      toast({ title: "Prezentace spuštěna", description: `Kód: ${data.gameCode}` });
+      navigate(`/live/ucitel/${data.sessionId}`);
+    } catch (e: any) {
+      toast({ title: "Chyba", description: e?.message || "Nepodařilo se spustit prezentaci", variant: "destructive" });
+    }
+  };
+
   const fetchTextbooks = async () => {
     const { data } = await supabase
       .from("teacher_textbooks")
