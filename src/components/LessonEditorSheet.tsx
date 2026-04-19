@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import BlockEditor from "@/components/admin/BlockEditor";
@@ -28,6 +29,7 @@ interface LessonData {
   blocks: Block[];
   sort_order: number;
   topic_id: string;
+  require_activities: boolean;
 }
 
 const LessonEditorSheet = ({ lessonId, open, onOpenChange, onSaved }: Props) => {
@@ -49,7 +51,8 @@ const LessonEditorSheet = ({ lessonId, open, onOpenChange, onSaved }: Props) => 
     if (data) {
       setLesson({
         ...data,
-        blocks: (data.blocks as unknown as Block[]) ?? [],
+        blocks: ((data as any).blocks as unknown as Block[]) ?? [],
+        require_activities: (data as any).require_activities ?? false,
       } as LessonData);
     }
     setLoading(false);
@@ -100,6 +103,7 @@ const LessonEditorSheet = ({ lessonId, open, onOpenChange, onSaved }: Props) => 
       status: lesson.status,
       blocks: lesson.blocks as any,
       sort_order: lesson.sort_order,
+      require_activities: lesson.require_activities,
     };
 
     await supabase.from("textbook_lessons").update(payload).eq("id", lesson.id);
@@ -202,6 +206,23 @@ const LessonEditorSheet = ({ lessonId, open, onOpenChange, onSaved }: Props) => 
                   assignments={assignments}
                   onChange={setAssignments}
                 />
+              </div>
+
+              <div className="flex items-start gap-2 p-3 border border-border rounded-md bg-muted/30">
+                <Checkbox
+                  id="require_activities"
+                  checked={lesson.require_activities}
+                  onCheckedChange={(v) => setLesson({ ...lesson, require_activities: !!v })}
+                  className="mt-0.5"
+                />
+                <div className="flex-1">
+                  <Label htmlFor="require_activities" className="cursor-pointer text-sm font-medium">
+                    Vyžadovat splnění aktivit před dokončením
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Student bude moci lekci označit jako dokončenou až po splnění alespoň jedné aktivity.
+                  </p>
+                </div>
               </div>
 
               <div>
