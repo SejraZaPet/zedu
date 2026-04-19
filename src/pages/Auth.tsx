@@ -50,7 +50,8 @@ const Auth = () => {
     } else if (authRole === "teacher" || authRole === "lektor") {
       navigate(redirectTo || "/ucitel", { replace: true });
     } else if (authRole === "rodic") {
-      navigate(redirectTo || "/rodic", { replace: true });
+      // Always go to /rodic — parents shouldn't be redirected to student/teacher routes
+      navigate("/rodic", { replace: true });
     } else {
       navigate(redirectTo || "/student", { replace: true });
     }
