@@ -183,7 +183,7 @@ const StudentGamePlay = () => {
                         player_id: playerId,
                         question_index: session?.current_question_index ?? 0,
                         answer: {},
-                        is_correct: maxScore > 0 && score >= maxScore,
+                        is_correct: maxScore > 0 && score / maxScore >= 0.5,
                         score: score,
                         response_time_ms: 0,
                       });
