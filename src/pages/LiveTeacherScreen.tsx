@@ -23,6 +23,7 @@ const SLIDE_TYPE_LABELS: Record<string, string> = {
 
 const LiveTeacherScreen = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
+  const navigate = useNavigate();
   const { session, players, responses, loading, connectionStatus, reconnect } = useGameSession(sessionId);
   const { startGame, nextQuestion, endGame } = useTeacherGameControls(sessionId);
 
