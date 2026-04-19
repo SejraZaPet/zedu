@@ -535,11 +535,8 @@ const TeacherTextbooks = () => {
                                       size="sm"
                                       variant="outline"
                                       className="h-7 gap-1.5"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        console.log("[Prezentace] clicked", lesson.title, "blocks:", lesson.blocks?.length);
+                                      onClick={() => {
                                         const slides = blocksToSlides(lesson.blocks || [], lesson.title);
-                                        console.log("[Prezentace] slides generated:", slides.length);
                                         setPendingSlides(slides);
                                         setPresentationLesson(lesson);
                                         setEditingSlideIndex(0);
