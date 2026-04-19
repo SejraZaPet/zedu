@@ -175,7 +175,7 @@ export function useGameSession(sessionId: string | undefined, refetchTrigger?: n
         channelRef.current = null;
       }
     };
-  }, [fetchData, subscribe]);
+  }, [fetchData, subscribe, refetchTrigger]);
 
   return { session, players, responses, loading, connectionStatus, reconnect, setSession, setPlayers };
 }
