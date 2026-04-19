@@ -17,6 +17,7 @@ interface Props {
 export const GameLobby = ({ session, players, onStart, isTeacher }: Props) => {
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const joinUrl = useMemo(() => {
     const base = window.location.origin;
