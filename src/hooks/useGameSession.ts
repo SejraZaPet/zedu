@@ -13,7 +13,7 @@ function backoffDelay(attempt: number): number {
   return Math.min(BASE_DELAY_MS * Math.pow(2, attempt), 128_000);
 }
 
-export function useGameSession(sessionId: string | undefined) {
+export function useGameSession(sessionId: string | undefined, refetchTrigger?: number) {
   const [session, setSession] = useState<GameSession | null>(null);
   const [players, setPlayers] = useState<GamePlayer[]>([]);
   const [responses, setResponses] = useState<GameResponse[]>([]);
@@ -175,7 +175,7 @@ export function useGameSession(sessionId: string | undefined) {
         channelRef.current = null;
       }
     };
-  }, [fetchData, subscribe]);
+  }, [fetchData, subscribe, refetchTrigger]);
 
   return { session, players, responses, loading, connectionStatus, reconnect, setSession, setPlayers };
 }

@@ -24,7 +24,8 @@ const SLIDE_TYPE_LABELS: Record<string, string> = {
 const LiveTeacherScreen = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
-  const { session, players, responses, loading, connectionStatus, reconnect } = useGameSession(sessionId);
+  const [fetchAttempts, setFetchAttempts] = useState(0);
+  const { session, players, responses, loading, connectionStatus, reconnect } = useGameSession(sessionId, fetchAttempts);
   const { startGame, nextQuestion, endGame } = useTeacherGameControls(sessionId);
 
   const slides: SlideData[] = (session?.activity_data as any[]) || [];
@@ -44,20 +45,34 @@ const LiveTeacherScreen = () => {
     }
   }, [session, currentIndex, slides.length, nextQuestion, endGame]);
 
-  // Auto-reload if slides arrive empty (session not yet saved when we navigated)
+  // Refetch session data if slides arrive empty (race with DB write)
   useEffect(() => {
-    if (!loading && session && slides.length === 0 && !isFinished) {
+    if (!loading && session && slides.length === 0 && !isFinished && fetchAttempts < 8) {
+      const delay = fetchAttempts < 3 ? 300 : 600;
       const timer = setTimeout(() => {
-        window.location.reload();
-      }, 1500);
+        setFetchAttempts((a) => a + 1);
+      }, delay);
       return () => clearTimeout(timer);
     }
-  }, [loading, session, slides.length, isFinished]);
+  }, [loading, session, slides.length, isFinished, fetchAttempts]);
 
-  if (!loading && session && slides.length === 0 && !isFinished) {
+  if (!loading && session && slides.length === 0 && !isFinished && fetchAttempts < 8) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-pulse text-muted-foreground">Načítám prezentaci…</div>
+      </div>
+    );
+  }
+
+  if (!loading && session && slides.length === 0 && !isFinished && fetchAttempts >= 8) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4 max-w-sm">
+          <p className="text-destructive">Prezentaci se nepodařilo načíst.</p>
+          <Button onClick={() => { setFetchAttempts(0); reconnect(); }}>
+            Zkusit znovu
+          </Button>
+        </div>
       </div>
     );
   }
