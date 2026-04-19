@@ -23,6 +23,7 @@ export function useGameSession(sessionId: string | undefined, refetchTrigger?: n
   const channelRef = useRef<RealtimeChannel | null>(null);
   const reconnectAttemptRef = useRef(0);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const mountedRef = useRef(true);
 
   // Full data fetch (used for initial load and resync)
@@ -131,6 +132,12 @@ export function useGameSession(sessionId: string | undefined, refetchTrigger?: n
       });
 
     channelRef.current = channel;
+
+    // Polling fallback for unauthenticated users (Realtime may 401)
+    if (pollingRef.current) clearInterval(pollingRef.current);
+    pollingRef.current = setInterval(() => {
+      if (mountedRef.current) fetchData();
+    }, 2000);
   }, [sessionId, fetchData]);
 
   const scheduleReconnect = useCallback(() => {
@@ -170,6 +177,10 @@ export function useGameSession(sessionId: string | undefined, refetchTrigger?: n
     return () => {
       mountedRef.current = false;
       if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
