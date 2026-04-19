@@ -269,6 +269,21 @@ const TeacherAssignments = () => {
                 </div>
               </div>
 
+              {prefillLessonId && lessonLoaded && (
+                <LessonWorksheetGenerator
+                  lessonId={prefillLessonId}
+                  lessonTitle={prefillLessonTitle}
+                  blocks={lessonBlocks}
+                  onGenerated={(qs) => setGeneratedQuestions(qs)}
+                />
+              )}
+
+              {generatedQuestions.length > 0 && (
+                <div className="text-xs text-muted-foreground">
+                  ✓ {generatedQuestions.length} otázek bude uloženo s úlohou.
+                </div>
+              )}
+
               <div className="flex gap-2">
                 <Button onClick={handleCreate} disabled={creating}>
                   {creating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}
