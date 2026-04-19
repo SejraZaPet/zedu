@@ -26,6 +26,7 @@ import {
   Pencil, Trash2, Plus, Save, Loader2, X, FileText, Play, Monitor,
 } from "lucide-react";
 import { blocksToSlides } from "@/lib/blocks-to-slides";
+import { usePresentationLauncher } from "@/hooks/usePresentationLauncher";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -103,52 +104,15 @@ const TeacherTextbooks = () => {
   const [newTopicGrade, setNewTopicGrade] = useState<number>(1);
   const [editingTopic, setEditingTopic] = useState<{ id: string; title: string } | null>(null);
 
-  // Presentation editor
-  const [presentationLesson, setPresentationLesson] = useState<LessonItem | null>(null);
-  const [pendingSlides, setPendingSlides] = useState<any[]>([]);
-  const [editingSlideIndex, setEditingSlideIndex] = useState(0);
-  const [existingSession, setExistingSession] = useState<{ id: string; title: string } | null>(null);
-  const [pendingLaunchData, setPendingLaunchData] = useState<{ lesson: LessonItem; slides: any[] } | null>(null);
-
-  const launchLiveSession = async (lesson: LessonItem, prebuiltSlides?: any[]) => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        const { data: existing } = await supabase
-          .from("game_sessions")
-          .select("id, title, status")
-          .eq("teacher_id", session.user.id)
-          .eq("title", lesson.title)
-          .in("status", ["lobby", "playing"])
-          .maybeSingle();
-        if (existing) {
-          const slides = prebuiltSlides || blocksToSlides(lesson.blocks || [], lesson.title);
-          setPendingLaunchData({ lesson, slides });
-          setExistingSession(existing);
-          return;
-        }
-      }
-      const rawBlocks = lesson.blocks || [];
-      const slides = prebuiltSlides || blocksToSlides(rawBlocks, lesson.title);
-      if (!session?.user) throw new Error("Není přihlášen");
-      const gameCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-      const { data, error } = await supabase.from("game_sessions").insert({
-        teacher_id: session.user.id,
-        title: lesson.title,
-        game_code: gameCode,
-        activity_data: slides as any,
-        settings: { timePerQuestion: 30, shuffleQuestions: false, shuffleAnswers: false, showLeaderboardAfterEach: false },
-        status: "lobby",
-        current_question_index: -1,
-      }).select().single();
-      if (error) throw error;
-      if (!data?.id) throw new Error("Chybí ID session");
-      toast({ title: "Prezentace spuštěna", description: `Kód: ${gameCode}` });
-      navigate(`/live/ucitel/${data.id}`);
-    } catch (e: any) {
-      toast({ title: "Chyba", description: e?.message || "Nepodařilo se spustit prezentaci", variant: "destructive" });
-    }
-  };
+  // Presentation editor (extracted to hook)
+  const {
+    presentationLesson, setPresentationLesson,
+    pendingSlides, setPendingSlides,
+    editingSlideIndex, setEditingSlideIndex,
+    existingSession, setExistingSession,
+    pendingLaunchData, setPendingLaunchData,
+    openEditor, launchLiveSession, launchNew,
+  } = usePresentationLauncher();
 
   const fetchTextbooks = async () => {
     const { data } = await supabase
@@ -539,12 +503,7 @@ const TeacherTextbooks = () => {
                                       size="sm"
                                       variant="outline"
                                       className="h-7 gap-1.5"
-                                      onClick={() => {
-                                        const slides = blocksToSlides(lesson.blocks || [], lesson.title);
-                                        setPendingSlides(slides);
-                                        setPresentationLesson(lesson);
-                                        setEditingSlideIndex(0);
-                                      }}
+                                      onClick={() => openEditor(lesson)}
                                       title="Spustit jako prezentaci"
                                     >
                                       <Play className="w-3.5 h-3.5" />
