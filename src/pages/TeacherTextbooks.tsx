@@ -487,6 +487,16 @@ const TeacherTextbooks = () => {
                                       <FileText className="w-3.5 h-3.5" />
                                       Pracovní list
                                     </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-7 gap-1.5"
+                                      onClick={() => launchLiveSession(lesson)}
+                                      title="Spustit jako prezentaci"
+                                    >
+                                      <Play className="w-3.5 h-3.5" />
+                                      Prezentace
+                                    </Button>
                                     <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setDeletingLesson(lesson)} title="Smazat">
                                       <Trash2 className="w-3.5 h-3.5 text-destructive" />
                                     </Button>
