@@ -818,7 +818,8 @@ const TeacherTextbooks = () => {
       </main>
       <SiteFooter />
 
-      <Dialog open={!!presentationLesson && pendingSlides.length > 0} onOpenChange={(open) => { if (!open) { setPresentationLesson(null); setPendingSlides([]); } }}>
+      {(() => { console.log("[Dialog render]", { presentationLesson: presentationLesson?.title, slides: pendingSlides.length }); return null; })()}
+      <Dialog open={!!presentationLesson && pendingSlides.length > 0} onOpenChange={(open) => { console.log("[Dialog onOpenChange]", open); if (!open) { setPresentationLesson(null); setPendingSlides([]); } }}>
         {presentationLesson && pendingSlides.length > 0 && (
           <DialogContent className="max-w-2xl">
             <DialogHeader>
