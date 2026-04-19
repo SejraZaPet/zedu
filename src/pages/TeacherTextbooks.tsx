@@ -644,6 +644,74 @@ const TeacherTextbooks = () => {
           </AlertDialogContent>
         </AlertDialog>
 
+        {/* === Create Topic Dialog === */}
+        <Dialog open={createTopicOpen} onOpenChange={setCreateTopicOpen}>
+          <DialogContent>
+            <DialogHeader><DialogTitle>Nové téma</DialogTitle></DialogHeader>
+            <div className="space-y-4 mt-2">
+              <div>
+                <Label>Název tématu</Label>
+                <Input value={newTopicTitle} onChange={(e) => setNewTopicTitle(e.target.value)} className="mt-1" placeholder="např. Hygiena v kuchyni" />
+              </div>
+              <div>
+                <Label>Ročník</Label>
+                <Select value={String(newTopicGrade)} onValueChange={(v) => setNewTopicGrade(Number(v))}>
+                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {matchedSubject?.grades.map(g => (
+                      <SelectItem key={g.grade_number} value={String(g.grade_number)}>{g.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button onClick={handleCreateTopic} disabled={saving || !newTopicTitle.trim()} className="w-full">
+                {saving ? "Vytvářím..." : "Vytvořit téma"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* === Rename Topic Dialog === */}
+        <Dialog open={!!editingTopic} onOpenChange={(open) => { if (!open) setEditingTopic(null); }}>
+          <DialogContent>
+            <DialogHeader><DialogTitle>Přejmenovat téma</DialogTitle></DialogHeader>
+            <div className="space-y-4 mt-2">
+              <div>
+                <Label>Název tématu</Label>
+                <Input value={editingTopic?.title ?? ""} onChange={(e) => setEditingTopic(editingTopic ? { ...editingTopic, title: e.target.value } : null)} className="mt-1" />
+              </div>
+              <Button onClick={handleRenameTopic} disabled={!editingTopic?.title.trim()} className="w-full">Uložit</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* === Create Lesson Dialog === */}
+        <Dialog open={createLessonOpen} onOpenChange={setCreateLessonOpen}>
+          <DialogContent>
+            <DialogHeader><DialogTitle>Nová lekce</DialogTitle></DialogHeader>
+            <div className="space-y-4 mt-2">
+              <div>
+                <Label>Název lekce</Label>
+                <Input value={newLessonTitle} onChange={(e) => setNewLessonTitle(e.target.value)} className="mt-1" placeholder="např. Úvod do hygieny" />
+              </div>
+              <div>
+                <Label>Téma</Label>
+                <Select value={newLessonTopicId} onValueChange={setNewLessonTopicId}>
+                  <SelectTrigger className="mt-1"><SelectValue placeholder="Vyberte téma" /></SelectTrigger>
+                  <SelectContent>
+                    {allTopics.map(t => (
+                      <SelectItem key={t.id} value={t.id}>{t.gradeLabel} → {t.title}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button onClick={handleCreateLesson} disabled={saving || !newLessonTitle.trim() || !newLessonTopicId} className="w-full">
+                {saving ? "Vytvářím..." : "Vytvořit lekci"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
         <PresentationEditorDialog
           presentationLesson={presentationLesson}
           pendingSlides={pendingSlides}
