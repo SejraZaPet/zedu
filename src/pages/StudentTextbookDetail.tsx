@@ -247,33 +247,65 @@ const StudentTextbookDetail = () => {
   // Lesson detail view
   if (selectedLesson) {
     const isLessonCompleted = completedLessonIds.has(selectedLesson.id);
+    const requireActivities = !!selectedLesson.require_activities;
+    const activityBlockCount = (selectedLesson.blocks || []).filter((b: any) => b?.type === "activity").length;
+    const hasActivities = activityBlockCount > 0;
+    const canComplete = !requireActivities || !hasActivities || completedActivityIndices.size >= 1;
+
+    const openLesson = (l: LessonData) => {
+      setCompletedActivityIndices(new Set());
+      setSelectedLesson(l);
+    };
+    const closeLesson = () => {
+      setCompletedActivityIndices(new Set());
+      setSelectedLesson(null);
+    };
+
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <SiteHeader />
         <main className="flex-1 container mx-auto px-4 py-12 max-w-3xl" style={{ paddingTop: "calc(70px + 3rem)" }}>
-          <Button variant="ghost" size="sm" onClick={() => setSelectedLesson(null)} className="mb-4 gap-2">
+          <Button variant="ghost" size="sm" onClick={closeLesson} className="mb-4 gap-2">
             <ArrowLeft className="w-4 h-4" /> Zpět na učebnici
           </Button>
           <h1 className="font-heading text-2xl font-bold mb-6">{selectedLesson.title}</h1>
           <div className="space-y-6">
             {(selectedLesson.blocks || []).map((block: any, idx: number) => (
-              <LessonBlockRenderer key={idx} block={block} blockIndex={idx} />
+              <LessonBlockRenderer
+                key={idx}
+                block={block}
+                blockIndex={idx}
+                onActivityComplete={(activityIndex) => {
+                  setCompletedActivityIndices(prev => new Set([...prev, activityIndex]));
+                }}
+              />
             ))}
           </div>
           {(!selectedLesson.blocks || selectedLesson.blocks.length === 0) && (
             <p className="text-muted-foreground text-center py-8">Tato lekce zatím nemá žádný obsah.</p>
           )}
-          <div className="mt-8 pt-6 border-t flex justify-center">
+          <div className="mt-8 pt-6 border-t flex flex-col items-center gap-2">
             {isLessonCompleted ? (
               <div className="flex items-center gap-2 text-green-600 font-medium">
                 <CheckCircle2 className="w-5 h-5" />
                 Lekce dokončena
               </div>
             ) : (
-              <Button onClick={() => handleMarkComplete(selectedLesson.id)} className="gap-2">
-                <CheckCircle2 className="w-4 h-4" />
-                Označit jako dokončené
-              </Button>
+              <>
+                <Button
+                  onClick={() => handleMarkComplete(selectedLesson.id)}
+                  className="gap-2"
+                  disabled={!canComplete}
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  Označit jako dokončené
+                </Button>
+                {requireActivities && hasActivities && !canComplete && (
+                  <p className="text-xs text-muted-foreground">
+                    Dokončete všechny aktivity v lekci pro odemknutí.
+                  </p>
+                )}
+              </>
             )}
           </div>
         </main>
