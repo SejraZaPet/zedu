@@ -2,6 +2,7 @@ import { GameSession, GamePlayer } from "@/lib/game-types";
 import { Button } from "@/components/ui/button";
 import { Users, Play, Copy, Check } from "lucide-react";
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { t } from "@/lib/t";
 import { QRCodeSVG } from "qrcode.react";
