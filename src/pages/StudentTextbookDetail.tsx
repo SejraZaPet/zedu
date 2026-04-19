@@ -14,6 +14,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { ArrowLeft, BookOpen, GraduationCap, FolderOpen, CheckCircle2, Circle } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 interface LessonData {
   id: string;
@@ -229,6 +230,7 @@ const StudentTextbookDetail = () => {
     if (error) console.error("Mark complete error:", error);
     if (!error) {
       setCompletedLessonIds(prev => new Set([...prev, lessonId]));
+      toast({ title: "Lekce dokončena! ✓", description: "Pokrok byl uložen." });
     }
   };
 
