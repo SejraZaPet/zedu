@@ -34,6 +34,7 @@ import StudentAssignments from "./pages/StudentAssignments";
 import StudentAssignmentPlayer from "./pages/StudentAssignmentPlayer";
 import TeacherClasses from "./pages/TeacherClasses";
 import TeacherResults from "./pages/TeacherResults";
+import ParentDashboard from "./pages/ParentDashboard";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +51,7 @@ const App = () => (
             <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
             <Route path="/student" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
             <Route path="/ucitel" element={<ProtectedRoute><TeacherDashboard /></ProtectedRoute>} />
+            <Route path="/rodic" element={<ProtectedRoute><ParentDashboard /></ProtectedRoute>} />
             <Route path="/ucitel/tridy" element={<ProtectedRoute><TeacherClasses /></ProtectedRoute>} />
             <Route path="/ucitel/vysledky" element={<ProtectedRoute><TeacherResults /></ProtectedRoute>} />
             <Route path="/profil" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />

@@ -49,6 +49,8 @@ const Auth = () => {
       navigate(redirectTo || "/admin", { replace: true });
     } else if (authRole === "teacher" || authRole === "lektor") {
       navigate(redirectTo || "/ucitel", { replace: true });
+    } else if (authRole === "rodic") {
+      navigate(redirectTo || "/rodic", { replace: true });
     } else {
       navigate(redirectTo || "/student", { replace: true });
     }
