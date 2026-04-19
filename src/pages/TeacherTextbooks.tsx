@@ -125,7 +125,7 @@ const TeacherTextbooks = () => {
         }
       }
       const rawBlocks = lesson.blocks || [];
-      const slides = blocksToSlides(rawBlocks, lesson.title);
+      const slides = prebuiltSlides || blocksToSlides(rawBlocks, lesson.title);
       if (!session?.user) throw new Error("Není přihlášen");
       const gameCode = Math.random().toString(36).substring(2, 8).toUpperCase();
       const { data, error } = await supabase.from("game_sessions").insert({
