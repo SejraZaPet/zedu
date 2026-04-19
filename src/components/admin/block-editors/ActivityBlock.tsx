@@ -1185,6 +1185,17 @@ const ActivityBlock = ({ block, onChange }: Props) => {
       {activityType === "reveal_cards" && <RevealCardsEditor props={p} onChange={onChange} />}
       {activityType === "memory_game" && <MemoryGameEditor props={p} onChange={onChange} />}
       {activityType === "crossword" && <CrosswordEditor props={p} onChange={onChange} />}
+
+      <div className="flex items-center gap-2 pt-3 border-t border-border mt-3">
+        <Checkbox
+          checked={p.required === true}
+          onCheckedChange={(v) => onChange({ ...p, required: !!v })}
+          id={`required-${block.id}`}
+        />
+        <Label htmlFor={`required-${block.id}`} className="text-xs cursor-pointer">
+          Povinná aktivita – žák musí splnit před dokončením lekce
+        </Label>
+      </div>
     </div>
   );
 };

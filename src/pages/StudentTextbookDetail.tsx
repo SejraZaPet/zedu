@@ -250,7 +250,14 @@ const StudentTextbookDetail = () => {
     const requireActivities = !!selectedLesson.require_activities;
     const activityBlockCount = (selectedLesson.blocks || []).filter((b: any) => b?.type === "activity").length;
     const hasActivities = activityBlockCount > 0;
-    const canComplete = !requireActivities || !hasActivities || completedActivityIndices.size >= 1;
+    const requiredActivityIndices = (selectedLesson.blocks || [])
+      .map((b: any, idx: number) => ({ b, idx }))
+      .filter(({ b }) => b?.type === "activity" && b?.props?.required === true)
+      .map(({ idx }) => idx);
+    const completedRequiredCount = requiredActivityIndices.filter((i) => completedActivityIndices.has(i)).length;
+    const remainingRequired = requiredActivityIndices.length - completedRequiredCount;
+    const allRequiredDone = remainingRequired <= 0;
+    const canComplete = requiredActivityIndices.length === 0 || allRequiredDone;
 
     const openLesson = (l: LessonData) => {
       setCompletedActivityIndices(new Set());
@@ -300,9 +307,9 @@ const StudentTextbookDetail = () => {
                   <CheckCircle2 className="w-4 h-4" />
                   Označit jako dokončené
                 </Button>
-                {requireActivities && hasActivities && !canComplete && (
+                {!canComplete && (
                   <p className="text-xs text-muted-foreground">
-                    Dokončete všechny aktivity v lekci pro odemknutí.
+                    {`Dokončete ${remainingRequired} povinnou aktivitu pro odemknutí.`}
                   </p>
                 )}
               </>
