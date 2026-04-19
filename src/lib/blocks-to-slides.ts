@@ -152,6 +152,63 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
         device: { instructions: "Sledujte výklad." },
         teacherNotes: "",
       });
+    } else if (type === "card_grid") {
+      const cards = props.cards || [];
+      if (cards.length === 0) continue;
+      const body = cards.map((c: any) => `• ${c.title || ""}${c.text ? ": " + stripHtml(c.text) : ""}`).join("\n");
+      slides.push({
+        slideId: `slide-${slideIndex++}`,
+        type: "explain",
+        projector: { headline: props.title || "", body },
+        device: { instructions: "Sledujte výklad." },
+        teacherNotes: "",
+        cardData: cards,
+      });
+    } else if (type === "accordion") {
+      const items = props.items || [];
+      if (items.length === 0) continue;
+      const body = items.map((item: any) => `▸ ${item.title || ""}\n${stripHtml(item.content || item.text || "")}`).join("\n\n");
+      slides.push({
+        slideId: `slide-${slideIndex++}`,
+        type: "explain",
+        projector: { headline: props.title || "", body },
+        device: { instructions: "Sledujte výklad." },
+        teacherNotes: "",
+      });
+    } else if (type === "summary") {
+      const items = props.items || props.points || [];
+      const body = Array.isArray(items) && items.length > 0
+        ? items.map((i: any) => `✓ ${typeof i === "string" ? i : i.text || i}`).join("\n")
+        : stripHtml(props.html || props.text || "");
+      if (!body) continue;
+      slides.push({
+        slideId: `slide-${slideIndex++}`,
+        type: "summary",
+        projector: { headline: props.title || "Shrnutí", body },
+        device: { instructions: "Zkontrolujte si znalosti." },
+        teacherNotes: "",
+      });
+    } else if (type === "youtube") {
+      const url = props.url || props.videoUrl || "";
+      const title = props.title || "Video";
+      slides.push({
+        slideId: `slide-${slideIndex++}`,
+        type: "explain",
+        projector: { headline: title, body: url ? `Video: ${url}` : "" },
+        device: { instructions: "Sledujte video." },
+        teacherNotes: "",
+      });
+    } else if (type === "gallery") {
+      const images = props.images || [];
+      if (images.length === 0) continue;
+      const firstUrl = images[0]?.url || "";
+      slides.push({
+        slideId: `slide-${slideIndex++}`,
+        type: "explain",
+        projector: { headline: props.title || "", body: `Galerie (${images.length} obrázků)`, assetRefs: firstUrl ? [firstUrl] : [] },
+        device: { instructions: "Prohlédněte si obrázky." },
+        teacherNotes: "",
+      });
     }
   }
 

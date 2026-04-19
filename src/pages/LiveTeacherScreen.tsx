@@ -193,6 +193,16 @@ const LiveTeacherScreen = () => {
                 </table>
               </div>
             )}
+            {(currentSlide as any).cardData && (
+              <div className="grid grid-cols-2 gap-3 mt-4">
+                {(currentSlide as any).cardData.map((card: any, i: number) => (
+                  <div key={i} className="border border-border rounded-lg p-3 bg-card">
+                    <p className="font-semibold text-sm">{card.title}</p>
+                    {card.text && <p className="text-xs text-muted-foreground mt-1">{card.text}</p>}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Device preview */}
