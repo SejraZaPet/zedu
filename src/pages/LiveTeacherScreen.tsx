@@ -44,6 +44,24 @@ const LiveTeacherScreen = () => {
     }
   }, [session, currentIndex, slides.length, nextQuestion, endGame]);
 
+  // Auto-reload if slides arrive empty (session not yet saved when we navigated)
+  useEffect(() => {
+    if (!loading && session && slides.length === 0 && !isFinished) {
+      const timer = setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [loading, session, slides.length, isFinished]);
+
+  if (!loading && session && slides.length === 0 && !isFinished) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-pulse text-muted-foreground">Načítám prezentaci…</div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
