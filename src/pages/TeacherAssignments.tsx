@@ -137,6 +137,7 @@ const TeacherAssignments = () => {
     setRandomizeChoices(false);
     setRandomizeOrder(false);
     setSelectedClassId("");
+    setGeneratedQuestions([]);
   };
 
   const handlePublish = async (id: string) => {
