@@ -51,6 +51,12 @@ const SiteHeader = () => {
         { label: "Nápověda", href: "/napoveda", icon: HelpCircle },
       ];
     }
+    if (userRole === "rodic") {
+      return [
+        { label: "Přehled", href: "/rodic", icon: LayoutDashboard },
+        { label: "Nápověda", href: "/napoveda", icon: HelpCircle },
+      ];
+    }
     if (isLoggedIn) {
       return [
         { label: "Přehled", href: "/student", icon: LayoutDashboard },

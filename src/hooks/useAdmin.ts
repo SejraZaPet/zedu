@@ -27,6 +27,10 @@ export const useAdmin = () => {
         navigate("/ucitel");
         return;
       }
+      if (role === "rodic") {
+        navigate("/rodic");
+        return;
+      }
       if (role === "user") {
         navigate("/student");
         return;
