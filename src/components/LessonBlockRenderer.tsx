@@ -350,22 +350,21 @@ export const LessonBlock = ({ block, blockIndex, onActivityComplete, isTeacher }
       if (p.required === true) {
         return (
           <div
-            className="p-4"
             style={{
-              background:
-                "linear-gradient(white, white) padding-box, linear-gradient(135deg, hsl(184 52% 60%), hsl(222 51% 70%), hsl(274 62% 60%)) border-box",
-              border: "2px solid transparent",
+              background: "linear-gradient(135deg, hsl(184 52% 95%), hsl(222 51% 93%), hsl(274 62% 93%))",
               borderRadius: "12px",
+              border: "2px solid hsl(274 62% 70%)",
+              padding: "16px",
             }}
           >
-            <div className="flex items-center gap-2 mb-3 pb-3 border-b border-primary/20">
-              <div className="w-6 h-6 rounded-full bg-gradient-brand flex items-center justify-center flex-shrink-0">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <div className="inline-flex items-center gap-2 mb-3 pb-3 border-b border-primary/30 w-full">
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold bg-primary text-white rounded-full px-3 py-1">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
                   <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                 </svg>
-              </div>
-              <span className="text-sm font-semibold text-primary">Povinná aktivita</span>
+                Povinná aktivita
+              </span>
             </div>
             {activityInner}
           </div>
