@@ -112,7 +112,7 @@ const TeacherGames = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => navigate(`/hra/ucitel/${s.id}`)}
+                        onClick={() => navigate(`/live/ucitel/${s.id}`)}
                       >
                         Otevřít
                       </Button>

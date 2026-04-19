@@ -104,6 +104,20 @@ const TeacherTextbooks = () => {
 
   const launchLiveSession = async (lesson: LessonItem) => {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const { data: existing } = await supabase
+          .from("game_sessions")
+          .select("id, status")
+          .eq("teacher_id", session.user.id)
+          .eq("title", lesson.title)
+          .in("status", ["lobby", "playing"])
+          .maybeSingle();
+        if (existing) {
+          navigate(`/live/ucitel/${existing.id}`);
+          return;
+        }
+      }
       console.log("DEBUG lesson:", lesson.title);
       console.log("DEBUG lesson.blocks:", JSON.stringify(lesson.blocks?.slice(0, 2)));
       const slides = blocksToSlides(lesson.blocks || [], lesson.title);
