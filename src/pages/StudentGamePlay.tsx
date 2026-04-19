@@ -101,20 +101,48 @@ const StudentGamePlay = () => {
   const timeLimit = (session.settings?.timePerQuestion || 20) * 1000;
   const questionStarted = session.question_started_at ? serverTsToClientMs(session.question_started_at) : Date.now();
 
+  const currentSlideData = session?.activity_data?.[session?.current_question_index ?? -1] as any;
+  const isSlideFormat = currentSlideData && !currentSlideData.question && currentSlideData.projector;
+
   return (
     <>
       <ConnectionStatusBanner status={connectionStatus} onReconnect={reconnect} />
-      <StudentGameQuestion
-        question={currentQ}
-        questionIndex={session.current_question_index}
-        totalQuestions={session.activity_data.length}
-        hasAnswered={hasAnswered}
-        lastResult={lastResult}
-        onAnswer={handleAnswer}
-        timeLimit={timeLimit}
-        questionStarted={questionStarted}
-        status={session.status}
-      />
+      {isSlideFormat ? (
+        <div className="min-h-screen bg-background flex flex-col">
+          <div className="flex-1 container mx-auto px-4 py-8 max-w-2xl flex flex-col justify-center">
+            {currentSlideData.projector?.headline && (
+              <h1 className="font-heading text-2xl font-bold mb-4 text-foreground">
+                {currentSlideData.projector.headline}
+              </h1>
+            )}
+            {currentSlideData.projector?.body && (
+              <p className="text-base text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                {currentSlideData.projector.body}
+              </p>
+            )}
+            {currentSlideData.device?.instructions && currentSlideData.device.instructions !== "Sledujte výklad." && (
+              <div className="mt-6 p-4 bg-primary/5 border border-primary/20 rounded-lg">
+                <p className="text-sm font-medium text-primary">{currentSlideData.device.instructions}</p>
+              </div>
+            )}
+            <div className="mt-8 text-center">
+              <p className="text-xs text-muted-foreground">Slide {(session?.current_question_index ?? 0) + 1} / {session?.activity_data?.length ?? 0}</p>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <StudentGameQuestion
+          question={currentQ}
+          questionIndex={session.current_question_index}
+          totalQuestions={session.activity_data.length}
+          hasAnswered={hasAnswered}
+          lastResult={lastResult}
+          onAnswer={handleAnswer}
+          timeLimit={timeLimit}
+          questionStarted={questionStarted}
+          status={session.status}
+        />
+      )}
     </>
   );
 };
