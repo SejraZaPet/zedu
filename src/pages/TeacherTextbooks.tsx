@@ -815,8 +815,8 @@ const TeacherTextbooks = () => {
       </main>
       <SiteFooter />
 
-      {presentationLesson && pendingSlides.length > 0 && (
-        <Dialog open={!!presentationLesson} onOpenChange={(open) => { if (!open) setPresentationLesson(null); }}>
+      <Dialog open={!!presentationLesson} onOpenChange={(open) => { if (!open) setPresentationLesson(null); }}>
+        {presentationLesson && pendingSlides.length > 0 && (
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Upravit prezentaci – {presentationLesson.title}</DialogTitle>
@@ -898,8 +898,8 @@ const TeacherTextbooks = () => {
               </Button>
             </DialogFooter>
           </DialogContent>
-        </Dialog>
-      )}
+        )}
+      </Dialog>
     </div>
   );
 };
