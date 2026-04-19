@@ -14,6 +14,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { ArrowLeft, BookOpen, GraduationCap, FolderOpen, CheckCircle2, Circle } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 interface LessonData {
   id: string;
