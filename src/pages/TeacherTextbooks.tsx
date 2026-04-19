@@ -123,8 +123,9 @@ const TeacherTextbooks = () => {
           .maybeSingle();
         if (existing) {
           const slides = prebuiltSlides || blocksToSlides(lesson.blocks || [], lesson.title);
-          setExistingSession(existing);
           setPendingLaunchData({ lesson, slides });
+          // Defer to next tick so the editor Dialog can fully unmount before opening the conflict Dialog
+          setTimeout(() => setExistingSession(existing), 150);
           return;
         }
       }
