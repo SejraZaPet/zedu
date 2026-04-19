@@ -165,6 +165,18 @@ const StudentGamePlay = () => {
                 </table>
               </div>
             )}
+            {currentSlideData.activitySpec && (
+              <div className="mt-4">
+                <LessonBlockRenderer
+                  block={{
+                    id: `live-activity-${currentSlideData.slideId}`,
+                    type: "activity",
+                    props: currentSlideData.activitySpec,
+                    visible: true,
+                  } as any}
+                />
+              </div>
+            )}
             {currentSlideData.device?.instructions && currentSlideData.device.instructions !== "Sledujte výklad." && (
               <div className="mt-6 p-4 bg-primary/5 border border-primary/20 rounded-lg">
                 <p className="text-sm font-medium text-primary">{currentSlideData.device.instructions}</p>
