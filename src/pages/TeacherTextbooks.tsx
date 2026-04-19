@@ -535,7 +535,12 @@ const TeacherTextbooks = () => {
                                       size="sm"
                                       variant="outline"
                                       className="h-7 gap-1.5"
-                                      onClick={() => launchLiveSession(lesson)}
+                                      onClick={() => {
+                                        const slides = blocksToSlides(lesson.blocks || [], lesson.title);
+                                        setPendingSlides(slides);
+                                        setPresentationLesson(lesson);
+                                        setEditingSlideIndex(0);
+                                      }}
                                       title="Spustit jako prezentaci"
                                     >
                                       <Play className="w-3.5 h-3.5" />
