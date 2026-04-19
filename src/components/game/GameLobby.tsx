@@ -33,6 +33,13 @@ export const GameLobby = ({ session, players, onStart, isTeacher }: Props) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5 flex flex-col items-center justify-center p-4">
+      {isTeacher && (
+        <div className="absolute top-4 left-4">
+          <Button variant="ghost" size="sm" onClick={() => navigate("/ucitel/ucebnice")}>
+            ← Zpět do učebnice
+          </Button>
+        </div>
+      )}
       <div className="text-center space-y-8 max-w-lg w-full">
         {/* Title */}
         <div className="space-y-2">
