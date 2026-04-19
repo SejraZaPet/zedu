@@ -122,18 +122,14 @@ const StudentGamePlay = () => {
     return <GameLeaderboardFinal session={session} players={players} responses={responses} highlightPlayerId={playerId} />;
   }
 
-  const currentQ = session?.activity_data?.[session?.current_question_index ?? -1];
-  const hasAnswered = answered.has(session.current_question_index);
-  const timeLimit = (session.settings?.timePerQuestion || 20) * 1000;
-  const questionStarted = session.question_started_at ? serverTsToClientMs(session.question_started_at) : Date.now();
+  const qi = session.current_question_index;
+  const currentSlideData = (session?.activity_data as any[])?.[qi];
+  const isSlideFormat = currentSlideData && currentSlideData.projector !== undefined && !currentSlideData.question;
 
-  const currentSlideData = session?.activity_data?.[session?.current_question_index ?? -1] as any;
-  const isSlideFormat = currentSlideData && !currentSlideData.question && currentSlideData.projector;
-
-  return (
-    <>
-      <ConnectionStatusBanner status={connectionStatus} onReconnect={reconnect} />
-      {isSlideFormat ? (
+  if (isSlideFormat) {
+    return (
+      <>
+        <ConnectionStatusBanner status={connectionStatus} onReconnect={reconnect} />
         <div className="min-h-screen bg-background flex flex-col">
           <div className="flex-1 container mx-auto px-4 py-8 max-w-2xl flex flex-col justify-center">
             {currentSlideData.projector?.headline && (
@@ -152,23 +148,43 @@ const StudentGamePlay = () => {
               </div>
             )}
             <div className="mt-8 text-center">
-              <p className="text-xs text-muted-foreground">Slide {(session?.current_question_index ?? 0) + 1} / {session?.activity_data?.length ?? 0}</p>
+              <p className="text-xs text-muted-foreground">
+                Slide {qi + 1} / {(session?.activity_data as any[])?.length ?? 0}
+              </p>
             </div>
           </div>
         </div>
-      ) : (
-        <StudentGameQuestion
-          question={currentQ}
-          questionIndex={session.current_question_index}
-          totalQuestions={session?.activity_data?.length ?? 0}
-          hasAnswered={hasAnswered}
-          lastResult={lastResult}
-          onAnswer={handleAnswer}
-          timeLimit={timeLimit}
-          questionStarted={questionStarted}
-          status={session.status}
-        />
-      )}
+      </>
+    );
+  }
+
+  const currentQ = !isSlideFormat ? (session.activity_data as any[])?.[qi] : null;
+  const hasAnswered = answered.has(qi);
+  const timeLimit = (session.settings?.timePerQuestion || 20) * 1000;
+  const questionStarted = session.question_started_at ? serverTsToClientMs(session.question_started_at) : Date.now();
+
+  if (!currentQ) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+        <div className="animate-pulse text-muted-foreground text-lg">Načítám...</div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <ConnectionStatusBanner status={connectionStatus} onReconnect={reconnect} />
+      <StudentGameQuestion
+        question={currentQ}
+        questionIndex={qi}
+        totalQuestions={(session?.activity_data as any[])?.length ?? 0}
+        hasAnswered={hasAnswered}
+        lastResult={lastResult}
+        onAnswer={handleAnswer}
+        timeLimit={timeLimit}
+        questionStarted={questionStarted}
+        status={session.status}
+      />
     </>
   );
 };
