@@ -263,7 +263,7 @@ const ActivitiesPage = () => {
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
-      <main className="pt-[90px] pb-16">
+      <main className="pb-16" style={{ paddingTop: "calc(70px + 1.5rem)" }}>
         {/* Header */}
         <div className="container mx-auto px-4 md:px-8 text-center mb-10">
           <h1 className="font-heading text-3xl md:text-4xl font-extrabold text-foreground mb-3">

@@ -72,7 +72,7 @@ const HelpPage = () => {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <SiteHeader />
-      <main className="flex-1 pt-[90px] pb-16">
+      <main className="flex-1 pb-16" style={{ paddingTop: "calc(70px + 1.5rem)" }}>
         <div className="container mx-auto max-w-4xl px-4">
           <h1 className="text-3xl md:text-4xl font-heading font-bold text-foreground mb-2">Nápověda</h1>
           <p className="text-muted-foreground mb-8">Návody k používání systému ZEdu</p>

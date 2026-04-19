@@ -88,7 +88,7 @@ const StudentAssignments = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <SiteHeader />
-      <main className="flex-1 container mx-auto px-4 py-8 max-w-3xl">
+      <main className="flex-1 container mx-auto px-4 py-8 max-w-3xl" style={{ paddingTop: "calc(70px + 1.5rem)" }}>
         <h1 className="text-2xl font-bold mb-1">Moje úlohy</h1>
         <p className="text-sm text-muted-foreground mb-6">Zadané úlohy a testy</p>
 
