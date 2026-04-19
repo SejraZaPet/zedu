@@ -104,7 +104,10 @@ const TeacherTextbooks = () => {
 
   const launchLiveSession = async (lesson: LessonItem) => {
     try {
+      console.log("DEBUG lesson:", lesson.title);
+      console.log("DEBUG lesson.blocks:", JSON.stringify(lesson.blocks?.slice(0, 2)));
       const slides = blocksToSlides(lesson.blocks || [], lesson.title);
+      console.log("DEBUG slides generated:", slides?.length);
       const { data, error } = await supabase.functions.invoke("create-live-session", {
         body: { lessonPlanId: null, title: lesson.title, slides },
       });
