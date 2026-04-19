@@ -20,9 +20,28 @@ const StudentGamePlay = () => {
     };
   }, [sessionId]);
 
-  const { session, players, responses, loading, connectionStatus, reconnect } = useGameSession(sessionId);
+  const [fetchAttempts, setFetchAttempts] = useState(0);
+  const { session, players, responses, loading, connectionStatus, reconnect } = useGameSession(sessionId, fetchAttempts);
   const [answered, setAnswered] = useState<Set<number>>(new Set());
   const [lastResult, setLastResult] = useState<{ correct: boolean; score: number } | null>(null);
+
+  useEffect(() => {
+    if (!loading && session && session.status === "lobby" && fetchAttempts < 20) {
+      const timer = setTimeout(() => {
+        setFetchAttempts((a) => a + 1);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [loading, session, fetchAttempts]);
+
+  useEffect(() => {
+    if (!loading && session && session.status === "playing" && session.current_question_index === -1 && fetchAttempts < 10) {
+      const timer = setTimeout(() => {
+        setFetchAttempts((a) => a + 1);
+      }, 400);
+      return () => clearTimeout(timer);
+    }
+  }, [loading, session, fetchAttempts]);
 
   // Track which questions have been answered
   useEffect(() => {
