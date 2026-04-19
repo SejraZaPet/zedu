@@ -108,7 +108,7 @@ const TeacherTextbooks = () => {
   const [pendingSlides, setPendingSlides] = useState<any[]>([]);
   const [editingSlideIndex, setEditingSlideIndex] = useState(0);
 
-  const launchLiveSession = async (lesson: LessonItem) => {
+  const launchLiveSession = async (lesson: LessonItem, prebuiltSlides?: any[]) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
