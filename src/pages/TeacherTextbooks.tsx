@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/sheet";
 import {
   BookOpen, Users, ArrowLeft, Copy, Eye, FolderOpen, ChevronRight,
-  Pencil, Trash2, Plus, Save, Loader2, X,
+  Pencil, Trash2, Plus, Save, Loader2, X, FileText,
 } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
