@@ -174,6 +174,7 @@ const StudentGamePlay = () => {
                     props: currentSlideData.activitySpec,
                     visible: true,
                   } as any}
+                  blockIndex={session?.current_question_index ?? 0}
                   onActivityComplete={async (_activityIndex: number, _activityType: string, score: number, maxScore: number) => {
                     if (!sessionId || !playerId) return;
                     try {
