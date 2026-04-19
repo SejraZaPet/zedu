@@ -120,8 +120,14 @@ const TeacherTextbooks = () => {
       }
       console.log("DEBUG lesson:", lesson.title);
       console.log("DEBUG lesson.blocks:", JSON.stringify(lesson.blocks?.slice(0, 2)));
-      const slides = blocksToSlides(lesson.blocks || [], lesson.title);
-      console.log("DEBUG slides generated:", slides?.length);
+      const rawBlocks = lesson.blocks || [];
+      console.log("BLOCKS COUNT:", rawBlocks.length);
+      console.log("BLOCK TYPES:", rawBlocks.map((b: any) => b?.type));
+      console.log("BLOCK[0] FULL:", JSON.stringify(rawBlocks[0]));
+      console.log("BLOCK[1] FULL:", JSON.stringify(rawBlocks[1]));
+      const slides = blocksToSlides(rawBlocks, lesson.title);
+      console.log("SLIDES COUNT:", slides.length);
+      console.log("SLIDE[1]:", JSON.stringify(slides[1]));
       const { data, error } = await supabase.functions.invoke("create-live-session", {
         body: { lessonPlanId: null, title: lesson.title, slides },
       });
