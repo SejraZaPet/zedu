@@ -47,6 +47,7 @@ const StudentTextbookDetail = () => {
   const [loading, setLoading] = useState(true);
   const [selectedLesson, setSelectedLesson] = useState<LessonData | null>(null);
   const [completedLessonIds, setCompletedLessonIds] = useState<Set<string>>(new Set());
+  const [completedActivityIndices, setCompletedActivityIndices] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     const fetchData = async () => {
