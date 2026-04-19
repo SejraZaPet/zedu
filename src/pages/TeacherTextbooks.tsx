@@ -516,7 +516,7 @@ const TeacherTextbooks = () => {
                                   >
                                     {lesson.status === "published" ? "Pub" : "Konc"}
                                   </Badge>
-                                  <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                                  <div className="flex gap-0.5 shrink-0">
                                     <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openLessonEditor(lesson)} title="Upravit">
                                       <Pencil className="w-3.5 h-3.5" />
                                     </Button>
