@@ -230,6 +230,7 @@ const StudentTextbookDetail = () => {
     if (error) console.error("Mark complete error:", error);
     if (!error) {
       setCompletedLessonIds(prev => new Set([...prev, lessonId]));
+      toast({ title: "Lekce dokončena! ✓", description: "Pokrok byl uložen." });
     }
   };
 
