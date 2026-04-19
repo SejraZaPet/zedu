@@ -925,6 +925,7 @@ export type Database = {
           blocks: Json
           created_at: string
           id: string
+          require_activities: boolean
           sort_order: number
           status: string
           textbook_id: string
@@ -935,6 +936,7 @@ export type Database = {
           blocks?: Json
           created_at?: string
           id?: string
+          require_activities?: boolean
           sort_order?: number
           status?: string
           textbook_id: string
@@ -945,6 +947,7 @@ export type Database = {
           blocks?: Json
           created_at?: string
           id?: string
+          require_activities?: boolean
           sort_order?: number
           status?: string
           textbook_id?: string
