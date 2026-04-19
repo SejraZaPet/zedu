@@ -476,6 +476,16 @@ const TeacherTextbooks = () => {
                                       <Pencil className="w-3.5 h-3.5" />
                                     </Button>
                                     <LessonPreviewDialog title={lesson.title} heroImageUrl={null} blocks={lesson.blocks} />
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-7 gap-1.5"
+                                      onClick={() => navigate(`/ucitel/ulohy?lessonId=${lesson.id}&lessonTitle=${encodeURIComponent(lesson.title)}`)}
+                                      title="Vytvořit pracovní list"
+                                    >
+                                      <FileText className="w-3.5 h-3.5" />
+                                      Pracovní list
+                                    </Button>
                                     <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setDeletingLesson(lesson)} title="Smazat">
                                       <Trash2 className="w-3.5 h-3.5 text-destructive" />
                                     </Button>
