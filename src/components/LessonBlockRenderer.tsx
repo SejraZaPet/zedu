@@ -291,7 +291,7 @@ export const LessonBlock = ({ block, blockIndex, onActivityComplete, isTeacher }
               {p.instructions}
             </p>
           )}
-          {at === "flashcards" && <FlashcardsActivity cards={p.flashcards || []} onComplete={handleComplete} />}
+          {at === "flashcards" && <FlashcardsActivity cards={p.flashcards || []} onComplete={() => handleComplete((p.flashcards || []).length, (p.flashcards || []).length)} />}
           {at === "quiz" && <QuizActivity quiz={p.quiz} onComplete={handleComplete} />}
           {at === "matching" && <MatchingActivity matching={p.matching} onComplete={handleComplete} />}
           {at === "sorting" && <SortingActivity sorting={p.sorting} onComplete={handleComplete} />}
