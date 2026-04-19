@@ -137,7 +137,7 @@ const StudentGamePlay = () => {
                 {currentSlideData.projector.headline}
               </h1>
             )}
-            {currentSlideData.projector?.body && (
+            {!currentSlideData.tableData && !currentSlideData.cardData && currentSlideData.projector?.body && (
               <p className="text-base text-muted-foreground whitespace-pre-wrap leading-relaxed">
                 {currentSlideData.projector.body}
               </p>
