@@ -22,8 +22,9 @@ import {
 } from "@/components/ui/sheet";
 import {
   BookOpen, Users, ArrowLeft, Copy, Eye, FolderOpen, ChevronRight,
-  Pencil, Trash2, Plus, Save, Loader2, X, FileText,
+  Pencil, Trash2, Plus, Save, Loader2, X, FileText, Play,
 } from "lucide-react";
+import { blocksToSlides } from "@/lib/blocks-to-slides";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -100,6 +101,21 @@ const TeacherTextbooks = () => {
   const [newTopicTitle, setNewTopicTitle] = useState("");
   const [newTopicGrade, setNewTopicGrade] = useState<number>(1);
   const [editingTopic, setEditingTopic] = useState<{ id: string; title: string } | null>(null);
+
+  const launchLiveSession = async (lesson: LessonItem) => {
+    try {
+      const slides = blocksToSlides(lesson.blocks || [], lesson.title);
+      const { data, error } = await supabase.functions.invoke("create-live-session", {
+        body: { lessonPlanId: null, title: lesson.title, slides },
+      });
+      if (error) throw error;
+      if (!data?.sessionId) throw new Error("Chybí ID session");
+      toast({ title: "Prezentace spuštěna", description: `Kód: ${data.gameCode}` });
+      navigate(`/live/ucitel/${data.sessionId}`);
+    } catch (e: any) {
+      toast({ title: "Chyba", description: e?.message || "Nepodařilo se spustit prezentaci", variant: "destructive" });
+    }
+  };
 
   const fetchTextbooks = async () => {
     const { data } = await supabase
@@ -485,6 +501,16 @@ const TeacherTextbooks = () => {
                                     >
                                       <FileText className="w-3.5 h-3.5" />
                                       Pracovní list
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-7 gap-1.5"
+                                      onClick={() => launchLiveSession(lesson)}
+                                      title="Spustit jako prezentaci"
+                                    >
+                                      <Play className="w-3.5 h-3.5" />
+                                      Prezentace
                                     </Button>
                                     <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setDeletingLesson(lesson)} title="Smazat">
                                       <Trash2 className="w-3.5 h-3.5 text-destructive" />
