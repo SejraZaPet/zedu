@@ -230,7 +230,12 @@ const LiveTeacherScreen = () => {
                   <div className="flex items-center gap-4">
                     <div className="text-center">
                       <p className="text-2xl font-bold text-green-600">
-                        {Math.round((responses.filter(r => r.question_index === currentIndex && r.is_correct).length / Math.max(responses.filter(r => r.question_index === currentIndex).length, 1)) * 100)}%
+                        {(() => {
+                          const relevant = responses.filter(r => r.question_index === currentIndex);
+                          if (relevant.length === 0) return 0;
+                          const avgScore = relevant.reduce((sum, r) => sum + (r.score ?? 0), 0) / relevant.length;
+                          return Math.round(avgScore);
+                        })()}%
                       </p>
                       <p className="text-xs text-muted-foreground">správně</p>
                     </div>
@@ -250,7 +255,7 @@ const LiveTeacherScreen = () => {
                             <div key={r.id} className="flex items-center justify-between text-sm">
                               <span className="text-foreground">{player?.nickname || "Žák"}</span>
                               <span className={r.is_correct ? "text-green-600 font-medium" : "text-muted-foreground"}>
-                                {r.score ?? 0} b. {r.is_correct ? "✓" : ""}
+                                {r.score ?? 0} %
                               </span>
                             </div>
                           );
