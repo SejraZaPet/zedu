@@ -22,6 +22,7 @@ interface LessonData {
   blocks: any[];
   sort_order: number;
   status: string;
+  require_activities?: boolean;
 }
 
 interface TopicWithLessons {
