@@ -114,7 +114,7 @@ const TeacherAssignments = () => {
         randomize_order: randomizeOrder,
         class_id: selectedClassId || null,
         status: "draft",
-        activity_data: [],
+        activity_data: generatedQuestions as any,
       } as any);
 
       if (error) throw error;
