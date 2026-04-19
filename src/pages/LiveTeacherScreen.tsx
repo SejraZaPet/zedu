@@ -71,6 +71,11 @@ const LiveTeacherScreen = () => {
           <h1 className="text-2xl font-bold">Výuka ukončena</h1>
           <p className="text-muted-foreground">{slides.length} slidů · {players.length} účastníků</p>
         </div>
+        <div className="flex justify-center">
+          <Button size="sm" variant="ghost" onClick={() => navigate("/ucitel/ucebnice")} className="gap-1.5">
+            <ArrowLeft className="w-4 h-4" /> Zpět do učebnice
+          </Button>
+        </div>
         <SessionExports sessionId={sessionId!} sessionTitle={session.title} />
       </div>
     );
