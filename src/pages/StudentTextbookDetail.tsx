@@ -110,7 +110,7 @@ const StudentTextbookDetail = () => {
       if (globalTopicIds.length > 0) {
         const { data: gl } = await supabase
           .from("textbook_lessons")
-          .select("id, title, blocks, sort_order, status, topic_id")
+          .select("id, title, blocks, sort_order, status, topic_id, require_activities")
           .in("topic_id", globalTopicIds)
           .eq("status", "published")
           .order("sort_order", { ascending: true });
