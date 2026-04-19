@@ -142,6 +142,28 @@ const StudentGamePlay = () => {
                 {currentSlideData.projector.body}
               </p>
             )}
+            {currentSlideData.tableData && (
+              <div className="overflow-x-auto mt-3">
+                <table className="w-full text-sm border-collapse">
+                  <thead>
+                    <tr>
+                      {currentSlideData.tableData.headers.map((h: string, i: number) => (
+                        <th key={i} className="border border-border bg-muted px-3 py-2 text-left font-medium">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {currentSlideData.tableData.rows.map((row: string[], ri: number) => (
+                      <tr key={ri}>
+                        {row.map((cell: string, ci: number) => (
+                          <td key={ci} className="border border-border px-3 py-2">{cell}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
             {currentSlideData.device?.instructions && currentSlideData.device.instructions !== "Sledujte výklad." && (
               <div className="mt-6 p-4 bg-primary/5 border border-primary/20 rounded-lg">
                 <p className="text-sm font-medium text-primary">{currentSlideData.device.instructions}</p>

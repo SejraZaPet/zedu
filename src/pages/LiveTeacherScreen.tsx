@@ -169,6 +169,28 @@ const LiveTeacherScreen = () => {
             </div>
             <h2 className="text-2xl font-bold">{currentSlide.projector.headline}</h2>
             <p className="text-base text-muted-foreground mt-2 whitespace-pre-wrap">{currentSlide.projector.body}</p>
+            {(currentSlide as any).tableData && (
+              <div className="overflow-x-auto mt-3">
+                <table className="w-full text-sm border-collapse">
+                  <thead>
+                    <tr>
+                      {(currentSlide as any).tableData.headers.map((h: string, i: number) => (
+                        <th key={i} className="border border-border bg-muted px-3 py-2 text-left font-medium">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(currentSlide as any).tableData.rows.map((row: string[], ri: number) => (
+                      <tr key={ri}>
+                        {row.map((cell: string, ci: number) => (
+                          <td key={ci} className="border border-border px-3 py-2">{cell}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
 
           {/* Device preview */}

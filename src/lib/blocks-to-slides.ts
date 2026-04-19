@@ -19,8 +19,6 @@ function stripHtml(html: string): string {
 }
 
 export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
-  console.log("[blocksToSlides] input:", { lessonTitle, blockCount: blocks?.length, blocks });
-
   const slides: any[] = [];
 
   slides.push({
@@ -36,7 +34,6 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
     if (!block || block.visible === false) continue;
     const type = block.type;
     const props = block.props || {};
-    console.log("[blocksToSlides] block:", { type, props });
 
     if (type === "heading") {
       const raw = props.text || props.html || props.content || props.value || "";
@@ -52,6 +49,16 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
     } else if (type === "paragraph") {
       const raw = props.text || props.html || props.content || props.value || "";
       const text = stripHtml(raw);
+      if (!text) continue;
+      slides.push({
+        slideId: `slide-${slideIndex++}`,
+        type: "explain",
+        projector: { headline: "", body: text },
+        device: { instructions: "Sledujte výklad." },
+        teacherNotes: "",
+      });
+    } else if (type === "rich_text") {
+      const text = stripHtml(props.html || props.text || props.content || "");
       if (!text) continue;
       slides.push({
         slideId: `slide-${slideIndex++}`,
@@ -96,6 +103,16 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
         device: { instructions: "Prohlédněte si obrázek." },
         teacherNotes: "",
       });
+    } else if (type === "image_text") {
+      const text = stripHtml(props.text || props.html || "");
+      const imageUrl = props.imageUrl || props.url || "";
+      slides.push({
+        slideId: `slide-${slideIndex++}`,
+        type: "explain",
+        projector: { headline: "", body: text, assetRefs: imageUrl ? [imageUrl] : [] },
+        device: { instructions: "Prohlédněte si obrázek a text." },
+        teacherNotes: "",
+      });
     } else if (type === "callout" || type === "quote") {
       const raw = props.text || props.html || props.content || props.value || "";
       const text = stripHtml(raw);
@@ -106,6 +123,24 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
         projector: { headline: "", body: text },
         device: { instructions: "Sledujte výklad." },
         teacherNotes: "",
+      });
+    } else if (type === "table") {
+      const headers: string[] = props.headers || [];
+      const rows: string[][] = props.rows || [];
+      if (headers.length === 0 && rows.length === 0) continue;
+
+      const headerLine = headers.join(" | ");
+      const separator = headers.map(() => "---").join(" | ");
+      const rowLines = rows.map((row: string[]) => row.join(" | ")).join("\n");
+      const tableText = [headerLine, separator, rowLines].filter(Boolean).join("\n");
+
+      slides.push({
+        slideId: `slide-${slideIndex++}`,
+        type: "explain",
+        projector: { headline: props.title || "", body: tableText },
+        device: { instructions: "Sledujte tabulku." },
+        teacherNotes: "",
+        tableData: { headers, rows },
       });
     } else if (type === "two_column" || type === "twoColumn") {
       const left = props.leftText || props.left || "";
@@ -128,6 +163,5 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
     teacherNotes: "",
   });
 
-  console.log("[blocksToSlides] output slides:", slides.length, slides);
   return slides;
 }
