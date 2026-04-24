@@ -194,6 +194,10 @@ const UsersManager = () => {
             </SelectContent>
           </Select>
         )}
+        <Button onClick={() => setAddUserOpen(true)} className="gap-2">
+          <UserPlus className="w-4 h-4" />
+          Přidat žáka
+        </Button>
       </div>
 
       <div className="text-sm text-muted-foreground">
