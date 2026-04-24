@@ -615,10 +615,8 @@ const UsersManager = () => {
               onClick={async () => {
                 setCreating(true);
                 try {
-                  const sanitize = (s: string) =>
-                    s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, "").toLowerCase() || "user";
-                  const email = newUser.email ||
-                    `${sanitize(newUser.first_name)}.${sanitize(newUser.last_name)}.${Date.now()}@zedu-student.cz`;
+                  const existingEmails = users.map(u => u.email);
+                  const email = newUser.email || generateStudentEmail(newUser.first_name, newUser.last_name, existingEmails);
                   const password = Math.random().toString(36).slice(-8) + "Aa1!";
 
                   const { data: authData, error: authError } = await supabase.functions.invoke("create-user", {
