@@ -26,6 +26,20 @@ const StudentGamePlay = () => {
   const { session, players, responses, loading, connectionStatus, reconnect } = useGameSession(sessionId, fetchAttempts);
   const [answered, setAnswered] = useState<Set<number>>(new Set());
   const [lastResult, setLastResult] = useState<{ correct: boolean; score: number } | null>(null);
+  const [liveSettings, setLiveSettings] = useState<any>({});
+
+  useEffect(() => {
+    if (!sessionId) return;
+    const interval = setInterval(async () => {
+      const { data } = await supabase
+        .from("game_sessions")
+        .select("settings")
+        .eq("id", sessionId)
+        .single();
+      if (data) setLiveSettings(data.settings || {});
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [sessionId]);
 
   useEffect(() => {
     if (!loading && session && session.status === "lobby" && fetchAttempts < 20) {
