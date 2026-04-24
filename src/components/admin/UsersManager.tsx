@@ -472,24 +472,22 @@ const UsersManager = () => {
             {filtered.map((user) => (
               <TableRow key={user.id} className="cursor-pointer hover:bg-muted/50" onClick={() => { setSelectedUser(user); setDetailOpen(true); }}>
                 <TableCell onClick={(e) => e.stopPropagation()}>
-                  {user.status === "pending" && (
-                    <Checkbox
-                      checked={selectedIds.has(user.id)}
-                      onCheckedChange={(v) => {
-                        const next = new Set(selectedIds);
-                        if (v) next.add(user.id);
-                        else next.delete(user.id);
-                        setSelectedIds(next);
-                      }}
-                    />
-                  )}
+                  <Checkbox
+                    checked={selectedIds.has(user.id)}
+                    onCheckedChange={(v) => {
+                      const next = new Set(selectedIds);
+                      if (v) next.add(user.id);
+                      else next.delete(user.id);
+                      setSelectedIds(next);
+                    }}
+                  />
                 </TableCell>
                 <TableCell className="font-medium whitespace-nowrap">
                   {user.first_name} {user.last_name}
                 </TableCell>
-                <TableCell className="text-muted-foreground">{user.email}</TableCell>
-                <TableCell className="text-muted-foreground">{user.school || "–"}</TableCell>
-                <TableCell className="text-muted-foreground">{user.field_of_study || "–"}</TableCell>
+                <TableCell className="text-muted-foreground max-w-[160px] truncate">{user.email}</TableCell>
+                <TableCell className="text-muted-foreground hidden md:table-cell max-w-[100px] truncate">{user.school || "–"}</TableCell>
+                <TableCell className="text-muted-foreground hidden xl:table-cell">{user.field_of_study || "–"}</TableCell>
                 <TableCell className="text-center text-muted-foreground">{user.year ?? "–"}</TableCell>
                 <TableCell>
                   {user.role === "admin" ? (
@@ -505,7 +503,7 @@ const UsersManager = () => {
                     {statusLabels[user.status] || user.status}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                <TableCell className="text-xs text-muted-foreground whitespace-nowrap hidden lg:table-cell">
                   {new Date(user.created_at).toLocaleDateString("cs-CZ")}
                 </TableCell>
                 <TableCell className="text-right">
