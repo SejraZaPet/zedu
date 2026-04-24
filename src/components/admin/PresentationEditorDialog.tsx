@@ -230,22 +230,58 @@ export const PresentationEditorDialog = ({
                     </Select>
                   </div>
                   {(pendingSlides[editingSlideIndex] as any).activitySpec?.activityType === "wall" && (
-                    <div>
-                      <Label className="text-xs">Otázka pro žáky</Label>
-                      <Textarea
-                        rows={2}
-                        value={(pendingSlides[editingSlideIndex] as any).activitySpec?.question || ""}
-                        onChange={(e) => {
-                          const updated = [...pendingSlides];
-                          updated[editingSlideIndex] = {
-                            ...updated[editingSlideIndex],
-                            activitySpec: { ...(updated[editingSlideIndex] as any).activitySpec, question: e.target.value },
-                          };
-                          setPendingSlides(updated);
-                        }}
-                        placeholder="Napište otázku pro žáky..."
-                      />
-                    </div>
+                    <>
+                      <div>
+                        <Label className="text-xs">Otázka pro žáky</Label>
+                        <Textarea
+                          rows={2}
+                          value={(pendingSlides[editingSlideIndex] as any).activitySpec?.question || ""}
+                          onChange={(e) => {
+                            const updated = [...pendingSlides];
+                            updated[editingSlideIndex] = {
+                              ...updated[editingSlideIndex],
+                              activitySpec: { ...(updated[editingSlideIndex] as any).activitySpec, question: e.target.value },
+                            };
+                            setPendingSlides(updated);
+                          }}
+                          placeholder="Napište otázku pro žáky..."
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          checked={(pendingSlides[editingSlideIndex] as any).activitySpec?.anonymous === true}
+                          onCheckedChange={(v) => {
+                            const updated = [...pendingSlides];
+                            updated[editingSlideIndex] = {
+                              ...updated[editingSlideIndex],
+                              activitySpec: { ...(updated[editingSlideIndex] as any).activitySpec, anonymous: !!v },
+                            };
+                            setPendingSlides(updated);
+                          }}
+                          id="slide-wall-anonymous"
+                        />
+                        <Label htmlFor="slide-wall-anonymous" className="text-xs cursor-pointer">
+                          Anonymní odpovědi
+                        </Label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          checked={(pendingSlides[editingSlideIndex] as any).activitySpec?.allowMultiple === true}
+                          onCheckedChange={(v) => {
+                            const updated = [...pendingSlides];
+                            updated[editingSlideIndex] = {
+                              ...updated[editingSlideIndex],
+                              activitySpec: { ...(updated[editingSlideIndex] as any).activitySpec, allowMultiple: !!v },
+                            };
+                            setPendingSlides(updated);
+                          }}
+                          id="slide-wall-multiple"
+                        />
+                        <Label htmlFor="slide-wall-multiple" className="text-xs cursor-pointer">
+                          Povolit více odpovědí od jednoho žáka
+                        </Label>
+                      </div>
+                    </>
                   )}
                 </div>
               )}
