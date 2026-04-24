@@ -129,6 +129,7 @@ export function usePresentationLauncher() {
     editingSlideIndex, setEditingSlideIndex,
     existingSession, setExistingSession,
     pendingLaunchData, setPendingLaunchData,
+    hasSavedPresentation,
     openEditor, launchLiveSession, launchNew,
   };
 }
