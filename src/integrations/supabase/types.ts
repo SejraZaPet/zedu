@@ -946,6 +946,7 @@ export type Database = {
           blocks: Json
           created_at: string
           id: string
+          presentation_slides: Json | null
           require_activities: boolean
           sort_order: number
           status: string
@@ -957,6 +958,7 @@ export type Database = {
           blocks?: Json
           created_at?: string
           id?: string
+          presentation_slides?: Json | null
           require_activities?: boolean
           sort_order?: number
           status?: string
@@ -968,6 +970,7 @@ export type Database = {
           blocks?: Json
           created_at?: string
           id?: string
+          presentation_slides?: Json | null
           require_activities?: boolean
           sort_order?: number
           status?: string
@@ -1070,6 +1073,7 @@ export type Database = {
           created_at: string
           hero_image_url: string | null
           id: string
+          presentation_slides: Json | null
           require_activities: boolean
           sort_order: number
           status: string
@@ -1082,6 +1086,7 @@ export type Database = {
           created_at?: string
           hero_image_url?: string | null
           id?: string
+          presentation_slides?: Json | null
           require_activities?: boolean
           sort_order?: number
           status?: string
@@ -1094,6 +1099,7 @@ export type Database = {
           created_at?: string
           hero_image_url?: string | null
           id?: string
+          presentation_slides?: Json | null
           require_activities?: boolean
           sort_order?: number
           status?: string
