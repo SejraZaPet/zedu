@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Ban, UserCheck, Shield, Search, UserPlus, CheckCheck, Upload, Trash2, KeyRound, Printer } from "lucide-react";
+import { Ban, UserCheck, Shield, Search, UserPlus, CheckCheck, Upload, Trash2, KeyRound, Printer, CheckCircle2, Clock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
