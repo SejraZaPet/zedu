@@ -44,6 +44,7 @@ interface UserProfile {
   status: string;
   created_at: string;
   role?: string;
+  login_password?: string;
 }
 
 const statusLabels: Record<string, string> = {
@@ -428,7 +429,7 @@ const UsersManager = () => {
                 firstName: u.first_name || "",
                 lastName: u.last_name || "",
                 email: u.email || "",
-                password: "viz heslo při vytvoření",
+                password: u.login_password || "–",
                 role: u.role || "user",
               }));
               printLoginCards(cards);
@@ -550,7 +551,7 @@ const UsersManager = () => {
                           firstName: user.first_name || "",
                           lastName: user.last_name || "",
                           email: user.email || "",
-                          password: "viz heslo při vytvoření",
+                          password: user.login_password || "–",
                           role: user.role || "user",
                         }]);
                       }} className="text-blue-400 hover:bg-blue-500/10 h-7 w-7 p-0">
@@ -696,6 +697,7 @@ const UsersManager = () => {
                     field_of_study: "",
                     year: newUser.year ? parseInt(newUser.year) : null,
                     status: "approved" as any,
+                    login_password: password,
                   });
 
                   await supabase.from("user_roles").insert({
@@ -924,6 +926,7 @@ const UsersManager = () => {
                         field_of_study: row.obor || row.trida || "",
                         year: row.rocnik ? parseInt(row.rocnik) : null,
                         status: "approved" as any,
+                        login_password: password,
                       });
 
                       await supabase.from("user_roles").insert({ user_id: userId, role: role as any });

@@ -41,8 +41,8 @@ function buildStrip(user: LoginCardData): string {
     '<div class="cred-row"><div class="cred-label">Přihlášení:</div><div class="cred-value">' +
       escHtml(user.email) +
       "</div></div>",
-    user.password === "viz heslo při vytvoření"
-      ? '<div class="cred-row"><div class="cred-label">Heslo:</div><div class="cred-value cred-password-note">Heslo bylo nastaveno při vytvoření účtu</div></div>'
+    (!user.password || user.password === "–" || user.password === "viz heslo při vytvoření")
+      ? '<div class="cred-row"><div class="cred-label">Heslo:</div><div class="cred-value cred-password-note">Heslo nebylo uloženo – použijte reset hesla</div></div>'
       : '<div class="cred-row"><div class="cred-label">Heslo:</div><div class="cred-value cred-password">' +
         escHtml(user.password) +
         "</div></div>",
