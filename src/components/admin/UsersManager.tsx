@@ -641,13 +641,44 @@ const UsersManager = () => {
                         const buffer = await file.arrayBuffer();
                         const wb = XLSX.read(buffer, { type: "array" });
                         const ws = wb.Sheets[wb.SheetNames[0]];
-                        rows = XLSX.utils.sheet_to_json(ws, { raw: false, defval: "" });
-                        rows = rows.map((row: any) =>
-                          Object.fromEntries(Object.entries(row).map(([k, v]) => [k.toLowerCase().trim(), v]))
+                        const allRows = XLSX.utils.sheet_to_json(ws, { raw: false, defval: "", header: 1 }) as any[][];
+
+                        const headerRowIndex = allRows.findIndex((row: any[]) =>
+                          row.some((cell: any) =>
+                            String(cell).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes("jmeno") ||
+                            String(cell).toLowerCase().includes("jméno")
+                          )
                         );
+                        if (headerRowIndex === -1) { setImportErrors(["Soubor neobsahuje záhlaví se sloupcem Jméno."]); return; }
+
+                        const keyMap: Record<string, string> = {
+                          "jmeno": "jmeno", "prijmeni": "prijmeni",
+                          "e-mail": "email", "email": "email",
+                          "e-mail rodice": "email_rodice", "email rodice": "email_rodice",
+                          "skola": "skola", "trida": "trida", "rocnik": "rocnik", "role": "role",
+                        };
+
+                        const headers = allRows[headerRowIndex].map((h: any) =>
+                          String(h).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s*\*/g, "").trim().toLowerCase()
+                        );
+
+                        rows = allRows
+                          .slice(headerRowIndex + 1)
+                          .map((row: any[]) => {
+                            const obj: any = {};
+                            headers.forEach((h: string, i: number) => {
+                              obj[keyMap[h] || h] = row[i] != null ? String(row[i]).trim() : "";
+                            });
+                            return obj;
+                          })
+                          .filter((r: any) =>
+                            r.jmeno && r.prijmeni &&
+                            !r.jmeno.toLowerCase().includes("jmeno") &&
+                            !r.jmeno.toLowerCase().includes("krestni") &&
+                            !r.jmeno.toLowerCase().includes("vzorovy")
+                          );
                       }
 
-                      rows = rows.filter((r: any) => r.jmeno && r.prijmeni && r.jmeno !== "Jan");
                       setImportPreview(rows);
                     } catch (err: any) {
                       setImportErrors([`Chyba při čtení souboru: ${err.message}`]);
