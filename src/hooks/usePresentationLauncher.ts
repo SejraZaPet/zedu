@@ -87,6 +87,13 @@ export function usePresentationLauncher() {
       }).select().single();
       if (error) throw error;
       if (!data?.id) throw new Error("Chybí ID session");
+      const lessonTable = lesson.source === "teacher_textbook_lessons"
+        ? "teacher_textbook_lessons"
+        : "textbook_lessons";
+      await supabase
+        .from(lessonTable)
+        .update({ presentation_slides: slides } as any)
+        .eq("id", lesson.id);
       toast({ title: "Prezentace spuštěna", description: `Kód: ${gameCode}` });
       navigate(`/live/ucitel/${data.id}`);
     } catch (e: any) {
