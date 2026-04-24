@@ -343,6 +343,7 @@ export const LessonBlock = ({ block, blockIndex, onActivityComplete, isTeacher }
             <WallActivity
               question={p.question || ""}
               anonymous={p.anonymous || false}
+              allowMultiple={p.allowMultiple || false}
               sessionId={p.sessionId}
               questionIndex={p.questionIndex}
               playerId={p.playerId}
