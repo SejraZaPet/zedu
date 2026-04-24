@@ -50,6 +50,15 @@ const statusLabels: Record<string, string> = {
   blocked: "Zablokovaný",
 };
 
+const roleLabels: Record<string, string> = {
+  admin: "Admin",
+  teacher: "Učitel",
+  lektor: "Lektor",
+  rodic: "Rodič",
+  parent: "Rodič",
+  user: "Žák",
+};
+
 const statusColors: Record<string, string> = {
   pending: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
   approved: "bg-green-500/20 text-green-400 border-green-500/30",
