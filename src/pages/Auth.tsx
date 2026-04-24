@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Lock, UserPlus, LogIn, GraduationCap, BookOpenText } from "lucide-react";
+import { Lock, UserPlus, LogIn, GraduationCap, BookOpenText, KeyRound, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type Role = "student" | "teacher";
