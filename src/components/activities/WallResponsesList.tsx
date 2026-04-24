@@ -52,20 +52,36 @@ const WallResponsesList = ({ sessionId, questionIndex, anonymous }: Props) => {
   }
 
   return (
-    <div className="mt-6 space-y-2">
-      <p className="text-sm font-medium text-foreground">Odpovědi spolužáků</p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        {responses.map((r) => (
-          <div
-            key={r.id}
-            className="bg-muted/50 border border-border rounded-lg p-3"
-          >
-            <p className="text-sm text-foreground leading-relaxed">{r.text}</p>
-            {r.nickname && (
-              <p className="text-xs text-muted-foreground mt-1">— {r.nickname}</p>
-            )}
-          </div>
-        ))}
+    <div className="mt-4">
+      <p className="text-sm font-medium text-muted-foreground mb-3">Odpovědi spolužáků:</p>
+      <div className="flex flex-wrap gap-2 justify-center">
+        {responses.map((r, i) => {
+          const colors = [
+            "bg-purple-100 border-purple-300 text-purple-800",
+            "bg-blue-100 border-blue-300 text-blue-800",
+            "bg-green-100 border-green-300 text-green-800",
+            "bg-yellow-100 border-yellow-300 text-yellow-800",
+            "bg-pink-100 border-pink-300 text-pink-800",
+            "bg-indigo-100 border-indigo-300 text-indigo-800",
+            "bg-teal-100 border-teal-300 text-teal-800",
+            "bg-orange-100 border-orange-300 text-orange-800",
+          ];
+          const color = colors[i % colors.length];
+          const rotations = [-2, 1, -1, 2, 0, -2, 1, -1];
+          const rotation = rotations[i % rotations.length];
+          return (
+            <div
+              key={r.id}
+              className={`${color} border-2 rounded-lg px-3 py-2 shadow-sm max-w-xs`}
+              style={{ transform: `rotate(${rotation}deg)` }}
+            >
+              <p className="text-sm leading-snug break-words">{r.text}</p>
+              {r.nickname && (
+                <p className="text-xs opacity-70 mt-1">— {r.nickname}</p>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
