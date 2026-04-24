@@ -353,6 +353,26 @@ const UsersManager = () => {
             <CheckCheck className="w-4 h-4" />
             Schválit vybrané
           </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="gap-2 text-red-400 hover:bg-red-500/10"
+            onClick={async () => {
+              if (!confirm(`Opravdu smazat ${selectedIds.size} uživatelů?`)) return;
+              try {
+                const ids = Array.from(selectedIds);
+                await Promise.all(ids.map(id => supabase.from("profiles").delete().eq("id", id)));
+                toast({ title: "Smazáno", description: `${ids.length} uživatelů bylo odstraněno.` });
+                setSelectedIds(new Set());
+                fetchUsers();
+              } catch (e: any) {
+                toast({ title: "Chyba", description: e.message, variant: "destructive" });
+              }
+            }}
+          >
+            <Trash2 className="w-4 h-4" />
+            Smazat vybrané
+          </Button>
           <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>
             Zrušit výběr
           </Button>
