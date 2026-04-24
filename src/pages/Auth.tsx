@@ -24,6 +24,7 @@ const Auth = () => {
   const [forgotPassword, setForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
   const [resetSent, setResetSent] = useState(false);
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
 
   // Login fields
   const [email, setEmail] = useState("");
