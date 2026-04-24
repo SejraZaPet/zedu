@@ -24,8 +24,31 @@ export function usePresentationLauncher() {
   const [existingSession, setExistingSession] = useState<{ id: string; title: string } | null>(null);
   const [pendingLaunchData, setPendingLaunchData] = useState<{ lesson: LessonItem; slides: any[] } | null>(null);
 
-  const openEditor = (lesson: LessonItem) => {
-    const slides = blocksToSlides(lesson.blocks || [], lesson.title);
+  const [hasSavedPresentation, setHasSavedPresentation] = useState(false);
+
+  const openEditor = async (lesson: LessonItem) => {
+    let slides: any[] = [];
+    let saved = false;
+
+    const table = lesson.source === "teacher_textbook_lessons"
+      ? "teacher_textbook_lessons"
+      : "textbook_lessons";
+
+    const { data } = await supabase
+      .from(table)
+      .select("presentation_slides" as any)
+      .eq("id", lesson.id)
+      .single();
+
+    const savedSlides = (data as any)?.presentation_slides;
+    if (savedSlides && Array.isArray(savedSlides) && savedSlides.length > 0) {
+      slides = savedSlides;
+      saved = true;
+    } else {
+      slides = blocksToSlides(lesson.blocks || [], lesson.title);
+    }
+
+    setHasSavedPresentation(saved);
     setPendingSlides(slides);
     setPresentationLesson(lesson);
     setEditingSlideIndex(0);
