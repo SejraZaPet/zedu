@@ -214,6 +214,10 @@ const UsersManager = () => {
           <UserPlus className="w-4 h-4" />
           Přidat žáka
         </Button>
+        <Button onClick={() => setImportOpen(true)} variant="outline" className="gap-2">
+          <Upload className="w-4 h-4" />
+          Hromadný import
+        </Button>
       </div>
 
       <div className="text-sm text-muted-foreground">
