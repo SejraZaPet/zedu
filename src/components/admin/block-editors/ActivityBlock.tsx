@@ -29,6 +29,7 @@ const ACTIVITY_TYPES = [
   { value: "matching", label: "Přiřazování A–B" },
   { value: "ordering", label: "Seřaď pořadí" },
   { value: "sorting", label: "Třídění do skupin" },
+  { value: "wall", label: "🧱 Zeď (odpovědi žáků)" },
 ];
 
 const FlashcardsEditor = ({ props, onChange }: { props: any; onChange: (p: any) => void }) => {
@@ -1185,6 +1186,30 @@ const ActivityBlock = ({ block, onChange }: Props) => {
       {activityType === "reveal_cards" && <RevealCardsEditor props={p} onChange={onChange} />}
       {activityType === "memory_game" && <MemoryGameEditor props={p} onChange={onChange} />}
       {activityType === "crossword" && <CrosswordEditor props={p} onChange={onChange} />}
+      {activityType === "wall" && (
+        <div className="space-y-3">
+          <div>
+            <Label className="text-xs">Otázka pro žáky</Label>
+            <Textarea
+              value={p.question || ""}
+              onChange={(e) => onChange({ ...p, question: e.target.value })}
+              placeholder="Co si myslíte o...?"
+              rows={2}
+              className="mt-1"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              checked={p.anonymous === true}
+              onCheckedChange={(v) => onChange({ ...p, anonymous: !!v })}
+              id="wall-anonymous"
+            />
+            <Label htmlFor="wall-anonymous" className="text-xs cursor-pointer">
+              Anonymní odpovědi
+            </Label>
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center gap-2 pt-3 border-t border-border mt-3">
         <Checkbox
