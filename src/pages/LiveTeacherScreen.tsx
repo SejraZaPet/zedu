@@ -134,6 +134,15 @@ const LiveTeacherScreen = () => {
         </div>
         <div className="flex gap-2">
           <Badge variant="outline">Slide {currentIndex + 1} / {slides.length}</Badge>
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1.5"
+            onClick={() => window.open(`/live/projektor/${sessionId}`, '_blank')}
+          >
+            <Monitor className="w-4 h-4" />
+            Projektor
+          </Button>
           <Button size="sm" variant="destructive" onClick={endGame}>
             <StopCircle className="w-4 h-4 mr-1" /> Ukončit
           </Button>
