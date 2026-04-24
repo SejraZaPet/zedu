@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FolderOpen, ChevronRight, Pencil, Trash2, Plus, FileText, Play } from "lucide-react";
+import { FolderOpen, ChevronRight, Pencil, Trash2, Plus, FileText, Play, Monitor } from "lucide-react";
 import LessonPreviewDialog from "@/components/admin/LessonPreviewDialog";
 import type { Block } from "@/lib/textbook-config";
 
@@ -95,7 +95,23 @@ const TextbookGradeGroups = ({
                         >
                           {lesson.status === "published" ? "Pub" : "Konc"}
                         </Badge>
-                        <div className="flex gap-0.5 shrink-0">
+                        {/* Mobile: icon-only buttons */}
+                        <div className="flex md:hidden gap-1 shrink-0">
+                          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => onEditLesson(lesson)} title="Upravit">
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => onOpenWorksheet(lesson.id, lesson.title)} title="Pracovní list">
+                            <FileText className="w-4 h-4" />
+                          </Button>
+                          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => onOpenPresentation(lesson)} title="Prezentace">
+                            <Monitor className="w-4 h-4" />
+                          </Button>
+                          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => onDeleteLesson(lesson)} title="Smazat">
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </Button>
+                        </div>
+                        {/* Desktop: buttons with text */}
+                        <div className="hidden md:flex gap-0.5 shrink-0">
                           <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onEditLesson(lesson)} title="Upravit">
                             <Pencil className="w-3.5 h-3.5" />
                           </Button>
