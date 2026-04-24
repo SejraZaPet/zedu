@@ -496,6 +496,176 @@ const UsersManager = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={importOpen} onOpenChange={(o) => { setImportOpen(o); if (!o) { setImportPreview([]); setImportFile(null); setImportErrors([]); } }}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Hromadný import uživatelů</DialogTitle>
+          </DialogHeader>
+          {!importPreview.length ? (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Nahrajte soubor Excel (.xlsx) nebo CSV (.csv) se sloupci: jmeno, prijmeni, email, email_rodice, skola, trida, rocnik, role
+              </p>
+              <div
+                className="border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={() => document.getElementById("import-file-input")?.click()}
+              >
+                <Upload className="w-10 h-10 mx-auto mb-3 text-muted-foreground" />
+                <p className="font-medium">Klikněte pro výběr souboru</p>
+                <p className="text-xs text-muted-foreground mt-1">.xlsx nebo .csv</p>
+                <input
+                  id="import-file-input"
+                  type="file"
+                  accept=".xlsx,.csv"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    setImportFile(file);
+                    setImportErrors([]);
+
+                    try {
+                      let rows: any[] = [];
+
+                      if (file.name.endsWith(".csv")) {
+                        const text = await file.text();
+                        const lines = text.split("\n").filter(Boolean);
+                        const headers = lines[0].split(",").map(h => h.trim().toLowerCase().replace(/"/g, ""));
+                        rows = lines.slice(1).map(line => {
+                          const values = line.split(",").map(v => v.trim().replace(/"/g, ""));
+                          return Object.fromEntries(headers.map((h, i) => [h, values[i] || ""]));
+                        });
+                      } else {
+                        const XLSX = await import("xlsx");
+                        const buffer = await file.arrayBuffer();
+                        const wb = XLSX.read(buffer, { type: "array" });
+                        const ws = wb.Sheets[wb.SheetNames[0]];
+                        rows = XLSX.utils.sheet_to_json(ws, { raw: false, defval: "" });
+                        rows = rows.map((row: any) =>
+                          Object.fromEntries(Object.entries(row).map(([k, v]) => [k.toLowerCase().trim(), v]))
+                        );
+                      }
+
+                      rows = rows.filter((r: any) => r.jmeno && r.prijmeni && r.jmeno !== "Jan");
+                      setImportPreview(rows);
+                    } catch (err: any) {
+                      setImportErrors([`Chyba při čtení souboru: ${err.message}`]);
+                    }
+                  }}
+                />
+              </div>
+              {importErrors.length > 0 && (
+                <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 space-y-1">
+                  {importErrors.map((e, i) => <p key={i} className="text-xs text-red-400">{e}</p>)}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium">{importPreview.length} uživatelů k importu</p>
+                <Button size="sm" variant="outline" onClick={() => { setImportPreview([]); setImportFile(null); }}>
+                  Nahrát jiný soubor
+                </Button>
+              </div>
+              <div className="border border-border rounded-lg overflow-x-auto max-h-96 overflow-y-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      {["Jméno", "Příjmení", "Email", "Škola", "Třída", "Ročník", "Role"].map(h => (
+                        <TableHead key={h}>{h}</TableHead>
+                      ))}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {importPreview.slice(0, 10).map((row, i) => (
+                      <TableRow key={i}>
+                        <TableCell>{row.jmeno}</TableCell>
+                        <TableCell>{row.prijmeni}</TableCell>
+                        <TableCell className="text-muted-foreground">{row.email || "—"}</TableCell>
+                        <TableCell className="text-muted-foreground">{row.skola || "—"}</TableCell>
+                        <TableCell className="text-muted-foreground">{row.trida || "—"}</TableCell>
+                        <TableCell className="text-muted-foreground">{row.rocnik || "—"}</TableCell>
+                        <TableCell className="text-muted-foreground">{row.role || "zak"}</TableCell>
+                      </TableRow>
+                    ))}
+                    {importPreview.length > 10 && (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center text-xs text-muted-foreground">
+                          ... a dalších {importPreview.length - 10} uživatelů
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+              {importErrors.length > 0 && (
+                <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 space-y-1 max-h-40 overflow-y-auto">
+                  {importErrors.map((e, i) => <p key={i} className="text-xs text-red-400">{e}</p>)}
+                </div>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setImportOpen(false); setImportPreview([]); setImportFile(null); }}>
+              Zrušit
+            </Button>
+            {importPreview.length > 0 && (
+              <Button
+                disabled={importing}
+                onClick={async () => {
+                  setImporting(true);
+                  const errors: string[] = [];
+                  let successCount = 0;
+
+                  for (const row of importPreview) {
+                    try {
+                      const sanitize = (s: string) => (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, "").toLowerCase() || "user";
+                      const email = row.email || `${sanitize(row.jmeno)}.${sanitize(row.prijmeni)}.${Date.now()}@zedu-student.cz`;
+                      const password = Math.random().toString(36).slice(-8) + "Aa1!";
+                      const role = row.role === "ucitel" ? "teacher" : row.role === "rodic" ? "rodic" : "user";
+
+                      const { data: authData, error: authError } = await supabase.functions.invoke("create-user", {
+                        body: { email, password, role }
+                      });
+                      if (authError) { errors.push(`${row.jmeno} ${row.prijmeni}: ${authError.message}`); continue; }
+
+                      const userId = authData?.user?.id || authData?.id;
+                      if (!userId) { errors.push(`${row.jmeno} ${row.prijmeni}: Nepodařilo se vytvořit účet`); continue; }
+
+                      await supabase.from("profiles").upsert({
+                        id: userId, first_name: row.jmeno, last_name: row.prijmeni,
+                        email, school: row.skola || "", year: row.rocnik ? parseInt(row.rocnik) : null,
+                        status: "approved" as any,
+                      });
+
+                      await supabase.from("user_roles").insert({ user_id: userId, role: role as any });
+                      successCount++;
+                    } catch (e: any) {
+                      errors.push(`${row.jmeno} ${row.prijmeni}: ${e.message}`);
+                    }
+                  }
+
+                  setImportErrors(errors);
+                  if (successCount > 0) {
+                    toast({ title: "Import dokončen", description: `${successCount} účtů bylo vytvořeno.${errors.length ? ` ${errors.length} chyb.` : ""}` });
+                    fetchUsers();
+                  }
+                  if (errors.length === 0) {
+                    setImportOpen(false);
+                    setImportPreview([]);
+                    setImportFile(null);
+                  }
+                  setImporting(false);
+                }}
+              >
+                {importing ? "Importuji..." : `Importovat ${importPreview.length} uživatelů`}
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
