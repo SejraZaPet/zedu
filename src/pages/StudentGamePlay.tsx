@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { serverTsToClientMs } from "@/lib/clock-sync";
 import LessonBlockRenderer from "@/components/LessonBlockRenderer";
 import WallResponsesList from "@/components/activities/WallResponsesList";
+import WallActivity from "@/components/activities/WallActivity";
 
 const StudentGamePlay = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -182,36 +183,48 @@ const StudentGamePlay = () => {
             )}
             {currentSlideData.activitySpec && (
               <div className="mt-4">
-                <LessonBlockRenderer
-                  block={{
-                    id: `live-activity-${currentSlideData.slideId}`,
-                    type: "activity",
-                    props: {
-                      ...currentSlideData.activitySpec,
-                      sessionId,
-                      playerId,
-                      questionIndex: session?.current_question_index ?? 0,
-                    },
-                    visible: true,
-                  } as any}
-                  blockIndex={session?.current_question_index ?? 0}
-                  onActivityComplete={async (_activityIndex: number, _activityType: string, score: number, maxScore: number) => {
-                    if (!sessionId || !playerId) return;
-                    try {
-                      await supabase.from("game_responses").insert({
-                        session_id: sessionId,
-                        player_id: playerId,
-                        question_index: session?.current_question_index ?? 0,
-                        answer: {},
-                        is_correct: maxScore > 0 && score / maxScore >= 0.5,
-                        score: maxScore > 0 ? Math.round((score / maxScore) * 100) : 0,
-                        response_time_ms: 0,
-                      });
-                    } catch (e) {
-                      console.error("Failed to save activity result:", e);
-                    }
-                  }}
-                />
+                {(currentSlideData as any).activitySpec?.activityType === "wall" ? (
+                  <WallActivity
+                    question={(currentSlideData as any).activitySpec?.question || ""}
+                    anonymous={liveSettings?.wallAnonymous ?? (currentSlideData as any).activitySpec?.anonymous ?? false}
+                    allowMultiple={liveSettings?.wallAllowMultiple ?? (currentSlideData as any).activitySpec?.allowMultiple ?? false}
+                    sessionId={sessionId}
+                    questionIndex={qi}
+                    playerId={playerId}
+                    onComplete={() => {}}
+                  />
+                ) : (
+                  <LessonBlockRenderer
+                    block={{
+                      id: `live-activity-${currentSlideData.slideId}`,
+                      type: "activity",
+                      props: {
+                        ...currentSlideData.activitySpec,
+                        sessionId,
+                        playerId,
+                        questionIndex: session?.current_question_index ?? 0,
+                      },
+                      visible: true,
+                    } as any}
+                    blockIndex={session?.current_question_index ?? 0}
+                    onActivityComplete={async (_activityIndex: number, _activityType: string, score: number, maxScore: number) => {
+                      if (!sessionId || !playerId) return;
+                      try {
+                        await supabase.from("game_responses").insert({
+                          session_id: sessionId,
+                          player_id: playerId,
+                          question_index: session?.current_question_index ?? 0,
+                          answer: {},
+                          is_correct: maxScore > 0 && score / maxScore >= 0.5,
+                          score: maxScore > 0 ? Math.round((score / maxScore) * 100) : 0,
+                          response_time_ms: 0,
+                        });
+                      } catch (e) {
+                        console.error("Failed to save activity result:", e);
+                      }
+                    }}
+                  />
+                )}
                 {(currentSlideData as any).activitySpec?.activityType === "wall" &&
                   liveSettings?.wallPublished &&
                   liveSettings?.wallPublishedQuestion === qi && (
