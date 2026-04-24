@@ -10,6 +10,7 @@ import { serverTsToClientMs } from "@/lib/clock-sync";
 import LessonBlockRenderer from "@/components/LessonBlockRenderer";
 import WallResponsesList from "@/components/activities/WallResponsesList";
 import WallActivity from "@/components/activities/WallActivity";
+import { Lock } from "lucide-react";
 
 const StudentGamePlay = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -184,15 +185,47 @@ const StudentGamePlay = () => {
             {currentSlideData.activitySpec && (
               <div className="mt-4">
                 {(currentSlideData as any).activitySpec?.activityType === "wall" ? (
-                  <WallActivity
-                    question={(currentSlideData as any).activitySpec?.question || ""}
-                    anonymous={liveSettings?.wallAnonymous ?? (currentSlideData as any).activitySpec?.anonymous ?? false}
-                    allowMultiple={liveSettings?.wallAllowMultiple ?? (currentSlideData as any).activitySpec?.allowMultiple ?? false}
-                    sessionId={sessionId}
-                    questionIndex={qi}
-                    playerId={playerId}
-                    onComplete={() => {}}
-                  />
+                  liveSettings?.wallPublished === true && liveSettings?.wallPublishedQuestion === qi ? (
+                    <div className="flex flex-col h-full">
+                      <div className="flex-1 overflow-y-auto pb-20">
+                        <WallResponsesList
+                          sessionId={sessionId || ""}
+                          questionIndex={qi}
+                          anonymous={liveSettings?.wallAnonymous ?? (currentSlideData as any).activitySpec?.anonymous ?? false}
+                        />
+                      </div>
+                      {(liveSettings?.wallAllowMultiple ?? (currentSlideData as any).activitySpec?.allowMultiple) ? (
+                        <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border p-3 z-10">
+                          <WallActivity
+                            question=""
+                            anonymous={liveSettings?.wallAnonymous ?? (currentSlideData as any).activitySpec?.anonymous ?? false}
+                            allowMultiple={true}
+                            sessionId={sessionId}
+                            questionIndex={qi}
+                            playerId={playerId}
+                            onComplete={() => {}}
+                          />
+                        </div>
+                      ) : (
+                        <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border p-3 z-10">
+                          <div className="flex items-center gap-2 px-4 py-2 bg-muted rounded-2xl text-sm text-muted-foreground">
+                            <Lock className="w-4 h-4 flex-shrink-0" />
+                            <span>Lze odeslat pouze jednu odpověď</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <WallActivity
+                      question={(currentSlideData as any).activitySpec?.question || ""}
+                      anonymous={liveSettings?.wallAnonymous ?? (currentSlideData as any).activitySpec?.anonymous ?? false}
+                      allowMultiple={liveSettings?.wallAllowMultiple ?? (currentSlideData as any).activitySpec?.allowMultiple ?? false}
+                      sessionId={sessionId}
+                      questionIndex={qi}
+                      playerId={playerId}
+                      onComplete={() => {}}
+                    />
+                  )
                 ) : (
                   <LessonBlockRenderer
                     block={{
@@ -225,15 +258,6 @@ const StudentGamePlay = () => {
                     }}
                   />
                 )}
-                {(currentSlideData as any).activitySpec?.activityType === "wall" &&
-                  liveSettings?.wallPublished &&
-                  liveSettings?.wallPublishedQuestion === qi && (
-                    <WallResponsesList
-                      sessionId={sessionId || ""}
-                      questionIndex={qi}
-                      anonymous={(currentSlideData as any).activitySpec?.anonymous || false}
-                    />
-                  )}
               </div>
             )}
             {currentSlideData.device?.instructions && currentSlideData.device.instructions !== "Sledujte výklad." && (
