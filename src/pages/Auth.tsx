@@ -21,6 +21,9 @@ const Auth = () => {
   const [error, setError] = useState("");
   const [role, setRole] = useState<Role>("student");
   const [pendingLogin, setPendingLogin] = useState(false);
+  const [forgotPassword, setForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetSent, setResetSent] = useState(false);
 
   // Login fields
   const [email, setEmail] = useState("");
