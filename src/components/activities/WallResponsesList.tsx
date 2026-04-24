@@ -51,33 +51,42 @@ const WallResponsesList = ({ sessionId, questionIndex, anonymous }: Props) => {
     );
   }
 
+  const bubbleStyles = [
+    { background: "rgba(147, 51, 234, 0.15)", border: "2px solid rgba(147, 51, 234, 0.4)", color: "#6b21a8" },
+    { background: "rgba(59, 130, 246, 0.15)", border: "2px solid rgba(59, 130, 246, 0.4)", color: "#1d4ed8" },
+    { background: "rgba(16, 185, 129, 0.15)", border: "2px solid rgba(16, 185, 129, 0.4)", color: "#065f46" },
+    { background: "rgba(245, 158, 11, 0.15)", border: "2px solid rgba(245, 158, 11, 0.4)", color: "#92400e" },
+    { background: "rgba(236, 72, 153, 0.15)", border: "2px solid rgba(236, 72, 153, 0.4)", color: "#9d174d" },
+    { background: "rgba(99, 102, 241, 0.15)", border: "2px solid rgba(99, 102, 241, 0.4)", color: "#3730a3" },
+    { background: "rgba(20, 184, 166, 0.15)", border: "2px solid rgba(20, 184, 166, 0.4)", color: "#134e4a" },
+    { background: "rgba(249, 115, 22, 0.15)", border: "2px solid rgba(249, 115, 22, 0.4)", color: "#7c2d12" },
+  ];
+  const rotations = [-2, 1, -1, 2, 0, -2, 1, -1];
+
   return (
     <div className="mt-4">
       <p className="text-sm font-medium text-muted-foreground mb-3">Odpovědi spolužáků:</p>
       <div className="flex flex-wrap gap-2 justify-center">
         {responses.map((r, i) => {
-          const colors = [
-            "bg-purple-100 border-purple-300 text-purple-800",
-            "bg-blue-100 border-blue-300 text-blue-800",
-            "bg-green-100 border-green-300 text-green-800",
-            "bg-yellow-100 border-yellow-300 text-yellow-800",
-            "bg-pink-100 border-pink-300 text-pink-800",
-            "bg-indigo-100 border-indigo-300 text-indigo-800",
-            "bg-teal-100 border-teal-300 text-teal-800",
-            "bg-orange-100 border-orange-300 text-orange-800",
-          ];
-          const color = colors[i % colors.length];
-          const rotations = [-2, 1, -1, 2, 0, -2, 1, -1];
+          const style = bubbleStyles[i % bubbleStyles.length];
           const rotation = rotations[i % rotations.length];
           return (
             <div
               key={r.id}
-              className={`${color} border-2 rounded-lg px-3 py-2 shadow-sm max-w-xs`}
-              style={{ transform: `rotate(${rotation}deg)` }}
+              style={{
+                background: style.background,
+                border: style.border,
+                color: style.color,
+                transform: `rotate(${rotation}deg)`,
+                borderRadius: "12px",
+                padding: "10px 16px",
+                maxWidth: "200px",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+              }}
             >
-              <p className="text-sm leading-snug break-words">{r.text}</p>
+              <p style={{ fontSize: "14px", fontWeight: 500, lineHeight: 1.4 }}>{r.text}</p>
               {r.nickname && (
-                <p className="text-xs opacity-70 mt-1">— {r.nickname}</p>
+                <p style={{ fontSize: "12px", opacity: 0.6, marginTop: "4px" }}>— {r.nickname}</p>
               )}
             </div>
           );
