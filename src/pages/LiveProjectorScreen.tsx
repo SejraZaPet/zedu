@@ -1,6 +1,7 @@
 import { useParams } from "react-router-dom";
 import { useGameSession } from "@/hooks/useGameSession";
 import { QRCodeSVG } from "qrcode.react";
+import { BookOpen } from "lucide-react";
 
 const LiveProjectorScreen = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
