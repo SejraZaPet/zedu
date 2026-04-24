@@ -912,10 +912,27 @@ const UsersManager = () => {
                       const { data: authData, error: authError } = await supabase.functions.invoke("create-user", {
                         body: { email, password, role }
                       });
-                      if (authError) { errors.push(`${row.jmeno} ${row.prijmeni}: ${authError.message}`); continue; }
 
-                      const userId = authData?.user?.id || authData?.id;
-                      if (!userId) { errors.push(`${row.jmeno} ${row.prijmeni}: Nepodařilo se vytvořit účet`); continue; }
+                      let userId: string | undefined = authData?.user?.id || authData?.id;
+
+                      if (authError || !userId) {
+                        const ctx: any = (authError as any)?.context;
+                        let body: any = authData;
+                        try {
+                          if (ctx && typeof ctx.json === "function") body = await ctx.json();
+                          else if (ctx && typeof ctx.text === "function") {
+                            const t = await ctx.text();
+                            try { body = JSON.parse(t); } catch { body = { error: t }; }
+                          }
+                        } catch { /* ignore */ }
+
+                        if (body?.code === "email_exists" && body?.existing_id) {
+                          userId = body.existing_id as string;
+                        } else {
+                          errors.push(`${row.jmeno} ${row.prijmeni}: ${body?.error || authError?.message || "Nepodařilo se vytvořit účet"}`);
+                          continue;
+                        }
+                      }
 
                       await supabase.from("profiles").upsert({
                         id: userId,
