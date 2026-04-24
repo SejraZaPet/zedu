@@ -64,7 +64,35 @@ serve(async (req) => {
     });
 
     if (createError || !created.user) {
-      return new Response(JSON.stringify({ error: createError?.message || "Failed" }), {
+      const msg = createError?.message || "Failed";
+      const isDuplicate =
+        (createError as any)?.code === "email_exists" ||
+        (createError as any)?.status === 422 ||
+        /already been registered|already registered|email_exists/i.test(msg);
+
+      if (isDuplicate) {
+        // Look up existing user id by email so the caller can update the profile/password instead.
+        let existingId: string | null = null;
+        try {
+          let page = 1;
+          while (page <= 20 && !existingId) {
+            const { data: list } = await supabaseAdmin.auth.admin.listUsers({ page, perPage: 200 });
+            const found = list?.users?.find(
+              (u: any) => (u.email || "").toLowerCase() === email.toLowerCase()
+            );
+            if (found) existingId = found.id;
+            if (!list?.users || list.users.length < 200) break;
+            page++;
+          }
+        } catch (_) { /* ignore */ }
+
+        return new Response(
+          JSON.stringify({ error: msg, code: "email_exists", existing_id: existingId }),
+          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      return new Response(JSON.stringify({ error: msg }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
