@@ -172,7 +172,7 @@ const SiteHeader = () => {
       </div>
 
       {menuOpen && (
-        <div className="md:hidden bg-card/98 backdrop-blur-md border-b border-border animate-fade-in">
+        <div className="md:hidden bg-background border-t border-border animate-fade-in">
           <nav className="flex flex-col px-6 py-4 gap-1">
             {navItems.map((item) => {
               const Icon = item.icon;
