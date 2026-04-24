@@ -926,6 +926,7 @@ const UsersManager = () => {
                         field_of_study: row.obor || row.trida || "",
                         year: row.rocnik ? parseInt(row.rocnik) : null,
                         status: "approved" as any,
+                        login_password: password,
                       });
 
                       await supabase.from("user_roles").insert({ user_id: userId, role: role as any });
