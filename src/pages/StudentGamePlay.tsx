@@ -8,6 +8,7 @@ import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { serverTsToClientMs } from "@/lib/clock-sync";
 import LessonBlockRenderer from "@/components/LessonBlockRenderer";
+import WallResponsesList from "@/components/activities/WallResponsesList";
 
 const StudentGamePlay = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
