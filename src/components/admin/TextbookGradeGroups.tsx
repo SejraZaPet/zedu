@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FolderOpen, ChevronRight, Pencil, Trash2, Plus, FileText, Play } from "lucide-react";
+import { FolderOpen, ChevronRight, Pencil, Trash2, Plus, FileText, Play, Monitor } from "lucide-react";
 import LessonPreviewDialog from "@/components/admin/LessonPreviewDialog";
 import type { Block } from "@/lib/textbook-config";
 
