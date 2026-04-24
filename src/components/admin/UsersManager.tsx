@@ -429,7 +429,7 @@ const UsersManager = () => {
                 firstName: u.first_name || "",
                 lastName: u.last_name || "",
                 email: u.email || "",
-                password: "viz heslo při vytvoření",
+                password: u.login_password || "–",
                 role: u.role || "user",
               }));
               printLoginCards(cards);
