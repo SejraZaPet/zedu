@@ -3,8 +3,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Ban, UserCheck, Shield, Search } from "lucide-react";
+import { Ban, UserCheck, Shield, Search, UserPlus } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import UserDetailDialog from "./UserDetailDialog";
 import {
   Select,
@@ -58,6 +66,16 @@ const UsersManager = () => {
   const [filterYear, setFilterYear] = useState<string>("all");
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [addUserOpen, setAddUserOpen] = useState(false);
+  const [newUser, setNewUser] = useState({
+    first_name: "",
+    last_name: "",
+    email: "",
+    school: "",
+    year: "",
+    role: "user",
+  });
+  const [creating, setCreating] = useState(false);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -176,6 +194,10 @@ const UsersManager = () => {
             </SelectContent>
           </Select>
         )}
+        <Button onClick={() => setAddUserOpen(true)} className="gap-2">
+          <UserPlus className="w-4 h-4" />
+          Přidat žáka
+        </Button>
       </div>
 
       <div className="text-sm text-muted-foreground">
@@ -262,6 +284,137 @@ const UsersManager = () => {
         onOpenChange={setDetailOpen}
         onUpdated={fetchUsers}
       />
+
+      <Dialog open={addUserOpen} onOpenChange={setAddUserOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Přidat nového žáka</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Jméno *</Label>
+                <Input
+                  value={newUser.first_name}
+                  onChange={(e) => setNewUser({ ...newUser, first_name: e.target.value })}
+                  placeholder="Jan"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label>Příjmení *</Label>
+                <Input
+                  value={newUser.last_name}
+                  onChange={(e) => setNewUser({ ...newUser, last_name: e.target.value })}
+                  placeholder="Novák"
+                  className="mt-1"
+                />
+              </div>
+            </div>
+            <div>
+              <Label>E-mail (volitelný)</Label>
+              <Input
+                value={newUser.email}
+                onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                placeholder="jan.novak@skola.cz"
+                className="mt-1"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Pokud žák nemá email, nechte prázdné – systém vygeneruje přihlašovací kód.
+              </p>
+            </div>
+            <div>
+              <Label>Škola</Label>
+              <Input
+                value={newUser.school}
+                onChange={(e) => setNewUser({ ...newUser, school: e.target.value })}
+                placeholder="ZŠ Brno"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label>Ročník</Label>
+              <Select value={newUser.year} onValueChange={(v) => setNewUser({ ...newUser, year: v })}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Vyberte ročník" />
+                </SelectTrigger>
+                <SelectContent>
+                  {[1,2,3,4,5,6,7,8,9].map(y => (
+                    <SelectItem key={y} value={String(y)}>{y}. ročník</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Role</Label>
+              <Select value={newUser.role} onValueChange={(v) => setNewUser({ ...newUser, role: v })}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="user">Žák</SelectItem>
+                  <SelectItem value="teacher">Učitel</SelectItem>
+                  <SelectItem value="lektor">Lektor</SelectItem>
+                  <SelectItem value="parent">Rodič</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddUserOpen(false)}>Zrušit</Button>
+            <Button
+              disabled={creating || !newUser.first_name || !newUser.last_name}
+              onClick={async () => {
+                setCreating(true);
+                try {
+                  const email = newUser.email ||
+                    `${newUser.first_name.toLowerCase()}.${newUser.last_name.toLowerCase()}.${Date.now()}@zedu-student.cz`;
+                  const password = Math.random().toString(36).slice(-8) + "Aa1!";
+
+                  const { data: authData, error: authError } = await supabase.functions.invoke("create-user", {
+                    body: { email, password, role: newUser.role }
+                  });
+
+                  if (authError) throw authError;
+
+                  const userId = authData?.user?.id || authData?.id;
+                  if (!userId) throw new Error("Nepodařilo se vytvořit účet");
+
+                  await supabase.from("profiles").upsert({
+                    id: userId,
+                    first_name: newUser.first_name,
+                    last_name: newUser.last_name,
+                    email: email,
+                    school: newUser.school,
+                    year: newUser.year ? parseInt(newUser.year) : null,
+                    status: "approved" as any,
+                  });
+
+                  await supabase.from("user_roles").insert({
+                    user_id: userId,
+                    role: newUser.role as any,
+                  });
+
+                  toast({
+                    title: "Žák přidán",
+                    description: `Účet pro ${newUser.first_name} ${newUser.last_name} byl vytvořen. ${!newUser.email ? `Přihlašovací email: ${email}` : ""}`
+                  });
+
+                  setAddUserOpen(false);
+                  setNewUser({ first_name: "", last_name: "", email: "", school: "", year: "", role: "user" });
+                  fetchUsers();
+                } catch (e: any) {
+                  toast({ title: "Chyba", description: e.message, variant: "destructive" });
+                } finally {
+                  setCreating(false);
+                }
+              }}
+            >
+              {creating ? "Vytváření..." : "Vytvořit účet"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
