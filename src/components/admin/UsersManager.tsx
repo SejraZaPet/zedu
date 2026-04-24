@@ -445,33 +445,26 @@ const UsersManager = () => {
 
       {/* Table */}
       <div className="border border-border rounded-lg overflow-x-auto">
-        <Table>
+        <Table className="text-sm">
           <TableHeader>
             <TableRow>
               <TableHead className="w-10">
                 <Checkbox
-                  checked={
-                    filtered.filter(u => u.status === "pending").length > 0 &&
-                    selectedIds.size === filtered.filter(u => u.status === "pending").length &&
-                    filtered.some(u => u.status === "pending")
-                  }
+                  checked={filtered.length > 0 && selectedIds.size === filtered.length}
                   onCheckedChange={(v) => {
-                    if (v) {
-                      setSelectedIds(new Set(filtered.filter(u => u.status === "pending").map(u => u.id)));
-                    } else {
-                      setSelectedIds(new Set());
-                    }
+                    if (v) setSelectedIds(new Set(filtered.map(u => u.id)));
+                    else setSelectedIds(new Set());
                   }}
                 />
               </TableHead>
-              <TableHead>Jméno a příjmení</TableHead>
+              <TableHead>Jméno</TableHead>
               <TableHead>E-mail</TableHead>
-              <TableHead>Škola</TableHead>
-              <TableHead>Obor</TableHead>
+              <TableHead className="hidden md:table-cell">Škola</TableHead>
+              <TableHead className="hidden xl:table-cell">Obor</TableHead>
               <TableHead className="text-center">Ročník</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>Stav</TableHead>
-              <TableHead>Registrace</TableHead>
+              <TableHead className="hidden lg:table-cell">Registrace</TableHead>
               <TableHead className="text-right">Akce</TableHead>
             </TableRow>
           </TableHeader>
