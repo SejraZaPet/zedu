@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Ban, UserCheck, Shield, Search, UserPlus, CheckCheck, Upload, Trash2 } from "lucide-react";
+import { Ban, UserCheck, Shield, Search, UserPlus, CheckCheck, Upload, Trash2, KeyRound } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -70,7 +70,8 @@ const statusColors: Record<string, string> = {
 function generateStudentEmail(
   firstName: string,
   lastName: string,
-  existingEmails: string[]
+  existingEmails: string[],
+  role: string
 ): string {
   const normalize = (s: string) =>
     (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
@@ -78,7 +79,7 @@ function generateStudentEmail(
   const first = normalize(firstName) || "user";
   const last = normalize(lastName) || "user";
   const initial = first.charAt(0);
-  const domain = "@zedu-student.cz";
+  const domain = (role === "teacher" || role === "lektor") ? "@zedu-lektor.cz" : "@zedu-student.cz";
 
   const v1 = `${first}.${last}${domain}`;
   if (!existingEmails.includes(v1)) return v1;
@@ -303,6 +304,7 @@ const UsersManager = () => {
                     "e-mail": "email",
                     "email": "email",
                     "e-mail_rodice": "email_rodice",
+                    "email_rodice": "email_rodice",
                     "skola": "skola",
                     "trida": "trida",
                     "rocnik": "rocnik",
@@ -499,6 +501,25 @@ const UsersManager = () => {
                       )}
                       <Button size="sm" variant="ghost" onClick={async (e) => {
                         e.stopPropagation();
+                        if (!confirm(`Vygenerovat nové heslo pro ${user.first_name} ${user.last_name}?`)) return;
+                        const newPassword = Math.random().toString(36).slice(-8) + "Aa1!";
+                        const { error } = await supabase.functions.invoke("reset-user-password", {
+                          body: { userId: user.id, newPassword }
+                        });
+                        if (error) {
+                          toast({ title: "Chyba", description: error.message, variant: "destructive" });
+                        } else {
+                          toast({
+                            title: "Heslo změněno",
+                            description: `Nové heslo: ${newPassword}`,
+                            duration: 15000,
+                          });
+                        }
+                      }} className="text-yellow-400 hover:bg-yellow-500/10 h-8 px-2">
+                        <KeyRound className="w-4 h-4" />
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={async (e) => {
+                        e.stopPropagation();
                         if (!confirm(`Opravdu smazat uživatele ${user.first_name} ${user.last_name}?`)) return;
                         const { error } = await supabase.from("profiles").delete().eq("id", user.id);
                         if (error) {
@@ -616,7 +637,7 @@ const UsersManager = () => {
                 setCreating(true);
                 try {
                   const existingEmails = users.map(u => u.email);
-                  const email = newUser.email || generateStudentEmail(newUser.first_name, newUser.last_name, existingEmails);
+                  const email = newUser.email || generateStudentEmail(newUser.first_name, newUser.last_name, existingEmails, newUser.role);
                   const password = Math.random().toString(36).slice(-8) + "Aa1!";
 
                   const { data: authData, error: authError } = await supabase.functions.invoke("create-user", {
@@ -634,6 +655,7 @@ const UsersManager = () => {
                     last_name: newUser.last_name,
                     email: email,
                     school: newUser.school,
+                    field_of_study: "",
                     year: newUser.year ? parseInt(newUser.year) : null,
                     status: "approved" as any,
                   });
@@ -643,7 +665,7 @@ const UsersManager = () => {
                     role: newUser.role as any,
                   });
 
-                  if (!email.includes("@zedu-student.cz")) {
+                  if (!email.includes("@zedu-student.cz") && !email.includes("@zedu-lektor.cz")) {
                     await sendWelcomeEmail({
                       to: email,
                       firstName: newUser.first_name,
@@ -732,12 +754,13 @@ const UsersManager = () => {
                         const keyMap: Record<string, string> = {
                           "jmeno": "jmeno", "prijmeni": "prijmeni",
                           "e-mail": "email", "email": "email",
+                          "e-mail_rodice": "email_rodice", "email_rodice": "email_rodice",
                           "e-mail rodice": "email_rodice", "email rodice": "email_rodice",
                           "skola": "skola", "trida": "trida", "rocnik": "rocnik", "role": "role",
                         };
 
                         const headers = allRows[headerRowIndex].map((h: any) =>
-                          String(h).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s*\*/g, "").trim().toLowerCase()
+                          String(h).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s*\*/g, "").trim().toLowerCase().replace(/\s+/g, "_")
                         );
 
                         rows = allRows
@@ -835,16 +858,16 @@ const UsersManager = () => {
                     try {
                       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                       const rawEmail = (row.email || "").toString().trim();
+                      const role = row.role === "ucitel" ? "teacher" : row.role === "rodic" ? "rodic" : row.role === "teacher" || row.role === "lektor" ? row.role : "user";
                       const email = rawEmail && emailRegex.test(rawEmail)
                         ? rawEmail
-                        : generateStudentEmail(row.jmeno, row.prijmeni, usedEmails);
+                        : generateStudentEmail(row.jmeno, row.prijmeni, usedEmails, role);
                       if (!rawEmail) usedEmails.push(email);
                       if (!emailRegex.test(email)) {
                         errors.push(`${row.jmeno} ${row.prijmeni}: Neplatný formát e-mailu (${email})`);
                         continue;
                       }
                       const password = Math.random().toString(36).slice(-8) + "Aa1!";
-                      const role = row.role === "ucitel" ? "teacher" : row.role === "rodic" ? "rodic" : "user";
 
                       const { data: authData, error: authError } = await supabase.functions.invoke("create-user", {
                         body: { email, password, role }
@@ -855,14 +878,19 @@ const UsersManager = () => {
                       if (!userId) { errors.push(`${row.jmeno} ${row.prijmeni}: Nepodařilo se vytvořit účet`); continue; }
 
                       await supabase.from("profiles").upsert({
-                        id: userId, first_name: row.jmeno, last_name: row.prijmeni,
-                        email, school: row.skola || "", year: row.rocnik ? parseInt(row.rocnik) : null,
+                        id: userId,
+                        first_name: row.jmeno,
+                        last_name: row.prijmeni,
+                        email,
+                        school: row.skola || "",
+                        field_of_study: row.obor || row.trida || "",
+                        year: row.rocnik ? parseInt(row.rocnik) : null,
                         status: "approved" as any,
                       });
 
                       await supabase.from("user_roles").insert({ user_id: userId, role: role as any });
 
-                      if (!email.includes("@zedu-student.cz")) {
+                      if (!email.includes("@zedu-student.cz") && !email.includes("@zedu-lektor.cz")) {
                         await sendWelcomeEmail({
                           to: email,
                           firstName: row.jmeno,
