@@ -754,7 +754,15 @@ const UsersManager = () => {
                   for (const row of importPreview) {
                     try {
                       const sanitize = (s: string) => (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, "").toLowerCase() || "user";
-                      const email = row.email || `${sanitize(row.jmeno)}.${sanitize(row.prijmeni)}.${Date.now()}@zedu-student.cz`;
+                      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                      const rawEmail = (row.email || "").toString().trim();
+                      const email = rawEmail && emailRegex.test(rawEmail)
+                        ? rawEmail
+                        : `${sanitize(row.jmeno)}.${sanitize(row.prijmeni)}.${Date.now()}${Math.floor(Math.random() * 1000)}@zedu-student.cz`;
+                      if (!emailRegex.test(email)) {
+                        errors.push(`${row.jmeno} ${row.prijmeni}: Neplatný formát e-mailu (${email})`);
+                        continue;
+                      }
                       const password = Math.random().toString(36).slice(-8) + "Aa1!";
                       const role = row.role === "ucitel" ? "teacher" : row.role === "rodic" ? "rodic" : "user";
 
