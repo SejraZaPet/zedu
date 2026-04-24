@@ -522,18 +522,18 @@ const UsersManager = () => {
               <p className="text-sm text-muted-foreground">
                 Nahrajte soubor Excel (.xlsx) nebo CSV (.csv) se sloupci: jmeno, prijmeni, email, email_rodice, skola, trida, rocnik, role
               </p>
-              <div
-                className="border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:bg-muted/50 transition-colors"
-                onClick={() => fileInputRef.current?.click()}
+              <label
+                htmlFor="zedu-import-file"
+                className="flex flex-col items-center justify-center border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:bg-muted/50 transition-colors"
               >
                 <Upload className="w-10 h-10 mx-auto mb-3 text-muted-foreground" />
                 <p className="font-medium">Klikněte pro výběr souboru</p>
                 <p className="text-xs text-muted-foreground mt-1">.xlsx nebo .csv</p>
                 <input
-                  ref={fileInputRef}
+                  id="zedu-import-file"
                   type="file"
                   accept=".xlsx,.csv"
-                  className="hidden"
+                  className="sr-only"
                   onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
@@ -569,7 +569,7 @@ const UsersManager = () => {
                     }
                   }}
                 />
-              </div>
+              </label>
               {importErrors.length > 0 && (
                 <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 space-y-1">
                   {importErrors.map((e, i) => <p key={i} className="text-xs text-red-400">{e}</p>)}
