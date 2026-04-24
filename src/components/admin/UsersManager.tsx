@@ -445,33 +445,26 @@ const UsersManager = () => {
 
       {/* Table */}
       <div className="border border-border rounded-lg overflow-x-auto">
-        <Table>
+        <Table className="text-sm">
           <TableHeader>
             <TableRow>
               <TableHead className="w-10">
                 <Checkbox
-                  checked={
-                    filtered.filter(u => u.status === "pending").length > 0 &&
-                    selectedIds.size === filtered.filter(u => u.status === "pending").length &&
-                    filtered.some(u => u.status === "pending")
-                  }
+                  checked={filtered.length > 0 && selectedIds.size === filtered.length}
                   onCheckedChange={(v) => {
-                    if (v) {
-                      setSelectedIds(new Set(filtered.filter(u => u.status === "pending").map(u => u.id)));
-                    } else {
-                      setSelectedIds(new Set());
-                    }
+                    if (v) setSelectedIds(new Set(filtered.map(u => u.id)));
+                    else setSelectedIds(new Set());
                   }}
                 />
               </TableHead>
-              <TableHead>Jméno a příjmení</TableHead>
+              <TableHead>Jméno</TableHead>
               <TableHead>E-mail</TableHead>
-              <TableHead>Škola</TableHead>
-              <TableHead>Obor</TableHead>
+              <TableHead className="hidden md:table-cell">Škola</TableHead>
+              <TableHead className="hidden xl:table-cell">Obor</TableHead>
               <TableHead className="text-center">Ročník</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>Stav</TableHead>
-              <TableHead>Registrace</TableHead>
+              <TableHead className="hidden lg:table-cell">Registrace</TableHead>
               <TableHead className="text-right">Akce</TableHead>
             </TableRow>
           </TableHeader>
@@ -479,24 +472,22 @@ const UsersManager = () => {
             {filtered.map((user) => (
               <TableRow key={user.id} className="cursor-pointer hover:bg-muted/50" onClick={() => { setSelectedUser(user); setDetailOpen(true); }}>
                 <TableCell onClick={(e) => e.stopPropagation()}>
-                  {user.status === "pending" && (
-                    <Checkbox
-                      checked={selectedIds.has(user.id)}
-                      onCheckedChange={(v) => {
-                        const next = new Set(selectedIds);
-                        if (v) next.add(user.id);
-                        else next.delete(user.id);
-                        setSelectedIds(next);
-                      }}
-                    />
-                  )}
+                  <Checkbox
+                    checked={selectedIds.has(user.id)}
+                    onCheckedChange={(v) => {
+                      const next = new Set(selectedIds);
+                      if (v) next.add(user.id);
+                      else next.delete(user.id);
+                      setSelectedIds(next);
+                    }}
+                  />
                 </TableCell>
                 <TableCell className="font-medium whitespace-nowrap">
                   {user.first_name} {user.last_name}
                 </TableCell>
-                <TableCell className="text-muted-foreground">{user.email}</TableCell>
-                <TableCell className="text-muted-foreground">{user.school || "–"}</TableCell>
-                <TableCell className="text-muted-foreground">{user.field_of_study || "–"}</TableCell>
+                <TableCell className="text-muted-foreground max-w-[160px] truncate">{user.email}</TableCell>
+                <TableCell className="text-muted-foreground hidden md:table-cell max-w-[100px] truncate">{user.school || "–"}</TableCell>
+                <TableCell className="text-muted-foreground hidden xl:table-cell">{user.field_of_study || "–"}</TableCell>
                 <TableCell className="text-center text-muted-foreground">{user.year ?? "–"}</TableCell>
                 <TableCell>
                   {user.role === "admin" ? (
@@ -512,7 +503,7 @@ const UsersManager = () => {
                     {statusLabels[user.status] || user.status}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                <TableCell className="text-xs text-muted-foreground whitespace-nowrap hidden lg:table-cell">
                   {new Date(user.created_at).toLocaleDateString("cs-CZ")}
                 </TableCell>
                 <TableCell className="text-right">
@@ -520,13 +511,13 @@ const UsersManager = () => {
                     <div className="flex gap-1 justify-end">
                       {user.status !== "approved" && (
                         <Button size="sm" variant="ghost" onClick={() => updateStatus(user.id, "approved")}
-                          className="text-green-400 hover:bg-green-500/10 h-8 px-2">
+                          className="text-green-400 hover:bg-green-500/10 h-7 w-7 p-0">
                           <UserCheck className="w-4 h-4" />
                         </Button>
                       )}
                       {user.status !== "blocked" && (
                         <Button size="sm" variant="ghost" onClick={() => updateStatus(user.id, "blocked")}
-                          className="text-red-400 hover:bg-red-500/10 h-8 px-2">
+                          className="text-red-400 hover:bg-red-500/10 h-7 w-7 p-0">
                           <Ban className="w-4 h-4" />
                         </Button>
                       )}
@@ -546,7 +537,7 @@ const UsersManager = () => {
                             duration: 15000,
                           });
                         }
-                      }} className="text-yellow-400 hover:bg-yellow-500/10 h-8 px-2">
+                      }} className="text-yellow-400 hover:bg-yellow-500/10 h-7 w-7 p-0">
                         <KeyRound className="w-4 h-4" />
                       </Button>
                       <Button size="sm" variant="ghost" onClick={(e) => {
@@ -558,7 +549,7 @@ const UsersManager = () => {
                           password: "viz heslo při vytvoření",
                           role: user.role || "user",
                         }]);
-                      }} className="text-blue-400 hover:bg-blue-500/10 h-8 px-2">
+                      }} className="text-blue-400 hover:bg-blue-500/10 h-7 w-7 p-0">
                         <Printer className="w-4 h-4" />
                       </Button>
                       <Button size="sm" variant="ghost" onClick={async (e) => {
@@ -571,7 +562,7 @@ const UsersManager = () => {
                           toast({ title: "Smazáno", description: `${user.first_name} ${user.last_name} byl odstraněn.` });
                           fetchUsers();
                         }
-                      }} className="text-red-400 hover:bg-red-500/10 h-8 px-2">
+                      }} className="text-red-400 hover:bg-red-500/10 h-7 w-7 p-0">
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
