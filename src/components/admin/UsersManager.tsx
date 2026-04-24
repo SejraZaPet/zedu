@@ -206,11 +206,57 @@ const UsersManager = () => {
         Celkem: {filtered.length} uživatel{filtered.length === 1 ? "" : filtered.length < 5 ? "é" : "ů"}
       </div>
 
+      {/* Bulk action bar */}
+      {selectedIds.size > 0 && (
+        <div className="flex items-center gap-3 p-3 bg-primary/10 border border-primary/30 rounded-lg">
+          <span className="text-sm font-medium">{selectedIds.size} vybráno</span>
+          <Button
+            size="sm"
+            onClick={async () => {
+              try {
+                const ids = Array.from(selectedIds);
+                await Promise.all(ids.map(id =>
+                  supabase.from("profiles").update({ status: "approved" as any }).eq("id", id)
+                ));
+                toast({ title: "Hotovo", description: `${ids.length} účtů bylo schváleno.` });
+                setSelectedIds(new Set());
+                fetchUsers();
+              } catch (e: any) {
+                toast({ title: "Chyba", description: e.message, variant: "destructive" });
+              }
+            }}
+            className="gap-2"
+          >
+            <CheckCheck className="w-4 h-4" />
+            Schválit vybrané
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>
+            Zrušit výběr
+          </Button>
+        </div>
+      )}
+
       {/* Table */}
       <div className="border border-border rounded-lg overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-10">
+                <Checkbox
+                  checked={
+                    filtered.filter(u => u.status === "pending").length > 0 &&
+                    selectedIds.size === filtered.filter(u => u.status === "pending").length &&
+                    filtered.some(u => u.status === "pending")
+                  }
+                  onCheckedChange={(v) => {
+                    if (v) {
+                      setSelectedIds(new Set(filtered.filter(u => u.status === "pending").map(u => u.id)));
+                    } else {
+                      setSelectedIds(new Set());
+                    }
+                  }}
+                />
+              </TableHead>
               <TableHead>Jméno a příjmení</TableHead>
               <TableHead>E-mail</TableHead>
               <TableHead>Škola</TableHead>
