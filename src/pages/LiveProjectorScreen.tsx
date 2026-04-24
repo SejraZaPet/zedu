@@ -2,6 +2,7 @@ import { useParams } from "react-router-dom";
 import { useGameSession } from "@/hooks/useGameSession";
 import { QRCodeSVG } from "qrcode.react";
 import { BookOpen } from "lucide-react";
+import WallProjectorView from "@/components/activities/WallProjectorView";
 
 const LiveProjectorScreen = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -161,7 +162,13 @@ const LiveProjectorScreen = () => {
           </div>
         )}
 
-        {currentSlide.type === "activity" && (
+        {currentSlide.type === "activity" && (currentSlide as any).activitySpec?.activityType === "wall" ? (
+          <WallProjectorView
+            sessionId={sessionId!}
+            questionIndex={currentIndex}
+            anonymous={(currentSlide as any).activitySpec?.anonymous || false}
+          />
+        ) : currentSlide.type === "activity" && (
           <div className="mt-8 bg-primary/10 border border-primary/20 rounded-2xl px-8 py-6">
             <div className="flex items-center gap-4 text-primary text-2xl font-medium">
               <span className="w-3 h-3 rounded-full bg-primary animate-pulse" />

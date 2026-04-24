@@ -14,6 +14,7 @@ import TrueFalseActivity from "@/components/activities/TrueFalseActivity";
 import RevealCardsActivity from "@/components/activities/RevealCardsActivity";
 import MemoryGameActivity from "@/components/activities/MemoryGameActivity";
 import CrosswordActivity from "@/components/activities/CrosswordActivity";
+import WallActivity from "@/components/activities/WallActivity";
 import { LiveGameButton } from "@/components/game/LiveGameButton";
 import type { GameQuestion } from "@/lib/game-types";
 const extractYouTubeId = (url: string): string | null => {
@@ -337,6 +338,16 @@ export const LessonBlock = ({ block, blockIndex, onActivityComplete, isTeacher }
           )}
           {at === "crossword" && p.crossword && (
             <CrosswordActivity entries={p.crossword.entries || []} />
+          )}
+          {at === "wall" && (
+            <WallActivity
+              question={p.question || ""}
+              anonymous={p.anonymous || false}
+              onComplete={() => handleComplete(1, 1)}
+              onSubmitResponse={(text) => {
+                console.log("Wall response:", text);
+              }}
+            />
           )}
           {/* Live Game Button for teachers */}
           {isTeacher && supportsLiveGame && gameQuestions.length > 0 && (
