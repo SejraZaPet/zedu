@@ -407,7 +407,7 @@ const UsersManager = () => {
               if (!confirm(`Opravdu smazat ${selectedIds.size} uživatelů?`)) return;
               try {
                 const ids = Array.from(selectedIds);
-                await Promise.all(ids.map(id => supabase.from("profiles").delete().eq("id", id)));
+                await Promise.all(ids.map(id => supabase.functions.invoke("delete-user", { body: { userId: id } })));
                 toast({ title: "Smazáno", description: `${ids.length} uživatelů bylo odstraněno.` });
                 setSelectedIds(new Set());
                 fetchUsers();
@@ -560,7 +560,9 @@ const UsersManager = () => {
                       <Button size="sm" variant="ghost" onClick={async (e) => {
                         e.stopPropagation();
                         if (!confirm(`Opravdu smazat uživatele ${user.first_name} ${user.last_name}?`)) return;
-                        const { error } = await supabase.from("profiles").delete().eq("id", user.id);
+                        const { error } = await supabase.functions.invoke("delete-user", {
+                          body: { userId: user.id }
+                        });
                         if (error) {
                           toast({ title: "Chyba", description: error.message, variant: "destructive" });
                         } else {
