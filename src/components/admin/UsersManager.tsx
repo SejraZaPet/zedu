@@ -304,6 +304,7 @@ const UsersManager = () => {
                     "e-mail": "email",
                     "email": "email",
                     "e-mail_rodice": "email_rodice",
+                    "email_rodice": "email_rodice",
                     "skola": "skola",
                     "trida": "trida",
                     "rocnik": "rocnik",
