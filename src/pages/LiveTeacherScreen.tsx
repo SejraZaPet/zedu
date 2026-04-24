@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Monitor, Smartphone, StickyNote, ChevronLeft, ChevronRight, Users, StopCircle, ArrowLeft } from "lucide-react";
 import SessionExports from "@/components/live/SessionExports";
+import { supabase } from "@/integrations/supabase/client";
 
 interface SlideData {
   slideId: string;
