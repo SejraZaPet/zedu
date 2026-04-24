@@ -73,17 +73,17 @@ const LiveProjectorScreen = () => {
 
   // Slide content
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen flex flex-col text-white" style={{ background: "linear-gradient(135deg, #0f0c29, #302b63, #24243e)" }}>
       {/* Progress bar */}
-      <div className="h-2 bg-muted">
+      <div className="h-2 bg-white/10">
         <div
-          className="h-full bg-primary transition-all duration-500"
+          className="h-full bg-purple-400 transition-all duration-500"
           style={{ width: `${progressPct}%` }}
         />
       </div>
 
       {/* Slide counter */}
-      <div className="flex justify-between items-center px-12 py-6 text-muted-foreground">
+      <div className="flex justify-between items-center px-12 py-6 text-gray-300">
         <span className="text-lg">{session.title}</span>
         <span className="text-lg font-medium">
           Slide {currentIndex + 1} / {slides.length}
@@ -92,16 +92,32 @@ const LiveProjectorScreen = () => {
 
       {/* Main content */}
       <div className="flex-1 flex flex-col items-center justify-center px-16 py-8 gap-8">
+        {currentSlide.type === "explain" && (
+          <div className="mb-2 inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-1.5 text-sm text-purple-300">
+            <BookOpen className="w-4 h-4" />
+            Výklad
+          </div>
+        )}
+
         {currentSlide.projector?.headline && (
-          <h2 className="text-7xl font-bold text-foreground text-center max-w-6xl leading-tight">
+          <h2 className="text-6xl font-bold text-center mb-10 leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-purple-200">
             {currentSlide.projector.headline}
           </h2>
         )}
 
         {!(currentSlide as any).tableData && !(currentSlide as any).cardData && currentSlide.projector?.body && (
-          <p className="text-3xl text-muted-foreground text-center max-w-5xl leading-relaxed">
-            {currentSlide.projector.body}
-          </p>
+          <div className="text-2xl text-gray-300 leading-relaxed space-y-3 w-full max-w-5xl">
+            {currentSlide.projector.body.split('\n').filter(Boolean).map((line: string, i: number) => (
+              <p key={i} className={line.startsWith('•') ? "flex items-start gap-3" : "text-center"}>
+                {line.startsWith('•') ? (
+                  <>
+                    <span className="text-purple-400 mt-1 flex-shrink-0">•</span>
+                    <span>{line.substring(1).trim()}</span>
+                  </>
+                ) : line}
+              </p>
+            ))}
+          </div>
         )}
 
         {(currentSlide as any).tableData && (
