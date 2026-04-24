@@ -15,6 +15,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import UserDetailDialog from "./UserDetailDialog";
+import { sendWelcomeEmail } from "@/lib/send-email";
 import {
   Select,
   SelectContent,
@@ -476,6 +477,17 @@ const UsersManager = () => {
                     role: newUser.role as any,
                   });
 
+                  if (!email.includes("@zedu-student.cz")) {
+                    await sendWelcomeEmail({
+                      to: email,
+                      firstName: newUser.first_name,
+                      lastName: newUser.last_name,
+                      email,
+                      password,
+                      role: newUser.role,
+                    });
+                  }
+
                   toast({
                     title: "Žák přidán",
                     description: `Účet pro ${newUser.first_name} ${newUser.last_name} byl vytvořen. ${!newUser.email ? `Přihlašovací email: ${email}` : ""}`
@@ -641,6 +653,18 @@ const UsersManager = () => {
                       });
 
                       await supabase.from("user_roles").insert({ user_id: userId, role: role as any });
+
+                      if (!email.includes("@zedu-student.cz")) {
+                        await sendWelcomeEmail({
+                          to: email,
+                          firstName: row.jmeno,
+                          lastName: row.prijmeni,
+                          email,
+                          password,
+                          role,
+                        });
+                      }
+
                       successCount++;
                     } catch (e: any) {
                       errors.push(`${row.jmeno} ${row.prijmeni}: ${e.message}`);
