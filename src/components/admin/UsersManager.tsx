@@ -77,6 +77,7 @@ const UsersManager = () => {
     role: "user",
   });
   const [creating, setCreating] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const fetchUsers = async () => {
     setLoading(true);
