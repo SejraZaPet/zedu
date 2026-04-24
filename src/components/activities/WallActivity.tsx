@@ -2,21 +2,44 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { CheckCircle2, Send } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
   question: string;
   anonymous: boolean;
   onComplete?: () => void;
   onSubmitResponse?: (response: string) => void;
+  sessionId?: string;
+  questionIndex?: number;
+  playerId?: string;
 }
 
-const WallActivity = ({ question, anonymous, onComplete, onSubmitResponse }: Props) => {
+const WallActivity = ({ question, anonymous, onComplete, onSubmitResponse, sessionId, questionIndex, playerId }: Props) => {
   const [response, setResponse] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = () => {
-    if (!response.trim()) return;
-    onSubmitResponse?.(response.trim());
+    const text = response.trim();
+    if (!text) return;
+    onSubmitResponse?.(text);
+
+    if (sessionId && playerId) {
+      supabase
+        .from("game_responses")
+        .insert({
+          session_id: sessionId,
+          player_id: playerId,
+          question_index: questionIndex ?? 0,
+          answer: { text },
+          is_correct: true,
+          score: 100,
+          response_time_ms: 0,
+        })
+        .then(({ error }) => {
+          if (error) console.error("Failed to save wall response:", error);
+        });
+    }
+
     setSubmitted(true);
     onComplete?.();
   };
@@ -48,7 +71,7 @@ const WallActivity = ({ question, anonymous, onComplete, onSubmitResponse }: Pro
         onChange={(e) => setResponse(e.target.value)}
         placeholder="Napište svou odpověď..."
         rows={4}
-        className="resize-none"
+        className="resize-none wall-response-text"
       />
       <Button onClick={handleSubmit} disabled={!response.trim()} className="w-full gap-2">
         <Send className="w-4 h-4" />
