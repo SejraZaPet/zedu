@@ -12,8 +12,15 @@ serve(async (req) => {
   }
 
   try {
-    const { userId, newPassword } = await req.json();
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized: missing bearer token" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
+    const { userId, newPassword } = await req.json();
     if (!userId || !newPassword) {
       return new Response(JSON.stringify({ error: "userId and newPassword required" }), {
         status: 400,
@@ -21,34 +28,33 @@ serve(async (req) => {
       });
     }
 
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+    // User-context client to validate the caller's JWT
+    const userClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const { data: userData, error: userErr } = await userClient.auth.getUser();
+    if (userErr || !userData?.user) {
+      return new Response(JSON.stringify({ error: "Unauthorized: invalid token", details: userErr?.message }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const supabaseAdmin = createClient(
+    // Admin client (service role) for role check + password update
+    const adminClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(token);
-    if (userError || !userData.user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const { data: roles } = await supabaseAdmin
+    const { data: roles } = await adminClient
       .from("user_roles")
       .select("role")
       .eq("user_id", userData.user.id);
 
-    const isAdmin = roles?.some((r) => r.role === "admin");
+    const isAdmin = roles?.some((r: any) => r.role === "admin");
     if (!isAdmin) {
       return new Response(JSON.stringify({ error: "Admin access required" }), {
         status: 403,
@@ -56,7 +62,7 @@ serve(async (req) => {
       });
     }
 
-    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+    const { error: updateError } = await adminClient.auth.admin.updateUserById(userId, {
       password: newPassword,
     });
 
