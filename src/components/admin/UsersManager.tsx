@@ -250,10 +250,51 @@ const UsersManager = () => {
                   const buffer = await file.arrayBuffer();
                   const wb = XLSX.read(buffer, { type: "array" });
                   const ws = wb.Sheets[wb.SheetNames[0]];
-                  rows = XLSX.utils.sheet_to_json(ws, { raw: false, defval: "" });
-                  rows = rows.map((row: any) =>
-                    Object.fromEntries(Object.entries(row).map(([k, v]) => [k.toLowerCase().trim(), v]))
+                  const allRows = XLSX.utils.sheet_to_json(ws, { raw: false, defval: "", header: 1 }) as any[][];
+
+                  let headerRowIndex = allRows.findIndex((row: any[]) =>
+                    row.some((cell: any) => String(cell).toLowerCase().includes("jméno") || String(cell).toLowerCase().includes("jmeno"))
                   );
+                  if (headerRowIndex === -1) headerRowIndex = 0;
+
+                  const headers = allRows[headerRowIndex].map((h: any) =>
+                    String(h)
+                      .toLowerCase()
+                      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+                      .replace(/\s*\*/g, "")
+                      .trim()
+                      .replace(/\s+/g, "_")
+                  );
+
+                  const keyMap: Record<string, string> = {
+                    "jmeno": "jmeno",
+                    "prijmeni": "prijmeni",
+                    "e-mail": "email",
+                    "email": "email",
+                    "e-mail_rodice": "email_rodice",
+                    "skola": "skola",
+                    "trida": "trida",
+                    "rocnik": "rocnik",
+                    "role": "role",
+                  };
+
+                  rows = allRows
+                    .slice(headerRowIndex + 1)
+                    .map((row: any[]) => {
+                      const obj: any = {};
+                      headers.forEach((h: string, i: number) => {
+                        const key = keyMap[h] || h;
+                        obj[key] = row[i] != null ? String(row[i]).trim() : "";
+                      });
+                      return obj;
+                    })
+                    .filter((r: any) =>
+                      r.jmeno &&
+                      r.prijmeni &&
+                      !r.jmeno.toLowerCase().includes("jméno") &&
+                      !r.jmeno.toLowerCase().includes("křestní") &&
+                      !r.jmeno.toLowerCase().includes("jmeno")
+                    );
                 }
 
                 console.log("Řádky před filtrem:", rows.length, rows[0]);
