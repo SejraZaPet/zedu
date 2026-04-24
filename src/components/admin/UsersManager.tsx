@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Ban, UserCheck, Shield, Search, UserPlus, CheckCheck, Upload } from "lucide-react";
+import { Ban, UserCheck, Shield, Search, UserPlus, CheckCheck, Upload, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -309,6 +309,22 @@ const UsersManager = () => {
         </label>
       </div>
 
+      {importedUsers.length > 0 && (
+        <div className="flex items-center justify-between p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
+          <span className="text-sm text-green-400 font-medium">
+            ✅ Import dokončen – {importedUsers.length} účtů vytvořeno
+          </span>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" className="gap-2" onClick={() => printLoginCards(importedUsers)}>
+              🖨️ Tisknout přihlašovací lístky
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setImportedUsers([])}>
+              Zavřít
+            </Button>
+          </div>
+        </div>
+      )}
+
       <div className="text-sm text-muted-foreground">
         Celkem: {filtered.length} uživatel{filtered.length === 1 ? "" : filtered.length < 5 ? "é" : "ů"}
       </div>
@@ -336,6 +352,26 @@ const UsersManager = () => {
           >
             <CheckCheck className="w-4 h-4" />
             Schválit vybrané
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="gap-2 text-red-400 hover:bg-red-500/10"
+            onClick={async () => {
+              if (!confirm(`Opravdu smazat ${selectedIds.size} uživatelů?`)) return;
+              try {
+                const ids = Array.from(selectedIds);
+                await Promise.all(ids.map(id => supabase.from("profiles").delete().eq("id", id)));
+                toast({ title: "Smazáno", description: `${ids.length} uživatelů bylo odstraněno.` });
+                setSelectedIds(new Set());
+                fetchUsers();
+              } catch (e: any) {
+                toast({ title: "Chyba", description: e.message, variant: "destructive" });
+              }
+            }}
+          >
+            <Trash2 className="w-4 h-4" />
+            Smazat vybrané
           </Button>
           <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>
             Zrušit výběr
@@ -430,6 +466,19 @@ const UsersManager = () => {
                           <Ban className="w-4 h-4" />
                         </Button>
                       )}
+                      <Button size="sm" variant="ghost" onClick={async (e) => {
+                        e.stopPropagation();
+                        if (!confirm(`Opravdu smazat uživatele ${user.first_name} ${user.last_name}?`)) return;
+                        const { error } = await supabase.from("profiles").delete().eq("id", user.id);
+                        if (error) {
+                          toast({ title: "Chyba", description: error.message, variant: "destructive" });
+                        } else {
+                          toast({ title: "Smazáno", description: `${user.first_name} ${user.last_name} byl odstraněn.` });
+                          fetchUsers();
+                        }
+                      }} className="text-red-400 hover:bg-red-500/10 h-8 px-2">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
                   )}
                 </TableCell>
@@ -815,11 +864,6 @@ const UsersManager = () => {
                 }}
               >
                 {importing ? "Importuji..." : `Importovat ${importPreview.length} uživatelů`}
-              </Button>
-            )}
-            {importedUsers.length > 0 && !importing && (
-              <Button variant="outline" className="gap-2" onClick={() => printLoginCards(importedUsers)}>
-                🖨️ Tisknout lístky ({importedUsers.length})
               </Button>
             )}
           </DialogFooter>
