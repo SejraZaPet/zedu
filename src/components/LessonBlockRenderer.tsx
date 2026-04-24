@@ -343,6 +343,9 @@ export const LessonBlock = ({ block, blockIndex, onActivityComplete, isTeacher }
             <WallActivity
               question={p.question || ""}
               anonymous={p.anonymous || false}
+              sessionId={p.sessionId}
+              questionIndex={p.questionIndex}
+              playerId={p.playerId}
               onComplete={() => handleComplete(1, 1)}
               onSubmitResponse={(text) => {
                 console.log("Wall response:", text);
