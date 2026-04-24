@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Ban, UserCheck, Shield, Search, UserPlus, CheckCheck, Upload, Trash2 } from "lucide-react";
+import { Ban, UserCheck, Shield, Search, UserPlus, CheckCheck, Upload, Trash2, KeyRound } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -70,7 +70,8 @@ const statusColors: Record<string, string> = {
 function generateStudentEmail(
   firstName: string,
   lastName: string,
-  existingEmails: string[]
+  existingEmails: string[],
+  role: string
 ): string {
   const normalize = (s: string) =>
     (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
@@ -78,7 +79,7 @@ function generateStudentEmail(
   const first = normalize(firstName) || "user";
   const last = normalize(lastName) || "user";
   const initial = first.charAt(0);
-  const domain = "@zedu-student.cz";
+  const domain = (role === "teacher" || role === "lektor") ? "@zedu-lektor.cz" : "@zedu-student.cz";
 
   const v1 = `${first}.${last}${domain}`;
   if (!existingEmails.includes(v1)) return v1;
