@@ -549,6 +549,18 @@ const UsersManager = () => {
                       }} className="text-yellow-400 hover:bg-yellow-500/10 h-8 px-2">
                         <KeyRound className="w-4 h-4" />
                       </Button>
+                      <Button size="sm" variant="ghost" onClick={(e) => {
+                        e.stopPropagation();
+                        printLoginCards([{
+                          firstName: user.first_name || "",
+                          lastName: user.last_name || "",
+                          email: user.email || "",
+                          password: "viz heslo při vytvoření",
+                          role: user.role || "user",
+                        }]);
+                      }} className="text-blue-400 hover:bg-blue-500/10 h-8 px-2">
+                        <Printer className="w-4 h-4" />
+                      </Button>
                       <Button size="sm" variant="ghost" onClick={async (e) => {
                         e.stopPropagation();
                         if (!confirm(`Opravdu smazat uživatele ${user.first_name} ${user.last_name}?`)) return;
