@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Lock, UserPlus, LogIn, GraduationCap, BookOpenText } from "lucide-react";
+import { Lock, UserPlus, LogIn, GraduationCap, BookOpenText, KeyRound, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type Role = "student" | "teacher";
@@ -21,6 +21,9 @@ const Auth = () => {
   const [error, setError] = useState("");
   const [role, setRole] = useState<Role>("student");
   const [pendingLogin, setPendingLogin] = useState(false);
+  const [forgotPassword, setForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetSent, setResetSent] = useState(false);
 
   // Login fields
   const [email, setEmail] = useState("");
@@ -175,6 +178,76 @@ const Auth = () => {
     setLoading(false);
   };
 
+  if (forgotPassword) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+        <div className="w-full max-w-md">
+          {!resetSent ? (
+            <>
+              <div className="text-center mb-8">
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                  <KeyRound className="w-6 h-6 text-primary" />
+                </div>
+                <h1 className="font-heading text-2xl font-bold">Obnova hesla</h1>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Zadejte váš email a zašleme vám odkaz pro obnovu hesla.
+                </p>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="resetEmail">E-mail</Label>
+                  <Input
+                    id="resetEmail"
+                    type="email"
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
+                    placeholder="vas@email.cz"
+                    className="mt-1"
+                  />
+                </div>
+                <Button
+                  className="w-full"
+                  onClick={async () => {
+                    if (!resetEmail) return;
+                    const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+                      redirectTo: `${window.location.origin}/reset-password`,
+                    });
+                    if (error) {
+                      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+                    } else {
+                      setResetSent(true);
+                    }
+                  }}
+                >
+                  Odeslat odkaz pro obnovu
+                </Button>
+                <Button variant="ghost" className="w-full" onClick={() => setForgotPassword(false)}>
+                  ← Zpět na přihlášení
+                </Button>
+              </div>
+            </>
+          ) : (
+            <div className="text-center">
+              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                <CheckCircle2 className="w-6 h-6 text-primary" />
+              </div>
+              <h1 className="font-heading text-2xl font-bold">Email odeslán!</h1>
+              <p className="text-sm text-muted-foreground mt-2 mb-6">
+                Zkontrolujte váš email <strong>{resetEmail}</strong> a klikněte na odkaz pro obnovu hesla.
+              </p>
+              <Button
+                variant="outline"
+                onClick={() => { setForgotPassword(false); setResetSent(false); setResetEmail(""); }}
+              >
+                Zpět na přihlášení
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="w-full max-w-md">
@@ -225,6 +298,13 @@ const Auth = () => {
             <div>
               <Label htmlFor="password">Heslo</Label>
               <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" className="mt-1" />
+              <button
+                type="button"
+                onClick={() => setForgotPassword(true)}
+                className="text-xs text-primary hover:underline mt-1 text-right w-full"
+              >
+                Zapomenuté heslo?
+              </button>
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
             <Button type="submit" className="w-full" disabled={loading}>
