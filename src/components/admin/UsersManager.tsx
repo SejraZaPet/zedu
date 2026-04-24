@@ -485,7 +485,11 @@ const UsersManager = () => {
                 <TableCell className="font-medium whitespace-nowrap">
                   {user.first_name} {user.last_name}
                 </TableCell>
-                <TableCell className="text-muted-foreground max-w-[160px] truncate">{user.email}</TableCell>
+                {(() => { const emailShort = user.email?.split("@")[0] || "–"; return (
+                  <TableCell className="text-muted-foreground max-w-[160px] truncate">
+                    <span title={user.email}>{emailShort}</span>
+                  </TableCell>
+                ); })()}
                 <TableCell className="text-muted-foreground hidden md:table-cell max-w-[100px] truncate">{user.school || "–"}</TableCell>
                 <TableCell className="text-muted-foreground hidden xl:table-cell">{user.field_of_study || "–"}</TableCell>
                 <TableCell className="text-center text-muted-foreground">{user.year ?? "–"}</TableCell>
