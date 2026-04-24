@@ -1208,6 +1208,16 @@ const ActivityBlock = ({ block, onChange }: Props) => {
               Anonymní odpovědi
             </Label>
           </div>
+          <div className="flex items-center gap-2 mt-2">
+            <Checkbox
+              checked={p.allowMultiple === true}
+              onCheckedChange={(v) => onChange({ ...p, allowMultiple: !!v })}
+              id="wall-multiple"
+            />
+            <Label htmlFor="wall-multiple" className="text-xs cursor-pointer">
+              Povolit více odpovědí od jednoho žáka
+            </Label>
+          </div>
         </div>
       )}
 

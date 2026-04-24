@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 interface Props {
   question: string;
   anonymous: boolean;
+  allowMultiple?: boolean;
   onComplete?: () => void;
   onSubmitResponse?: (response: string) => void;
   sessionId?: string;
@@ -14,9 +15,19 @@ interface Props {
   playerId?: string;
 }
 
-const WallActivity = ({ question, anonymous, onComplete, onSubmitResponse, sessionId, questionIndex, playerId }: Props) => {
+const WallActivity = ({
+  question,
+  anonymous,
+  allowMultiple = false,
+  onComplete,
+  onSubmitResponse,
+  sessionId,
+  questionIndex,
+  playerId,
+}: Props) => {
   const [response, setResponse] = useState("");
-  const [submitted, setSubmitted] = useState(false);
+  const [submittedCount, setSubmittedCount] = useState(0);
+  const [justSubmitted, setJustSubmitted] = useState(false);
 
   const handleSubmit = () => {
     const text = response.trim();
@@ -40,19 +51,26 @@ const WallActivity = ({ question, anonymous, onComplete, onSubmitResponse, sessi
         });
     }
 
-    setSubmitted(true);
+    setSubmittedCount((c) => c + 1);
+    setJustSubmitted(true);
+    setResponse("");
     onComplete?.();
+
+    if (allowMultiple) {
+      // Hide confirmation after a short delay so student can submit again
+      setTimeout(() => setJustSubmitted(false), 1500);
+    }
   };
 
-  if (submitted) {
+  // Single-response mode: lock UI after first submit
+  if (!allowMultiple && submittedCount > 0) {
     return (
       <div className="flex flex-col items-center justify-center text-center py-8 gap-3">
         <CheckCircle2 className="w-12 h-12 text-primary" />
         <p className="text-lg font-semibold text-foreground">Odpověď odeslána!</p>
-        {!anonymous && (
+        {!anonymous ? (
           <p className="text-sm text-muted-foreground">Vaše jméno bude zobrazeno u odpovědi.</p>
-        )}
-        {anonymous && (
+        ) : (
           <p className="text-sm text-muted-foreground">Odpověď je anonymní.</p>
         )}
       </div>
@@ -66,6 +84,12 @@ const WallActivity = ({ question, anonymous, onComplete, onSubmitResponse, sessi
           {question || "Odpovězte na otázku učitele"}
         </p>
       </div>
+      {allowMultiple && justSubmitted && (
+        <div className="flex items-center gap-2 text-sm text-primary bg-primary/10 rounded-md px-3 py-2">
+          <CheckCircle2 className="w-4 h-4" />
+          Odpověď odeslána. Můžete přidat další.
+        </div>
+      )}
       <Textarea
         value={response}
         onChange={(e) => setResponse(e.target.value)}
@@ -79,6 +103,11 @@ const WallActivity = ({ question, anonymous, onComplete, onSubmitResponse, sessi
       </Button>
       {anonymous && (
         <p className="text-xs text-muted-foreground text-center">Vaše odpověď bude anonymní</p>
+      )}
+      {allowMultiple && submittedCount > 0 && (
+        <p className="text-xs text-muted-foreground text-center">
+          Odeslaných odpovědí: {submittedCount}
+        </p>
       )}
     </div>
   );

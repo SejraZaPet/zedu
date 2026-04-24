@@ -8,6 +8,7 @@ import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { serverTsToClientMs } from "@/lib/clock-sync";
 import LessonBlockRenderer from "@/components/LessonBlockRenderer";
+import WallResponsesList from "@/components/activities/WallResponsesList";
 
 const StudentGamePlay = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -25,6 +26,20 @@ const StudentGamePlay = () => {
   const { session, players, responses, loading, connectionStatus, reconnect } = useGameSession(sessionId, fetchAttempts);
   const [answered, setAnswered] = useState<Set<number>>(new Set());
   const [lastResult, setLastResult] = useState<{ correct: boolean; score: number } | null>(null);
+  const [liveSettings, setLiveSettings] = useState<any>({});
+
+  useEffect(() => {
+    if (!sessionId) return;
+    const interval = setInterval(async () => {
+      const { data } = await supabase
+        .from("game_sessions")
+        .select("settings")
+        .eq("id", sessionId)
+        .single();
+      if (data) setLiveSettings(data.settings || {});
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [sessionId]);
 
   useEffect(() => {
     if (!loading && session && session.status === "lobby" && fetchAttempts < 20) {
@@ -197,6 +212,15 @@ const StudentGamePlay = () => {
                     }
                   }}
                 />
+                {(currentSlideData as any).activitySpec?.activityType === "wall" &&
+                  liveSettings?.wallPublished &&
+                  liveSettings?.wallPublishedQuestion === qi && (
+                    <WallResponsesList
+                      sessionId={sessionId || ""}
+                      questionIndex={qi}
+                      anonymous={(currentSlideData as any).activitySpec?.anonymous || false}
+                    />
+                  )}
               </div>
             )}
             {currentSlideData.device?.instructions && currentSlideData.device.instructions !== "Sledujte výklad." && (
