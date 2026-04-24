@@ -271,6 +271,19 @@ const UsersManager = () => {
           <TableBody>
             {filtered.map((user) => (
               <TableRow key={user.id} className="cursor-pointer hover:bg-muted/50" onClick={() => { setSelectedUser(user); setDetailOpen(true); }}>
+                <TableCell onClick={(e) => e.stopPropagation()}>
+                  {user.status === "pending" && (
+                    <Checkbox
+                      checked={selectedIds.has(user.id)}
+                      onCheckedChange={(v) => {
+                        const next = new Set(selectedIds);
+                        if (v) next.add(user.id);
+                        else next.delete(user.id);
+                        setSelectedIds(next);
+                      }}
+                    />
+                  )}
+                </TableCell>
                 <TableCell className="font-medium whitespace-nowrap">
                   {user.first_name} {user.last_name}
                 </TableCell>
