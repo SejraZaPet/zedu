@@ -536,11 +536,17 @@ const UsersManager = () => {
                         if (error) {
                           toast({ title: "Chyba", description: error.message, variant: "destructive" });
                         } else {
+                          await supabase.from("profiles").update({
+                            login_password: newPassword
+                          }).eq("id", user.id);
+
                           toast({
                             title: "Heslo změněno",
                             description: `Nové heslo: ${newPassword}`,
                             duration: 15000,
                           });
+
+                          fetchUsers();
                         }
                       }} className="text-yellow-400 hover:bg-yellow-500/10 h-7 w-7 p-0">
                         <KeyRound className="w-4 h-4" />
