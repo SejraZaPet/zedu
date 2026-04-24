@@ -251,6 +251,19 @@ export const PresentationEditorDialog = ({
             </div>
           )}
           <DialogFooter className="gap-2 mt-4">
+            {onSave && (
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  await onSave(pendingSlides);
+                  toast({ title: "Prezentace uložena", description: "Změny byly uloženy k lekci." });
+                }}
+                className="gap-2"
+              >
+                <Save className="w-4 h-4" />
+                Uložit
+              </Button>
+            )}
             <Button variant="outline" onClick={onClose}>Zrušit</Button>
             <Button onClick={() => onLaunch(pendingSlides)} className="gap-2">
               <Monitor className="w-4 h-4" />
