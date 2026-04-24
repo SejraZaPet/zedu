@@ -41,9 +41,11 @@ function buildStrip(user: LoginCardData): string {
     '<div class="cred-row"><div class="cred-label">Přihlášení:</div><div class="cred-value">' +
       escHtml(user.email) +
       "</div></div>",
-    '<div class="cred-row"><div class="cred-label">Heslo:</div><div class="cred-value cred-password">' +
-      escHtml(user.password) +
-      "</div></div>",
+    user.password === "viz heslo při vytvoření"
+      ? '<div class="cred-row"><div class="cred-label">Heslo:</div><div class="cred-value cred-password-note">Heslo bylo nastaveno při vytvoření účtu</div></div>'
+      : '<div class="cred-row"><div class="cred-label">Heslo:</div><div class="cred-value cred-password">' +
+        escHtml(user.password) +
+        "</div></div>",
     "</div>",
     '<div class="strip-right">',
     '<img class="qr" src="' + qrUrl + '" alt="QR" />',
@@ -68,6 +70,7 @@ const CSS = [
   ".cred-label { font-size: 7pt; font-weight: 600; text-transform: uppercase; color: #94a3b8; min-width: 48pt; }",
   ".cred-value { font-size: 9pt; font-family: monospace; color: #334155; }",
   ".cred-password { font-size: 11pt; font-weight: 700; font-family: monospace; color: #0f172a; letter-spacing: 0.04em; }",
+  ".cred-password-note { font-size: 9pt; font-style: italic; color: #94a3b8; font-family: Arial, sans-serif; }",
   ".strip-right { display: flex; flex-direction: column; align-items: center; gap: 2pt; }",
   ".qr { width: 55pt; height: 55pt; }",
   ".qr-label { font-size: 6pt; color: #94a3b8; }",

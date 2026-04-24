@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Ban, UserCheck, Shield, Search, UserPlus, CheckCheck, Upload, Trash2, KeyRound } from "lucide-react";
+import { Ban, UserCheck, Shield, Search, UserPlus, CheckCheck, Upload, Trash2, KeyRound, Printer } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -418,6 +418,25 @@ const UsersManager = () => {
             <Trash2 className="w-4 h-4" />
             Smazat vybrané
           </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-2"
+            onClick={() => {
+              const selectedUsers = users.filter(u => selectedIds.has(u.id));
+              const cards = selectedUsers.map(u => ({
+                firstName: u.first_name || "",
+                lastName: u.last_name || "",
+                email: u.email || "",
+                password: "viz heslo při vytvoření",
+                role: u.role || "user",
+              }));
+              printLoginCards(cards);
+            }}
+          >
+            <Printer className="w-4 h-4" />
+            Tisknout štítky ({selectedIds.size})
+          </Button>
           <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>
             Zrušit výběr
           </Button>
@@ -529,6 +548,18 @@ const UsersManager = () => {
                         }
                       }} className="text-yellow-400 hover:bg-yellow-500/10 h-8 px-2">
                         <KeyRound className="w-4 h-4" />
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={(e) => {
+                        e.stopPropagation();
+                        printLoginCards([{
+                          firstName: user.first_name || "",
+                          lastName: user.last_name || "",
+                          email: user.email || "",
+                          password: "viz heslo při vytvoření",
+                          role: user.role || "user",
+                        }]);
+                      }} className="text-blue-400 hover:bg-blue-500/10 h-8 px-2">
+                        <Printer className="w-4 h-4" />
                       </Button>
                       <Button size="sm" variant="ghost" onClick={async (e) => {
                         e.stopPropagation();
