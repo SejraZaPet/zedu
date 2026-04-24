@@ -17,6 +17,8 @@ const ResetPassword = () => {
   const [checking, setChecking] = useState(true);
   const [validLink, setValidLink] = useState(false);
   const [linkError, setLinkError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   useEffect(() => {
     // Supabase's recovery flow places tokens in the URL hash (#access_token=...&type=recovery)
