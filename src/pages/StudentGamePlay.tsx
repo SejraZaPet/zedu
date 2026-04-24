@@ -212,6 +212,15 @@ const StudentGamePlay = () => {
                     }
                   }}
                 />
+                {(currentSlideData as any).activitySpec?.activityType === "wall" &&
+                  liveSettings?.wallPublished &&
+                  liveSettings?.wallPublishedQuestion === qi && (
+                    <WallResponsesList
+                      sessionId={sessionId || ""}
+                      questionIndex={qi}
+                      anonymous={(currentSlideData as any).activitySpec?.anonymous || false}
+                    />
+                  )}
               </div>
             )}
             {currentSlideData.device?.instructions && currentSlideData.device.instructions !== "Sledujte výklad." && (
