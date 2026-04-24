@@ -67,6 +67,37 @@ const statusColors: Record<string, string> = {
   blocked: "bg-red-500/20 text-red-400 border-red-500/30",
 };
 
+function generateStudentEmail(
+  firstName: string,
+  lastName: string,
+  existingEmails: string[]
+): string {
+  const normalize = (s: string) =>
+    (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+
+  const first = normalize(firstName) || "user";
+  const last = normalize(lastName) || "user";
+  const initial = first.charAt(0);
+  const domain = "@zedu-student.cz";
+
+  const v1 = `${first}.${last}${domain}`;
+  if (!existingEmails.includes(v1)) return v1;
+
+  const v2 = `${initial}${last}${domain}`;
+  if (!existingEmails.includes(v2)) return v2;
+
+  let n = 2;
+  while (n < 100) {
+    const v3 = `${first}.${last}${n}${domain}`;
+    if (!existingEmails.includes(v3)) return v3;
+    const v4 = `${initial}${last}${n}${domain}`;
+    if (!existingEmails.includes(v4)) return v4;
+    n++;
+  }
+
+  return `${first}.${last}.${Date.now()}${domain}`;
+}
+
 const UsersManager = () => {
   const { toast } = useToast();
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -584,10 +615,8 @@ const UsersManager = () => {
               onClick={async () => {
                 setCreating(true);
                 try {
-                  const sanitize = (s: string) =>
-                    s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, "").toLowerCase() || "user";
-                  const email = newUser.email ||
-                    `${sanitize(newUser.first_name)}.${sanitize(newUser.last_name)}.${Date.now()}@zedu-student.cz`;
+                  const existingEmails = users.map(u => u.email);
+                  const email = newUser.email || generateStudentEmail(newUser.first_name, newUser.last_name, existingEmails);
                   const password = Math.random().toString(36).slice(-8) + "Aa1!";
 
                   const { data: authData, error: authError } = await supabase.functions.invoke("create-user", {
@@ -799,15 +828,17 @@ const UsersManager = () => {
                   const errors: string[] = [];
                   let successCount = 0;
                   const importedUsersList: LoginCardData[] = [];
+                  const existingEmails = users.map(u => u.email);
+                  const usedEmails: string[] = [...existingEmails];
 
                   for (const row of importPreview) {
                     try {
-                      const sanitize = (s: string) => (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, "").toLowerCase() || "user";
                       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                       const rawEmail = (row.email || "").toString().trim();
                       const email = rawEmail && emailRegex.test(rawEmail)
                         ? rawEmail
-                        : `${sanitize(row.jmeno)}.${sanitize(row.prijmeni)}.${Date.now()}${Math.floor(Math.random() * 1000)}@zedu-student.cz`;
+                        : generateStudentEmail(row.jmeno, row.prijmeni, usedEmails);
+                      if (!rawEmail) usedEmails.push(email);
                       if (!emailRegex.test(email)) {
                         errors.push(`${row.jmeno} ${row.prijmeni}: Neplatný formát e-mailu (${email})`);
                         continue;
