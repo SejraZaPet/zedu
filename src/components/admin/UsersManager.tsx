@@ -697,6 +697,7 @@ const UsersManager = () => {
                     field_of_study: "",
                     year: newUser.year ? parseInt(newUser.year) : null,
                     status: "approved" as any,
+                    login_password: password,
                   });
 
                   await supabase.from("user_roles").insert({
