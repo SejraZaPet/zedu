@@ -1,3 +1,5 @@
+import logoUrl from "@/assets/zedu-logo-new.png";
+
 export interface LoginCardData {
   firstName: string;
   lastName: string;
@@ -27,7 +29,7 @@ function buildStrip(user: LoginCardData): string {
   return [
     '<div class="strip">',
     '<div class="strip-left">',
-    '<div class="logo">ZEdu</div>',
+    '<img class="logo-img" src="' + logoUrl + '" alt="ZEdu" />',
     '<div class="role-badge">' + escHtml(roleLabel) + "</div>",
     "</div>",
     '<div class="strip-center">',
@@ -58,7 +60,7 @@ const CSS = [
   "body { font-family: Arial, sans-serif; background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }",
   ".strip { display: flex; align-items: center; gap: 10pt; padding: 7pt 10pt; border: 1pt solid #e2e8f0; min-height: 28mm; }",
   ".strip-left { display: flex; flex-direction: column; align-items: center; min-width: 44pt; gap: 4pt; }",
-  ".logo { font-size: 13pt; font-weight: 800; color: #14b8a6; }",
+  ".logo-img { width: 40pt; height: auto; object-fit: contain; }",
   ".role-badge { font-size: 6pt; font-weight: 700; color: #fff; background: #6366f1; padding: 2pt 5pt; border-radius: 8pt; }",
   ".strip-center { flex: 1; display: flex; flex-direction: column; gap: 4pt; }",
   ".student-name { font-size: 14pt; font-weight: 700; color: #0f172a; }",
