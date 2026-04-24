@@ -466,6 +466,19 @@ const UsersManager = () => {
                           <Ban className="w-4 h-4" />
                         </Button>
                       )}
+                      <Button size="sm" variant="ghost" onClick={async (e) => {
+                        e.stopPropagation();
+                        if (!confirm(`Opravdu smazat uživatele ${user.first_name} ${user.last_name}?`)) return;
+                        const { error } = await supabase.from("profiles").delete().eq("id", user.id);
+                        if (error) {
+                          toast({ title: "Chyba", description: error.message, variant: "destructive" });
+                        } else {
+                          toast({ title: "Smazáno", description: `${user.first_name} ${user.last_name} byl odstraněn.` });
+                          fetchUsers();
+                        }
+                      }} className="text-red-400 hover:bg-red-500/10 h-8 px-2">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
                   )}
                 </TableCell>
