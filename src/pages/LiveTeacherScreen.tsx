@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Monitor, Smartphone, StickyNote, ChevronLeft, ChevronRight, Users, StopCircle, ArrowLeft } from "lucide-react";
 import SessionExports from "@/components/live/SessionExports";
 import { supabase } from "@/integrations/supabase/client";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 interface SlideData {
   slideId: string;
@@ -303,6 +305,38 @@ const LiveTeacherScreen = () => {
                       >
                         {wallPublished ? "✓ Odpovědi zobrazeny" : "Zveřejnit odpovědi"}
                       </Button>
+                    </div>
+                    <div className="flex items-center gap-4 flex-wrap">
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={settings?.wallAnonymous ?? (currentSlide as any).activitySpec?.anonymous ?? false}
+                          onCheckedChange={async (v) => {
+                            if (!sessionId) return;
+                            await supabase.from("game_sessions").update({
+                              settings: { ...(settings || {}), wallAnonymous: v }
+                            }).eq("id", sessionId);
+                          }}
+                          id="live-wall-anonymous"
+                        />
+                        <Label htmlFor="live-wall-anonymous" className="text-xs cursor-pointer">
+                          Anonymní
+                        </Label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={settings?.wallAllowMultiple ?? (currentSlide as any).activitySpec?.allowMultiple ?? false}
+                          onCheckedChange={async (v) => {
+                            if (!sessionId) return;
+                            await supabase.from("game_sessions").update({
+                              settings: { ...(settings || {}), wallAllowMultiple: v }
+                            }).eq("id", sessionId);
+                          }}
+                          id="live-wall-multiple"
+                        />
+                        <Label htmlFor="live-wall-multiple" className="text-xs cursor-pointer">
+                          Více odpovědí
+                        </Label>
+                      </div>
                     </div>
                     <div className="space-y-1 max-h-40 overflow-y-auto">
                       {wallResponses.length === 0 ? (
