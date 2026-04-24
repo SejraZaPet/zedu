@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Monitor, Smartphone, StickyNote, ChevronLeft, ChevronRight, Users, StopCircle, ArrowLeft } from "lucide-react";
 import SessionExports from "@/components/live/SessionExports";
+import { supabase } from "@/integrations/supabase/client";
 
 interface SlideData {
   slideId: string;
@@ -274,6 +275,53 @@ const LiveTeacherScreen = () => {
                   )}
                 </div>
               )}
+
+              {(currentSlide as any).activitySpec?.activityType === "wall" && (() => {
+                const wallPublished =
+                  (settings?.wallPublished === true) &&
+                  (settings?.wallPublishedQuestion === currentIndex);
+                const anonymous = (currentSlide as any).activitySpec?.anonymous;
+                const wallResponses = responses.filter(r => r.question_index === currentIndex);
+                return (
+                  <div className="mt-3 p-3 border border-border rounded-lg space-y-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium">Zeď odpovědí</p>
+                      <Button
+                        size="sm"
+                        variant={wallPublished ? "default" : "outline"}
+                        onClick={async () => {
+                          if (!sessionId) return;
+                          await supabase.from("game_sessions").update({
+                            settings: {
+                              ...(settings || {}),
+                              wallPublished: !wallPublished,
+                              wallPublishedQuestion: currentIndex,
+                            },
+                          }).eq("id", sessionId);
+                        }}
+                        className="gap-1.5"
+                      >
+                        {wallPublished ? "✓ Odpovědi zobrazeny" : "Zveřejnit odpovědi"}
+                      </Button>
+                    </div>
+                    <div className="space-y-1 max-h-40 overflow-y-auto">
+                      {wallResponses.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">Zatím žádné odpovědi.</p>
+                      ) : (
+                        wallResponses.map(r => {
+                          const player = players.find(p => p.id === r.player_id);
+                          return (
+                            <div key={r.id} className="flex items-start gap-2 text-sm p-2 bg-muted rounded">
+                              {!anonymous && <span className="font-medium text-primary flex-shrink-0">{player?.nickname || "Žák"}:</span>}
+                              <span className="text-muted-foreground">{(r.answer as any)?.text || "—"}</span>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
 
