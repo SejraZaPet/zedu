@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import UserDetailDialog from "./UserDetailDialog";
 import { sendWelcomeEmail } from "@/lib/send-email";
+import { printLoginCards, type LoginCardData } from "@/lib/generate-login-cards";
 import {
   Select,
   SelectContent,
@@ -93,6 +94,7 @@ const UsersManager = () => {
   const [importPreview, setImportPreview] = useState<any[]>([]);
   const [importing, setImporting] = useState(false);
   const [importErrors, setImportErrors] = useState<string[]>([]);
+  const [importedUsers, setImportedUsers] = useState<LoginCardData[]>([]);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -630,6 +632,7 @@ const UsersManager = () => {
                   setImporting(true);
                   const errors: string[] = [];
                   let successCount = 0;
+                  const importedUsersList: LoginCardData[] = [];
 
                   for (const row of importPreview) {
                     try {
@@ -666,6 +669,7 @@ const UsersManager = () => {
                       }
 
                       successCount++;
+                      importedUsersList.push({ firstName: row.jmeno, lastName: row.prijmeni, email, password, role });
                     } catch (e: any) {
                       errors.push(`${row.jmeno} ${row.prijmeni}: ${e.message}`);
                     }
@@ -682,9 +686,15 @@ const UsersManager = () => {
                     setImportFile(null);
                   }
                   setImporting(false);
+                  setImportedUsers(importedUsersList);
                 }}
               >
                 {importing ? "Importuji..." : `Importovat ${importPreview.length} uživatelů`}
+              </Button>
+            )}
+            {importedUsers.length > 0 && !importing && (
+              <Button variant="outline" className="gap-2" onClick={() => printLoginCards(importedUsers)}>
+                🖨️ Tisknout lístky ({importedUsers.length})
               </Button>
             )}
           </DialogFooter>
