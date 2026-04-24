@@ -32,7 +32,7 @@ const LiveProjectorScreen = () => {
   // Lobby screen
   if (session.status === "lobby") {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-12 gap-8 text-white" style={{ background: "linear-gradient(135deg, #0f0c29, #302b63, #24243e)" }}>
+      <div className="min-h-screen flex flex-col items-center justify-center p-12 gap-8 text-white" style={{ background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)" }}>
         <h1 className="text-6xl font-bold text-center">{session.title}</h1>
         <p className="text-2xl text-gray-300">Připojte se k prezentaci</p>
         <div className="bg-white rounded-3xl p-8 mb-10 shadow-2xl">
