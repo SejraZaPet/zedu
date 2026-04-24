@@ -463,7 +463,7 @@ const UsersManager = () => {
               <TableHead className="hidden xl:table-cell">Obor</TableHead>
               <TableHead className="text-center">Ročník</TableHead>
               <TableHead>Role</TableHead>
-              <TableHead>Stav</TableHead>
+              <TableHead className="w-8 text-center"><Shield className="w-4 h-4 inline" /></TableHead>
               <TableHead className="hidden lg:table-cell">Registrace</TableHead>
               <TableHead className="text-right">Akce</TableHead>
             </TableRow>
