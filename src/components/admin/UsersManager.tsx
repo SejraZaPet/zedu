@@ -502,13 +502,13 @@ const UsersManager = () => {
                     <span className="text-xs text-muted-foreground">{roleLabels[user.role || "user"] || user.role}</span>
                   )}
                 </TableCell>
-                <TableCell>
-                  <Badge variant="outline" className={`text-xs ${statusColors[user.status] || ""}`}>
-                    {statusLabels[user.status] || user.status}
-                  </Badge>
+                <TableCell className="text-center">
+                  {user.status === "approved" && <CheckCircle2 className="w-4 h-4 text-green-500 inline" />}
+                  {user.status === "pending" && <Clock className="w-4 h-4 text-yellow-500 inline" />}
+                  {user.status === "blocked" && <Ban className="w-4 h-4 text-red-500 inline" />}
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground whitespace-nowrap hidden lg:table-cell">
-                  {new Date(user.created_at).toLocaleDateString("cs-CZ")}
+                  {new Date(user.created_at).toLocaleDateString("cs-CZ", { day: "2-digit", month: "2-digit", year: "2-digit" })}
                 </TableCell>
                 <TableCell className="text-right">
                   {user.role !== "admin" && (
