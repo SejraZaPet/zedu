@@ -32,7 +32,7 @@ const LiveProjectorScreen = () => {
   // Lobby screen
   if (session.status === "lobby") {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-12 gap-8 text-white" style={{ background: "linear-gradient(135deg, #0f0c29, #302b63, #24243e)" }}>
+      <div className="min-h-screen flex flex-col items-center justify-center p-12 gap-8 text-white" style={{ background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)" }}>
         <h1 className="text-6xl font-bold text-center">{session.title}</h1>
         <p className="text-2xl text-gray-300">Připojte se k prezentaci</p>
         <div className="bg-white rounded-3xl p-8 mb-10 shadow-2xl">
@@ -73,7 +73,7 @@ const LiveProjectorScreen = () => {
 
   // Slide content
   return (
-    <div className="min-h-screen flex flex-col text-white" style={{ background: "linear-gradient(135deg, #0f0c29, #302b63, #24243e)" }}>
+    <div className="min-h-screen flex flex-col text-white" style={{ background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)" }}>
       {/* Progress bar */}
       <div className="h-2 bg-white/10">
         <div
@@ -121,14 +121,14 @@ const LiveProjectorScreen = () => {
         )}
 
         {(currentSlide as any).tableData && (
-          <div className="w-full max-w-6xl overflow-auto">
-            <table className="w-full border-collapse text-2xl">
+          <div className="w-full mt-4 rounded-xl overflow-hidden border border-white/20">
+            <table className="w-full text-xl border-collapse table-fixed">
               <thead>
                 <tr>
                   {(currentSlide as any).tableData.headers.map((h: string, i: number) => (
                     <th
                       key={i}
-                      className="border border-border bg-muted px-6 py-4 text-left font-semibold text-foreground"
+                      className="border border-white/20 bg-white/20 px-6 py-4 text-left font-bold text-white"
                     >
                       {h}
                     </th>
@@ -137,9 +137,9 @@ const LiveProjectorScreen = () => {
               </thead>
               <tbody>
                 {(currentSlide as any).tableData.rows.map((row: string[], ri: number) => (
-                  <tr key={ri}>
+                  <tr key={ri} className={ri % 2 === 0 ? "bg-white/5" : "bg-white/10"}>
                     {row.map((cell: string, ci: number) => (
-                      <td key={ci} className="border border-border px-6 py-4 text-foreground">
+                      <td key={ci} className="border border-white/20 px-6 py-4 text-white">
                         {cell}
                       </td>
                     ))}
