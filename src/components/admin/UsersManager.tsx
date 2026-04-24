@@ -227,12 +227,14 @@ const UsersManager = () => {
             className="sr-only"
             onChange={async (e) => {
               const file = e.target.files?.[0];
+              console.log("Soubor vybrán:", file?.name, file?.size, file?.type);
               if (!file) return;
               setImportFile(file);
               setImportErrors([]);
               setImportOpen(true);
 
               try {
+                console.log("Začínám zpracování souboru...");
                 let rows: any[] = [];
 
                 if (file.name.endsWith(".csv")) {
@@ -255,6 +257,7 @@ const UsersManager = () => {
                 }
 
                 rows = rows.filter((r: any) => r.jmeno && r.prijmeni && r.jmeno !== "Jan");
+                console.log("Řádky načteny:", rows.length, rows[0]);
                 setImportPreview(rows);
               } catch (err: any) {
                 setImportErrors([`Chyba při čtení souboru: ${err.message}`]);
