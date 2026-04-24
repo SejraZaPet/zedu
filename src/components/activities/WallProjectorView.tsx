@@ -82,14 +82,14 @@ const WallProjectorView = ({ sessionId, questionIndex, anonymous, published = fa
   }
 
   const bubbleStyles = [
-    { background: "rgba(147, 51, 234, 0.15)", border: "2px solid rgba(147, 51, 234, 0.4)", color: "#6b21a8" },
-    { background: "rgba(59, 130, 246, 0.15)", border: "2px solid rgba(59, 130, 246, 0.4)", color: "#1d4ed8" },
-    { background: "rgba(16, 185, 129, 0.15)", border: "2px solid rgba(16, 185, 129, 0.4)", color: "#065f46" },
-    { background: "rgba(245, 158, 11, 0.15)", border: "2px solid rgba(245, 158, 11, 0.4)", color: "#92400e" },
-    { background: "rgba(236, 72, 153, 0.15)", border: "2px solid rgba(236, 72, 153, 0.4)", color: "#9d174d" },
-    { background: "rgba(99, 102, 241, 0.15)", border: "2px solid rgba(99, 102, 241, 0.4)", color: "#3730a3" },
-    { background: "rgba(20, 184, 166, 0.15)", border: "2px solid rgba(20, 184, 166, 0.4)", color: "#134e4a" },
-    { background: "rgba(249, 115, 22, 0.15)", border: "2px solid rgba(249, 115, 22, 0.4)", color: "#7c2d12" },
+    { background: "rgba(255,255,255,0.15)", border: "2px solid rgba(255,255,255,0.4)", color: "#ffffff" },
+    { background: "rgba(167, 139, 250, 0.3)", border: "2px solid rgba(167, 139, 250, 0.6)", color: "#ede9fe" },
+    { background: "rgba(96, 165, 250, 0.3)", border: "2px solid rgba(96, 165, 250, 0.6)", color: "#dbeafe" },
+    { background: "rgba(52, 211, 153, 0.3)", border: "2px solid rgba(52, 211, 153, 0.6)", color: "#d1fae5" },
+    { background: "rgba(251, 191, 36, 0.3)", border: "2px solid rgba(251, 191, 36, 0.6)", color: "#fef3c7" },
+    { background: "rgba(249, 115, 22, 0.3)", border: "2px solid rgba(249, 115, 22, 0.6)", color: "#ffedd5" },
+    { background: "rgba(236, 72, 153, 0.3)", border: "2px solid rgba(236, 72, 153, 0.6)", color: "#fce7f3" },
+    { background: "rgba(34, 211, 238, 0.3)", border: "2px solid rgba(34, 211, 238, 0.6)", color: "#cffafe" },
   ];
   const rotations = [-2, 1, -1, 2, 0, -2, 1, -1];
 
@@ -111,12 +111,15 @@ const WallProjectorView = ({ sessionId, questionIndex, anonymous, published = fa
                   color: style.color,
                   transform: `rotate(${rotation}deg)`,
                   borderRadius: "16px",
-                  padding: "20px 24px",
-                  maxWidth: "320px",
-                  boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
+                  padding: "16px 24px",
+                  maxWidth: "280px",
+                  boxShadow: "0 4px 16px rgba(0,0,0,0.3)",
+                  fontSize: "20px",
+                  fontWeight: 500,
+                  lineHeight: 1.4,
                 }}
               >
-                <p style={{ fontSize: "18px", fontWeight: 500, lineHeight: 1.5 }}>{r.text}</p>
+                <p style={{ fontSize: "20px", fontWeight: 500, lineHeight: 1.4 }}>{r.text}</p>
                 {r.nickname && (
                   <p style={{ fontSize: "14px", opacity: 0.7, marginTop: "8px" }}>— {r.nickname}</p>
                 )}
