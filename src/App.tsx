@@ -30,6 +30,7 @@ import StudentGameJoin from "./pages/StudentGameJoin";
 import StudentGamePlay from "./pages/StudentGamePlay";
 import TeacherGames from "./pages/TeacherGames";
 import LiveTeacherScreen from "./pages/LiveTeacherScreen";
+import LiveProjectorScreen from "./pages/LiveProjectorScreen";
 import TeacherAssignments from "./pages/TeacherAssignments";
 import StudentAssignments from "./pages/StudentAssignments";
 import StudentAssignmentPlayer from "./pages/StudentAssignmentPlayer";
