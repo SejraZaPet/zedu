@@ -128,6 +128,7 @@ const UsersManager = () => {
   const [importing, setImporting] = useState(false);
   const [importErrors, setImportErrors] = useState<string[]>([]);
   const [importedUsers, setImportedUsers] = useState<LoginCardData[]>([]);
+  const [lastImportedUsers, setLastImportedUsers] = useState<LoginCardData[]>([]);
 
   const fetchUsers = async () => {
     setLoading(true);
