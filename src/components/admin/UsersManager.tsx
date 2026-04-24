@@ -828,15 +828,17 @@ const UsersManager = () => {
                   const errors: string[] = [];
                   let successCount = 0;
                   const importedUsersList: LoginCardData[] = [];
+                  const existingEmails = users.map(u => u.email);
+                  const usedEmails: string[] = [...existingEmails];
 
                   for (const row of importPreview) {
                     try {
-                      const sanitize = (s: string) => (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, "").toLowerCase() || "user";
                       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                       const rawEmail = (row.email || "").toString().trim();
                       const email = rawEmail && emailRegex.test(rawEmail)
                         ? rawEmail
-                        : `${sanitize(row.jmeno)}.${sanitize(row.prijmeni)}.${Date.now()}${Math.floor(Math.random() * 1000)}@zedu-student.cz`;
+                        : generateStudentEmail(row.jmeno, row.prijmeni, usedEmails);
+                      if (!rawEmail) usedEmails.push(email);
                       if (!emailRegex.test(email)) {
                         errors.push(`${row.jmeno} ${row.prijmeni}: Neplatný formát e-mailu (${email})`);
                         continue;
