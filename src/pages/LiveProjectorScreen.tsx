@@ -167,6 +167,10 @@ const LiveProjectorScreen = () => {
             sessionId={sessionId!}
             questionIndex={currentIndex}
             anonymous={(currentSlide as any).activitySpec?.anonymous || false}
+            published={
+              (session.settings as any)?.wallPublished === true &&
+              (session.settings as any)?.wallPublishedQuestion === currentIndex
+            }
           />
         ) : currentSlide.type === "activity" && (
           <div className="mt-8 bg-primary/10 border border-primary/20 rounded-2xl px-8 py-6">

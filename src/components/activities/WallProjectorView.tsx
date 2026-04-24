@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Response {
@@ -12,33 +12,34 @@ interface Props {
   sessionId: string;
   questionIndex: number;
   anonymous: boolean;
+  published?: boolean;
 }
 
-const WallProjectorView = ({ sessionId, questionIndex, anonymous }: Props) => {
+const WallProjectorView = ({ sessionId, questionIndex, anonymous, published = false }: Props) => {
   const [responses, setResponses] = useState<Response[]>([]);
 
+  const loadResponses = useCallback(async () => {
+    const { data } = await supabase
+      .from("game_responses")
+      .select("id, answer, created_at, player_id, game_players(nickname)")
+      .eq("session_id", sessionId)
+      .eq("question_index", questionIndex);
+
+    if (data) {
+      setResponses(
+        data
+          .map((r: any) => ({
+            id: r.id,
+            text: (r.answer as any)?.text || "",
+            nickname: anonymous ? undefined : r.game_players?.nickname,
+            created_at: r.created_at,
+          }))
+          .filter((r) => r.text)
+      );
+    }
+  }, [sessionId, questionIndex, anonymous]);
+
   useEffect(() => {
-    const loadResponses = async () => {
-      const { data } = await supabase
-        .from("game_responses")
-        .select("id, answer, created_at, player_id, game_players(nickname)")
-        .eq("session_id", sessionId)
-        .eq("question_index", questionIndex);
-
-      if (data) {
-        setResponses(
-          data
-            .map((r: any) => ({
-              id: r.id,
-              text: (r.answer as any)?.text || "",
-              nickname: anonymous ? undefined : r.game_players?.nickname,
-              created_at: r.created_at,
-            }))
-            .filter((r) => r.text)
-        );
-      }
-    };
-
     loadResponses();
 
     const channel = supabase
@@ -54,24 +55,31 @@ const WallProjectorView = ({ sessionId, questionIndex, anonymous }: Props) => {
         (payload) => {
           const r = payload.new as any;
           if (r.question_index === questionIndex && (r.answer as any)?.text) {
-            setResponses((prev) => [
-              ...prev,
-              {
-                id: r.id,
-                text: (r.answer as any).text,
-                nickname: undefined,
-                created_at: r.created_at,
-              },
-            ]);
+            // Reload to get nickname from joined player
+            loadResponses();
           }
         }
       )
       .subscribe();
 
+    // Polling fallback every 2 seconds
+    const interval = setInterval(loadResponses, 2000);
+
     return () => {
       supabase.removeChannel(channel);
+      clearInterval(interval);
     };
-  }, [sessionId, questionIndex, anonymous]);
+  }, [sessionId, questionIndex, loadResponses]);
+
+  if (!published) {
+    return (
+      <div className="w-full max-w-6xl text-center">
+        <p className="text-2xl text-gray-300">
+          Učitel zobrazí odpovědi ({responses.length} odpovědí přijato)
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-6xl">
