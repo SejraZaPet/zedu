@@ -2,7 +2,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Monitor, Plus, Trash2, ChevronDown } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { Monitor, Plus, Trash2, ChevronDown, Save } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -19,6 +21,8 @@ interface Props {
   setEditingSlideIndex: (i: number) => void;
   onClose: () => void;
   onLaunch: (slides: any[]) => void;
+  onSave?: (slides: any[]) => Promise<void>;
+  hasSavedPresentation?: boolean;
   existingSession: { id: string; title: string } | null;
   onContinueExisting: () => void;
   onLaunchNew: () => void;
@@ -28,15 +32,21 @@ interface Props {
 export const PresentationEditorDialog = ({
   presentationLesson, pendingSlides, setPendingSlides,
   editingSlideIndex, setEditingSlideIndex,
-  onClose, onLaunch,
+  onClose, onLaunch, onSave, hasSavedPresentation,
   existingSession, onContinueExisting, onLaunchNew, onCloseExisting,
 }: Props) => {
+  const { toast } = useToast();
   return (
     <>
       <Dialog open={!!presentationLesson && pendingSlides.length > 0} onOpenChange={(open) => { if (!open) onClose(); }}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Upravit prezentaci – {presentationLesson?.title}</DialogTitle>
+            <DialogTitle className="flex items-center gap-2 flex-wrap">
+              <span>Upravit prezentaci – {presentationLesson?.title}</span>
+              <Badge variant={hasSavedPresentation ? "default" : "secondary"} className="text-xs">
+                {hasSavedPresentation ? "Uložená prezentace" : "Nová prezentace"}
+              </Badge>
+            </DialogTitle>
           </DialogHeader>
           <div className="flex gap-1 flex-wrap mb-4">
             {pendingSlides.map((_, i) => (
@@ -241,6 +251,19 @@ export const PresentationEditorDialog = ({
             </div>
           )}
           <DialogFooter className="gap-2 mt-4">
+            {onSave && (
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  await onSave(pendingSlides);
+                  toast({ title: "Prezentace uložena", description: "Změny byly uloženy k lekci." });
+                }}
+                className="gap-2"
+              >
+                <Save className="w-4 h-4" />
+                Uložit
+              </Button>
+            )}
             <Button variant="outline" onClick={onClose}>Zrušit</Button>
             <Button onClick={() => onLaunch(pendingSlides)} className="gap-2">
               <Monitor className="w-4 h-4" />

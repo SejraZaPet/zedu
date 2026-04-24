@@ -114,6 +114,7 @@ const TeacherTextbooks = () => {
     editingSlideIndex, setEditingSlideIndex,
     existingSession, setExistingSession,
     pendingLaunchData, setPendingLaunchData,
+    hasSavedPresentation,
     openEditor, launchLiveSession, launchNew,
   } = usePresentationLauncher();
 
@@ -634,12 +635,20 @@ const TeacherTextbooks = () => {
           setPendingSlides={setPendingSlides}
           editingSlideIndex={editingSlideIndex}
           setEditingSlideIndex={setEditingSlideIndex}
+          hasSavedPresentation={hasSavedPresentation}
           onClose={() => { setPresentationLesson(null); setPendingSlides([]); }}
           onLaunch={async (slides) => {
             const lesson = presentationLesson!;
             setPresentationLesson(null);
             setPendingSlides([]);
             await launchLiveSession(lesson, slides);
+          }}
+          onSave={async (slides) => {
+            if (!presentationLesson) return;
+            const table = presentationLesson.source === "teacher_textbook_lessons"
+              ? "teacher_textbook_lessons"
+              : "textbook_lessons";
+            await supabase.from(table).update({ presentation_slides: slides } as any).eq("id", presentationLesson.id);
           }}
           existingSession={existingSession}
           onContinueExisting={() => {
@@ -683,12 +692,20 @@ const TeacherTextbooks = () => {
         setPendingSlides={setPendingSlides}
         editingSlideIndex={editingSlideIndex}
         setEditingSlideIndex={setEditingSlideIndex}
+        hasSavedPresentation={hasSavedPresentation}
         onClose={() => { setPresentationLesson(null); setPendingSlides([]); }}
         onLaunch={async (slides) => {
           const lesson = presentationLesson!;
           setPresentationLesson(null);
           setPendingSlides([]);
           await launchLiveSession(lesson, slides);
+        }}
+        onSave={async (slides) => {
+          if (!presentationLesson) return;
+          const table = presentationLesson.source === "teacher_textbook_lessons"
+            ? "teacher_textbook_lessons"
+            : "textbook_lessons";
+          await supabase.from(table).update({ presentation_slides: slides } as any).eq("id", presentationLesson.id);
         }}
         existingSession={existingSession}
         onContinueExisting={() => {
