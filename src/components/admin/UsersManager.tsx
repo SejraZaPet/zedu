@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -91,6 +91,7 @@ const UsersManager = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [importOpen, setImportOpen] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [importPreview, setImportPreview] = useState<any[]>([]);
   const [importing, setImporting] = useState(false);
   const [importErrors, setImportErrors] = useState<string[]>([]);
@@ -523,13 +524,13 @@ const UsersManager = () => {
               </p>
               <div
                 className="border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:bg-muted/50 transition-colors"
-                onClick={() => document.getElementById("import-file-input")?.click()}
+                onClick={() => fileInputRef.current?.click()}
               >
                 <Upload className="w-10 h-10 mx-auto mb-3 text-muted-foreground" />
                 <p className="font-medium">Klikněte pro výběr souboru</p>
                 <p className="text-xs text-muted-foreground mt-1">.xlsx nebo .csv</p>
                 <input
-                  id="import-file-input"
+                  ref={fileInputRef}
                   type="file"
                   accept=".xlsx,.csv"
                   className="hidden"
