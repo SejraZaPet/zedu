@@ -21,6 +21,8 @@ interface Props {
   setEditingSlideIndex: (i: number) => void;
   onClose: () => void;
   onLaunch: (slides: any[]) => void;
+  onSave?: (slides: any[]) => Promise<void>;
+  hasSavedPresentation?: boolean;
   existingSession: { id: string; title: string } | null;
   onContinueExisting: () => void;
   onLaunchNew: () => void;
@@ -30,9 +32,10 @@ interface Props {
 export const PresentationEditorDialog = ({
   presentationLesson, pendingSlides, setPendingSlides,
   editingSlideIndex, setEditingSlideIndex,
-  onClose, onLaunch,
+  onClose, onLaunch, onSave, hasSavedPresentation,
   existingSession, onContinueExisting, onLaunchNew, onCloseExisting,
 }: Props) => {
+  const { toast } = useToast();
   return (
     <>
       <Dialog open={!!presentationLesson && pendingSlides.length > 0} onOpenChange={(open) => { if (!open) onClose(); }}>
