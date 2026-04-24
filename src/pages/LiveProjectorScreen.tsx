@@ -121,14 +121,14 @@ const LiveProjectorScreen = () => {
         )}
 
         {(currentSlide as any).tableData && (
-          <div className="w-full max-w-6xl overflow-auto">
-            <table className="w-full border-collapse text-2xl">
+          <div className="w-full mt-4 rounded-xl overflow-hidden border border-white/20">
+            <table className="w-full text-xl border-collapse table-fixed">
               <thead>
                 <tr>
                   {(currentSlide as any).tableData.headers.map((h: string, i: number) => (
                     <th
                       key={i}
-                      className="border border-border bg-muted px-6 py-4 text-left font-semibold text-foreground"
+                      className="border border-white/20 bg-white/20 px-6 py-4 text-left font-bold text-white"
                     >
                       {h}
                     </th>
@@ -137,9 +137,9 @@ const LiveProjectorScreen = () => {
               </thead>
               <tbody>
                 {(currentSlide as any).tableData.rows.map((row: string[], ri: number) => (
-                  <tr key={ri}>
+                  <tr key={ri} className={ri % 2 === 0 ? "bg-white/5" : "bg-white/10"}>
                     {row.map((cell: string, ci: number) => (
-                      <td key={ci} className="border border-border px-6 py-4 text-foreground">
+                      <td key={ci} className="border border-white/20 px-6 py-4 text-white">
                         {cell}
                       </td>
                     ))}
