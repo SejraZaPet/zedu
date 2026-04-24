@@ -186,16 +186,27 @@ const StudentGamePlay = () => {
               <div className="mt-4">
                 {(currentSlideData as any).activitySpec?.activityType === "wall" ? (
                   liveSettings?.wallPublished === true && liveSettings?.wallPublishedQuestion === qi ? (
-                    <div className="flex flex-col h-full">
-                      <div className="flex-1 overflow-y-auto pb-20">
+                    <div
+                      className="fixed inset-0 flex flex-col"
+                      style={{
+                        background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)",
+                        color: "white",
+                        zIndex: 50,
+                      }}
+                    >
+                      <div className="flex-1 overflow-y-auto p-4 pb-24">
                         <WallResponsesList
                           sessionId={sessionId || ""}
                           questionIndex={qi}
                           anonymous={liveSettings?.wallAnonymous ?? (currentSlideData as any).activitySpec?.anonymous ?? false}
+                          darkMode={true}
                         />
                       </div>
                       {(liveSettings?.wallAllowMultiple ?? (currentSlideData as any).activitySpec?.allowMultiple) ? (
-                        <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border p-3 z-10">
+                        <div
+                          className="fixed bottom-0 left-0 right-0 p-3 z-10"
+                          style={{ background: "rgba(0,0,0,0.4)", borderTop: "1px solid rgba(255,255,255,0.15)" }}
+                        >
                           <WallActivity
                             question=""
                             anonymous={liveSettings?.wallAnonymous ?? (currentSlideData as any).activitySpec?.anonymous ?? false}
@@ -207,8 +218,14 @@ const StudentGamePlay = () => {
                           />
                         </div>
                       ) : (
-                        <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border p-3 z-10">
-                          <div className="flex items-center gap-2 px-4 py-2 bg-muted rounded-2xl text-sm text-muted-foreground">
+                        <div
+                          className="fixed bottom-0 left-0 right-0 p-3 z-10"
+                          style={{ background: "rgba(0,0,0,0.4)", borderTop: "1px solid rgba(255,255,255,0.15)" }}
+                        >
+                          <div
+                            className="flex items-center gap-2 px-4 py-2 rounded-2xl text-sm"
+                            style={{ background: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.8)" }}
+                          >
                             <Lock className="w-4 h-4 flex-shrink-0" />
                             <span>Lze odeslat pouze jednu odpověď</span>
                           </div>
