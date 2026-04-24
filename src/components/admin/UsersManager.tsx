@@ -218,10 +218,50 @@ const UsersManager = () => {
           <UserPlus className="w-4 h-4" />
           Přidat žáka
         </Button>
-        <Button onClick={() => setImportOpen(true)} variant="outline" className="gap-2">
+        <label className="inline-flex items-center gap-2 cursor-pointer px-4 py-2 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground text-sm font-medium transition-colors">
           <Upload className="w-4 h-4" />
           Hromadný import
-        </Button>
+          <input
+            type="file"
+            accept=".xlsx,.csv"
+            className="sr-only"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              setImportFile(file);
+              setImportErrors([]);
+              setImportOpen(true);
+
+              try {
+                let rows: any[] = [];
+
+                if (file.name.endsWith(".csv")) {
+                  const text = await file.text();
+                  const lines = text.split("\n").filter(Boolean);
+                  const headers = lines[0].split(",").map(h => h.trim().toLowerCase().replace(/"/g, ""));
+                  rows = lines.slice(1).map(line => {
+                    const values = line.split(",").map(v => v.trim().replace(/"/g, ""));
+                    return Object.fromEntries(headers.map((h, i) => [h, values[i] || ""]));
+                  });
+                } else {
+                  const XLSX = await import("xlsx");
+                  const buffer = await file.arrayBuffer();
+                  const wb = XLSX.read(buffer, { type: "array" });
+                  const ws = wb.Sheets[wb.SheetNames[0]];
+                  rows = XLSX.utils.sheet_to_json(ws, { raw: false, defval: "" });
+                  rows = rows.map((row: any) =>
+                    Object.fromEntries(Object.entries(row).map(([k, v]) => [k.toLowerCase().trim(), v]))
+                  );
+                }
+
+                rows = rows.filter((r: any) => r.jmeno && r.prijmeni && r.jmeno !== "Jan");
+                setImportPreview(rows);
+              } catch (err: any) {
+                setImportErrors([`Chyba při čtení souboru: ${err.message}`]);
+              }
+            }}
+          />
+        </label>
       </div>
 
       <div className="text-sm text-muted-foreground">
