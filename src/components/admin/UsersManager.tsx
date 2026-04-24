@@ -128,6 +128,7 @@ const UsersManager = () => {
   const [importing, setImporting] = useState(false);
   const [importErrors, setImportErrors] = useState<string[]>([]);
   const [importedUsers, setImportedUsers] = useState<LoginCardData[]>([]);
+  const [lastImportedUsers, setLastImportedUsers] = useState<LoginCardData[]>([]);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -250,6 +251,11 @@ const UsersManager = () => {
           <UserPlus className="w-4 h-4" />
           Přidat žáka
         </Button>
+        {lastImportedUsers.length > 0 && (
+          <Button size="sm" variant="outline" className="gap-2" onClick={() => printLoginCards(lastImportedUsers)}>
+            🖨️ Znovu tisknout štítky ({lastImportedUsers.length})
+          </Button>
+        )}
         <label className="inline-flex items-center gap-2 cursor-pointer px-4 py-2 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground text-sm font-medium transition-colors">
           <Upload className="w-4 h-4" />
           Hromadný import
@@ -920,6 +926,7 @@ const UsersManager = () => {
                   }
                   setImporting(false);
                   setImportedUsers(importedUsersList);
+                  setLastImportedUsers(importedUsersList);
                 }}
               >
                 {importing ? "Importuji..." : `Importovat ${importPreview.length} uživatelů`}
