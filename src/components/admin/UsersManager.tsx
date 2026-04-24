@@ -511,13 +511,13 @@ const UsersManager = () => {
                     <div className="flex gap-1 justify-end">
                       {user.status !== "approved" && (
                         <Button size="sm" variant="ghost" onClick={() => updateStatus(user.id, "approved")}
-                          className="text-green-400 hover:bg-green-500/10 h-8 px-2">
+                          className="text-green-400 hover:bg-green-500/10 h-7 w-7 p-0">
                           <UserCheck className="w-4 h-4" />
                         </Button>
                       )}
                       {user.status !== "blocked" && (
                         <Button size="sm" variant="ghost" onClick={() => updateStatus(user.id, "blocked")}
-                          className="text-red-400 hover:bg-red-500/10 h-8 px-2">
+                          className="text-red-400 hover:bg-red-500/10 h-7 w-7 p-0">
                           <Ban className="w-4 h-4" />
                         </Button>
                       )}
@@ -537,7 +537,7 @@ const UsersManager = () => {
                             duration: 15000,
                           });
                         }
-                      }} className="text-yellow-400 hover:bg-yellow-500/10 h-8 px-2">
+                      }} className="text-yellow-400 hover:bg-yellow-500/10 h-7 w-7 p-0">
                         <KeyRound className="w-4 h-4" />
                       </Button>
                       <Button size="sm" variant="ghost" onClick={(e) => {
@@ -549,7 +549,7 @@ const UsersManager = () => {
                           password: "viz heslo při vytvoření",
                           role: user.role || "user",
                         }]);
-                      }} className="text-blue-400 hover:bg-blue-500/10 h-8 px-2">
+                      }} className="text-blue-400 hover:bg-blue-500/10 h-7 w-7 p-0">
                         <Printer className="w-4 h-4" />
                       </Button>
                       <Button size="sm" variant="ghost" onClick={async (e) => {
@@ -562,7 +562,7 @@ const UsersManager = () => {
                           toast({ title: "Smazáno", description: `${user.first_name} ${user.last_name} byl odstraněn.` });
                           fetchUsers();
                         }
-                      }} className="text-red-400 hover:bg-red-500/10 h-8 px-2">
+                      }} className="text-red-400 hover:bg-red-500/10 h-7 w-7 p-0">
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
