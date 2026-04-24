@@ -731,6 +731,7 @@ export type Database = {
           first_name: string
           id: string
           last_name: string
+          login_password: string | null
           school: string
           status: Database["public"]["Enums"]["account_status"]
           updated_at: string
@@ -743,6 +744,7 @@ export type Database = {
           first_name?: string
           id: string
           last_name?: string
+          login_password?: string | null
           school?: string
           status?: Database["public"]["Enums"]["account_status"]
           updated_at?: string
@@ -755,6 +757,7 @@ export type Database = {
           first_name?: string
           id?: string
           last_name?: string
+          login_password?: string | null
           school?: string
           status?: Database["public"]["Enums"]["account_status"]
           updated_at?: string
