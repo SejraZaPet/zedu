@@ -67,6 +67,37 @@ const statusColors: Record<string, string> = {
   blocked: "bg-red-500/20 text-red-400 border-red-500/30",
 };
 
+function generateStudentEmail(
+  firstName: string,
+  lastName: string,
+  existingEmails: string[]
+): string {
+  const normalize = (s: string) =>
+    (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+
+  const first = normalize(firstName) || "user";
+  const last = normalize(lastName) || "user";
+  const initial = first.charAt(0);
+  const domain = "@zedu-student.cz";
+
+  const v1 = `${first}.${last}${domain}`;
+  if (!existingEmails.includes(v1)) return v1;
+
+  const v2 = `${initial}${last}${domain}`;
+  if (!existingEmails.includes(v2)) return v2;
+
+  let n = 2;
+  while (n < 100) {
+    const v3 = `${first}.${last}${n}${domain}`;
+    if (!existingEmails.includes(v3)) return v3;
+    const v4 = `${initial}${last}${n}${domain}`;
+    if (!existingEmails.includes(v4)) return v4;
+    n++;
+  }
+
+  return `${first}.${last}.${Date.now()}${domain}`;
+}
+
 const UsersManager = () => {
   const { toast } = useToast();
   const [users, setUsers] = useState<UserProfile[]>([]);
