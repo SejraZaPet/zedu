@@ -44,6 +44,7 @@ interface UserProfile {
   status: string;
   created_at: string;
   role?: string;
+  login_password?: string;
 }
 
 const statusLabels: Record<string, string> = {
