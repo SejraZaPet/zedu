@@ -298,6 +298,13 @@ const Auth = () => {
             <div>
               <Label htmlFor="password">Heslo</Label>
               <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" className="mt-1" />
+              <button
+                type="button"
+                onClick={() => setForgotPassword(true)}
+                className="text-xs text-primary hover:underline mt-1 text-right w-full"
+              >
+                Zapomenuté heslo?
+              </button>
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
             <Button type="submit" className="w-full" disabled={loading}>
