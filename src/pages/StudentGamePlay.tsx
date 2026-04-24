@@ -171,7 +171,12 @@ const StudentGamePlay = () => {
                   block={{
                     id: `live-activity-${currentSlideData.slideId}`,
                     type: "activity",
-                    props: currentSlideData.activitySpec,
+                    props: {
+                      ...currentSlideData.activitySpec,
+                      sessionId,
+                      playerId,
+                      questionIndex: session?.current_question_index ?? 0,
+                    },
                     visible: true,
                   } as any}
                   blockIndex={session?.current_question_index ?? 0}
