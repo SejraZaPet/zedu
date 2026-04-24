@@ -32,17 +32,17 @@ const LiveProjectorScreen = () => {
   // Lobby screen
   if (session.status === "lobby") {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-12 gap-8">
-        <h1 className="text-6xl font-bold text-foreground text-center">{session.title}</h1>
-        <p className="text-2xl text-muted-foreground">Připojte se k prezentaci</p>
-        <div className="bg-card p-8 rounded-2xl shadow-lg">
+      <div className="min-h-screen flex flex-col items-center justify-center p-12 gap-8 text-white" style={{ background: "linear-gradient(135deg, #0f0c29, #302b63, #24243e)" }}>
+        <h1 className="text-6xl font-bold text-center">{session.title}</h1>
+        <p className="text-2xl text-gray-300">Připojte se k prezentaci</p>
+        <div className="bg-white rounded-3xl p-8 mb-10 shadow-2xl">
           <QRCodeSVG value={joinUrl} size={280} />
         </div>
         <div className="text-center">
-          <p className="text-xl text-muted-foreground mb-2">Kód pro připojení</p>
-          <p className="text-8xl font-mono font-bold tracking-widest text-primary">{gameCode}</p>
+          <p className="text-xl text-gray-300 mb-2">Kód pro připojení</p>
+          <p className="text-8xl font-bold tracking-[0.3em] text-white mt-4">{gameCode}</p>
         </div>
-        <p className="text-xl text-muted-foreground">{players.length} připojených žáků</p>
+        <p className="text-xl text-gray-300">{players.length} připojených žáků</p>
       </div>
     );
   }
