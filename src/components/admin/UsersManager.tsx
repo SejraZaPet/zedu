@@ -256,8 +256,9 @@ const UsersManager = () => {
                   );
                 }
 
+                console.log("Řádky před filtrem:", rows.length, rows[0]);
                 rows = rows.filter((r: any) => r.jmeno && r.prijmeni && r.jmeno !== "Jan");
-                console.log("Řádky načteny:", rows.length, rows[0]);
+                console.log("Řádky po filtru:", rows.length);
                 setImportPreview(rows);
               } catch (err: any) {
                 setImportErrors([`Chyba při čtení souboru: ${err.message}`]);
