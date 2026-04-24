@@ -551,7 +551,7 @@ const UsersManager = () => {
                           firstName: user.first_name || "",
                           lastName: user.last_name || "",
                           email: user.email || "",
-                          password: "viz heslo při vytvoření",
+                          password: user.login_password || "–",
                           role: user.role || "user",
                         }]);
                       }} className="text-blue-400 hover:bg-blue-500/10 h-7 w-7 p-0">
