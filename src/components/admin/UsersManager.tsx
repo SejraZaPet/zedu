@@ -306,7 +306,7 @@ const UsersManager = () => {
                       <Shield className="w-3 h-3 mr-1" /> Admin
                     </Badge>
                   ) : (
-                    <span className="text-xs text-muted-foreground">Student</span>
+                    <span className="text-xs text-muted-foreground">{roleLabels[user.role || "user"] || user.role}</span>
                   )}
                 </TableCell>
                 <TableCell>
