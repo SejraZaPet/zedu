@@ -866,11 +866,6 @@ const UsersManager = () => {
                 {importing ? "Importuji..." : `Importovat ${importPreview.length} uživatelů`}
               </Button>
             )}
-            {importedUsers.length > 0 && !importing && (
-              <Button variant="outline" className="gap-2" onClick={() => printLoginCards(importedUsers)}>
-                🖨️ Tisknout lístky ({importedUsers.length})
-              </Button>
-            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
