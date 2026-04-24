@@ -41,7 +41,12 @@ export const PresentationEditorDialog = ({
       <Dialog open={!!presentationLesson && pendingSlides.length > 0} onOpenChange={(open) => { if (!open) onClose(); }}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Upravit prezentaci – {presentationLesson?.title}</DialogTitle>
+            <DialogTitle className="flex items-center gap-2 flex-wrap">
+              <span>Upravit prezentaci – {presentationLesson?.title}</span>
+              <Badge variant={hasSavedPresentation ? "default" : "secondary"} className="text-xs">
+                {hasSavedPresentation ? "Uložená prezentace" : "Nová prezentace"}
+              </Badge>
+            </DialogTitle>
           </DialogHeader>
           <div className="flex gap-1 flex-wrap mb-4">
             {pendingSlides.map((_, i) => (
