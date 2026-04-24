@@ -111,6 +111,8 @@ const UsersManager = () => {
   const [filterYear, setFilterYear] = useState<string>("all");
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [printDialogUser, setPrintDialogUser] = useState<UserProfile | null>(null);
+  const [printPassword, setPrintPassword] = useState("");
   const [addUserOpen, setAddUserOpen] = useState(false);
   const [newUser, setNewUser] = useState({
     first_name: "",
@@ -553,13 +555,8 @@ const UsersManager = () => {
                       </Button>
                       <Button size="sm" variant="ghost" onClick={(e) => {
                         e.stopPropagation();
-                        printLoginCards([{
-                          firstName: user.first_name || "",
-                          lastName: user.last_name || "",
-                          email: user.email || "",
-                          password: user.login_password || "–",
-                          role: user.role || "user",
-                        }]);
+                        setPrintDialogUser(user);
+                        setPrintPassword(user.login_password || "");
                       }} className="text-blue-400 hover:bg-blue-500/10 h-7 w-7 p-0">
                         <Printer className="w-4 h-4" />
                       </Button>
@@ -992,6 +989,52 @@ const UsersManager = () => {
                 {importing ? "Importuji..." : `Importovat ${importPreview.length} uživatelů`}
               </Button>
             )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!printDialogUser} onOpenChange={(o) => { if (!o) { setPrintDialogUser(null); setPrintPassword(""); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Tisk přihlašovacího štítku</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              {printDialogUser?.first_name} {printDialogUser?.last_name} · {printDialogUser?.email}
+            </p>
+            <div>
+              <Label>Heslo pro štítek</Label>
+              <Input
+                value={printPassword}
+                onChange={(e) => setPrintPassword(e.target.value)}
+                placeholder="Zadejte heslo nebo použijte reset hesla"
+                className="mt-1 font-mono"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                {printDialogUser?.login_password ? "✅ Heslo je uloženo v systému" : "⚠️ Heslo není uloženo – zadejte ručně nebo použijte reset hesla"}
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setPrintDialogUser(null); setPrintPassword(""); }}>Zrušit</Button>
+            <Button
+              disabled={!printPassword}
+              onClick={() => {
+                if (printDialogUser) {
+                  printLoginCards([{
+                    firstName: printDialogUser.first_name || "",
+                    lastName: printDialogUser.last_name || "",
+                    email: printDialogUser.email || "",
+                    password: printPassword,
+                    role: printDialogUser.role || "user",
+                  }]);
+                  setPrintDialogUser(null);
+                  setPrintPassword("");
+                }
+              }}
+            >
+              🖨️ Tisknout štítek
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
