@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Ban, UserCheck, Shield, Search, UserPlus, CheckCheck, Upload, Trash2, KeyRound, Printer } from "lucide-react";
+import { Ban, UserCheck, Shield, Search, UserPlus, CheckCheck, Upload, Trash2, KeyRound, Printer, CheckCircle2, Clock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -463,7 +463,7 @@ const UsersManager = () => {
               <TableHead className="hidden xl:table-cell">Obor</TableHead>
               <TableHead className="text-center">Ročník</TableHead>
               <TableHead>Role</TableHead>
-              <TableHead>Stav</TableHead>
+              <TableHead className="w-8 text-center"><Shield className="w-4 h-4 inline" /></TableHead>
               <TableHead className="hidden lg:table-cell">Registrace</TableHead>
               <TableHead className="text-right">Akce</TableHead>
             </TableRow>
@@ -485,7 +485,11 @@ const UsersManager = () => {
                 <TableCell className="font-medium whitespace-nowrap">
                   {user.first_name} {user.last_name}
                 </TableCell>
-                <TableCell className="text-muted-foreground max-w-[160px] truncate">{user.email}</TableCell>
+                {(() => { const emailShort = user.email?.split("@")[0] || "–"; return (
+                  <TableCell className="text-muted-foreground max-w-[160px] truncate">
+                    <span title={user.email}>{emailShort}</span>
+                  </TableCell>
+                ); })()}
                 <TableCell className="text-muted-foreground hidden md:table-cell max-w-[100px] truncate">{user.school || "–"}</TableCell>
                 <TableCell className="text-muted-foreground hidden xl:table-cell">{user.field_of_study || "–"}</TableCell>
                 <TableCell className="text-center text-muted-foreground">{user.year ?? "–"}</TableCell>
@@ -498,13 +502,13 @@ const UsersManager = () => {
                     <span className="text-xs text-muted-foreground">{roleLabels[user.role || "user"] || user.role}</span>
                   )}
                 </TableCell>
-                <TableCell>
-                  <Badge variant="outline" className={`text-xs ${statusColors[user.status] || ""}`}>
-                    {statusLabels[user.status] || user.status}
-                  </Badge>
+                <TableCell className="text-center">
+                  {user.status === "approved" && <CheckCircle2 className="w-4 h-4 text-green-500 inline" />}
+                  {user.status === "pending" && <Clock className="w-4 h-4 text-yellow-500 inline" />}
+                  {user.status === "blocked" && <Ban className="w-4 h-4 text-red-500 inline" />}
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground whitespace-nowrap hidden lg:table-cell">
-                  {new Date(user.created_at).toLocaleDateString("cs-CZ")}
+                  {new Date(user.created_at).toLocaleDateString("cs-CZ", { day: "2-digit", month: "2-digit", year: "2-digit" })}
                 </TableCell>
                 <TableCell className="text-right">
                   {user.role !== "admin" && (
