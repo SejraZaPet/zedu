@@ -136,6 +136,7 @@ const ProfilePage = () => {
     });
   };
 
+  const handleChangePassword = async () => {
     if (newPassword.length < 6) {
       toast({ title: "Chyba", description: "Heslo musí mít alespoň 6 znaků.", variant: "destructive" });
       return;
