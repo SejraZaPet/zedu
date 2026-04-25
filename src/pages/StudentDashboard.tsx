@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { User, KeyRound, ClipboardList, Gamepad2, ListTodo } from "lucide-react";
+import { User, KeyRound, ClipboardList, Gamepad2, ListTodo, CalendarDays } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { useAuth } from "@/contexts/AuthContext";
@@ -64,6 +64,13 @@ const StudentDashboard = () => {
       description: "Zobrazte zadané úlohy a sledujte své výsledky.",
       button: "Otevřít úlohy",
       onClick: () => navigate("/student/ulohy"),
+    },
+    {
+      icon: CalendarDays,
+      title: "Můj kalendář",
+      description: "Týdenní rozvrh hodin, úkolů a deadlinů.",
+      button: "Otevřít kalendář",
+      onClick: () => navigate("/student/kalendar"),
     },
     {
       icon: Gamepad2,
