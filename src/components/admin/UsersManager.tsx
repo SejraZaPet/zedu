@@ -1101,6 +1101,67 @@ const UsersManager = () => {
 
                       await supabase.from("user_roles").insert({ user_id: userId, role: role as any });
 
+                      const isAdultStudent = ["ano", "yes", "true", "1"].includes(String(row.zletily || "").toLowerCase().trim());
+
+                      if (role === "user" && !isAdultStudent) {
+                        try {
+                          const sanitize = (s: string) => (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+                          const parentLogin = (row.email_rodice || "").toString().trim() || `rodic.${sanitize(row.jmeno)}${sanitize(row.prijmeni)}@zedu-rodic.cz`;
+                          const parentPassword = Math.random().toString(36).slice(-8) + "Aa1!";
+
+                          const { data: parentAuth, error: parentErr } = await supabase.functions.invoke("create-user", {
+                            body: { email: parentLogin, password: parentPassword, role: "rodic" }
+                          });
+
+                          let parentId: string | undefined = parentAuth?.user?.id || parentAuth?.id;
+                          if (parentErr || !parentId) {
+                            const ctx: any = (parentErr as any)?.context;
+                            let body: any = parentAuth;
+                            try {
+                              if (ctx && typeof ctx.json === "function") body = await ctx.json();
+                              else if (ctx && typeof ctx.text === "function") {
+                                const t = await ctx.text();
+                                try { body = JSON.parse(t); } catch { body = { error: t }; }
+                              }
+                            } catch { /* ignore */ }
+                            if (body?.code === "email_exists" && body?.existing_id) parentId = body.existing_id;
+                          }
+
+                          if (parentId) {
+                            const parentUsername = generateUsername("rodic", sanitize(row.jmeno) + sanitize(row.prijmeni), usedUsernames);
+                            usedUsernames.push(parentUsername);
+
+                            await supabase.from("profiles").upsert({
+                              id: parentId,
+                              first_name: "Rodič",
+                              last_name: `${row.jmeno} ${row.prijmeni}`,
+                              email: parentLogin,
+                              status: "approved" as any,
+                              login_password: parentPassword,
+                              username: parentUsername,
+                              parent_email: (row.email_rodice || "").toString().trim() || null,
+                            });
+
+                            await supabase.from("user_roles").insert({ user_id: parentId, role: "rodic" as any });
+
+                            await supabase.from("parent_student_links" as any).insert({
+                              parent_id: parentId,
+                              student_id: userId,
+                            });
+
+                            importedUsersList.push({
+                              firstName: "Rodič",
+                              lastName: `${row.jmeno} ${row.prijmeni}`,
+                              email: parentLogin,
+                              password: parentPassword,
+                              role: "rodic",
+                            });
+                          }
+                        } catch (pe: any) {
+                          errors.push(`Rodič ${row.jmeno} ${row.prijmeni}: ${pe.message}`);
+                        }
+                      }
+
                       if (!email.includes("@zedu-student.cz") && !email.includes("@zedu-lektor.cz")) {
                         await sendWelcomeEmail({
                           to: email,
