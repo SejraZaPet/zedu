@@ -781,11 +781,24 @@ export default function WorksheetEditor() {
                 <SelectTrigger className="h-8 text-xs">
                   <SelectValue placeholder="Vyber lekci…" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-[60vh]">
                   <SelectItem value="__none__">— Žádná —</SelectItem>
+                  {allLessons.length === 0 && (
+                    <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                      Žádné lekce k dispozici
+                    </div>
+                  )}
                   {allLessons.map((l) => (
-                    <SelectItem key={l.id} value={l.id}>
-                      {l.title}
+                    <SelectItem key={`${l.type}-${l.id}`} value={l.id}>
+                      <span className="inline-flex items-center gap-1.5">
+                        <Badge
+                          variant={l.type === "global" ? "secondary" : "outline"}
+                          className="text-[10px] px-1.5 py-0 h-4"
+                        >
+                          {l.type === "global" ? "Globální" : "Vlastní"}
+                        </Badge>
+                        <span className="truncate">{l.title}</span>
+                      </span>
                     </SelectItem>
                   ))}
                 </SelectContent>
