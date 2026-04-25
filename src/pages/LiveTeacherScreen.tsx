@@ -10,6 +10,7 @@ import SessionExports from "@/components/live/SessionExports";
 import { supabase } from "@/integrations/supabase/client";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import PollProjectorView from "@/components/activities/PollProjectorView";
 
 interface SlideData {
   slideId: string;
