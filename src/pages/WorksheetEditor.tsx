@@ -183,6 +183,13 @@ export default function WorksheetEditor() {
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
   const [allLessons, setAllLessons] = useState<LessonOption[]>([]);
   const [activeLessonContent, setActiveLessonContent] = useState<string>("");
+  const [linkedLessons, setLinkedLessons] = useState<LinkedLessonRow[]>([]);
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const [searchParams] = useSearchParams();
+  const fromLessonId = searchParams.get("from_lesson");
+  const fromLessonType = (searchParams.get("from_lesson_type") as "global" | "teacher" | null) || null;
+  const returnTo = searchParams.get("return_to");
+  const autoLinkAttempted = useRef(false);
 
   const [suggestionDialog, setSuggestionDialog] = useState<{
     open: boolean;
