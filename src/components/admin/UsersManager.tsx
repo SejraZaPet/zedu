@@ -141,6 +141,7 @@ const UsersManager = () => {
   });
   const [createParentAccount, setCreateParentAccount] = useState(false);
   const [parentEmail, setParentEmail] = useState("");
+  const [isAdult, setIsAdult] = useState(false);
   const [creating, setCreating] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [importOpen, setImportOpen] = useState(false);
