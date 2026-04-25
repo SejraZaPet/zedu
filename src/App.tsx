@@ -82,6 +82,7 @@ const App = () => (
             <Route path="/live/student/:sessionId" element={<StudentGamePlay />} />
             <Route path="/napoveda" element={<HelpPage />} />
             <Route path="/napoveda/:guideId" element={<HelpDetailPage />} />
+            <Route path="/gdpr" element={<GdprPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
