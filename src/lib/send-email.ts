@@ -9,15 +9,17 @@ export const sendWelcomeEmail = async (params: {
   email: string;
   password: string;
   role: string;
+  username?: string;
 }) => {
   const roleLabel =
     params.role === "teacher" ? "učitel" : params.role === "rodic" ? "rodič" : "žák";
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #1a1a1a;">
-      <div style="background: linear-gradient(135deg, #14b8a6, #6366f1); padding: 24px; border-radius: 8px; color: #ffffff; text-align: center;">
-        <h1 style="margin: 0; font-size: 24px;">ZEdu.cz</h1>
-        <p style="margin: 4px 0 0; opacity: 0.9;">Moderní nástroje pro vzdělávání</p>
+      <div style="background: linear-gradient(135deg, #14b8a6, #6366f1); padding: 32px 24px; border-radius: 8px 8px 0 0; text-align: center;">
+        <img src="https://www.zedu.cz/zedu-logo-new.png" alt="ZEdu" style="height: 48px; width: auto; margin-bottom: 12px;" onerror="this.style.display='none'" />
+        <h1 style="margin: 0; font-size: 28px; font-weight: 800; color: #ffffff; letter-spacing: -0.02em;">ZEdu<span style="color: #a5f3fc;">.cz</span></h1>
+        <p style="margin: 6px 0 0; opacity: 0.9; color: #ffffff; font-size: 14px;">Moderní nástroje pro vzdělávání</p>
       </div>
 
       <h2 style="margin-top: 28px;">Vítejte v ZEdu, ${params.firstName}!</h2>
@@ -25,6 +27,7 @@ export const sendWelcomeEmail = async (params: {
 
       <div style="background: #f3f4f6; padding: 16px; border-radius: 8px; margin: 20px 0;">
         <h3 style="margin: 0 0 8px;">Přihlašovací údaje</h3>
+        ${params.username ? `<p style="margin: 4px 0;"><strong>Uživatelské jméno:</strong> ${params.username}</p>` : ""}
         <p style="margin: 4px 0;"><strong>Email:</strong> ${params.email}</p>
         <p style="margin: 4px 0;"><strong>Heslo:</strong> ${params.password}</p>
       </div>
