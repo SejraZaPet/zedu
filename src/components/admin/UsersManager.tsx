@@ -851,6 +851,7 @@ const UsersManager = () => {
                         email: parentLogin,
                         password: parentPassword,
                         role: "rodic",
+                        username: parentUsername,
                       });
                     } catch (pe: any) {
                       toast({ title: "Rodičovský účet selhal", description: pe.message, variant: "destructive" });
