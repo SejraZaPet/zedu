@@ -373,7 +373,12 @@ const UsersManager = () => {
                 }
 
                 console.log("Řádky před filtrem:", rows.length, rows[0]);
-                rows = rows.filter((r: any) => r.jmeno && r.prijmeni && r.jmeno !== "Jan");
+                rows = rows.filter((r: any) => r.jmeno && r.prijmeni &&
+                  !r.jmeno.toLowerCase().includes("křestní") &&
+                  !r.jmeno.toLowerCase().includes("krestni") &&
+                  !r.jmeno.toLowerCase().includes("vzorový") &&
+                  !r.jmeno.toLowerCase().includes("vzorovy")
+                );
                 console.log("Řádky po filtru:", rows.length);
                 setImportPreview(rows);
               } catch (err: any) {
@@ -992,8 +997,9 @@ const UsersManager = () => {
                           })
                           .filter((r: any) =>
                             r.jmeno && r.prijmeni &&
-                            !r.jmeno.toLowerCase().includes("jmeno") &&
+                            !r.jmeno.toLowerCase().includes("křestní") &&
                             !r.jmeno.toLowerCase().includes("krestni") &&
+                            !r.jmeno.toLowerCase().includes("vzorový") &&
                             !r.jmeno.toLowerCase().includes("vzorovy")
                           );
                       }
