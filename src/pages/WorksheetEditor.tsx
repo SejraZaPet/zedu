@@ -667,6 +667,9 @@ export default function WorksheetEditor() {
             <Button variant="outline" size="sm" onClick={() => setPreviewOpen(true)}>
               <Eye className="w-4 h-4 mr-1" /> Náhled
             </Button>
+            <Button variant="outline" size="sm" onClick={() => setPdfDialogOpen(true)}>
+              <Printer className="w-4 h-4 mr-1" /> Tisk/PDF
+            </Button>
             <Button size="sm" onClick={togglePublish}>
               <Send className="w-4 h-4 mr-1" />
               {status === "published" ? "Vrátit do konceptu" : "Publikovat"}
