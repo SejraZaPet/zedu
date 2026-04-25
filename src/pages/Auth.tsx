@@ -406,10 +406,12 @@ const Auth = () => {
               <Label htmlFor="regEmail">E-mail</Label>
               <Input id="regEmail" type="email" value={regEmail} onChange={(e) => setRegEmail(e.target.value)} required className="mt-1" />
             </div>
-            <div>
-              <Label htmlFor="school">Škola</Label>
-              <Input id="school" value={school} onChange={(e) => setSchool(e.target.value)} className="mt-1" placeholder="Název školy" />
-            </div>
+            {role !== "rodic" && (
+              <div>
+                <Label htmlFor="school">Škola</Label>
+                <Input id="school" value={school} onChange={(e) => setSchool(e.target.value)} className="mt-1" placeholder="Název školy" />
+              </div>
+            )}
 
             {/* Student-only fields */}
             {role === "student" && (
