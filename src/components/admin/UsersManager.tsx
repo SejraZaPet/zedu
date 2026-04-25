@@ -1178,7 +1178,7 @@ const UsersManager = () => {
                       }
 
                       successCount++;
-                      importedUsersList.push({ firstName: row.jmeno, lastName: row.prijmeni, email, password, role });
+                      importedUsersList.push({ firstName: row.jmeno, lastName: row.prijmeni, email, password, role, username });
                     } catch (e: any) {
                       errors.push(`${row.jmeno} ${row.prijmeni}: ${e.message}`);
                     }
