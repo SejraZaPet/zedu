@@ -67,6 +67,8 @@ const TeacherAssignments = () => {
   const [generatedQuestions, setGeneratedQuestions] = useState<GeneratedQuestion[]>([]);
   const [lessonBlocks, setLessonBlocks] = useState<any[]>([]);
   const [lessonLoaded, setLessonLoaded] = useState(false);
+  const [worksheets, setWorksheets] = useState<WorksheetOption[]>([]);
+  const [selectedWorksheetId, setSelectedWorksheetId] = useState<string>("");
 
   useEffect(() => {
     loadData();
