@@ -34,6 +34,14 @@ interface Assignment {
   class_id: string | null;
   created_at: string;
   activity_data: any[];
+  worksheet_id?: string | null;
+}
+
+interface WorksheetOption {
+  id: string;
+  title: string;
+  status: string;
+  updated_at: string;
 }
 
 const TeacherAssignments = () => {
