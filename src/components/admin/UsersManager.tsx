@@ -398,16 +398,6 @@ const UsersManager = () => {
         </div>
       )}
 
-      {lastImportedUsers.length > 0 && (
-        <div className="flex items-center justify-between p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
-          <span className="text-sm text-green-400 font-medium">
-            Poslední import: {lastImportedUsers.length} účtů
-          </span>
-          <Button size="sm" variant="outline" className="gap-2" onClick={() => printLoginCards(lastImportedUsers)}>
-            🖨️ Tisknout štítky
-          </Button>
-        </div>
-      )}
 
       <div className="text-sm text-muted-foreground">
         Celkem: {filtered.length} uživatel{filtered.length === 1 ? "" : filtered.length < 5 ? "é" : "ů"}
