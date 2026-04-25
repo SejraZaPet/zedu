@@ -105,6 +105,14 @@ import {
 } from "@/lib/worksheet-templates";
 import { downloadWorksheetPdf } from "@/lib/worksheet-pdf-export";
 import WorksheetPlayer from "@/components/WorksheetPlayer";
+import LinkedLessonsDialog, { type LessonChoice } from "@/components/admin/LinkedLessonsDialog";
+
+interface LinkedLessonRow {
+  id: string; // worksheet_lessons.id
+  lesson_id: string;
+  lesson_type: "global" | "teacher";
+  title: string;
+}
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
