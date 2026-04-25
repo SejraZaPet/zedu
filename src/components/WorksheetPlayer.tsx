@@ -24,6 +24,7 @@ import {
   Loader2,
   CheckCircle2,
   Clock,
+  Info,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useWorksheetAutosave, type WorksheetAnswers } from "@/hooks/useWorksheetAutosave";
