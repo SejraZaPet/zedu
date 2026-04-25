@@ -53,7 +53,12 @@ function buildStrip(user: LoginCardData): string {
         escHtml(user.password) +
         "</div></div>",
     ...(user.role === "rodic"
-      ? ['<div class="cred-row"><div class="cred-label">Propojení:</div><div class="cred-value cred-password-note">Zadejte kód žáka ZAK-XXXX v nastavení vašeho profilu na zedu.cz</div></div>']
+      ? [
+          ...(user.childCodes && user.childCodes.length > 0
+            ? ['<div class="cred-row"><div class="cred-label">Kód dítěte:</div><div class="cred-value cred-password">' + escHtml(user.childCodes.join(", ")) + '</div></div>']
+            : []),
+          '<div class="cred-row"><div class="cred-value cred-password-note">Další děti přidáte v profilu na zedu.cz zadáním jejich kódu ZAK-XXXX</div></div>',
+        ]
       : (user.studentCode
           ? ['<div class="cred-row"><div class="cred-label">Kód žáka:</div><div class="cred-value cred-password">' + escHtml(user.studentCode) + "</div></div>"]
           : [])),
