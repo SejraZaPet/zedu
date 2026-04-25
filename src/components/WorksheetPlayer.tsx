@@ -316,6 +316,28 @@ export default function WorksheetPlayer({
         </Card>
       )}
 
+      {/* Section headings & instructions příslušející k aktuální otázce (kontext nad otázkou) */}
+      {contextHeadings.map((h) => {
+        if (h.tags?.includes("section_heading")) {
+          return (
+            <div key={h.id} className="pt-2">
+              <h3 className="text-lg font-bold text-foreground border-b border-border pb-1">
+                {h.prompt}
+              </h3>
+            </div>
+          );
+        }
+        // instruction
+        return (
+          <Card key={h.id} className="border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/30">
+            <CardContent className="p-3 flex items-start gap-2 text-sm text-amber-900 dark:text-amber-100">
+              <Info className="h-4 w-4 mt-0.5 shrink-0" />
+              <span>{h.prompt}</span>
+            </CardContent>
+          </Card>
+        );
+      })}
+
       {/* Current Item */}
       {item && (
         <Card className={`border ${itemResult ? (itemResult.correct ? "border-green-500" : "border-red-300") : "border-border"}`}>
