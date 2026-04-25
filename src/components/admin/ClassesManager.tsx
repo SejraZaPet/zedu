@@ -30,9 +30,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Pencil, Archive, ArchiveRestore, Trash2, Users, Search, Key, KeyRound, Copy, RefreshCw, XCircle, Clock } from "lucide-react";
+import { Plus, Pencil, Archive, ArchiveRestore, Trash2, Users, Search, Key, KeyRound, Copy, RefreshCw, XCircle, Clock, BookOpen } from "lucide-react";
 import ClassMembersDialog from "./ClassMembersDialog";
 import ClassScheduleDialog from "./ClassScheduleDialog";
+import ClassTextbooksDialog from "./ClassTextbooksDialog";
 
 interface ClassItem {
   id: string;
@@ -73,6 +74,9 @@ const ClassesManager = () => {
 
   // Schedule dialog
   const [scheduleClass, setScheduleClass] = useState<{ id: string; name: string } | null>(null);
+
+  // Textbooks dialog
+  const [textbooksClass, setTextbooksClass] = useState<{ id: string; name: string } | null>(null);
 
   // Delete dialog
   const [deleteTarget, setDeleteTarget] = useState<ClassItem | null>(null);
@@ -373,6 +377,9 @@ const ClassesManager = () => {
                     <Button size="sm" variant="ghost" onClick={() => openEdit(c)} className="h-8 px-2" title="Upravit">
                       <Pencil className="w-4 h-4" />
                     </Button>
+                    <Button size="sm" variant="ghost" onClick={() => setTextbooksClass({ id: c.id, name: c.name })} className="h-8 px-2" title="Učebnice">
+                      <BookOpen className="w-4 h-4" />
+                    </Button>
                     <Button size="sm" variant="ghost" onClick={() => setScheduleClass({ id: c.id, name: c.name })} className="h-8 px-2" title="Rozvrh">
                       <Clock className="w-4 h-4" />
                     </Button>
@@ -504,6 +511,16 @@ const ClassesManager = () => {
           className={scheduleClass.name}
           open={!!scheduleClass}
           onOpenChange={(open) => !open && setScheduleClass(null)}
+        />
+      )}
+
+      {/* Textbooks dialog */}
+      {textbooksClass && (
+        <ClassTextbooksDialog
+          classId={textbooksClass.id}
+          className={textbooksClass.name}
+          open={!!textbooksClass}
+          onOpenChange={(open) => !open && setTextbooksClass(null)}
         />
       )}
     </div>
