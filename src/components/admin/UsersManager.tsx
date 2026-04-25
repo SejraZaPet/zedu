@@ -471,6 +471,7 @@ const UsersManager = () => {
                 password: u.login_password || "–",
                 role: u.role || "user",
                 username: u.username || "",
+                studentCode: u.role === "user" ? (u.student_code || "") : "",
               }));
               printLoginCards(cards);
             }}
