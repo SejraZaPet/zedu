@@ -114,13 +114,11 @@ const ParentDashboard = () => {
     if (!code) return;
     setLinking(true);
     try {
-      const { data: profile, error } = await supabase
-        .from("profiles")
-        .select("id, first_name, last_name")
-        .eq("student_code", code)
-        .maybeSingle();
+      const { data: matches, error } = await supabase
+        .rpc("find_student_by_code" as any, { _code: code });
 
       if (error) throw error;
+      const profile = (matches as any[])?.[0];
       if (!profile) {
         toast({ title: "Žák nenalezen", description: `Kód ${code} neodpovídá žádnému žáku.`, variant: "destructive" });
         return;
