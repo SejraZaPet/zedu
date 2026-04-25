@@ -37,6 +37,7 @@ import StudentAssignmentPlayer from "./pages/StudentAssignmentPlayer";
 import TeacherClasses from "./pages/TeacherClasses";
 import TeacherResults from "./pages/TeacherResults";
 import ParentDashboard from "./pages/ParentDashboard";
+import GdprPage from "./pages/GdprPage";
 
 const queryClient = new QueryClient();
 
