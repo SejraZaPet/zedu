@@ -250,6 +250,7 @@ body {
   gap: 12pt;
 }
 
+/* ─── Matching ─── */
 .ws-matching-table {
   width: 100%;
   border-collapse: collapse;
