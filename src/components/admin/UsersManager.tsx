@@ -17,6 +17,7 @@ import {
 import UserDetailDialog from "./UserDetailDialog";
 
 import { printLoginCards, type LoginCardData } from "@/lib/generate-login-cards";
+import { sendWelcomeEmail } from "@/lib/send-email";
 import {
   Select,
   SelectContent,
