@@ -470,6 +470,8 @@ const StudentAssignmentPlayer = () => {
         <p className="text-[10px] text-muted-foreground text-center mt-4">
           Klávesnice: ← → navigace · A–D volba odpovědi · Enter odevzdání
         </p>
+          </>
+        )}
       </main>
       <SiteFooter />
     </div>
