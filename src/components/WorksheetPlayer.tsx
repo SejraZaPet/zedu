@@ -24,6 +24,7 @@ import {
   Loader2,
   CheckCircle2,
   Clock,
+  Info,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useWorksheetAutosave, type WorksheetAnswers } from "@/hooks/useWorksheetAutosave";
@@ -191,9 +192,30 @@ export default function WorksheetPlayer({
     return <div className="p-8 text-center text-muted-foreground">Varianta „{variantId}" nenalezena.</div>;
   }
 
-  const items = variant.items;
+  const allItems = variant.items;
+
+  // Bloky s tagy "section_heading" a "instruction" jsou pouze vizuální / informační.
+  // Vyřazujeme je z navigace i ze score; renderují se jako kontext nad nejbližší další otázkou.
+  const isNonInteractive = (it: WorksheetItem) =>
+    !!it.tags?.includes("section_heading") || !!it.tags?.includes("instruction");
+
+  const items = allItems.filter((it) => !isNonInteractive(it));
   const item = items[currentIndex];
   const totalItems = items.length;
+
+  // Najdi non-interactive bloky které mají být zobrazeny nad aktuální otázkou
+  // (vše mezi předchozí interaktivní otázkou exklusivně a aktuální otázkou exklusivně).
+  const contextHeadings = useMemo<WorksheetItem[]>(() => {
+    if (!item) return [];
+    const currentRealIdx = allItems.findIndex((it) => it.id === item.id);
+    if (currentRealIdx < 0) return [];
+    // hledej zpět do nejbližší interaktivní otázky (exclusive)
+    let start = currentRealIdx - 1;
+    while (start >= 0 && isNonInteractive(allItems[start])) start--;
+    // start nyní ukazuje na předchozí interaktivní otázku (nebo -1)
+    return allItems.slice(start + 1, currentRealIdx);
+  }, [allItems, item?.id]);
+
   const answeredCount = items.filter((it) => answers[it.id] !== undefined && answers[it.id] !== "" && answers[it.id] !== null).length;
   const progressPct = totalItems > 0 ? (answeredCount / totalItems) * 100 : 0;
 
@@ -293,6 +315,28 @@ export default function WorksheetPlayer({
           </CardContent>
         </Card>
       )}
+
+      {/* Section headings & instructions příslušející k aktuální otázce (kontext nad otázkou) */}
+      {contextHeadings.map((h) => {
+        if (h.tags?.includes("section_heading")) {
+          return (
+            <div key={h.id} className="pt-2">
+              <h3 className="text-lg font-bold text-foreground border-b border-border pb-1">
+                {h.prompt}
+              </h3>
+            </div>
+          );
+        }
+        // instruction
+        return (
+          <Card key={h.id} className="border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/30">
+            <CardContent className="p-3 flex items-start gap-2 text-sm text-amber-900 dark:text-amber-100">
+              <Info className="h-4 w-4 mt-0.5 shrink-0" />
+              <span>{h.prompt}</span>
+            </CardContent>
+          </Card>
+        );
+      })}
 
       {/* Current Item */}
       {item && (
