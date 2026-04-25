@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Ban, UserCheck, Shield, Search, UserPlus, CheckCheck, Upload, Trash2, KeyRound, Printer, CheckCircle2, Clock } from "lucide-react";
+import { Ban, UserCheck, Shield, Search, UserPlus, CheckCheck, Upload, Trash2, KeyRound, Printer, CheckCircle2, Clock, RefreshCw } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -609,6 +609,32 @@ const UsersManager = () => {
                         setPrintPassword(user.login_password || "");
                       }} className="text-blue-400 hover:bg-blue-500/10 h-7 w-7 p-0">
                         <Printer className="w-4 h-4" />
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={async (e) => {
+                        e.stopPropagation();
+                        if (!confirm(`Vygenerovat nové heslo a vytisknout štítek pro ${user.first_name} ${user.last_name}?`)) return;
+                        const newPassword = Math.random().toString(36).slice(-8) + "Aa1!";
+                        const { error } = await supabase.functions.invoke("reset-user-password", {
+                          body: { userId: user.id, newPassword }
+                        });
+                        if (error) {
+                          toast({ title: "Chyba", description: error.message, variant: "destructive" });
+                          return;
+                        }
+                        await supabase.from("profiles").update({ login_password: newPassword }).eq("id", user.id);
+                        await fetchUsers();
+                        printLoginCards([{
+                          firstName: user.first_name || "",
+                          lastName: user.last_name || "",
+                          email: user.email || "",
+                          password: newPassword,
+                          role: user.role || "user",
+                          username: user.username || "",
+                          studentCode: user.student_code || "",
+                        }]);
+                        toast({ title: "Hotovo", description: `Nové heslo: ${newPassword}`, duration: 15000 });
+                      }} className="text-purple-400 hover:bg-purple-500/10 h-7 w-7 p-0">
+                        <RefreshCw className="w-3.5 h-3.5" />
                       </Button>
                       <Button size="sm" variant="ghost" onClick={async (e) => {
                         e.stopPropagation();
