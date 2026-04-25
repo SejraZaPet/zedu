@@ -1265,6 +1265,7 @@ const UsersManager = () => {
                     password: printPassword,
                     role: printDialogUser.role || "user",
                     username: printDialogUser.username || "",
+                    studentCode: printDialogUser.role === "user" ? (printDialogUser.student_code || "") : "",
                   }]);
                   setPrintDialogUser(null);
                   setPrintPassword("");
