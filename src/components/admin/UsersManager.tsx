@@ -682,6 +682,18 @@ const UsersManager = () => {
                 </SelectContent>
               </Select>
             </div>
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="is-adult"
+                checked={isAdult}
+                onCheckedChange={(v) => {
+                  setIsAdult(!!v);
+                  if (v) setCreateParentAccount(false);
+                }}
+              />
+              <Label htmlFor="is-adult" className="cursor-pointer">
+                Žák je zletilý (18+)
+              </Label>
             <div>
               <Label>Role</Label>
               <Select value={newUser.role} onValueChange={(v) => setNewUser({ ...newUser, role: v })}>
