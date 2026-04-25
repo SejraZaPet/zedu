@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { User, KeyRound, ClipboardList, Gamepad2, ListTodo, CalendarDays } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
+import TodayWidget from "@/components/calendar/TodayWidget";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface Profile {
