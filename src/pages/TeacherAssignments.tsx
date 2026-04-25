@@ -287,6 +287,50 @@ const TeacherAssignments = () => {
                 </div>
               </div>
 
+              {/* Pracovní list selector */}
+              <div className="p-3 border border-border rounded-lg bg-muted/30 space-y-2">
+                <div className="flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-muted-foreground" />
+                  <Label className="text-sm">Pracovní list (volitelné)</Label>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Vyber existující pracovní list – žáci ho otevřou v interaktivním plejeru.
+                </p>
+                <div className="flex gap-2">
+                  <Select
+                    value={selectedWorksheetId || "__none__"}
+                    onValueChange={(v) => setSelectedWorksheetId(v === "__none__" ? "" : v)}
+                  >
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="— Žádný pracovní list —" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">— Žádný pracovní list —</SelectItem>
+                      {worksheets.map((w) => (
+                        <SelectItem key={w.id} value={w.id}>
+                          {w.title} {w.status === "draft" ? "(koncept)" : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate("/ucitel/pracovni-listy")}
+                    title="Vytvořit nový pracovní list"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5 mr-1" />
+                    Nový
+                  </Button>
+                </div>
+                {selectedWorksheetId && (
+                  <p className="text-[11px] text-muted-foreground">
+                    ✓ Žáci uvidí pracovní list namísto AI otázek (pokud je vybrán).
+                  </p>
+                )}
+              </div>
+
               {prefillLessonId && lessonLoaded && (
                 <LessonWorksheetGenerator
                   lessonId={prefillLessonId}
