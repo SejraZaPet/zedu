@@ -246,34 +246,64 @@ export default function WorksheetEditor() {
     })();
   }, [authLoading, user, id, navigate]);
 
-  // ── Načtení seznamu lekcí (pro Combobox) ──
+  // ── Načtení seznamu lekcí (globální + učitelské) pro Combobox ──
   useEffect(() => {
     if (!user) return;
     (async () => {
-      const { data } = await supabase
-        .from("lessons")
-        .select("id, title")
-        .order("title", { ascending: true })
-        .limit(200);
-      setAllLessons((data as any) ?? []);
+      const [globalRes, teacherRes] = await Promise.all([
+        supabase
+          .from("textbook_lessons")
+          .select("id, title, topic_id")
+          .order("title", { ascending: true })
+          .limit(500),
+        supabase
+          .from("teacher_textbook_lessons")
+          .select("id, title, textbook_id")
+          .order("title", { ascending: true })
+          .limit(200),
+      ]);
+      const merged: LessonOption[] = [
+        ...(((globalRes.data ?? []) as any[]).map((l) => ({
+          id: l.id,
+          title: l.title,
+          type: "global" as const,
+          textbookId: l.topic_id ?? null,
+        }))),
+        ...(((teacherRes.data ?? []) as any[]).map((l) => ({
+          id: l.id,
+          title: l.title,
+          type: "teacher" as const,
+          textbookId: l.textbook_id ?? null,
+        }))),
+      ];
+      setAllLessons(merged);
     })();
   }, [user]);
 
-  // ── Načtení obsahu vybrané lekce ──
+  // ── Načtení obsahu vybrané lekce (z odpovídající tabulky) ──
   useEffect(() => {
     if (!activeLessonId) {
       setActiveLessonContent("");
       return;
     }
+    const opt = allLessons.find((l) => l.id === activeLessonId);
+    if (!opt) {
+      // může se stát před prvním načtením seznamu — zkusíme oba zdroje
+      return;
+    }
     (async () => {
+      const tableName =
+        opt.type === "global" ? "textbook_lessons" : "teacher_textbook_lessons";
       const { data } = await supabase
-        .from("lessons")
-        .select("content, title")
+        .from(tableName as any)
+        .select("blocks, title")
         .eq("id", activeLessonId)
         .maybeSingle();
-      setActiveLessonContent((data as any)?.content ?? "");
+      const row = (data as any) ?? {};
+      // obě tabulky používají jsonb `blocks`
+      setActiveLessonContent(extractTextFromBlocks(row.blocks));
     })();
-  }, [activeLessonId]);
+  }, [activeLessonId, allLessons]);
 
   // ── Auto-save ──
   useEffect(() => {
