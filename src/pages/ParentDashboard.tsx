@@ -286,14 +286,43 @@ const ParentDashboard = () => {
                         {student.school || "—"} · {student.year ? `${student.year}. ročník` : "—"}
                       </p>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleUnlinkChild(student.id)}
-                      className="text-red-500 hover:bg-red-500/10"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        onClick={async () => {
+                          if (!confirm(`Resetovat heslo pro ${student.first_name} ${student.last_name}?`)) return;
+                          const { data, error } = await supabase.functions.invoke("parent-reset-child-password", {
+                            body: { childId: student.id },
+                          });
+                          if (error || !data?.newPassword) {
+                            toast({
+                              title: "Chyba",
+                              description: error?.message || data?.error || "Nepodařilo se resetovat heslo.",
+                              variant: "destructive",
+                            });
+                          } else {
+                            toast({
+                              title: "Heslo resetováno",
+                              description: `Nové heslo: ${data.newPassword}`,
+                              duration: 15000,
+                            });
+                          }
+                        }}
+                      >
+                        <KeyRound className="w-4 h-4" />
+                        Resetovat heslo
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleUnlinkChild(student.id)}
+                        className="text-red-500 hover:bg-red-500/10"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
