@@ -849,7 +849,7 @@ const UsersManager = () => {
                   await supabase.from("user_roles").upsert({
                     user_id: userId,
                     role: newUser.role as any,
-                  }, { onConflict: "user_id" });
+                  }, { onConflict: "user_id,role", ignoreDuplicates: true });
 
                   if (!email.includes("@zedu-student.cz") && !email.includes("@zedu-lektor.cz") && !email.includes("@zedu-rodic.cz")) {
                     try {
@@ -910,7 +910,7 @@ const UsersManager = () => {
                       await supabase.from("user_roles").upsert({
                         user_id: parentUserId,
                         role: "rodic" as any,
-                      }, { onConflict: "user_id" });
+                      }, { onConflict: "user_id,role", ignoreDuplicates: true });
 
                       await supabase.from("parent_student_links" as any).insert({
                         parent_id: parentUserId,
@@ -1165,7 +1165,7 @@ const UsersManager = () => {
                         continue;
                       }
 
-                      await supabase.from("user_roles").upsert({ user_id: userId, role: role as any }, { onConflict: "user_id" });
+                      await supabase.from("user_roles").upsert({ user_id: userId, role: role as any }, { onConflict: "user_id,role", ignoreDuplicates: true });
 
                       successCount++;
 
@@ -1226,7 +1226,7 @@ const UsersManager = () => {
                                   username: parentUsername,
                                   parent_email: parentEmailValue || null,
                                 });
-                                await supabase.from("user_roles").upsert({ user_id: parentId, role: "rodic" as any }, { onConflict: "user_id" });
+                                await supabase.from("user_roles").upsert({ user_id: parentId, role: "rodic" as any }, { onConflict: "user_id,role", ignoreDuplicates: true });
                                 importedUsersList.push({
                                   firstName: "Rodič",
                                   lastName: `${row.jmeno} ${row.prijmeni}`,
