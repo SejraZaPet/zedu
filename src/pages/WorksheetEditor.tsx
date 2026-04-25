@@ -56,6 +56,8 @@ import type {
   ItemType,
   Difficulty,
   AnswerKeyEntry,
+  OfflineMode,
+  GroupSize,
 } from "@/lib/worksheet-spec";
 import {
   emptyWorksheetSpec,
@@ -63,6 +65,8 @@ import {
   createDefaultAnswerKey,
   recomputeMetadata,
   ITEM_TYPE_LABELS,
+  OFFLINE_MODE_LABELS,
+  GROUP_SIZE_LABELS,
 } from "@/lib/worksheet-defaults";
 import WorksheetPlayer from "@/components/WorksheetPlayer";
 
