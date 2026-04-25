@@ -846,10 +846,10 @@ const UsersManager = () => {
                     student_code: studentCode,
                   });
 
-                  await supabase.from("user_roles").insert({
+                  await supabase.from("user_roles").upsert({
                     user_id: userId,
                     role: newUser.role as any,
-                  });
+                  }, { onConflict: "user_id" });
 
                   if (!email.includes("@zedu-student.cz") && !email.includes("@zedu-lektor.cz") && !email.includes("@zedu-rodic.cz")) {
                     try {
