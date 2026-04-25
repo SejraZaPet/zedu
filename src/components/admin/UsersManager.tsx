@@ -861,6 +861,7 @@ const UsersManager = () => {
                         email,
                         password,
                         role: newUser.role,
+                        username: username,
                       });
                       console.log("Email výsledek:", emailResult);
                     } catch (emailErr) {
