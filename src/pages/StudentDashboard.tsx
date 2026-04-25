@@ -103,6 +103,8 @@ const StudentDashboard = () => {
           <p className="text-muted-foreground mt-1">Studentský panel</p>
         </div>
 
+        <TodayWidget role="student" />
+
         <div className="grid gap-6 md:grid-cols-2">
           {/* Profil */}
           <div className="bg-card border border-border rounded-xl p-6 flex flex-col">
