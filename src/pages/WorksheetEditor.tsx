@@ -85,6 +85,12 @@ import {
 } from "@/lib/worksheet-defaults";
 import { OFFLINE_MODE_META } from "@/lib/worksheet-offline-meta";
 import { splitLessonContent, type LessonBlock } from "@/lib/lesson-content-splitter";
+import {
+  WORKSHEET_TEMPLATES,
+  buildTemplate,
+  type WorksheetTemplateId,
+} from "@/lib/worksheet-templates";
+import { downloadWorksheetPdf } from "@/lib/worksheet-pdf-export";
 import WorksheetPlayer from "@/components/WorksheetPlayer";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
