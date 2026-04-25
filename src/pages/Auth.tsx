@@ -41,6 +41,7 @@ const Auth = () => {
   const [fieldOfStudy, setFieldOfStudy] = useState("");
   const [year, setYear] = useState("");
   const [classCode, setClassCode] = useState("");
+  const [gdprConsent, setGdprConsent] = useState(false);
 
   // React to auth state changes - redirect when logged in
   useEffect(() => {
