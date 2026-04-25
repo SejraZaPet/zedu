@@ -41,9 +41,18 @@ export const sendWelcomeEmail = async (params: {
     </div>
   `;
 
-  return supabase.functions.invoke("send-email", {
-    body: { to: params.to, subject: "Vítejte v ZEdu – vaše přihlašovací údaje", html },
-  });
+  try {
+    const result = await supabase.functions.invoke("send-email", {
+      body: { to: params.to, subject: "Vítejte v ZEdu – vaše přihlašovací údaje", html },
+    });
+    if (result.error) {
+      console.warn("Email se nepodařilo odeslat:", result.error);
+    }
+    return result;
+  } catch (err) {
+    console.warn("Email service nedostupný:", err);
+    return { data: null, error: err };
+  }
 };
 
 export const sendParentWelcomeEmail = async (params: {
