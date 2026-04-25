@@ -1202,7 +1202,7 @@ const UsersManager = () => {
                       }
 
                       successCount++;
-                      importedUsersList.push({ firstName: row.jmeno, lastName: row.prijmeni, email, password, role, username });
+                      importedUsersList.push({ firstName: row.jmeno, lastName: row.prijmeni, email, password, role, username, studentCode: role === "user" ? studentCode : undefined });
                     } catch (e: any) {
                       errors.push(`${row.jmeno} ${row.prijmeni}: ${e.message}`);
                     }
