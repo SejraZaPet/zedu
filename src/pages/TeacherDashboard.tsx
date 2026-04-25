@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { User, GraduationCap, Sparkles, School, BarChart3 } from "lucide-react";
+import { User, GraduationCap, Sparkles, School, BarChart3, ListTodo } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { useAuth } from "@/contexts/AuthContext";
@@ -76,6 +76,13 @@ const TeacherDashboard = () => {
       description: "Sledujte úspěšnost a dokončené aktivity.",
       button: "Zobrazit výsledky",
       onClick: () => navigate("/ucitel/vysledky"),
+    },
+    {
+      icon: ListTodo,
+      title: "Moje úkoly",
+      description: "Osobní seznam úkolů, příprav a termínů.",
+      button: "Otevřít úkoly",
+      onClick: () => navigate("/todo"),
     },
   ];
 
