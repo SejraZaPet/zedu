@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { User, GraduationCap, Sparkles, School, BarChart3, ListTodo, CalendarDays } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
+import TodayWidget from "@/components/calendar/TodayWidget";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface Profile {
@@ -108,6 +109,8 @@ const TeacherDashboard = () => {
             {isLektor ? "Lektorský panel" : "Učitelský panel"}
           </p>
         </div>
+
+        <TodayWidget role="teacher" />
 
         <div className="grid gap-6 md:grid-cols-2">
           {teacherCards.map((card) => (

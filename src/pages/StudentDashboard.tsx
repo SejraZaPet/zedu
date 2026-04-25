@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { User, KeyRound, ClipboardList, Gamepad2, ListTodo, CalendarDays } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
+import TodayWidget from "@/components/calendar/TodayWidget";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface Profile {
@@ -101,6 +102,8 @@ const StudentDashboard = () => {
           </h1>
           <p className="text-muted-foreground mt-1">Studentský panel</p>
         </div>
+
+        <TodayWidget role="student" />
 
         <div className="grid gap-6 md:grid-cols-2">
           {/* Profil */}
