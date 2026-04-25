@@ -880,11 +880,14 @@ export default function WorksheetEditor() {
               </div>
             </div>
 
-            {/* Z lekce sekce */}
+            {/* Aktivní lekce sekce */}
             <div className="mt-5 pt-4 border-t border-border">
               <h3 className="font-heading text-sm font-semibold mb-2 text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
-                <BookOpen className="w-3.5 h-3.5" /> Z lekce
+                <BookOpen className="w-3.5 h-3.5" /> Aktivní lekce
               </h3>
+              <p className="text-[11px] text-muted-foreground mb-2">
+                Lekce, ze které právě tahám návrhy.
+              </p>
               <Select
                 value={activeLessonId ?? "__none__"}
                 onValueChange={(v) => handleSetSourceLesson(v === "__none__" ? null : v)}
@@ -936,6 +939,52 @@ export default function WorksheetEditor() {
                   ))}
                 </div>
               )}
+            </div>
+
+            {/* Připojené lekce */}
+            <div className="mt-5 pt-4 border-t border-border">
+              <h3 className="font-heading text-sm font-semibold mb-2 text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                <Link2 className="w-3.5 h-3.5" /> Připojené lekce ({linkedLessons.length})
+              </h3>
+              {linkedLessons.length === 0 ? (
+                <p className="text-[11px] text-muted-foreground mb-2">
+                  Tento pracovní list zatím není napojený na žádnou lekci.
+                </p>
+              ) : (
+                <div className="space-y-1 mb-2">
+                  {linkedLessons.map((l) => (
+                    <div
+                      key={l.id}
+                      className="flex items-center gap-1.5 px-2 py-1.5 rounded-md border border-border bg-background text-xs"
+                    >
+                      <Badge
+                        variant={l.lesson_type === "global" ? "secondary" : "outline"}
+                        className="text-[10px] px-1.5 py-0 h-4 shrink-0"
+                      >
+                        {l.lesson_type === "global" ? "G" : "V"}
+                      </Badge>
+                      <span className="truncate flex-1" title={l.title}>
+                        {l.title}
+                      </span>
+                      <button
+                        onClick={() => handleRemoveLinkedLesson(l.id)}
+                        className="text-muted-foreground hover:text-destructive shrink-0"
+                        title="Odebrat propojení"
+                      >
+                        <XCircle className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full h-8 text-xs"
+                onClick={() => setLinkDialogOpen(true)}
+              >
+                <Plus className="w-3.5 h-3.5 mr-1" /> Přidat další lekci
+              </Button>
             </div>
 
             {/* Šablony sekce */}
