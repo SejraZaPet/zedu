@@ -1213,7 +1213,6 @@ const UsersManager = () => {
                   }
                   setImporting(false);
                   setImportedUsers(importedUsersList);
-                  if (importedUsersList.length > 0) setLastImportedUsers(importedUsersList);
                 }}
               >
                 {importing ? "Importuji..." : `Importovat ${importPreview.length} uživatelů`}
