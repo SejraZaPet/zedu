@@ -349,6 +349,8 @@ const UsersManager = () => {
                     "role": "role",
                     "zletily": "zletily",
                     "zletilý": "zletily",
+                    "zletila": "zletily",
+                    "adult": "zletily",
                   };
 
                   rows = allRows
@@ -972,7 +974,7 @@ const UsersManager = () => {
                           "e-mail_rodice": "email_rodice", "email_rodice": "email_rodice",
                           "e-mail rodice": "email_rodice", "email rodice": "email_rodice",
                           "skola": "skola", "trida": "trida", "rocnik": "rocnik", "role": "role",
-                          "zletily": "zletily", "zletilý": "zletily",
+                          "zletily": "zletily", "zletilý": "zletily", "zletila": "zletily", "adult": "zletily",
                         };
 
                         const headers = allRows[headerRowIndex].map((h: any) =>
@@ -1132,6 +1134,56 @@ const UsersManager = () => {
                         username,
                         studentCode,
                       });
+
+                      const isAdultStudent = ["ano", "yes", "true", "1"].includes(String(row.zletily || "").toLowerCase().trim());
+                      console.log("Zletily hodnota:", row.zletily, "isAdult:", isAdultStudent, "role:", role);
+
+                      if (!isAdultStudent && role === "user") {
+                        try {
+                          const parentLogin = (row.email_rodice && String(row.email_rodice).trim()) || `rodic.${username}@zedu-rodic.cz`;
+                          const parentPassword = Math.random().toString(36).slice(-8) + "Aa1!";
+                          const parentUsername = generateUsername("rodic", `${row.jmeno}.${row.prijmeni}`, usedUsernames);
+                          usedUsernames.push(parentUsername);
+
+                          const { data: parentAuth, error: parentErr } = await supabase.functions.invoke("create-user", {
+                            body: { email: parentLogin, password: parentPassword, role: "rodic" }
+                          });
+                          if (parentErr) throw parentErr;
+                          const parentUserId = parentAuth?.user?.id || parentAuth?.id;
+                          if (!parentUserId) throw new Error("Nepodařilo se vytvořit účet rodiče");
+
+                          await supabase.from("profiles").upsert({
+                            id: parentUserId,
+                            first_name: "Rodič",
+                            last_name: `${row.jmeno || ""} ${row.prijmeni || ""}`.trim(),
+                            email: parentLogin,
+                            status: "approved" as any,
+                            login_password: parentPassword,
+                            username: parentUsername,
+                            parent_email: (row.email_rodice && String(row.email_rodice).trim()) || null,
+                          });
+
+                          await supabase.from("user_roles").insert({ user_id: parentUserId, role: "rodic" as any });
+
+                          await supabase.from("parent_student_links" as any).insert({
+                            parent_id: parentUserId,
+                            student_id: userId,
+                          });
+
+                          importedUsersList.push({
+                            firstName: "Rodič",
+                            lastName: `${row.jmeno} ${row.prijmeni}`,
+                            email: parentLogin,
+                            password: parentPassword,
+                            role: "rodic",
+                            username: parentUsername,
+                            studentCode: "",
+                          });
+                        } catch (pe: any) {
+                          console.error("Parent creation error:", pe);
+                          errors.push(`${row.jmeno} ${row.prijmeni} (rodič): ${pe.message}`);
+                        }
+                      }
                     } catch (e: any) {
                       errors.push(`${row.jmeno} ${row.prijmeni}: ${e.message}`);
                     }
