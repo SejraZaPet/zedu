@@ -20,9 +20,16 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
   ChevronLeft,
+  ChevronDown,
   GripVertical,
   Trash2,
   Plus,
@@ -31,6 +38,10 @@ import {
   CheckCircle2,
   Send,
   X,
+  RotateCcw,
+  Sparkles,
+  BookOpen,
+  Wand2,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -68,6 +79,8 @@ import {
   OFFLINE_MODE_LABELS,
   GROUP_SIZE_LABELS,
 } from "@/lib/worksheet-defaults";
+import { OFFLINE_MODE_META } from "@/lib/worksheet-offline-meta";
+import { splitLessonContent, type LessonBlock } from "@/lib/lesson-content-splitter";
 import WorksheetPlayer from "@/components/WorksheetPlayer";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
@@ -80,7 +93,14 @@ const ITEM_TYPES: ItemType[] = [
   "ordering",
   "short_answer",
   "open_answer",
-  "offline_activity",
+];
+
+const OFFLINE_MODES: OfflineMode[] = [
+  "discussion",
+  "group_work",
+  "practical",
+  "observation",
+  "reflection",
 ];
 
 const MODE_OPTIONS = [
@@ -89,6 +109,28 @@ const MODE_OPTIONS = [
   { value: "test", label: "Test" },
   { value: "revision", label: "Opakování" },
 ];
+
+const HISTORY_LIMIT = 50;
+
+interface AiSuggestion {
+  type: ItemType;
+  difficulty: Difficulty;
+  points: number;
+  prompt: string;
+  rationale: string;
+  choices?: string[];
+  correctChoice?: string;
+  correctBoolean?: boolean;
+  blankText?: string;
+  blankAnswers?: string[];
+  matchPairs?: Array<{ left: string; right: string }>;
+  orderItems?: string[];
+  shortAnswer?: string;
+  rubric?: string;
+  offlineMode?: OfflineMode;
+  groupSize?: GroupSize;
+  durationMin?: number;
+}
 
 export default function WorksheetEditor() {
   const { id } = useParams<{ id: string }>();
@@ -102,15 +144,38 @@ export default function WorksheetEditor() {
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [previewOpen, setPreviewOpen] = useState(false);
 
+  const [sourceLessonId, setSourceLessonId] = useState<string | null>(null);
+  const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
+  const [allLessons, setAllLessons] = useState<Array<{ id: string; title: string }>>([]);
+  const [activeLessonContent, setActiveLessonContent] = useState<string>("");
+
+  const [suggestionDialog, setSuggestionDialog] = useState<{
+    open: boolean;
+    blockText: string;
+    blockTitle: string;
+    loading: boolean;
+    suggestions: AiSuggestion[];
+    customInstruction: string;
+  }>({
+    open: false,
+    blockText: "",
+    blockTitle: "",
+    loading: false,
+    suggestions: [],
+    customInstruction: "",
+  });
+
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const initialLoad = useRef(true);
+  const historyRef = useRef<WorksheetSpec[]>([]);
+  const skipNextHistoryPush = useRef(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  // ── Načtení ──
+  // ── Načtení worksheetu ──
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
@@ -137,7 +202,6 @@ export default function WorksheetEditor() {
         gradeBand: row.grade_band,
         worksheetMode: row.worksheet_mode,
       });
-      // Sync header s DB sloupci (zdroj pravdy zde)
       loaded = {
         ...loaded,
         header: {
@@ -150,12 +214,43 @@ export default function WorksheetEditor() {
       };
       setSpec(loaded);
       setStatus(row.status);
+      setSourceLessonId(row.source_lesson_id ?? null);
+      setActiveLessonId(row.source_lesson_id ?? null);
       setLoading(false);
       initialLoad.current = false;
     })();
   }, [authLoading, user, id, navigate]);
 
-  // ── Auto-save (debounced) ──
+  // ── Načtení seznamu lekcí (pro Combobox) ──
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data } = await supabase
+        .from("lessons")
+        .select("id, title")
+        .order("title", { ascending: true })
+        .limit(200);
+      setAllLessons((data as any) ?? []);
+    })();
+  }, [user]);
+
+  // ── Načtení obsahu vybrané lekce ──
+  useEffect(() => {
+    if (!activeLessonId) {
+      setActiveLessonContent("");
+      return;
+    }
+    (async () => {
+      const { data } = await supabase
+        .from("lessons")
+        .select("content, title")
+        .eq("id", activeLessonId)
+        .maybeSingle();
+      setActiveLessonContent((data as any)?.content ?? "");
+    })();
+  }, [activeLessonId]);
+
+  // ── Auto-save ──
   useEffect(() => {
     if (loading || !spec || !id) return;
     if (initialLoad.current) return;
@@ -184,14 +279,53 @@ export default function WorksheetEditor() {
     };
   }, [spec, id, loading]);
 
-  // ── Helpers pro mutaci spec ──
+  // ── Spec mutator (s history push) ──
   const updateSpec = useCallback((mutator: (s: WorksheetSpec) => WorksheetSpec) => {
     setSpec((prev) => {
       if (!prev) return prev;
       initialLoad.current = false;
+      if (!skipNextHistoryPush.current) {
+        // push current state to history before mutating
+        historyRef.current.push(prev);
+        if (historyRef.current.length > HISTORY_LIMIT) {
+          historyRef.current.shift();
+        }
+      }
+      skipNextHistoryPush.current = false;
       return recomputeMetadata(mutator(prev));
     });
   }, []);
+
+  const undo = useCallback(() => {
+    const previous = historyRef.current.pop();
+    if (!previous) {
+      toast({ title: "Není co vrátit zpět" });
+      return;
+    }
+    skipNextHistoryPush.current = true;
+    setSpec(previous);
+    toast({ title: "Vráceno zpět" });
+  }, []);
+
+  // ── Ctrl+Z handler ──
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const mod = e.ctrlKey || e.metaKey;
+      if (mod && !e.shiftKey && e.key.toLowerCase() === "z") {
+        // Don't hijack inside text inputs unless empty selection — keep simple: always intercept
+        const target = e.target as HTMLElement | null;
+        const tag = target?.tagName?.toLowerCase();
+        if (tag === "input" || tag === "textarea" || target?.isContentEditable) {
+          // Let native undo happen inside text fields
+          return;
+        }
+        e.preventDefault();
+        undo();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [undo]);
 
   const items = spec?.variants[0]?.items ?? [];
   const answerKeys = spec?.answerKeys[spec.variants[0]?.variantId ?? "A"] ?? [];
@@ -202,6 +336,33 @@ export default function WorksheetEditor() {
     if (!spec) return;
     const variantId = spec.variants[0].variantId;
     const newItem = createDefaultItem(type, items.length + 1);
+    const newKey = createDefaultAnswerKey(newItem);
+    updateSpec((s) => ({
+      ...s,
+      variants: s.variants.map((v, idx) =>
+        idx === 0 ? { ...v, items: [...v.items, newItem] } : v
+      ),
+      answerKeys: {
+        ...s.answerKeys,
+        [variantId]: [...(s.answerKeys[variantId] ?? []), newKey],
+      },
+    }));
+    setSelectedId(newItem.id);
+  }
+
+  function addOfflineActivity(mode: OfflineMode) {
+    if (!spec) return;
+    const variantId = spec.variants[0].variantId;
+    const meta = OFFLINE_MODE_META[mode];
+    const base = createDefaultItem("offline_activity", items.length + 1);
+    const newItem: WorksheetItem = {
+      ...base,
+      offlineMode: mode,
+      groupSize: meta.defaultGroup,
+      durationMin: meta.defaultDuration,
+      timeEstimateSec: meta.defaultDuration * 60,
+      prompt: meta.defaultPrompt,
+    };
     const newKey = createDefaultAnswerKey(newItem);
     updateSpec((s) => ({
       ...s,
@@ -261,6 +422,19 @@ export default function WorksheetEditor() {
     }));
   }
 
+  /** Replace whole item (used by AI refine). */
+  function replaceItem(itemId: string, newItem: WorksheetItem) {
+    if (!spec) return;
+    updateSpec((s) => ({
+      ...s,
+      variants: s.variants.map((v, idx) =>
+        idx === 0
+          ? { ...v, items: v.items.map((it) => (it.id === itemId ? newItem : it)) }
+          : v
+      ),
+    }));
+  }
+
   function handleDragEnd(e: DragEndEvent) {
     const { active, over } = e;
     if (!over || active.id === over.id || !spec) return;
@@ -289,6 +463,104 @@ export default function WorksheetEditor() {
     }
   }
 
+  // ── AI: load suggestions for a lesson block ──
+  async function openSuggestionsForBlock(block: LessonBlock) {
+    setSuggestionDialog({
+      open: true,
+      blockText: block.text,
+      blockTitle: block.title,
+      loading: true,
+      suggestions: [],
+      customInstruction: "",
+    });
+    await fetchSuggestions(block.text, "");
+  }
+
+  async function fetchSuggestions(blockText: string, customInstruction: string) {
+    setSuggestionDialog((d) => ({ ...d, loading: true, suggestions: [] }));
+    try {
+      const lesson = allLessons.find((l) => l.id === activeLessonId);
+      const { data, error } = await supabase.functions.invoke("generate-block-suggestions", {
+        body: {
+          blockText,
+          lessonTitle: lesson?.title ?? "",
+          lessonSubject: spec?.header.subject ?? "",
+          userInstruction: customInstruction,
+        },
+      });
+      if (error) throw error;
+      const list: AiSuggestion[] = (data as any)?.suggestions ?? [];
+      setSuggestionDialog((d) => ({ ...d, loading: false, suggestions: list }));
+    } catch (err: any) {
+      setSuggestionDialog((d) => ({ ...d, loading: false }));
+      toast({
+        title: "AI návrhy selhaly",
+        description: err?.message ?? "Zkuste to znovu",
+        variant: "destructive",
+      });
+    }
+  }
+
+  function applySuggestion(s: AiSuggestion) {
+    if (!spec) return;
+    const variantId = spec.variants[0].variantId;
+    const base = createDefaultItem(s.type, items.length + 1);
+    const newItem: WorksheetItem = {
+      ...base,
+      prompt: s.prompt,
+      points: s.points || base.points,
+      difficulty: s.difficulty,
+      ...(s.choices ? { choices: s.choices } : {}),
+      ...(s.matchPairs ? { matchPairs: s.matchPairs } : {}),
+      ...(s.orderItems ? { orderItems: s.orderItems } : {}),
+      ...(s.blankText ? { blankText: s.blankText } : {}),
+      ...(s.offlineMode ? { offlineMode: s.offlineMode } : {}),
+      ...(s.groupSize ? { groupSize: s.groupSize } : {}),
+      ...(s.durationMin
+        ? { durationMin: s.durationMin, timeEstimateSec: s.durationMin * 60 }
+        : {}),
+    };
+    let correct: string | string[] = "";
+    if (s.type === "mcq") correct = s.correctChoice ?? s.choices?.[0] ?? "";
+    else if (s.type === "true_false") correct = s.correctBoolean ? "true" : "false";
+    else if (s.type === "fill_blank") correct = s.blankAnswers ?? "";
+    else if (s.type === "matching") correct = (s.matchPairs ?? []).map((p) => `${p.left}=${p.right}`);
+    else if (s.type === "ordering") correct = s.orderItems ?? [];
+    else if (s.type === "short_answer") correct = s.shortAnswer ?? "";
+    const newKey: AnswerKeyEntry = {
+      itemId: newItem.id,
+      itemNumber: newItem.itemNumber,
+      correctAnswer: correct,
+      ...(s.rubric ? { rubric: s.rubric } : {}),
+    };
+    updateSpec((sp) => ({
+      ...sp,
+      variants: sp.variants.map((v, idx) =>
+        idx === 0 ? { ...v, items: [...v.items, newItem] } : v
+      ),
+      answerKeys: {
+        ...sp.answerKeys,
+        [variantId]: [...(sp.answerKeys[variantId] ?? []), newKey],
+      },
+    }));
+    setSelectedId(newItem.id);
+    setSuggestionDialog((d) => ({ ...d, open: false }));
+    toast({ title: "Blok přidán do listu" });
+  }
+
+  // ── Update sourceLessonId v DB když si učitel přepne ──
+  async function handleSetSourceLesson(lessonId: string | null) {
+    setActiveLessonId(lessonId);
+    // Update DB only if changed from current source
+    if (lessonId !== sourceLessonId && id) {
+      await supabase
+        .from("worksheets" as any)
+        .update({ source_lesson_id: lessonId } as any)
+        .eq("id", id);
+      setSourceLessonId(lessonId);
+    }
+  }
+
   if (loading || !spec) {
     return (
       <div className="min-h-screen bg-background">
@@ -297,6 +569,8 @@ export default function WorksheetEditor() {
       </div>
     );
   }
+
+  const lessonBlocks = splitLessonContent(activeLessonContent);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -319,6 +593,15 @@ export default function WorksheetEditor() {
             className="font-heading text-base font-semibold border-0 shadow-none focus-visible:ring-1 max-w-md"
           />
           <div className="ml-auto flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={undo}
+              title="Zpět (Ctrl+Z)"
+              disabled={historyRef.current.length === 0}
+            >
+              <RotateCcw className="w-4 h-4" />
+            </Button>
             <SaveIndicator state={saveState} />
             <Badge variant={status === "published" ? "default" : "secondary"}>
               {status === "published" ? "Publikováno" : "Koncept"}
@@ -335,7 +618,7 @@ export default function WorksheetEditor() {
       </div>
 
       <main className="flex-1 container mx-auto px-4 py-6 max-w-7xl">
-        <div className="grid gap-4 lg:grid-cols-[240px_1fr_320px]">
+        <div className="grid gap-4 lg:grid-cols-[260px_1fr_340px]">
           {/* ── PALETA ── */}
           <aside className="bg-card border border-border rounded-xl p-4 lg:sticky lg:top-[140px] lg:max-h-[calc(100vh-160px)] lg:overflow-y-auto">
             <h3 className="font-heading text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
@@ -354,6 +637,79 @@ export default function WorksheetEditor() {
                   </div>
                 </button>
               ))}
+            </div>
+
+            {/* Offline aktivity sekce */}
+            <div className="mt-5 pt-4 border-t border-border">
+              <h3 className="font-heading text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
+                Offline aktivity
+              </h3>
+              <div className="space-y-1.5">
+                {OFFLINE_MODES.map((mode) => {
+                  const meta = OFFLINE_MODE_META[mode];
+                  const Icon = meta.icon;
+                  return (
+                    <button
+                      key={mode}
+                      onClick={() => addOfflineActivity(mode)}
+                      className="w-full text-left px-3 py-2 rounded-lg hover:bg-accent/10 transition-colors border border-transparent hover:border-accent/40 flex items-start gap-2"
+                    >
+                      <Icon className="w-4 h-4 mt-0.5 text-accent shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium">{meta.label}</div>
+                        <div className="text-[11px] text-muted-foreground">
+                          {meta.defaultDuration} min · {GROUP_SIZE_LABELS[meta.defaultGroup]}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Z lekce sekce */}
+            <div className="mt-5 pt-4 border-t border-border">
+              <h3 className="font-heading text-sm font-semibold mb-2 text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                <BookOpen className="w-3.5 h-3.5" /> Z lekce
+              </h3>
+              <Select
+                value={activeLessonId ?? "__none__"}
+                onValueChange={(v) => handleSetSourceLesson(v === "__none__" ? null : v)}
+              >
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder="Vyber lekci…" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">— Žádná —</SelectItem>
+                  {allLessons.map((l) => (
+                    <SelectItem key={l.id} value={l.id}>
+                      {l.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {activeLessonId && lessonBlocks.length === 0 && (
+                <p className="text-xs text-muted-foreground mt-2">Lekce nemá obsah.</p>
+              )}
+
+              {lessonBlocks.length > 0 && (
+                <div className="mt-2 space-y-1.5">
+                  {lessonBlocks.map((b) => (
+                    <button
+                      key={b.id}
+                      onClick={() => openSuggestionsForBlock(b)}
+                      className="w-full text-left px-2.5 py-2 rounded-md border border-border bg-background hover:border-primary/50 hover:bg-primary/5 transition text-xs"
+                      title="Klik → AI navrhne 3 úlohy"
+                    >
+                      <div className="flex items-start gap-1.5">
+                        <Sparkles className="w-3 h-3 mt-0.5 text-primary shrink-0" />
+                        <span className="line-clamp-2">{b.title}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="mt-6 pt-4 border-t border-border text-xs text-muted-foreground">
@@ -473,17 +829,24 @@ export default function WorksheetEditor() {
             {!selectedItem ? (
               <p className="text-sm text-muted-foreground">Vyber blok pro úpravu.</p>
             ) : (
-              <PropertiesPanel
-                item={selectedItem}
-                answerKey={selectedAnswer}
-                onUpdateItem={(p) => updateItem(selectedItem.id, p)}
-                onUpdateKey={(p) => updateAnswerKey(selectedItem.id, p)}
-              />
+              <>
+                <PropertiesPanel
+                  item={selectedItem}
+                  answerKey={selectedAnswer}
+                  onUpdateItem={(p) => updateItem(selectedItem.id, p)}
+                  onUpdateKey={(p) => updateAnswerKey(selectedItem.id, p)}
+                />
+                <AiBlockChat
+                  item={selectedItem}
+                  onApplyRefined={(refined) => replaceItem(selectedItem.id, refined)}
+                />
+              </>
             )}
           </aside>
         </div>
       </main>
 
+      {/* Preview dialog */}
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -494,6 +857,109 @@ export default function WorksheetEditor() {
             variantId={spec.variants[0].variantId}
             attemptId={null}
           />
+        </DialogContent>
+      </Dialog>
+
+      {/* AI Suggestions dialog */}
+      <Dialog
+        open={suggestionDialog.open}
+        onOpenChange={(o) => setSuggestionDialog((d) => ({ ...d, open: o }))}
+      >
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-primary" />
+              AI návrhy úloh
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              K pasáži: <span className="italic">{suggestionDialog.blockTitle}</span>
+            </DialogDescription>
+          </DialogHeader>
+
+          {suggestionDialog.loading && (
+            <div className="py-12 text-center text-muted-foreground">
+              <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
+              Generuji návrhy…
+            </div>
+          )}
+
+          {!suggestionDialog.loading && suggestionDialog.suggestions.length > 0 && (
+            <div className="space-y-3">
+              {suggestionDialog.suggestions.map((s, idx) => (
+                <div
+                  key={idx}
+                  className="border border-border rounded-lg p-3 hover:border-primary/40 transition"
+                >
+                  <div className="flex items-center gap-2 mb-2 text-xs">
+                    <Badge variant="secondary">
+                      {ITEM_TYPE_LABELS[s.type]?.label ?? s.type}
+                    </Badge>
+                    <Badge variant="outline">
+                      {s.difficulty === "easy"
+                        ? "Lehká"
+                        : s.difficulty === "medium"
+                        ? "Střední"
+                        : "Těžká"}
+                    </Badge>
+                    <Badge variant="outline">{s.points} b</Badge>
+                  </div>
+                  <p className="text-sm font-medium mb-1">{s.prompt}</p>
+                  {s.choices && (
+                    <ul className="text-xs text-muted-foreground list-disc list-inside mb-1">
+                      {s.choices.map((c, i) => (
+                        <li
+                          key={i}
+                          className={c === s.correctChoice ? "font-semibold text-foreground" : ""}
+                        >
+                          {c}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <p className="text-[11px] text-muted-foreground italic mb-2">
+                    💡 {s.rationale}
+                  </p>
+                  <Button size="sm" onClick={() => applySuggestion(s)}>
+                    <Plus className="w-3 h-3 mr-1" /> Přidat do listu
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Custom prompt */}
+          <div className="border-t border-border pt-3 mt-2">
+            <Label className="text-xs">Vlastní zadání pro AI</Label>
+            <div className="flex gap-2 mt-1">
+              <Input
+                placeholder="např. „udělej z toho test pravda/nepravda"
+                value={suggestionDialog.customInstruction}
+                onChange={(e) =>
+                  setSuggestionDialog((d) => ({ ...d, customInstruction: e.target.value }))
+                }
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    fetchSuggestions(
+                      suggestionDialog.blockText,
+                      suggestionDialog.customInstruction,
+                    );
+                  }
+                }}
+              />
+              <Button
+                size="sm"
+                onClick={() =>
+                  fetchSuggestions(
+                    suggestionDialog.blockText,
+                    suggestionDialog.customInstruction,
+                  )
+                }
+                disabled={suggestionDialog.loading}
+              >
+                <Wand2 className="w-3 h-3 mr-1" /> Znovu
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
@@ -520,7 +986,7 @@ function SaveIndicator({ state }: { state: SaveState }) {
   return null;
 }
 
-// ─────────────────────────── Sortable block ───────────────────────────
+// ─────────────────────────── Sortable block (canvas) ───────────────────────────
 
 function SortableItemBlock({
   item,
@@ -542,13 +1008,21 @@ function SortableItemBlock({
     opacity: isDragging ? 0.5 : 1,
   };
 
+  const isOffline = item.type === "offline_activity";
+  const offlineMeta = isOffline && item.offlineMode ? OFFLINE_MODE_META[item.offlineMode] : null;
+  const OfflineIcon = offlineMeta?.icon;
+
   return (
     <div
       ref={setNodeRef}
       style={style}
       onClick={onSelect}
       className={`flex items-start gap-2 p-3 rounded-lg border transition-colors cursor-pointer ${
-        selected ? "border-primary bg-primary/5" : "border-border bg-background hover:bg-muted/40"
+        selected
+          ? "border-primary bg-primary/5"
+          : isOffline
+          ? "border-accent/40 bg-accent/5 hover:bg-accent/10"
+          : "border-border bg-background hover:bg-muted/40"
       }`}
     >
       <button
@@ -564,10 +1038,24 @@ function SortableItemBlock({
         {item.itemNumber}
       </div>
       <div className="flex-1 min-w-0">
-        <div className="text-xs text-muted-foreground mb-0.5">
-          {ITEM_TYPE_LABELS[item.type].label} · {item.points} b
+        {isOffline && offlineMeta && OfflineIcon ? (
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-accent-foreground/80 mb-1">
+            <OfflineIcon className="w-3.5 h-3.5 text-accent" />
+            <span>
+              {offlineMeta.label}
+              {item.groupSize ? ` · ${GROUP_SIZE_LABELS[item.groupSize]}` : ""}
+              {item.durationMin ? ` · ${item.durationMin} min` : ""}
+            </span>
+            <span className="text-muted-foreground font-normal">· {item.points} b</span>
+          </div>
+        ) : (
+          <div className="text-xs text-muted-foreground mb-0.5">
+            {ITEM_TYPE_LABELS[item.type].label} · {item.points} b
+          </div>
+        )}
+        <div className="text-sm line-clamp-2">
+          {item.prompt || <em className="text-muted-foreground">Bez textu</em>}
         </div>
-        <div className="text-sm line-clamp-2">{item.prompt || <em className="text-muted-foreground">Bez textu</em>}</div>
       </div>
       <button
         onClick={(e) => {
@@ -580,6 +1068,161 @@ function SortableItemBlock({
         <Trash2 className="w-4 h-4" />
       </button>
     </div>
+  );
+}
+
+// ─────────────────────────── AI Block Chat (properties panel) ───────────────────────────
+
+function AiBlockChat({
+  item,
+  onApplyRefined,
+}: {
+  item: WorksheetItem;
+  onApplyRefined: (refined: WorksheetItem) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [customPrompt, setCustomPrompt] = useState("");
+  const [pending, setPending] = useState<{
+    refinedBlock: WorksheetItem;
+    changesSummary: string[];
+  } | null>(null);
+
+  async function runAction(action: string, customInstruction?: string) {
+    setLoading(true);
+    setPending(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("worksheet-block-refine", {
+        body: {
+          block: item,
+          action,
+          customInstruction: customInstruction ?? "",
+        },
+      });
+      if (error) throw error;
+      setPending({
+        refinedBlock: (data as any).refinedBlock as WorksheetItem,
+        changesSummary: (data as any).changesSummary ?? [],
+      });
+    } catch (err: any) {
+      toast({
+        title: "AI úprava selhala",
+        description: err?.message ?? "Zkuste to znovu",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function applyPending() {
+    if (!pending) return;
+    onApplyRefined(pending.refinedBlock);
+    setPending(null);
+    setCustomPrompt("");
+    toast({ title: "Úprava použita" });
+  }
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen} className="mt-4 pt-3 border-t border-border">
+      <CollapsibleTrigger asChild>
+        <button className="w-full flex items-center justify-between text-xs font-semibold text-muted-foreground uppercase tracking-wide hover:text-foreground">
+          <span className="flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-primary" /> Zeptej se AI
+          </span>
+          <ChevronDown
+            className={`w-4 h-4 transition-transform ${open ? "rotate-180" : ""}`}
+          />
+        </button>
+      </CollapsibleTrigger>
+
+      <CollapsibleContent className="mt-3 space-y-3">
+        <div className="grid grid-cols-2 gap-1.5">
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={loading}
+            onClick={() => runAction("simplify")}
+          >
+            Zjednodušit
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={loading}
+            onClick={() => runAction("harder")}
+          >
+            Ztížit
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={loading}
+            onClick={() => runAction("rephrase")}
+          >
+            Přeformulovat
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={loading}
+            onClick={() => runAction("add_hint")}
+          >
+            Přidat hint
+          </Button>
+        </div>
+
+        <div className="flex gap-1.5">
+          <Input
+            placeholder="Vlastní pokyn…"
+            value={customPrompt}
+            onChange={(e) => setCustomPrompt(e.target.value)}
+            disabled={loading}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && customPrompt.trim()) {
+                runAction("custom", customPrompt.trim());
+              }
+            }}
+            className="text-xs"
+          />
+          <Button
+            size="sm"
+            disabled={loading || !customPrompt.trim()}
+            onClick={() => runAction("custom", customPrompt.trim())}
+          >
+            <Wand2 className="w-3 h-3" />
+          </Button>
+        </div>
+
+        {loading && (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Loader2 className="w-3 h-3 animate-spin" /> AI pracuje…
+          </div>
+        )}
+
+        {pending && (
+          <div className="rounded-md border border-primary/30 bg-primary/5 p-2.5 text-xs space-y-2">
+            <p className="font-semibold text-foreground">Navržené změny:</p>
+            <ul className="list-disc list-inside space-y-0.5 text-muted-foreground">
+              {pending.changesSummary.map((c, i) => (
+                <li key={i}>{c}</li>
+              ))}
+            </ul>
+            <p className="text-foreground">
+              <span className="font-medium">Nový text:</span> {pending.refinedBlock.prompt}
+            </p>
+            <div className="flex gap-1.5">
+              <Button size="sm" onClick={applyPending}>
+                Použít
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setPending(null)}>
+                Zahodit
+              </Button>
+            </div>
+          </div>
+        )}
+      </CollapsibleContent>
+    </Collapsible>
   );
 }
 
@@ -645,7 +1288,6 @@ function PropertiesPanel({
         </Select>
       </div>
 
-      {/* Type-specific */}
       {item.type === "mcq" && (
         <div>
           <Label className="text-xs mb-1 block">Volby (zaškrtni správnou)</Label>
@@ -862,7 +1504,7 @@ function PropertiesPanel({
       )}
 
       {item.type === "offline_activity" && (
-        <div className="space-y-3 rounded-lg border border-dashed border-primary/40 bg-primary/5 p-3">
+        <div className="space-y-3 rounded-lg border border-dashed border-accent/40 bg-accent/5 p-3">
           <div>
             <Label className="text-xs">Režim aktivity</Label>
             <Select
@@ -903,7 +1545,12 @@ function PropertiesPanel({
                 type="number"
                 min={0}
                 value={item.durationMin ?? 0}
-                onChange={(e) => onUpdateItem({ durationMin: Number(e.target.value) || 0 })}
+                onChange={(e) =>
+                  onUpdateItem({
+                    durationMin: Number(e.target.value) || 0,
+                    timeEstimateSec: (Number(e.target.value) || 0) * 60,
+                  })
+                }
               />
             </div>
           </div>
@@ -919,11 +1566,11 @@ function PropertiesPanel({
           </div>
 
           <p className="text-[11px] text-muted-foreground">
-            Offline aktivity probíhají mimo zařízení. Studenti je v online přehrávači uvidí jako informativní kartu, body přiděluje učitel ručně.
+            Offline aktivity probíhají mimo zařízení. Studenti je v online přehrávači uvidí jako
+            informativní kartu, body přiděluje učitel ručně.
           </p>
         </div>
       )}
-
 
       <div className="pt-3 border-t border-border">
         <Label className="text-xs">Obrázek (URL, volitelné)</Label>
@@ -942,7 +1589,6 @@ function PropertiesPanel({
         )}
       </div>
 
-      {/* Answer space (print) */}
       <div className="pt-3 border-t border-border">
         <Label className="text-xs">Prostor pro odpověď (tisk)</Label>
         <Select
