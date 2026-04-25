@@ -1194,15 +1194,19 @@ const UsersManager = () => {
                         }
                       }
 
-                      if (!email.includes("@zedu-student.cz") && !email.includes("@zedu-lektor.cz")) {
-                        await sendWelcomeEmail({
-                          to: email,
-                          firstName: row.jmeno,
-                          lastName: row.prijmeni,
-                          email,
-                          password,
-                          role,
-                        });
+                      if (!email.includes("@zedu-student.cz") && !email.includes("@zedu-lektor.cz") && !email.includes("@zedu-rodic.cz")) {
+                        try {
+                          await sendWelcomeEmail({
+                            to: email,
+                            firstName: row.jmeno,
+                            lastName: row.prijmeni,
+                            email,
+                            password,
+                            role,
+                          });
+                        } catch (emailErr) {
+                          console.warn("Email se nepodařilo odeslat:", emailErr);
+                        }
                       }
 
                       successCount++;
