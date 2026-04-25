@@ -1146,45 +1146,69 @@ const UsersManager = () => {
 
                       if (!isAdultStudent && role === "user") {
                         try {
-                          const parentLogin = (row.email_rodice && String(row.email_rodice).trim()) || `rodic.${username}@zedu-rodic.cz`;
-                          const parentPassword = Math.random().toString(36).slice(-8) + "Aa1!";
-                          const parentUsername = generateUsername("rodic", `${row.jmeno}.${row.prijmeni}`, usedUsernames);
-                          usedUsernames.push(parentUsername);
+                          const parentEmailValue = (row.email_rodice && String(row.email_rodice).trim()) || "";
+                          const parentLogin = parentEmailValue || `rodic.${username}@zedu-rodic.cz`;
 
-                          const { data: parentAuth, error: parentErr } = await supabase.functions.invoke("create-user", {
-                            body: { email: parentLogin, password: parentPassword, role: "rodic" }
-                          });
-                          if (parentErr) throw parentErr;
-                          const parentUserId = parentAuth?.user?.id || parentAuth?.id;
-                          if (!parentUserId) throw new Error("Nepodařilo se vytvořit účet rodiče");
+                          // Zkontroluj zda rodič již existuje (sdílený rodič pro sourozence)
+                          const { data: existingParent } = await supabase
+                            .from("profiles")
+                            .select("id")
+                            .eq("email", parentLogin)
+                            .maybeSingle();
 
-                          await supabase.from("profiles").upsert({
-                            id: parentUserId,
-                            first_name: "Rodič",
-                            last_name: `${row.jmeno || ""} ${row.prijmeni || ""}`.trim(),
-                            email: parentLogin,
-                            status: "approved" as any,
-                            login_password: parentPassword,
-                            username: parentUsername,
-                            parent_email: (row.email_rodice && String(row.email_rodice).trim()) || null,
-                          });
+                          let parentId: string | undefined;
 
-                          await supabase.from("user_roles").insert({ user_id: parentUserId, role: "rodic" as any });
+                          if (existingParent?.id) {
+                            parentId = existingParent.id;
+                          } else {
+                            const parentPassword = Math.random().toString(36).slice(-8) + "Aa1!";
+                            const { data: parentAuth, error: parentErr } = await supabase.functions.invoke("create-user", {
+                              body: { email: parentLogin, password: parentPassword, role: "rodic" }
+                            });
+                            if (parentErr) throw parentErr;
+                            parentId = parentAuth?.user?.id || parentAuth?.id;
 
-                          await supabase.from("parent_student_links" as any).insert({
-                            parent_id: parentUserId,
-                            student_id: userId,
-                          });
+                            if (parentId) {
+                              const parentUsername = generateUsername("rodic", sanitizeStr(row.jmeno) + sanitizeStr(row.prijmeni), usedUsernames);
+                              usedUsernames.push(parentUsername);
+                              await supabase.from("profiles").upsert({
+                                id: parentId,
+                                first_name: "Rodič",
+                                last_name: `${row.jmeno} ${row.prijmeni}`,
+                                email: parentLogin,
+                                status: "approved" as any,
+                                login_password: parentPassword,
+                                username: parentUsername,
+                                parent_email: parentEmailValue || null,
+                              });
+                              await supabase.from("user_roles").insert({ user_id: parentId, role: "rodic" as any });
+                              importedUsersList.push({
+                                firstName: "Rodič",
+                                lastName: `${row.jmeno} ${row.prijmeni}`,
+                                email: parentLogin,
+                                password: parentPassword,
+                                role: "rodic",
+                                username: parentUsername,
+                              });
+                            }
+                          }
 
-                          importedUsersList.push({
-                            firstName: "Rodič",
-                            lastName: `${row.jmeno} ${row.prijmeni}`,
-                            email: parentLogin,
-                            password: parentPassword,
-                            role: "rodic",
-                            username: parentUsername,
-                            studentCode: "",
-                          });
+                          // Vždy přidej propojení rodič-žák (pokud ještě neexistuje)
+                          if (parentId) {
+                            const { data: existingLink } = await supabase
+                              .from("parent_student_links" as any)
+                              .select("id")
+                              .eq("parent_id", parentId)
+                              .eq("student_id", userId)
+                              .maybeSingle();
+
+                            if (!existingLink) {
+                              await supabase.from("parent_student_links" as any).insert({
+                                parent_id: parentId,
+                                student_id: userId,
+                              });
+                            }
+                          }
                         } catch (pe: any) {
                           console.error("Parent creation error:", pe);
                           errors.push(`${row.jmeno} ${row.prijmeni} (rodič): ${pe.message}`);
