@@ -152,7 +152,6 @@ const UsersManager = () => {
   const [importing, setImporting] = useState(false);
   const [importErrors, setImportErrors] = useState<string[]>([]);
   const [importedUsers, setImportedUsers] = useState<LoginCardData[]>([]);
-  const [lastImportedUsers, setLastImportedUsers] = useState<LoginCardData[]>([]);
   const [parentLinkMap, setParentLinkMap] = useState<Map<string, string>>(new Map());
 
   const fetchUsers = async () => {
@@ -527,7 +526,7 @@ const UsersManager = () => {
                 </TableCell>
                 <TableCell className="font-medium whitespace-nowrap">
                   <div className="flex flex-col">
-                    <span>{user.first_name} {user.last_name}</span>
+                    <span>{user.first_name || ""} {user.last_name || ""}</span>
                     {user.role === "rodic" && parentLinkMap.get(user.id) && (
                       <span className="text-xs text-muted-foreground">
                         👨‍👩‍👧 {parentLinkMap.get(user.id)}
