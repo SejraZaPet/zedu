@@ -1114,10 +1114,11 @@ const UsersManager = () => {
                   const importedUsersList: LoginCardData[] = [];
                   const existingEmails = users.map(u => u.email);
                   const usedEmails: string[] = [...existingEmails];
-                  const existingUsernames = users.map(u => u.username).filter(Boolean) as string[];
-                  const usedUsernames: string[] = [...existingUsernames];
+                   const existingUsernames = users.map(u => u.username).filter(Boolean) as string[];
+                   const usedUsernames: string[] = [...existingUsernames];
+                   const parentEmailToId = new Map<string, string>();
 
-                  for (const row of importPreview) {
+                   for (const row of importPreview) {
                     try {
                       const sanitizeStr = (s: string) => (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
 
