@@ -86,6 +86,7 @@ const ProfilePage = () => {
       setSchool(data.school || "");
       setFieldOfStudy(data.field_of_study || "");
       setYear(data.year ? String(data.year) : "");
+      setParentEmail((data as any).parent_email || "");
       setLoading(false);
     };
 
