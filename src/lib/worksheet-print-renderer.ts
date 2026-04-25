@@ -227,7 +227,29 @@ body {
   margin: 0 3pt;
 }
 
-/* ─── Matching ─── */
+/* ─── Offline activity ─── */
+.ws-offline-activity {
+  margin: 4pt 0;
+  padding: 8pt 10pt;
+  border: 1pt dashed #6366f1;
+  border-radius: 4pt;
+  background: #eef2ff;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+.ws-offline-badge {
+  font-size: 9pt;
+  font-weight: 600;
+  color: #4338ca;
+  margin-bottom: 4pt;
+}
+.ws-offline-meta {
+  font-size: 8.5pt;
+  color: #475569;
+  display: flex;
+  gap: 12pt;
+}
+
 .ws-matching-table {
   width: 100%;
   border-collapse: collapse;
