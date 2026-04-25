@@ -735,6 +735,7 @@ export type Database = {
           school: string
           status: Database["public"]["Enums"]["account_status"]
           updated_at: string
+          username: string | null
           year: number | null
         }
         Insert: {
@@ -748,6 +749,7 @@ export type Database = {
           school?: string
           status?: Database["public"]["Enums"]["account_status"]
           updated_at?: string
+          username?: string | null
           year?: number | null
         }
         Update: {
@@ -761,6 +763,7 @@ export type Database = {
           school?: string
           status?: Database["public"]["Enums"]["account_status"]
           updated_at?: string
+          username?: string | null
           year?: number | null
         }
         Relationships: []

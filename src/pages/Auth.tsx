@@ -66,7 +66,21 @@ const Auth = () => {
     setLoading(true);
     setError("");
 
-    const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
+    let loginEmail = email.trim();
+    if (!loginEmail.includes("@")) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("email")
+        .eq("username", loginEmail.toLowerCase())
+        .maybeSingle();
+      if (!profile?.email) {
+        setError("Uživatelské jméno nenalezeno. Zkuste přihlášení pomocí emailu.");
+        setLoading(false);
+        return;
+      }
+      loginEmail = profile.email;
+    }
+    const { error: authError } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
 
     if (authError) {
       if (authError.message?.toLowerCase().includes("email not confirmed")) {
@@ -293,8 +307,8 @@ const Auth = () => {
         {mode === "login" ? (
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <Label htmlFor="email">E-mail</Label>
-              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" className="mt-1" />
+              <Label htmlFor="email">E-mail nebo uživatelské jméno</Label>
+              <Input id="email" type="text" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="username" placeholder="email@domena.cz nebo anovakova" className="mt-1" />
             </div>
             <div>
               <Label htmlFor="password">Heslo</Label>
