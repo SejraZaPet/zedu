@@ -349,6 +349,8 @@ const UsersManager = () => {
                     "role": "role",
                     "zletily": "zletily",
                     "zletilý": "zletily",
+                    "zletila": "zletily",
+                    "adult": "zletily",
                   };
 
                   rows = allRows
