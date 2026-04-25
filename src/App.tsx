@@ -42,6 +42,9 @@ import TodoPage from "./pages/TodoPage";
 import StudentCalendar from "./pages/StudentCalendar";
 import TeacherCalendar from "./pages/TeacherCalendar";
 import NotificationsPage from "./pages/NotificationsPage";
+import TeacherWorksheets from "./pages/TeacherWorksheets";
+import WorksheetEditor from "./pages/WorksheetEditor";
+import StudentWorksheetView from "./pages/StudentWorksheetView";
 
 const queryClient = new QueryClient();
 
@@ -91,6 +94,9 @@ const App = () => (
             <Route path="/student/kalendar" element={<ProtectedRoute><StudentCalendar /></ProtectedRoute>} />
             <Route path="/ucitel/kalendar" element={<ProtectedRoute><TeacherCalendar /></ProtectedRoute>} />
             <Route path="/notifikace" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
+            <Route path="/ucitel/pracovni-listy" element={<ProtectedRoute><TeacherWorksheets /></ProtectedRoute>} />
+            <Route path="/ucitel/pracovni-listy/:id" element={<ProtectedRoute><WorksheetEditor /></ProtectedRoute>} />
+            <Route path="/student/pracovni-list/:id" element={<ProtectedRoute><StudentWorksheetView /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
