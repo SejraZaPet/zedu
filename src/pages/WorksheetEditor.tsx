@@ -84,7 +84,18 @@ import {
   GROUP_SIZE_LABELS,
 } from "@/lib/worksheet-defaults";
 import { OFFLINE_MODE_META } from "@/lib/worksheet-offline-meta";
-import { splitLessonContent, type LessonBlock } from "@/lib/lesson-content-splitter";
+import {
+  splitLessonContent,
+  extractTextFromBlocks,
+  type LessonBlock,
+} from "@/lib/lesson-content-splitter";
+
+type LessonOption = {
+  id: string;
+  title: string;
+  type: "global" | "teacher";
+  textbookId: string | null;
+};
 import {
   WORKSHEET_TEMPLATES,
   buildTemplate,
@@ -160,7 +171,7 @@ export default function WorksheetEditor() {
 
   const [sourceLessonId, setSourceLessonId] = useState<string | null>(null);
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
-  const [allLessons, setAllLessons] = useState<Array<{ id: string; title: string }>>([]);
+  const [allLessons, setAllLessons] = useState<LessonOption[]>([]);
   const [activeLessonContent, setActiveLessonContent] = useState<string>("");
 
   const [suggestionDialog, setSuggestionDialog] = useState<{
@@ -235,34 +246,64 @@ export default function WorksheetEditor() {
     })();
   }, [authLoading, user, id, navigate]);
 
-  // ── Načtení seznamu lekcí (pro Combobox) ──
+  // ── Načtení seznamu lekcí (globální + učitelské) pro Combobox ──
   useEffect(() => {
     if (!user) return;
     (async () => {
-      const { data } = await supabase
-        .from("lessons")
-        .select("id, title")
-        .order("title", { ascending: true })
-        .limit(200);
-      setAllLessons((data as any) ?? []);
+      const [globalRes, teacherRes] = await Promise.all([
+        supabase
+          .from("textbook_lessons")
+          .select("id, title, topic_id")
+          .order("title", { ascending: true })
+          .limit(500),
+        supabase
+          .from("teacher_textbook_lessons")
+          .select("id, title, textbook_id")
+          .order("title", { ascending: true })
+          .limit(200),
+      ]);
+      const merged: LessonOption[] = [
+        ...(((globalRes.data ?? []) as any[]).map((l) => ({
+          id: l.id,
+          title: l.title,
+          type: "global" as const,
+          textbookId: l.topic_id ?? null,
+        }))),
+        ...(((teacherRes.data ?? []) as any[]).map((l) => ({
+          id: l.id,
+          title: l.title,
+          type: "teacher" as const,
+          textbookId: l.textbook_id ?? null,
+        }))),
+      ];
+      setAllLessons(merged);
     })();
   }, [user]);
 
-  // ── Načtení obsahu vybrané lekce ──
+  // ── Načtení obsahu vybrané lekce (z odpovídající tabulky) ──
   useEffect(() => {
     if (!activeLessonId) {
       setActiveLessonContent("");
       return;
     }
+    const opt = allLessons.find((l) => l.id === activeLessonId);
+    if (!opt) {
+      // může se stát před prvním načtením seznamu — zkusíme oba zdroje
+      return;
+    }
     (async () => {
+      const tableName =
+        opt.type === "global" ? "textbook_lessons" : "teacher_textbook_lessons";
       const { data } = await supabase
-        .from("lessons")
-        .select("content, title")
+        .from(tableName as any)
+        .select("blocks, title")
         .eq("id", activeLessonId)
         .maybeSingle();
-      setActiveLessonContent((data as any)?.content ?? "");
+      const row = (data as any) ?? {};
+      // obě tabulky používají jsonb `blocks`
+      setActiveLessonContent(extractTextFromBlocks(row.blocks));
     })();
-  }, [activeLessonId]);
+  }, [activeLessonId, allLessons]);
 
   // ── Auto-save ──
   useEffect(() => {
@@ -639,7 +680,7 @@ export default function WorksheetEditor() {
         className="sticky z-30 bg-background/95 backdrop-blur border-b border-border"
         style={{ top: "70px" }}
       >
-        <div className="container mx-auto px-4 py-3 flex items-center gap-3 max-w-7xl">
+        <div className="container mx-auto px-4 py-3 flex items-center gap-3 max-w-[1600px]">
           <Button variant="ghost" size="sm" onClick={() => navigate("/ucitel/pracovni-listy")}>
             <ChevronLeft className="w-4 h-4 mr-1" /> Zpět
           </Button>
@@ -678,8 +719,8 @@ export default function WorksheetEditor() {
         </div>
       </div>
 
-      <main className="flex-1 container mx-auto px-4 py-6 max-w-7xl">
-        <div className="grid gap-4 lg:grid-cols-[260px_1fr_340px]">
+      <main className="flex-1 container mx-auto px-4 py-6 max-w-[1600px] w-full">
+        <div className="grid gap-4 lg:grid-cols-[240px_minmax(0,1fr)_340px]">
           {/* ── PALETA ── */}
           <aside className="bg-card border border-border rounded-xl p-4 lg:sticky lg:top-[140px] lg:max-h-[calc(100vh-160px)] lg:overflow-y-auto">
             <h3 className="font-heading text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
@@ -740,11 +781,24 @@ export default function WorksheetEditor() {
                 <SelectTrigger className="h-8 text-xs">
                   <SelectValue placeholder="Vyber lekci…" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-[60vh]">
                   <SelectItem value="__none__">— Žádná —</SelectItem>
+                  {allLessons.length === 0 && (
+                    <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                      Žádné lekce k dispozici
+                    </div>
+                  )}
                   {allLessons.map((l) => (
-                    <SelectItem key={l.id} value={l.id}>
-                      {l.title}
+                    <SelectItem key={`${l.type}-${l.id}`} value={l.id}>
+                      <span className="inline-flex items-center gap-1.5">
+                        <Badge
+                          variant={l.type === "global" ? "secondary" : "outline"}
+                          className="text-[10px] px-1.5 py-0 h-4"
+                        >
+                          {l.type === "global" ? "Globální" : "Vlastní"}
+                        </Badge>
+                        <span className="truncate">{l.title}</span>
+                      </span>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -809,7 +863,7 @@ export default function WorksheetEditor() {
           </aside>
 
           {/* ── CANVAS ── */}
-          <section className="bg-card border border-border rounded-xl p-6">
+          <section className="bg-card border border-border rounded-xl p-6 min-w-0">
             {/* Hlavička pracovního listu */}
             <div className="grid sm:grid-cols-2 gap-3 mb-6 pb-6 border-b border-border">
               <div>
@@ -911,7 +965,7 @@ export default function WorksheetEditor() {
           </section>
 
           {/* ── PROPERTIES ── */}
-          <aside className="bg-card border border-border rounded-xl p-4 lg:sticky lg:top-[140px] lg:max-h-[calc(100vh-160px)] lg:overflow-y-auto">
+          <aside className="bg-card border border-border rounded-xl p-4 min-w-0 lg:sticky lg:top-[140px] lg:max-h-[calc(100vh-160px)] lg:overflow-y-auto lg:overflow-x-hidden">
             <h3 className="font-heading text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
               Vlastnosti
             </h3>

@@ -59,3 +59,41 @@ export function splitLessonContent(content: string): LessonBlock[] {
     .filter((x): x is LessonBlock => x !== null)
     .slice(0, 30); // safety cap
 }
+
+/**
+ * Extrahuje plain-text / markdown z blokové struktury (jsonb `blocks`)
+ * používané v učitelských lekcích a textbook_lessons.
+ */
+export function extractTextFromBlocks(blocks: unknown): string {
+  if (!Array.isArray(blocks)) return "";
+  const stripHtml = (s: unknown) =>
+    String(s ?? "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  const parts: string[] = [];
+
+  for (const b of blocks as any[]) {
+    if (!b || typeof b !== "object") continue;
+    const p = b.props ?? {};
+    switch (b.type) {
+      case "heading":
+        if (p.text) parts.push(`# ${stripHtml(p.text)}`);
+        break;
+      case "paragraph":
+        if (p.text) parts.push(stripHtml(p.text));
+        break;
+      case "bullet_list": {
+        const items: unknown[] = Array.isArray(p.items) ? p.items : [];
+        for (const it of items) parts.push(`- ${stripHtml(it)}`);
+        break;
+      }
+      case "callout":
+      case "quote":
+      case "summary":
+        if (p.text) parts.push(stripHtml(p.text));
+        break;
+      default:
+        break;
+    }
+  }
+  return parts.filter(Boolean).join("\n");
+}
+
