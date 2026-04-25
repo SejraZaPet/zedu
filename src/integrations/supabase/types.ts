@@ -732,8 +732,10 @@ export type Database = {
           id: string
           last_name: string
           login_password: string | null
+          parent_email: string | null
           school: string
           status: Database["public"]["Enums"]["account_status"]
+          student_code: string | null
           updated_at: string
           username: string | null
           year: number | null
@@ -746,8 +748,10 @@ export type Database = {
           id: string
           last_name?: string
           login_password?: string | null
+          parent_email?: string | null
           school?: string
           status?: Database["public"]["Enums"]["account_status"]
+          student_code?: string | null
           updated_at?: string
           username?: string | null
           year?: number | null
@@ -760,8 +764,10 @@ export type Database = {
           id?: string
           last_name?: string
           login_password?: string | null
+          parent_email?: string | null
           school?: string
           status?: Database["public"]["Enums"]["account_status"]
+          student_code?: string | null
           updated_at?: string
           username?: string | null
           year?: number | null
