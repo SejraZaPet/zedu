@@ -245,6 +245,40 @@ const StudentGamePlay = () => {
                       onComplete={() => {}}
                     />
                   )
+                ) : (currentSlideData as any).activitySpec?.activityType === "poll" ? (
+                  (() => {
+                    const spec = (currentSlideData as any).activitySpec || {};
+                    const options = Array.isArray(spec.options) ? spec.options : [];
+                    const question = spec.question || "";
+                    const allowMultiple = liveSettings?.pollAllowMultiple ?? spec.allowMultiple ?? false;
+                    const published =
+                      liveSettings?.pollPublished === true &&
+                      liveSettings?.pollPublishedQuestion === qi;
+                    if (published) {
+                      return (
+                        <div className="border border-border rounded-xl p-4 bg-card">
+                          <PollProjectorView
+                            question={question}
+                            options={options}
+                            sessionId={sessionId || ""}
+                            questionIndex={qi}
+                            totalPlayers={players.length}
+                          />
+                        </div>
+                      );
+                    }
+                    return (
+                      <PollActivity
+                        question={question}
+                        options={options}
+                        allowMultiple={allowMultiple}
+                        sessionId={sessionId}
+                        questionIndex={qi}
+                        playerId={playerId}
+                        onComplete={() => {}}
+                      />
+                    );
+                  })()
                 ) : (
                   <LessonBlockRenderer
                     block={{
