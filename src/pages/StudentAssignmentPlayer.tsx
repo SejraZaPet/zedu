@@ -22,6 +22,7 @@ interface AssignmentData {
   randomize_order: boolean;
   activity_data: any[];
   settings: any;
+  worksheet_id?: string | null;
 }
 
 interface AttemptData {
