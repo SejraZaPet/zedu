@@ -794,6 +794,13 @@ const UsersManager = () => {
               onClick={async () => {
                 setCreating(true);
                 try {
+                  // Ověř, že session admina je platná (jinak edge funkce vrátí 401)
+                  const { data: sessionData } = await supabase.auth.getSession();
+                  if (!sessionData?.session) {
+                    await supabase.auth.signOut();
+                    throw new Error("Vaše přihlášení vypršelo. Přihlaste se prosím znovu.");
+                  }
+
                   const existingEmails = users.map(u => u.email);
                   const email = newUser.email || generateStudentEmail(newUser.first_name, newUser.last_name, existingEmails, newUser.role);
                   const password = Math.random().toString(36).slice(-8) + "Aa1!";
@@ -804,7 +811,12 @@ const UsersManager = () => {
 
                   if (authError) {
                     console.error("create-user error:", authError);
-                    throw new Error(authError.message || "Chyba při vytváření účtu");
+                    const msg = (authError as any)?.message || "";
+                    if (msg.includes("401") || msg.toLowerCase().includes("unauthorized")) {
+                      await supabase.auth.signOut();
+                      throw new Error("Vaše přihlášení vypršelo. Přihlaste se prosím znovu.");
+                    }
+                    throw new Error(msg || "Chyba při vytváření účtu");
                   }
 
                   const userId = authData?.user?.id || authData?.id;
