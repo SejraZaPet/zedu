@@ -109,6 +109,10 @@ function scoreWorksheet(
         // open answers need manual grading — auto-score as 0
         correct = false;
         break;
+      case "offline_activity":
+        // offline activities are not auto-scored — points awarded manually by teacher
+        correct = false;
+        break;
     }
 
     perItem[item.id] = { correct, points: correct ? item.points : 0 };
@@ -128,6 +132,7 @@ const TYPE_LABELS: Record<string, string> = {
   ordering: "Seřazení",
   short_answer: "Krátká odpověď",
   open_answer: "Otevřená odpověď",
+  offline_activity: "Offline aktivita",
 };
 
 const DIFFICULTY_COLORS: Record<string, string> = {
