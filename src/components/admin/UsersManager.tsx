@@ -333,6 +333,8 @@ const UsersManager = () => {
                     "trida": "trida",
                     "rocnik": "rocnik",
                     "role": "role",
+                    "zletily": "zletily",
+                    "zletilý": "zletily",
                   };
 
                   rows = allRows
