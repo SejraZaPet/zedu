@@ -123,6 +123,7 @@ export type Database = {
           teacher_id: string
           title: string
           updated_at: string
+          worksheet_id: string | null
         }
         Insert: {
           activity_data?: Json
@@ -140,6 +141,7 @@ export type Database = {
           teacher_id: string
           title?: string
           updated_at?: string
+          worksheet_id?: string | null
         }
         Update: {
           activity_data?: Json
@@ -157,6 +159,7 @@ export type Database = {
           teacher_id?: string
           title?: string
           updated_at?: string
+          worksheet_id?: string | null
         }
         Relationships: [
           {
@@ -171,6 +174,13 @@ export type Database = {
             columns: ["lesson_plan_id"]
             isOneToOne: false
             referencedRelation: "lesson_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignments_worksheet_id_fkey"
+            columns: ["worksheet_id"]
+            isOneToOne: false
+            referencedRelation: "worksheets"
             referencedColumns: ["id"]
           },
         ]
@@ -1423,6 +1433,51 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      worksheets: {
+        Row: {
+          created_at: string
+          grade_band: string
+          id: string
+          source_lesson_id: string | null
+          source_lesson_type: string | null
+          spec: Json
+          status: string
+          subject: string
+          teacher_id: string
+          title: string
+          updated_at: string
+          worksheet_mode: string
+        }
+        Insert: {
+          created_at?: string
+          grade_band?: string
+          id?: string
+          source_lesson_id?: string | null
+          source_lesson_type?: string | null
+          spec?: Json
+          status?: string
+          subject?: string
+          teacher_id: string
+          title?: string
+          updated_at?: string
+          worksheet_mode?: string
+        }
+        Update: {
+          created_at?: string
+          grade_band?: string
+          id?: string
+          source_lesson_id?: string | null
+          source_lesson_type?: string | null
+          spec?: Json
+          status?: string
+          subject?: string
+          teacher_id?: string
+          title?: string
+          updated_at?: string
+          worksheet_mode?: string
         }
         Relationships: []
       }
