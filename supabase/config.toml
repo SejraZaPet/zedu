@@ -47,3 +47,5 @@ verify_jwt = false
 
 [functions.generate-video-checkpoints]
 verify_jwt = false
+[functions.lookup-username]
+verify_jwt = false
