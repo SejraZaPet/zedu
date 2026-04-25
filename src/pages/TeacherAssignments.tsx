@@ -138,7 +138,6 @@ const TeacherAssignments = () => {
     setRandomizeChoices(false);
     setRandomizeOrder(false);
     setSelectedClassId("");
-    setGeneratedQuestions([]);
     setSelectedWorksheetId("");
   };
 
