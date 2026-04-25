@@ -1114,10 +1114,11 @@ const UsersManager = () => {
                   const importedUsersList: LoginCardData[] = [];
                   const existingEmails = users.map(u => u.email);
                   const usedEmails: string[] = [...existingEmails];
-                  const existingUsernames = users.map(u => u.username).filter(Boolean) as string[];
-                  const usedUsernames: string[] = [...existingUsernames];
+                   const existingUsernames = users.map(u => u.username).filter(Boolean) as string[];
+                   const usedUsernames: string[] = [...existingUsernames];
+                   const parentEmailToId = new Map<string, string>();
 
-                  for (const row of importPreview) {
+                   for (const row of importPreview) {
                     try {
                       const sanitizeStr = (s: string) => (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
 
@@ -1184,49 +1185,58 @@ const UsersManager = () => {
                       if (!isAdultStudent && role === "user") {
                         try {
                           const parentEmailValue = (row.email_rodice && String(row.email_rodice).trim()) || "";
-                          const parentLogin = parentEmailValue || `rodic.${username}@zedu-rodic.cz`;
-
-                          // Zkontroluj zda rodič již existuje (sdílený rodič pro sourozence)
-                          const { data: existingParent } = await supabase
-                            .from("profiles")
-                            .select("id")
-                            .eq("email", parentLogin)
-                            .maybeSingle();
+                          const parentLogin = parentEmailValue || `rodic.${sanitizeStr(row.jmeno)}${sanitizeStr(row.prijmeni)}@zedu-rodic.cz`;
 
                           let parentId: string | undefined;
 
-                          if (existingParent?.id) {
-                            parentId = existingParent.id;
+                          // Zkontroluj jestli jsme tento rodičovský účet již vytvořili v tomto importu
+                          if (parentEmailToId.has(parentLogin)) {
+                            parentId = parentEmailToId.get(parentLogin);
                           } else {
-                            const parentPassword = Math.random().toString(36).slice(-8) + "Aa1!";
-                            const { data: parentAuth, error: parentErr } = await supabase.functions.invoke("create-user", {
-                              body: { email: parentLogin, password: parentPassword, role: "rodic" }
-                            });
-                            if (parentErr) throw parentErr;
-                            parentId = parentAuth?.user?.id || parentAuth?.id;
+                            // Zkontroluj jestli rodič existuje v databázi
+                            const { data: existingParent } = await supabase
+                              .from("profiles")
+                              .select("id")
+                              .eq("email", parentLogin)
+                              .maybeSingle();
 
-                            if (parentId) {
-                              const parentUsername = generateUsername("rodic", sanitizeStr(row.jmeno) + sanitizeStr(row.prijmeni), usedUsernames);
-                              usedUsernames.push(parentUsername);
-                              await supabase.from("profiles").upsert({
-                                id: parentId,
-                                first_name: "Rodič",
-                                last_name: `${row.jmeno} ${row.prijmeni}`,
-                                email: parentLogin,
-                                status: "approved" as any,
-                                login_password: parentPassword,
-                                username: parentUsername,
-                                parent_email: parentEmailValue || null,
+                            if (existingParent?.id) {
+                              parentId = existingParent.id;
+                              parentEmailToId.set(parentLogin, parentId);
+                            } else {
+                              const parentPassword = Math.random().toString(36).slice(-8) + "Aa1!";
+                              const { data: parentAuth, error: parentErr } = await supabase.functions.invoke("create-user", {
+                                body: { email: parentLogin, password: parentPassword, role: "rodic" }
                               });
-                              await supabase.from("user_roles").insert({ user_id: parentId, role: "rodic" as any });
-                              importedUsersList.push({
-                                firstName: "Rodič",
-                                lastName: `${row.jmeno} ${row.prijmeni}`,
-                                email: parentLogin,
-                                password: parentPassword,
-                                role: "rodic",
-                                username: parentUsername,
-                              });
+                              if (parentErr) throw parentErr;
+                              parentId = parentAuth?.user?.id || parentAuth?.id;
+
+                              if (parentId) {
+                                const parentUsername = generateUsername("rodic", sanitizeStr(row.jmeno) + sanitizeStr(row.prijmeni), usedUsernames);
+                                usedUsernames.push(parentUsername);
+                                parentEmailToId.set(parentLogin, parentId);
+
+                                await supabase.from("profiles").upsert({
+                                  id: parentId,
+                                  first_name: "Rodič",
+                                  last_name: `${row.jmeno} ${row.prijmeni}`,
+                                  email: parentLogin,
+                                  status: "approved" as any,
+                                  login_password: parentPassword,
+                                  username: parentUsername,
+                                  parent_email: parentEmailValue || null,
+                                });
+                                await supabase.from("user_roles").insert({ user_id: parentId, role: "rodic" as any });
+                                importedUsersList.push({
+                                  firstName: "Rodič",
+                                  lastName: `${row.jmeno} ${row.prijmeni}`,
+                                  email: parentLogin,
+                                  password: parentPassword,
+                                  role: "rodic",
+                                  username: parentUsername,
+                                  childCodes: [studentCode],
+                                });
+                              }
                             }
                           }
 
@@ -1244,6 +1254,14 @@ const UsersManager = () => {
                                 parent_id: parentId,
                                 student_id: userId,
                               });
+                            }
+
+                            // Přidej kód žáka k existujícímu rodiči v seznamu tisku
+                            const existingParentCard = importedUsersList.find(u => u.email === parentLogin && u.role === "rodic");
+                            if (existingParentCard) {
+                              if (!existingParentCard.childCodes?.includes(studentCode)) {
+                                existingParentCard.childCodes = [...(existingParentCard.childCodes || []), studentCode];
+                              }
                             }
                           }
                         } catch (pe: any) {
