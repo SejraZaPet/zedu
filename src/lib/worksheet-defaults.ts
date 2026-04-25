@@ -162,7 +162,12 @@ export function recomputeMetadata(spec: WorksheetSpec): WorksheetSpec {
   items.forEach((it, idx) => {
     it.itemNumber = idx + 1;
     totalPoints += it.points || 0;
-    totalSec += it.timeEstimateSec || 0;
+    // Pro offline aktivity preferuj durationMin (v minutách), jinak timeEstimateSec
+    if (it.type === "offline_activity" && typeof it.durationMin === "number" && it.durationMin > 0) {
+      totalSec += it.durationMin * 60;
+    } else {
+      totalSec += it.timeEstimateSec || 0;
+    }
     diff[it.difficulty] = (diff[it.difficulty] || 0) + 1;
     typeDist[it.type] = (typeDist[it.type] || 0) + 1;
   });
