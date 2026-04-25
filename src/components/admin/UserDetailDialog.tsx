@@ -4,7 +4,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -30,7 +29,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Trash2, Save } from "lucide-react";
+import { Trash2, Save, Pencil } from "lucide-react";
 
 interface UserProfile {
   id: string;
@@ -52,34 +51,35 @@ interface Props {
   onUpdated: () => void;
 }
 
-const statusLabels: Record<string, string> = {
-  pending: "Čeká na schválení",
-  approved: "Schválený",
-  blocked: "Zablokovaný",
-};
-
 const UserDetailDialog = ({ user, open, onOpenChange, onUpdated }: Props) => {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [lastSignIn, setLastSignIn] = useState<string | null>(null);
 
-  // Editable fields
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [school, setSchool] = useState("");
-  const [fieldOfStudy, setFieldOfStudy] = useState("");
-  const [year, setYear] = useState("");
+  const [editMode, setEditMode] = useState(false);
+  const [editData, setEditData] = useState({
+    first_name: "",
+    last_name: "",
+    school: "",
+    year: "",
+    field_of_study: "",
+  });
+
+  // Status & role still editable separately
   const [status, setStatus] = useState("");
   const [role, setRole] = useState("");
 
   useEffect(() => {
     if (user) {
-      setFirstName(user.first_name);
-      setLastName(user.last_name);
-      setSchool(user.school);
-      setFieldOfStudy(user.field_of_study);
-      setYear(user.year ? String(user.year) : "");
+      setEditData({
+        first_name: user.first_name || "",
+        last_name: user.last_name || "",
+        school: user.school || "",
+        year: user.year ? String(user.year) : "",
+        field_of_study: user.field_of_study || "",
+      });
+      setEditMode(false);
       setStatus(user.status);
       setRole(user.role || "user");
       setLastSignIn(null);
@@ -100,21 +100,38 @@ const UserDetailDialog = ({ user, open, onOpenChange, onUpdated }: Props) => {
     }
   };
 
-  const handleSave = async () => {
+  const handleSaveProfile = async () => {
+    if (!user) return;
+    setSaving(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        first_name: editData.first_name,
+        last_name: editData.last_name,
+        school: editData.school,
+        year: editData.year ? parseInt(editData.year) : null,
+        field_of_study: editData.field_of_study,
+      })
+      .eq("id", user.id);
+
+    if (error) {
+      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+      setSaving(false);
+      return;
+    }
+    toast({ title: "Uloženo", description: "Profil byl aktualizován." });
+    setEditMode(false);
+    setSaving(false);
+    onUpdated();
+  };
+
+  const handleSaveStatusRole = async () => {
     if (!user) return;
     setSaving(true);
 
-    // Update profile
     const { error: profileError } = await supabase
       .from("profiles")
-      .update({
-        first_name: firstName,
-        last_name: lastName,
-        school,
-        field_of_study: fieldOfStudy,
-        year: year ? parseInt(year) : null,
-        status: status as any,
-      })
+      .update({ status: status as any })
       .eq("id", user.id);
 
     if (profileError) {
@@ -123,11 +140,8 @@ const UserDetailDialog = ({ user, open, onOpenChange, onUpdated }: Props) => {
       return;
     }
 
-    // Update role if changed
     if (role !== user.role) {
-      // Delete existing role
       await supabase.from("user_roles").delete().eq("user_id", user.id);
-      // Insert new role
       const { error: roleError } = await supabase
         .from("user_roles")
         .insert({ user_id: user.id, role: role as any });
@@ -139,7 +153,7 @@ const UserDetailDialog = ({ user, open, onOpenChange, onUpdated }: Props) => {
       }
     }
 
-    toast({ title: "Uloženo", description: "Údaje uživatele byly aktualizovány." });
+    toast({ title: "Uloženo", description: "Stav a role byly aktualizovány." });
     setSaving(false);
     onUpdated();
     onOpenChange(false);
@@ -148,19 +162,13 @@ const UserDetailDialog = ({ user, open, onOpenChange, onUpdated }: Props) => {
   const handleDelete = async () => {
     if (!user) return;
     setDeleting(true);
-
-    // Delete profile (cascade should handle user_roles via FK)
     const { error } = await supabase.from("profiles").delete().eq("id", user.id);
-
     if (error) {
       toast({ title: "Chyba", description: error.message, variant: "destructive" });
       setDeleting(false);
       return;
     }
-
-    // Also delete role entries
     await supabase.from("user_roles").delete().eq("user_id", user.id);
-
     toast({ title: "Smazáno", description: "Uživatel byl odstraněn." });
     setDeleting(false);
     onUpdated();
@@ -171,46 +179,115 @@ const UserDetailDialog = ({ user, open, onOpenChange, onUpdated }: Props) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Detail uživatele</DialogTitle>
+          <div className="flex items-center justify-between gap-2">
+            <DialogTitle>Detail uživatele</DialogTitle>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setEditMode(!editMode)}
+              className="mr-6"
+            >
+              {editMode ? (
+                "Zrušit"
+              ) : (
+                <>
+                  <Pencil className="w-3.5 h-3.5 mr-1" /> Upravit
+                </>
+              )}
+            </Button>
+          </div>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label>Jméno</Label>
-              <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} className="mt-1" />
+          {editMode ? (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Jméno</Label>
+                  <Input
+                    value={editData.first_name}
+                    onChange={(e) => setEditData({ ...editData, first_name: e.target.value })}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label>Příjmení</Label>
+                  <Input
+                    value={editData.last_name}
+                    onChange={(e) => setEditData({ ...editData, last_name: e.target.value })}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label>Škola</Label>
+                <Input
+                  value={editData.school}
+                  onChange={(e) => setEditData({ ...editData, school: e.target.value })}
+                  className="mt-1"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Ročník</Label>
+                  <Input
+                    value={editData.year}
+                    onChange={(e) => setEditData({ ...editData, year: e.target.value })}
+                    className="mt-1"
+                    type="number"
+                    min="1"
+                    max="9"
+                  />
+                </div>
+                <div>
+                  <Label>Třída/Obor</Label>
+                  <Input
+                    value={editData.field_of_study}
+                    onChange={(e) => setEditData({ ...editData, field_of_study: e.target.value })}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+              <Button className="w-full" onClick={handleSaveProfile} disabled={saving}>
+                <Save className="w-4 h-4 mr-1" /> {saving ? "Ukládání..." : "Uložit změny"}
+              </Button>
             </div>
-            <div>
-              <Label>Příjmení</Label>
-              <Input value={lastName} onChange={(e) => setLastName(e.target.value)} className="mt-1" />
+          ) : (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <div className="text-muted-foreground">Jméno</div>
+                  <div className="font-medium">{user.first_name || "–"}</div>
+                </div>
+                <div>
+                  <div className="text-muted-foreground">Příjmení</div>
+                  <div className="font-medium">{user.last_name || "–"}</div>
+                </div>
+              </div>
+              <div className="text-sm">
+                <div className="text-muted-foreground">E-mail</div>
+                <div className="font-medium break-all">{user.email}</div>
+              </div>
+              <div className="text-sm">
+                <div className="text-muted-foreground">Škola</div>
+                <div className="font-medium">{user.school || "–"}</div>
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <div className="text-muted-foreground">Ročník</div>
+                  <div className="font-medium">{user.year ?? "–"}</div>
+                </div>
+                <div>
+                  <div className="text-muted-foreground">Třída/Obor</div>
+                  <div className="font-medium">{user.field_of_study || "–"}</div>
+                </div>
+              </div>
             </div>
-          </div>
+          )}
 
-          <div>
-            <Label>E-mail</Label>
-            <Input value={user.email} disabled className="mt-1 opacity-60" />
-            <p className="text-xs text-muted-foreground mt-1">E-mail nelze změnit.</p>
-          </div>
-
-          <div>
-            <Label>Škola</Label>
-            <Input value={school} onChange={(e) => setSchool(e.target.value)} className="mt-1" />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label>Obor</Label>
-              <Input value={fieldOfStudy} onChange={(e) => setFieldOfStudy(e.target.value)} className="mt-1" />
-            </div>
-            <div>
-              <Label>Ročník</Label>
-              <Input type="number" min="1" max="6" value={year} onChange={(e) => setYear(e.target.value)} className="mt-1" />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 border-t border-border pt-3">
             <div>
               <Label>Role</Label>
               <Select value={role} onValueChange={setRole}>
@@ -239,7 +316,6 @@ const UserDetailDialog = ({ user, open, onOpenChange, onUpdated }: Props) => {
             </div>
           </div>
 
-          {/* Read-only info */}
           <div className="border-t border-border pt-3 space-y-1">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Registrace:</span>
@@ -275,9 +351,9 @@ const UserDetailDialog = ({ user, open, onOpenChange, onUpdated }: Props) => {
             </AlertDialogContent>
           </AlertDialog>
 
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Zrušit</Button>
-          <Button onClick={handleSave} disabled={saving}>
-            <Save className="w-4 h-4 mr-1" /> {saving ? "Ukládání..." : "Uložit"}
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Zavřít</Button>
+          <Button onClick={handleSaveStatusRole} disabled={saving}>
+            <Save className="w-4 h-4 mr-1" /> {saving ? "Ukládání..." : "Uložit role/stav"}
           </Button>
         </DialogFooter>
       </DialogContent>
