@@ -49,3 +49,6 @@ verify_jwt = false
 verify_jwt = false
 [functions.lookup-username]
 verify_jwt = false
+
+[functions.create-user]
+verify_jwt = false
