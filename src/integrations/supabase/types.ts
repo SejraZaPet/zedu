@@ -795,6 +795,42 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          link: string | null
+          payload: Json
+          read_at: string | null
+          recipient_id: string
+          title: string
+          type: string
+        }
+        Insert: {
+          body?: string
+          created_at?: string
+          id?: string
+          link?: string | null
+          payload?: Json
+          read_at?: string | null
+          recipient_id: string
+          title: string
+          type: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          link?: string | null
+          payload?: Json
+          read_at?: string | null
+          recipient_id?: string
+          title?: string
+          type?: string
+        }
+        Relationships: []
+      }
       parent_student_links: {
         Row: {
           created_at: string | null
@@ -1461,11 +1497,21 @@ export type Database = {
         Args: { _code: string; _user_id: string }
         Returns: string
       }
+      notify_deadline_soon: { Args: never; Returns: undefined }
       owns_textbook: {
         Args: { _teacher_id: string; _textbook_id: string }
         Returns: boolean
       }
       reap_stale_export_jobs: { Args: never; Returns: number }
+      send_admin_notification: {
+        Args: {
+          _body: string
+          _link?: string
+          _recipient_ids: string[]
+          _title: string
+        }
+        Returns: number
+      }
     }
     Enums: {
       account_status: "pending" | "approved" | "blocked"
