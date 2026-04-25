@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") || Deno.env.get("RESEND_KEY");
+    const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") || Deno.env.get("RESEND_KEY") || "re_LCFx8wny_3ZdSostB5aZbqbBJ6UarFyzQ";
 
     if (!RESEND_API_KEY) {
       console.error("RESEND_API_KEY chybí. Dostupné proměnné:", JSON.stringify(
