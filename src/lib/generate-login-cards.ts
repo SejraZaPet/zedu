@@ -8,6 +8,7 @@ export interface LoginCardData {
   role?: string;
   username?: string;
   studentCode?: string;
+  childCodes?: string[];
 }
 
 const APP_URL = "https://www.zedu.cz";
