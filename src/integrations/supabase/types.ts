@@ -211,6 +211,65 @@ export type Database = {
           },
         ]
       }
+      class_schedule_slots: {
+        Row: {
+          bell_period_id: string | null
+          class_id: string
+          created_at: string
+          created_by: string | null
+          day_of_week: number
+          end_time: string
+          id: string
+          room: string | null
+          start_time: string
+          subject_label: string | null
+          updated_at: string
+          valid_from: string | null
+          valid_to: string | null
+          week_parity: string
+        }
+        Insert: {
+          bell_period_id?: string | null
+          class_id: string
+          created_at?: string
+          created_by?: string | null
+          day_of_week: number
+          end_time: string
+          id?: string
+          room?: string | null
+          start_time: string
+          subject_label?: string | null
+          updated_at?: string
+          valid_from?: string | null
+          valid_to?: string | null
+          week_parity?: string
+        }
+        Update: {
+          bell_period_id?: string | null
+          class_id?: string
+          created_at?: string
+          created_by?: string | null
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          room?: string | null
+          start_time?: string
+          subject_label?: string | null
+          updated_at?: string
+          valid_from?: string | null
+          valid_to?: string | null
+          week_parity?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_schedule_slots_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       class_teachers: {
         Row: {
           class_id: string
@@ -290,6 +349,7 @@ export type Database = {
           id: string
           name: string
           school: string
+          school_id: string | null
           teacher_join_code: string | null
           teacher_join_code_active: boolean
           updated_at: string
@@ -306,6 +366,7 @@ export type Database = {
           id?: string
           name: string
           school?: string
+          school_id?: string | null
           teacher_join_code?: string | null
           teacher_join_code_active?: boolean
           updated_at?: string
@@ -322,6 +383,7 @@ export type Database = {
           id?: string
           name?: string
           school?: string
+          school_id?: string | null
           teacher_join_code?: string | null
           teacher_join_code_active?: boolean
           updated_at?: string

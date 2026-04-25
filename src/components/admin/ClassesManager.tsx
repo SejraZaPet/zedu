@@ -30,8 +30,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Pencil, Archive, ArchiveRestore, Trash2, Users, Search, Key, KeyRound, Copy, RefreshCw, XCircle } from "lucide-react";
+import { Plus, Pencil, Archive, ArchiveRestore, Trash2, Users, Search, Key, KeyRound, Copy, RefreshCw, XCircle, Clock } from "lucide-react";
 import ClassMembersDialog from "./ClassMembersDialog";
+import ClassScheduleDialog from "./ClassScheduleDialog";
 
 interface ClassItem {
   id: string;
@@ -69,6 +70,9 @@ const ClassesManager = () => {
 
   // Members dialog
   const [membersClass, setMembersClass] = useState<ClassItem | null>(null);
+
+  // Schedule dialog
+  const [scheduleClass, setScheduleClass] = useState<{ id: string; name: string } | null>(null);
 
   // Delete dialog
   const [deleteTarget, setDeleteTarget] = useState<ClassItem | null>(null);
@@ -369,6 +373,9 @@ const ClassesManager = () => {
                     <Button size="sm" variant="ghost" onClick={() => openEdit(c)} className="h-8 px-2" title="Upravit">
                       <Pencil className="w-4 h-4" />
                     </Button>
+                    <Button size="sm" variant="ghost" onClick={() => setScheduleClass({ id: c.id, name: c.name })} className="h-8 px-2" title="Rozvrh">
+                      <Clock className="w-4 h-4" />
+                    </Button>
                     <Button
                       size="sm"
                       variant="ghost"
@@ -487,6 +494,16 @@ const ClassesManager = () => {
           open={!!membersClass}
           onOpenChange={(open) => !open && setMembersClass(null)}
           onUpdated={fetchClasses}
+        />
+      )}
+
+      {/* Schedule dialog */}
+      {scheduleClass && (
+        <ClassScheduleDialog
+          classId={scheduleClass.id}
+          className={scheduleClass.name}
+          open={!!scheduleClass}
+          onOpenChange={(open) => !open && setScheduleClass(null)}
         />
       )}
     </div>
