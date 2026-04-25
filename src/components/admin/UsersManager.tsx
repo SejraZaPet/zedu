@@ -997,8 +997,9 @@ const UsersManager = () => {
                           })
                           .filter((r: any) =>
                             r.jmeno && r.prijmeni &&
-                            !r.jmeno.toLowerCase().includes("jmeno") &&
+                            !r.jmeno.toLowerCase().includes("křestní") &&
                             !r.jmeno.toLowerCase().includes("krestni") &&
+                            !r.jmeno.toLowerCase().includes("vzorový") &&
                             !r.jmeno.toLowerCase().includes("vzorovy")
                           );
                       }
