@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
+import NotificationBell from "@/components/notifications/NotificationBell";
 
 interface NavItem {
   label: string;
@@ -129,6 +130,7 @@ const SiteHeader = () => {
           </nav>
           {isLoggedIn ? (
             <div className="flex items-center gap-2 ml-2 border-l border-border pl-4">
+              <NotificationBell />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className={`gap-2 ${location.pathname === "/profil" || location.pathname === "/admin" ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-primary"}`}>
