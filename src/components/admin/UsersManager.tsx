@@ -813,6 +813,7 @@ const UsersManager = () => {
                         year: null,
                         status: "approved" as any,
                         login_password: parentPassword,
+                        username: parentUsername,
                         parent_email: parentEmail.trim() || null,
                       });
 
