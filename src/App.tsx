@@ -41,6 +41,7 @@ import GdprPage from "./pages/GdprPage";
 import TodoPage from "./pages/TodoPage";
 import StudentCalendar from "./pages/StudentCalendar";
 import TeacherCalendar from "./pages/TeacherCalendar";
+import NotificationsPage from "./pages/NotificationsPage";
 
 const queryClient = new QueryClient();
 
@@ -89,6 +90,7 @@ const App = () => (
             <Route path="/todo" element={<ProtectedRoute><TodoPage /></ProtectedRoute>} />
             <Route path="/student/kalendar" element={<ProtectedRoute><StudentCalendar /></ProtectedRoute>} />
             <Route path="/ucitel/kalendar" element={<ProtectedRoute><TeacherCalendar /></ProtectedRoute>} />
+            <Route path="/notifikace" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
