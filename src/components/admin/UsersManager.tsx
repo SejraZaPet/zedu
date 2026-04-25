@@ -907,10 +907,10 @@ const UsersManager = () => {
                         parent_email: parentEmail.trim() || null,
                       });
 
-                      await supabase.from("user_roles").insert({
+                      await supabase.from("user_roles").upsert({
                         user_id: parentUserId,
                         role: "rodic" as any,
-                      });
+                      }, { onConflict: "user_id" });
 
                       await supabase.from("parent_student_links" as any).insert({
                         parent_id: parentUserId,
