@@ -39,6 +39,8 @@ import TeacherResults from "./pages/TeacherResults";
 import ParentDashboard from "./pages/ParentDashboard";
 import GdprPage from "./pages/GdprPage";
 import TodoPage from "./pages/TodoPage";
+import StudentCalendar from "./pages/StudentCalendar";
+import TeacherCalendar from "./pages/TeacherCalendar";
 
 const queryClient = new QueryClient();
 
@@ -85,6 +87,8 @@ const App = () => (
             <Route path="/napoveda/:guideId" element={<HelpDetailPage />} />
             <Route path="/gdpr" element={<GdprPage />} />
             <Route path="/todo" element={<ProtectedRoute><TodoPage /></ProtectedRoute>} />
+            <Route path="/student/kalendar" element={<ProtectedRoute><StudentCalendar /></ProtectedRoute>} />
+            <Route path="/ucitel/kalendar" element={<ProtectedRoute><TeacherCalendar /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
