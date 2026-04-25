@@ -830,6 +830,21 @@ const UsersManager = () => {
                     role: newUser.role as any,
                   });
 
+                  if (!email.includes("@zedu-student.cz") && !email.includes("@zedu-lektor.cz") && !email.includes("@zedu-rodic.cz")) {
+                    try {
+                      await sendWelcomeEmail({
+                        to: email,
+                        firstName: newUser.first_name,
+                        lastName: newUser.last_name,
+                        email,
+                        password,
+                        role: newUser.role,
+                      });
+                    } catch (e) {
+                      console.warn("Email neposlán:", e);
+                    }
+                  }
+
                   const printCards: LoginCardData[] = [{
                     firstName: newUser.first_name,
                     lastName: newUser.last_name,
