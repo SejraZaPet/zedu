@@ -30,7 +30,88 @@ const ACTIVITY_TYPES = [
   { value: "ordering", label: "Seřaď pořadí" },
   { value: "sorting", label: "Třídění do skupin" },
   { value: "wall", label: "🧱 Zeď (odpovědi žáků)" },
+  { value: "poll", label: "📊 Hlasování (Mentimeter)" },
 ];
+
+const PollEditor = ({ props, onChange }: { props: any; onChange: (p: any) => void }) => {
+  const options: Array<{ id: string; text: string }> = Array.isArray(props.options) && props.options.length > 0
+    ? props.options
+    : [
+        { id: crypto.randomUUID(), text: "" },
+        { id: crypto.randomUUID(), text: "" },
+      ];
+
+  const updateOption = (idx: number, text: string) => {
+    const next = options.map((o, i) => (i === idx ? { ...o, text } : o));
+    onChange({ ...props, options: next });
+  };
+
+  const addOption = () => {
+    if (options.length >= 6) return;
+    onChange({
+      ...props,
+      options: [...options, { id: crypto.randomUUID(), text: "" }],
+    });
+  };
+
+  const removeOption = (idx: number) => {
+    if (options.length <= 2) return;
+    onChange({ ...props, options: options.filter((_, i) => i !== idx) });
+  };
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label className="text-xs">Otázka pro hlasování</Label>
+        <Textarea
+          value={props.question || ""}
+          onChange={(e) => onChange({ ...props, question: e.target.value })}
+          placeholder="Která možnost vás nejvíce oslovuje?"
+          rows={2}
+          className="mt-1"
+        />
+      </div>
+      <div className="space-y-2">
+        <Label className="text-xs">Možnosti odpovědí (2–6)</Label>
+        {options.map((opt, i) => (
+          <div key={opt.id} className="flex items-center gap-2">
+            <Input
+              value={opt.text}
+              onChange={(e) => updateOption(i, e.target.value)}
+              placeholder={`Možnost ${i + 1}`}
+            />
+            {options.length > 2 && (
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8 text-destructive flex-shrink-0"
+                onClick={() => removeOption(i)}
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </Button>
+            )}
+          </div>
+        ))}
+        {options.length < 6 && (
+          <Button variant="outline" size="sm" onClick={addOption}>
+            <Plus className="w-3 h-3 mr-1" />
+            Přidat možnost
+          </Button>
+        )}
+      </div>
+      <div className="flex items-center gap-2 pt-1">
+        <Checkbox
+          checked={props.allowMultiple === true}
+          onCheckedChange={(v) => onChange({ ...props, allowMultiple: !!v })}
+          id="poll-multiple"
+        />
+        <Label htmlFor="poll-multiple" className="text-xs cursor-pointer">
+          Povolit více odpovědí
+        </Label>
+      </div>
+    </div>
+  );
+};
 
 const FlashcardsEditor = ({ props, onChange }: { props: any; onChange: (p: any) => void }) => {
   const cards = props.flashcards || [{ front: "", back: "" }];
