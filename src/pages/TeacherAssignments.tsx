@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import AssignmentResultsDashboard from "@/components/admin/AssignmentResultsDashboard";
-import LessonWorksheetGenerator, { type GeneratedQuestion } from "@/components/admin/LessonWorksheetGenerator";
+
 
 interface Assignment {
   id: string;
