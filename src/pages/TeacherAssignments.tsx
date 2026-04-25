@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import AssignmentResultsDashboard from "@/components/admin/AssignmentResultsDashboard";
-import LessonWorksheetGenerator, { type GeneratedQuestion } from "@/components/admin/LessonWorksheetGenerator";
+
 
 interface Assignment {
   id: string;
@@ -49,6 +49,8 @@ const TeacherAssignments = () => {
   const [searchParams] = useSearchParams();
   const prefillLessonId = searchParams.get("lessonId");
   const prefillLessonTitle = searchParams.get("lessonTitle") || "";
+  const prefillLessonType = (searchParams.get("lessonType") as "global" | "teacher" | null) || "teacher";
+  const prefillWorksheetId = searchParams.get("worksheetId");
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [classes, setClasses] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,32 +66,14 @@ const TeacherAssignments = () => {
   const [randomizeChoices, setRandomizeChoices] = useState(false);
   const [randomizeOrder, setRandomizeOrder] = useState(false);
   const [selectedClassId, setSelectedClassId] = useState<string>("");
-  const [generatedQuestions, setGeneratedQuestions] = useState<GeneratedQuestion[]>([]);
-  const [lessonBlocks, setLessonBlocks] = useState<any[]>([]);
-  const [lessonLoaded, setLessonLoaded] = useState(false);
   const [worksheets, setWorksheets] = useState<WorksheetOption[]>([]);
-  const [selectedWorksheetId, setSelectedWorksheetId] = useState<string>("");
+  const [selectedWorksheetId, setSelectedWorksheetId] = useState<string>(prefillWorksheetId || "");
 
   useEffect(() => {
     loadData();
   }, []);
 
-  useEffect(() => {
-    if (!prefillLessonId) return;
-    let cancelled = false;
-    (async () => {
-      // Try teacher_textbook_lessons first, then textbook_lessons
-      const [teacherRes, globalRes] = await Promise.all([
-        supabase.from("teacher_textbook_lessons").select("blocks").eq("id", prefillLessonId).maybeSingle(),
-        supabase.from("textbook_lessons").select("blocks").eq("id", prefillLessonId).maybeSingle(),
-      ]);
-      if (cancelled) return;
-      const blocks = (teacherRes.data?.blocks ?? globalRes.data?.blocks ?? []) as any[];
-      setLessonBlocks(Array.isArray(blocks) ? blocks : []);
-      setLessonLoaded(true);
-    })();
-    return () => { cancelled = true; };
-  }, [prefillLessonId]);
+  // (Old AI inline generator removed — worksheets are now first-class entities.)
 
   const loadData = async () => {
     setLoading(true);
@@ -130,7 +114,7 @@ const TeacherAssignments = () => {
         randomize_order: randomizeOrder,
         class_id: selectedClassId || null,
         status: "draft",
-        activity_data: generatedQuestions as any,
+        activity_data: [] as any,
         worksheet_id: selectedWorksheetId || null,
       } as any);
 
@@ -154,7 +138,6 @@ const TeacherAssignments = () => {
     setRandomizeChoices(false);
     setRandomizeOrder(false);
     setSelectedClassId("");
-    setGeneratedQuestions([]);
     setSelectedWorksheetId("");
   };
 
@@ -317,34 +300,41 @@ const TeacherAssignments = () => {
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => navigate("/ucitel/pracovni-listy")}
-                    title="Vytvořit nový pracovní list"
+                    onClick={() => {
+                      const params = new URLSearchParams();
+                      if (prefillLessonId) {
+                        params.set("from_lesson", prefillLessonId);
+                        params.set("from_lesson_type", prefillLessonType);
+                      }
+                      const returnUrl = `/ucitel/ulohy${
+                        prefillLessonId
+                          ? `?lessonId=${prefillLessonId}&lessonTitle=${encodeURIComponent(prefillLessonTitle)}`
+                          : ""
+                      }`;
+                      params.set("return_to", returnUrl);
+                      window.open(`/ucitel/pracovni-listy?${params.toString()}`, "_blank");
+                    }}
+                    title="Vytvořit nový pracovní list v novém okně"
                   >
                     <ExternalLink className="w-3.5 h-3.5 mr-1" />
                     Nový
                   </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={loadData}
+                    title="Obnovit seznam pracovních listů"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                  </Button>
                 </div>
                 {selectedWorksheetId && (
                   <p className="text-[11px] text-muted-foreground">
-                    ✓ Žáci uvidí pracovní list namísto AI otázek (pokud je vybrán).
+                    ✓ Žáci uvidí tento pracovní list v interaktivním plejeru.
                   </p>
                 )}
               </div>
-
-              {prefillLessonId && lessonLoaded && (
-                <LessonWorksheetGenerator
-                  lessonId={prefillLessonId}
-                  lessonTitle={prefillLessonTitle}
-                  blocks={lessonBlocks}
-                  onGenerated={(qs) => setGeneratedQuestions(qs)}
-                />
-              )}
-
-              {generatedQuestions.length > 0 && (
-                <div className="text-xs text-muted-foreground">
-                  ✓ {generatedQuestions.length} otázek bude uloženo s úlohou.
-                </div>
-              )}
 
               <div className="flex gap-2">
                 <Button onClick={handleCreate} disabled={creating}>

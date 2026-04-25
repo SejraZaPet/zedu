@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import SiteHeader from "@/components/SiteHeader";
@@ -45,6 +45,8 @@ import {
   FileDown,
   LayoutTemplate,
   Printer,
+  Link2,
+  XCircle,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
@@ -103,6 +105,14 @@ import {
 } from "@/lib/worksheet-templates";
 import { downloadWorksheetPdf } from "@/lib/worksheet-pdf-export";
 import WorksheetPlayer from "@/components/WorksheetPlayer";
+import LinkedLessonsDialog, { type LessonChoice } from "@/components/admin/LinkedLessonsDialog";
+
+interface LinkedLessonRow {
+  id: string; // worksheet_lessons.id
+  lesson_id: string;
+  lesson_type: "global" | "teacher";
+  title: string;
+}
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
@@ -173,6 +183,13 @@ export default function WorksheetEditor() {
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
   const [allLessons, setAllLessons] = useState<LessonOption[]>([]);
   const [activeLessonContent, setActiveLessonContent] = useState<string>("");
+  const [linkedLessons, setLinkedLessons] = useState<LinkedLessonRow[]>([]);
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const [searchParams] = useSearchParams();
+  const fromLessonId = searchParams.get("from_lesson");
+  const fromLessonType = (searchParams.get("from_lesson_type") as "global" | "teacher" | null) || null;
+  const returnTo = searchParams.get("return_to");
+  const autoLinkAttempted = useRef(false);
 
   const [suggestionDialog, setSuggestionDialog] = useState<{
     open: boolean;
@@ -304,6 +321,75 @@ export default function WorksheetEditor() {
       setActiveLessonContent(extractTextFromBlocks(row.blocks));
     })();
   }, [activeLessonId, allLessons]);
+
+  // ── Load linked lessons ──
+  const loadLinkedLessons = useCallback(async () => {
+    if (!id) return;
+    const { data: links } = await supabase
+      .from("worksheet_lessons" as any)
+      .select("id, lesson_id, lesson_type")
+      .eq("worksheet_id", id);
+    const rows = ((links as any[]) ?? []) as Array<{
+      id: string;
+      lesson_id: string;
+      lesson_type: "global" | "teacher";
+    }>;
+    if (rows.length === 0) {
+      setLinkedLessons([]);
+      return;
+    }
+    const globalIds = rows.filter((r) => r.lesson_type === "global").map((r) => r.lesson_id);
+    const teacherIds = rows.filter((r) => r.lesson_type === "teacher").map((r) => r.lesson_id);
+    const [gRes, tRes] = await Promise.all([
+      globalIds.length
+        ? supabase.from("textbook_lessons").select("id, title").in("id", globalIds)
+        : Promise.resolve({ data: [] as any[] }),
+      teacherIds.length
+        ? supabase.from("teacher_textbook_lessons").select("id, title").in("id", teacherIds)
+        : Promise.resolve({ data: [] as any[] }),
+    ]);
+    const titleMap = new Map<string, string>();
+    ((gRes.data ?? []) as any[]).forEach((l) => titleMap.set(`global-${l.id}`, l.title));
+    ((tRes.data ?? []) as any[]).forEach((l) => titleMap.set(`teacher-${l.id}`, l.title));
+    setLinkedLessons(
+      rows.map((r) => ({
+        id: r.id,
+        lesson_id: r.lesson_id,
+        lesson_type: r.lesson_type,
+        title: titleMap.get(`${r.lesson_type}-${r.lesson_id}`) ?? "(neznámá lekce)",
+      }))
+    );
+  }, [id]);
+
+  useEffect(() => {
+    if (!id || !user) return;
+    void loadLinkedLessons();
+  }, [id, user, loadLinkedLessons]);
+
+  // ── Auto-link lesson from URL (?from_lesson=...&from_lesson_type=...) ──
+  useEffect(() => {
+    if (!id || !user || !fromLessonId || !fromLessonType) return;
+    if (autoLinkAttempted.current) return;
+    autoLinkAttempted.current = true;
+    (async () => {
+      await supabase.from("worksheet_lessons" as any).insert({
+        worksheet_id: id,
+        lesson_id: fromLessonId,
+        lesson_type: fromLessonType,
+        added_by: user.id,
+      } as any);
+      // also set as source if not yet set
+      if (!sourceLessonId) {
+        await supabase
+          .from("worksheets" as any)
+          .update({ source_lesson_id: fromLessonId, source_lesson_type: fromLessonType } as any)
+          .eq("id", id);
+        setSourceLessonId(fromLessonId);
+        setActiveLessonId(fromLessonId);
+      }
+      void loadLinkedLessons();
+    })();
+  }, [id, user, fromLessonId, fromLessonType, sourceLessonId, loadLinkedLessons]);
 
   // ── Auto-save ──
   useEffect(() => {
@@ -660,6 +746,31 @@ export default function WorksheetEditor() {
     }
   }
 
+  async function handleAddLinkedLessons(selected: LessonChoice[]) {
+    if (!id || !user || selected.length === 0) return;
+    const rows = selected.map((s) => ({
+      worksheet_id: id,
+      lesson_id: s.id,
+      lesson_type: s.type,
+      added_by: user.id,
+    }));
+    const { error } = await supabase.from("worksheet_lessons" as any).insert(rows as any);
+    if (error) {
+      toast({ title: "Nepodařilo se připojit", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: `Připojeno: ${selected.length} ${selected.length === 1 ? "lekce" : "lekcí"}` });
+    void loadLinkedLessons();
+  }
+
+  async function handleRemoveLinkedLesson(linkId: string) {
+    const { error } = await supabase.from("worksheet_lessons" as any).delete().eq("id", linkId);
+    if (error) {
+      toast({ title: "Nepodařilo se odebrat", description: error.message, variant: "destructive" });
+      return;
+    }
+    void loadLinkedLessons();
+  }
   if (loading || !spec) {
     return (
       <div className="min-h-screen bg-background">
@@ -769,11 +880,14 @@ export default function WorksheetEditor() {
               </div>
             </div>
 
-            {/* Z lekce sekce */}
+            {/* Aktivní lekce sekce */}
             <div className="mt-5 pt-4 border-t border-border">
               <h3 className="font-heading text-sm font-semibold mb-2 text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
-                <BookOpen className="w-3.5 h-3.5" /> Z lekce
+                <BookOpen className="w-3.5 h-3.5" /> Aktivní lekce
               </h3>
+              <p className="text-[11px] text-muted-foreground mb-2">
+                Lekce, ze které právě tahám návrhy.
+              </p>
               <Select
                 value={activeLessonId ?? "__none__"}
                 onValueChange={(v) => handleSetSourceLesson(v === "__none__" ? null : v)}
@@ -825,6 +939,52 @@ export default function WorksheetEditor() {
                   ))}
                 </div>
               )}
+            </div>
+
+            {/* Připojené lekce */}
+            <div className="mt-5 pt-4 border-t border-border">
+              <h3 className="font-heading text-sm font-semibold mb-2 text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                <Link2 className="w-3.5 h-3.5" /> Připojené lekce ({linkedLessons.length})
+              </h3>
+              {linkedLessons.length === 0 ? (
+                <p className="text-[11px] text-muted-foreground mb-2">
+                  Tento pracovní list zatím není napojený na žádnou lekci.
+                </p>
+              ) : (
+                <div className="space-y-1 mb-2">
+                  {linkedLessons.map((l) => (
+                    <div
+                      key={l.id}
+                      className="flex items-center gap-1.5 px-2 py-1.5 rounded-md border border-border bg-background text-xs"
+                    >
+                      <Badge
+                        variant={l.lesson_type === "global" ? "secondary" : "outline"}
+                        className="text-[10px] px-1.5 py-0 h-4 shrink-0"
+                      >
+                        {l.lesson_type === "global" ? "G" : "V"}
+                      </Badge>
+                      <span className="truncate flex-1" title={l.title}>
+                        {l.title}
+                      </span>
+                      <button
+                        onClick={() => handleRemoveLinkedLesson(l.id)}
+                        className="text-muted-foreground hover:text-destructive shrink-0"
+                        title="Odebrat propojení"
+                      >
+                        <XCircle className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full h-8 text-xs"
+                onClick={() => setLinkDialogOpen(true)}
+              >
+                <Plus className="w-3.5 h-3.5 mr-1" /> Přidat další lekci
+              </Button>
             </div>
 
             {/* Šablony sekce */}
@@ -1152,6 +1312,31 @@ export default function WorksheetEditor() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <LinkedLessonsDialog
+        open={linkDialogOpen}
+        onOpenChange={setLinkDialogOpen}
+        allLessons={allLessons.map((l) => ({ id: l.id, title: l.title, type: l.type }))}
+        alreadyLinkedKeys={
+          new Set(linkedLessons.map((l) => `${l.lesson_type}-${l.lesson_id}`))
+        }
+        onConfirm={handleAddLinkedLessons}
+      />
+
+      {returnTo && id && (
+        <div className="fixed bottom-4 right-4 z-40 bg-card border border-border rounded-xl shadow-lg p-3 flex items-center gap-2 text-sm">
+          <span className="text-muted-foreground">Pokračovat zpět do úkolu:</span>
+          <Button
+            size="sm"
+            onClick={() => {
+              const sep = returnTo.includes("?") ? "&" : "?";
+              navigate(`${returnTo}${sep}worksheetId=${id}`);
+            }}
+          >
+            Vrátit se k úkolu
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
