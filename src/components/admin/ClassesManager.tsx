@@ -30,8 +30,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Pencil, Archive, ArchiveRestore, Trash2, Users, Search, Key, KeyRound, Copy, RefreshCw, XCircle } from "lucide-react";
+import { Plus, Pencil, Archive, ArchiveRestore, Trash2, Users, Search, Key, KeyRound, Copy, RefreshCw, XCircle, Clock } from "lucide-react";
 import ClassMembersDialog from "./ClassMembersDialog";
+import ClassScheduleDialog from "./ClassScheduleDialog";
 
 interface ClassItem {
   id: string;
