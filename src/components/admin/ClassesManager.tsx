@@ -496,6 +496,16 @@ const ClassesManager = () => {
           onUpdated={fetchClasses}
         />
       )}
+
+      {/* Schedule dialog */}
+      {scheduleClass && (
+        <ClassScheduleDialog
+          classId={scheduleClass.id}
+          className={scheduleClass.name}
+          open={!!scheduleClass}
+          onOpenChange={(open) => !open && setScheduleClass(null)}
+        />
+      )}
     </div>
   );
 };
