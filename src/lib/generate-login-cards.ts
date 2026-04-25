@@ -51,9 +51,11 @@ function buildStrip(user: LoginCardData): string {
       : '<div class="cred-row"><div class="cred-label">Heslo:</div><div class="cred-value cred-password">' +
         escHtml(user.password) +
         "</div></div>",
-    ...(user.studentCode
-      ? ['<div class="cred-row"><div class="cred-label">Kód žáka:</div><div class="cred-value cred-password">' + escHtml(user.studentCode) + "</div></div>"]
-      : []),
+    ...(user.role === "rodic"
+      ? ['<div class="cred-row"><div class="cred-label">Propojení:</div><div class="cred-value cred-password-note">Zadejte kód žáka ZAK-XXXX v nastavení vašeho profilu na zedu.cz</div></div>']
+      : (user.studentCode
+          ? ['<div class="cred-row"><div class="cred-label">Kód žáka:</div><div class="cred-value cred-password">' + escHtml(user.studentCode) + "</div></div>"]
+          : [])),
     "</div>",
     '<div class="strip-right">',
     '<img class="qr" src="' + qrUrl + '" alt="QR" />',
