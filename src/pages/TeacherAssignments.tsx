@@ -49,6 +49,8 @@ const TeacherAssignments = () => {
   const [searchParams] = useSearchParams();
   const prefillLessonId = searchParams.get("lessonId");
   const prefillLessonTitle = searchParams.get("lessonTitle") || "";
+  const prefillLessonType = (searchParams.get("lessonType") as "global" | "teacher" | null) || "teacher";
+  const prefillWorksheetId = searchParams.get("worksheetId");
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [classes, setClasses] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,11 +66,8 @@ const TeacherAssignments = () => {
   const [randomizeChoices, setRandomizeChoices] = useState(false);
   const [randomizeOrder, setRandomizeOrder] = useState(false);
   const [selectedClassId, setSelectedClassId] = useState<string>("");
-  const [generatedQuestions, setGeneratedQuestions] = useState<GeneratedQuestion[]>([]);
-  const [lessonBlocks, setLessonBlocks] = useState<any[]>([]);
-  const [lessonLoaded, setLessonLoaded] = useState(false);
   const [worksheets, setWorksheets] = useState<WorksheetOption[]>([]);
-  const [selectedWorksheetId, setSelectedWorksheetId] = useState<string>("");
+  const [selectedWorksheetId, setSelectedWorksheetId] = useState<string>(prefillWorksheetId || "");
 
   useEffect(() => {
     loadData();
