@@ -38,6 +38,7 @@ import TeacherClasses from "./pages/TeacherClasses";
 import TeacherResults from "./pages/TeacherResults";
 import ParentDashboard from "./pages/ParentDashboard";
 import GdprPage from "./pages/GdprPage";
+import TodoPage from "./pages/TodoPage";
 
 const queryClient = new QueryClient();
 
@@ -83,6 +84,7 @@ const App = () => (
             <Route path="/napoveda" element={<HelpPage />} />
             <Route path="/napoveda/:guideId" element={<HelpDetailPage />} />
             <Route path="/gdpr" element={<GdprPage />} />
+            <Route path="/todo" element={<ProtectedRoute><TodoPage /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

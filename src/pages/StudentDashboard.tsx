@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { User, KeyRound, ClipboardList, Gamepad2 } from "lucide-react";
+import { User, KeyRound, ClipboardList, Gamepad2, ListTodo } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { useAuth } from "@/contexts/AuthContext";
@@ -71,6 +71,13 @@ const StudentDashboard = () => {
       description: "Zapojte se do živé hry, kterou spustil váš učitel.",
       button: "Připojit se",
       onClick: () => navigate("/live/pripojit"),
+    },
+    {
+      icon: ListTodo,
+      title: "Moje úkoly",
+      description: "Spravujte si vlastní úkoly, testy a termíny domácích úkolů.",
+      button: "Otevřít úkoly",
+      onClick: () => navigate("/todo"),
     },
   ];
 
