@@ -85,6 +85,19 @@ const StudentAssignmentPlayer = () => {
       const assignmentData = aData as any as AssignmentData;
       setAssignment(assignmentData);
 
+      // Pokud má assignment přiřazený worksheet, načti ho (přednost před activity_data).
+      if (assignmentData.worksheet_id) {
+        const { data: wData } = await supabase
+          .from("worksheets" as any)
+          .select("spec")
+          .eq("id", assignmentData.worksheet_id)
+          .maybeSingle();
+        const ws = (wData as any)?.spec;
+        if (ws && ws.version) {
+          setWorksheetSpec(ws as WorksheetSpec);
+        }
+      }
+
       // Check deadline
       if (assignmentData.deadline && new Date(assignmentData.deadline) < new Date()) {
         toast({ title: "Termín vypršel", description: "Tato úloha již nelze odevzdat.", variant: "destructive" });
