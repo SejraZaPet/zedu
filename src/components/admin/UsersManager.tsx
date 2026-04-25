@@ -941,6 +941,7 @@ const UsersManager = () => {
                           "e-mail_rodice": "email_rodice", "email_rodice": "email_rodice",
                           "e-mail rodice": "email_rodice", "email rodice": "email_rodice",
                           "skola": "skola", "trida": "trida", "rocnik": "rocnik", "role": "role",
+                          "zletily": "zletily", "zletilý": "zletily",
                         };
 
                         const headers = allRows[headerRowIndex].map((h: any) =>
