@@ -773,6 +773,34 @@ export default function WorksheetEditor() {
               )}
             </div>
 
+            {/* Šablony sekce */}
+            <Collapsible defaultOpen={false} className="mt-5 pt-4 border-t border-border">
+              <CollapsibleTrigger className="w-full flex items-center justify-between gap-2 text-sm font-semibold text-muted-foreground uppercase tracking-wide font-heading mb-2 hover:text-foreground transition-colors">
+                <span className="flex items-center gap-1.5">
+                  <LayoutTemplate className="w-3.5 h-3.5" /> Šablony
+                </span>
+                <ChevronDown className="w-3.5 h-3.5" />
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-1.5">
+                {WORKSHEET_TEMPLATES.map((tpl) => (
+                  <button
+                    key={tpl.id}
+                    onClick={() => addTemplate(tpl.id)}
+                    className="w-full text-left px-2.5 py-2 rounded-md border border-border bg-background hover:border-primary/50 hover:bg-primary/5 transition text-xs"
+                    title={`Vloží ${tpl.blockCount} bloků`}
+                  >
+                    <div className="font-medium text-sm flex items-center gap-1.5">
+                      <LayoutTemplate className="w-3 h-3 text-primary" />
+                      {tpl.label}
+                    </div>
+                    <div className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2">
+                      {tpl.description}
+                    </div>
+                  </button>
+                ))}
+              </CollapsibleContent>
+            </Collapsible>
+
             <div className="mt-6 pt-4 border-t border-border text-xs text-muted-foreground">
               <p className="mb-1">{items.length} otázek</p>
               <p className="mb-1">{spec.metadata.totalPoints} bodů</p>
