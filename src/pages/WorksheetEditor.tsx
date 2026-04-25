@@ -322,6 +322,75 @@ export default function WorksheetEditor() {
     })();
   }, [activeLessonId, allLessons]);
 
+  // ── Load linked lessons ──
+  const loadLinkedLessons = useCallback(async () => {
+    if (!id) return;
+    const { data: links } = await supabase
+      .from("worksheet_lessons" as any)
+      .select("id, lesson_id, lesson_type")
+      .eq("worksheet_id", id);
+    const rows = ((links as any[]) ?? []) as Array<{
+      id: string;
+      lesson_id: string;
+      lesson_type: "global" | "teacher";
+    }>;
+    if (rows.length === 0) {
+      setLinkedLessons([]);
+      return;
+    }
+    const globalIds = rows.filter((r) => r.lesson_type === "global").map((r) => r.lesson_id);
+    const teacherIds = rows.filter((r) => r.lesson_type === "teacher").map((r) => r.lesson_id);
+    const [gRes, tRes] = await Promise.all([
+      globalIds.length
+        ? supabase.from("textbook_lessons").select("id, title").in("id", globalIds)
+        : Promise.resolve({ data: [] as any[] }),
+      teacherIds.length
+        ? supabase.from("teacher_textbook_lessons").select("id, title").in("id", teacherIds)
+        : Promise.resolve({ data: [] as any[] }),
+    ]);
+    const titleMap = new Map<string, string>();
+    ((gRes.data ?? []) as any[]).forEach((l) => titleMap.set(`global-${l.id}`, l.title));
+    ((tRes.data ?? []) as any[]).forEach((l) => titleMap.set(`teacher-${l.id}`, l.title));
+    setLinkedLessons(
+      rows.map((r) => ({
+        id: r.id,
+        lesson_id: r.lesson_id,
+        lesson_type: r.lesson_type,
+        title: titleMap.get(`${r.lesson_type}-${r.lesson_id}`) ?? "(neznámá lekce)",
+      }))
+    );
+  }, [id]);
+
+  useEffect(() => {
+    if (!id || !user) return;
+    void loadLinkedLessons();
+  }, [id, user, loadLinkedLessons]);
+
+  // ── Auto-link lesson from URL (?from_lesson=...&from_lesson_type=...) ──
+  useEffect(() => {
+    if (!id || !user || !fromLessonId || !fromLessonType) return;
+    if (autoLinkAttempted.current) return;
+    autoLinkAttempted.current = true;
+    (async () => {
+      await supabase.from("worksheet_lessons" as any).insert({
+        worksheet_id: id,
+        lesson_id: fromLessonId,
+        lesson_type: fromLessonType,
+        added_by: user.id,
+      } as any);
+      // also set as source if not yet set
+      if (!sourceLessonId) {
+        await supabase
+          .from("worksheets" as any)
+          .update({ source_lesson_id: fromLessonId, source_lesson_type: fromLessonType } as any)
+          .eq("id", id);
+        setSourceLessonId(fromLessonId);
+        setActiveLessonId(fromLessonId);
+      }
+      void loadLinkedLessons();
+    })();
+  }, [id, user, fromLessonId, fromLessonType, sourceLessonId, loadLinkedLessons]);
+
   // ── Auto-save ──
   useEffect(() => {
     if (loading || !spec || !id) return;
