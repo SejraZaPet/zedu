@@ -45,6 +45,23 @@ interface UserProfile {
   created_at: string;
   role?: string;
   login_password?: string;
+  username?: string;
+}
+
+function generateUsername(firstName: string, lastName: string, existingUsernames: string[]): string {
+  const normalize = (s: string) =>
+    (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+  const initial = normalize(firstName).charAt(0);
+  const last = normalize(lastName);
+  const base = initial + last;
+  if (!existingUsernames.includes(base)) return base;
+  let n = 2;
+  while (n < 100) {
+    const v = base + n;
+    if (!existingUsernames.includes(v)) return v;
+    n++;
+  }
+  return base + Date.now();
 }
 
 const statusLabels: Record<string, string> = {
@@ -462,6 +479,7 @@ const UsersManager = () => {
               </TableHead>
               <TableHead>Jméno</TableHead>
               <TableHead>E-mail</TableHead>
+              <TableHead className="hidden lg:table-cell">Uživatelské jméno</TableHead>
               <TableHead className="hidden md:table-cell">Škola</TableHead>
               <TableHead className="hidden xl:table-cell">Obor</TableHead>
               <TableHead className="text-center">Ročník</TableHead>
@@ -493,6 +511,9 @@ const UsersManager = () => {
                     <span title={user.email}>{emailShort}</span>
                   </TableCell>
                 ); })()}
+                <TableCell className="hidden lg:table-cell text-xs font-mono text-muted-foreground">
+                  {user.username || "–"}
+                </TableCell>
                 <TableCell className="text-muted-foreground hidden md:table-cell max-w-[100px] truncate">{user.school || "–"}</TableCell>
                 <TableCell className="text-muted-foreground hidden xl:table-cell">{user.field_of_study || "–"}</TableCell>
                 <TableCell className="text-center text-muted-foreground">{user.year ?? "–"}</TableCell>
@@ -582,7 +603,7 @@ const UsersManager = () => {
             ))}
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
                   Žádní uživatelé nenalezeni.
                 </TableCell>
               </TableRow>
@@ -693,6 +714,9 @@ const UsersManager = () => {
                   const userId = authData?.user?.id || authData?.id;
                   if (!userId) throw new Error("Nepodařilo se vytvořit účet");
 
+                  const existingUsernames = users.map(u => u.username).filter(Boolean) as string[];
+                  const username = generateUsername(newUser.first_name, newUser.last_name, existingUsernames);
+
                   await supabase.from("profiles").upsert({
                     id: userId,
                     first_name: newUser.first_name,
@@ -703,6 +727,7 @@ const UsersManager = () => {
                     year: newUser.year ? parseInt(newUser.year) : null,
                     status: "approved" as any,
                     login_password: password,
+                    username: username,
                   });
 
                   await supabase.from("user_roles").insert({
@@ -898,6 +923,8 @@ const UsersManager = () => {
                   const importedUsersList: LoginCardData[] = [];
                   const existingEmails = users.map(u => u.email);
                   const usedEmails: string[] = [...existingEmails];
+                  const existingUsernames = users.map(u => u.username).filter(Boolean) as string[];
+                  const usedUsernames: string[] = [...existingUsernames];
 
                   for (const row of importPreview) {
                     try {
@@ -939,6 +966,9 @@ const UsersManager = () => {
                         }
                       }
 
+                      const username = generateUsername(row.jmeno, row.prijmeni, usedUsernames);
+                      usedUsernames.push(username);
+
                       await supabase.from("profiles").upsert({
                         id: userId,
                         first_name: row.jmeno,
@@ -949,6 +979,7 @@ const UsersManager = () => {
                         year: row.rocnik ? parseInt(row.rocnik) : null,
                         status: "approved" as any,
                         login_password: password,
+                        username: username,
                       });
 
                       await supabase.from("user_roles").insert({ user_id: userId, role: role as any });
