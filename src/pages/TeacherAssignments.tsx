@@ -95,12 +95,18 @@ const TeacherAssignments = () => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (user) setUserId(user.id);
-    const [assignmentsRes, classesRes] = await Promise.all([
+    const [assignmentsRes, classesRes, worksheetsRes] = await Promise.all([
       supabase.from("assignments" as any).select("*").order("created_at", { ascending: false }),
       supabase.from("classes").select("id, name").eq("archived", false),
+      supabase
+        .from("worksheets" as any)
+        .select("id, title, status, updated_at")
+        .in("status", ["draft", "published"])
+        .order("updated_at", { ascending: false }),
     ]);
     if (assignmentsRes.data) setAssignments(assignmentsRes.data as any);
     if (classesRes.data) setClasses(classesRes.data);
+    if (worksheetsRes.data) setWorksheets(worksheetsRes.data as any);
     setLoading(false);
   };
 
