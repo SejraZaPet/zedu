@@ -153,6 +153,10 @@ export default function WorksheetEditor() {
   const [loading, setLoading] = useState(true);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [pdfDialogOpen, setPdfDialogOpen] = useState(false);
+  const [pdfIncludeAnswerKey, setPdfIncludeAnswerKey] = useState(false);
+  const [pdfIncludeNameField, setPdfIncludeNameField] = useState(true);
+  const [pdfExporting, setPdfExporting] = useState(false);
 
   const [sourceLessonId, setSourceLessonId] = useState<string | null>(null);
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
