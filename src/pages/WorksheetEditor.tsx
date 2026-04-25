@@ -863,7 +863,7 @@ export default function WorksheetEditor() {
           </aside>
 
           {/* ── CANVAS ── */}
-          <section className="bg-card border border-border rounded-xl p-6">
+          <section className="bg-card border border-border rounded-xl p-6 min-w-0">
             {/* Hlavička pracovního listu */}
             <div className="grid sm:grid-cols-2 gap-3 mb-6 pb-6 border-b border-border">
               <div>
