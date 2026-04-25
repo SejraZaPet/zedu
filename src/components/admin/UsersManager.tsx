@@ -807,15 +807,19 @@ const UsersManager = () => {
                     role: newUser.role as any,
                   });
 
-                  if (!email.includes("@zedu-student.cz") && !email.includes("@zedu-lektor.cz")) {
-                    await sendWelcomeEmail({
-                      to: email,
-                      firstName: newUser.first_name,
-                      lastName: newUser.last_name,
-                      email,
-                      password,
-                      role: newUser.role,
-                    });
+                  if (!email.includes("@zedu-student.cz") && !email.includes("@zedu-lektor.cz") && !email.includes("@zedu-rodic.cz")) {
+                    try {
+                      await sendWelcomeEmail({
+                        to: email,
+                        firstName: newUser.first_name,
+                        lastName: newUser.last_name,
+                        email,
+                        password,
+                        role: newUser.role,
+                      });
+                    } catch (emailErr) {
+                      console.warn("Email se nepodařilo odeslat:", emailErr);
+                    }
                   }
 
                   const printCards: LoginCardData[] = [{
