@@ -5,11 +5,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Lock, UserPlus, LogIn, GraduationCap, BookOpenText, KeyRound, CheckCircle2, Eye, EyeOff } from "lucide-react";
+import { Lock, UserPlus, LogIn, GraduationCap, BookOpenText, KeyRound, CheckCircle2, Eye, EyeOff, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 
-type Role = "student" | "teacher";
+type Role = "student" | "teacher" | "rodic";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -147,8 +147,9 @@ const Auth = () => {
     const metadata: Record<string, unknown> = {
       first_name: firstName,
       last_name: lastName,
-      school,
-      role_label: role,
+      school: role === "rodic" ? "" : school,
+      role_label: role === "rodic" ? "rodic" : role === "teacher" ? "teacher" : "user",
+      status: role === "rodic" ? "approved" : "pending",
     };
 
     if (role === "student") {
@@ -192,7 +193,10 @@ const Auth = () => {
 
     toast({
       title: "Registrace úspěšná",
-      description: "Potvrďte svůj e-mail a vyčkejte na schválení účtu administrátorem.",
+      description:
+        role === "rodic"
+          ? "Účet byl vytvořen. Přihlaste se a přidejte své děti přes kód žáka ZAK-XXXX."
+          : "Potvrďte svůj e-mail a vyčkejte na schválení účtu administrátorem.",
     });
 
     setMode("login");
@@ -346,7 +350,7 @@ const Auth = () => {
             {/* Role selector */}
             <div>
               <p className="text-sm font-semibold text-foreground mb-2">Vyberte typ účtu</p>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <button
                   type="button"
                   onClick={() => setRole("student")}
@@ -369,7 +373,19 @@ const Auth = () => {
                   }`}
                 >
                   <BookOpenText className={`w-6 h-6 ${role === "teacher" ? "text-primary" : "text-muted-foreground"}`} />
-                  <span className={`text-sm font-semibold ${role === "teacher" ? "text-primary" : "text-foreground"}`}>Učitel</span>
+                  <span className={`text-sm font-semibold text-center leading-tight ${role === "teacher" ? "text-primary" : "text-foreground"}`}>Učitel / Lektor</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRole("rodic")}
+                  className={`flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all duration-200 ${
+                    role === "rodic"
+                      ? "border-primary bg-primary/[0.06] shadow-sm"
+                      : "border-border bg-card hover:border-muted-foreground/30"
+                  }`}
+                >
+                  <Users className={`w-6 h-6 ${role === "rodic" ? "text-primary" : "text-muted-foreground"}`} />
+                  <span className={`text-sm font-semibold ${role === "rodic" ? "text-primary" : "text-foreground"}`}>Rodič</span>
                 </button>
               </div>
               <p className="text-xs text-muted-foreground mt-2">Podle zvolené role se zobrazí odpovídající registrační údaje.</p>
@@ -390,10 +406,12 @@ const Auth = () => {
               <Label htmlFor="regEmail">E-mail</Label>
               <Input id="regEmail" type="email" value={regEmail} onChange={(e) => setRegEmail(e.target.value)} required className="mt-1" />
             </div>
-            <div>
-              <Label htmlFor="school">Škola</Label>
-              <Input id="school" value={school} onChange={(e) => setSchool(e.target.value)} className="mt-1" placeholder="Název školy" />
-            </div>
+            {role !== "rodic" && (
+              <div>
+                <Label htmlFor="school">Škola</Label>
+                <Input id="school" value={school} onChange={(e) => setSchool(e.target.value)} className="mt-1" placeholder="Název školy" />
+              </div>
+            )}
 
             {/* Student-only fields */}
             {role === "student" && (
