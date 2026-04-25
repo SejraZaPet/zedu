@@ -14,6 +14,8 @@ interface Profile {
   school: string;
   field_of_study: string;
   year: number | null;
+  username?: string;
+  student_code?: string;
 }
 
 const StudentDashboard = () => {
