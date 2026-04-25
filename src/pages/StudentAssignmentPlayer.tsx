@@ -293,6 +293,36 @@ const StudentAssignmentPlayer = () => {
           )}
         </div>
 
+        {/* Worksheet branch (přednost před legacy activity_data) */}
+        {worksheetSpec ? (
+          <WorksheetPlayer
+            spec={worksheetSpec}
+            variantId={worksheetSpec.variants[0]?.variantId ?? "A"}
+            attemptId={attempt?.id ?? null}
+            locked={isReadOnly}
+            initialAnswers={(attempt?.answers as any) || {}}
+            onSubmit={async (wAnswers, score, maxScore) => {
+              if (!attempt) return;
+              try {
+                await supabase
+                  .from("assignment_attempts" as any)
+                  .update({
+                    status: "submitted",
+                    answers: wAnswers as any,
+                    score,
+                    max_score: maxScore,
+                    submitted_at: new Date().toISOString(),
+                  } as any)
+                  .eq("id", attempt.id);
+                setAttempt({ ...attempt, status: "submitted", score, max_score: maxScore });
+                toast({ title: "Odevzdáno!", description: `Skóre: ${score}/${maxScore}` });
+              } catch (e: any) {
+                toast({ title: "Chyba", description: e.message, variant: "destructive" });
+              }
+            }}
+          />
+        ) : (
+          <>
         {/* Progress */}
         <div className="mb-4 space-y-1">
           <div className="flex justify-between text-xs text-muted-foreground">
