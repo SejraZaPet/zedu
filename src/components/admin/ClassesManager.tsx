@@ -71,6 +71,9 @@ const ClassesManager = () => {
   // Members dialog
   const [membersClass, setMembersClass] = useState<ClassItem | null>(null);
 
+  // Schedule dialog
+  const [scheduleClass, setScheduleClass] = useState<{ id: string; name: string } | null>(null);
+
   // Delete dialog
   const [deleteTarget, setDeleteTarget] = useState<ClassItem | null>(null);
 
