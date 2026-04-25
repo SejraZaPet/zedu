@@ -131,7 +131,7 @@ const ProfilePage = () => {
     }
     toast({
       title: "Email uložen",
-      description: "Pro obnovu hesla použijte „Zapomenuté heslo" na přihlašovací stránce.",
+      description: 'Pro obnovu hesla použijte „Zapomenuté heslo" na přihlašovací stránce.',
       duration: 8000,
     });
   };
