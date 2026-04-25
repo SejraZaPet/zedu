@@ -1074,47 +1074,30 @@ const UsersManager = () => {
 
                   for (const row of importPreview) {
                     try {
-                      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                      const rawEmail = (row.email || "").toString().trim();
+                      const sanitizeStr = (s: string) => (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+
                       const role = row.role === "ucitel" ? "teacher" : row.role === "rodic" ? "rodic" : row.role === "teacher" || row.role === "lektor" ? row.role : "user";
-                      const email = rawEmail && emailRegex.test(rawEmail)
-                        ? rawEmail
-                        : generateStudentEmail(row.jmeno, row.prijmeni, usedEmails, role);
-                      if (!rawEmail) usedEmails.push(email);
-                      if (!emailRegex.test(email)) {
-                        errors.push(`${row.jmeno} ${row.prijmeni}: Neplatný formát e-mailu (${email})`);
-                        continue;
-                      }
+                      const email = row.email || generateStudentEmail(row.jmeno, row.prijmeni, usedEmails, role);
+
+                      usedEmails.push(email);
+
                       const password = Math.random().toString(36).slice(-8) + "Aa1!";
+
+                      const username = generateUsername(row.jmeno, row.prijmeni, usedUsernames);
+
+                      usedUsernames.push(username);
+
+                      const studentCode = 'ZAK-' + Math.random().toString(36).slice(-4).toUpperCase();
 
                       const { data: authData, error: authError } = await supabase.functions.invoke("create-user", {
                         body: { email, password, role }
                       });
 
-                      let userId: string | undefined = authData?.user?.id || authData?.id;
+                      if (authError) { errors.push(`${row.jmeno} ${row.prijmeni}: ${authError.message}`); continue; }
 
-                      if (authError || !userId) {
-                        const ctx: any = (authError as any)?.context;
-                        let body: any = authData;
-                        try {
-                          if (ctx && typeof ctx.json === "function") body = await ctx.json();
-                          else if (ctx && typeof ctx.text === "function") {
-                            const t = await ctx.text();
-                            try { body = JSON.parse(t); } catch { body = { error: t }; }
-                          }
-                        } catch { /* ignore */ }
+                      const userId = authData?.user?.id || authData?.id;
 
-                        if (body?.code === "email_exists" && body?.existing_id) {
-                          userId = body.existing_id as string;
-                        } else {
-                          errors.push(`${row.jmeno} ${row.prijmeni}: ${body?.error || authError?.message || "Nepodařilo se vytvořit účet"}`);
-                          continue;
-                        }
-                      }
-
-                      const username = generateUsername(row.jmeno, row.prijmeni, usedUsernames);
-                      usedUsernames.push(username);
-                      const studentCode = 'ZAK-' + Math.random().toString(36).slice(-4).toUpperCase();
+                      if (!userId) { errors.push(`${row.jmeno} ${row.prijmeni}: Nepodařilo se získat ID`); continue; }
 
                       const { error: profileError } = await supabase.from("profiles").upsert({
                         id: userId,
@@ -1138,70 +1121,17 @@ const UsersManager = () => {
 
                       await supabase.from("user_roles").insert({ user_id: userId, role: role as any });
 
-                      const isAdultStudent = ["ano", "yes", "true", "1"].includes(String(row.zletily || "").toLowerCase().trim());
-
-                      if (role === "user" && !isAdultStudent) {
-                        try {
-                          const sanitize = (s: string) => (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
-                          const parentLogin = (row.email_rodice || "").toString().trim() || `rodic.${sanitize(row.jmeno)}${sanitize(row.prijmeni)}@zedu-rodic.cz`;
-                          const parentPassword = Math.random().toString(36).slice(-8) + "Aa1!";
-
-                          const { data: parentAuth, error: parentErr } = await supabase.functions.invoke("create-user", {
-                            body: { email: parentLogin, password: parentPassword, role: "rodic" }
-                          });
-
-                          let parentId: string | undefined = parentAuth?.user?.id || parentAuth?.id;
-                          if (parentErr || !parentId) {
-                            const ctx: any = (parentErr as any)?.context;
-                            let body: any = parentAuth;
-                            try {
-                              if (ctx && typeof ctx.json === "function") body = await ctx.json();
-                              else if (ctx && typeof ctx.text === "function") {
-                                const t = await ctx.text();
-                                try { body = JSON.parse(t); } catch { body = { error: t }; }
-                              }
-                            } catch { /* ignore */ }
-                            if (body?.code === "email_exists" && body?.existing_id) parentId = body.existing_id;
-                          }
-
-                          if (parentId) {
-                            const parentUsername = generateUsername("rodic", sanitize(row.jmeno) + sanitize(row.prijmeni), usedUsernames);
-                            usedUsernames.push(parentUsername);
-
-                            await supabase.from("profiles").upsert({
-                              id: parentId,
-                              first_name: "Rodič",
-                              last_name: `${row.jmeno} ${row.prijmeni}`,
-                              email: parentLogin,
-                              status: "approved" as any,
-                              login_password: parentPassword,
-                              username: parentUsername,
-                              parent_email: (row.email_rodice || "").toString().trim() || null,
-                            });
-
-                            await supabase.from("user_roles").insert({ user_id: parentId, role: "rodic" as any });
-
-                            await supabase.from("parent_student_links" as any).insert({
-                              parent_id: parentId,
-                              student_id: userId,
-                            });
-
-                            importedUsersList.push({
-                              firstName: "Rodič",
-                              lastName: `${row.jmeno} ${row.prijmeni}`,
-                              email: parentLogin,
-                              password: parentPassword,
-                              role: "rodic",
-                              username: parentUsername,
-                            });
-                          }
-                        } catch (pe: any) {
-                          errors.push(`Rodič ${row.jmeno} ${row.prijmeni}: ${pe.message}`);
-                        }
-                      }
-
                       successCount++;
-                      importedUsersList.push({ firstName: row.jmeno, lastName: row.prijmeni, email, password, role, username, studentCode: role === "user" ? studentCode : undefined });
+
+                      importedUsersList.push({ 
+                        firstName: row.jmeno, 
+                        lastName: row.prijmeni, 
+                        email, 
+                        password, 
+                        role,
+                        username,
+                        studentCode,
+                      });
                     } catch (e: any) {
                       errors.push(`${row.jmeno} ${row.prijmeni}: ${e.message}`);
                     }
