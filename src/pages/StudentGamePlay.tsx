@@ -10,6 +10,8 @@ import { serverTsToClientMs } from "@/lib/clock-sync";
 import LessonBlockRenderer from "@/components/LessonBlockRenderer";
 import WallResponsesList from "@/components/activities/WallResponsesList";
 import WallActivity from "@/components/activities/WallActivity";
+import PollActivity from "@/components/activities/PollActivity";
+import PollProjectorView from "@/components/activities/PollProjectorView";
 import { Lock } from "lucide-react";
 
 const StudentGamePlay = () => {
