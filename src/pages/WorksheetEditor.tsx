@@ -84,7 +84,18 @@ import {
   GROUP_SIZE_LABELS,
 } from "@/lib/worksheet-defaults";
 import { OFFLINE_MODE_META } from "@/lib/worksheet-offline-meta";
-import { splitLessonContent, type LessonBlock } from "@/lib/lesson-content-splitter";
+import {
+  splitLessonContent,
+  extractTextFromBlocks,
+  type LessonBlock,
+} from "@/lib/lesson-content-splitter";
+
+type LessonOption = {
+  id: string;
+  title: string;
+  type: "global" | "teacher";
+  textbookId: string | null;
+};
 import {
   WORKSHEET_TEMPLATES,
   buildTemplate,
