@@ -14,8 +14,9 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger
 } from "@/components/ui/dialog";
 import {
-  Plus, ArrowLeft, Pencil, Trash2, GripVertical, Eye, EyeOff
+  Plus, ArrowLeft, Pencil, Trash2, GripVertical, Eye, EyeOff, FileText
 } from "lucide-react";
+import { emptyWorksheetSpec } from "@/lib/worksheet-defaults";
 
 interface Lesson {
   id: string;
