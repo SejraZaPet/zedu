@@ -171,6 +171,19 @@ const UsersManager = () => {
     const { data: roles } = await supabase.from("user_roles").select("user_id, role");
     const roleMap = new Map(roles?.map(r => [r.user_id, r.role]) ?? []);
 
+    const { data: parentLinks } = await supabase
+      .from("parent_student_links" as any)
+      .select("parent_id, student_id");
+    const profileNameMap = new Map((profiles ?? []).map(p => [p.id, `${p.first_name} ${p.last_name}`.trim()]));
+    const linkMap = new Map<string, string>();
+    ((parentLinks as any[]) || []).forEach((link: any) => {
+      const studentName = profileNameMap.get(link.student_id) || "";
+      if (!studentName) return;
+      const existing = linkMap.get(link.parent_id);
+      linkMap.set(link.parent_id, existing ? `${existing}, ${studentName}` : studentName);
+    });
+    setParentLinkMap(linkMap);
+
     const enriched = (profiles ?? []).map(p => ({
       ...p,
       status: p.status as string,
