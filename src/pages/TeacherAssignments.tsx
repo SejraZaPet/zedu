@@ -300,34 +300,41 @@ const TeacherAssignments = () => {
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => navigate("/ucitel/pracovni-listy")}
-                    title="Vytvořit nový pracovní list"
+                    onClick={() => {
+                      const params = new URLSearchParams();
+                      if (prefillLessonId) {
+                        params.set("from_lesson", prefillLessonId);
+                        params.set("from_lesson_type", prefillLessonType);
+                      }
+                      const returnUrl = `/ucitel/ulohy${
+                        prefillLessonId
+                          ? `?lessonId=${prefillLessonId}&lessonTitle=${encodeURIComponent(prefillLessonTitle)}`
+                          : ""
+                      }`;
+                      params.set("return_to", returnUrl);
+                      window.open(`/ucitel/pracovni-listy?${params.toString()}`, "_blank");
+                    }}
+                    title="Vytvořit nový pracovní list v novém okně"
                   >
                     <ExternalLink className="w-3.5 h-3.5 mr-1" />
                     Nový
                   </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={loadData}
+                    title="Obnovit seznam pracovních listů"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                  </Button>
                 </div>
                 {selectedWorksheetId && (
                   <p className="text-[11px] text-muted-foreground">
-                    ✓ Žáci uvidí pracovní list namísto AI otázek (pokud je vybrán).
+                    ✓ Žáci uvidí tento pracovní list v interaktivním plejeru.
                   </p>
                 )}
               </div>
-
-              {prefillLessonId && lessonLoaded && (
-                <LessonWorksheetGenerator
-                  lessonId={prefillLessonId}
-                  lessonTitle={prefillLessonTitle}
-                  blocks={lessonBlocks}
-                  onGenerated={(qs) => setGeneratedQuestions(qs)}
-                />
-              )}
-
-              {generatedQuestions.length > 0 && (
-                <div className="text-xs text-muted-foreground">
-                  ✓ {generatedQuestions.length} otázek bude uloženo s úlohou.
-                </div>
-              )}
 
               <div className="flex gap-2">
                 <Button onClick={handleCreate} disabled={creating}>
