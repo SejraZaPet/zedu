@@ -427,7 +427,24 @@ const Auth = () => {
             </div>
 
             {error && <p className="text-sm text-destructive">{error}</p>}
-            <Button type="submit" className="w-full" disabled={loading}>
+
+            <div className="flex items-start gap-2">
+              <Checkbox
+                id="gdprConsent"
+                checked={gdprConsent}
+                onCheckedChange={(v) => setGdprConsent(!!v)}
+                className="mt-0.5"
+              />
+              <Label htmlFor="gdprConsent" className="text-xs leading-relaxed font-normal cursor-pointer">
+                Souhlasím se{" "}
+                <a href="/gdpr" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                  zpracováním osobních údajů
+                </a>
+                {" "}a podmínkami užívání služby ZEdu.cz. *
+              </Label>
+            </div>
+
+            <Button type="submit" className="w-full" disabled={loading || !gdprConsent}>
               {loading ? "Registrace..." : "Zaregistrovat se"}
             </Button>
           </form>
