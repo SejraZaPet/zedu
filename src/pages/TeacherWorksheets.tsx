@@ -51,6 +51,10 @@ const MODE_LABELS: Record<string, string> = {
 
 export default function TeacherWorksheets() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const fromLessonId = searchParams.get("from_lesson");
+  const fromLessonType = (searchParams.get("from_lesson_type") as "global" | "teacher" | null) || null;
+  const returnTo = searchParams.get("return_to");
   const { user, loading: authLoading } = useAuth();
   const [items, setItems] = useState<WorksheetRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -66,6 +70,49 @@ export default function TeacherWorksheets() {
     }
     void load();
   }, [authLoading, user]);
+
+  // Auto-create a worksheet when arriving with ?from_lesson=...
+  useEffect(() => {
+    if (authLoading || !user || !fromLessonId || !fromLessonType) return;
+    let cancelled = false;
+    (async () => {
+      // fetch lesson title for default name
+      const tableName =
+        fromLessonType === "global" ? "textbook_lessons" : "teacher_textbook_lessons";
+      const { data: lessonRow } = await supabase
+        .from(tableName as any)
+        .select("title")
+        .eq("id", fromLessonId)
+        .maybeSingle();
+      if (cancelled) return;
+      const title = `Pracovní list – ${(lessonRow as any)?.title ?? "Lekce"}`;
+      const spec = emptyWorksheetSpec({ title });
+      const { data: created, error } = await supabase
+        .from("worksheets" as any)
+        .insert({
+          teacher_id: user.id,
+          title,
+          spec: spec as any,
+          source_lesson_id: fromLessonId,
+          source_lesson_type: fromLessonType,
+        } as any)
+        .select("id")
+        .single();
+      if (cancelled || error || !created) return;
+      const params = new URLSearchParams();
+      params.set("from_lesson", fromLessonId);
+      params.set("from_lesson_type", fromLessonType);
+      if (returnTo) params.set("return_to", returnTo);
+      navigate(
+        `/ucitel/pracovni-listy/${(created as any).id}?${params.toString()}`,
+        { replace: true }
+      );
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, user, fromLessonId, fromLessonType]);
 
   async function load() {
     if (!user) return;
