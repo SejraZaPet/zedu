@@ -38,7 +38,7 @@ interface Profile {
 const ProfilePage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, isLoggedIn, loading: authLoading } = useAuth();
+  const { user, isLoggedIn, role, loading: authLoading } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -47,6 +47,10 @@ const ProfilePage = () => {
   const [school, setSchool] = useState("");
   const [fieldOfStudy, setFieldOfStudy] = useState("");
   const [year, setYear] = useState<string>("");
+
+  // Parent recovery email
+  const [parentEmail, setParentEmail] = useState("");
+  const [savingParentEmail, setSavingParentEmail] = useState(false);
 
   // Password change
   const [showPasswordForm, setShowPasswordForm] = useState(false);
