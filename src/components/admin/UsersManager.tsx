@@ -1240,6 +1240,7 @@ const UsersManager = () => {
                     email: printDialogUser.email || "",
                     password: printPassword,
                     role: printDialogUser.role || "user",
+                    username: printDialogUser.username || "",
                   }]);
                   setPrintDialogUser(null);
                   setPrintPassword("");
