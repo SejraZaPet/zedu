@@ -455,6 +455,7 @@ const UsersManager = () => {
                 email: u.email || "",
                 password: u.login_password || "–",
                 role: u.role || "user",
+                username: u.username || "",
               }));
               printLoginCards(cards);
             }}
@@ -800,6 +801,7 @@ const UsersManager = () => {
                     email,
                     password,
                     role: newUser.role,
+                    username: username,
                   }];
 
                   if (newUser.role === "user" && createParentAccount) {
@@ -849,6 +851,7 @@ const UsersManager = () => {
                         email: parentLogin,
                         password: parentPassword,
                         role: "rodic",
+                        username: parentUsername,
                       });
                     } catch (pe: any) {
                       toast({ title: "Rodičovský účet selhal", description: pe.message, variant: "destructive" });
@@ -1155,6 +1158,7 @@ const UsersManager = () => {
                               email: parentLogin,
                               password: parentPassword,
                               role: "rodic",
+                              username: parentUsername,
                             });
                           }
                         } catch (pe: any) {
@@ -1174,7 +1178,7 @@ const UsersManager = () => {
                       }
 
                       successCount++;
-                      importedUsersList.push({ firstName: row.jmeno, lastName: row.prijmeni, email, password, role });
+                      importedUsersList.push({ firstName: row.jmeno, lastName: row.prijmeni, email, password, role, username });
                     } catch (e: any) {
                       errors.push(`${row.jmeno} ${row.prijmeni}: ${e.message}`);
                     }
@@ -1236,6 +1240,7 @@ const UsersManager = () => {
                     email: printDialogUser.email || "",
                     password: printPassword,
                     role: printDialogUser.role || "user",
+                    username: printDialogUser.username || "",
                   }]);
                   setPrintDialogUser(null);
                   setPrintPassword("");
