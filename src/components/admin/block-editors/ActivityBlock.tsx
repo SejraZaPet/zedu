@@ -1301,6 +1301,7 @@ const ActivityBlock = ({ block, onChange }: Props) => {
           </div>
         </div>
       )}
+      {activityType === "poll" && <PollEditor props={p} onChange={onChange} />}
 
       <div className="flex items-center gap-2 pt-3 border-t border-border mt-3">
         <Checkbox
