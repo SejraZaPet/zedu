@@ -73,22 +73,7 @@ const TeacherAssignments = () => {
     loadData();
   }, []);
 
-  useEffect(() => {
-    if (!prefillLessonId) return;
-    let cancelled = false;
-    (async () => {
-      // Try teacher_textbook_lessons first, then textbook_lessons
-      const [teacherRes, globalRes] = await Promise.all([
-        supabase.from("teacher_textbook_lessons").select("blocks").eq("id", prefillLessonId).maybeSingle(),
-        supabase.from("textbook_lessons").select("blocks").eq("id", prefillLessonId).maybeSingle(),
-      ]);
-      if (cancelled) return;
-      const blocks = (teacherRes.data?.blocks ?? globalRes.data?.blocks ?? []) as any[];
-      setLessonBlocks(Array.isArray(blocks) ? blocks : []);
-      setLessonLoaded(true);
-    })();
-    return () => { cancelled = true; };
-  }, [prefillLessonId]);
+  // (Old AI inline generator removed — worksheets are now first-class entities.)
 
   const loadData = async () => {
     setLoading(true);
