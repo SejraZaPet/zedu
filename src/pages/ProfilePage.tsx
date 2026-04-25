@@ -249,6 +249,35 @@ const ProfilePage = () => {
           </CardContent>
         </Card>
 
+        {/* Parent recovery email */}
+        {role === "rodic" && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Mail className="w-4 h-4 text-primary" />
+                Email pro obnovu hesla
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Přidejte svůj email, abyste si mohli obnovit heslo přes funkci „Zapomenuté heslo" na přihlašovací stránce.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Input
+                  type="email"
+                  value={parentEmail}
+                  onChange={(e) => setParentEmail(e.target.value)}
+                  placeholder="vas@email.cz"
+                />
+                <Button onClick={handleSaveParentEmail} disabled={savingParentEmail} variant="outline" className="gap-2">
+                  <Save className="w-4 h-4" />
+                  {savingParentEmail ? "Ukládám…" : "Uložit"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Password change */}
         <Card>
           <CardHeader>
