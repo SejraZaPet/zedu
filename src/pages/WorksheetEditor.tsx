@@ -746,6 +746,31 @@ export default function WorksheetEditor() {
     }
   }
 
+  async function handleAddLinkedLessons(selected: LessonChoice[]) {
+    if (!id || !user || selected.length === 0) return;
+    const rows = selected.map((s) => ({
+      worksheet_id: id,
+      lesson_id: s.id,
+      lesson_type: s.type,
+      added_by: user.id,
+    }));
+    const { error } = await supabase.from("worksheet_lessons" as any).insert(rows as any);
+    if (error) {
+      toast({ title: "Nepodařilo se připojit", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: `Připojeno: ${selected.length} ${selected.length === 1 ? "lekce" : "lekcí"}` });
+    void loadLinkedLessons();
+  }
+
+  async function handleRemoveLinkedLesson(linkId: string) {
+    const { error } = await supabase.from("worksheet_lessons" as any).delete().eq("id", linkId);
+    if (error) {
+      toast({ title: "Nepodařilo se odebrat", description: error.message, variant: "destructive" });
+      return;
+    }
+    void loadLinkedLessons();
+  }
   if (loading || !spec) {
     return (
       <div className="min-h-screen bg-background">
