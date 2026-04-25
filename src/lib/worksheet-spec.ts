@@ -20,7 +20,19 @@ export type ItemType =
   | "matching"
   | "ordering"
   | "short_answer"
-  | "open_answer";
+  | "open_answer"
+  | "offline_activity";
+
+/** Režim offline (didaktické) aktivity v pracovním listu. */
+export type OfflineMode =
+  | "discussion"
+  | "group_work"
+  | "practical"
+  | "observation"
+  | "reflection";
+
+/** Velikost skupiny pro offline aktivitu. */
+export type GroupSize = "individual" | "pair" | "small_group" | "class";
 
 export type Difficulty = "easy" | "medium" | "hard";
 
