@@ -110,6 +110,8 @@ const TeacherDashboard = () => {
           </p>
         </div>
 
+        <TodayWidget role="teacher" />
+
         <div className="grid gap-6 md:grid-cols-2">
           {teacherCards.map((card) => (
             <div
