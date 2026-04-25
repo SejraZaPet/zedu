@@ -6,6 +6,7 @@ export interface LoginCardData {
   email: string;
   password: string;
   role?: string;
+  username?: string;
 }
 
 const APP_URL = "https://www.zedu.cz";
@@ -38,6 +39,9 @@ function buildStrip(user: LoginCardData): string {
       " " +
       escHtml(user.lastName) +
       "</div>",
+    '<div class="cred-row"><div class="cred-label">Uživ. jméno:</div><div class="cred-value">' +
+      escHtml(user.username || "–") +
+      "</div></div>",
     '<div class="cred-row"><div class="cred-label">Přihlášení:</div><div class="cred-value">' +
       escHtml(user.email) +
       "</div></div>",
