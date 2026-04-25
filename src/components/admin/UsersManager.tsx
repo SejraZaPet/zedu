@@ -1158,6 +1158,7 @@ const UsersManager = () => {
                               email: parentLogin,
                               password: parentPassword,
                               role: "rodic",
+                              username: parentUsername,
                             });
                           }
                         } catch (pe: any) {
