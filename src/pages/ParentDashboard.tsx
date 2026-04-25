@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { User, BookOpen, ClipboardList, CheckCircle2, Clock, Plus, Settings, Trash2 } from "lucide-react";
+import { User, BookOpen, ClipboardList, CheckCircle2, Clock, Plus, Settings, Trash2, KeyRound } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { useAuth } from "@/contexts/AuthContext";
