@@ -1251,6 +1251,14 @@ export type Database = {
         Args: { _code: string; _student_id: string }
         Returns: string
       }
+      find_student_by_code: {
+        Args: { _code: string }
+        Returns: {
+          first_name: string
+          id: string
+          last_name: string
+        }[]
+      }
       generate_game_code: { Args: never; Returns: string }
       increment_player_score: {
         Args: { _player_id: string; _score_delta: number }
