@@ -68,17 +68,15 @@ const Auth = () => {
 
     let loginEmail = email.trim();
     if (!loginEmail.includes("@")) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("email")
-        .eq("username", loginEmail.toLowerCase())
-        .maybeSingle();
-      if (!profile?.email) {
+      const { data: lookupData, error: lookupError } = await supabase.functions.invoke("lookup-username", {
+        body: { username: loginEmail }
+      });
+      if (lookupError || !lookupData?.email) {
         setError("Uživatelské jméno nenalezeno. Zkuste přihlášení pomocí emailu.");
         setLoading(false);
         return;
       }
-      loginEmail = profile.email;
+      loginEmail = lookupData.email;
     }
     const { error: authError } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
 
