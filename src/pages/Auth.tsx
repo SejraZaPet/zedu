@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Lock, UserPlus, LogIn, GraduationCap, BookOpenText, KeyRound, CheckCircle2, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Checkbox } from "@/components/ui/checkbox";
 
 type Role = "student" | "teacher";
 
@@ -40,6 +41,7 @@ const Auth = () => {
   const [fieldOfStudy, setFieldOfStudy] = useState("");
   const [year, setYear] = useState("");
   const [classCode, setClassCode] = useState("");
+  const [gdprConsent, setGdprConsent] = useState(false);
 
   // React to auth state changes - redirect when logged in
   useEffect(() => {
@@ -123,6 +125,12 @@ const Auth = () => {
     e.preventDefault();
     setLoading(true);
     setError("");
+
+    if (!gdprConsent) {
+      setError("Pro registraci je nutný souhlas se zpracováním osobních údajů.");
+      setLoading(false);
+      return;
+    }
 
     if (regPassword !== regPasswordConfirm) {
       setError("Hesla se neshodují.");
@@ -419,7 +427,24 @@ const Auth = () => {
             </div>
 
             {error && <p className="text-sm text-destructive">{error}</p>}
-            <Button type="submit" className="w-full" disabled={loading}>
+
+            <div className="flex items-start gap-2">
+              <Checkbox
+                id="gdprConsent"
+                checked={gdprConsent}
+                onCheckedChange={(v) => setGdprConsent(!!v)}
+                className="mt-0.5"
+              />
+              <Label htmlFor="gdprConsent" className="text-xs leading-relaxed font-normal cursor-pointer">
+                Souhlasím se{" "}
+                <a href="/gdpr" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                  zpracováním osobních údajů
+                </a>
+                {" "}a podmínkami užívání služby ZEdu.cz. *
+              </Label>
+            </div>
+
+            <Button type="submit" className="w-full" disabled={loading || !gdprConsent}>
               {loading ? "Registrace..." : "Zaregistrovat se"}
             </Button>
           </form>

@@ -37,6 +37,7 @@ import StudentAssignmentPlayer from "./pages/StudentAssignmentPlayer";
 import TeacherClasses from "./pages/TeacherClasses";
 import TeacherResults from "./pages/TeacherResults";
 import ParentDashboard from "./pages/ParentDashboard";
+import GdprPage from "./pages/GdprPage";
 
 const queryClient = new QueryClient();
 
@@ -81,6 +82,7 @@ const App = () => (
             <Route path="/live/student/:sessionId" element={<StudentGamePlay />} />
             <Route path="/napoveda" element={<HelpPage />} />
             <Route path="/napoveda/:guideId" element={<HelpDetailPage />} />
+            <Route path="/gdpr" element={<GdprPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
