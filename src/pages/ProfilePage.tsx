@@ -32,6 +32,8 @@ interface Profile {
   year: number | null;
   status: string;
   created_at: string;
+  role: string;
+  parent_email: string | null;
 }
 
 const ProfilePage = () => {
