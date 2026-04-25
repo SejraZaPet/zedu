@@ -152,7 +152,6 @@ const UsersManager = () => {
   const [importing, setImporting] = useState(false);
   const [importErrors, setImportErrors] = useState<string[]>([]);
   const [importedUsers, setImportedUsers] = useState<LoginCardData[]>([]);
-  const [lastImportedUsers, setLastImportedUsers] = useState<LoginCardData[]>([]);
   const [parentLinkMap, setParentLinkMap] = useState<Map<string, string>>(new Map());
 
   const fetchUsers = async () => {
@@ -399,16 +398,6 @@ const UsersManager = () => {
         </div>
       )}
 
-      {lastImportedUsers.length > 0 && (
-        <div className="flex items-center justify-between p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
-          <span className="text-sm text-green-400 font-medium">
-            Poslední import: {lastImportedUsers.length} účtů
-          </span>
-          <Button size="sm" variant="outline" className="gap-2" onClick={() => printLoginCards(lastImportedUsers)}>
-            🖨️ Tisknout štítky
-          </Button>
-        </div>
-      )}
 
       <div className="text-sm text-muted-foreground">
         Celkem: {filtered.length} uživatel{filtered.length === 1 ? "" : filtered.length < 5 ? "é" : "ů"}
@@ -527,7 +516,7 @@ const UsersManager = () => {
                 </TableCell>
                 <TableCell className="font-medium whitespace-nowrap">
                   <div className="flex flex-col">
-                    <span>{user.first_name} {user.last_name}</span>
+                    <span>{user.first_name || ""} {user.last_name || ""}</span>
                     {user.role === "rodic" && parentLinkMap.get(user.id) && (
                       <span className="text-xs text-muted-foreground">
                         👨‍👩‍👧 {parentLinkMap.get(user.id)}
@@ -1224,7 +1213,6 @@ const UsersManager = () => {
                   }
                   setImporting(false);
                   setImportedUsers(importedUsersList);
-                  if (importedUsersList.length > 0) setLastImportedUsers(importedUsersList);
                 }}
               >
                 {importing ? "Importuji..." : `Importovat ${importPreview.length} uživatelů`}
