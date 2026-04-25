@@ -695,6 +695,34 @@ const UsersManager = () => {
                 </SelectContent>
               </Select>
             </div>
+            {newUser.role === "user" && (
+              <div className="space-y-2 rounded-lg border border-border p-3 bg-muted/30">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="create-parent"
+                    checked={createParentAccount}
+                    onCheckedChange={(v) => setCreateParentAccount(!!v)}
+                  />
+                  <Label htmlFor="create-parent" className="cursor-pointer">
+                    Vytvořit účet pro rodiče
+                  </Label>
+                </div>
+                {createParentAccount && (
+                  <div>
+                    <Label className="text-xs">Email rodiče (volitelné)</Label>
+                    <Input
+                      value={parentEmail}
+                      onChange={(e) => setParentEmail(e.target.value)}
+                      placeholder="rodic@email.cz"
+                      className="mt-1"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Pokud nezadáte, vytvoří se interní přihlášení s vygenerovaným heslem.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddUserOpen(false)}>Zrušit</Button>
