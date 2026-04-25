@@ -211,17 +211,87 @@ export type Database = {
           },
         ]
       }
+      class_teachers: {
+        Row: {
+          class_id: string
+          id: string
+          joined_at: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          class_id: string
+          id?: string
+          joined_at?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          class_id?: string
+          id?: string
+          joined_at?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_teachers_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      class_textbooks: {
+        Row: {
+          added_at: string
+          added_by: string | null
+          class_id: string
+          id: string
+          textbook_id: string
+          textbook_type: string
+        }
+        Insert: {
+          added_at?: string
+          added_by?: string | null
+          class_id: string
+          id?: string
+          textbook_id: string
+          textbook_type: string
+        }
+        Update: {
+          added_at?: string
+          added_by?: string | null
+          class_id?: string
+          id?: string
+          textbook_id?: string
+          textbook_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_textbooks_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       classes: {
         Row: {
           access_code: string | null
           access_code_active: boolean
           archived: boolean
           created_at: string
+          created_by: string | null
           description: string
           field_of_study: string
           id: string
           name: string
           school: string
+          teacher_join_code: string | null
+          teacher_join_code_active: boolean
           updated_at: string
           year: number | null
         }
@@ -230,11 +300,14 @@ export type Database = {
           access_code_active?: boolean
           archived?: boolean
           created_at?: string
+          created_by?: string | null
           description?: string
           field_of_study?: string
           id?: string
           name: string
           school?: string
+          teacher_join_code?: string | null
+          teacher_join_code_active?: boolean
           updated_at?: string
           year?: number | null
         }
@@ -243,11 +316,14 @@ export type Database = {
           access_code_active?: boolean
           archived?: boolean
           created_at?: string
+          created_by?: string | null
           description?: string
           field_of_study?: string
           id?: string
           name?: string
           school?: string
+          teacher_join_code?: string | null
+          teacher_join_code_active?: boolean
           updated_at?: string
           year?: number | null
         }
@@ -1296,15 +1372,28 @@ export type Database = {
         }[]
       }
       generate_game_code: { Args: never; Returns: string }
+      generate_teacher_join_code: { Args: never; Returns: string }
       increment_player_score: {
         Args: { _player_id: string; _score_delta: number }
         Returns: undefined
       }
       is_admin: { Args: never; Returns: boolean }
       is_admin_or_teacher: { Args: never; Returns: boolean }
+      is_class_owner: {
+        Args: { _class_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_class_teacher: {
+        Args: { _class_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_enrolled_in_textbook: {
         Args: { _student_id: string; _textbook_id: string }
         Returns: boolean
+      }
+      join_class_as_teacher: {
+        Args: { _code: string; _user_id: string }
+        Returns: string
       }
       join_class_by_code: {
         Args: { _code: string; _user_id: string }
