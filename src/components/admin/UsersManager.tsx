@@ -455,6 +455,7 @@ const UsersManager = () => {
                 email: u.email || "",
                 password: u.login_password || "–",
                 role: u.role || "user",
+                username: u.username || "",
               }));
               printLoginCards(cards);
             }}
