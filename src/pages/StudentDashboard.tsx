@@ -33,7 +33,7 @@ const StudentDashboard = () => {
 
     supabase
       .from("profiles")
-      .select("first_name, last_name, email, school, field_of_study, year")
+      .select("first_name, last_name, email, school, field_of_study, year, username, student_code")
       .eq("id", user.id)
       .single()
       .then(({ data }) => {
