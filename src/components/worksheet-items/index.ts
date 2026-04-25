@@ -7,6 +7,7 @@ export { default as MatchingItem } from "./MatchingItem";
 export { default as OrderingItem } from "./OrderingItem";
 export { default as ShortAnswerItem } from "./ShortAnswerItem";
 export { default as OpenAnswerItem } from "./OpenAnswerItem";
+export { default as OfflineActivityItem } from "./OfflineActivityItem";
 
 import type { ItemType } from "@/lib/worksheet-spec";
 import type { FC } from "react";
@@ -19,6 +20,7 @@ import MatchingItem from "./MatchingItem";
 import OrderingItem from "./OrderingItem";
 import ShortAnswerItem from "./ShortAnswerItem";
 import OpenAnswerItem from "./OpenAnswerItem";
+import OfflineActivityItem from "./OfflineActivityItem";
 
 /** Registry mapping item type → renderer component */
 export const ITEM_RENDERERS: Record<ItemType, FC<WorksheetItemProps>> = {
@@ -29,4 +31,5 @@ export const ITEM_RENDERERS: Record<ItemType, FC<WorksheetItemProps>> = {
   ordering: OrderingItem,
   short_answer: ShortAnswerItem,
   open_answer: OpenAnswerItem,
+  offline_activity: OfflineActivityItem,
 };

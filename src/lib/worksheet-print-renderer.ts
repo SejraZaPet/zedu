@@ -227,6 +227,29 @@ body {
   margin: 0 3pt;
 }
 
+/* ─── Offline activity ─── */
+.ws-offline-activity {
+  margin: 4pt 0;
+  padding: 8pt 10pt;
+  border: 1pt dashed #6366f1;
+  border-radius: 4pt;
+  background: #eef2ff;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+.ws-offline-badge {
+  font-size: 9pt;
+  font-weight: 600;
+  color: #4338ca;
+  margin-bottom: 4pt;
+}
+.ws-offline-meta {
+  font-size: 8.5pt;
+  color: #475569;
+  display: flex;
+  gap: 12pt;
+}
+
 /* ─── Matching ─── */
 .ws-matching-table {
   width: 100%;
@@ -499,6 +522,33 @@ function renderItem(item: WorksheetItem, showPoints: boolean): string {
     case "open_answer":
       // prompt + answer space only
       break;
+
+    case "offline_activity": {
+      const modeLabels: Record<string, string> = {
+        discussion: "Diskuse",
+        group_work: "Skupinová práce",
+        practical: "Praktická aktivita",
+        observation: "Pozorování",
+        reflection: "Reflexe",
+      };
+      const groupLabels: Record<string, string> = {
+        individual: "Jednotlivec",
+        pair: "Dvojice",
+        small_group: "Malá skupina (3–5)",
+        class: "Celá třída",
+      };
+      const mode = item.offlineMode ?? "discussion";
+      const group = item.groupSize ?? "class";
+      const dur = item.durationMin && item.durationMin > 0 ? `~${item.durationMin} min` : "";
+      body = `<div class="ws-offline-activity">
+        <div class="ws-offline-badge">⬢ Offline aktivita: ${esc(modeLabels[mode] ?? mode)}</div>
+        <div class="ws-offline-meta">
+          <span>👥 ${esc(groupLabels[group] ?? group)}</span>
+          ${dur ? `<span>⏱ ${esc(dur)}</span>` : ""}
+        </div>
+      </div>`;
+      break;
+    }
   }
 
   return `

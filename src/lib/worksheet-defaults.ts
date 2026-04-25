@@ -112,6 +112,18 @@ export function createDefaultItem(type: ItemType, itemNumber: number): Worksheet
         timeEstimateSec: 180,
         answerSpace: { type: "lines", heightMm: 50, lineCount: 8 },
       };
+    case "offline_activity":
+      return {
+        ...base,
+        prompt: "Diskutujte ve třídě o tématu a zapište si hlavní závěry.",
+        points: 2,
+        timeEstimateSec: 600, // 10 min
+        difficulty: "medium",
+        offlineMode: "discussion",
+        groupSize: "class",
+        durationMin: 10,
+        answerSpace: { type: "lines", heightMm: 40, lineCount: 6 },
+      };
   }
 }
 
@@ -150,7 +162,12 @@ export function recomputeMetadata(spec: WorksheetSpec): WorksheetSpec {
   items.forEach((it, idx) => {
     it.itemNumber = idx + 1;
     totalPoints += it.points || 0;
-    totalSec += it.timeEstimateSec || 0;
+    // Pro offline aktivity preferuj durationMin (v minutách), jinak timeEstimateSec
+    if (it.type === "offline_activity" && typeof it.durationMin === "number" && it.durationMin > 0) {
+      totalSec += it.durationMin * 60;
+    } else {
+      totalSec += it.timeEstimateSec || 0;
+    }
     diff[it.difficulty] = (diff[it.difficulty] || 0) + 1;
     typeDist[it.type] = (typeDist[it.type] || 0) + 1;
   });
@@ -175,4 +192,20 @@ export const ITEM_TYPE_LABELS: Record<ItemType, { label: string; description: st
   ordering: { label: "Seřazení", description: "Uspořádání do správného pořadí" },
   short_answer: { label: "Krátká odpověď", description: "Pár slov nebo věta" },
   open_answer: { label: "Otevřená odpověď", description: "Delší slovní úvaha" },
+  offline_activity: { label: "Offline aktivita", description: "Diskuse, skupinová práce nebo praktické cvičení" },
+};
+
+export const OFFLINE_MODE_LABELS: Record<import("@/lib/worksheet-spec").OfflineMode, string> = {
+  discussion: "Diskuse",
+  group_work: "Skupinová práce",
+  practical: "Praktická aktivita",
+  observation: "Pozorování",
+  reflection: "Reflexe",
+};
+
+export const GROUP_SIZE_LABELS: Record<import("@/lib/worksheet-spec").GroupSize, string> = {
+  individual: "Jednotlivec",
+  pair: "Dvojice",
+  small_group: "Malá skupina (3–5)",
+  class: "Celá třída",
 };

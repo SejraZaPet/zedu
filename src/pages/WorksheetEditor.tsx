@@ -56,6 +56,8 @@ import type {
   ItemType,
   Difficulty,
   AnswerKeyEntry,
+  OfflineMode,
+  GroupSize,
 } from "@/lib/worksheet-spec";
 import {
   emptyWorksheetSpec,
@@ -63,6 +65,8 @@ import {
   createDefaultAnswerKey,
   recomputeMetadata,
   ITEM_TYPE_LABELS,
+  OFFLINE_MODE_LABELS,
+  GROUP_SIZE_LABELS,
 } from "@/lib/worksheet-defaults";
 import WorksheetPlayer from "@/components/WorksheetPlayer";
 
@@ -76,6 +80,7 @@ const ITEM_TYPES: ItemType[] = [
   "ordering",
   "short_answer",
   "open_answer",
+  "offline_activity",
 ];
 
 const MODE_OPTIONS = [
@@ -856,7 +861,70 @@ function PropertiesPanel({
         </div>
       )}
 
-      {/* Image */}
+      {item.type === "offline_activity" && (
+        <div className="space-y-3 rounded-lg border border-dashed border-primary/40 bg-primary/5 p-3">
+          <div>
+            <Label className="text-xs">Režim aktivity</Label>
+            <Select
+              value={item.offlineMode ?? "discussion"}
+              onValueChange={(v) => onUpdateItem({ offlineMode: v as OfflineMode })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {(Object.entries(OFFLINE_MODE_LABELS) as [OfflineMode, string][]).map(([k, label]) => (
+                  <SelectItem key={k} value={k}>{label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label className="text-xs">Velikost skupiny</Label>
+              <Select
+                value={item.groupSize ?? "class"}
+                onValueChange={(v) => onUpdateItem({ groupSize: v as GroupSize })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(Object.entries(GROUP_SIZE_LABELS) as [GroupSize, string][]).map(([k, label]) => (
+                    <SelectItem key={k} value={k}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Délka (min)</Label>
+              <Input
+                type="number"
+                min={0}
+                value={item.durationMin ?? 0}
+                onChange={(e) => onUpdateItem({ durationMin: Number(e.target.value) || 0 })}
+              />
+            </div>
+          </div>
+
+          <div>
+            <Label className="text-xs">Pokyny pro hodnocení (volitelné)</Label>
+            <Textarea
+              value={answerKey?.rubric ?? ""}
+              onChange={(e) => onUpdateKey({ rubric: e.target.value })}
+              rows={2}
+              placeholder="Např. body za aktivní účast, splnění zadání…"
+            />
+          </div>
+
+          <p className="text-[11px] text-muted-foreground">
+            Offline aktivity probíhají mimo zařízení. Studenti je v online přehrávači uvidí jako informativní kartu, body přiděluje učitel ručně.
+          </p>
+        </div>
+      )}
+
+
       <div className="pt-3 border-t border-border">
         <Label className="text-xs">Obrázek (URL, volitelné)</Label>
         <Input
