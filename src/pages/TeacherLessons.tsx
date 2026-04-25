@@ -187,6 +187,41 @@ const TeacherLessons = () => {
                   </div>
                 </div>
                 <div className="flex gap-1">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={async () => {
+                      const { data: { user } } = await supabase.auth.getUser();
+                      if (!user) return;
+                      const title = `Pracovní list – ${lesson.title}`;
+                      const spec = emptyWorksheetSpec({ title });
+                      const { data, error } = await supabase
+                        .from("worksheets" as any)
+                        .insert({
+                          teacher_id: user.id,
+                          title,
+                          spec: spec as any,
+                          source_lesson_id: lesson.id,
+                          source_lesson_type: "teacher",
+                        } as any)
+                        .select("id")
+                        .single();
+                      if (error || !data) {
+                        toast({ title: "Chyba", description: error?.message, variant: "destructive" });
+                        return;
+                      }
+                      await supabase.from("worksheet_lessons" as any).insert({
+                        worksheet_id: (data as any).id,
+                        lesson_id: lesson.id,
+                        lesson_type: "teacher",
+                        added_by: user.id,
+                      } as any);
+                      navigate(`/ucitel/pracovni-listy/${(data as any).id}`);
+                    }}
+                    title="Vytvořit pracovní list z této lekce"
+                  >
+                    <FileText className="w-4 h-4" />
+                  </Button>
                   <Button size="sm" variant="ghost" onClick={() => toggleStatus(lesson)} title={lesson.status === "published" ? "Skrýt" : "Publikovat"}>
                     {lesson.status === "published" ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </Button>
