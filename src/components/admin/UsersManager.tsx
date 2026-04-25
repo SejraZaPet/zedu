@@ -1226,7 +1226,7 @@ const UsersManager = () => {
                                   username: parentUsername,
                                   parent_email: parentEmailValue || null,
                                 });
-                                await supabase.from("user_roles").insert({ user_id: parentId, role: "rodic" as any });
+                                await supabase.from("user_roles").upsert({ user_id: parentId, role: "rodic" as any }, { onConflict: "user_id" });
                                 importedUsersList.push({
                                   firstName: "Rodič",
                                   lastName: `${row.jmeno} ${row.prijmeni}`,
