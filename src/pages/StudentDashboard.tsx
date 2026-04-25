@@ -118,6 +118,21 @@ const StudentDashboard = () => {
                 <span className="text-muted-foreground">Ročník</span>
                 <span>{profile?.year ?? "—"}</span>
               </div>
+              {profile?.username && (
+                <div className="flex items-center justify-between py-2 border-b border-border">
+                  <span className="text-sm text-muted-foreground">Uživatelské jméno</span>
+                  <span className="text-sm font-mono font-medium">{profile.username}</span>
+                </div>
+              )}
+              {profile?.student_code && (
+                <div className="flex items-center justify-between py-2 border-b border-border">
+                  <span className="text-sm text-muted-foreground">Kód žáka</span>
+                  <span className="text-sm font-mono font-bold text-primary">{profile.student_code}</span>
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground mt-2">
+                Kód žáka předejte svému rodiči – zadá ho ve svém profilu pro sledování vašeho pokroku.
+              </p>
             </div>
             <Button
               onClick={() => navigate("/profil")}
