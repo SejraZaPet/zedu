@@ -17,6 +17,7 @@ import {
 import UserDetailDialog from "./UserDetailDialog";
 
 import { printLoginCards, type LoginCardData } from "@/lib/generate-login-cards";
+import { sendWelcomeEmail } from "@/lib/send-email";
 import {
   Select,
   SelectContent,
@@ -828,6 +829,21 @@ const UsersManager = () => {
                     user_id: userId,
                     role: newUser.role as any,
                   });
+
+                  if (!email.includes("@zedu-student.cz") && !email.includes("@zedu-lektor.cz") && !email.includes("@zedu-rodic.cz")) {
+                    try {
+                      await sendWelcomeEmail({
+                        to: email,
+                        firstName: newUser.first_name,
+                        lastName: newUser.last_name,
+                        email,
+                        password,
+                        role: newUser.role,
+                      });
+                    } catch (e) {
+                      console.warn("Email neposlán:", e);
+                    }
+                  }
 
                   const printCards: LoginCardData[] = [{
                     firstName: newUser.first_name,
