@@ -10,7 +10,6 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, Save, KeyRound, User, Mail } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
 
 const statusLabels: Record<string, string> = {
   pending: "Čeká na schválení",
