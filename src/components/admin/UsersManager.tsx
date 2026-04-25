@@ -1116,19 +1116,25 @@ const UsersManager = () => {
                       usedUsernames.push(username);
                       const studentCode = 'ZAK-' + Math.random().toString(36).slice(-4).toUpperCase();
 
-                      await supabase.from("profiles").upsert({
+                      const { error: profileError } = await supabase.from("profiles").upsert({
                         id: userId,
-                        first_name: row.jmeno,
-                        last_name: row.prijmeni,
-                        email,
+                        first_name: row.jmeno || "",
+                        last_name: row.prijmeni || "",
+                        email: email,
                         school: row.skola || "",
-                        field_of_study: row.obor || row.trida || "",
-                        year: row.rocnik ? parseInt(row.rocnik) : null,
+                        year: row.rocnik ? parseInt(String(row.rocnik)) : null,
+                        field_of_study: row.trida || row.obor || "",
                         status: "approved" as any,
                         login_password: password,
                         username: username,
                         student_code: studentCode,
                       });
+
+                      if (profileError) {
+                        console.error("Profile upsert error:", profileError);
+                        errors.push(`${row.jmeno} ${row.prijmeni}: Chyba při ukládání profilu - ${profileError.message}`);
+                        continue;
+                      }
 
                       await supabase.from("user_roles").insert({ user_id: userId, role: role as any });
 
