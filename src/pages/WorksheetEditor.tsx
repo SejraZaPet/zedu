@@ -680,7 +680,7 @@ export default function WorksheetEditor() {
         className="sticky z-30 bg-background/95 backdrop-blur border-b border-border"
         style={{ top: "70px" }}
       >
-        <div className="container mx-auto px-4 py-3 flex items-center gap-3 max-w-7xl">
+        <div className="container mx-auto px-4 py-3 flex items-center gap-3 max-w-[1600px]">
           <Button variant="ghost" size="sm" onClick={() => navigate("/ucitel/pracovni-listy")}>
             <ChevronLeft className="w-4 h-4 mr-1" /> Zpět
           </Button>
