@@ -7,15 +7,20 @@ const corsHeaders = {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", { status: 200, headers: corsHeaders });
   }
 
   try {
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") || Deno.env.get("RESEND_KEY");
 
+    console.log("ENV keys available:", Object.keys(Deno.env.toObject()).filter(k => !k.includes("SECRET")));
+    console.log("RESEND_API_KEY present:", !!RESEND_API_KEY);
+
     if (!RESEND_API_KEY) {
-      console.error("RESEND_API_KEY není nastaven v secrets");
-      return new Response(JSON.stringify({ error: "Email service not configured" }), {
+      return new Response(JSON.stringify({
+        error: "RESEND_API_KEY není nakonfigurován",
+        availableKeys: Object.keys(Deno.env.toObject()).filter(k => k.startsWith("RESEND"))
+      }), {
         status: 503,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
