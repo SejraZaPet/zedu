@@ -15,7 +15,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import UserDetailDialog from "./UserDetailDialog";
-import { sendWelcomeEmail } from "@/lib/send-email";
+
 import { printLoginCards, type LoginCardData } from "@/lib/generate-login-cards";
 import {
   Select,
