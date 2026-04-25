@@ -54,6 +54,7 @@ const SiteHeader = () => {
     if (userRole === "rodic") {
       return [
         { label: "Přehled", href: "/rodic", icon: LayoutDashboard },
+        { label: "Profil", href: "/profil", icon: User },
         { label: "Nápověda", href: "/napoveda", icon: HelpCircle },
       ];
     }

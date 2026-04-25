@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Save, KeyRound, User } from "lucide-react";
+import { ArrowLeft, Save, KeyRound, User, Mail } from "lucide-react";
 
 const statusLabels: Record<string, string> = {
   pending: "Čeká na schválení",
@@ -32,12 +32,13 @@ interface Profile {
   year: number | null;
   status: string;
   created_at: string;
+  parent_email: string | null;
 }
 
 const ProfilePage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, isLoggedIn, loading: authLoading } = useAuth();
+  const { user, isLoggedIn, role, loading: authLoading } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -46,6 +47,10 @@ const ProfilePage = () => {
   const [school, setSchool] = useState("");
   const [fieldOfStudy, setFieldOfStudy] = useState("");
   const [year, setYear] = useState<string>("");
+
+  // Parent recovery email
+  const [parentEmail, setParentEmail] = useState("");
+  const [savingParentEmail, setSavingParentEmail] = useState(false);
 
   // Password change
   const [showPasswordForm, setShowPasswordForm] = useState(false);
@@ -81,6 +86,7 @@ const ProfilePage = () => {
       setSchool(data.school || "");
       setFieldOfStudy(data.field_of_study || "");
       setYear(data.year ? String(data.year) : "");
+      setParentEmail((data as any).parent_email || "");
       setLoading(false);
     };
 
@@ -109,6 +115,25 @@ const ProfilePage = () => {
 
     toast({ title: "Uloženo", description: "Údaje byly úspěšně aktualizovány." });
     setProfile((prev) => prev ? { ...prev, school, field_of_study: fieldOfStudy, year: year ? parseInt(year, 10) : null } : prev);
+  };
+
+  const handleSaveParentEmail = async () => {
+    if (!user) return;
+    setSavingParentEmail(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ parent_email: parentEmail.trim() || null })
+      .eq("id", user.id);
+    setSavingParentEmail(false);
+    if (error) {
+      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({
+      title: "Email uložen",
+      description: 'Pro obnovu hesla použijte „Zapomenuté heslo" na přihlašovací stránce.',
+      duration: 8000,
+    });
   };
 
   const handleChangePassword = async () => {
@@ -224,6 +249,35 @@ const ProfilePage = () => {
             </Button>
           </CardContent>
         </Card>
+
+        {/* Parent recovery email */}
+        {role === "rodic" && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Mail className="w-4 h-4 text-primary" />
+                Email pro obnovu hesla
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Přidejte svůj email, abyste si mohli obnovit heslo přes funkci „Zapomenuté heslo" na přihlašovací stránce.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Input
+                  type="email"
+                  value={parentEmail}
+                  onChange={(e) => setParentEmail(e.target.value)}
+                  placeholder="vas@email.cz"
+                />
+                <Button onClick={handleSaveParentEmail} disabled={savingParentEmail} variant="outline" className="gap-2">
+                  <Save className="w-4 h-4" />
+                  {savingParentEmail ? "Ukládám…" : "Uložit"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Password change */}
         <Card>
