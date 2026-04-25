@@ -9,6 +9,8 @@ import { Loader2, ChevronLeft, ChevronRight, CheckCircle2, Clock, Save, Send, Ar
 import { toast } from "@/hooks/use-toast";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
+import WorksheetPlayer from "@/components/WorksheetPlayer";
+import type { WorksheetSpec } from "@/lib/worksheet-spec";
 
 interface AssignmentData {
   id: string;
