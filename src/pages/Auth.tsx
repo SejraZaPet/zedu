@@ -126,6 +126,12 @@ const Auth = () => {
     setLoading(true);
     setError("");
 
+    if (!gdprConsent) {
+      setError("Pro registraci je nutný souhlas se zpracováním osobních údajů.");
+      setLoading(false);
+      return;
+    }
+
     if (regPassword !== regPasswordConfirm) {
       setError("Hesla se neshodují.");
       setLoading(false);
