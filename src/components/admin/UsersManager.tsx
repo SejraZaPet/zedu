@@ -709,7 +709,7 @@ const UsersManager = () => {
                 </SelectContent>
               </Select>
             </div>
-            {newUser.role === "user" && (
+            {newUser.role === "user" && !isAdult && (
               <div className="space-y-2 rounded-lg border border-border p-3 bg-muted/30">
                 <div className="flex items-center gap-2">
                   <Checkbox
