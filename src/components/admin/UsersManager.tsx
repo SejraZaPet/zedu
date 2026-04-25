@@ -790,6 +790,11 @@ const UsersManager = () => {
                     try {
                       const parentLogin = parentEmail.trim() || `rodic.${username}@zedu-rodic.cz`;
                       const parentPassword = Math.random().toString(36).slice(-8) + "Aa1!";
+                      const parentUsername = generateUsername(
+                        "rodic",
+                        `${newUser.first_name}${newUser.last_name}`,
+                        [...existingUsernames, username]
+                      );
 
                       const { data: parentAuth, error: parentErr } = await supabase.functions.invoke("create-user", {
                         body: { email: parentLogin, password: parentPassword, role: "rodic" }
@@ -808,6 +813,7 @@ const UsersManager = () => {
                         year: null,
                         status: "approved" as any,
                         login_password: parentPassword,
+                        username: parentUsername,
                         parent_email: parentEmail.trim() || null,
                       });
 
