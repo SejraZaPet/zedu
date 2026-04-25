@@ -965,7 +965,7 @@ export default function WorksheetEditor() {
           </section>
 
           {/* ── PROPERTIES ── */}
-          <aside className="bg-card border border-border rounded-xl p-4 lg:sticky lg:top-[140px] lg:max-h-[calc(100vh-160px)] lg:overflow-y-auto">
+          <aside className="bg-card border border-border rounded-xl p-4 min-w-0 lg:sticky lg:top-[140px] lg:max-h-[calc(100vh-160px)] lg:overflow-y-auto lg:overflow-x-hidden">
             <h3 className="font-heading text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
               Vlastnosti
             </h3>
