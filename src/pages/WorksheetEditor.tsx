@@ -45,6 +45,8 @@ import {
   FileDown,
   LayoutTemplate,
   Printer,
+  Link2,
+  XCircle,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
