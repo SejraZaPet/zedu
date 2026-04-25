@@ -117,7 +117,25 @@ const ProfilePage = () => {
     setProfile((prev) => prev ? { ...prev, school, field_of_study: fieldOfStudy, year: year ? parseInt(year, 10) : null } : prev);
   };
 
-  const handleChangePassword = async () => {
+  const handleSaveParentEmail = async () => {
+    if (!user) return;
+    setSavingParentEmail(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ parent_email: parentEmail.trim() || null })
+      .eq("id", user.id);
+    setSavingParentEmail(false);
+    if (error) {
+      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({
+      title: "Email uložen",
+      description: "Pro obnovu hesla použijte „Zapomenuté heslo" na přihlašovací stránce.",
+      duration: 8000,
+    });
+  };
+
     if (newPassword.length < 6) {
       toast({ title: "Chyba", description: "Heslo musí mít alespoň 6 znaků.", variant: "destructive" });
       return;
