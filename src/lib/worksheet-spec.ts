@@ -99,6 +99,12 @@ export interface WorksheetItem {
   hints?: string[];
   /** Tags for filtering / grouping */
   tags?: string[];
+  /** Offline activity mode (only for type=offline_activity). */
+  offlineMode?: OfflineMode;
+  /** Estimated activity duration in minutes (only for type=offline_activity). */
+  durationMin?: number;
+  /** Suggested group size (only for type=offline_activity). */
+  groupSize?: GroupSize;
 }
 
 export interface AnswerKeyEntry {
@@ -216,7 +222,7 @@ export const WORKSHEET_SPEC_JSON_SCHEMA = {
               properties: {
                 id: { type: "string" },
                 itemNumber: { type: "integer", minimum: 1 },
-                type: { type: "string", enum: ["mcq", "fill_blank", "true_false", "matching", "ordering", "short_answer", "open_answer"] },
+                type: { type: "string", enum: ["mcq", "fill_blank", "true_false", "matching", "ordering", "short_answer", "open_answer", "offline_activity"] },
                 prompt: { type: "string" },
                 points: { type: "number", minimum: 0 },
                 difficulty: { type: "string", enum: ["easy", "medium", "hard"] },
