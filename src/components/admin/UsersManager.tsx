@@ -525,7 +525,14 @@ const UsersManager = () => {
                   />
                 </TableCell>
                 <TableCell className="font-medium whitespace-nowrap">
-                  {user.first_name} {user.last_name}
+                  <div className="flex flex-col">
+                    <span>{user.first_name} {user.last_name}</span>
+                    {user.role === "rodic" && parentLinkMap.get(user.id) && (
+                      <span className="text-xs text-muted-foreground">
+                        👨‍👩‍👧 {parentLinkMap.get(user.id)}
+                      </span>
+                    )}
+                  </div>
                 </TableCell>
                 {(() => { const emailShort = user.email?.split("@")[0] || "–"; return (
                   <TableCell className="text-muted-foreground max-w-[160px] truncate">
