@@ -719,8 +719,8 @@ export default function WorksheetEditor() {
         </div>
       </div>
 
-      <main className="flex-1 container mx-auto px-4 py-6 max-w-7xl">
-        <div className="grid gap-4 lg:grid-cols-[260px_1fr_340px]">
+      <main className="flex-1 container mx-auto px-4 py-6 max-w-[1600px] w-full">
+        <div className="grid gap-4 lg:grid-cols-[240px_minmax(0,1fr)_340px]">
           {/* ── PALETA ── */}
           <aside className="bg-card border border-border rounded-xl p-4 lg:sticky lg:top-[140px] lg:max-h-[calc(100vh-160px)] lg:overflow-y-auto">
             <h3 className="font-heading text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
