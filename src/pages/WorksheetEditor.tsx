@@ -76,6 +76,7 @@ const ITEM_TYPES: ItemType[] = [
   "ordering",
   "short_answer",
   "open_answer",
+  "offline_activity",
 ];
 
 const MODE_OPTIONS = [
