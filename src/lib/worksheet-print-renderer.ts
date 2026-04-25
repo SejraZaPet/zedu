@@ -499,7 +499,33 @@ function renderItem(item: WorksheetItem, showPoints: boolean): string {
     case "open_answer":
       // prompt + answer space only
       break;
-  }
+
+    case "offline_activity": {
+      const modeLabels: Record<string, string> = {
+        discussion: "Diskuse",
+        group_work: "Skupinová práce",
+        practical: "Praktická aktivita",
+        observation: "Pozorování",
+        reflection: "Reflexe",
+      };
+      const groupLabels: Record<string, string> = {
+        individual: "Jednotlivec",
+        pair: "Dvojice",
+        small_group: "Malá skupina (3–5)",
+        class: "Celá třída",
+      };
+      const mode = item.offlineMode ?? "discussion";
+      const group = item.groupSize ?? "class";
+      const dur = item.durationMin && item.durationMin > 0 ? `~${item.durationMin} min` : "";
+      body = `<div class="ws-offline-activity">
+        <div class="ws-offline-badge">⬢ Offline aktivita: ${esc(modeLabels[mode] ?? mode)}</div>
+        <div class="ws-offline-meta">
+          <span>👥 ${esc(groupLabels[group] ?? group)}</span>
+          ${dur ? `<span>⏱ ${esc(dur)}</span>` : ""}
+        </div>
+      </div>`;
+      break;
+    }
 
   return `
 <div class="ws-item">
