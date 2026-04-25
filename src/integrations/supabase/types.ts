@@ -1436,6 +1436,41 @@ export type Database = {
         }
         Relationships: []
       }
+      worksheet_lessons: {
+        Row: {
+          added_at: string
+          added_by: string | null
+          id: string
+          lesson_id: string
+          lesson_type: string
+          worksheet_id: string
+        }
+        Insert: {
+          added_at?: string
+          added_by?: string | null
+          id?: string
+          lesson_id: string
+          lesson_type: string
+          worksheet_id: string
+        }
+        Update: {
+          added_at?: string
+          added_by?: string | null
+          id?: string
+          lesson_id?: string
+          lesson_type?: string
+          worksheet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "worksheet_lessons_worksheet_id_fkey"
+            columns: ["worksheet_id"]
+            isOneToOne: false
+            referencedRelation: "worksheets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       worksheets: {
         Row: {
           created_at: string
