@@ -801,6 +801,7 @@ const UsersManager = () => {
                     email,
                     password,
                     role: newUser.role,
+                    username: username,
                   }];
 
                   if (newUser.role === "user" && createParentAccount) {
