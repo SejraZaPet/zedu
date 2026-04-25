@@ -155,6 +155,7 @@ const TeacherAssignments = () => {
     setRandomizeOrder(false);
     setSelectedClassId("");
     setGeneratedQuestions([]);
+    setSelectedWorksheetId("");
   };
 
   const handlePublish = async (id: string) => {
