@@ -373,6 +373,9 @@ const ClassesManager = () => {
                     <Button size="sm" variant="ghost" onClick={() => openEdit(c)} className="h-8 px-2" title="Upravit">
                       <Pencil className="w-4 h-4" />
                     </Button>
+                    <Button size="sm" variant="ghost" onClick={() => setScheduleClass({ id: c.id, name: c.name })} className="h-8 px-2" title="Rozvrh">
+                      <Clock className="w-4 h-4" />
+                    </Button>
                     <Button
                       size="sm"
                       variant="ghost"
