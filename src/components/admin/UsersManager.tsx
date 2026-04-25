@@ -746,6 +746,7 @@ const UsersManager = () => {
 
                   const existingUsernames = users.map(u => u.username).filter(Boolean) as string[];
                   const username = generateUsername(newUser.first_name, newUser.last_name, existingUsernames);
+                  const studentCode = 'ZAK-' + Math.random().toString(36).slice(-4).toUpperCase();
 
                   await supabase.from("profiles").upsert({
                     id: userId,
@@ -758,6 +759,7 @@ const UsersManager = () => {
                     status: "approved" as any,
                     login_password: password,
                     username: username,
+                    student_code: studentCode,
                   });
 
                   await supabase.from("user_roles").insert({
@@ -776,13 +778,72 @@ const UsersManager = () => {
                     });
                   }
 
+                  const printCards: LoginCardData[] = [{
+                    firstName: newUser.first_name,
+                    lastName: newUser.last_name,
+                    email,
+                    password,
+                    role: newUser.role,
+                  }];
+
+                  if (newUser.role === "user" && createParentAccount) {
+                    try {
+                      const parentLogin = parentEmail.trim() || `rodic.${username}@zedu-rodic.cz`;
+                      const parentPassword = Math.random().toString(36).slice(-8) + "Aa1!";
+
+                      const { data: parentAuth, error: parentErr } = await supabase.functions.invoke("create-user", {
+                        body: { email: parentLogin, password: parentPassword, role: "rodic" }
+                      });
+                      if (parentErr) throw parentErr;
+                      const parentUserId = parentAuth?.user?.id || parentAuth?.id;
+                      if (!parentUserId) throw new Error("Nepodařilo se vytvořit účet rodiče");
+
+                      await supabase.from("profiles").upsert({
+                        id: parentUserId,
+                        first_name: "Rodič",
+                        last_name: `${newUser.first_name} ${newUser.last_name}`,
+                        email: parentLogin,
+                        school: newUser.school,
+                        field_of_study: "",
+                        year: null,
+                        status: "approved" as any,
+                        login_password: parentPassword,
+                        parent_email: parentEmail.trim() || null,
+                      });
+
+                      await supabase.from("user_roles").insert({
+                        user_id: parentUserId,
+                        role: "rodic" as any,
+                      });
+
+                      await supabase.from("parent_student_links" as any).insert({
+                        parent_id: parentUserId,
+                        student_id: userId,
+                      });
+
+                      printCards.push({
+                        firstName: "Rodič",
+                        lastName: `${newUser.first_name} ${newUser.last_name}`,
+                        email: parentLogin,
+                        password: parentPassword,
+                        role: "rodic",
+                      });
+                    } catch (pe: any) {
+                      toast({ title: "Rodičovský účet selhal", description: pe.message, variant: "destructive" });
+                    }
+                  }
+
                   toast({
                     title: "Žák přidán",
                     description: `Účet pro ${newUser.first_name} ${newUser.last_name} byl vytvořen. ${!newUser.email ? `Přihlašovací email: ${email}` : ""}`
                   });
 
+                  printLoginCards(printCards);
+
                   setAddUserOpen(false);
                   setNewUser({ first_name: "", last_name: "", email: "", school: "", year: "", role: "user" });
+                  setCreateParentAccount(false);
+                  setParentEmail("");
                   fetchUsers();
                 } catch (e: any) {
                   toast({ title: "Chyba", description: e.message, variant: "destructive" });
