@@ -949,7 +949,54 @@ export default function WorksheetEditor() {
         </DialogContent>
       </Dialog>
 
-      {/* AI Suggestions dialog */}
+      {/* PDF Export dialog */}
+      <Dialog open={pdfDialogOpen} onOpenChange={setPdfDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Export PDF</DialogTitle>
+            <DialogDescription>
+              PDF bude obsahovat QR kód s odkazem na online verzi pro žáky.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="flex items-center justify-between gap-3 p-3 border border-border rounded-lg bg-muted/30">
+              <div>
+                <Label className="text-sm">Pole pro jméno žáka</Label>
+                <p className="text-xs text-muted-foreground">Hlavička s linkou pro jméno.</p>
+              </div>
+              <Switch
+                checked={pdfIncludeNameField}
+                onCheckedChange={setPdfIncludeNameField}
+              />
+            </div>
+            <div className="flex items-center justify-between gap-3 p-3 border border-border rounded-lg bg-muted/30">
+              <div>
+                <Label className="text-sm">Zahrnout odpověďový klíč</Label>
+                <p className="text-xs text-muted-foreground">Učitelská verze – pouze pro vlastní použití.</p>
+              </div>
+              <Switch
+                checked={pdfIncludeAnswerKey}
+                onCheckedChange={setPdfIncludeAnswerKey}
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setPdfDialogOpen(false)} disabled={pdfExporting}>
+                Zrušit
+              </Button>
+              <Button onClick={handleExportPdf} disabled={pdfExporting}>
+                {pdfExporting ? (
+                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                ) : (
+                  <FileDown className="w-4 h-4 mr-1" />
+                )}
+                Stáhnout PDF
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+
       <Dialog
         open={suggestionDialog.open}
         onOpenChange={(o) => setSuggestionDialog((d) => ({ ...d, open: o }))}
