@@ -391,6 +391,50 @@ export default function WorksheetEditor() {
     setSelectedId(newItem.id);
   }
 
+  function addTemplate(templateId: WorksheetTemplateId) {
+    if (!spec) return;
+    const variantId = spec.variants[0].variantId;
+    const startNumber = items.length + 1;
+    const { items: newItems, keys: newKeys } = buildTemplate(templateId, startNumber);
+    const tpl = WORKSHEET_TEMPLATES.find((t) => t.id === templateId);
+    updateSpec((s) => ({
+      ...s,
+      variants: s.variants.map((v, idx) =>
+        idx === 0 ? { ...v, items: [...v.items, ...newItems] } : v
+      ),
+      answerKeys: {
+        ...s.answerKeys,
+        [variantId]: [...(s.answerKeys[variantId] ?? []), ...newKeys],
+      },
+    }));
+    toast({
+      title: `Šablona „${tpl?.label}" přidána`,
+      description: `${newItems.length} bloků vloženo na konec.`,
+    });
+  }
+
+  async function handleExportPdf() {
+    if (!spec || !id) return;
+    setPdfExporting(true);
+    try {
+      await downloadWorksheetPdf(spec, {
+        worksheetId: id,
+        includeAnswerKey: pdfIncludeAnswerKey,
+        includeNameField: pdfIncludeNameField,
+      });
+      toast({ title: "PDF vytvořeno" });
+      setPdfDialogOpen(false);
+    } catch (e: any) {
+      toast({
+        title: "Export PDF selhal",
+        description: e?.message ?? String(e),
+        variant: "destructive",
+      });
+    } finally {
+      setPdfExporting(false);
+    }
+  }
+
   function deleteItem(itemId: string) {
     if (!spec) return;
     const variantId = spec.variants[0].variantId;
