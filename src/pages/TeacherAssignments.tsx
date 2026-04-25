@@ -131,6 +131,7 @@ const TeacherAssignments = () => {
         class_id: selectedClassId || null,
         status: "draft",
         activity_data: generatedQuestions as any,
+        worksheet_id: selectedWorksheetId || null,
       } as any);
 
       if (error) throw error;
