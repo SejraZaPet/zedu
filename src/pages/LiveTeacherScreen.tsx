@@ -10,6 +10,7 @@ import SessionExports from "@/components/live/SessionExports";
 import { supabase } from "@/integrations/supabase/client";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import PollProjectorView from "@/components/activities/PollProjectorView";
 
 interface SlideData {
   slideId: string;
@@ -353,6 +354,65 @@ const LiveTeacherScreen = () => {
                         })
                       )}
                     </div>
+                  </div>
+                );
+              })()}
+
+              {(currentSlide as any).activitySpec?.activityType === "poll" && (() => {
+                const pollPublished =
+                  (settings?.pollPublished === true) &&
+                  (settings?.pollPublishedQuestion === currentIndex);
+                const spec = (currentSlide as any).activitySpec || {};
+                const options = Array.isArray(spec.options) ? spec.options : [];
+                const question = spec.question || "";
+                return (
+                  <div className="mt-3 p-3 border border-border rounded-lg space-y-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium">Hlasování</p>
+                      <Button
+                        size="sm"
+                        variant={pollPublished ? "default" : "outline"}
+                        onClick={async () => {
+                          if (!sessionId) return;
+                          await supabase.from("game_sessions").update({
+                            settings: {
+                              ...(settings || {}),
+                              pollPublished: !pollPublished,
+                              pollPublishedQuestion: currentIndex,
+                            },
+                          }).eq("id", sessionId);
+                        }}
+                        className="gap-1.5"
+                      >
+                        {pollPublished ? "✓ Výsledky zobrazeny" : "Zveřejnit výsledky"}
+                      </Button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={settings?.pollAllowMultiple ?? spec.allowMultiple ?? false}
+                        onCheckedChange={async (v) => {
+                          if (!sessionId) return;
+                          await supabase.from("game_sessions").update({
+                            settings: { ...(settings || {}), pollAllowMultiple: v }
+                          }).eq("id", sessionId);
+                        }}
+                        id="live-poll-multiple"
+                      />
+                      <Label htmlFor="live-poll-multiple" className="text-xs cursor-pointer">
+                        Povolit více odpovědí
+                      </Label>
+                    </div>
+                    {sessionId && options.length > 0 && (
+                      <div className="border border-border rounded-md p-3 bg-card">
+                        <PollProjectorView
+                          question={question}
+                          options={options}
+                          sessionId={sessionId}
+                          questionIndex={currentIndex}
+                          totalPlayers={players.length}
+                        />
+                      </div>
+                    )}
                   </div>
                 );
               })()}

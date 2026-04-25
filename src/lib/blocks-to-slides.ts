@@ -83,13 +83,21 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
         teacherNotes: "",
       });
     } else if (type === "activity") {
-      const title = props.title || props.activityType || "Aktivita";
+      const title = props.title || props.question || props.activityType || "Aktivita";
       const instructions = props.instructions || "";
+      const isPoll = props.activityType === "poll";
       slides.push({
         slideId: `slide-${slideIndex++}`,
         type: "activity",
-        projector: { headline: title, body: instructions },
-        device: { instructions: instructions || "Splňte aktivitu na svém zařízení." },
+        projector: {
+          headline: isPoll ? (props.question || title) : title,
+          body: instructions,
+        },
+        device: {
+          instructions:
+            instructions ||
+            (isPoll ? "Vyberte možnost a hlasujte." : "Splňte aktivitu na svém zařízení."),
+        },
         teacherNotes: "",
         activitySpec: props,
       });
