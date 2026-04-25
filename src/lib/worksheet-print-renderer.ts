@@ -526,6 +526,7 @@ function renderItem(item: WorksheetItem, showPoints: boolean): string {
       </div>`;
       break;
     }
+  }
 
   return `
 <div class="ws-item">
