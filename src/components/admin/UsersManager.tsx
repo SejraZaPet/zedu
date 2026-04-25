@@ -1185,7 +1185,7 @@ const UsersManager = () => {
                       if (!isAdultStudent && role === "user") {
                         try {
                           const parentEmailValue = (row.email_rodice && String(row.email_rodice).trim()) || "";
-                          const parentLogin = parentEmailValue || `rodic.${sanitizeStr(row.jmeno)}${sanitizeStr(row.prijmeni)}@zedu-rodic.cz`;
+                          const parentLogin = parentEmailValue || `rodic.${studentCode.toLowerCase()}@zedu-rodic.cz`;
 
                           let parentId: string | undefined;
 
