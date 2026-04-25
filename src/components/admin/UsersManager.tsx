@@ -46,6 +46,7 @@ interface UserProfile {
   role?: string;
   login_password?: string;
   username?: string;
+  student_code?: string;
 }
 
 function generateUsername(firstName: string, lastName: string, existingUsernames: string[]): string {
@@ -152,6 +153,7 @@ const UsersManager = () => {
   const [importErrors, setImportErrors] = useState<string[]>([]);
   const [importedUsers, setImportedUsers] = useState<LoginCardData[]>([]);
   const [lastImportedUsers, setLastImportedUsers] = useState<LoginCardData[]>([]);
+  const [parentLinkMap, setParentLinkMap] = useState<Map<string, string>>(new Map());
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -168,6 +170,19 @@ const UsersManager = () => {
 
     const { data: roles } = await supabase.from("user_roles").select("user_id, role");
     const roleMap = new Map(roles?.map(r => [r.user_id, r.role]) ?? []);
+
+    const { data: parentLinks } = await supabase
+      .from("parent_student_links" as any)
+      .select("parent_id, student_id");
+    const profileNameMap = new Map((profiles ?? []).map(p => [p.id, `${p.first_name} ${p.last_name}`.trim()]));
+    const linkMap = new Map<string, string>();
+    ((parentLinks as any[]) || []).forEach((link: any) => {
+      const studentName = profileNameMap.get(link.student_id) || "";
+      if (!studentName) return;
+      const existing = linkMap.get(link.parent_id);
+      linkMap.set(link.parent_id, existing ? `${existing}, ${studentName}` : studentName);
+    });
+    setParentLinkMap(linkMap);
 
     const enriched = (profiles ?? []).map(p => ({
       ...p,
@@ -456,6 +471,7 @@ const UsersManager = () => {
                 password: u.login_password || "–",
                 role: u.role || "user",
                 username: u.username || "",
+                studentCode: u.role === "user" ? (u.student_code || "") : "",
               }));
               printLoginCards(cards);
             }}
@@ -510,7 +526,14 @@ const UsersManager = () => {
                   />
                 </TableCell>
                 <TableCell className="font-medium whitespace-nowrap">
-                  {user.first_name} {user.last_name}
+                  <div className="flex flex-col">
+                    <span>{user.first_name} {user.last_name}</span>
+                    {user.role === "rodic" && parentLinkMap.get(user.id) && (
+                      <span className="text-xs text-muted-foreground">
+                        👨‍👩‍👧 {parentLinkMap.get(user.id)}
+                      </span>
+                    )}
+                  </div>
                 </TableCell>
                 {(() => { const emailShort = user.email?.split("@")[0] || "–"; return (
                   <TableCell className="text-muted-foreground max-w-[160px] truncate">
@@ -802,6 +825,7 @@ const UsersManager = () => {
                     password,
                     role: newUser.role,
                     username: username,
+                    studentCode: newUser.role === "user" ? studentCode : undefined,
                   }];
 
                   if (newUser.role === "user" && createParentAccount) {
@@ -1178,7 +1202,7 @@ const UsersManager = () => {
                       }
 
                       successCount++;
-                      importedUsersList.push({ firstName: row.jmeno, lastName: row.prijmeni, email, password, role, username });
+                      importedUsersList.push({ firstName: row.jmeno, lastName: row.prijmeni, email, password, role, username, studentCode: role === "user" ? studentCode : undefined });
                     } catch (e: any) {
                       errors.push(`${row.jmeno} ${row.prijmeni}: ${e.message}`);
                     }
@@ -1241,6 +1265,7 @@ const UsersManager = () => {
                     password: printPassword,
                     role: printDialogUser.role || "user",
                     username: printDialogUser.username || "",
+                    studentCode: printDialogUser.role === "user" ? (printDialogUser.student_code || "") : "",
                   }]);
                   setPrintDialogUser(null);
                   setPrintPassword("");
