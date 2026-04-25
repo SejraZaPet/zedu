@@ -851,9 +851,10 @@ const UsersManager = () => {
                     role: newUser.role as any,
                   }, { onConflict: "user_id,role", ignoreDuplicates: true });
 
-                  if (!email.includes("@zedu-student.cz") && !email.includes("@zedu-lektor.cz") && !email.includes("@zedu-rodic.cz")) {
+                  if (email && !email.includes("@zedu-student.cz") && !email.includes("@zedu-lektor.cz") && !email.includes("@zedu-rodic.cz")) {
                     try {
-                      await sendWelcomeEmail({
+                      console.log("Odesílám uvítací email na:", email);
+                      const emailResult = await sendWelcomeEmail({
                         to: email,
                         firstName: newUser.first_name,
                         lastName: newUser.last_name,
@@ -861,8 +862,9 @@ const UsersManager = () => {
                         password,
                         role: newUser.role,
                       });
-                    } catch (e) {
-                      console.warn("Email neposlán:", e);
+                      console.log("Email výsledek:", emailResult);
+                    } catch (emailErr) {
+                      console.warn("Email se nepodařilo odeslat:", emailErr);
                     }
                   }
 
