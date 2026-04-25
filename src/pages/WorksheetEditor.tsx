@@ -171,7 +171,7 @@ export default function WorksheetEditor() {
 
   const [sourceLessonId, setSourceLessonId] = useState<string | null>(null);
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
-  const [allLessons, setAllLessons] = useState<Array<{ id: string; title: string }>>([]);
+  const [allLessons, setAllLessons] = useState<LessonOption[]>([]);
   const [activeLessonContent, setActiveLessonContent] = useState<string>("");
 
   const [suggestionDialog, setSuggestionDialog] = useState<{
