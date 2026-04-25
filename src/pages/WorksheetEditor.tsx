@@ -42,7 +42,11 @@ import {
   Sparkles,
   BookOpen,
   Wand2,
+  FileDown,
+  LayoutTemplate,
+  Printer,
 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
 import {
   DndContext,
