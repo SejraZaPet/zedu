@@ -1059,6 +1059,7 @@ const UsersManager = () => {
 
                       const username = generateUsername(row.jmeno, row.prijmeni, usedUsernames);
                       usedUsernames.push(username);
+                      const studentCode = 'ZAK-' + Math.random().toString(36).slice(-4).toUpperCase();
 
                       await supabase.from("profiles").upsert({
                         id: userId,
@@ -1071,6 +1072,7 @@ const UsersManager = () => {
                         status: "approved" as any,
                         login_password: password,
                         username: username,
+                        student_code: studentCode,
                       });
 
                       await supabase.from("user_roles").insert({ user_id: userId, role: role as any });
