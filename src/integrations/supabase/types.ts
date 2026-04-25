@@ -732,8 +732,10 @@ export type Database = {
           id: string
           last_name: string
           login_password: string | null
+          parent_email: string | null
           school: string
           status: Database["public"]["Enums"]["account_status"]
+          student_code: string | null
           updated_at: string
           username: string | null
           year: number | null
@@ -746,8 +748,10 @@ export type Database = {
           id: string
           last_name?: string
           login_password?: string | null
+          parent_email?: string | null
           school?: string
           status?: Database["public"]["Enums"]["account_status"]
+          student_code?: string | null
           updated_at?: string
           username?: string | null
           year?: number | null
@@ -760,8 +764,10 @@ export type Database = {
           id?: string
           last_name?: string
           login_password?: string | null
+          parent_email?: string | null
           school?: string
           status?: Database["public"]["Enums"]["account_status"]
+          student_code?: string | null
           updated_at?: string
           username?: string | null
           year?: number | null
@@ -1244,6 +1250,14 @@ export type Database = {
       enroll_by_textbook_code: {
         Args: { _code: string; _student_id: string }
         Returns: string
+      }
+      find_student_by_code: {
+        Args: { _code: string }
+        Returns: {
+          first_name: string
+          id: string
+          last_name: string
+        }[]
       }
       generate_game_code: { Args: never; Returns: string }
       increment_player_score: {
