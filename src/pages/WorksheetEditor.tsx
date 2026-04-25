@@ -1312,6 +1312,31 @@ export default function WorksheetEditor() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <LinkedLessonsDialog
+        open={linkDialogOpen}
+        onOpenChange={setLinkDialogOpen}
+        allLessons={allLessons.map((l) => ({ id: l.id, title: l.title, type: l.type }))}
+        alreadyLinkedKeys={
+          new Set(linkedLessons.map((l) => `${l.lesson_type}-${l.lesson_id}`))
+        }
+        onConfirm={handleAddLinkedLessons}
+      />
+
+      {returnTo && id && (
+        <div className="fixed bottom-4 right-4 z-40 bg-card border border-border rounded-xl shadow-lg p-3 flex items-center gap-2 text-sm">
+          <span className="text-muted-foreground">Pokračovat zpět do úkolu:</span>
+          <Button
+            size="sm"
+            onClick={() => {
+              const sep = returnTo.includes("?") ? "&" : "?";
+              navigate(`${returnTo}${sep}worksheetId=${id}`);
+            }}
+          >
+            Vrátit se k úkolu
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
