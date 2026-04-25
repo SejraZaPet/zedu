@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Loader2, Plus, CalendarIcon, Trash2, Send, Clock, Users, Shuffle, RotateCcw, Eye, EyeOff, BarChart3 } from "lucide-react";
+import { Loader2, Plus, CalendarIcon, Trash2, Send, Clock, Users, Shuffle, RotateCcw, Eye, EyeOff, BarChart3, FileText, ExternalLink } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -34,6 +34,14 @@ interface Assignment {
   class_id: string | null;
   created_at: string;
   activity_data: any[];
+  worksheet_id?: string | null;
+}
+
+interface WorksheetOption {
+  id: string;
+  title: string;
+  status: string;
+  updated_at: string;
 }
 
 const TeacherAssignments = () => {
@@ -59,6 +67,8 @@ const TeacherAssignments = () => {
   const [generatedQuestions, setGeneratedQuestions] = useState<GeneratedQuestion[]>([]);
   const [lessonBlocks, setLessonBlocks] = useState<any[]>([]);
   const [lessonLoaded, setLessonLoaded] = useState(false);
+  const [worksheets, setWorksheets] = useState<WorksheetOption[]>([]);
+  const [selectedWorksheetId, setSelectedWorksheetId] = useState<string>("");
 
   useEffect(() => {
     loadData();
@@ -85,12 +95,18 @@ const TeacherAssignments = () => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (user) setUserId(user.id);
-    const [assignmentsRes, classesRes] = await Promise.all([
+    const [assignmentsRes, classesRes, worksheetsRes] = await Promise.all([
       supabase.from("assignments" as any).select("*").order("created_at", { ascending: false }),
       supabase.from("classes").select("id, name").eq("archived", false),
+      supabase
+        .from("worksheets" as any)
+        .select("id, title, status, updated_at")
+        .in("status", ["draft", "published"])
+        .order("updated_at", { ascending: false }),
     ]);
     if (assignmentsRes.data) setAssignments(assignmentsRes.data as any);
     if (classesRes.data) setClasses(classesRes.data);
+    if (worksheetsRes.data) setWorksheets(worksheetsRes.data as any);
     setLoading(false);
   };
 
@@ -115,6 +131,7 @@ const TeacherAssignments = () => {
         class_id: selectedClassId || null,
         status: "draft",
         activity_data: generatedQuestions as any,
+        worksheet_id: selectedWorksheetId || null,
       } as any);
 
       if (error) throw error;
@@ -138,6 +155,7 @@ const TeacherAssignments = () => {
     setRandomizeOrder(false);
     setSelectedClassId("");
     setGeneratedQuestions([]);
+    setSelectedWorksheetId("");
   };
 
   const handlePublish = async (id: string) => {
@@ -267,6 +285,50 @@ const TeacherAssignments = () => {
                   </div>
                   <Switch checked={randomizeChoices} onCheckedChange={setRandomizeChoices} />
                 </div>
+              </div>
+
+              {/* Pracovní list selector */}
+              <div className="p-3 border border-border rounded-lg bg-muted/30 space-y-2">
+                <div className="flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-muted-foreground" />
+                  <Label className="text-sm">Pracovní list (volitelné)</Label>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Vyber existující pracovní list – žáci ho otevřou v interaktivním plejeru.
+                </p>
+                <div className="flex gap-2">
+                  <Select
+                    value={selectedWorksheetId || "__none__"}
+                    onValueChange={(v) => setSelectedWorksheetId(v === "__none__" ? "" : v)}
+                  >
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="— Žádný pracovní list —" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">— Žádný pracovní list —</SelectItem>
+                      {worksheets.map((w) => (
+                        <SelectItem key={w.id} value={w.id}>
+                          {w.title} {w.status === "draft" ? "(koncept)" : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate("/ucitel/pracovni-listy")}
+                    title="Vytvořit nový pracovní list"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5 mr-1" />
+                    Nový
+                  </Button>
+                </div>
+                {selectedWorksheetId && (
+                  <p className="text-[11px] text-muted-foreground">
+                    ✓ Žáci uvidí pracovní list namísto AI otázek (pokud je vybrán).
+                  </p>
+                )}
               </div>
 
               {prefillLessonId && lessonLoaded && (

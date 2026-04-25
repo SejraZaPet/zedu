@@ -9,6 +9,8 @@ import { Loader2, ChevronLeft, ChevronRight, CheckCircle2, Clock, Save, Send, Ar
 import { toast } from "@/hooks/use-toast";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
+import WorksheetPlayer from "@/components/WorksheetPlayer";
+import type { WorksheetSpec } from "@/lib/worksheet-spec";
 
 interface AssignmentData {
   id: string;
@@ -20,6 +22,7 @@ interface AssignmentData {
   randomize_order: boolean;
   activity_data: any[];
   settings: any;
+  worksheet_id?: string | null;
 }
 
 interface AttemptData {
@@ -55,6 +58,7 @@ const StudentAssignmentPlayer = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [items, setItems] = useState<any[]>([]);
+  const [worksheetSpec, setWorksheetSpec] = useState<WorksheetSpec | null>(null);
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedAnswers = useRef<string>("");
 
@@ -80,6 +84,19 @@ const StudentAssignmentPlayer = () => {
       if (aErr || !aData) throw new Error("Úloha nenalezena");
       const assignmentData = aData as any as AssignmentData;
       setAssignment(assignmentData);
+
+      // Pokud má assignment přiřazený worksheet, načti ho (přednost před activity_data).
+      if (assignmentData.worksheet_id) {
+        const { data: wData } = await supabase
+          .from("worksheets" as any)
+          .select("spec")
+          .eq("id", assignmentData.worksheet_id)
+          .maybeSingle();
+        const ws = (wData as any)?.spec;
+        if (ws && ws.version) {
+          setWorksheetSpec(ws as WorksheetSpec);
+        }
+      }
 
       // Check deadline
       if (assignmentData.deadline && new Date(assignmentData.deadline) < new Date()) {
@@ -276,6 +293,36 @@ const StudentAssignmentPlayer = () => {
           )}
         </div>
 
+        {/* Worksheet branch (přednost před legacy activity_data) */}
+        {worksheetSpec ? (
+          <WorksheetPlayer
+            spec={worksheetSpec}
+            variantId={worksheetSpec.variants[0]?.variantId ?? "A"}
+            attemptId={attempt?.id ?? null}
+            locked={isReadOnly}
+            initialAnswers={(attempt?.answers as any) || {}}
+            onSubmit={async (wAnswers, score, maxScore) => {
+              if (!attempt) return;
+              try {
+                await supabase
+                  .from("assignment_attempts" as any)
+                  .update({
+                    status: "submitted",
+                    answers: wAnswers as any,
+                    score,
+                    max_score: maxScore,
+                    submitted_at: new Date().toISOString(),
+                  } as any)
+                  .eq("id", attempt.id);
+                setAttempt({ ...attempt, status: "submitted", score, max_score: maxScore });
+                toast({ title: "Odevzdáno!", description: `Skóre: ${score}/${maxScore}` });
+              } catch (e: any) {
+                toast({ title: "Chyba", description: e.message, variant: "destructive" });
+              }
+            }}
+          />
+        ) : (
+          <>
         {/* Progress */}
         <div className="mb-4 space-y-1">
           <div className="flex justify-between text-xs text-muted-foreground">
@@ -423,6 +470,8 @@ const StudentAssignmentPlayer = () => {
         <p className="text-[10px] text-muted-foreground text-center mt-4">
           Klávesnice: ← → navigace · A–D volba odpovědi · Enter odevzdání
         </p>
+          </>
+        )}
       </main>
       <SiteFooter />
     </div>

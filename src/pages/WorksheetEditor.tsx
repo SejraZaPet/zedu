@@ -42,7 +42,11 @@ import {
   Sparkles,
   BookOpen,
   Wand2,
+  FileDown,
+  LayoutTemplate,
+  Printer,
 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
 import {
   DndContext,
@@ -81,6 +85,12 @@ import {
 } from "@/lib/worksheet-defaults";
 import { OFFLINE_MODE_META } from "@/lib/worksheet-offline-meta";
 import { splitLessonContent, type LessonBlock } from "@/lib/lesson-content-splitter";
+import {
+  WORKSHEET_TEMPLATES,
+  buildTemplate,
+  type WorksheetTemplateId,
+} from "@/lib/worksheet-templates";
+import { downloadWorksheetPdf } from "@/lib/worksheet-pdf-export";
 import WorksheetPlayer from "@/components/WorksheetPlayer";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
@@ -143,6 +153,10 @@ export default function WorksheetEditor() {
   const [loading, setLoading] = useState(true);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [pdfDialogOpen, setPdfDialogOpen] = useState(false);
+  const [pdfIncludeAnswerKey, setPdfIncludeAnswerKey] = useState(false);
+  const [pdfIncludeNameField, setPdfIncludeNameField] = useState(true);
+  const [pdfExporting, setPdfExporting] = useState(false);
 
   const [sourceLessonId, setSourceLessonId] = useState<string | null>(null);
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
@@ -377,6 +391,50 @@ export default function WorksheetEditor() {
     setSelectedId(newItem.id);
   }
 
+  function addTemplate(templateId: WorksheetTemplateId) {
+    if (!spec) return;
+    const variantId = spec.variants[0].variantId;
+    const startNumber = items.length + 1;
+    const { items: newItems, keys: newKeys } = buildTemplate(templateId, startNumber);
+    const tpl = WORKSHEET_TEMPLATES.find((t) => t.id === templateId);
+    updateSpec((s) => ({
+      ...s,
+      variants: s.variants.map((v, idx) =>
+        idx === 0 ? { ...v, items: [...v.items, ...newItems] } : v
+      ),
+      answerKeys: {
+        ...s.answerKeys,
+        [variantId]: [...(s.answerKeys[variantId] ?? []), ...newKeys],
+      },
+    }));
+    toast({
+      title: `Šablona „${tpl?.label}" přidána`,
+      description: `${newItems.length} bloků vloženo na konec.`,
+    });
+  }
+
+  async function handleExportPdf() {
+    if (!spec || !id) return;
+    setPdfExporting(true);
+    try {
+      await downloadWorksheetPdf(spec, {
+        worksheetId: id,
+        includeAnswerKey: pdfIncludeAnswerKey,
+        includeNameField: pdfIncludeNameField,
+      });
+      toast({ title: "PDF vytvořeno" });
+      setPdfDialogOpen(false);
+    } catch (e: any) {
+      toast({
+        title: "Export PDF selhal",
+        description: e?.message ?? String(e),
+        variant: "destructive",
+      });
+    } finally {
+      setPdfExporting(false);
+    }
+  }
+
   function deleteItem(itemId: string) {
     if (!spec) return;
     const variantId = spec.variants[0].variantId;
@@ -609,6 +667,9 @@ export default function WorksheetEditor() {
             <Button variant="outline" size="sm" onClick={() => setPreviewOpen(true)}>
               <Eye className="w-4 h-4 mr-1" /> Náhled
             </Button>
+            <Button variant="outline" size="sm" onClick={() => setPdfDialogOpen(true)}>
+              <Printer className="w-4 h-4 mr-1" /> Tisk/PDF
+            </Button>
             <Button size="sm" onClick={togglePublish}>
               <Send className="w-4 h-4 mr-1" />
               {status === "published" ? "Vrátit do konceptu" : "Publikovat"}
@@ -711,6 +772,34 @@ export default function WorksheetEditor() {
                 </div>
               )}
             </div>
+
+            {/* Šablony sekce */}
+            <Collapsible defaultOpen={false} className="mt-5 pt-4 border-t border-border">
+              <CollapsibleTrigger className="w-full flex items-center justify-between gap-2 text-sm font-semibold text-muted-foreground uppercase tracking-wide font-heading mb-2 hover:text-foreground transition-colors">
+                <span className="flex items-center gap-1.5">
+                  <LayoutTemplate className="w-3.5 h-3.5" /> Šablony
+                </span>
+                <ChevronDown className="w-3.5 h-3.5" />
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-1.5">
+                {WORKSHEET_TEMPLATES.map((tpl) => (
+                  <button
+                    key={tpl.id}
+                    onClick={() => addTemplate(tpl.id)}
+                    className="w-full text-left px-2.5 py-2 rounded-md border border-border bg-background hover:border-primary/50 hover:bg-primary/5 transition text-xs"
+                    title={`Vloží ${tpl.blockCount} bloků`}
+                  >
+                    <div className="font-medium text-sm flex items-center gap-1.5">
+                      <LayoutTemplate className="w-3 h-3 text-primary" />
+                      {tpl.label}
+                    </div>
+                    <div className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2">
+                      {tpl.description}
+                    </div>
+                  </button>
+                ))}
+              </CollapsibleContent>
+            </Collapsible>
 
             <div className="mt-6 pt-4 border-t border-border text-xs text-muted-foreground">
               <p className="mb-1">{items.length} otázek</p>
@@ -860,7 +949,54 @@ export default function WorksheetEditor() {
         </DialogContent>
       </Dialog>
 
-      {/* AI Suggestions dialog */}
+      {/* PDF Export dialog */}
+      <Dialog open={pdfDialogOpen} onOpenChange={setPdfDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Export PDF</DialogTitle>
+            <DialogDescription>
+              PDF bude obsahovat QR kód s odkazem na online verzi pro žáky.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="flex items-center justify-between gap-3 p-3 border border-border rounded-lg bg-muted/30">
+              <div>
+                <Label className="text-sm">Pole pro jméno žáka</Label>
+                <p className="text-xs text-muted-foreground">Hlavička s linkou pro jméno.</p>
+              </div>
+              <Switch
+                checked={pdfIncludeNameField}
+                onCheckedChange={setPdfIncludeNameField}
+              />
+            </div>
+            <div className="flex items-center justify-between gap-3 p-3 border border-border rounded-lg bg-muted/30">
+              <div>
+                <Label className="text-sm">Zahrnout odpověďový klíč</Label>
+                <p className="text-xs text-muted-foreground">Učitelská verze – pouze pro vlastní použití.</p>
+              </div>
+              <Switch
+                checked={pdfIncludeAnswerKey}
+                onCheckedChange={setPdfIncludeAnswerKey}
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setPdfDialogOpen(false)} disabled={pdfExporting}>
+                Zrušit
+              </Button>
+              <Button onClick={handleExportPdf} disabled={pdfExporting}>
+                {pdfExporting ? (
+                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                ) : (
+                  <FileDown className="w-4 h-4 mr-1" />
+                )}
+                Stáhnout PDF
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+
       <Dialog
         open={suggestionDialog.open}
         onOpenChange={(o) => setSuggestionDialog((d) => ({ ...d, open: o }))}
