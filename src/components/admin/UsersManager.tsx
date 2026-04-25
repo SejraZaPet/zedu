@@ -802,10 +802,19 @@ const UsersManager = () => {
                     body: { email, password, role: newUser.role }
                   });
 
-                  if (authError) throw authError;
+                  if (authError) {
+                    console.error("create-user error:", authError);
+                    throw new Error(authError.message || "Chyba při vytváření účtu");
+                  }
 
                   const userId = authData?.user?.id || authData?.id;
-                  if (!userId) throw new Error("Nepodařilo se vytvořit účet");
+                  if (!userId) {
+                    if (authData?.code === "email_exists" || authData?.existing_id) {
+                      throw new Error(`Email ${email} již existuje v systému. Použijte jiný email.`);
+                    }
+                    console.error("authData:", authData);
+                    throw new Error("Nepodařilo se získat ID uživatele");
+                  }
 
                   const existingUsernames = users.map(u => u.username).filter(Boolean) as string[];
                   const username = generateUsername(newUser.first_name, newUser.last_name, existingUsernames);
