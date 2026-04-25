@@ -863,6 +863,7 @@ const UsersManager = () => {
                   setAddUserOpen(false);
                   setNewUser({ first_name: "", last_name: "", email: "", school: "", year: "", role: "user" });
                   setCreateParentAccount(false);
+                  setIsAdult(false);
                   setParentEmail("");
                   fetchUsers();
                 } catch (e: any) {
