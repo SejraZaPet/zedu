@@ -350,7 +350,7 @@ const Auth = () => {
             {/* Role selector */}
             <div>
               <p className="text-sm font-semibold text-foreground mb-2">Vyberte typ účtu</p>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <button
                   type="button"
                   onClick={() => setRole("student")}
@@ -373,7 +373,19 @@ const Auth = () => {
                   }`}
                 >
                   <BookOpenText className={`w-6 h-6 ${role === "teacher" ? "text-primary" : "text-muted-foreground"}`} />
-                  <span className={`text-sm font-semibold ${role === "teacher" ? "text-primary" : "text-foreground"}`}>Učitel</span>
+                  <span className={`text-sm font-semibold text-center leading-tight ${role === "teacher" ? "text-primary" : "text-foreground"}`}>Učitel / Lektor</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRole("rodic")}
+                  className={`flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all duration-200 ${
+                    role === "rodic"
+                      ? "border-primary bg-primary/[0.06] shadow-sm"
+                      : "border-border bg-card hover:border-muted-foreground/30"
+                  }`}
+                >
+                  <Users className={`w-6 h-6 ${role === "rodic" ? "text-primary" : "text-muted-foreground"}`} />
+                  <span className={`text-sm font-semibold ${role === "rodic" ? "text-primary" : "text-foreground"}`}>Rodič</span>
                 </button>
               </div>
               <p className="text-xs text-muted-foreground mt-2">Podle zvolené role se zobrazí odpovídající registrační údaje.</p>
