@@ -46,6 +46,7 @@ interface UserProfile {
   role?: string;
   login_password?: string;
   username?: string;
+  student_code?: string;
 }
 
 function generateUsername(firstName: string, lastName: string, existingUsernames: string[]): string {
