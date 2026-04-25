@@ -58,6 +58,7 @@ const StudentAssignmentPlayer = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [items, setItems] = useState<any[]>([]);
+  const [worksheetSpec, setWorksheetSpec] = useState<WorksheetSpec | null>(null);
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedAnswers = useRef<string>("");
 
