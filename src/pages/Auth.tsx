@@ -147,8 +147,9 @@ const Auth = () => {
     const metadata: Record<string, unknown> = {
       first_name: firstName,
       last_name: lastName,
-      school,
-      role_label: role,
+      school: role === "rodic" ? "" : school,
+      role_label: role === "rodic" ? "rodic" : role === "teacher" ? "teacher" : "user",
+      status: role === "rodic" ? "approved" : "pending",
     };
 
     if (role === "student") {
@@ -192,7 +193,10 @@ const Auth = () => {
 
     toast({
       title: "Registrace úspěšná",
-      description: "Potvrďte svůj e-mail a vyčkejte na schválení účtu administrátorem.",
+      description:
+        role === "rodic"
+          ? "Účet byl vytvořen. Přihlaste se a přidejte své děti přes kód žáka ZAK-XXXX."
+          : "Potvrďte svůj e-mail a vyčkejte na schválení účtu administrátorem.",
     });
 
     setMode("login");
