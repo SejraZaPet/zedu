@@ -1302,6 +1302,26 @@ export default function WorksheetEditor() {
             <div className="hidden md:block">
               <SaveIndicator state={saveState} />
             </div>
+            <div className="hidden md:flex items-center gap-2 px-2 border-l border-border ml-1">
+              <Switch
+                id="points-enabled"
+                checked={spec.renderConfig?.pointsEnabled ?? true}
+                onCheckedChange={(checked) =>
+                  updateSpec((s) => ({
+                    ...s,
+                    renderConfig: { ...s.renderConfig, pointsEnabled: checked },
+                  }))
+                }
+              />
+              <Label htmlFor="points-enabled" className="text-xs cursor-pointer whitespace-nowrap">
+                {(spec.renderConfig?.pointsEnabled ?? true) ? "Bodované" : "Nebodované"}
+              </Label>
+            </div>
+            {(spec.renderConfig?.pointsEnabled ?? true) && (
+              <Badge variant="outline" className="hidden lg:inline-flex whitespace-nowrap">
+                Celkem: {spec.metadata.totalPoints} {pointsLabel(spec.metadata.totalPoints)}
+              </Badge>
+            )}
             <Badge
               variant={status === "published" ? "default" : status === "scheduled" ? "outline" : "secondary"}
               className="hidden sm:inline-flex"
