@@ -30,6 +30,9 @@ import { formatDistanceToNow } from "date-fns";
 import { cs } from "date-fns/locale";
 import { emptyWorksheetSpec } from "@/lib/worksheet-defaults";
 import type { WorksheetSpec } from "@/lib/worksheet-spec";
+import WorksheetsForLessonDialog, {
+  type WorksheetForLessonItem,
+} from "@/components/admin/WorksheetsForLessonDialog";
 
 interface WorksheetRow {
   id: string;
