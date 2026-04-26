@@ -183,6 +183,77 @@ interface AiSuggestion {
   durationMin?: number;
 }
 
+// ─── SchedulePicker ──────────────────────────────────────────────
+function pad(n: number) {
+  return String(n).padStart(2, "0");
+}
+
+function SchedulePicker({
+  initial,
+  onCancel,
+  onConfirm,
+}: {
+  initial: Date;
+  onCancel: () => void;
+  onConfirm: (d: Date) => void;
+}) {
+  const [date, setDate] = useState<Date | undefined>(initial);
+  const [time, setTime] = useState<string>(`${pad(initial.getHours())}:${pad(initial.getMinutes())}`);
+
+  function buildDate(): Date | null {
+    if (!date) return null;
+    const [hh, mm] = time.split(":").map((x) => Number(x));
+    if (Number.isNaN(hh) || Number.isNaN(mm)) return null;
+    const d = new Date(date);
+    d.setHours(hh, mm, 0, 0);
+    return d;
+  }
+
+  const target = buildDate();
+  const inFuture = target && target.getTime() > Date.now();
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <Label className="text-xs mb-2 block">Datum</Label>
+        <Calendar
+          mode="single"
+          selected={date}
+          onSelect={setDate}
+          disabled={(d) => d < new Date(new Date().setHours(0, 0, 0, 0))}
+          initialFocus
+          className="p-3 pointer-events-auto rounded-md border"
+        />
+      </div>
+      <div>
+        <Label className="text-xs mb-2 block flex items-center gap-1.5">
+          <Clock className="w-3.5 h-3.5" /> Čas
+        </Label>
+        <Input
+          type="time"
+          value={time}
+          onChange={(e) => setTime(e.target.value)}
+        />
+      </div>
+      {target && !inFuture && (
+        <p className="text-xs text-destructive">Vyber budoucí čas.</p>
+      )}
+      <div className="flex gap-2 justify-end">
+        <Button variant="outline" size="sm" onClick={onCancel}>
+          Zrušit
+        </Button>
+        <Button
+          size="sm"
+          onClick={() => target && inFuture && onConfirm(target)}
+          disabled={!target || !inFuture}
+        >
+          <CalendarClock className="w-4 h-4 mr-1" /> Naplánovat
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export default function WorksheetEditor() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
