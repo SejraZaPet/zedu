@@ -710,6 +710,58 @@ ${answerKey}
 }
 
 /**
+ * Render variant content as a fragment (no <html>/<head>/<body>).
+ * Returns separate styleTag + bodyHtml so it can be injected safely
+ * into an existing DOM node (e.g. a div for html2canvas/html2pdf).
+ */
+export function renderWorksheetVariantFragment(
+  spec: WorksheetSpec,
+  variantId: string,
+  options?: WorksheetPrintOptions,
+): { styleTag: string; bodyHtml: string; documentTitle: string } {
+  const variant = spec.variants.find((v) => v.variantId === variantId);
+  if (!variant) throw new Error(`Variant "${variantId}" not found`);
+
+  const specCopy: WorksheetSpec = options?.includeNameField !== undefined
+    ? { ...spec, header: { ...spec.header, studentNameField: options.includeNameField } }
+    : spec;
+
+  const css = buildWorksheetCss();
+  const header = renderHeader(specCopy, variant);
+  const items = variant.items
+    .map((it) => renderItem(it, specCopy.renderConfig.showPoints))
+    .join("\n");
+  const answerKey = specCopy.renderConfig.includeAnswerKey
+    ? renderAnswerKey(variantId, spec.answerKeys[variantId] ?? [])
+    : "";
+
+  const dateStr = new Date().toLocaleDateString("cs-CZ");
+
+  const bodyHtml = `
+<div class="ws-page">
+  <div class="ws-content">
+${header}
+
+<div class="ws-items">
+${items}
+</div>
+
+${answerKey}
+
+<div class="ws-footer">
+  ZEdu · ${esc(specCopy.header.title)} · ${dateStr}
+</div>
+  </div>
+</div>`;
+
+  return {
+    styleTag: `<style>${css}</style>`,
+    bodyHtml,
+    documentTitle: `${esc(specCopy.header.title)}${specCopy.header.variantLabel ? ` — ${esc(specCopy.header.variantLabel)}` : ""}`,
+  };
+}
+
+/**
  * Render ALL variants into separate HTML documents.
  */
 export function renderAllVariants(
