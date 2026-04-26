@@ -91,6 +91,7 @@ import {
   extractTextFromBlocks,
   type LessonBlock,
 } from "@/lib/lesson-content-splitter";
+import { useSubjects } from "@/hooks/useSubjects";
 
 type LessonOption = {
   id: string;
