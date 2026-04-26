@@ -38,6 +38,12 @@ export async function buildWorksheetPdfHtml(
   spec: WorksheetSpec,
   options: PdfExportOptions,
 ): Promise<{ html: string; filename: string }> {
+  console.log("[PDF] buildWorksheetPdfHtml called with:", {
+    title: spec.header?.title,
+    variantsCount: spec.variants?.length,
+    itemsCount: spec.variants?.[0]?.items?.length,
+    variantId: options.variantId,
+  });
   const variantId = options.variantId ?? spec.variants[0]?.variantId ?? "A";
   const baseUrl =
     options.baseUrl ??
@@ -56,6 +62,11 @@ export async function buildWorksheetPdfHtml(
   const baseHtml = renderWorksheetVariantHtml(specWithConfig, variantId, {
     includeNameField: options.includeNameField,
   });
+  console.log("[PDF] baseHtml length:", baseHtml.length);
+  if (baseHtml.length < 500) {
+    console.error("[PDF] CRITICAL: baseHtml is too short, render may be broken");
+    console.log("[PDF] baseHtml:", baseHtml);
+  }
 
   // QR jako data URL
   const qrDataUrl = await QRCode.toDataURL(studentUrl, {
@@ -63,6 +74,7 @@ export async function buildWorksheetPdfHtml(
     width: 220,
     errorCorrectionLevel: "M",
   });
+  console.log("[PDF] QR generated, dataUrl length:", qrDataUrl.length);
 
   const qrBlock = `
 <div class="ws-qr-wrap" style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
@@ -70,58 +82,93 @@ export async function buildWorksheetPdfHtml(
   <div style="font-size:9px;color:#475569;line-height:1.2;max-width:90px;">Pokračuj online →<br/>${studentUrl.replace(/^https?:\/\//, "")}</div>
 </div>`;
 
-  // Inject jako pravý sloupec do .ws-header-top.
-  // Print renderer dává variantBadge tam – nahradíme ji (nebo přidáme za ni) blokem QR.
   let html = baseHtml;
-  // Najdeme uzavírací </div> co následuje po </div>${variantBadge}\n  </div> v ws-header-top.
-  // Bezpečný přístup: nahradíme celý ws-header-top regexem.
+  const beforeLength = html.length;
   html = html.replace(
     /<div class="ws-header-top">([\s\S]*?)<\/div>\s*<div class="ws-meta-row">/,
-    (_m, inner) => {
-      // odstraníme případnou původní variantBadge a vložíme QR napravo
-      return `<div class="ws-header-top" style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">${inner}${qrBlock}</div>\n  <div class="ws-meta-row">`;
-    },
+    (_m, inner) =>
+      `<div class="ws-header-top" style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">${inner}${qrBlock}</div>\n  <div class="ws-meta-row">`,
   );
+  if (beforeLength === html.length) {
+    console.warn("[PDF] WARNING: ws-header-top regex did NOT match. PDF will lack QR but still render.");
+  }
 
   const filename = `pracovni-list-${slugify(spec.header.title)}.pdf`;
   return { html, filename };
 }
 
-/**
- * Vygeneruje a stáhne PDF.
- * Volá se z prohlížeče.
- */
-export async function downloadWorksheetPdf(
-  spec: WorksheetSpec,
-  options: PdfExportOptions,
-): Promise<void> {
-  const { html, filename } = await buildWorksheetPdfHtml(spec, options);
-
-  // dynamic import — html2pdf.js sahá na window
-  const html2pdfMod: any = await import("html2pdf.js");
-  const html2pdf = html2pdfMod.default ?? html2pdfMod;
-
-  // Vytvoříme off-screen container
+function buildPdfContainer(html: string): HTMLDivElement {
   const container = document.createElement("div");
   container.innerHTML = html;
   container.style.position = "fixed";
   container.style.left = "-10000px";
   container.style.top = "0";
+  container.style.width = "210mm";
+  container.style.background = "white";
   document.body.appendChild(container);
+  return container;
+}
+
+const PDF_OPTIONS_BASE = {
+  margin: [10, 10, 12, 10],
+  image: { type: "jpeg", quality: 0.95 },
+  html2canvas: { scale: 2, useCORS: true, letterRendering: true, windowWidth: 794 },
+  jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+  pagebreak: { mode: ["css", "legacy"] },
+};
+
+/**
+ * Vygeneruje a stáhne PDF.
+ */
+export async function downloadWorksheetPdf(
+  spec: WorksheetSpec,
+  options: PdfExportOptions,
+): Promise<void> {
+  console.log("[PDF] downloadWorksheetPdf started");
+  const { html, filename } = await buildWorksheetPdfHtml(spec, options);
+
+  const html2pdfMod: any = await import("html2pdf.js");
+  const html2pdf = html2pdfMod.default ?? html2pdfMod;
+
+  const container = buildPdfContainer(html);
+  console.log("[PDF] Container appended, offsetHeight:", container.offsetHeight);
 
   try {
     await html2pdf()
-      .set({
-        margin: [10, 10, 12, 10],
-        filename,
-        image: { type: "jpeg", quality: 0.95 },
-        html2canvas: { scale: 2, useCORS: true, letterRendering: true },
-        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-        pagebreak: { mode: ["css", "legacy"] },
-      })
+      .set({ ...PDF_OPTIONS_BASE, filename })
       .from(container)
       .save();
+    console.log("[PDF] PDF saved");
+  } catch (e) {
+    console.error("[PDF] html2pdf failed:", e);
+    throw e;
   } finally {
     document.body.removeChild(container);
   }
 }
+
+/**
+ * Vygeneruje PDF jako Blob URL pro náhled v iframe.
+ * Volající musí URL revokovat (URL.revokeObjectURL).
+ */
+export async function buildWorksheetPdfBlobUrl(
+  spec: WorksheetSpec,
+  options: PdfExportOptions,
+): Promise<string> {
+  const { html } = await buildWorksheetPdfHtml(spec, options);
+
+  const html2pdfMod: any = await import("html2pdf.js");
+  const html2pdf = html2pdfMod.default ?? html2pdfMod;
+
+  const container = buildPdfContainer(html);
+  try {
+    const pdfBlob: Blob = await html2pdf()
+      .set(PDF_OPTIONS_BASE)
+      .from(container)
+      .outputPdf("blob");
+    return URL.createObjectURL(pdfBlob);
+  } finally {
+    document.body.removeChild(container);
+  }
+}
+

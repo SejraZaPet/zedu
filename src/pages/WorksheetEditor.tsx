@@ -21,6 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   Collapsible,
@@ -134,7 +135,7 @@ import {
   buildTemplate,
   type WorksheetTemplateId,
 } from "@/lib/worksheet-templates";
-import { downloadWorksheetPdf } from "@/lib/worksheet-pdf-export";
+import { downloadWorksheetPdf, buildWorksheetPdfBlobUrl } from "@/lib/worksheet-pdf-export";
 import WorksheetPlayer from "@/components/WorksheetPlayer";
 import LinkedLessonsDialog, { type LessonChoice } from "@/components/admin/LinkedLessonsDialog";
 
@@ -284,6 +285,8 @@ export default function WorksheetEditor() {
   const [pdfDialogOpen, setPdfDialogOpen] = useState(false);
   const [pdfIncludeAnswerKey, setPdfIncludeAnswerKey] = useState(false);
   const [pdfIncludeNameField, setPdfIncludeNameField] = useState(true);
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+  const [pdfPreviewLoading, setPdfPreviewLoading] = useState(false);
   const [pdfExporting, setPdfExporting] = useState(false);
   const [subjectComboOpen, setSubjectComboOpen] = useState(false);
   const [subjectSearch, setSubjectSearch] = useState("");
@@ -732,6 +735,30 @@ export default function WorksheetEditor() {
     }
   }
 
+  async function handlePreviewPdf() {
+    if (!spec || !id) return;
+    setPdfPreviewLoading(true);
+    try {
+      const url = await buildWorksheetPdfBlobUrl(spec, {
+        worksheetId: id,
+        includeAnswerKey: pdfIncludeAnswerKey,
+        includeNameField: pdfIncludeNameField,
+      });
+      setPdfPreviewUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return url;
+      });
+    } catch (e: any) {
+      toast({
+        title: "Náhled PDF selhal",
+        description: e?.message ?? String(e),
+        variant: "destructive",
+      });
+    } finally {
+      setPdfPreviewLoading(false);
+    }
+  }
+
   function deleteItem(itemId: string) {
     if (!spec) return;
     const variantId = spec.variants[0].variantId;
@@ -853,6 +880,12 @@ export default function WorksheetEditor() {
     setScheduledAt(null);
     toast({ title: "Plánované publikování zrušeno" });
   }
+
+  useEffect(() => {
+    return () => {
+      if (pdfPreviewUrl) URL.revokeObjectURL(pdfPreviewUrl);
+    };
+  }, [pdfPreviewUrl]);
 
 
   // ── AI: load suggestions for a lesson block ──
@@ -1657,6 +1690,14 @@ export default function WorksheetEditor() {
               <Button variant="outline" onClick={() => setPdfDialogOpen(false)} disabled={pdfExporting}>
                 Zrušit
               </Button>
+              <Button variant="outline" onClick={handlePreviewPdf} disabled={pdfPreviewLoading || pdfExporting}>
+                {pdfPreviewLoading ? (
+                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                ) : (
+                  <Eye className="w-4 h-4 mr-1" />
+                )}
+                Náhled
+              </Button>
               <Button onClick={handleExportPdf} disabled={pdfExporting}>
                 {pdfExporting ? (
                   <Loader2 className="w-4 h-4 mr-1 animate-spin" />
@@ -1669,6 +1710,46 @@ export default function WorksheetEditor() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* PDF Preview dialog */}
+      <Dialog
+        open={!!pdfPreviewUrl}
+        onOpenChange={(o) => {
+          if (!o) {
+            if (pdfPreviewUrl) URL.revokeObjectURL(pdfPreviewUrl);
+            setPdfPreviewUrl(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Náhled PDF</DialogTitle>
+            <DialogDescription>
+              Takhle bude vypadat pracovní list pro žáky.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-hidden">
+            {pdfPreviewUrl && (
+              <iframe
+                src={pdfPreviewUrl}
+                className="w-full h-full border rounded"
+                title="Náhled pracovního listu"
+              />
+            )}
+          </div>
+          <DialogFooter>
+            <Button onClick={handleExportPdf} disabled={pdfExporting}>
+              {pdfExporting ? (
+                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+              ) : (
+                <FileDown className="w-4 h-4 mr-1" />
+              )}
+              Stáhnout
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
 
       <Dialog
