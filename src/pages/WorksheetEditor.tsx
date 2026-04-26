@@ -134,7 +134,7 @@ import {
   buildTemplate,
   type WorksheetTemplateId,
 } from "@/lib/worksheet-templates";
-import { downloadWorksheetPdf } from "@/lib/worksheet-pdf-export";
+import { downloadWorksheetPdf, buildWorksheetPdfBlobUrl } from "@/lib/worksheet-pdf-export";
 import WorksheetPlayer from "@/components/WorksheetPlayer";
 import LinkedLessonsDialog, { type LessonChoice } from "@/components/admin/LinkedLessonsDialog";
 
