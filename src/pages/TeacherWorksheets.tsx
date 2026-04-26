@@ -98,18 +98,54 @@ export default function TeacherWorksheets() {
       if (cancelled) return;
       const title = (lessonRow as any)?.title ?? "Lekce";
 
-      // find existing worksheets linked to this lesson by this teacher
-      const { data: links } = await supabase
+      console.log("[smart-flow] querying worksheet_lessons for lesson:", fromLessonId, fromLessonType);
+      const { data: linkRows, error: linkErr } = await supabase
         .from("worksheet_lessons" as any)
-        .select("worksheet_id, worksheets!inner(id, title, status, updated_at, spec, teacher_id)")
+        .select("worksheet_id")
         .eq("lesson_id", fromLessonId)
         .eq("lesson_type", fromLessonType);
 
+      console.log("[smart-flow] worksheet_lessons result:", linkRows, "error:", linkErr);
+
       if (cancelled) return;
 
-      const ownWorksheets: WorksheetForLessonItem[] = ((links as any[]) ?? [])
-        .map((l) => l.worksheets)
-        .filter((w: any) => w && w.teacher_id === user.id)
+      if (linkErr) {
+        toast({
+          title: "Nepodařilo se načíst vazby lekce",
+          description: linkErr.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const worksheetIds = ((linkRows ?? []) as any[]).map((row) => row.worksheet_id);
+
+      if (worksheetIds.length === 0) {
+        console.log("[smart-flow] no links found, will create new draft");
+      }
+
+      const { data: wRows, error: wErr } = worksheetIds.length
+        ? await supabase
+            .from("worksheets" as any)
+            .select("id, title, status, updated_at, spec, teacher_id")
+            .in("id", worksheetIds)
+            .eq("teacher_id", user.id)
+        : { data: [], error: null };
+
+      console.log("[smart-flow] worksheets fetched:", wRows, "error:", wErr);
+
+      if (cancelled) return;
+
+      if (wErr) {
+        toast({
+          title: "Nepodařilo se načíst pracovní listy lekce",
+          description: wErr.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const ownWorksheets: WorksheetForLessonItem[] = ((wRows ?? []) as any[])
         .map((w: any) => ({
           id: w.id,
           title: w.title,
@@ -117,7 +153,13 @@ export default function TeacherWorksheets() {
           updated_at: w.updated_at,
           item_count: w?.spec?.variants?.[0]?.items?.length,
           teacher_id: w.teacher_id,
-        }));
+        }))
+        .sort(
+          (a, b) =>
+            new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+        );
+
+      console.log("[smart-flow] own worksheets count:", ownWorksheets.length);
 
       const navigateToEditor = (id: string) => {
         const params = new URLSearchParams();
