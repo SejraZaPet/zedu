@@ -100,12 +100,29 @@ export async function buildWorksheetPdfHtml(
 function buildPdfContainer(html: string): HTMLDivElement {
   const container = document.createElement("div");
   container.innerHTML = html;
-  container.style.position = "fixed";
+  container.style.position = "absolute";
   container.style.left = "-10000px";
   container.style.top = "0";
   container.style.width = "210mm";
+  container.style.minHeight = "297mm";
+  container.style.height = "auto";
+  container.style.display = "block";
   container.style.background = "white";
   document.body.appendChild(container);
+
+  // Ensure first child also has explicit auto height (avoid 0-height clones)
+  const inner = container.firstElementChild as HTMLElement | null;
+  if (inner) {
+    inner.style.minHeight = "297mm";
+    inner.style.height = "auto";
+    inner.style.display = "block";
+    inner.style.width = "100%";
+    inner.style.maxWidth = "none";
+  }
+  // Also handle deeper children that may carry max-width from <body> styles
+  Array.from(container.querySelectorAll<HTMLElement>(":scope > *")).forEach((el) => {
+    el.style.maxWidth = "none";
+  });
   return container;
 }
 
@@ -131,11 +148,35 @@ export async function downloadWorksheetPdf(
   const html2pdf = html2pdfMod.default ?? html2pdfMod;
 
   const container = buildPdfContainer(html);
-  console.log("[PDF] Container appended, offsetHeight:", container.offsetHeight);
+  await new Promise((r) => requestAnimationFrame(() => r(null)));
+
+  const inner = container.firstElementChild as HTMLElement | null;
+  console.log("[PDF] Container appended, offsetHeight:", container.offsetHeight, "scrollHeight:", container.scrollHeight);
+  console.log("[PDF] Inner element:", {
+    tag: inner?.tagName,
+    offsetHeight: inner?.offsetHeight,
+    scrollHeight: inner?.scrollHeight,
+    computedHeight: inner ? getComputedStyle(inner).height : "n/a",
+    computedDisplay: inner ? getComputedStyle(inner).display : "n/a",
+  });
+
+  const effectiveHeight = Math.max(
+    container.scrollHeight,
+    inner?.scrollHeight ?? 0,
+    1123,
+  );
 
   try {
     await html2pdf()
-      .set({ ...PDF_OPTIONS_BASE, filename })
+      .set({
+        ...PDF_OPTIONS_BASE,
+        filename,
+        html2canvas: {
+          ...PDF_OPTIONS_BASE.html2canvas,
+          height: effectiveHeight,
+          windowHeight: effectiveHeight,
+        },
+      })
       .from(container)
       .save();
     console.log("[PDF] PDF saved");
@@ -149,7 +190,6 @@ export async function downloadWorksheetPdf(
 
 /**
  * Vygeneruje PDF jako Blob URL pro náhled v iframe.
- * Volající musí URL revokovat (URL.revokeObjectURL).
  */
 export async function buildWorksheetPdfBlobUrl(
   spec: WorksheetSpec,
@@ -161,9 +201,20 @@ export async function buildWorksheetPdfBlobUrl(
   const html2pdf = html2pdfMod.default ?? html2pdfMod;
 
   const container = buildPdfContainer(html);
+  await new Promise((r) => requestAnimationFrame(() => r(null)));
+
+  const effectiveHeight = Math.max(container.scrollHeight, 1123);
+
   try {
     const pdfBlob: Blob = await html2pdf()
-      .set(PDF_OPTIONS_BASE)
+      .set({
+        ...PDF_OPTIONS_BASE,
+        html2canvas: {
+          ...PDF_OPTIONS_BASE.html2canvas,
+          height: effectiveHeight,
+          windowHeight: effectiveHeight,
+        },
+      })
       .from(container)
       .outputPdf("blob");
     return URL.createObjectURL(pdfBlob);
