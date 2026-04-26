@@ -709,7 +709,27 @@ function renderAnswerKey(variantId: string, keys: AnswerKeyEntry[]): string {
 </div>`;
 }
 
-// ────────────────── Main Renderer ──────────────────
+function renderFooter(spec: WorksheetSpec): string {
+  const meta = spec.metadata;
+  const pointsEnabled = spec.renderConfig.pointsEnabled !== false;
+  const dateStr = new Date().toLocaleDateString("cs-CZ");
+
+  const metaParts: string[] = [];
+  if (pointsEnabled && meta.totalPoints > 0) {
+    metaParts.push(`Celkem: ${meta.totalPoints} ${pointsLabel(meta.totalPoints)}`);
+  }
+  if (meta.totalTimeMin > 0) {
+    metaParts.push(`Čas: ~${meta.totalTimeMin} min`);
+  }
+  metaParts.push(`Vytištěno: ${dateStr}`);
+
+  return `
+<div class="ws-footer">
+  ZEdu · ${esc(spec.header.title)}
+  <div class="ws-footer-meta">${metaParts.join(" · ")}</div>
+</div>`;
+}
+
 
 export interface WorksheetPrintOptions {
   paper?: "A4";
