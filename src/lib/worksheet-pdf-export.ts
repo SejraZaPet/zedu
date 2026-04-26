@@ -100,12 +100,29 @@ export async function buildWorksheetPdfHtml(
 function buildPdfContainer(html: string): HTMLDivElement {
   const container = document.createElement("div");
   container.innerHTML = html;
-  container.style.position = "fixed";
+  container.style.position = "absolute";
   container.style.left = "-10000px";
   container.style.top = "0";
   container.style.width = "210mm";
+  container.style.minHeight = "297mm";
+  container.style.height = "auto";
+  container.style.display = "block";
   container.style.background = "white";
   document.body.appendChild(container);
+
+  // Ensure first child also has explicit auto height (avoid 0-height clones)
+  const inner = container.firstElementChild as HTMLElement | null;
+  if (inner) {
+    inner.style.minHeight = "297mm";
+    inner.style.height = "auto";
+    inner.style.display = "block";
+    inner.style.width = "100%";
+    inner.style.maxWidth = "none";
+  }
+  // Also handle deeper children that may carry max-width from <body> styles
+  Array.from(container.querySelectorAll<HTMLElement>(":scope > *")).forEach((el) => {
+    el.style.maxWidth = "none";
+  });
   return container;
 }
 
