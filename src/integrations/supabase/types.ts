@@ -1476,6 +1476,7 @@ export type Database = {
           created_at: string
           grade_band: string
           id: string
+          scheduled_publish_at: string | null
           source_lesson_id: string | null
           source_lesson_type: string | null
           spec: Json
@@ -1490,6 +1491,7 @@ export type Database = {
           created_at?: string
           grade_band?: string
           id?: string
+          scheduled_publish_at?: string | null
           source_lesson_id?: string | null
           source_lesson_type?: string | null
           spec?: Json
@@ -1504,6 +1506,7 @@ export type Database = {
           created_at?: string
           grade_band?: string
           id?: string
+          scheduled_publish_at?: string | null
           source_lesson_id?: string | null
           source_lesson_type?: string | null
           spec?: Json
@@ -1592,6 +1595,7 @@ export type Database = {
         Args: { _teacher_id: string; _textbook_id: string }
         Returns: boolean
       }
+      publish_due_worksheets: { Args: never; Returns: number }
       reap_stale_export_jobs: { Args: never; Returns: number }
       send_admin_notification: {
         Args: {

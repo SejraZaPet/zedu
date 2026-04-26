@@ -52,3 +52,6 @@ verify_jwt = false
 
 [functions.create-user]
 verify_jwt = false
+
+[functions.publish-scheduled-worksheets]
+verify_jwt = false
