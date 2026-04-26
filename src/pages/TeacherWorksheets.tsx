@@ -166,7 +166,8 @@ export default function TeacherWorksheets() {
   }, [authLoading, user, fromLessonId, fromLessonType]);
 
   async function handleCreateNewForLesson() {
-    if (!user || !fromLessonId || !fromLessonType) return;
+    const ctx = pendingLessonCtx;
+    if (!user || !ctx) return;
     const newTitle = `Pracovní list – ${lessonTitle || "Lekce"}`;
     const spec = emptyWorksheetSpec({ title: newTitle });
     const { data: created, error } = await supabase
@@ -175,8 +176,8 @@ export default function TeacherWorksheets() {
         teacher_id: user.id,
         title: newTitle,
         spec: spec as any,
-        source_lesson_id: fromLessonId,
-        source_lesson_type: fromLessonType,
+        source_lesson_id: ctx.id,
+        source_lesson_type: ctx.type,
       } as any)
       .select("id")
       .single();
@@ -190,9 +191,9 @@ export default function TeacherWorksheets() {
     }
     setWorksheetsForLessonOpen(false);
     const params = new URLSearchParams();
-    params.set("from_lesson", fromLessonId);
-    params.set("from_lesson_type", fromLessonType);
-    if (returnTo) params.set("return_to", returnTo);
+    params.set("from_lesson", ctx.id);
+    params.set("from_lesson_type", ctx.type);
+    if (ctx.returnTo) params.set("return_to", ctx.returnTo);
     navigate(`/ucitel/pracovni-listy/${(created as any).id}?${params.toString()}`);
   }
 
