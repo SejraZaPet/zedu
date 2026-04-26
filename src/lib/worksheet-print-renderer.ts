@@ -689,6 +689,8 @@ export function renderWorksheetVariantHtml(
 </head>
 <body>
 
+<div class="ws-page">
+  <div class="ws-content">
 ${header}
 
 <div class="ws-items">
@@ -699,6 +701,8 @@ ${answerKey}
 
 <div class="ws-footer">
   ZEdu · ${esc(specCopy.header.title)} · ${dateStr}
+</div>
+  </div>
 </div>
 
 </body>
