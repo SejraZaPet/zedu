@@ -731,6 +731,29 @@ export default function WorksheetEditor() {
       });
     } finally {
       setPdfExporting(false);
+  }
+
+  async function handlePreviewPdf() {
+    if (!spec || !id) return;
+    setPdfPreviewLoading(true);
+    try {
+      const url = await buildWorksheetPdfBlobUrl(spec, {
+        worksheetId: id,
+        includeAnswerKey: pdfIncludeAnswerKey,
+        includeNameField: pdfIncludeNameField,
+      });
+      setPdfPreviewUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return url;
+      });
+    } catch (e: any) {
+      toast({
+        title: "Náhled PDF selhal",
+        description: e?.message ?? String(e),
+        variant: "destructive",
+      });
+    } finally {
+      setPdfPreviewLoading(false);
     }
   }
 
