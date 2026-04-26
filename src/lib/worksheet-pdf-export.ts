@@ -62,6 +62,11 @@ export async function buildWorksheetPdfHtml(
   const baseHtml = renderWorksheetVariantHtml(specWithConfig, variantId, {
     includeNameField: options.includeNameField,
   });
+  console.log("[PDF] baseHtml length:", baseHtml.length);
+  if (baseHtml.length < 500) {
+    console.error("[PDF] CRITICAL: baseHtml is too short, render may be broken");
+    console.log("[PDF] baseHtml:", baseHtml);
+  }
 
   // QR jako data URL
   const qrDataUrl = await QRCode.toDataURL(studentUrl, {
@@ -69,6 +74,7 @@ export async function buildWorksheetPdfHtml(
     width: 220,
     errorCorrectionLevel: "M",
   });
+  console.log("[PDF] QR generated, dataUrl length:", qrDataUrl.length);
 
   const qrBlock = `
 <div class="ws-qr-wrap" style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
@@ -76,26 +82,43 @@ export async function buildWorksheetPdfHtml(
   <div style="font-size:9px;color:#475569;line-height:1.2;max-width:90px;">Pokračuj online →<br/>${studentUrl.replace(/^https?:\/\//, "")}</div>
 </div>`;
 
-  // Inject jako pravý sloupec do .ws-header-top.
-  // Print renderer dává variantBadge tam – nahradíme ji (nebo přidáme za ni) blokem QR.
   let html = baseHtml;
-  // Najdeme uzavírací </div> co následuje po </div>${variantBadge}\n  </div> v ws-header-top.
-  // Bezpečný přístup: nahradíme celý ws-header-top regexem.
+  const beforeLength = html.length;
   html = html.replace(
     /<div class="ws-header-top">([\s\S]*?)<\/div>\s*<div class="ws-meta-row">/,
-    (_m, inner) => {
-      // odstraníme případnou původní variantBadge a vložíme QR napravo
-      return `<div class="ws-header-top" style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">${inner}${qrBlock}</div>\n  <div class="ws-meta-row">`;
-    },
+    (_m, inner) =>
+      `<div class="ws-header-top" style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">${inner}${qrBlock}</div>\n  <div class="ws-meta-row">`,
   );
+  if (beforeLength === html.length) {
+    console.warn("[PDF] WARNING: ws-header-top regex did NOT match. PDF will lack QR but still render.");
+  }
 
   const filename = `pracovni-list-${slugify(spec.header.title)}.pdf`;
   return { html, filename };
 }
 
+function buildPdfContainer(html: string): HTMLDivElement {
+  const container = document.createElement("div");
+  container.innerHTML = html;
+  container.style.position = "fixed";
+  container.style.left = "-10000px";
+  container.style.top = "0";
+  container.style.width = "210mm";
+  container.style.background = "white";
+  document.body.appendChild(container);
+  return container;
+}
+
+const PDF_OPTIONS_BASE = {
+  margin: [10, 10, 12, 10],
+  image: { type: "jpeg", quality: 0.95 },
+  html2canvas: { scale: 2, useCORS: true, letterRendering: true, windowWidth: 794 },
+  jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+  pagebreak: { mode: ["css", "legacy"] },
+};
+
 /**
  * Vygeneruje a stáhne PDF.
- * Volá se z prohlížeče.
  */
 export async function downloadWorksheetPdf(
   spec: WorksheetSpec,
