@@ -90,7 +90,7 @@ function buildPdfContainer(styleTag: string, bodyHtml: string): HTMLDivElement {
   // Vlož STYLE tag jako první + body content. Žádné <!DOCTYPE>/<html>/<body>.
   container.innerHTML = styleTag + bodyHtml;
   container.style.position = "absolute";
-  container.style.left = "-10000px";
+  container.style.left = "0"; // DEBUG: bylo "-10000px"
   container.style.top = "0";
   container.style.width = "210mm";
   container.style.minHeight = "297mm";
