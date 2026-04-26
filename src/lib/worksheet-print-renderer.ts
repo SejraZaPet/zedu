@@ -797,7 +797,7 @@ export function renderWorksheetVariantFragment(
     ? renderAnswerKey(variantId, spec.answerKeys[variantId] ?? [])
     : "";
 
-  const dateStr = new Date().toLocaleDateString("cs-CZ");
+  const footer = renderFooter(specCopy);
 
   const bodyHtml = `
 <div class="ws-page">
@@ -810,9 +810,7 @@ ${items}
 
 ${answerKey}
 
-<div class="ws-footer">
-  ZEdu · ${esc(specCopy.header.title)} · ${dateStr}
-</div>
+${footer}
   </div>
 </div>`;
 
