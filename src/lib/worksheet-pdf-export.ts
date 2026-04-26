@@ -1,15 +1,13 @@
 /**
  * Export pracovního listu do PDF s QR kódem v hlavičce.
  *
- * Postup:
- *  1) renderToHtml přes worksheet-print-renderer
- *  2) vygeneruj QR jako data URL (qrcode lib)
- *  3) inject <img> do .ws-header (pravý horní roh)
- *  4) html2pdf.js → download
+ * Používáme renderWorksheetVariantFragment (style + body bez <html>/<body>)
+ * a vkládáme do divu — innerHTML divu nesmí obsahovat <!DOCTYPE>, jinak
+ * prohlížeč strukturu rozbije a html2canvas vidí prázdný layout.
  */
 
 import QRCode from "qrcode";
-import { renderWorksheetVariantHtml } from "./worksheet-print-renderer";
+import { renderWorksheetVariantFragment } from "./worksheet-print-renderer";
 import type { WorksheetSpec } from "./worksheet-spec";
 
 export interface PdfExportOptions {
@@ -22,35 +20,30 @@ export interface PdfExportOptions {
 }
 
 function slugify(s: string): string {
-  return s
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 80) || "pracovni-list";
+  return (
+    s
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 80) || "pracovni-list"
+  );
 }
 
 /**
- * Vygeneruje finální HTML pro PDF (s QR kódem v rohu hlavičky).
+ * Vygeneruje fragment (style + body) pro PDF, s QR kódem v hlavičce.
  */
-export async function buildWorksheetPdfHtml(
+export async function buildWorksheetPdfFragment(
   spec: WorksheetSpec,
   options: PdfExportOptions,
-): Promise<{ html: string; filename: string }> {
-  console.log("[PDF] buildWorksheetPdfHtml called with:", {
-    title: spec.header?.title,
-    variantsCount: spec.variants?.length,
-    itemsCount: spec.variants?.[0]?.items?.length,
-    variantId: options.variantId,
-  });
+): Promise<{ styleTag: string; bodyHtml: string; filename: string }> {
   const variantId = options.variantId ?? spec.variants[0]?.variantId ?? "A";
   const baseUrl =
     options.baseUrl ??
     (typeof window !== "undefined" ? window.location.origin : "https://zedu.cz");
   const studentUrl = `${baseUrl}/student/pracovni-list/${options.worksheetId}`;
 
-  // Apply renderConfig overrides (answer key)
   const specWithConfig: WorksheetSpec = {
     ...spec,
     renderConfig: {
@@ -59,22 +52,17 @@ export async function buildWorksheetPdfHtml(
     },
   };
 
-  const baseHtml = renderWorksheetVariantHtml(specWithConfig, variantId, {
-    includeNameField: options.includeNameField,
-  });
-  console.log("[PDF] baseHtml length:", baseHtml.length);
-  if (baseHtml.length < 500) {
-    console.error("[PDF] CRITICAL: baseHtml is too short, render may be broken");
-    console.log("[PDF] baseHtml:", baseHtml);
-  }
+  const { styleTag, bodyHtml } = renderWorksheetVariantFragment(
+    specWithConfig,
+    variantId,
+    { includeNameField: options.includeNameField },
+  );
 
-  // QR jako data URL
   const qrDataUrl = await QRCode.toDataURL(studentUrl, {
     margin: 1,
     width: 220,
     errorCorrectionLevel: "M",
   });
-  console.log("[PDF] QR generated, dataUrl length:", qrDataUrl.length);
 
   const qrBlock = `
 <div class="ws-qr-wrap" style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
@@ -82,24 +70,25 @@ export async function buildWorksheetPdfHtml(
   <div style="font-size:9px;color:#475569;line-height:1.2;max-width:90px;">Pokračuj online →<br/>${studentUrl.replace(/^https?:\/\//, "")}</div>
 </div>`;
 
-  let html = baseHtml;
-  const beforeLength = html.length;
-  html = html.replace(
+  let modifiedBody = bodyHtml;
+  const beforeLength = modifiedBody.length;
+  modifiedBody = modifiedBody.replace(
     /<div class="ws-header-top">([\s\S]*?)<\/div>\s*<div class="ws-meta-row">/,
     (_m, inner) =>
       `<div class="ws-header-top" style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">${inner}${qrBlock}</div>\n  <div class="ws-meta-row">`,
   );
-  if (beforeLength === html.length) {
-    console.warn("[PDF] WARNING: ws-header-top regex did NOT match. PDF will lack QR but still render.");
+  if (beforeLength === modifiedBody.length) {
+    console.warn("[PDF] ws-header-top regex did NOT match.");
   }
 
   const filename = `pracovni-list-${slugify(spec.header.title)}.pdf`;
-  return { html, filename };
+  return { styleTag, bodyHtml: modifiedBody, filename };
 }
 
-function buildPdfContainer(html: string): HTMLDivElement {
+function buildPdfContainer(styleTag: string, bodyHtml: string): HTMLDivElement {
   const container = document.createElement("div");
-  container.innerHTML = html;
+  // Vlož STYLE tag jako první + body content. Žádné <!DOCTYPE>/<html>/<body>.
+  container.innerHTML = styleTag + bodyHtml;
   container.style.position = "absolute";
   container.style.left = "-10000px";
   container.style.top = "0";
@@ -109,20 +98,6 @@ function buildPdfContainer(html: string): HTMLDivElement {
   container.style.display = "block";
   container.style.background = "white";
   document.body.appendChild(container);
-
-  // Ensure first child also has explicit auto height (avoid 0-height clones)
-  const inner = container.firstElementChild as HTMLElement | null;
-  if (inner) {
-    inner.style.minHeight = "297mm";
-    inner.style.height = "auto";
-    inner.style.display = "block";
-    inner.style.width = "100%";
-    inner.style.maxWidth = "none";
-  }
-  // Also handle deeper children that may carry max-width from <body> styles
-  Array.from(container.querySelectorAll<HTMLElement>(":scope > *")).forEach((el) => {
-    el.style.maxWidth = "none";
-  });
   return container;
 }
 
@@ -142,95 +117,32 @@ export async function downloadWorksheetPdf(
   options: PdfExportOptions,
 ): Promise<void> {
   console.log("[PDF] downloadWorksheetPdf started");
-  const { html, filename } = await buildWorksheetPdfHtml(spec, options);
-
-  console.log("[PDF-DIAG] Generated HTML (first 2000 chars):");
-  console.log(html.substring(0, 2000));
-  console.log("[PDF-DIAG] Generated HTML (last 1000 chars):");
-  console.log(html.substring(html.length - 1000));
+  const { styleTag, bodyHtml, filename } = await buildWorksheetPdfFragment(spec, options);
+  console.log("[PDF] fragment lengths:", { style: styleTag.length, body: bodyHtml.length });
 
   const html2pdfMod: any = await import("html2pdf.js");
   const html2pdf = html2pdfMod.default ?? html2pdfMod;
 
-  const container = buildPdfContainer(html);
+  const container = buildPdfContainer(styleTag, bodyHtml);
   await new Promise<void>((resolve) =>
     requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
   );
 
-  console.log("[PDF-DIAG] Container info:", {
-    offsetWidth: container.offsetWidth,
-    offsetHeight: container.offsetHeight,
-    scrollHeight: container.scrollHeight,
-    childCount: container.childElementCount,
-    firstChildTag: container.firstElementChild?.tagName,
-    innerHTMLLength: container.innerHTML.length,
-  });
-
   const items = container.querySelectorAll(".ws-item");
-  console.log("[PDF-DIAG] Found .ws-item elements:", items.length);
-
+  console.log("[PDF-DIAG] container offsetHeight:", container.offsetHeight, "items:", items.length);
   if (items.length > 0) {
-    const firstItem = items[0] as HTMLElement;
-    const cs = getComputedStyle(firstItem);
-    console.log("[PDF-DIAG] First .ws-item details:", {
-      tag: firstItem.tagName,
-      offsetHeight: firstItem.offsetHeight,
-      offsetWidth: firstItem.offsetWidth,
-      scrollHeight: firstItem.scrollHeight,
-      textContent: firstItem.textContent?.substring(0, 200),
-      color: cs.color,
-      backgroundColor: cs.backgroundColor,
-      visibility: cs.visibility,
-      opacity: cs.opacity,
-      display: cs.display,
-      fontSize: cs.fontSize,
-      position: cs.position,
-    });
-  }
-
-  const prompts = container.querySelectorAll(".prompt");
-  console.log("[PDF-DIAG] Found .prompt elements:", prompts.length);
-
-  if (prompts.length > 0) {
-    const firstPrompt = prompts[0] as HTMLElement;
-    const cs = getComputedStyle(firstPrompt);
-    console.log("[PDF-DIAG] First .prompt details:", {
-      textContent: firstPrompt.textContent?.substring(0, 200),
-      offsetHeight: firstPrompt.offsetHeight,
+    const first = items[0] as HTMLElement;
+    const cs = getComputedStyle(first);
+    console.log("[PDF-DIAG] first .ws-item:", {
+      offsetHeight: first.offsetHeight,
       color: cs.color,
       visibility: cs.visibility,
       opacity: cs.opacity,
-      fontSize: cs.fontSize,
+      text: first.textContent?.substring(0, 120),
     });
   }
 
-  const header = container.querySelector(".ws-header, header, h1");
-  if (header) {
-    const cs = getComputedStyle(header as HTMLElement);
-    console.log("[PDF-DIAG] Header details:", {
-      tag: header.tagName,
-      textContent: header.textContent?.substring(0, 100),
-      color: cs.color,
-      fontSize: cs.fontSize,
-      offsetHeight: (header as HTMLElement).offsetHeight,
-    });
-  }
-
-  const inner = container.firstElementChild as HTMLElement | null;
-  console.log("[PDF] Container appended, offsetHeight:", container.offsetHeight, "scrollHeight:", container.scrollHeight);
-  console.log("[PDF] Inner element:", {
-    tag: inner?.tagName,
-    offsetHeight: inner?.offsetHeight,
-    scrollHeight: inner?.scrollHeight,
-    computedHeight: inner ? getComputedStyle(inner).height : "n/a",
-    computedDisplay: inner ? getComputedStyle(inner).display : "n/a",
-  });
-
-  const effectiveHeight = Math.max(
-    container.scrollHeight,
-    inner?.scrollHeight ?? 0,
-    1123,
-  );
+  const effectiveHeight = Math.max(container.scrollHeight, 1123);
 
   try {
     await html2pdf()
@@ -261,13 +173,15 @@ export async function buildWorksheetPdfBlobUrl(
   spec: WorksheetSpec,
   options: PdfExportOptions,
 ): Promise<string> {
-  const { html } = await buildWorksheetPdfHtml(spec, options);
+  const { styleTag, bodyHtml } = await buildWorksheetPdfFragment(spec, options);
 
   const html2pdfMod: any = await import("html2pdf.js");
   const html2pdf = html2pdfMod.default ?? html2pdfMod;
 
-  const container = buildPdfContainer(html);
-  await new Promise((r) => requestAnimationFrame(() => r(null)));
+  const container = buildPdfContainer(styleTag, bodyHtml);
+  await new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+  );
 
   const effectiveHeight = Math.max(container.scrollHeight, 1123);
 
@@ -288,4 +202,3 @@ export async function buildWorksheetPdfBlobUrl(
     document.body.removeChild(container);
   }
 }
-
