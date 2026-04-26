@@ -800,7 +800,8 @@ export function renderWorksheetVariantHtml(
 
   const css = buildWorksheetCss();
   const header = renderHeader(specCopy, variant);
-  const items = variant.items.map((it) => renderItem(it, specCopy.renderConfig.showPoints)).join("\n");
+  const showPointsEffective = specCopy.renderConfig.showPoints && specCopy.renderConfig.pointsEnabled !== false;
+  const items = variant.items.map((it) => renderItem(it, showPointsEffective)).join("\n");
   const answerKey = specCopy.renderConfig.includeAnswerKey
     ? renderAnswerKey(variantId, spec.answerKeys[variantId] ?? [])
     : "";
