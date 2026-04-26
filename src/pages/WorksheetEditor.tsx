@@ -91,6 +91,7 @@ import {
   extractTextFromBlocks,
   type LessonBlock,
 } from "@/lib/lesson-content-splitter";
+import { useSubjects } from "@/hooks/useSubjects";
 
 type LessonOption = {
   id: string;
@@ -167,6 +168,7 @@ export default function WorksheetEditor() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  const { data: subjectsList } = useSubjects(true);
 
   const [spec, setSpec] = useState<WorksheetSpec | null>(null);
   const [status, setStatus] = useState<"draft" | "published">("draft");
@@ -820,14 +822,24 @@ export default function WorksheetEditor() {
       return;
     }
     toast({ title: `Připojeno: ${selected.length} ${selected.length === 1 ? "lekce" : "lekcí"}` });
+    // UX: pokud zatím není aktivní lekce, nastav první nově přidanou
+    if (!activeLessonId && selected[0]) {
+      void handleSetSourceLesson(selected[0].id);
+    }
     void loadLinkedLessons();
   }
 
   async function handleRemoveLinkedLesson(linkId: string) {
+    const removed = linkedLessons.find((l) => l.id === linkId);
     const { error } = await supabase.from("worksheet_lessons" as any).delete().eq("id", linkId);
     if (error) {
       toast({ title: "Nepodařilo se odebrat", description: error.message, variant: "destructive" });
       return;
+    }
+    // UX: pokud byla odstraněná lekce zrovna aktivní, vyber jinou nebo vyčisti
+    if (removed && removed.lesson_id === activeLessonId) {
+      const remaining = linkedLessons.filter((l) => l.id !== linkId);
+      void handleSetSourceLesson(remaining[0]?.lesson_id ?? null);
     }
     void loadLinkedLessons();
   }
@@ -1088,23 +1100,57 @@ export default function WorksheetEditor() {
             <div className="grid sm:grid-cols-2 gap-3 mb-6 pb-6 border-b border-border">
               <div>
                 <Label className="text-xs">Předmět</Label>
-                <Input
-                  value={spec.header.subject}
-                  onChange={(e) =>
-                    updateSpec((s) => ({ ...s, header: { ...s.header, subject: e.target.value } }))
+                <Select
+                  value={spec.header.subject || "__none__"}
+                  onValueChange={(v) =>
+                    updateSpec((s) => ({
+                      ...s,
+                      header: { ...s.header, subject: v === "__none__" ? "" : v },
+                    }))
                   }
-                  placeholder="např. Matematika"
-                />
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Vyber předmět…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">— Nezadáno —</SelectItem>
+                    {(subjectsList ?? []).map((s) => (
+                      <SelectItem key={s.id} value={s.slug}>
+                        <span className="inline-flex items-center gap-2">
+                          <span
+                            className="w-2 h-2 rounded-full"
+                            style={{ backgroundColor: s.color }}
+                          />
+                          {s.label}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label className="text-xs">Ročník</Label>
-                <Input
-                  value={spec.header.gradeBand}
-                  onChange={(e) =>
-                    updateSpec((s) => ({ ...s, header: { ...s.header, gradeBand: e.target.value } }))
+                <Select
+                  value={spec.header.gradeBand || "__none__"}
+                  onValueChange={(v) =>
+                    updateSpec((s) => ({
+                      ...s,
+                      header: { ...s.header, gradeBand: v === "__none__" ? "" : v },
+                    }))
                   }
-                  placeholder="např. 1. ročník SŠ"
-                />
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Vyber ročník…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">— Nezadáno —</SelectItem>
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
+                      <SelectItem key={n} value={`${n}. ročník`}>
+                        {n}. ročník
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label className="text-xs">Režim</Label>

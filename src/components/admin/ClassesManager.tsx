@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,6 +55,7 @@ interface ClassItem {
 
 const ClassesManager = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [classes, setClasses] = useState<ClassItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -195,7 +197,14 @@ const ClassesManager = () => {
       }
       toast({ title: "Uloženo", description: "Třída byla upravena." });
     } else {
-      const { error } = await supabase.from("classes").insert(payload);
+      if (!user) {
+        toast({ title: "Chyba", description: "Nejste přihlášen/a.", variant: "destructive" });
+        setSaving(false);
+        return;
+      }
+      const { error } = await supabase
+        .from("classes")
+        .insert({ ...payload, created_by: user.id } as any);
       if (error) {
         toast({ title: "Chyba", description: error.message, variant: "destructive" });
         setSaving(false);

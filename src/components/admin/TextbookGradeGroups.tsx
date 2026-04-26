@@ -36,7 +36,7 @@ interface Props {
   onEditTopic: (topic: { id: string; title: string }) => void;
   onDeleteTopic: (topicId: string, lessonCount: number) => void;
   onOpenPresentation: (lesson: LessonItem) => void;
-  onOpenWorksheet: (lessonId: string, lessonTitle: string) => void;
+  onOpenWorksheet: (lesson: LessonItem) => void;
   onPreviewLesson: (lesson: LessonItem) => void;
 }
 
@@ -100,7 +100,7 @@ const TextbookGradeGroups = ({
                           <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => onEditLesson(lesson)} title="Upravit">
                             <Pencil className="w-4 h-4" />
                           </Button>
-                          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => onOpenWorksheet(lesson.id, lesson.title)} title="Pracovní list">
+                          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => onOpenWorksheet(lesson)} title="Pracovní list">
                             <FileText className="w-4 h-4" />
                           </Button>
                           <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => onOpenPresentation(lesson)} title="Prezentace">
@@ -120,7 +120,7 @@ const TextbookGradeGroups = ({
                             size="sm"
                             variant="outline"
                             className="h-7 gap-1.5"
-                            onClick={() => onOpenWorksheet(lesson.id, lesson.title)}
+                            onClick={() => onOpenWorksheet(lesson)}
                             title="Vytvořit pracovní list"
                           >
                             <FileText className="w-3.5 h-3.5" />
