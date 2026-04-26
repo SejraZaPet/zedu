@@ -924,40 +924,113 @@ export default function WorksheetEditor() {
         className="sticky z-30 bg-background/95 backdrop-blur border-b border-border"
         style={{ top: "70px" }}
       >
-        <div className="container mx-auto px-4 py-3 flex items-center gap-3 max-w-[1600px]">
-          <Button variant="ghost" size="sm" onClick={handleBack}>
-            <ChevronLeft className="w-4 h-4 mr-1" /> Zpět
+        <div className="container mx-auto px-4 py-3 flex items-center gap-2 sm:gap-3 max-w-[1600px]">
+          <Button variant="ghost" size="sm" onClick={handleBack} className="shrink-0">
+            <ChevronLeft className="w-4 h-4 sm:mr-1" />
+            <span className="hidden sm:inline">Zpět</span>
           </Button>
+
+          {/* Mobile: open palette drawer */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="lg:hidden shrink-0"
+            onClick={() => setMobilePaletteOpen(true)}
+            title="Otevřít paletu"
+          >
+            <Menu className="w-4 h-4" />
+          </Button>
+
           <Input
             value={spec.header.title}
             onChange={(e) =>
               updateSpec((s) => ({ ...s, header: { ...s.header, title: e.target.value } }))
             }
-            className="font-heading text-base font-semibold border-0 shadow-none focus-visible:ring-1 max-w-md"
+            className="font-heading text-sm sm:text-base font-semibold border-0 shadow-none focus-visible:ring-1 min-w-0 flex-1 sm:flex-none sm:max-w-md"
           />
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex items-center gap-1 sm:gap-2">
             <Button
               variant="ghost"
               size="sm"
               onClick={undo}
               title="Zpět (Ctrl+Z)"
               disabled={historyRef.current.length === 0}
+              className="hidden sm:inline-flex"
             >
               <RotateCcw className="w-4 h-4" />
             </Button>
-            <SaveIndicator state={saveState} />
-            <Badge variant={status === "published" ? "default" : "secondary"}>
-              {status === "published" ? "Publikováno" : "Koncept"}
+            <div className="hidden md:block">
+              <SaveIndicator state={saveState} />
+            </div>
+            <Badge
+              variant={status === "published" ? "default" : status === "scheduled" ? "outline" : "secondary"}
+              className="hidden sm:inline-flex"
+            >
+              {status === "published"
+                ? "Publikováno"
+                : status === "scheduled"
+                  ? scheduledAt
+                    ? `Naplánováno · ${scheduledAt.toLocaleDateString("cs-CZ")} ${scheduledAt.toLocaleTimeString("cs-CZ", { hour: "2-digit", minute: "2-digit" })}`
+                    : "Naplánováno"
+                  : "Koncept"}
             </Badge>
-            <Button variant="outline" size="sm" onClick={() => setPreviewOpen(true)}>
+            <Button variant="outline" size="sm" onClick={() => setPreviewOpen(true)} className="hidden sm:inline-flex">
               <Eye className="w-4 h-4 mr-1" /> Náhled
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setPdfDialogOpen(true)}>
+            <Button variant="outline" size="sm" onClick={() => setPdfDialogOpen(true)} className="hidden md:inline-flex">
               <Printer className="w-4 h-4 mr-1" /> Tisk/PDF
             </Button>
-            <Button size="sm" onClick={togglePublish}>
-              <Send className="w-4 h-4 mr-1" />
-              {status === "published" ? "Vrátit do konceptu" : "Publikovat"}
+
+            {/* Publish dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm">
+                  <Send className="w-4 h-4 sm:mr-1" />
+                  <span className="hidden sm:inline">
+                    {status === "published"
+                      ? "Publikováno"
+                      : status === "scheduled"
+                        ? "Naplánováno"
+                        : "Publikovat"}
+                  </span>
+                  <ChevronDown className="w-3.5 h-3.5 ml-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 bg-popover">
+                {status !== "published" && (
+                  <DropdownMenuItem onClick={togglePublish}>
+                    <Send className="w-4 h-4 mr-2" /> Publikovat hned
+                  </DropdownMenuItem>
+                )}
+                {status === "published" && (
+                  <DropdownMenuItem onClick={togglePublish}>
+                    <RotateCcw className="w-4 h-4 mr-2" /> Vrátit do konceptu
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onClick={() => setScheduleDialogOpen(true)}>
+                  <CalendarClock className="w-4 h-4 mr-2" />
+                  {status === "scheduled" ? "Změnit termín…" : "Naplánovat publikaci…"}
+                </DropdownMenuItem>
+                {status === "scheduled" && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={cancelSchedule} className="text-destructive">
+                      <X className="w-4 h-4 mr-2" /> Zrušit plán
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Mobile: open properties drawer */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="lg:hidden shrink-0"
+              onClick={() => setMobilePropsOpen(true)}
+              title="Vlastnosti"
+            >
+              <PanelRight className="w-4 h-4" />
             </Button>
           </div>
         </div>
