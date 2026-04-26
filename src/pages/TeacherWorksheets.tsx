@@ -402,6 +402,18 @@ export default function TeacherWorksheets() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {pendingLessonCtx && (
+        <WorksheetsForLessonDialog
+          open={worksheetsForLessonOpen}
+          onOpenChange={setWorksheetsForLessonOpen}
+          lessonId={pendingLessonCtx.id}
+          lessonType={pendingLessonCtx.type}
+          lessonTitle={lessonTitle}
+          worksheets={worksheetsForLesson}
+          onCreateNew={handleCreateNewForLesson}
+        />
+      )}
     </div>
   );
 }
