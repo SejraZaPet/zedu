@@ -2175,11 +2175,13 @@ function AiBlockChat({
 function PropertiesPanel({
   item,
   answerKey,
+  pointsEnabled,
   onUpdateItem,
   onUpdateKey,
 }: {
   item: WorksheetItem;
   answerKey: AnswerKeyEntry | null;
+  pointsEnabled: boolean;
   onUpdateItem: (p: Partial<WorksheetItem>) => void;
   onUpdateKey: (p: Partial<AnswerKeyEntry>) => void;
 }) {
@@ -2194,16 +2196,33 @@ function PropertiesPanel({
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        <div>
-          <Label className="text-xs">Body</Label>
-          <Input
-            type="number"
-            min={0}
-            value={item.points}
-            onChange={(e) => onUpdateItem({ points: Number(e.target.value) || 0 })}
-          />
-        </div>
+      <div className={pointsEnabled ? "grid grid-cols-2 gap-2" : ""}>
+        {pointsEnabled && (
+          <div>
+            <Label className="text-xs">Body</Label>
+            <Input
+              type="number"
+              min={0}
+              max={10}
+              value={item.points}
+              onChange={(e) => onUpdateItem({ points: Number(e.target.value) || 0 })}
+            />
+            <div className="flex gap-1.5 mt-2">
+              {[1, 2, 3, 5].map((n) => (
+                <Button
+                  key={n}
+                  type="button"
+                  variant={item.points === n ? "default" : "outline"}
+                  size="sm"
+                  className="h-7 px-2 text-xs flex-1"
+                  onClick={() => onUpdateItem({ points: n })}
+                >
+                  {n} {pointsLabel(n)}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
         <div>
           <Label className="text-xs">Čas (s)</Label>
           <Input
