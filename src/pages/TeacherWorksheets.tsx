@@ -109,6 +109,15 @@ export default function TeacherWorksheets() {
 
       if (cancelled) return;
 
+      if (linkErr) {
+        toast({
+          title: "Nepodařilo se načíst vazby lekce",
+          description: linkErr.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
       const worksheetIds = ((linkRows ?? []) as any[]).map((row) => row.worksheet_id);
 
       if (worksheetIds.length === 0) {
@@ -126,6 +135,15 @@ export default function TeacherWorksheets() {
       console.log("[smart-flow] worksheets fetched:", wRows, "error:", wErr);
 
       if (cancelled) return;
+
+      if (wErr) {
+        toast({
+          title: "Nepodařilo se načíst pracovní listy lekce",
+          description: wErr.message,
+          variant: "destructive",
+        });
+        return;
+      }
 
       const ownWorksheets: WorksheetForLessonItem[] = ((wRows ?? []) as any[])
         .map((w: any) => ({
