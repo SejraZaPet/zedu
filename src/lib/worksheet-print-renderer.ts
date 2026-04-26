@@ -571,6 +571,12 @@ function esc(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
+function pointsLabel(n: number): string {
+  if (n === 1) return "bod";
+  if (n >= 2 && n <= 4) return "body";
+  return "bodů";
+}
+
 function renderHeader(spec: WorksheetSpec, variant: WorksheetVariant): string {
   const h = spec.header;
   const meta = spec.metadata;
