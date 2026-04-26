@@ -30,7 +30,6 @@ import {
 } from "lucide-react";
 import { blocksToSlides } from "@/lib/blocks-to-slides";
 import { usePresentationLauncher } from "@/hooks/usePresentationLauncher";
-import { emptyWorksheetSpec } from "@/lib/worksheet-defaults";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
