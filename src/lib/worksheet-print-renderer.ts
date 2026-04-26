@@ -708,20 +708,32 @@ function renderItem(item: WorksheetItem, showPoints: boolean): string {
       const group = item.groupSize ?? "class";
       const dur = item.durationMin && item.durationMin > 0 ? `~${item.durationMin} min` : "";
       body = `<div class="ws-offline-activity">
-        <div class="ws-offline-badge">⬢ Offline aktivita: ${esc(modeLabels[mode] ?? mode)}</div>
+        <div class="ws-offline-badge">Aktivita ve třídě · ${esc(modeLabels[mode] ?? mode)}</div>
         <div class="ws-offline-meta">
-          <span>👥 ${esc(groupLabels[group] ?? group)}</span>
-          ${dur ? `<span>⏱ ${esc(dur)}</span>` : ""}
+          <span><strong>Skupina:</strong> ${esc(groupLabels[group] ?? group)}</span>
+          ${dur ? `<span><strong>Čas:</strong> ${esc(dur)}</span>` : ""}
         </div>
       </div>`;
       break;
     }
   }
 
+  const typeLabels: Record<string, string> = {
+    mcq: "Výběr z možností",
+    true_false: "Pravda / Nepravda",
+    fill_blank: "Doplňování",
+    matching: "Spojování",
+    ordering: "Seřazení",
+    short_answer: "Krátká odpověď",
+    open_answer: "Otevřená odpověď",
+    offline_activity: "Aktivita ve třídě",
+  };
+
   return `
 <div class="ws-item">
   <div class="ws-item-header">
-    <span class="ws-item-number">${item.itemNumber}.</span>
+    <span class="ws-item-number-badge">${item.itemNumber}</span>
+    <span class="ws-item-type">${esc(typeLabels[item.type] ?? item.type)}</span>
     ${pointsHtml}
   </div>
   <div class="ws-item-prompt prompt">${esc(item.prompt)}</div>
