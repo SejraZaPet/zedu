@@ -144,11 +144,77 @@ export async function downloadWorksheetPdf(
   console.log("[PDF] downloadWorksheetPdf started");
   const { html, filename } = await buildWorksheetPdfHtml(spec, options);
 
+  console.log("[PDF-DIAG] Generated HTML (first 2000 chars):");
+  console.log(html.substring(0, 2000));
+  console.log("[PDF-DIAG] Generated HTML (last 1000 chars):");
+  console.log(html.substring(html.length - 1000));
+
   const html2pdfMod: any = await import("html2pdf.js");
   const html2pdf = html2pdfMod.default ?? html2pdfMod;
 
   const container = buildPdfContainer(html);
-  await new Promise((r) => requestAnimationFrame(() => r(null)));
+  await new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+  );
+
+  console.log("[PDF-DIAG] Container info:", {
+    offsetWidth: container.offsetWidth,
+    offsetHeight: container.offsetHeight,
+    scrollHeight: container.scrollHeight,
+    childCount: container.childElementCount,
+    firstChildTag: container.firstElementChild?.tagName,
+    innerHTMLLength: container.innerHTML.length,
+  });
+
+  const items = container.querySelectorAll(".ws-item");
+  console.log("[PDF-DIAG] Found .ws-item elements:", items.length);
+
+  if (items.length > 0) {
+    const firstItem = items[0] as HTMLElement;
+    const cs = getComputedStyle(firstItem);
+    console.log("[PDF-DIAG] First .ws-item details:", {
+      tag: firstItem.tagName,
+      offsetHeight: firstItem.offsetHeight,
+      offsetWidth: firstItem.offsetWidth,
+      scrollHeight: firstItem.scrollHeight,
+      textContent: firstItem.textContent?.substring(0, 200),
+      color: cs.color,
+      backgroundColor: cs.backgroundColor,
+      visibility: cs.visibility,
+      opacity: cs.opacity,
+      display: cs.display,
+      fontSize: cs.fontSize,
+      position: cs.position,
+    });
+  }
+
+  const prompts = container.querySelectorAll(".prompt");
+  console.log("[PDF-DIAG] Found .prompt elements:", prompts.length);
+
+  if (prompts.length > 0) {
+    const firstPrompt = prompts[0] as HTMLElement;
+    const cs = getComputedStyle(firstPrompt);
+    console.log("[PDF-DIAG] First .prompt details:", {
+      textContent: firstPrompt.textContent?.substring(0, 200),
+      offsetHeight: firstPrompt.offsetHeight,
+      color: cs.color,
+      visibility: cs.visibility,
+      opacity: cs.opacity,
+      fontSize: cs.fontSize,
+    });
+  }
+
+  const header = container.querySelector(".ws-header, header, h1");
+  if (header) {
+    const cs = getComputedStyle(header as HTMLElement);
+    console.log("[PDF-DIAG] Header details:", {
+      tag: header.tagName,
+      textContent: header.textContent?.substring(0, 100),
+      color: cs.color,
+      fontSize: cs.fontSize,
+      offsetHeight: (header as HTMLElement).offsetHeight,
+    });
+  }
 
   const inner = container.firstElementChild as HTMLElement | null;
   console.log("[PDF] Container appended, offsetHeight:", container.offsetHeight, "scrollHeight:", container.scrollHeight);
