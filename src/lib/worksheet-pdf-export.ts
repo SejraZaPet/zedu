@@ -1,13 +1,13 @@
 /**
  * Export pracovního listu do PDF s QR kódem v hlavičce.
  *
- * Používáme renderWorksheetVariantFragment (style + body bez <html>/<body>)
- * a vkládáme do divu — innerHTML divu nesmí obsahovat <!DOCTYPE>, jinak
- * prohlížeč strukturu rozbije a html2canvas vidí prázdný layout.
+ * Strategie: vykreslíme kompletní HTML dokument do iframe (přes srcdoc),
+ * což zajistí korektní aplikaci <style> a layout. Pak předáme
+ * iframe.contentDocument.body do html2pdf.
  */
 
 import QRCode from "qrcode";
-import { renderWorksheetVariantFragment } from "./worksheet-print-renderer";
+import { renderWorksheetVariantHtml } from "./worksheet-print-renderer";
 import type { WorksheetSpec } from "./worksheet-spec";
 
 export interface PdfExportOptions {
@@ -32,12 +32,12 @@ function slugify(s: string): string {
 }
 
 /**
- * Vygeneruje fragment (style + body) pro PDF, s QR kódem v hlavičce.
+ * Vygeneruje kompletní HTML dokument pro PDF (s QR v hlavičce).
  */
-export async function buildWorksheetPdfFragment(
+export async function buildWorksheetPdfHtml(
   spec: WorksheetSpec,
   options: PdfExportOptions,
-): Promise<{ styleTag: string; bodyHtml: string; filename: string }> {
+): Promise<{ html: string; filename: string }> {
   const variantId = options.variantId ?? spec.variants[0]?.variantId ?? "A";
   const baseUrl =
     options.baseUrl ??
@@ -52,11 +52,9 @@ export async function buildWorksheetPdfFragment(
     },
   };
 
-  const { styleTag, bodyHtml } = renderWorksheetVariantFragment(
-    specWithConfig,
-    variantId,
-    { includeNameField: options.includeNameField },
-  );
+  const baseHtml = renderWorksheetVariantHtml(specWithConfig, variantId, {
+    includeNameField: options.includeNameField,
+  });
 
   const qrDataUrl = await QRCode.toDataURL(studentUrl, {
     margin: 1,
@@ -70,35 +68,79 @@ export async function buildWorksheetPdfFragment(
   <div style="font-size:9px;color:#475569;line-height:1.2;max-width:90px;">Pokračuj online →<br/>${studentUrl.replace(/^https?:\/\//, "")}</div>
 </div>`;
 
-  let modifiedBody = bodyHtml;
-  const beforeLength = modifiedBody.length;
-  modifiedBody = modifiedBody.replace(
+  let html = baseHtml;
+  const beforeLength = html.length;
+  html = html.replace(
     /<div class="ws-header-top">([\s\S]*?)<\/div>\s*<div class="ws-meta-row">/,
     (_m, inner) =>
       `<div class="ws-header-top" style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">${inner}${qrBlock}</div>\n  <div class="ws-meta-row">`,
   );
-  if (beforeLength === modifiedBody.length) {
+  if (beforeLength === html.length) {
     console.warn("[PDF] ws-header-top regex did NOT match.");
   }
 
   const filename = `pracovni-list-${slugify(spec.header.title)}.pdf`;
-  return { styleTag, bodyHtml: modifiedBody, filename };
+  return { html, filename };
 }
 
-function buildPdfContainer(styleTag: string, bodyHtml: string): HTMLDivElement {
-  const container = document.createElement("div");
-  // Vlož STYLE tag jako první + body content. Žádné <!DOCTYPE>/<html>/<body>.
-  container.innerHTML = styleTag + bodyHtml;
-  container.style.position = "absolute";
-  container.style.left = "0"; // DEBUG: bylo "-10000px"
-  container.style.top = "0";
-  container.style.width = "210mm";
-  container.style.minHeight = "297mm";
-  container.style.height = "auto";
-  container.style.display = "block";
-  container.style.background = "white";
-  document.body.appendChild(container);
-  return container;
+/**
+ * Vytvoří off-screen iframe s daným HTML dokumentem a počká na load + layout.
+ */
+async function buildPdfFrame(html: string): Promise<HTMLIFrameElement> {
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "absolute";
+  iframe.style.left = "-10000px";
+  iframe.style.top = "0";
+  iframe.style.width = "210mm";
+  iframe.style.height = "1px";
+  iframe.style.border = "none";
+  iframe.style.background = "white";
+  document.body.appendChild(iframe);
+
+  await new Promise<void>((resolve, reject) => {
+    iframe.onload = () => resolve();
+    iframe.onerror = (e) => reject(e);
+    try {
+      iframe.srcdoc = html;
+    } catch (e) {
+      // Fallback přes document.write
+      const doc = iframe.contentDocument!;
+      doc.open();
+      doc.write(html);
+      doc.close();
+    }
+  });
+
+  await new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+  );
+
+  const doc = iframe.contentDocument!;
+  const actualHeight = Math.max(
+    doc.body.scrollHeight,
+    doc.documentElement.scrollHeight,
+    1123,
+  );
+  iframe.style.height = `${actualHeight}px`;
+
+  console.log("[PDF-IFRAME] iframe content height:", actualHeight);
+  console.log(
+    "[PDF-IFRAME] iframe items:",
+    doc.querySelectorAll(".ws-item").length,
+  );
+  const firstItem = doc.querySelector(".ws-item") as HTMLElement | null;
+  if (firstItem) {
+    const cs = iframe.contentWindow!.getComputedStyle(firstItem);
+    console.log("[PDF-IFRAME] first .ws-item:", {
+      offsetHeight: firstItem.offsetHeight,
+      color: cs.color,
+      visibility: cs.visibility,
+      opacity: cs.opacity,
+      text: firstItem.textContent?.substring(0, 120),
+    });
+  }
+
+  return iframe;
 }
 
 const PDF_OPTIONS_BASE = {
@@ -117,63 +159,28 @@ export async function downloadWorksheetPdf(
   options: PdfExportOptions,
 ): Promise<void> {
   console.log("[PDF] downloadWorksheetPdf started");
-  const { styleTag, bodyHtml, filename } = await buildWorksheetPdfFragment(spec, options);
-  console.log("[PDF] fragment lengths:", { style: styleTag.length, body: bodyHtml.length });
+  const { html, filename } = await buildWorksheetPdfHtml(spec, options);
+  console.log("[PDF] html length:", html.length);
 
   const html2pdfMod: any = await import("html2pdf.js");
   const html2pdf = html2pdfMod.default ?? html2pdfMod;
 
-  const container = buildPdfContainer(styleTag, bodyHtml);
-  await new Promise<void>((resolve) =>
-    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
-  );
-
-  // === DEBUG: ukaž container 5s ===
-  container.style.position = "fixed";
-  container.style.left = "0";
-  container.style.top = "0";
-  container.style.zIndex = "99999";
-  container.style.border = "3px solid red";
-  container.style.background = "white";
-  console.log("[PDF-DEBUG] Container is now visible for 5 seconds!");
-  await new Promise((r) => setTimeout(r, 5000));
-  // ================================
-
-  const items = container.querySelectorAll(".ws-item");
-  console.log("[PDF-DIAG] container offsetHeight:", container.offsetHeight, "items:", items.length);
-  if (items.length > 0) {
-    const first = items[0] as HTMLElement;
-    const cs = getComputedStyle(first);
-    console.log("[PDF-DIAG] first .ws-item:", {
-      offsetHeight: first.offsetHeight,
-      color: cs.color,
-      visibility: cs.visibility,
-      opacity: cs.opacity,
-      text: first.textContent?.substring(0, 120),
-    });
-  }
-
-  const effectiveHeight = Math.max(container.scrollHeight, 1123);
+  const iframe = await buildPdfFrame(html);
 
   try {
     await html2pdf()
       .set({
         ...PDF_OPTIONS_BASE,
         filename,
-        html2canvas: {
-          ...PDF_OPTIONS_BASE.html2canvas,
-          height: effectiveHeight,
-          windowHeight: effectiveHeight,
-        },
       })
-      .from(container)
+      .from(iframe.contentDocument!.body)
       .save();
     console.log("[PDF] PDF saved");
   } catch (e) {
     console.error("[PDF] html2pdf failed:", e);
     throw e;
   } finally {
-    document.body.removeChild(container);
+    document.body.removeChild(iframe);
   }
 }
 
@@ -184,32 +191,20 @@ export async function buildWorksheetPdfBlobUrl(
   spec: WorksheetSpec,
   options: PdfExportOptions,
 ): Promise<string> {
-  const { styleTag, bodyHtml } = await buildWorksheetPdfFragment(spec, options);
+  const { html } = await buildWorksheetPdfHtml(spec, options);
 
   const html2pdfMod: any = await import("html2pdf.js");
   const html2pdf = html2pdfMod.default ?? html2pdfMod;
 
-  const container = buildPdfContainer(styleTag, bodyHtml);
-  await new Promise<void>((resolve) =>
-    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
-  );
-
-  const effectiveHeight = Math.max(container.scrollHeight, 1123);
+  const iframe = await buildPdfFrame(html);
 
   try {
     const pdfBlob: Blob = await html2pdf()
-      .set({
-        ...PDF_OPTIONS_BASE,
-        html2canvas: {
-          ...PDF_OPTIONS_BASE.html2canvas,
-          height: effectiveHeight,
-          windowHeight: effectiveHeight,
-        },
-      })
-      .from(container)
+      .set({ ...PDF_OPTIONS_BASE })
+      .from(iframe.contentDocument!.body)
       .outputPdf("blob");
     return URL.createObjectURL(pdfBlob);
   } finally {
-    document.body.removeChild(container);
+    document.body.removeChild(iframe);
   }
 }
