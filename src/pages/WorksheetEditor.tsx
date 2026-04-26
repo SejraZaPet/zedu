@@ -1213,7 +1213,9 @@ export default function WorksheetEditor() {
 
       <div className="mt-6 pt-4 border-t border-border text-xs text-muted-foreground">
         <p className="mb-1">{items.length} otázek</p>
-        <p className="mb-1">{spec.metadata.totalPoints} bodů</p>
+        {(spec.renderConfig?.pointsEnabled ?? true) && (
+          <p className="mb-1">{spec.metadata.totalPoints} {pointsLabel(spec.metadata.totalPoints)}</p>
+        )}
         <p>~{spec.metadata.totalTimeMin} min</p>
       </div>
     </>
