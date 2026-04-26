@@ -128,6 +128,17 @@ export async function downloadWorksheetPdf(
     requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
   );
 
+  // === DEBUG: ukaž container 5s ===
+  container.style.position = "fixed";
+  container.style.left = "0";
+  container.style.top = "0";
+  container.style.zIndex = "99999";
+  container.style.border = "3px solid red";
+  container.style.background = "white";
+  console.log("[PDF-DEBUG] Container is now visible for 5 seconds!");
+  await new Promise((r) => setTimeout(r, 5000));
+  // ================================
+
   const items = container.querySelectorAll(".ws-item");
   console.log("[PDF-DIAG] container offsetHeight:", container.offsetHeight, "items:", items.length);
   if (items.length > 0) {
