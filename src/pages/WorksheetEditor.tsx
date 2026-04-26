@@ -284,6 +284,8 @@ export default function WorksheetEditor() {
   const [pdfDialogOpen, setPdfDialogOpen] = useState(false);
   const [pdfIncludeAnswerKey, setPdfIncludeAnswerKey] = useState(false);
   const [pdfIncludeNameField, setPdfIncludeNameField] = useState(true);
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+  const [pdfPreviewLoading, setPdfPreviewLoading] = useState(false);
   const [pdfExporting, setPdfExporting] = useState(false);
   const [subjectComboOpen, setSubjectComboOpen] = useState(false);
   const [subjectSearch, setSubjectSearch] = useState("");
