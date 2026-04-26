@@ -90,7 +90,7 @@ function buildPdfContainer(styleTag: string, bodyHtml: string): HTMLDivElement {
   // Vlož STYLE tag jako první + body content. Žádné <!DOCTYPE>/<html>/<body>.
   container.innerHTML = styleTag + bodyHtml;
   container.style.position = "absolute";
-  container.style.left = "-10000px";
+  container.style.left = "0"; // DEBUG: bylo "-10000px"
   container.style.top = "0";
   container.style.width = "210mm";
   container.style.minHeight = "297mm";
@@ -127,6 +127,17 @@ export async function downloadWorksheetPdf(
   await new Promise<void>((resolve) =>
     requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
   );
+
+  // === DEBUG: ukaž container 5s ===
+  container.style.position = "fixed";
+  container.style.left = "0";
+  container.style.top = "0";
+  container.style.zIndex = "99999";
+  container.style.border = "3px solid red";
+  container.style.background = "white";
+  console.log("[PDF-DEBUG] Container is now visible for 5 seconds!");
+  await new Promise((r) => setTimeout(r, 5000));
+  // ================================
 
   const items = container.querySelectorAll(".ws-item");
   console.log("[PDF-DIAG] container offsetHeight:", container.offsetHeight, "items:", items.length);
