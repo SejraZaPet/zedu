@@ -880,6 +880,12 @@ export default function WorksheetEditor() {
     toast({ title: "Plánované publikování zrušeno" });
   }
 
+  useEffect(() => {
+    return () => {
+      if (pdfPreviewUrl) URL.revokeObjectURL(pdfPreviewUrl);
+    };
+  }, [pdfPreviewUrl]);
+
 
   // ── AI: load suggestions for a lesson block ──
   async function openSuggestionsForBlock(block: LessonBlock) {
