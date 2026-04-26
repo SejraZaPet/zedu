@@ -285,6 +285,8 @@ export default function WorksheetEditor() {
   const [pdfIncludeAnswerKey, setPdfIncludeAnswerKey] = useState(false);
   const [pdfIncludeNameField, setPdfIncludeNameField] = useState(true);
   const [pdfExporting, setPdfExporting] = useState(false);
+  const [subjectComboOpen, setSubjectComboOpen] = useState(false);
+  const [subjectSearch, setSubjectSearch] = useState("");
 
   const [sourceLessonId, setSourceLessonId] = useState<string | null>(null);
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
