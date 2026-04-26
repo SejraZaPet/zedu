@@ -67,6 +67,11 @@ export default function TeacherWorksheets() {
   const [worksheetsForLessonOpen, setWorksheetsForLessonOpen] = useState(false);
   const [worksheetsForLesson, setWorksheetsForLesson] = useState<WorksheetForLessonItem[]>([]);
   const [lessonTitle, setLessonTitle] = useState<string>("");
+  const [pendingLessonCtx, setPendingLessonCtx] = useState<{
+    id: string;
+    type: "global" | "teacher";
+    returnTo: string | null;
+  } | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
