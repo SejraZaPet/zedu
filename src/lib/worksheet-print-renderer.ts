@@ -34,11 +34,11 @@ export const WORKSHEET_PAGINATION_RULES = [
 
 export function buildWorksheetCss(): string {
   return `
-/* ═══ ZEdu Worksheet Print — Modern A4 ═══ */
+/* ═══ ZEdu Worksheet Print — Workbook / Study Material ═══ */
 
 @page {
   size: A4 portrait;
-  margin: 12mm;
+  margin: 14mm 14mm 16mm 14mm;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -50,10 +50,10 @@ html, body {
 
 .ws-page,
 .ws-content {
-  font-family: -apple-system, "Segoe UI", system-ui, "Helvetica Neue", Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, "Helvetica Neue", Arial, sans-serif;
   font-size: 10.5pt;
   line-height: 1.5;
-  color: #1E293B !important;
+  color: #1A1A1A !important;
   background: #FFFFFF !important;
 }
 
@@ -90,101 +90,96 @@ html, body {
 .ws-header {
   display: block;
   margin-bottom: 12mm;
-  padding-bottom: 6mm;
-  border-bottom: 2pt solid #7C3AED;
-  background: #FFFFFF !important;
+  padding-bottom: 8mm;
+  border-bottom: 1.5pt solid #1A1A1A;
 }
 .ws-header-top {
   display: table;
   width: 100%;
-  margin-bottom: 10pt;
+  margin-bottom: 8pt;
 }
-.ws-header-top > .ws-title-block {
+.ws-title-block {
   display: table-cell;
   vertical-align: top;
-  width: 70%;
+  width: 75%;
+  padding-right: 12pt;
 }
-.ws-header-top > .ws-qr-wrap {
-  display: table-cell;
-  vertical-align: top;
-  text-align: right;
-  width: 30%;
-  padding-left: 12pt;
+.ws-eyebrow {
+  display: block;
+  font-size: 8.5pt;
+  font-weight: 600;
+  color: #64748B !important;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 6pt;
 }
 .ws-title {
   display: block;
-  font-size: 22pt;
+  font-size: 26pt;
   font-weight: 700;
-  color: #7C3AED !important;
-  line-height: 1.2;
-  margin-bottom: 4pt;
+  color: #1A1A1A !important;
+  line-height: 1.1;
+  margin: 0 0 6pt 0;
+  letter-spacing: -0.01em;
 }
 .ws-subtitle {
   display: block;
-  font-size: 11pt;
-  color: #64748B !important;
-  margin-bottom: 8pt;
-}
-.ws-variant-badge {
-  display: inline-block;
-  padding: 3pt 10pt;
-  background: #F5F3FF !important;
-  color: #7C3AED !important;
-  border-radius: 12pt;
-  font-size: 9pt;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  margin-top: 4pt;
-}
-
-/* ─── Meta tags (pill) ─── */
-.ws-meta-row {
-  display: block;
-  margin: 8pt 0;
-}
-.ws-meta-tag {
-  display: inline-block;
-  margin: 2pt 6pt 2pt 0;
-  padding: 3pt 10pt;
-  background: #F1F5F9 !important;
-  border-radius: 12pt;
-  font-size: 9pt;
-  color: #475569 !important;
-  font-weight: 500;
-}
-.ws-meta-tag.ws-meta-primary {
-  background: #F5F3FF !important;
-  color: #7C3AED !important;
+  font-size: 10pt;
   font-weight: 600;
+  color: #64748B !important;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 4pt;
+}
+.ws-qr-wrap {
+  display: table-cell;
+  vertical-align: top;
+  text-align: right;
+  width: 25%;
+}
+.ws-qr-wrap img {
+  display: inline-block;
+  width: 78pt;
+  height: 78pt;
+  border: 1pt solid #E5E7EB;
+  border-radius: 4pt;
+  padding: 2pt;
+  background: #FFFFFF !important;
+}
+.ws-qr-wrap > div:last-child {
+  display: block;
+  margin-top: 4pt;
+  font-size: 7pt;
+  color: #64748B !important;
+  line-height: 1.3;
+  max-width: 100pt;
+  text-align: right;
 }
 
 /* ─── Student fields ─── */
-.ws-fields {
+.ws-fields-strip {
   display: block;
-  margin: 12pt 0 8pt 0;
-  padding: 8pt 12pt;
-  background: #F8FAFC !important;
-  border-radius: 6pt;
+  margin: 8pt 0 0 0;
+  padding-top: 8pt;
+  border-top: 0.5pt solid #E5E7EB;
 }
 .ws-field {
   display: inline-block;
   margin-right: 32pt;
-  margin-bottom: 4pt;
   font-size: 10pt;
+  color: #64748B !important;
   white-space: nowrap;
 }
 .ws-field-label {
   display: inline-block;
   margin-right: 6pt;
   font-weight: 600;
-  color: #475569 !important;
+  color: #1A1A1A !important;
 }
 .ws-field-line {
   display: inline-block;
-  min-width: 120pt;
-  border-bottom: 1pt solid #94A3B8;
+  min-width: 130pt;
+  border-bottom: 1pt solid #1A1A1A;
   height: 14pt;
   vertical-align: bottom;
 }
@@ -192,132 +187,108 @@ html, body {
 /* ─── Instructions ─── */
 .ws-instructions {
   display: block;
-  margin: 8pt 0;
-  padding: 8pt 12pt;
-  background: #FEF3C7 !important;
-  border-left: 3pt solid #F59E0B;
-  border-radius: 4pt;
+  margin: 8mm 0 6mm 0;
+  padding: 6pt 0 6pt 12pt;
+  border-left: 2pt solid #7C3AED;
   font-size: 10pt;
-  color: #78350F !important;
-  line-height: 1.5;
+  color: #475569 !important;
+  font-style: italic;
+  line-height: 1.6;
 }
 
-/* ─── Items (cards) ─── */
+/* ─── Items ─── */
 .ws-item {
   display: block;
   break-inside: avoid;
   page-break-inside: avoid;
-  margin-bottom: 8mm;
-  padding: 5mm 6mm;
-  border: 1pt solid #E2E8F0;
-  border-radius: 8pt;
+  margin-bottom: 10mm;
   background: #FFFFFF !important;
-  border-left: 3pt solid #7C3AED;
-  color: #1E293B !important;
+  color: #1A1A1A !important;
   overflow: visible;
 }
 .ws-item-header {
   display: block;
   margin-bottom: 6pt;
   padding-bottom: 4pt;
-  border-bottom: 0.5pt solid #F1F5F9;
 }
-.ws-item-number-badge {
+.ws-item-num {
   display: inline-block;
-  width: 24pt;
-  height: 24pt;
-  line-height: 24pt;
-  text-align: center;
-  border-radius: 50%;
-  background: #7C3AED !important;
-  color: #FFFFFF !important;
+  width: 18pt;
+  font-size: 14pt;
   font-weight: 700;
-  font-size: 12pt;
-  margin-right: 8pt;
-  vertical-align: middle;
+  color: #7C3AED !important;
+  vertical-align: top;
+  line-height: 1.3;
 }
-.ws-item-type {
-  display: inline-block;
-  font-size: 9pt;
-  color: #64748B !important;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+.ws-item-prompt,
+.ws-item .prompt {
+  display: inline;
+  font-size: 12pt;
   font-weight: 600;
-  vertical-align: middle;
+  color: #1A1A1A !important;
+  background: transparent !important;
+  line-height: 1.4;
+  break-after: avoid;
+  page-break-after: avoid;
 }
 .ws-item-points {
   display: inline-block;
   float: right;
-  margin-top: 6pt;
-  padding: 2pt 8pt;
-  background: #F5F3FF !important;
-  color: #7C3AED !important;
-  border-radius: 12pt;
-  font-size: 9pt;
-  font-weight: 700;
-}
-.ws-item-prompt,
-.ws-item .prompt {
-  display: block;
-  font-size: 12pt;
+  margin-top: 4pt;
+  font-size: 8.5pt;
+  color: #94A3B8 !important;
   font-weight: 500;
-  line-height: 1.5;
-  color: #1E293B !important;
-  background: transparent !important;
-  margin: 6pt 0 4pt 0;
-  break-after: avoid;
-  page-break-after: avoid;
 }
 
 /* ─── MCQ ─── */
 .ws-choices {
   list-style: none;
   padding: 0;
-  margin: 6pt 0;
+  margin: 6pt 0 6pt 18pt;
 }
 .ws-choices li {
   display: block;
   padding: 5pt 0 5pt 32pt;
+  position: relative;
   font-size: 11pt;
   line-height: 1.5;
-  position: relative;
-  color: #1E293B !important;
+  color: #1A1A1A !important;
 }
 .ws-choice-marker {
   display: inline-block;
   position: absolute;
   left: 0;
-  top: 4pt;
+  top: 5pt;
   width: 22pt;
   height: 22pt;
-  line-height: 22pt;
+  line-height: 19pt;
   text-align: center;
-  border: 1.5pt solid #CBD5E1;
+  border: 1.5pt solid #1A1A1A;
   border-radius: 50%;
-  font-size: 11pt;
+  font-size: 10pt;
   font-weight: 700;
-  color: #475569 !important;
+  color: #1A1A1A !important;
   background: #FFFFFF !important;
 }
 
 /* ─── True/False ─── */
 .ws-tf-options {
   display: block;
-  margin: 8pt 0;
+  margin: 8pt 0 0 18pt;
 }
 .ws-tf-option {
   display: inline-block;
   margin-right: 32pt;
   font-size: 11pt;
-  font-weight: 500;
-  color: #1E293B !important;
+  color: #1A1A1A !important;
+  vertical-align: middle;
 }
 .ws-tf-box {
   display: inline-block;
-  width: 16pt;
-  height: 16pt;
-  border: 1.5pt solid #94A3B8;
-  border-radius: 4pt;
+  width: 14pt;
+  height: 14pt;
+  border: 1.5pt solid #1A1A1A;
+  border-radius: 2pt;
   background: #FFFFFF !important;
   margin-right: 6pt;
   vertical-align: middle;
@@ -326,14 +297,15 @@ html, body {
 /* ─── Fill blanks ─── */
 .ws-blank-text {
   display: block;
-  font-size: 11.5pt;
-  line-height: 2;
-  color: #1E293B !important;
+  margin: 6pt 0 0 18pt;
+  font-size: 11pt;
+  line-height: 2.2;
+  color: #1A1A1A !important;
 }
 .ws-blank-slot {
   display: inline-block;
-  min-width: 80pt;
-  border-bottom: 1.5pt solid #7C3AED;
+  min-width: 90pt;
+  border-bottom: 1.5pt solid #1A1A1A;
   margin: 0 4pt;
   height: 16pt;
   vertical-align: bottom;
@@ -342,12 +314,9 @@ html, body {
 /* ─── Offline activity ─── */
 .ws-offline-activity {
   display: block;
-  margin: 6pt 0;
-  padding: 10pt 12pt;
-  background: #FFFBEB !important;
-  border: 1pt solid #FDE68A;
-  border-left: 3pt solid #F59E0B;
-  border-radius: 6pt;
+  margin: 6pt 0 0 18pt;
+  padding: 8pt 0 8pt 12pt;
+  border-left: 2pt solid #94A3B8;
   break-inside: avoid;
   page-break-inside: avoid;
 }
@@ -355,20 +324,19 @@ html, body {
   display: block;
   font-size: 9pt;
   font-weight: 700;
-  color: #92400E !important;
+  color: #475569 !important;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin-bottom: 6pt;
+  letter-spacing: 0.06em;
+  margin-bottom: 4pt;
 }
 .ws-offline-meta {
   display: block;
   font-size: 9.5pt;
-  color: #78350F !important;
+  color: #475569 !important;
 }
 .ws-offline-meta > span {
   display: inline-block;
   margin-right: 18pt;
-  font-weight: 500;
 }
 
 /* ─── Matching ─── */
@@ -376,7 +344,7 @@ html, body {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0 4pt;
-  margin: 6pt 0;
+  margin: 6pt 0 0 18pt;
   break-inside: avoid;
   page-break-inside: avoid;
 }
@@ -392,14 +360,14 @@ html, body {
 .ws-matching-table td {
   padding: 6pt 10pt;
   font-size: 10pt;
-  background: #F8FAFC !important;
-  border-radius: 4pt;
+  background: #FFFFFF !important;
+  border-bottom: 0.5pt solid #E5E7EB;
   vertical-align: middle;
-  color: #1E293B !important;
+  color: #1A1A1A !important;
 }
 .ws-matching-table td.ws-match-answer {
   background: #FFFFFF !important;
-  border: 1.5pt dashed #CBD5E1;
+  border-bottom: 1pt solid #1A1A1A;
   min-width: 100pt;
 }
 
@@ -407,7 +375,7 @@ html, body {
 .ws-ordering-list {
   list-style: none;
   padding: 0;
-  margin: 6pt 0;
+  margin: 6pt 0 0 18pt;
   break-inside: avoid;
   page-break-inside: avoid;
 }
@@ -416,8 +384,8 @@ html, body {
   padding: 8pt 0 8pt 36pt;
   font-size: 11pt;
   position: relative;
-  border-bottom: 0.5pt solid #F1F5F9;
-  color: #1E293B !important;
+  border-bottom: 0.5pt solid #E5E7EB;
+  color: #1A1A1A !important;
 }
 .ws-order-box {
   display: inline-block;
@@ -426,45 +394,44 @@ html, body {
   top: 6pt;
   width: 24pt;
   height: 22pt;
-  border: 1.5pt solid #CBD5E1;
-  border-radius: 4pt;
+  border: 1.5pt solid #1A1A1A;
+  border-radius: 2pt;
   background: #FFFFFF !important;
 }
 
 /* ─── Answer Space ─── */
 .ws-answer-space {
   display: block;
-  margin-top: 8pt;
+  margin: 8pt 0 0 18pt;
   position: relative;
 }
 .ws-answer-lines { display: block; width: 100%; }
 .ws-answer-line {
   display: block;
-  height: 7mm;
-  border-bottom: 0.7pt solid #CBD5E1;
+  height: 8mm;
+  border-bottom: 0.7pt solid #94A3B8;
   margin: 0;
 }
 .ws-answer-grid {
   display: block;
-  border: 1pt solid #E2E8F0;
-  border-radius: 4pt;
+  border: 0.7pt solid #E5E7EB;
+  border-radius: 0;
   background: #FFFFFF !important;
 }
 .ws-answer-blank {
   display: block;
-  border: 1pt dashed #94A3B8;
-  border-radius: 4pt;
-  background: #FAFBFC !important;
+  border: 0.7pt dashed #94A3B8;
+  background: #FAFAFA !important;
   position: relative;
-  padding: 10pt;
+  padding: 12pt;
 }
 .ws-answer-label {
   position: absolute;
   top: 4pt;
-  left: 8pt;
+  right: 8pt;
   font-size: 7pt;
   color: #94A3B8 !important;
-  font-weight: 600;
+  font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -473,73 +440,59 @@ html, body {
 .ws-answer-key {
   break-before: page;
   page-break-before: always;
-  padding-top: 12pt;
+  padding-top: 8pt;
 }
 .ws-answer-key h2 {
   font-size: 18pt;
   font-weight: 700;
-  color: #16A34A !important;
-  border-bottom: 2pt solid #16A34A;
+  color: #1A1A1A !important;
+  border-bottom: 1.5pt solid #1A1A1A;
   padding-bottom: 6pt;
   margin-bottom: 12pt;
+  letter-spacing: -0.01em;
 }
 .ws-key-item {
   display: block;
-  padding: 6pt 12pt;
-  margin-bottom: 4pt;
-  background: #F0FDF4 !important;
-  border-radius: 6pt;
-  font-size: 10pt;
-  color: #1E293B !important;
+  padding: 8pt 0;
+  margin-bottom: 0;
+  border-bottom: 0.5pt solid #E5E7EB;
+  background: #FFFFFF !important;
 }
 .ws-key-num {
   display: inline-block;
+  width: 24pt;
   font-weight: 700;
-  margin-right: 8pt;
-  color: #16A34A !important;
+  color: #7C3AED !important;
+  font-size: 11pt;
+  vertical-align: top;
 }
 .ws-key-answer {
   display: inline;
-  color: #14532D !important;
+  color: #1A1A1A !important;
   font-weight: 600;
+  font-size: 11pt;
 }
 .ws-key-explanation {
   display: block;
-  margin-top: 4pt;
-  color: #475569 !important;
-  font-size: 9pt;
-  line-height: 1.5;
-}
-
-/* ─── QR ─── */
-.ws-qr-wrap img {
-  display: inline-block;
-  width: 80pt;
-  height: 80pt;
-  border: 1pt solid #E2E8F0;
-  border-radius: 6pt;
-  padding: 3pt;
-  background: #FFFFFF !important;
-}
-.ws-qr-wrap > div:last-child {
-  display: block;
-  margin-top: 4pt;
-  font-size: 7.5pt;
+  margin: 4pt 0 0 24pt;
   color: #64748B !important;
-  line-height: 1.3;
-  max-width: 100pt;
+  font-size: 9.5pt;
+  line-height: 1.5;
 }
 
 /* ─── Footer ─── */
 .ws-footer {
   display: block;
-  margin-top: 16pt;
-  padding-top: 8pt;
-  border-top: 1pt solid #E2E8F0;
+  margin-top: 16mm;
+  padding-top: 6pt;
+  border-top: 0.5pt solid #E5E7EB;
   font-size: 8pt;
   color: #94A3B8 !important;
-  text-align: center;
-  font-weight: 500;
+  text-align: left;
+}
+.ws-footer-meta {
+  display: block;
+  margin-top: 2pt;
 }
 
 /* ─── Pagination ─── */
