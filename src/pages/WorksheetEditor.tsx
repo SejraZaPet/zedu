@@ -175,6 +175,12 @@ const MODE_OPTIONS = [
 
 const HISTORY_LIMIT = 50;
 
+function pointsLabel(n: number): string {
+  if (n === 1) return "bod";
+  if (n >= 2 && n <= 4) return "body";
+  return "bodů";
+}
+
 interface AiSuggestion {
   type: ItemType;
   difficulty: Difficulty;
