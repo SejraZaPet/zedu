@@ -530,9 +530,8 @@ function pointsLabel(n: number): string {
   return "bodů";
 }
 
-function renderHeader(spec: WorksheetSpec, variant: WorksheetVariant): string {
+function renderHeader(spec: WorksheetSpec, _variant: WorksheetVariant): string {
   const h = spec.header;
-  const meta = spec.metadata;
 
   const fields: string[] = [];
   if (h.studentNameField) {
@@ -545,34 +544,26 @@ function renderHeader(spec: WorksheetSpec, variant: WorksheetVariant): string {
     fields.push(`<div class="ws-field"><span class="ws-field-label">Třída:</span><span class="ws-field-line">&nbsp;</span></div>`);
   }
 
-  const variantBadge = h.variantLabel
-    ? `<span class="ws-variant-badge">${esc(h.variantLabel)}</span>`
+  // Eyebrow: SUBJECT · GRADE BAND (uppercase)
+  const eyebrowParts = [h.subject, h.gradeBand].filter((s) => s && s.trim().length > 0);
+  const eyebrow = eyebrowParts.length
+    ? `<div class="ws-eyebrow">${esc(eyebrowParts.join(" · ").toUpperCase())}</div>`
     : "";
 
-  const pointsEnabled = spec.renderConfig.pointsEnabled !== false;
-  const metaTags: string[] = [
-    `<span class="ws-meta-tag ws-meta-primary">${esc(h.subject)}</span>`,
-    `<span class="ws-meta-tag">${esc(h.gradeBand)}</span>`,
-  ];
-  if (pointsEnabled) {
-    metaTags.push(`<span class="ws-meta-tag">${meta.totalPoints} ${pointsLabel(meta.totalPoints)}</span>`);
-  }
-  metaTags.push(`<span class="ws-meta-tag">~${meta.totalTimeMin} min</span>`);
-  if (h.teacherName) {
-    metaTags.push(`<span class="ws-meta-tag">${esc(h.teacherName)}</span>`);
-  }
+  const subtitle = h.subtitle && h.subtitle.trim().length > 0
+    ? `<div class="ws-subtitle">${esc(h.subtitle)}</div>`
+    : "";
 
   return `
 <div class="ws-header">
   <div class="ws-header-top">
     <div class="ws-title-block">
-      <div class="ws-title">${esc(h.title)}</div>
-      ${h.subtitle ? `<div class="ws-subtitle">${esc(h.subtitle)}</div>` : ""}
-      ${variantBadge}
+      ${eyebrow}
+      <h1 class="ws-title">${esc(h.title)}</h1>
+      ${subtitle}
     </div>
   </div>
-  <div class="ws-meta-row">${metaTags.join("")}</div>
-  ${fields.length ? `<div class="ws-fields">${fields.join("")}</div>` : ""}
+  ${fields.length ? `<div class="ws-fields-strip">${fields.join("")}</div>` : ""}
   ${h.instructions ? `<div class="ws-instructions">${esc(h.instructions)}</div>` : ""}
 </div>`;
 }
@@ -584,7 +575,7 @@ function renderAnswerSpace(space: AnswerSpace): string {
 
   switch (space.type) {
     case "lines": {
-      const count = space.lineCount ?? Math.max(2, Math.floor(space.heightMm / 7));
+      const count = space.lineCount ?? Math.max(2, Math.floor(space.heightMm / 8));
       const lines = Array.from({ length: count }, () => `<div class="ws-answer-line"></div>`).join("");
       return `<div class="ws-answer-space ws-answer-lines" style="${hStyle}">${lines}</div>`;
     }
@@ -599,8 +590,23 @@ function renderAnswerSpace(space: AnswerSpace): string {
 
 const CHOICE_LETTERS = "ABCDEFGHIJKLMNOP";
 
+// Labely musí odpovídat OFFLINE_MODE_LABELS / GROUP_SIZE_LABELS v worksheet-defaults.ts
+const OFFLINE_MODE_PRINT_LABELS: Record<string, string> = {
+  discussion: "Diskuse",
+  group_work: "Skupinová práce",
+  practical: "Praktická aktivita",
+  observation: "Pozorování",
+  reflection: "Reflexe",
+};
+const GROUP_SIZE_PRINT_LABELS: Record<string, string> = {
+  individual: "Jednotlivec",
+  pair: "Dvojice",
+  small_group: "Malá skupina (3–5)",
+  class: "Celá třída",
+};
+
 function renderItem(item: WorksheetItem, showPoints: boolean): string {
-  const pointsHtml = showPoints
+  const pointsHtml = showPoints && item.points > 0
     ? `<span class="ws-item-points">${item.points} ${pointsLabel(item.points)}</span>`
     : "";
 
@@ -653,26 +659,13 @@ function renderItem(item: WorksheetItem, showPoints: boolean): string {
       break;
 
     case "offline_activity": {
-      const modeLabels: Record<string, string> = {
-        discussion: "Diskuse",
-        group_work: "Skupinová práce",
-        practical: "Praktická aktivita",
-        observation: "Pozorování",
-        reflection: "Reflexe",
-      };
-      const groupLabels: Record<string, string> = {
-        individual: "Jednotlivec",
-        pair: "Dvojice",
-        small_group: "Malá skupina (3–5)",
-        class: "Celá třída",
-      };
       const mode = item.offlineMode ?? "discussion";
       const group = item.groupSize ?? "class";
-      const dur = item.durationMin && item.durationMin > 0 ? `~${item.durationMin} min` : "";
+      const dur = item.durationMin && item.durationMin > 0 ? `${item.durationMin} min` : "";
       body = `<div class="ws-offline-activity">
-        <div class="ws-offline-badge">Aktivita ve třídě · ${esc(modeLabels[mode] ?? mode)}</div>
+        <div class="ws-offline-badge">${esc(OFFLINE_MODE_PRINT_LABELS[mode] ?? mode)}</div>
         <div class="ws-offline-meta">
-          <span><strong>Skupina:</strong> ${esc(groupLabels[group] ?? group)}</span>
+          <span><strong>Skupina:</strong> ${esc(GROUP_SIZE_PRINT_LABELS[group] ?? group)}</span>
           ${dur ? `<span><strong>Čas:</strong> ${esc(dur)}</span>` : ""}
         </div>
       </div>`;
@@ -680,25 +673,13 @@ function renderItem(item: WorksheetItem, showPoints: boolean): string {
     }
   }
 
-  const typeLabels: Record<string, string> = {
-    mcq: "Výběr z možností",
-    true_false: "Pravda / Nepravda",
-    fill_blank: "Doplňování",
-    matching: "Spojování",
-    ordering: "Seřazení",
-    short_answer: "Krátká odpověď",
-    open_answer: "Otevřená odpověď",
-    offline_activity: "Aktivita ve třídě",
-  };
-
   return `
 <div class="ws-item">
   <div class="ws-item-header">
-    <span class="ws-item-number-badge">${item.itemNumber}</span>
-    <span class="ws-item-type">${esc(typeLabels[item.type] ?? item.type)}</span>
+    <span class="ws-item-num">${item.itemNumber}.</span>
+    <span class="ws-item-prompt prompt">${esc(item.prompt)}</span>
     ${pointsHtml}
   </div>
-  <div class="ws-item-prompt prompt">${esc(item.prompt)}</div>
   ${body}
   ${renderAnswerSpace(item.answerSpace)}
 </div>`;
