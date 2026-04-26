@@ -648,7 +648,7 @@ const CHOICE_LETTERS = "ABCDEFGHIJKLMNOP";
 
 function renderItem(item: WorksheetItem, showPoints: boolean): string {
   const pointsHtml = showPoints
-    ? `<span class="ws-item-points">[${item.points} ${item.points === 1 ? "bod" : item.points < 5 ? "body" : "bodů"}]</span>`
+    ? `<span class="ws-item-points">${item.points} ${pointsLabel(item.points)}</span>`
     : "";
 
   let body = "";
