@@ -124,33 +124,51 @@ export async function downloadWorksheetPdf(
   spec: WorksheetSpec,
   options: PdfExportOptions,
 ): Promise<void> {
+  console.log("[PDF] downloadWorksheetPdf started");
   const { html, filename } = await buildWorksheetPdfHtml(spec, options);
 
-  // dynamic import — html2pdf.js sahá na window
   const html2pdfMod: any = await import("html2pdf.js");
   const html2pdf = html2pdfMod.default ?? html2pdfMod;
 
-  // Vytvoříme off-screen container
-  const container = document.createElement("div");
-  container.innerHTML = html;
-  container.style.position = "fixed";
-  container.style.left = "-10000px";
-  container.style.top = "0";
-  document.body.appendChild(container);
+  const container = buildPdfContainer(html);
+  console.log("[PDF] Container appended, offsetHeight:", container.offsetHeight);
 
   try {
     await html2pdf()
-      .set({
-        margin: [10, 10, 12, 10],
-        filename,
-        image: { type: "jpeg", quality: 0.95 },
-        html2canvas: { scale: 2, useCORS: true, letterRendering: true },
-        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-        pagebreak: { mode: ["css", "legacy"] },
-      })
+      .set({ ...PDF_OPTIONS_BASE, filename })
       .from(container)
       .save();
+    console.log("[PDF] PDF saved");
+  } catch (e) {
+    console.error("[PDF] html2pdf failed:", e);
+    throw e;
   } finally {
     document.body.removeChild(container);
   }
 }
+
+/**
+ * Vygeneruje PDF jako Blob URL pro náhled v iframe.
+ * Volající musí URL revokovat (URL.revokeObjectURL).
+ */
+export async function buildWorksheetPdfBlobUrl(
+  spec: WorksheetSpec,
+  options: PdfExportOptions,
+): Promise<string> {
+  const { html } = await buildWorksheetPdfHtml(spec, options);
+
+  const html2pdfMod: any = await import("html2pdf.js");
+  const html2pdf = html2pdfMod.default ?? html2pdfMod;
+
+  const container = buildPdfContainer(html);
+  try {
+    const pdfBlob: Blob = await html2pdf()
+      .set(PDF_OPTIONS_BASE)
+      .from(container)
+      .outputPdf("blob");
+    return URL.createObjectURL(pdfBlob);
+  } finally {
+    document.body.removeChild(container);
+  }
+}
+
