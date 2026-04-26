@@ -135,6 +135,7 @@ export default function TeacherWorksheets() {
       if (ownWorksheets.length >= 2) {
         setLessonTitle(title);
         setWorksheetsForLesson(ownWorksheets);
+        setPendingLessonCtx({ id: fromLessonId, type: fromLessonType, returnTo });
         setWorksheetsForLessonOpen(true);
         // strip URL params so re-opens don't re-trigger
         navigate("/ucitel/pracovni-listy", { replace: true });
