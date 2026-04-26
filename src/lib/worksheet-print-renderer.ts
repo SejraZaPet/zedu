@@ -34,7 +34,7 @@ export const WORKSHEET_PAGINATION_RULES = [
 
 export function buildWorksheetCss(): string {
   return `
-/* ═══ ZEdu Worksheet Print — A4 ═══ */
+/* ═══ ZEdu Worksheet Print — Modern A4 ═══ */
 
 @page {
   size: A4 portrait;
@@ -45,24 +45,23 @@ export function buildWorksheetCss(): string {
 html, body {
   margin: 0;
   padding: 0;
-  background: #ffffff;
+  background: #FFFFFF;
 }
 
 .ws-page,
 .ws-content {
-  font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  font-family: -apple-system, "Segoe UI", system-ui, "Helvetica Neue", Arial, sans-serif;
   font-size: 10.5pt;
-  line-height: 1.45;
-  color: #1a1a1a !important;
-  background: #ffffff !important;
+  line-height: 1.5;
+  color: #1E293B !important;
+  background: #FFFFFF !important;
 }
 
 .ws-page {
   display: block;
   width: 100%;
   min-height: 297mm;
-  color: #1a1a1a !important;
-  background: #ffffff !important;
+  background: #FFFFFF !important;
   opacity: 1 !important;
   visibility: visible !important;
 }
@@ -85,130 +84,187 @@ html, body {
   overflow: visible;
 }
 
-.ws-items {
-  display: block;
-  width: 100%;
-}
+.ws-items { display: block; width: 100%; }
 
 /* ─── Header ─── */
 .ws-header {
   display: block;
-  border-bottom: 2px solid #111827;
-  padding-bottom: 8pt;
-  margin-bottom: 10pt;
-  color: #111827 !important;
-  background: #ffffff !important;
+  margin-bottom: 12mm;
+  padding-bottom: 6mm;
+  border-bottom: 2pt solid #7C3AED;
+  background: #FFFFFF !important;
 }
 .ws-header-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12pt;
-  margin-bottom: 6pt;
+  display: table;
+  width: 100%;
+  margin-bottom: 10pt;
 }
-.ws-title { display: block; font-size: 16pt; font-weight: 700; color: #111827 !important; line-height: 1.2; }
-.ws-subtitle { display: block; font-size: 10pt; color: #475569 !important; margin-top: 2pt; }
+.ws-header-top > .ws-title-block {
+  display: table-cell;
+  vertical-align: top;
+  width: 70%;
+}
+.ws-header-top > .ws-qr-wrap {
+  display: table-cell;
+  vertical-align: top;
+  text-align: right;
+  width: 30%;
+  padding-left: 12pt;
+}
+.ws-title {
+  display: block;
+  font-size: 22pt;
+  font-weight: 700;
+  color: #7C3AED !important;
+  line-height: 1.2;
+  margin-bottom: 4pt;
+}
+.ws-subtitle {
+  display: block;
+  font-size: 11pt;
+  color: #64748B !important;
+  margin-bottom: 8pt;
+}
 .ws-variant-badge {
   display: inline-block;
-  padding: 2pt 10pt;
-  border: 1px solid #111827;
-  border-radius: 3pt;
-  font-size: 10pt;
+  padding: 3pt 10pt;
+  background: #F5F3FF !important;
+  color: #7C3AED !important;
+  border-radius: 12pt;
+  font-size: 9pt;
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   white-space: nowrap;
-  color: #111827 !important;
-  background: #ffffff !important;
+  margin-top: 4pt;
 }
+
+/* ─── Meta tags (pill) ─── */
 .ws-meta-row {
-  display: flex;
-  gap: 6pt;
-  font-size: 9pt;
-  color: #475569 !important;
-  flex-wrap: wrap;
+  display: block;
+  margin: 8pt 0;
 }
 .ws-meta-tag {
-  padding: 1pt 6pt;
-  background: #f8fafc !important;
-  border: 1px solid #d0d0d0;
-  border-radius: 2pt;
-  font-weight: 600;
-  color: #334155 !important;
+  display: inline-block;
+  margin: 2pt 6pt 2pt 0;
+  padding: 3pt 10pt;
+  background: #F1F5F9 !important;
+  border-radius: 12pt;
+  font-size: 9pt;
+  color: #475569 !important;
+  font-weight: 500;
 }
+.ws-meta-tag.ws-meta-primary {
+  background: #F5F3FF !important;
+  color: #7C3AED !important;
+  font-weight: 600;
+}
+
+/* ─── Student fields ─── */
 .ws-fields {
-  display: flex;
-  gap: 12pt;
-  margin-top: 8pt;
-  flex-wrap: wrap;
+  display: block;
+  margin: 12pt 0 8pt 0;
+  padding: 8pt 12pt;
+  background: #F8FAFC !important;
+  border-radius: 6pt;
 }
 .ws-field {
-  display: flex;
-  align-items: baseline;
-  gap: 4pt;
+  display: inline-block;
+  margin-right: 32pt;
+  margin-bottom: 4pt;
   font-size: 10pt;
+  white-space: nowrap;
 }
 .ws-field-label {
+  display: inline-block;
+  margin-right: 6pt;
   font-weight: 600;
-  color: #334155 !important;
-  white-space: nowrap;
+  color: #475569 !important;
 }
 .ws-field-line {
   display: inline-block;
-  min-width: 100pt;
-  border-bottom: 1px solid #111827;
+  min-width: 120pt;
+  border-bottom: 1pt solid #94A3B8;
+  height: 14pt;
+  vertical-align: bottom;
 }
+
+/* ─── Instructions ─── */
 .ws-instructions {
-  margin-top: 8pt;
-  padding: 6pt 10pt;
-  background: #f8fafc !important;
-  border: 1px solid #d0d0d0;
-  border-left: 3px solid #64748b;
-  font-size: 9pt;
-  color: #334155 !important;
+  display: block;
+  margin: 8pt 0;
+  padding: 8pt 12pt;
+  background: #FEF3C7 !important;
+  border-left: 3pt solid #F59E0B;
+  border-radius: 4pt;
+  font-size: 10pt;
+  color: #78350F !important;
   line-height: 1.5;
 }
 
-/* ─── Items ─── */
+/* ─── Items (cards) ─── */
 .ws-item {
   display: block;
   break-inside: avoid;
   page-break-inside: avoid;
   margin-bottom: 8mm;
-  padding: 4mm 4.5mm;
-  border: 1px solid #111827;
-  border-radius: 3pt;
-  background: #ffffff !important;
-  color: #1a1a1a !important;
+  padding: 5mm 6mm;
+  border: 1pt solid #E2E8F0;
+  border-radius: 8pt;
+  background: #FFFFFF !important;
+  border-left: 3pt solid #7C3AED;
+  color: #1E293B !important;
   overflow: visible;
 }
 .ws-item-header {
-  display: flex;
-  align-items: flex-start;
-  gap: 6pt;
-  margin-bottom: 3pt;
+  display: block;
+  margin-bottom: 6pt;
+  padding-bottom: 4pt;
+  border-bottom: 0.5pt solid #F1F5F9;
 }
-.ws-item-number {
-  font-size: 11pt;
+.ws-item-number-badge {
+  display: inline-block;
+  width: 24pt;
+  height: 24pt;
+  line-height: 24pt;
+  text-align: center;
+  border-radius: 50%;
+  background: #7C3AED !important;
+  color: #FFFFFF !important;
   font-weight: 700;
-  color: #111827 !important;
-  min-width: 18pt;
+  font-size: 12pt;
+  margin-right: 8pt;
+  vertical-align: middle;
+}
+.ws-item-type {
+  display: inline-block;
+  font-size: 9pt;
+  color: #64748B !important;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+  vertical-align: middle;
 }
 .ws-item-points {
-  margin-left: auto;
-  font-size: 8pt;
-  color: #64748b !important;
-  font-weight: 600;
-  white-space: nowrap;
+  display: inline-block;
+  float: right;
+  margin-top: 6pt;
+  padding: 2pt 8pt;
+  background: #F5F3FF !important;
+  color: #7C3AED !important;
+  border-radius: 12pt;
+  font-size: 9pt;
+  font-weight: 700;
 }
 .ws-item-prompt,
 .ws-item .prompt {
   display: block;
-  font-size: 11pt;
-  line-height: 1.45;
-  color: #000000 !important;
+  font-size: 12pt;
+  font-weight: 500;
+  line-height: 1.5;
+  color: #1E293B !important;
   background: transparent !important;
-  margin-bottom: 4pt;
+  margin: 6pt 0 4pt 0;
   break-after: avoid;
   page-break-after: avoid;
 }
@@ -217,94 +273,110 @@ html, body {
 .ws-choices {
   list-style: none;
   padding: 0;
-  margin: 4pt 0;
+  margin: 6pt 0;
 }
 .ws-choices li {
-  display: flex;
-  align-items: flex-start;
-  gap: 6pt;
-  padding: 2pt 0;
-  font-size: 10pt;
-  color: #1a1a1a !important;
+  display: block;
+  padding: 5pt 0 5pt 32pt;
+  font-size: 11pt;
+  line-height: 1.5;
+  position: relative;
+  color: #1E293B !important;
 }
 .ws-choice-marker {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16pt;
-  height: 16pt;
-  border: 1px solid #64748b;
+  display: inline-block;
+  position: absolute;
+  left: 0;
+  top: 4pt;
+  width: 22pt;
+  height: 22pt;
+  line-height: 22pt;
+  text-align: center;
+  border: 1.5pt solid #CBD5E1;
   border-radius: 50%;
-  font-size: 8pt;
-  font-weight: 600;
-  color: #334155 !important;
-  background: #ffffff !important;
-  flex-shrink: 0;
-  margin-top: 1pt;
+  font-size: 11pt;
+  font-weight: 700;
+  color: #475569 !important;
+  background: #FFFFFF !important;
 }
 
 /* ─── True/False ─── */
 .ws-tf-options {
-  display: flex;
-  gap: 16pt;
-  margin: 4pt 0;
+  display: block;
+  margin: 8pt 0;
 }
 .ws-tf-option {
-  display: flex;
-  align-items: center;
-  gap: 4pt;
-  font-size: 10pt;
-  color: #1a1a1a !important;
+  display: inline-block;
+  margin-right: 32pt;
+  font-size: 11pt;
+  font-weight: 500;
+  color: #1E293B !important;
 }
 .ws-tf-box {
-  width: 14pt;
-  height: 14pt;
-  border: 1px solid #64748b;
-  border-radius: 2pt;
-  background: #ffffff !important;
+  display: inline-block;
+  width: 16pt;
+  height: 16pt;
+  border: 1.5pt solid #94A3B8;
+  border-radius: 4pt;
+  background: #FFFFFF !important;
+  margin-right: 6pt;
+  vertical-align: middle;
 }
 
 /* ─── Fill blanks ─── */
 .ws-blank-text {
-  font-size: 10.5pt;
+  display: block;
+  font-size: 11.5pt;
   line-height: 2;
-  color: #1a1a1a !important;
+  color: #1E293B !important;
 }
 .ws-blank-slot {
   display: inline-block;
-  min-width: 60pt;
-  border-bottom: 1px solid #111827;
-  margin: 0 3pt;
+  min-width: 80pt;
+  border-bottom: 1.5pt solid #7C3AED;
+  margin: 0 4pt;
+  height: 16pt;
+  vertical-align: bottom;
 }
 
 /* ─── Offline activity ─── */
 .ws-offline-activity {
-  margin: 4pt 0;
-  padding: 8pt 10pt;
-  border: 1px dashed #4f46e5;
-  border-radius: 4pt;
-  background: #eef2ff !important;
+  display: block;
+  margin: 6pt 0;
+  padding: 10pt 12pt;
+  background: #FFFBEB !important;
+  border: 1pt solid #FDE68A;
+  border-left: 3pt solid #F59E0B;
+  border-radius: 6pt;
   break-inside: avoid;
   page-break-inside: avoid;
 }
 .ws-offline-badge {
+  display: block;
   font-size: 9pt;
-  font-weight: 600;
-  color: #3730a3 !important;
-  margin-bottom: 4pt;
+  font-weight: 700;
+  color: #92400E !important;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 6pt;
 }
 .ws-offline-meta {
-  font-size: 8.5pt;
-  color: #334155 !important;
-  display: flex;
-  gap: 12pt;
+  display: block;
+  font-size: 9.5pt;
+  color: #78350F !important;
+}
+.ws-offline-meta > span {
+  display: inline-block;
+  margin-right: 18pt;
+  font-weight: 500;
 }
 
 /* ─── Matching ─── */
 .ws-matching-table {
   width: 100%;
-  border-collapse: collapse;
-  margin: 4pt 0;
+  border-collapse: separate;
+  border-spacing: 0 4pt;
+  margin: 6pt 0;
   break-inside: avoid;
   page-break-inside: avoid;
 }
@@ -312,88 +384,87 @@ html, body {
   font-size: 8pt;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #64748b !important;
+  color: #64748B !important;
   font-weight: 600;
   text-align: left;
-  padding: 2pt 8pt 4pt;
-  border-bottom: 1px solid #cbd5e1;
+  padding: 2pt 10pt 4pt;
 }
 .ws-matching-table td {
-  padding: 4pt 8pt;
+  padding: 6pt 10pt;
   font-size: 10pt;
-  border-bottom: 1px solid #d0d0d0;
-  vertical-align: top;
-  color: #1a1a1a !important;
-  background: #ffffff !important;
+  background: #F8FAFC !important;
+  border-radius: 4pt;
+  vertical-align: middle;
+  color: #1E293B !important;
 }
 .ws-matching-table td.ws-match-answer {
-  border-bottom: 1px dotted #64748b;
-  min-width: 80pt;
+  background: #FFFFFF !important;
+  border: 1.5pt dashed #CBD5E1;
+  min-width: 100pt;
 }
 
 /* ─── Ordering ─── */
 .ws-ordering-list {
   list-style: none;
   padding: 0;
-  margin: 4pt 0;
+  margin: 6pt 0;
   break-inside: avoid;
   page-break-inside: avoid;
 }
 .ws-ordering-list li {
-  display: flex;
-  align-items: center;
-  gap: 8pt;
-  padding: 3pt 0;
-  font-size: 10pt;
-  border-bottom: 1px solid #d0d0d0;
-  color: #1a1a1a !important;
+  display: block;
+  padding: 8pt 0 8pt 36pt;
+  font-size: 11pt;
+  position: relative;
+  border-bottom: 0.5pt solid #F1F5F9;
+  color: #1E293B !important;
 }
 .ws-order-box {
-  width: 20pt;
-  height: 18pt;
-  border: 1px solid #64748b;
-  border-radius: 2pt;
-  flex-shrink: 0;
-  background: #ffffff !important;
+  display: inline-block;
+  position: absolute;
+  left: 0;
+  top: 6pt;
+  width: 24pt;
+  height: 22pt;
+  border: 1.5pt solid #CBD5E1;
+  border-radius: 4pt;
+  background: #FFFFFF !important;
 }
 
 /* ─── Answer Space ─── */
 .ws-answer-space {
   display: block;
-  margin-top: 4pt;
+  margin-top: 8pt;
   position: relative;
-  overflow: hidden;
 }
-.ws-answer-lines {
-  width: 100%;
-}
+.ws-answer-lines { display: block; width: 100%; }
 .ws-answer-line {
-  height: 0;
-  border-bottom: 1px solid #cbd5e1;
-  margin-bottom: 4.5mm;
+  display: block;
+  height: 7mm;
+  border-bottom: 0.7pt solid #CBD5E1;
+  margin: 0;
 }
 .ws-answer-grid {
-  border: 1px solid #d0d0d0;
-  border-radius: 3pt;
-  background-color: #ffffff !important;
-  background-image:
-    repeating-linear-gradient(0deg, transparent, transparent 5mm, #d0d0d0 5mm, #d0d0d0 5.2mm),
-    repeating-linear-gradient(90deg, transparent, transparent 5mm, #d0d0d0 5mm, #d0d0d0 5.2mm);
-  background-size: 5.2mm 5.2mm;
+  display: block;
+  border: 1pt solid #E2E8F0;
+  border-radius: 4pt;
+  background: #FFFFFF !important;
 }
 .ws-answer-blank {
-  border: 1px dashed #94a3b8;
-  border-radius: 3pt;
+  display: block;
+  border: 1pt dashed #94A3B8;
+  border-radius: 4pt;
+  background: #FAFBFC !important;
   position: relative;
-  background: #ffffff !important;
+  padding: 10pt;
 }
-.ws-answer-blank::after {
-  content: "Místo pro odpověď";
+.ws-answer-label {
   position: absolute;
-  top: 3pt;
-  left: 6pt;
+  top: 4pt;
+  left: 8pt;
   font-size: 7pt;
-  color: #64748b !important;
+  color: #94A3B8 !important;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -402,36 +473,73 @@ html, body {
 .ws-answer-key {
   break-before: page;
   page-break-before: always;
-  padding-top: 10pt;
+  padding-top: 12pt;
 }
 .ws-answer-key h2 {
-  font-size: 14pt;
+  font-size: 18pt;
   font-weight: 700;
-  color: #111827 !important;
-  border-bottom: 1px solid #111827;
-  padding-bottom: 4pt;
-  margin-bottom: 10pt;
+  color: #16A34A !important;
+  border-bottom: 2pt solid #16A34A;
+  padding-bottom: 6pt;
+  margin-bottom: 12pt;
 }
 .ws-key-item {
-  display: flex;
-  gap: 8pt;
-  padding: 3pt 0;
+  display: block;
+  padding: 6pt 12pt;
+  margin-bottom: 4pt;
+  background: #F0FDF4 !important;
+  border-radius: 6pt;
   font-size: 10pt;
-  border-bottom: 1px solid #e5e7eb;
-  color: #1a1a1a !important;
+  color: #1E293B !important;
 }
-.ws-key-num { font-weight: 700; min-width: 18pt; color: #111827 !important; }
-.ws-key-answer { color: #166534 !important; font-weight: 600; }
-.ws-key-explanation { color: #475569 !important; font-size: 9pt; margin-top: 1pt; }
+.ws-key-num {
+  display: inline-block;
+  font-weight: 700;
+  margin-right: 8pt;
+  color: #16A34A !important;
+}
+.ws-key-answer {
+  display: inline;
+  color: #14532D !important;
+  font-weight: 600;
+}
+.ws-key-explanation {
+  display: block;
+  margin-top: 4pt;
+  color: #475569 !important;
+  font-size: 9pt;
+  line-height: 1.5;
+}
+
+/* ─── QR ─── */
+.ws-qr-wrap img {
+  display: inline-block;
+  width: 80pt;
+  height: 80pt;
+  border: 1pt solid #E2E8F0;
+  border-radius: 6pt;
+  padding: 3pt;
+  background: #FFFFFF !important;
+}
+.ws-qr-wrap > div:last-child {
+  display: block;
+  margin-top: 4pt;
+  font-size: 7.5pt;
+  color: #64748B !important;
+  line-height: 1.3;
+  max-width: 100pt;
+}
 
 /* ─── Footer ─── */
 .ws-footer {
+  display: block;
   margin-top: 16pt;
-  padding-top: 4pt;
-  border-top: 1px solid #d0d0d0;
-  font-size: 7pt;
-  color: #64748b !important;
+  padding-top: 8pt;
+  border-top: 1pt solid #E2E8F0;
+  font-size: 8pt;
+  color: #94A3B8 !important;
   text-align: center;
+  font-weight: 500;
 }
 
 /* ─── Pagination ─── */
@@ -442,12 +550,11 @@ p, li { orphans: 2; widows: 2; }
 @media screen {
   .ws-page { padding: 20px; }
   .ws-content { max-width: 800px; margin: 0 auto; }
-  .ws-item { box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06); }
 }
 
 /* ─── Print overrides ─── */
 @media print {
-  .ws-page, .ws-content { background: #ffffff !important; }
+  .ws-page, .ws-content { background: #FFFFFF !important; }
   a { color: inherit; text-decoration: none; }
   .no-print { display: none !important; }
 }
@@ -484,7 +591,7 @@ function renderHeader(spec: WorksheetSpec, variant: WorksheetVariant): string {
     : "";
 
   const metaTags: string[] = [
-    `<span class="ws-meta-tag">${esc(h.subject)}</span>`,
+    `<span class="ws-meta-tag ws-meta-primary">${esc(h.subject)}</span>`,
     `<span class="ws-meta-tag">${esc(h.gradeBand)}</span>`,
     `<span class="ws-meta-tag">${meta.totalPoints} bodů</span>`,
     `<span class="ws-meta-tag">~${meta.totalTimeMin} min</span>`,
@@ -496,11 +603,11 @@ function renderHeader(spec: WorksheetSpec, variant: WorksheetVariant): string {
   return `
 <div class="ws-header">
   <div class="ws-header-top">
-    <div>
+    <div class="ws-title-block">
       <div class="ws-title">${esc(h.title)}</div>
       ${h.subtitle ? `<div class="ws-subtitle">${esc(h.subtitle)}</div>` : ""}
+      ${variantBadge}
     </div>
-    ${variantBadge}
   </div>
   <div class="ws-meta-row">${metaTags.join("")}</div>
   ${fields.length ? `<div class="ws-fields">${fields.join("")}</div>` : ""}
@@ -522,7 +629,7 @@ function renderAnswerSpace(space: AnswerSpace): string {
     case "grid":
       return `<div class="ws-answer-space ws-answer-grid" style="${hStyle}"></div>`;
     case "blank":
-      return `<div class="ws-answer-space ws-answer-blank" style="${hStyle}"></div>`;
+      return `<div class="ws-answer-space ws-answer-blank" style="${hStyle}"><span class="ws-answer-label">Místo pro odpověď</span></div>`;
     default:
       return "";
   }
@@ -601,20 +708,32 @@ function renderItem(item: WorksheetItem, showPoints: boolean): string {
       const group = item.groupSize ?? "class";
       const dur = item.durationMin && item.durationMin > 0 ? `~${item.durationMin} min` : "";
       body = `<div class="ws-offline-activity">
-        <div class="ws-offline-badge">⬢ Offline aktivita: ${esc(modeLabels[mode] ?? mode)}</div>
+        <div class="ws-offline-badge">Aktivita ve třídě · ${esc(modeLabels[mode] ?? mode)}</div>
         <div class="ws-offline-meta">
-          <span>👥 ${esc(groupLabels[group] ?? group)}</span>
-          ${dur ? `<span>⏱ ${esc(dur)}</span>` : ""}
+          <span><strong>Skupina:</strong> ${esc(groupLabels[group] ?? group)}</span>
+          ${dur ? `<span><strong>Čas:</strong> ${esc(dur)}</span>` : ""}
         </div>
       </div>`;
       break;
     }
   }
 
+  const typeLabels: Record<string, string> = {
+    mcq: "Výběr z možností",
+    true_false: "Pravda / Nepravda",
+    fill_blank: "Doplňování",
+    matching: "Spojování",
+    ordering: "Seřazení",
+    short_answer: "Krátká odpověď",
+    open_answer: "Otevřená odpověď",
+    offline_activity: "Aktivita ve třídě",
+  };
+
   return `
 <div class="ws-item">
   <div class="ws-item-header">
-    <span class="ws-item-number">${item.itemNumber}.</span>
+    <span class="ws-item-number-badge">${item.itemNumber}</span>
+    <span class="ws-item-type">${esc(typeLabels[item.type] ?? item.type)}</span>
     ${pointsHtml}
   </div>
   <div class="ws-item-prompt prompt">${esc(item.prompt)}</div>
