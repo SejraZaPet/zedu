@@ -1601,6 +1601,7 @@ export default function WorksheetEditor() {
                         key={item.id}
                         item={item}
                         selected={item.id === selectedId}
+                        pointsEnabled={spec.renderConfig?.pointsEnabled ?? true}
                         onSelect={() => setSelectedId(item.id)}
                         onDelete={() => deleteItem(item.id)}
                       />
