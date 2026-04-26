@@ -705,15 +705,52 @@ export default function WorksheetEditor() {
     const next = status === "published" ? "draft" : "published";
     const { error } = await supabase
       .from("worksheets" as any)
-      .update({ status: next } as any)
+      .update({ status: next, scheduled_publish_at: null } as any)
       .eq("id", id);
     if (error) {
       toast({ title: "Změna stavu selhala", description: error.message, variant: "destructive" });
     } else {
       setStatus(next);
+      setScheduledAt(null);
       toast({ title: next === "published" ? "Publikováno" : "Vráceno do konceptu" });
     }
   }
+
+  async function schedulePublish(when: Date) {
+    if (!id) return;
+    if (when.getTime() <= Date.now()) {
+      toast({ title: "Vyber budoucí čas", variant: "destructive" });
+      return;
+    }
+    const { error } = await supabase
+      .from("worksheets" as any)
+      .update({ status: "scheduled", scheduled_publish_at: when.toISOString() } as any)
+      .eq("id", id);
+    if (error) {
+      toast({ title: "Naplánování selhalo", description: error.message, variant: "destructive" });
+      return;
+    }
+    setStatus("scheduled");
+    setScheduledAt(when);
+    setScheduleDialogOpen(false);
+    toast({ title: "Naplánováno", description: when.toLocaleString("cs-CZ") });
+  }
+
+  async function cancelSchedule() {
+    if (!id) return;
+    const { error } = await supabase
+      .from("worksheets" as any)
+      .update({ status: "draft", scheduled_publish_at: null } as any)
+      .eq("id", id);
+    if (error) {
+      toast({ title: "Zrušení selhalo", description: error.message, variant: "destructive" });
+      return;
+    }
+    setStatus("draft");
+    setScheduledAt(null);
+    toast({ title: "Plánované publikování zrušeno" });
+  }
+
 
   // ── AI: load suggestions for a lesson block ──
   async function openSuggestionsForBlock(block: LessonBlock) {
