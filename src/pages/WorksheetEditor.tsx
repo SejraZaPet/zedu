@@ -731,6 +731,7 @@ export default function WorksheetEditor() {
       });
     } finally {
       setPdfExporting(false);
+    }
   }
 
   async function handlePreviewPdf() {
