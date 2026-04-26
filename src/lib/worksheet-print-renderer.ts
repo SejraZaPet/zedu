@@ -591,7 +591,7 @@ function renderHeader(spec: WorksheetSpec, variant: WorksheetVariant): string {
     : "";
 
   const metaTags: string[] = [
-    `<span class="ws-meta-tag">${esc(h.subject)}</span>`,
+    `<span class="ws-meta-tag ws-meta-primary">${esc(h.subject)}</span>`,
     `<span class="ws-meta-tag">${esc(h.gradeBand)}</span>`,
     `<span class="ws-meta-tag">${meta.totalPoints} bodů</span>`,
     `<span class="ws-meta-tag">~${meta.totalTimeMin} min</span>`,
@@ -603,11 +603,11 @@ function renderHeader(spec: WorksheetSpec, variant: WorksheetVariant): string {
   return `
 <div class="ws-header">
   <div class="ws-header-top">
-    <div>
+    <div class="ws-title-block">
       <div class="ws-title">${esc(h.title)}</div>
       ${h.subtitle ? `<div class="ws-subtitle">${esc(h.subtitle)}</div>` : ""}
+      ${variantBadge}
     </div>
-    ${variantBadge}
   </div>
   <div class="ws-meta-row">${metaTags.join("")}</div>
   ${fields.length ? `<div class="ws-fields">${fields.join("")}</div>` : ""}
