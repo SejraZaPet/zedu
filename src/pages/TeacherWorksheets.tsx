@@ -64,6 +64,9 @@ export default function TeacherWorksheets() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "published">("all");
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [worksheetsForLessonOpen, setWorksheetsForLessonOpen] = useState(false);
+  const [worksheetsForLesson, setWorksheetsForLesson] = useState<WorksheetForLessonItem[]>([]);
+  const [lessonTitle, setLessonTitle] = useState<string>("");
 
   useEffect(() => {
     if (authLoading) return;
@@ -74,12 +77,12 @@ export default function TeacherWorksheets() {
     void load();
   }, [authLoading, user]);
 
-  // Auto-create a worksheet when arriving with ?from_lesson=...
+  // Smart flow when arriving with ?from_lesson=...
   useEffect(() => {
     if (authLoading || !user || !fromLessonId || !fromLessonType) return;
     let cancelled = false;
     (async () => {
-      // fetch lesson title for default name
+      // fetch lesson title
       const tableName =
         fromLessonType === "global" ? "textbook_lessons" : "teacher_textbook_lessons";
       const { data: lessonRow } = await supabase
@@ -88,13 +91,59 @@ export default function TeacherWorksheets() {
         .eq("id", fromLessonId)
         .maybeSingle();
       if (cancelled) return;
-      const title = `Pracovní list – ${(lessonRow as any)?.title ?? "Lekce"}`;
-      const spec = emptyWorksheetSpec({ title });
+      const title = (lessonRow as any)?.title ?? "Lekce";
+
+      // find existing worksheets linked to this lesson by this teacher
+      const { data: links } = await supabase
+        .from("worksheet_lessons" as any)
+        .select("worksheet_id, worksheets!inner(id, title, status, updated_at, spec, teacher_id)")
+        .eq("lesson_id", fromLessonId)
+        .eq("lesson_type", fromLessonType);
+
+      if (cancelled) return;
+
+      const ownWorksheets: WorksheetForLessonItem[] = ((links as any[]) ?? [])
+        .map((l) => l.worksheets)
+        .filter((w: any) => w && w.teacher_id === user.id)
+        .map((w: any) => ({
+          id: w.id,
+          title: w.title,
+          status: w.status,
+          updated_at: w.updated_at,
+          item_count: w?.spec?.variants?.[0]?.items?.length,
+          teacher_id: w.teacher_id,
+        }));
+
+      const navigateToEditor = (id: string) => {
+        const params = new URLSearchParams();
+        params.set("from_lesson", fromLessonId);
+        params.set("from_lesson_type", fromLessonType);
+        if (returnTo) params.set("return_to", returnTo);
+        navigate(`/ucitel/pracovni-listy/${id}?${params.toString()}`, { replace: true });
+      };
+
+      if (ownWorksheets.length === 1) {
+        navigateToEditor(ownWorksheets[0].id);
+        return;
+      }
+
+      if (ownWorksheets.length >= 2) {
+        setLessonTitle(title);
+        setWorksheetsForLesson(ownWorksheets);
+        setWorksheetsForLessonOpen(true);
+        // strip URL params so re-opens don't re-trigger
+        navigate("/ucitel/pracovni-listy", { replace: true });
+        return;
+      }
+
+      // 0 → create new draft
+      const newTitle = `Pracovní list – ${title}`;
+      const spec = emptyWorksheetSpec({ title: newTitle });
       const { data: created, error } = await supabase
         .from("worksheets" as any)
         .insert({
           teacher_id: user.id,
-          title,
+          title: newTitle,
           spec: spec as any,
           source_lesson_id: fromLessonId,
           source_lesson_type: fromLessonType,
@@ -102,20 +151,44 @@ export default function TeacherWorksheets() {
         .select("id")
         .single();
       if (cancelled || error || !created) return;
-      const params = new URLSearchParams();
-      params.set("from_lesson", fromLessonId);
-      params.set("from_lesson_type", fromLessonType);
-      if (returnTo) params.set("return_to", returnTo);
-      navigate(
-        `/ucitel/pracovni-listy/${(created as any).id}?${params.toString()}`,
-        { replace: true }
-      );
+      navigateToEditor((created as any).id);
     })();
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, user, fromLessonId, fromLessonType]);
+
+  async function handleCreateNewForLesson() {
+    if (!user || !fromLessonId || !fromLessonType) return;
+    const newTitle = `Pracovní list – ${lessonTitle || "Lekce"}`;
+    const spec = emptyWorksheetSpec({ title: newTitle });
+    const { data: created, error } = await supabase
+      .from("worksheets" as any)
+      .insert({
+        teacher_id: user.id,
+        title: newTitle,
+        spec: spec as any,
+        source_lesson_id: fromLessonId,
+        source_lesson_type: fromLessonType,
+      } as any)
+      .select("id")
+      .single();
+    if (error || !created) {
+      toast({
+        title: "Nepodařilo se vytvořit",
+        description: error?.message,
+        variant: "destructive",
+      });
+      return;
+    }
+    setWorksheetsForLessonOpen(false);
+    const params = new URLSearchParams();
+    params.set("from_lesson", fromLessonId);
+    params.set("from_lesson_type", fromLessonType);
+    if (returnTo) params.set("return_to", returnTo);
+    navigate(`/ucitel/pracovni-listy/${(created as any).id}?${params.toString()}`);
+  }
 
   async function load() {
     if (!user) return;
