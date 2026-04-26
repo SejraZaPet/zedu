@@ -852,7 +852,7 @@ export default function WorksheetEditor() {
         style={{ top: "70px" }}
       >
         <div className="container mx-auto px-4 py-3 flex items-center gap-3 max-w-[1600px]">
-          <Button variant="ghost" size="sm" onClick={() => navigate("/ucitel/pracovni-listy")}>
+          <Button variant="ghost" size="sm" onClick={handleBack}>
             <ChevronLeft className="w-4 h-4 mr-1" /> Zpět
           </Button>
           <Input
