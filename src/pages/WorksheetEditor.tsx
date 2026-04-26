@@ -820,14 +820,24 @@ export default function WorksheetEditor() {
       return;
     }
     toast({ title: `Připojeno: ${selected.length} ${selected.length === 1 ? "lekce" : "lekcí"}` });
+    // UX: pokud zatím není aktivní lekce, nastav první nově přidanou
+    if (!activeLessonId && selected[0]) {
+      void handleSetSourceLesson(selected[0].id);
+    }
     void loadLinkedLessons();
   }
 
   async function handleRemoveLinkedLesson(linkId: string) {
+    const removed = linkedLessons.find((l) => l.id === linkId);
     const { error } = await supabase.from("worksheet_lessons" as any).delete().eq("id", linkId);
     if (error) {
       toast({ title: "Nepodařilo se odebrat", description: error.message, variant: "destructive" });
       return;
+    }
+    // UX: pokud byla odstraněná lekce zrovna aktivní, vyber jinou nebo vyčisti
+    if (removed && removed.lesson_id === activeLessonId) {
+      const remaining = linkedLessons.filter((l) => l.id !== linkId);
+      void handleSetSourceLesson(remaining[0]?.lesson_id ?? null);
     }
     void loadLinkedLessons();
   }
