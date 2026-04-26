@@ -740,7 +740,7 @@ export function renderWorksheetVariantHtml(
     ? renderAnswerKey(variantId, spec.answerKeys[variantId] ?? [])
     : "";
 
-  const dateStr = new Date().toLocaleDateString("cs-CZ");
+  const footer = renderFooter(specCopy);
 
   return `<!DOCTYPE html>
 <html lang="cs">
@@ -762,9 +762,7 @@ ${items}
 
 ${answerKey}
 
-<div class="ws-footer">
-  ZEdu · ${esc(specCopy.header.title)} · ${dateStr}
-</div>
+${footer}
   </div>
 </div>
 
