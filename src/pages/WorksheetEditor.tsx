@@ -1239,6 +1239,7 @@ export default function WorksheetEditor() {
           <PropertiesPanel
             item={selectedItem}
             answerKey={selectedAnswer}
+            pointsEnabled={spec.renderConfig?.pointsEnabled ?? true}
             onUpdateItem={(p) => updateItem(selectedItem.id, p)}
             onUpdateKey={(p) => updateAnswerKey(selectedItem.id, p)}
           />
