@@ -1392,29 +1392,47 @@ export default function WorksheetEditor() {
           </section>
 
           {/* ── PROPERTIES ── */}
-          <aside className="bg-card border border-border rounded-xl p-4 min-w-0 lg:sticky lg:top-[140px] lg:max-h-[calc(100vh-160px)] lg:overflow-y-auto lg:overflow-x-hidden">
-            <h3 className="font-heading text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
-              Vlastnosti
-            </h3>
-            {!selectedItem ? (
-              <p className="text-sm text-muted-foreground">Vyber blok pro úpravu.</p>
-            ) : (
-              <>
-                <PropertiesPanel
-                  item={selectedItem}
-                  answerKey={selectedAnswer}
-                  onUpdateItem={(p) => updateItem(selectedItem.id, p)}
-                  onUpdateKey={(p) => updateAnswerKey(selectedItem.id, p)}
-                />
-                <AiBlockChat
-                  item={selectedItem}
-                  onApplyRefined={(refined) => replaceItem(selectedItem.id, refined)}
-                />
-              </>
-            )}
+          <aside className="hidden lg:block bg-card border border-border rounded-xl p-4 min-w-0 lg:sticky lg:top-[140px] lg:max-h-[calc(100vh-160px)] lg:overflow-y-auto lg:overflow-x-hidden">
+            {propertiesContent}
           </aside>
         </div>
       </main>
+
+      {/* Mobile drawers (palette + properties) */}
+      <Sheet open={mobilePaletteOpen} onOpenChange={setMobilePaletteOpen}>
+        <SheetContent side="left" className="w-[88vw] sm:max-w-sm overflow-y-auto p-4">
+          <SheetHeader className="mb-3">
+            <SheetTitle>Paleta</SheetTitle>
+          </SheetHeader>
+          {paletteContent}
+        </SheetContent>
+      </Sheet>
+
+      <Sheet open={mobilePropsOpen} onOpenChange={setMobilePropsOpen}>
+        <SheetContent side="right" className="w-[92vw] sm:max-w-md overflow-y-auto p-4">
+          <SheetHeader className="mb-3">
+            <SheetTitle>Vlastnosti bloku</SheetTitle>
+          </SheetHeader>
+          {propertiesContent}
+        </SheetContent>
+      </Sheet>
+
+      {/* Schedule publish dialog */}
+      <Dialog open={scheduleDialogOpen} onOpenChange={setScheduleDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Naplánovat publikaci</DialogTitle>
+            <DialogDescription>
+              Pracovní list se automaticky publikuje ve zvolený čas.
+            </DialogDescription>
+          </DialogHeader>
+          <SchedulePicker
+            initial={scheduledAt ?? new Date(Date.now() + 60 * 60 * 1000)}
+            onCancel={() => setScheduleDialogOpen(false)}
+            onConfirm={(d) => schedulePublish(d)}
+          />
+        </DialogContent>
+      </Dialog>
 
       {/* Preview dialog */}
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
