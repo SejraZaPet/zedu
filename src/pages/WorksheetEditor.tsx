@@ -391,34 +391,94 @@ export default function WorksheetEditor() {
     })();
   }, [id, user, fromLessonId, fromLessonType, sourceLessonId, loadLinkedLessons]);
 
-  // ── Auto-save ──
+  // ── Auto-save (s pending payload, který přežije unmount) ──
+  const pendingSaveRef = useRef<Record<string, any> | null>(null);
+
   useEffect(() => {
     if (loading || !spec || !id) return;
     if (initialLoad.current) return;
+
+    const payload = {
+      title: spec.header.title,
+      subject: spec.header.subject,
+      grade_band: spec.header.gradeBand,
+      worksheet_mode: spec.header.worksheetMode,
+      spec: spec as any,
+    } as Record<string, any>;
+    pendingSaveRef.current = payload;
+
     if (saveTimer.current) clearTimeout(saveTimer.current);
     setSaveState("saving");
+
     saveTimer.current = setTimeout(async () => {
+      const toSave = pendingSaveRef.current;
+      if (!toSave) return;
+      pendingSaveRef.current = null;
       const { error } = await supabase
         .from("worksheets" as any)
-        .update({
-          title: spec.header.title,
-          subject: spec.header.subject,
-          grade_band: spec.header.gradeBand,
-          worksheet_mode: spec.header.worksheetMode,
-          spec: spec as any,
-        } as any)
+        .update(toSave as any)
         .eq("id", id);
       if (error) {
         setSaveState("error");
+        pendingSaveRef.current = toSave; // ulož zpět pro retry
         toast({ title: "Ukládání selhalo", description: error.message, variant: "destructive" });
       } else {
         setSaveState("saved");
       }
     }, 1000);
-    return () => {
-      if (saveTimer.current) clearTimeout(saveTimer.current);
-    };
+
+    // Pozor: NEMAZAT timer při cleanup — chceme, aby pending save dokončil.
   }, [spec, id, loading]);
+
+  // Flush při unmount (fire-and-forget)
+  useEffect(() => {
+    return () => {
+      if (pendingSaveRef.current && id) {
+        const toSave = pendingSaveRef.current;
+        pendingSaveRef.current = null;
+        // Fire-and-forget — prohlížeč request dokončí
+        void supabase.from("worksheets" as any).update(toSave as any).eq("id", id);
+      }
+    };
+  }, [id]);
+
+  // Varování před zavřením okna s neuloženými změnami
+  useEffect(() => {
+    function handleBeforeUnload(e: BeforeUnloadEvent) {
+      if (pendingSaveRef.current) {
+        e.preventDefault();
+        e.returnValue = "";
+        return "";
+      }
+    }
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, []);
+
+  // Flush save + navigace zpět
+  const handleBack = useCallback(async () => {
+    if (saveTimer.current) {
+      clearTimeout(saveTimer.current);
+      saveTimer.current = null;
+    }
+    if (pendingSaveRef.current && id) {
+      const toSave = pendingSaveRef.current;
+      pendingSaveRef.current = null;
+      setSaveState("saving");
+      const { error } = await supabase
+        .from("worksheets" as any)
+        .update(toSave as any)
+        .eq("id", id);
+      if (error) {
+        setSaveState("error");
+        pendingSaveRef.current = toSave;
+        toast({ title: "Nepodařilo se uložit", description: error.message, variant: "destructive" });
+        return;
+      }
+      setSaveState("saved");
+    }
+    navigate("/ucitel/pracovni-listy");
+  }, [id, navigate]);
 
   // ── Spec mutator (s history push) ──
   const updateSpec = useCallback((mutator: (s: WorksheetSpec) => WorksheetSpec) => {
@@ -792,7 +852,7 @@ export default function WorksheetEditor() {
         style={{ top: "70px" }}
       >
         <div className="container mx-auto px-4 py-3 flex items-center gap-3 max-w-[1600px]">
-          <Button variant="ghost" size="sm" onClick={() => navigate("/ucitel/pracovni-listy")}>
+          <Button variant="ghost" size="sm" onClick={handleBack}>
             <ChevronLeft className="w-4 h-4 mr-1" /> Zpět
           </Button>
           <Input
