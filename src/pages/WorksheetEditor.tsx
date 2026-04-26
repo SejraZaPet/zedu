@@ -171,7 +171,11 @@ export default function WorksheetEditor() {
   const { data: subjectsList } = useSubjects(true);
 
   const [spec, setSpec] = useState<WorksheetSpec | null>(null);
-  const [status, setStatus] = useState<"draft" | "published">("draft");
+  const [status, setStatus] = useState<"draft" | "published" | "scheduled">("draft");
+  const [scheduledAt, setScheduledAt] = useState<Date | null>(null);
+  const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
+  const [mobilePaletteOpen, setMobilePaletteOpen] = useState(false);
+  const [mobilePropsOpen, setMobilePropsOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saveState, setSaveState] = useState<SaveState>("idle");
@@ -258,6 +262,7 @@ export default function WorksheetEditor() {
       };
       setSpec(loaded);
       setStatus(row.status);
+      setScheduledAt(row.scheduled_publish_at ? new Date(row.scheduled_publish_at) : null);
       setSourceLessonId(row.source_lesson_id ?? null);
       setActiveLessonId(row.source_lesson_id ?? null);
       setLoading(false);
