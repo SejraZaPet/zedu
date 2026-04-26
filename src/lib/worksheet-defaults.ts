@@ -53,6 +53,7 @@ export function emptyWorksheetSpec(opts?: {
       showTypeLabels: true,
       paper: "A4",
       includeAnswerKey: false,
+      pointsEnabled: true,
     },
   };
 }
