@@ -168,6 +168,7 @@ export default function WorksheetEditor() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  const { data: subjectsList } = useSubjects(true);
 
   const [spec, setSpec] = useState<WorksheetSpec | null>(null);
   const [status, setStatus] = useState<"draft" | "published">("draft");
