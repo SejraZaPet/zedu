@@ -1936,11 +1936,13 @@ function SaveIndicator({ state }: { state: SaveState }) {
 function SortableItemBlock({
   item,
   selected,
+  pointsEnabled,
   onSelect,
   onDelete,
 }: {
   item: WorksheetItem;
   selected: boolean;
+  pointsEnabled: boolean;
   onSelect: () => void;
   onDelete: () => void;
 }) {
