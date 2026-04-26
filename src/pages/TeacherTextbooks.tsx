@@ -455,7 +455,43 @@ const TeacherTextbooks = () => {
                 onEditTopic={(topic) => setEditingTopic(topic)}
                 onDeleteTopic={handleDeleteTopic}
                 onOpenPresentation={openEditor}
-                onOpenWorksheet={(lessonId, lessonTitle) => navigate(`/ucitel/ulohy?lessonId=${lessonId}&lessonTitle=${encodeURIComponent(lessonTitle)}`)}
+                onOpenWorksheet={async (lesson) => {
+                  const { data: { user } } = await supabase.auth.getUser();
+                  if (!user) {
+                    toast({ title: "Nejste přihlášen/a", variant: "destructive" });
+                    return;
+                  }
+                  const lessonType: "global" | "teacher" =
+                    lesson.source === "textbook_lessons" ? "global" : "teacher";
+                  const title = `Pracovní list – ${lesson.title}`;
+                  const spec = emptyWorksheetSpec({
+                    title,
+                    subject: selectedTextbook?.subject ?? "",
+                  });
+                  const { data, error } = await supabase
+                    .from("worksheets" as any)
+                    .insert({
+                      teacher_id: user.id,
+                      title,
+                      subject: selectedTextbook?.subject ?? null,
+                      spec: spec as any,
+                      source_lesson_id: lesson.id,
+                      source_lesson_type: lessonType,
+                    } as any)
+                    .select("id")
+                    .single();
+                  if (error || !data) {
+                    toast({ title: "Chyba", description: error?.message, variant: "destructive" });
+                    return;
+                  }
+                  await supabase.from("worksheet_lessons" as any).insert({
+                    worksheet_id: (data as any).id,
+                    lesson_id: lesson.id,
+                    lesson_type: lessonType,
+                    added_by: user.id,
+                  } as any);
+                  navigate(`/ucitel/pracovni-listy/${(data as any).id}`);
+                }}
                 onPreviewLesson={() => {}}
               />
             )}
