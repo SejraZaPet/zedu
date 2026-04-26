@@ -1202,6 +1202,9 @@ export default function WorksheetEditor() {
     <div className="min-h-screen bg-background flex flex-col">
       <SiteHeader />
 
+      {/* Spacer for fixed SiteHeader (h ~70px) */}
+      <div aria-hidden className="h-[70px] shrink-0" />
+
       {/* Sticky toolbar */}
       <div
         className="sticky z-30 bg-background/95 backdrop-blur border-b border-border"
