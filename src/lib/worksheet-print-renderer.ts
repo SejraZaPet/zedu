@@ -590,12 +590,15 @@ function renderHeader(spec: WorksheetSpec, variant: WorksheetVariant): string {
     ? `<span class="ws-variant-badge">${esc(h.variantLabel)}</span>`
     : "";
 
+  const pointsEnabled = spec.renderConfig.pointsEnabled !== false;
   const metaTags: string[] = [
     `<span class="ws-meta-tag ws-meta-primary">${esc(h.subject)}</span>`,
     `<span class="ws-meta-tag">${esc(h.gradeBand)}</span>`,
-    `<span class="ws-meta-tag">${meta.totalPoints} bodů</span>`,
-    `<span class="ws-meta-tag">~${meta.totalTimeMin} min</span>`,
   ];
+  if (pointsEnabled) {
+    metaTags.push(`<span class="ws-meta-tag">${meta.totalPoints} ${pointsLabel(meta.totalPoints)}</span>`);
+  }
+  metaTags.push(`<span class="ws-meta-tag">~${meta.totalTimeMin} min</span>`);
   if (h.teacherName) {
     metaTags.push(`<span class="ws-meta-tag">${esc(h.teacherName)}</span>`);
   }
