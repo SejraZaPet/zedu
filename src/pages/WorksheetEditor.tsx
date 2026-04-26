@@ -66,7 +66,18 @@ import {
   PanelRight,
   CalendarClock,
   Clock,
+  ChevronsUpDown,
+  Check,
 } from "lucide-react";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -274,6 +285,8 @@ export default function WorksheetEditor() {
   const [pdfIncludeAnswerKey, setPdfIncludeAnswerKey] = useState(false);
   const [pdfIncludeNameField, setPdfIncludeNameField] = useState(true);
   const [pdfExporting, setPdfExporting] = useState(false);
+  const [subjectComboOpen, setSubjectComboOpen] = useState(false);
+  const [subjectSearch, setSubjectSearch] = useState("");
 
   const [sourceLessonId, setSourceLessonId] = useState<string | null>(null);
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
@@ -1322,7 +1335,7 @@ export default function WorksheetEditor() {
         </div>
       </div>
 
-      <main className="flex-1 container mx-auto px-4 py-6 max-w-[1600px] w-full">
+      <main className="flex-1 container mx-auto px-4 pt-8 pb-6 max-w-[1600px] w-full">
         <div className="grid gap-4 lg:grid-cols-[240px_minmax(0,1fr)_340px]">
           {/* ── PALETA ── */}
           <aside className="hidden lg:block bg-card border border-border rounded-xl p-4 lg:sticky lg:top-[140px] lg:max-h-[calc(100vh-160px)] lg:overflow-y-auto">
@@ -1335,33 +1348,121 @@ export default function WorksheetEditor() {
             <div className="grid sm:grid-cols-2 gap-3 mb-6 pb-6 border-b border-border">
               <div>
                 <Label className="text-xs">Předmět</Label>
-                <Select
-                  value={spec.header.subject || "__none__"}
-                  onValueChange={(v) =>
-                    updateSpec((s) => ({
-                      ...s,
-                      header: { ...s.header, subject: v === "__none__" ? "" : v },
-                    }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Vyber předmět…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">— Nezadáno —</SelectItem>
-                    {(subjectsList ?? []).map((s) => (
-                      <SelectItem key={s.id} value={s.slug}>
-                        <span className="inline-flex items-center gap-2">
-                          <span
-                            className="w-2 h-2 rounded-full"
-                            style={{ backgroundColor: s.color }}
+                {(() => {
+                  const subjects = subjectsList ?? [];
+                  const currentValue = spec.header.subject || "";
+                  const matchedSubject = subjects.find(
+                    (s) => s.slug === currentValue || s.label === currentValue,
+                  );
+                  const displayLabel = matchedSubject?.label || currentValue;
+                  const hasMatchInList =
+                    !subjectSearch ||
+                    subjects.some(
+                      (s) =>
+                        s.label.toLowerCase() === subjectSearch.toLowerCase() ||
+                        s.slug.toLowerCase() === subjectSearch.toLowerCase(),
+                    );
+                  const setSubject = (val: string) =>
+                    updateSpec((st) => ({
+                      ...st,
+                      header: { ...st.header, subject: val },
+                    }));
+                  return (
+                    <Popover open={subjectComboOpen} onOpenChange={setSubjectComboOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={subjectComboOpen}
+                          className="w-full justify-between font-normal"
+                        >
+                          <span className="inline-flex items-center gap-2 truncate">
+                            {matchedSubject && (
+                              <span
+                                className="w-2 h-2 rounded-full shrink-0"
+                                style={{ backgroundColor: matchedSubject.color }}
+                              />
+                            )}
+                            <span className="truncate">
+                              {displayLabel || "Vyber nebo napiš předmět…"}
+                            </span>
+                          </span>
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        className="w-[var(--radix-popover-trigger-width)] p-0 bg-popover"
+                        align="start"
+                      >
+                        <Command>
+                          <CommandInput
+                            placeholder="Hledej nebo napiš nový…"
+                            value={subjectSearch}
+                            onValueChange={setSubjectSearch}
                           />
-                          {s.label}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                          <CommandList>
+                            <CommandEmpty>Žádný předmět nenalezen.</CommandEmpty>
+                            <CommandGroup>
+                              <CommandItem
+                                value="__none__"
+                                onSelect={() => {
+                                  setSubject("");
+                                  setSubjectComboOpen(false);
+                                  setSubjectSearch("");
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    !currentValue ? "opacity-100" : "opacity-0",
+                                  )}
+                                />
+                                — Nezadáno —
+                              </CommandItem>
+                              {subjects.map((s) => (
+                                <CommandItem
+                                  key={s.id}
+                                  value={s.label}
+                                  onSelect={() => {
+                                    setSubject(s.slug);
+                                    setSubjectComboOpen(false);
+                                    setSubjectSearch("");
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      matchedSubject?.id === s.id ? "opacity-100" : "opacity-0",
+                                    )}
+                                  />
+                                  <span
+                                    className="w-2 h-2 rounded-full mr-2"
+                                    style={{ backgroundColor: s.color }}
+                                  />
+                                  {s.label}
+                                </CommandItem>
+                              ))}
+                              {subjectSearch && !hasMatchInList && (
+                                <CommandItem
+                                  value={`__custom__${subjectSearch}`}
+                                  onSelect={() => {
+                                    setSubject(subjectSearch);
+                                    setSubjectComboOpen(false);
+                                    setSubjectSearch("");
+                                  }}
+                                  className="border-t"
+                                >
+                                  <Plus className="mr-2 h-4 w-4" />
+                                  Použít vlastní: „{subjectSearch}"
+                                </CommandItem>
+                              )}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  );
+                })()}
               </div>
               <div>
                 <Label className="text-xs">Ročník</Label>
