@@ -175,6 +175,12 @@ const MODE_OPTIONS = [
 
 const HISTORY_LIMIT = 50;
 
+function pointsLabel(n: number): string {
+  if (n === 1) return "bod";
+  if (n >= 2 && n <= 4) return "body";
+  return "bodů";
+}
+
 interface AiSuggestion {
   type: ItemType;
   difficulty: Difficulty;
@@ -1213,7 +1219,9 @@ export default function WorksheetEditor() {
 
       <div className="mt-6 pt-4 border-t border-border text-xs text-muted-foreground">
         <p className="mb-1">{items.length} otázek</p>
-        <p className="mb-1">{spec.metadata.totalPoints} bodů</p>
+        {(spec.renderConfig?.pointsEnabled ?? true) && (
+          <p className="mb-1">{spec.metadata.totalPoints} {pointsLabel(spec.metadata.totalPoints)}</p>
+        )}
         <p>~{spec.metadata.totalTimeMin} min</p>
       </div>
     </>
@@ -1231,6 +1239,7 @@ export default function WorksheetEditor() {
           <PropertiesPanel
             item={selectedItem}
             answerKey={selectedAnswer}
+            pointsEnabled={spec.renderConfig?.pointsEnabled ?? true}
             onUpdateItem={(p) => updateItem(selectedItem.id, p)}
             onUpdateKey={(p) => updateAnswerKey(selectedItem.id, p)}
           />
@@ -1294,6 +1303,26 @@ export default function WorksheetEditor() {
             <div className="hidden md:block">
               <SaveIndicator state={saveState} />
             </div>
+            <div className="hidden md:flex items-center gap-2 px-2 border-l border-border ml-1">
+              <Switch
+                id="points-enabled"
+                checked={spec.renderConfig?.pointsEnabled ?? true}
+                onCheckedChange={(checked) =>
+                  updateSpec((s) => ({
+                    ...s,
+                    renderConfig: { ...s.renderConfig, pointsEnabled: checked },
+                  }))
+                }
+              />
+              <Label htmlFor="points-enabled" className="text-xs cursor-pointer whitespace-nowrap">
+                {(spec.renderConfig?.pointsEnabled ?? true) ? "Bodované" : "Nebodované"}
+              </Label>
+            </div>
+            {(spec.renderConfig?.pointsEnabled ?? true) && (
+              <Badge variant="outline" className="hidden lg:inline-flex whitespace-nowrap">
+                Celkem: {spec.metadata.totalPoints} {pointsLabel(spec.metadata.totalPoints)}
+              </Badge>
+            )}
             <Badge
               variant={status === "published" ? "default" : status === "scheduled" ? "outline" : "secondary"}
               className="hidden sm:inline-flex"
@@ -1572,6 +1601,7 @@ export default function WorksheetEditor() {
                         key={item.id}
                         item={item}
                         selected={item.id === selectedId}
+                        pointsEnabled={spec.renderConfig?.pointsEnabled ?? true}
                         onSelect={() => setSelectedId(item.id)}
                         onDelete={() => deleteItem(item.id)}
                       />
@@ -1907,11 +1937,13 @@ function SaveIndicator({ state }: { state: SaveState }) {
 function SortableItemBlock({
   item,
   selected,
+  pointsEnabled,
   onSelect,
   onDelete,
 }: {
   item: WorksheetItem;
   selected: boolean;
+  pointsEnabled: boolean;
   onSelect: () => void;
   onDelete: () => void;
 }) {
@@ -1962,11 +1994,13 @@ function SortableItemBlock({
               {item.groupSize ? ` · ${GROUP_SIZE_LABELS[item.groupSize]}` : ""}
               {item.durationMin ? ` · ${item.durationMin} min` : ""}
             </span>
-            <span className="text-muted-foreground font-normal">· {item.points} b</span>
+            {pointsEnabled && (
+              <span className="text-muted-foreground font-normal">· {item.points} b</span>
+            )}
           </div>
         ) : (
           <div className="text-xs text-muted-foreground mb-0.5">
-            {ITEM_TYPE_LABELS[item.type].label} · {item.points} b
+            {ITEM_TYPE_LABELS[item.type].label}{pointsEnabled ? ` · ${item.points} b` : ""}
           </div>
         )}
         <div className="text-sm line-clamp-2">
@@ -2147,11 +2181,13 @@ function AiBlockChat({
 function PropertiesPanel({
   item,
   answerKey,
+  pointsEnabled,
   onUpdateItem,
   onUpdateKey,
 }: {
   item: WorksheetItem;
   answerKey: AnswerKeyEntry | null;
+  pointsEnabled: boolean;
   onUpdateItem: (p: Partial<WorksheetItem>) => void;
   onUpdateKey: (p: Partial<AnswerKeyEntry>) => void;
 }) {
@@ -2166,16 +2202,33 @@ function PropertiesPanel({
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        <div>
-          <Label className="text-xs">Body</Label>
-          <Input
-            type="number"
-            min={0}
-            value={item.points}
-            onChange={(e) => onUpdateItem({ points: Number(e.target.value) || 0 })}
-          />
-        </div>
+      <div className={pointsEnabled ? "grid grid-cols-2 gap-2" : ""}>
+        {pointsEnabled && (
+          <div>
+            <Label className="text-xs">Body</Label>
+            <Input
+              type="number"
+              min={0}
+              max={10}
+              value={item.points}
+              onChange={(e) => onUpdateItem({ points: Number(e.target.value) || 0 })}
+            />
+            <div className="flex gap-1.5 mt-2">
+              {[1, 2, 3, 5].map((n) => (
+                <Button
+                  key={n}
+                  type="button"
+                  variant={item.points === n ? "default" : "outline"}
+                  size="sm"
+                  className="h-7 px-2 text-xs flex-1"
+                  onClick={() => onUpdateItem({ points: n })}
+                >
+                  {n} {pointsLabel(n)}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
         <div>
           <Label className="text-xs">Čas (s)</Label>
           <Input

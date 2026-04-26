@@ -167,6 +167,8 @@ export interface WorksheetRenderConfig {
   paper?: "A4" | "letter";
   /** Include answer key (separate page/section) */
   includeAnswerKey: boolean;
+  /** Master switch — points enabled at worksheet level (default true). When false, hide all point UI/PDF output. */
+  pointsEnabled?: boolean;
 }
 
 export interface WorksheetSpec {

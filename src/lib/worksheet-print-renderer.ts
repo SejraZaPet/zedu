@@ -571,6 +571,12 @@ function esc(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
+function pointsLabel(n: number): string {
+  if (n === 1) return "bod";
+  if (n >= 2 && n <= 4) return "body";
+  return "bodů";
+}
+
 function renderHeader(spec: WorksheetSpec, variant: WorksheetVariant): string {
   const h = spec.header;
   const meta = spec.metadata;
@@ -590,12 +596,15 @@ function renderHeader(spec: WorksheetSpec, variant: WorksheetVariant): string {
     ? `<span class="ws-variant-badge">${esc(h.variantLabel)}</span>`
     : "";
 
+  const pointsEnabled = spec.renderConfig.pointsEnabled !== false;
   const metaTags: string[] = [
     `<span class="ws-meta-tag ws-meta-primary">${esc(h.subject)}</span>`,
     `<span class="ws-meta-tag">${esc(h.gradeBand)}</span>`,
-    `<span class="ws-meta-tag">${meta.totalPoints} bodů</span>`,
-    `<span class="ws-meta-tag">~${meta.totalTimeMin} min</span>`,
   ];
+  if (pointsEnabled) {
+    metaTags.push(`<span class="ws-meta-tag">${meta.totalPoints} ${pointsLabel(meta.totalPoints)}</span>`);
+  }
+  metaTags.push(`<span class="ws-meta-tag">~${meta.totalTimeMin} min</span>`);
   if (h.teacherName) {
     metaTags.push(`<span class="ws-meta-tag">${esc(h.teacherName)}</span>`);
   }
@@ -639,7 +648,7 @@ const CHOICE_LETTERS = "ABCDEFGHIJKLMNOP";
 
 function renderItem(item: WorksheetItem, showPoints: boolean): string {
   const pointsHtml = showPoints
-    ? `<span class="ws-item-points">[${item.points} ${item.points === 1 ? "bod" : item.points < 5 ? "body" : "bodů"}]</span>`
+    ? `<span class="ws-item-points">${item.points} ${pointsLabel(item.points)}</span>`
     : "";
 
   let body = "";
@@ -791,7 +800,8 @@ export function renderWorksheetVariantHtml(
 
   const css = buildWorksheetCss();
   const header = renderHeader(specCopy, variant);
-  const items = variant.items.map((it) => renderItem(it, specCopy.renderConfig.showPoints)).join("\n");
+  const showPointsEffective = specCopy.renderConfig.showPoints && specCopy.renderConfig.pointsEnabled !== false;
+  const items = variant.items.map((it) => renderItem(it, showPointsEffective)).join("\n");
   const answerKey = specCopy.renderConfig.includeAnswerKey
     ? renderAnswerKey(variantId, spec.answerKeys[variantId] ?? [])
     : "";
@@ -847,8 +857,9 @@ export function renderWorksheetVariantFragment(
 
   const css = buildWorksheetCss();
   const header = renderHeader(specCopy, variant);
+  const showPointsEffective = specCopy.renderConfig.showPoints && specCopy.renderConfig.pointsEnabled !== false;
   const items = variant.items
-    .map((it) => renderItem(it, specCopy.renderConfig.showPoints))
+    .map((it) => renderItem(it, showPointsEffective))
     .join("\n");
   const answerKey = specCopy.renderConfig.includeAnswerKey
     ? renderAnswerKey(variantId, spec.answerKeys[variantId] ?? [])
