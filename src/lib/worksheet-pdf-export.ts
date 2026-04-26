@@ -38,6 +38,12 @@ export async function buildWorksheetPdfHtml(
   spec: WorksheetSpec,
   options: PdfExportOptions,
 ): Promise<{ html: string; filename: string }> {
+  console.log("[PDF] buildWorksheetPdfHtml called with:", {
+    title: spec.header?.title,
+    variantsCount: spec.variants?.length,
+    itemsCount: spec.variants?.[0]?.items?.length,
+    variantId: options.variantId,
+  });
   const variantId = options.variantId ?? spec.variants[0]?.variantId ?? "A";
   const baseUrl =
     options.baseUrl ??
