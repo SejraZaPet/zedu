@@ -1994,11 +1994,13 @@ function SortableItemBlock({
               {item.groupSize ? ` · ${GROUP_SIZE_LABELS[item.groupSize]}` : ""}
               {item.durationMin ? ` · ${item.durationMin} min` : ""}
             </span>
-            <span className="text-muted-foreground font-normal">· {item.points} b</span>
+            {pointsEnabled && (
+              <span className="text-muted-foreground font-normal">· {item.points} b</span>
+            )}
           </div>
         ) : (
           <div className="text-xs text-muted-foreground mb-0.5">
-            {ITEM_TYPE_LABELS[item.type].label} · {item.points} b
+            {ITEM_TYPE_LABELS[item.type].label}{pointsEnabled ? ` · ${item.points} b` : ""}
           </div>
         )}
         <div className="text-sm line-clamp-2">
