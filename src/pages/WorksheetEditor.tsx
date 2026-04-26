@@ -1689,6 +1689,14 @@ export default function WorksheetEditor() {
               <Button variant="outline" onClick={() => setPdfDialogOpen(false)} disabled={pdfExporting}>
                 Zrušit
               </Button>
+              <Button variant="outline" onClick={handlePreviewPdf} disabled={pdfPreviewLoading || pdfExporting}>
+                {pdfPreviewLoading ? (
+                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                ) : (
+                  <Eye className="w-4 h-4 mr-1" />
+                )}
+                Náhled
+              </Button>
               <Button onClick={handleExportPdf} disabled={pdfExporting}>
                 {pdfExporting ? (
                   <Loader2 className="w-4 h-4 mr-1 animate-spin" />
@@ -1701,6 +1709,46 @@ export default function WorksheetEditor() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* PDF Preview dialog */}
+      <Dialog
+        open={!!pdfPreviewUrl}
+        onOpenChange={(o) => {
+          if (!o) {
+            if (pdfPreviewUrl) URL.revokeObjectURL(pdfPreviewUrl);
+            setPdfPreviewUrl(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Náhled PDF</DialogTitle>
+            <DialogDescription>
+              Takhle bude vypadat pracovní list pro žáky.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-hidden">
+            {pdfPreviewUrl && (
+              <iframe
+                src={pdfPreviewUrl}
+                className="w-full h-full border rounded"
+                title="Náhled pracovního listu"
+              />
+            )}
+          </div>
+          <DialogFooter>
+            <Button onClick={handleExportPdf} disabled={pdfExporting}>
+              {pdfExporting ? (
+                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+              ) : (
+                <FileDown className="w-4 h-4 mr-1" />
+              )}
+              Stáhnout
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
 
       <Dialog
