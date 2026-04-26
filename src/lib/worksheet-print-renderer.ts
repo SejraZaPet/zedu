@@ -629,7 +629,7 @@ function renderAnswerSpace(space: AnswerSpace): string {
     case "grid":
       return `<div class="ws-answer-space ws-answer-grid" style="${hStyle}"></div>`;
     case "blank":
-      return `<div class="ws-answer-space ws-answer-blank" style="${hStyle}"></div>`;
+      return `<div class="ws-answer-space ws-answer-blank" style="${hStyle}"><span class="ws-answer-label">Místo pro odpověď</span></div>`;
     default:
       return "";
   }
