@@ -80,6 +80,7 @@ const Admin = () => {
         <div className="container mx-auto max-w-5xl flex items-center justify-between h-14 px-4">
           <h1 className="font-heading text-lg">Administrace</h1>
           <div className="flex items-center gap-2">
+            <ViewAsSwitcher />
             <Button size="sm" variant="ghost" asChild>
               <a href="/"><Home className="w-4 h-4 mr-1" /> Web</a>
             </Button>
