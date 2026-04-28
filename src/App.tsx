@@ -45,6 +45,7 @@ import NotificationsPage from "./pages/NotificationsPage";
 import TeacherWorksheets from "./pages/TeacherWorksheets";
 import WorksheetEditor from "./pages/WorksheetEditor";
 import StudentWorksheetView from "./pages/StudentWorksheetView";
+import ViewAsBanner from "./components/ViewAsBanner";
 
 const queryClient = new QueryClient();
 
@@ -55,6 +56,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <ViewAsBanner />
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />

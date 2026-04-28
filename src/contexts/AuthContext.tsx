@@ -16,9 +16,23 @@ interface AuthState {
 
 interface AuthContextValue extends AuthState {
   signOut: () => Promise<void>;
+  /** True role from DB, ignoring any admin "view as" override */
+  realRole: AppRole;
+  /** Admin-only: temporarily view the app as another role. null = no override */
+  viewAsRole: AppRole;
+  setViewAsRole: (role: AppRole) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+
+const VIEW_AS_KEY = "zedu:view-as-role";
+const VALID_VIEW_ROLES: AppRole[] = ["admin", "teacher", "user"];
+
+const readViewAs = (): AppRole => {
+  if (typeof window === "undefined") return null;
+  const v = window.localStorage.getItem(VIEW_AS_KEY) as AppRole;
+  return VALID_VIEW_ROLES.includes(v) ? v : null;
+};
 
 // Priority order: highest-privilege / most-specific role wins when a user has multiple rows.
 const ROLE_PRIORITY: Record<string, number> = {
@@ -97,10 +111,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => { mounted = false; subscription.unsubscribe(); };
   }, []);
 
-  const signOut = async () => { await supabase.auth.signOut(); };
+  const signOut = async () => {
+    if (typeof window !== "undefined") window.localStorage.removeItem(VIEW_AS_KEY);
+    await supabase.auth.signOut();
+  };
+
+  const [viewAsRole, setViewAsRoleState] = useState<AppRole>(() => readViewAs());
+  const setViewAsRole = (role: AppRole) => {
+    if (typeof window !== "undefined") {
+      if (role) window.localStorage.setItem(VIEW_AS_KEY, role);
+      else window.localStorage.removeItem(VIEW_AS_KEY);
+    }
+    setViewAsRoleState(role);
+  };
+
+  const isAdmin = state.role === "admin";
+  const effectiveRole: AppRole = isAdmin && viewAsRole ? viewAsRole : state.role;
 
   return (
-    <AuthContext.Provider value={{ ...state, signOut }}>
+    <AuthContext.Provider value={{
+      ...state,
+      role: effectiveRole,
+      realRole: state.role,
+      viewAsRole: isAdmin ? viewAsRole : null,
+      setViewAsRole,
+      signOut,
+    }}>
       {children}
     </AuthContext.Provider>
   );

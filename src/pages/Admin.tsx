@@ -1,6 +1,9 @@
 import { useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAdmin } from "@/hooks/useAdmin";
+import { useAuth } from "@/contexts/AuthContext";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Eye } from "lucide-react";
 import LessonOutlineGenerator from "@/components/admin/LessonOutlineGenerator";
 import MCQGenerator from "@/components/admin/MCQGenerator";
 import MatchingGenerator from "@/components/admin/MatchingGenerator";
@@ -77,6 +80,7 @@ const Admin = () => {
         <div className="container mx-auto max-w-5xl flex items-center justify-between h-14 px-4">
           <h1 className="font-heading text-lg">Administrace</h1>
           <div className="flex items-center gap-2">
+            <ViewAsSwitcher />
             <Button size="sm" variant="ghost" asChild>
               <a href="/"><Home className="w-4 h-4 mr-1" /> Web</a>
             </Button>
@@ -119,6 +123,38 @@ const Admin = () => {
         {activeTab === "results" && isTeacher && <ClassResultsManager />}
         {activeTab === "help" && <HelpGuidesManager />}
       </div>
+    </div>
+  );
+};
+
+const ViewAsSwitcher = () => {
+  const { realRole, viewAsRole, setViewAsRole } = useAuth();
+  if (realRole !== "admin") return null;
+  const value = viewAsRole ?? "admin";
+  return (
+    <div className="flex items-center gap-1.5">
+      <Eye className="w-4 h-4 text-muted-foreground" />
+      <Select
+        value={value}
+        onValueChange={(v) => {
+          if (v === "admin") {
+            setViewAsRole(null);
+          } else {
+            setViewAsRole(v as "teacher" | "user");
+            // Navigate to that role's dashboard so admin immediately sees it
+            window.location.href = v === "teacher" ? "/ucitel" : "/student";
+          }
+        }}
+      >
+        <SelectTrigger className="h-8 w-[150px] text-sm">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="admin">Admin (já)</SelectItem>
+          <SelectItem value="teacher">Zobrazit jako učitel</SelectItem>
+          <SelectItem value="user">Zobrazit jako žák</SelectItem>
+        </SelectContent>
+      </Select>
     </div>
   );
 };
