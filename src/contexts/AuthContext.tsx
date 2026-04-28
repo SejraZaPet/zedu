@@ -111,10 +111,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => { mounted = false; subscription.unsubscribe(); };
   }, []);
 
-  const signOut = async () => { await supabase.auth.signOut(); };
+  const signOut = async () => {
+    if (typeof window !== "undefined") window.localStorage.removeItem(VIEW_AS_KEY);
+    await supabase.auth.signOut();
+  };
+
+  const [viewAsRole, setViewAsRoleState] = useState<AppRole>(() => readViewAs());
+  const setViewAsRole = (role: AppRole) => {
+    if (typeof window !== "undefined") {
+      if (role) window.localStorage.setItem(VIEW_AS_KEY, role);
+      else window.localStorage.removeItem(VIEW_AS_KEY);
+    }
+    setViewAsRoleState(role);
+  };
+
+  const isAdmin = state.role === "admin";
+  const effectiveRole: AppRole = isAdmin && viewAsRole ? viewAsRole : state.role;
 
   return (
-    <AuthContext.Provider value={{ ...state, signOut }}>
+    <AuthContext.Provider value={{
+      ...state,
+      role: effectiveRole,
+      realRole: state.role,
+      viewAsRole: isAdmin ? viewAsRole : null,
+      setViewAsRole,
+      signOut,
+    }}>
       {children}
     </AuthContext.Provider>
   );
