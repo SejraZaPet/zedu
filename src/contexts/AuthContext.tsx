@@ -16,9 +16,23 @@ interface AuthState {
 
 interface AuthContextValue extends AuthState {
   signOut: () => Promise<void>;
+  /** True role from DB, ignoring any admin "view as" override */
+  realRole: AppRole;
+  /** Admin-only: temporarily view the app as another role. null = no override */
+  viewAsRole: AppRole;
+  setViewAsRole: (role: AppRole) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+
+const VIEW_AS_KEY = "zedu:view-as-role";
+const VALID_VIEW_ROLES: AppRole[] = ["admin", "teacher", "user"];
+
+const readViewAs = (): AppRole => {
+  if (typeof window === "undefined") return null;
+  const v = window.localStorage.getItem(VIEW_AS_KEY) as AppRole;
+  return VALID_VIEW_ROLES.includes(v) ? v : null;
+};
 
 // Priority order: highest-privilege / most-specific role wins when a user has multiple rows.
 const ROLE_PRIORITY: Record<string, number> = {
