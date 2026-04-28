@@ -127,4 +127,36 @@ const Admin = () => {
   );
 };
 
+const ViewAsSwitcher = () => {
+  const { realRole, viewAsRole, setViewAsRole } = useAuth();
+  if (realRole !== "admin") return null;
+  const value = viewAsRole ?? "admin";
+  return (
+    <div className="flex items-center gap-1.5">
+      <Eye className="w-4 h-4 text-muted-foreground" />
+      <Select
+        value={value}
+        onValueChange={(v) => {
+          if (v === "admin") {
+            setViewAsRole(null);
+          } else {
+            setViewAsRole(v as "teacher" | "user");
+            // Navigate to that role's dashboard so admin immediately sees it
+            window.location.href = v === "teacher" ? "/ucitel" : "/student";
+          }
+        }}
+      >
+        <SelectTrigger className="h-8 w-[150px] text-sm">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="admin">Admin (já)</SelectItem>
+          <SelectItem value="teacher">Zobrazit jako učitel</SelectItem>
+          <SelectItem value="user">Zobrazit jako žák</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+  );
+};
+
 export default Admin;
