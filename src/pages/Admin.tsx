@@ -1,6 +1,9 @@
 import { useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAdmin } from "@/hooks/useAdmin";
+import { useAuth } from "@/contexts/AuthContext";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Eye } from "lucide-react";
 import LessonOutlineGenerator from "@/components/admin/LessonOutlineGenerator";
 import MCQGenerator from "@/components/admin/MCQGenerator";
 import MatchingGenerator from "@/components/admin/MatchingGenerator";
