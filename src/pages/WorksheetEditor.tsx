@@ -23,6 +23,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Collapsible,
   CollapsibleContent,
@@ -294,6 +295,8 @@ export default function WorksheetEditor() {
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   const [pdfPreviewLoading, setPdfPreviewLoading] = useState(false);
   const [pdfExporting, setPdfExporting] = useState(false);
+  const [showPrintTipDialog, setShowPrintTipDialog] = useState(false);
+  const [dontShowPrintTipAgain, setDontShowPrintTipAgain] = useState(false);
   const [subjectComboOpen, setSubjectComboOpen] = useState(false);
   const [subjectSearch, setSubjectSearch] = useState("");
 
@@ -719,7 +722,7 @@ export default function WorksheetEditor() {
     });
   }
 
-  async function handleExportPdf() {
+  async function performExportPdf() {
     if (!spec || !id) return;
     setPdfExporting(true);
     try {
@@ -727,11 +730,6 @@ export default function WorksheetEditor() {
         worksheetId: id,
         includeAnswerKey: pdfIncludeAnswerKey,
         includeNameField: pdfIncludeNameField,
-      });
-      toast({
-        title: "Print dialog otevřen",
-        description: 'Pro čistý výstup vypni v dialogu „Záhlaví a zápatí" (More settings → Headers and footers). Pak zvol „Uložit jako PDF" nebo Tisk.',
-        duration: 6000,
       });
       setPdfDialogOpen(false);
     } catch (e: any) {
@@ -743,6 +741,24 @@ export default function WorksheetEditor() {
     } finally {
       setPdfExporting(false);
     }
+  }
+
+  function handleExportPdf() {
+    if (!spec || !id) return;
+    const skip = typeof window !== "undefined" && localStorage.getItem("zedu-skip-print-tip") === "true";
+    if (skip) {
+      void performExportPdf();
+    } else {
+      setShowPrintTipDialog(true);
+    }
+  }
+
+  function handleConfirmPrintTip() {
+    if (dontShowPrintTipAgain) {
+      localStorage.setItem("zedu-skip-print-tip", "true");
+    }
+    setShowPrintTipDialog(false);
+    void performExportPdf();
   }
 
   async function handlePreviewPdf() {
@@ -1784,6 +1800,48 @@ export default function WorksheetEditor() {
         </DialogContent>
       </Dialog>
 
+      {/* Print tip dialog */}
+      <Dialog open={showPrintTipDialog} onOpenChange={setShowPrintTipDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Před tiskem PDF</DialogTitle>
+            <DialogDescription>
+              Pro čistý PDF výstup vypněte v print dialogu záhlaví a zápatí prohlížeče.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 py-2">
+            <div className="rounded-lg bg-muted p-4 text-sm">
+              <p className="font-semibold mb-2">Postup:</p>
+              <ol className="list-decimal list-inside space-y-1.5 text-muted-foreground">
+                <li>V print dialogu klikněte „Další nastavení"</li>
+                <li>Vypněte přepínač „Záhlaví a zápatí"</li>
+                <li>Pokračujte „Uložit jako PDF"</li>
+              </ol>
+            </div>
+
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <Checkbox
+                checked={dontShowPrintTipAgain}
+                onCheckedChange={(checked) => setDontShowPrintTipAgain(!!checked)}
+              />
+              <span className="text-muted-foreground">Příště nezobrazovat</span>
+            </label>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPrintTipDialog(false)}>
+              Zrušit
+            </Button>
+            <Button onClick={handleConfirmPrintTip} disabled={pdfExporting}>
+              {pdfExporting ? (
+                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+              ) : null}
+              Pokračovat na tisk
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
 
       <Dialog
