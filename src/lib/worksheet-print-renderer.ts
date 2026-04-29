@@ -537,10 +537,9 @@ function renderHeader(spec: WorksheetSpec, _variant: WorksheetVariant): string {
     fields.push(`<div class="ws-field"><span class="ws-field-label">Třída:</span><span class="ws-field-line">&nbsp;</span></div>`);
   }
 
-  // Eyebrow: SUBJECT · GRADE BAND (uppercase)
-  const eyebrowParts = [h.subject, h.gradeBand].filter((s) => s && s.trim().length > 0);
-  const eyebrow = eyebrowParts.length
-    ? `<div class="ws-eyebrow">${esc(eyebrowParts.join(" · ").toUpperCase())}</div>`
+  // Eyebrow: jen ROČNÍK (předmět patří do footeru — Manual D.1)
+  const eyebrow = h.gradeBand && h.gradeBand.trim().length > 0
+    ? `<div class="ws-eyebrow">${esc(h.gradeBand.toUpperCase())}</div>`
     : "";
 
   const subtitle = h.subtitle && h.subtitle.trim().length > 0
