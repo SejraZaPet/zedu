@@ -657,8 +657,8 @@ function renderItem(item: WorksheetItem, showPoints: boolean): string {
       body = `<div class="ws-offline-activity">
         <div class="ws-offline-badge">${esc(OFFLINE_MODE_PRINT_LABELS[mode] ?? mode)}</div>
         <div class="ws-offline-meta">
-          <span><strong>Skupina:</strong> ${esc(GROUP_SIZE_PRINT_LABELS[group] ?? group)}</span>
-          ${dur ? `<span><strong>Čas:</strong> ${esc(dur)}</span>` : ""}
+          <span>Skupina: ${esc(GROUP_SIZE_PRINT_LABELS[group] ?? group)}</span>
+          ${dur ? `<span>Čas: ${esc(dur)}</span>` : ""}
         </div>
       </div>`;
       break;
