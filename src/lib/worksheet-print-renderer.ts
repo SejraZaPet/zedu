@@ -782,7 +782,6 @@ function renderAnswerKey(variantId: string, keys: AnswerKeyEntry[]): string {
 function renderFooter(spec: WorksheetSpec): string {
   const meta = spec.metadata;
   const pointsEnabled = spec.renderConfig.pointsEnabled !== false;
-  const dateStr = new Date().toLocaleDateString("cs-CZ");
 
   const metaParts: string[] = [];
   if (spec.header.subject && spec.header.subject.trim().length > 0) {
@@ -794,7 +793,6 @@ function renderFooter(spec: WorksheetSpec): string {
   if (meta.totalTimeMin > 0) {
     metaParts.push(`Čas: ~${meta.totalTimeMin} min`);
   }
-  metaParts.push(`Vytištěno: ${dateStr}`);
 
   return `
 <div class="ws-footer">
