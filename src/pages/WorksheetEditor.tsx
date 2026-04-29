@@ -728,7 +728,11 @@ export default function WorksheetEditor() {
         includeAnswerKey: pdfIncludeAnswerKey,
         includeNameField: pdfIncludeNameField,
       });
-      toast({ title: "Print dialog otevřen", description: 'Zvol „Uložit jako PDF" nebo Tisk.' });
+      toast({
+        title: "Print dialog otevřen",
+        description: 'Pro čistý výstup vypni v dialogu „Záhlaví a zápatí" (More settings → Headers and footers). Pak zvol „Uložit jako PDF" nebo Tisk.',
+        duration: 6000,
+      });
       setPdfDialogOpen(false);
     } catch (e: any) {
       toast({
