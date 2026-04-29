@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Send, Calendar as CalendarIcon } from "lucide-react";
+import { Send, Calendar as CalendarIcon, Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 type Mode = "admin" | "teacher";
@@ -62,6 +62,8 @@ export default function NotificationComposer({ mode, defaults, onSent }: Props) 
   const [scheduledAt, setScheduledAt] = useState<string>("");
   const [link, setLink] = useState(defaults?.link ?? "");
   const [submitting, setSubmitting] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiHint, setAiHint] = useState("");
 
   const [classes, setClasses] = useState<ClassRow[]>([]);
   const [students, setStudents] = useState<StudentRow[]>([]);
@@ -134,6 +136,41 @@ export default function NotificationComposer({ mode, defaults, onSent }: Props) 
     setScheduledAt("");
     setClassIds([]);
     setStudentIds([]);
+  };
+
+  const handleAiSuggest = async () => {
+    setAiLoading(true);
+    try {
+      const audience =
+        receiverType === "all_teachers"
+          ? "učitele"
+          : receiverType === "all_students" || receiverType === "user"
+            ? "žáky"
+            : receiverType === "class"
+              ? "celou třídu"
+              : "uživatele";
+      const { data, error } = await supabase.functions.invoke(
+        "generate-notification-text",
+        {
+          body: {
+            type,
+            subject: title || aiHint || "obecné sdělení",
+            audience,
+            extra: aiHint || undefined,
+          },
+        },
+      );
+      if (error) throw error;
+      const d = data as { title?: string; content?: string; error?: string };
+      if (d?.error) throw new Error(d.error);
+      if (d?.title && !title.trim()) setTitle(d.title);
+      if (d?.content) setContent(d.content);
+      toast.success("Návrh textu vložen");
+    } catch (e: any) {
+      toast.error(e?.message || "Nepodařilo se vygenerovat text");
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   const handleSubmit = async () => {
@@ -219,7 +256,31 @@ export default function NotificationComposer({ mode, defaults, onSent }: Props) 
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="notif-content">Text zprávy</Label>
+        <div className="flex items-center justify-between gap-2">
+          <Label htmlFor="notif-content">Text zprávy</Label>
+          <div className="flex items-center gap-2">
+            <Input
+              value={aiHint}
+              onChange={(e) => setAiHint(e.target.value)}
+              placeholder="Volitelný kontext pro AI…"
+              className="h-8 w-56 text-xs"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleAiSuggest}
+              disabled={aiLoading}
+            >
+              {aiLoading ? (
+                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+              ) : (
+                <Sparkles className="w-3.5 h-3.5 mr-1.5" />
+              )}
+              Navrhnout text AI
+            </Button>
+          </div>
+        </div>
         <Textarea
           id="notif-content"
           value={content}
