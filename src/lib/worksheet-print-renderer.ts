@@ -34,7 +34,7 @@ export const WORKSHEET_PAGINATION_RULES = [
 
 export function buildWorksheetCss(): string {
   return `
-/* ═══ ZEdu Worksheet Print — Workbook / Study Material ═══ */
+/* ═══ ZEdu Worksheet Print — Workbook / Study Material (Brand Manual v1, sekce D) ═══ */
 
 @page {
   size: A4 portrait;
@@ -50,10 +50,10 @@ html, body {
 
 .ws-page,
 .ws-content {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, "Helvetica Neue", Arial, sans-serif;
-  font-size: 10.5pt;
+  font-family: "Lato", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, "Helvetica Neue", Arial, sans-serif;
+  font-size: 11pt;
   line-height: 1.5;
-  color: #1A1A1A !important;
+  color: #1A1F2C !important;
   background: #FFFFFF !important;
 }
 
@@ -86,12 +86,12 @@ html, body {
 
 .ws-items { display: block; width: 100%; }
 
-/* ─── Header ─── */
+/* ─── D.1 Header ─── */
 .ws-header {
   display: block;
   margin-bottom: 12mm;
   padding-bottom: 8mm;
-  border-bottom: 1.5pt solid #1A1A1A;
+  border-bottom: 1.5pt solid #1A1F2C;
 }
 .ws-header-top {
   display: table;
@@ -106,8 +106,8 @@ html, body {
 }
 .ws-eyebrow {
   display: block;
-  font-size: 8.5pt;
-  font-weight: 600;
+  font-size: 9pt;
+  font-weight: 700;
   color: #64748B !important;
   text-transform: uppercase;
   letter-spacing: 0.12em;
@@ -117,7 +117,7 @@ html, body {
   display: block;
   font-size: 26pt;
   font-weight: 700;
-  color: #1A1A1A !important;
+  color: #1A1F2C !important;
   line-height: 1.1;
   margin: 0 0 6pt 0;
   letter-spacing: -0.01em;
@@ -174,12 +174,12 @@ html, body {
   display: inline-block;
   margin-right: 6pt;
   font-weight: 600;
-  color: #1A1A1A !important;
+  color: #1A1F2C !important;
 }
 .ws-field-line {
   display: inline-block;
   min-width: 130pt;
-  border-bottom: 1pt solid #1A1A1A;
+  border-bottom: 1pt solid #1A1F2C;
   height: 14pt;
   vertical-align: bottom;
 }
@@ -189,21 +189,21 @@ html, body {
   display: block;
   margin: 8mm 0 6mm 0;
   padding: 6pt 0 6pt 12pt;
-  border-left: 2pt solid #7C3AED;
+  border-left: 2pt solid #9B87C9;
   font-size: 10pt;
   color: #475569 !important;
   font-style: italic;
   line-height: 1.6;
 }
 
-/* ─── Items ─── */
+/* ─── D.2 Question Block (BEZ rámečku) ─── */
 .ws-item {
   display: block;
   break-inside: avoid;
   page-break-inside: avoid;
   margin-bottom: 10mm;
   background: #FFFFFF !important;
-  color: #1A1A1A !important;
+  color: #1A1F2C !important;
   overflow: visible;
 }
 .ws-item-header {
@@ -216,7 +216,7 @@ html, body {
   width: 18pt;
   font-size: 14pt;
   font-weight: 700;
-  color: #7C3AED !important;
+  color: #0F9A8B !important;
   vertical-align: top;
   line-height: 1.3;
 }
@@ -225,7 +225,7 @@ html, body {
   display: inline;
   font-size: 12pt;
   font-weight: 600;
-  color: #1A1A1A !important;
+  color: #1A1F2C !important;
   background: transparent !important;
   line-height: 1.4;
   break-after: avoid;
@@ -240,7 +240,7 @@ html, body {
   font-weight: 500;
 }
 
-/* ─── MCQ ─── */
+/* ─── D.3 MCQ — text markers A) B) (NE kruhy) ─── */
 .ws-choices {
   list-style: none;
   padding: 0;
@@ -248,30 +248,22 @@ html, body {
 }
 .ws-choices li {
   display: block;
-  padding: 5pt 0 5pt 32pt;
-  position: relative;
+  padding: 5pt 0;
   font-size: 11pt;
   line-height: 1.5;
-  color: #1A1A1A !important;
+  color: #1A1F2C !important;
 }
 .ws-choice-marker {
   display: inline-block;
-  position: absolute;
-  left: 0;
-  top: 5pt;
-  width: 22pt;
-  height: 22pt;
-  line-height: 19pt;
-  text-align: center;
-  border: 1.5pt solid #1A1A1A;
-  border-radius: 50%;
-  font-size: 10pt;
+  min-width: 26pt;
+  margin-right: 6pt;
+  font-size: 11pt;
   font-weight: 700;
-  color: #1A1A1A !important;
-  background: #FFFFFF !important;
+  color: #0F9A8B !important;
+  vertical-align: baseline;
 }
 
-/* ─── True/False ─── */
+/* ─── D.4 True/False ─── */
 .ws-tf-options {
   display: block;
   margin: 8pt 0 0 18pt;
@@ -280,43 +272,44 @@ html, body {
   display: inline-block;
   margin-right: 32pt;
   font-size: 11pt;
-  color: #1A1A1A !important;
+  color: #1A1F2C !important;
   vertical-align: middle;
 }
 .ws-tf-box {
   display: inline-block;
   width: 14pt;
   height: 14pt;
-  border: 1.5pt solid #1A1A1A;
+  border: 1.5pt solid #1A1F2C;
   border-radius: 2pt;
   background: #FFFFFF !important;
   margin-right: 6pt;
   vertical-align: middle;
 }
 
-/* ─── Fill blanks ─── */
+/* ─── D.5 Fill blanks ─── */
 .ws-blank-text {
   display: block;
   margin: 6pt 0 0 18pt;
   font-size: 11pt;
   line-height: 2.2;
-  color: #1A1A1A !important;
+  color: #1A1F2C !important;
 }
 .ws-blank-slot {
   display: inline-block;
   min-width: 90pt;
-  border-bottom: 1.5pt solid #1A1A1A;
+  border-bottom: 1.5pt solid #0F9A8B;
   margin: 0 4pt;
   height: 16pt;
   vertical-align: bottom;
 }
 
-/* ─── Offline activity ─── */
+/* ─── D.6 Offline activity (levý border, NE barevný card) ─── */
 .ws-offline-activity {
   display: block;
   margin: 6pt 0 0 18pt;
-  padding: 8pt 0 8pt 12pt;
+  padding: 8pt 12pt;
   border-left: 2pt solid #94A3B8;
+  background: #FFFFFF !important;
   break-inside: avoid;
   page-break-inside: avoid;
 }
@@ -353,7 +346,7 @@ html, body {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: #64748B !important;
-  font-weight: 600;
+  font-weight: 700;
   text-align: left;
   padding: 2pt 10pt 4pt;
 }
@@ -363,11 +356,11 @@ html, body {
   background: #FFFFFF !important;
   border-bottom: 0.5pt solid #E5E7EB;
   vertical-align: middle;
-  color: #1A1A1A !important;
+  color: #1A1F2C !important;
 }
 .ws-matching-table td.ws-match-answer {
   background: #FFFFFF !important;
-  border-bottom: 1pt solid #1A1A1A;
+  border-bottom: 1pt solid #0F9A8B;
   min-width: 100pt;
 }
 
@@ -385,7 +378,7 @@ html, body {
   font-size: 11pt;
   position: relative;
   border-bottom: 0.5pt solid #E5E7EB;
-  color: #1A1A1A !important;
+  color: #1A1F2C !important;
 }
 .ws-order-box {
   display: inline-block;
@@ -394,7 +387,7 @@ html, body {
   top: 6pt;
   width: 24pt;
   height: 22pt;
-  border: 1.5pt solid #1A1A1A;
+  border: 1.5pt solid #1A1F2C;
   border-radius: 2pt;
   background: #FFFFFF !important;
 }
@@ -445,8 +438,8 @@ html, body {
 .ws-answer-key h2 {
   font-size: 18pt;
   font-weight: 700;
-  color: #1A1A1A !important;
-  border-bottom: 1.5pt solid #1A1A1A;
+  color: #1A1F2C !important;
+  border-bottom: 1.5pt solid #1A1F2C;
   padding-bottom: 6pt;
   margin-bottom: 12pt;
   letter-spacing: -0.01em;
@@ -462,13 +455,13 @@ html, body {
   display: inline-block;
   width: 24pt;
   font-weight: 700;
-  color: #7C3AED !important;
+  color: #0F9A8B !important;
   font-size: 11pt;
   vertical-align: top;
 }
 .ws-key-answer {
   display: inline;
-  color: #1A1A1A !important;
+  color: #1A1F2C !important;
   font-weight: 600;
   font-size: 11pt;
 }
@@ -480,7 +473,7 @@ html, body {
   line-height: 1.5;
 }
 
-/* ─── Footer ─── */
+/* ─── D.7 Footer ─── */
 .ws-footer {
   display: block;
   margin-top: 16mm;
@@ -544,10 +537,9 @@ function renderHeader(spec: WorksheetSpec, _variant: WorksheetVariant): string {
     fields.push(`<div class="ws-field"><span class="ws-field-label">Třída:</span><span class="ws-field-line">&nbsp;</span></div>`);
   }
 
-  // Eyebrow: SUBJECT · GRADE BAND (uppercase)
-  const eyebrowParts = [h.subject, h.gradeBand].filter((s) => s && s.trim().length > 0);
-  const eyebrow = eyebrowParts.length
-    ? `<div class="ws-eyebrow">${esc(eyebrowParts.join(" · ").toUpperCase())}</div>`
+  // Eyebrow: jen ROČNÍK (předmět patří do footeru — Manual D.1)
+  const eyebrow = h.gradeBand && h.gradeBand.trim().length > 0
+    ? `<div class="ws-eyebrow">${esc(h.gradeBand.toUpperCase())}</div>`
     : "";
 
   const subtitle = h.subtitle && h.subtitle.trim().length > 0
@@ -615,7 +607,7 @@ function renderItem(item: WorksheetItem, showPoints: boolean): string {
   switch (item.type) {
     case "mcq":
       body = `<ul class="ws-choices">${(item.choices ?? [])
-        .map((c, i) => `<li><span class="ws-choice-marker">${CHOICE_LETTERS[i]}</span><span>${esc(c)}</span></li>`)
+        .map((c, i) => `<li><span class="ws-choice-marker">${CHOICE_LETTERS[i]})</span><span>${esc(c)}</span></li>`)
         .join("")}</ul>`;
       break;
 
@@ -665,8 +657,8 @@ function renderItem(item: WorksheetItem, showPoints: boolean): string {
       body = `<div class="ws-offline-activity">
         <div class="ws-offline-badge">${esc(OFFLINE_MODE_PRINT_LABELS[mode] ?? mode)}</div>
         <div class="ws-offline-meta">
-          <span><strong>Skupina:</strong> ${esc(GROUP_SIZE_PRINT_LABELS[group] ?? group)}</span>
-          ${dur ? `<span><strong>Čas:</strong> ${esc(dur)}</span>` : ""}
+          <span>Skupina: ${esc(GROUP_SIZE_PRINT_LABELS[group] ?? group)}</span>
+          ${dur ? `<span>Čas: ${esc(dur)}</span>` : ""}
         </div>
       </div>`;
       break;
@@ -715,6 +707,9 @@ function renderFooter(spec: WorksheetSpec): string {
   const dateStr = new Date().toLocaleDateString("cs-CZ");
 
   const metaParts: string[] = [];
+  if (spec.header.subject && spec.header.subject.trim().length > 0) {
+    metaParts.push(`Předmět: ${spec.header.subject}`);
+  }
   if (pointsEnabled && meta.totalPoints > 0) {
     metaParts.push(`Celkem: ${meta.totalPoints} ${pointsLabel(meta.totalPoints)}`);
   }
@@ -726,7 +721,7 @@ function renderFooter(spec: WorksheetSpec): string {
   return `
 <div class="ws-footer">
   ZEdu · ${esc(spec.header.title)}
-  <div class="ws-footer-meta">${metaParts.join(" · ")}</div>
+  <div class="ws-footer-meta">${esc(metaParts.join(" · "))}</div>
 </div>`;
 }
 
