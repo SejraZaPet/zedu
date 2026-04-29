@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import AssignmentResultsDashboard from "@/components/admin/AssignmentResultsDashboard";
+import RemindButton from "@/components/notifications/RemindButton";
 
 
 interface Assignment {
@@ -383,6 +384,20 @@ const TeacherAssignments = () => {
                       </div>
                     </div>
                     <div className="flex gap-1">
+                      {a.status === "published" && a.class_id && (
+                        <RemindButton
+                          mode="teacher"
+                          receiverType="class"
+                          receiverIds={[a.class_id]}
+                          title={`Připomenutí úkolu: ${a.title}`}
+                          content={
+                            a.deadline
+                              ? `Nezapomeň odevzdat úkol „${a.title}" do ${format(new Date(a.deadline), "d. M. yyyy", { locale: cs })}.`
+                              : `Nezapomeň na úkol „${a.title}".`
+                          }
+                          link={`/student/ulohy`}
+                        />
+                      )}
                       {a.status === "draft" && (
                         <Button size="sm" variant="outline" onClick={() => handlePublish(a.id)}>
                           <Send className="w-3.5 h-3.5 mr-1" /> Publikovat
