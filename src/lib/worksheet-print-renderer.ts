@@ -831,8 +831,6 @@ export function renderWorksheetVariantHtml(
     ? renderAnswerKey(variantId, spec.answerKeys[variantId] ?? [])
     : "";
 
-  const footer = renderFooter(specCopy);
-
   return `<!DOCTYPE html>
 <html lang="cs">
 <head>
@@ -852,8 +850,6 @@ ${items}
 </div>
 
 ${answerKey}
-
-${footer}
   </div>
 </div>
 
@@ -888,8 +884,6 @@ export function renderWorksheetVariantFragment(
     ? renderAnswerKey(variantId, spec.answerKeys[variantId] ?? [])
     : "";
 
-  const footer = renderFooter(specCopy);
-
   const bodyHtml = `
 <div class="ws-page">
   <div class="ws-content">
@@ -900,8 +894,6 @@ ${items}
 </div>
 
 ${answerKey}
-
-${footer}
   </div>
 </div>`;
 
