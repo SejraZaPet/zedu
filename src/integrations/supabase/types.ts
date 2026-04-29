@@ -805,37 +805,118 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_broadcasts: {
+        Row: {
+          content: string
+          created_at: string
+          error_message: string | null
+          id: string
+          is_manual: boolean
+          link: string | null
+          receiver_ids: string[]
+          receiver_type: string
+          recipient_count: number
+          scheduled_at: string | null
+          sender_id: string
+          sender_role: string
+          sent_at: string | null
+          status: string
+          title: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          is_manual?: boolean
+          link?: string | null
+          receiver_ids?: string[]
+          receiver_type: string
+          recipient_count?: number
+          scheduled_at?: string | null
+          sender_id: string
+          sender_role: string
+          sent_at?: string | null
+          status?: string
+          title: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          is_manual?: boolean
+          link?: string | null
+          receiver_ids?: string[]
+          receiver_type?: string
+          recipient_count?: number
+          scheduled_at?: string | null
+          sender_id?: string
+          sender_role?: string
+          sent_at?: string | null
+          status?: string
+          title?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           body: string
+          broadcast_id: string | null
           created_at: string
           id: string
+          is_manual: boolean
           link: string | null
           payload: Json
           read_at: string | null
+          receiver_type: string | null
           recipient_id: string
+          sender_id: string | null
+          sender_role: string | null
+          sent_at: string | null
+          status: string
           title: string
           type: string
         }
         Insert: {
           body?: string
+          broadcast_id?: string | null
           created_at?: string
           id?: string
+          is_manual?: boolean
           link?: string | null
           payload?: Json
           read_at?: string | null
+          receiver_type?: string | null
           recipient_id: string
+          sender_id?: string | null
+          sender_role?: string | null
+          sent_at?: string | null
+          status?: string
           title: string
           type: string
         }
         Update: {
           body?: string
+          broadcast_id?: string | null
           created_at?: string
           id?: string
+          is_manual?: boolean
           link?: string | null
           payload?: Json
           read_at?: string | null
+          receiver_type?: string | null
           recipient_id?: string
+          sender_id?: string | null
+          sender_role?: string | null
+          sent_at?: string | null
+          status?: string
           title?: string
           type?: string
         }
@@ -1524,7 +1605,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _fanout_broadcast: { Args: { _broadcast_id: string }; Returns: number }
+      _resolve_broadcast_recipients: {
+        Args: {
+          _b: Database["public"]["Tables"]["notification_broadcasts"]["Row"]
+        }
+        Returns: {
+          recipient_id: string
+        }[]
+      }
       can_access_textbooks: { Args: { _user_id: string }; Returns: boolean }
+      cancel_notification: { Args: { _broadcast_id: string }; Returns: boolean }
       claim_export_job: {
         Args: { _worker_id: string }
         Returns: {
@@ -1550,6 +1641,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      dispatch_scheduled_notifications: { Args: never; Returns: number }
       enroll_by_textbook_code: {
         Args: { _code: string; _student_id: string }
         Returns: string
@@ -1605,6 +1697,18 @@ export type Database = {
           _title: string
         }
         Returns: number
+      }
+      send_notification: {
+        Args: {
+          _content: string
+          _link?: string
+          _receiver_ids?: string[]
+          _receiver_type: string
+          _scheduled_at?: string
+          _title: string
+          _type?: string
+        }
+        Returns: string
       }
     }
     Enums: {
