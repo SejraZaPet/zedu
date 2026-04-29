@@ -18,12 +18,14 @@ import UsersManager from "@/components/admin/UsersManager";
 import ClassesManager from "@/components/admin/ClassesManager";
 import ClassResultsManager from "@/components/admin/ClassResultsManager";
 import AdminDashboard from "@/components/admin/AdminDashboard";
+import NotificationsManager from "@/components/admin/NotificationsManager";
 import { Button } from "@/components/ui/button";
-import { BookOpen, LogOut, Home, GraduationCap, Settings, Users, School, BarChart3, LayoutDashboard, HelpCircle, ListTree, CircleHelp, Link2, Pencil, Video } from "lucide-react";
+import { BookOpen, LogOut, Home, GraduationCap, Settings, Users, School, BarChart3, LayoutDashboard, HelpCircle, ListTree, CircleHelp, Link2, Pencil, Video, Bell } from "lucide-react";
 
 const adminTabs = [
   { id: "dashboard", label: "Přehled", icon: LayoutDashboard },
   { id: "users", label: "Uživatelé", icon: Users },
+  { id: "notifications", label: "Notifikace", icon: Bell },
   { id: "help", label: "Nápověda", icon: HelpCircle },
 ] as const;
 
@@ -42,7 +44,7 @@ const teacherTabs = [
   { id: "help", label: "Nápověda", icon: HelpCircle },
 ] as const;
 
-type Tab = "dashboard" | "textbooks" | "lessons" | "outline" | "mcq" | "matching" | "slide-edit" | "video-ai" | "subjects" | "users" | "classes" | "results" | "help";
+type Tab = "dashboard" | "textbooks" | "lessons" | "outline" | "mcq" | "matching" | "slide-edit" | "video-ai" | "subjects" | "users" | "classes" | "results" | "help" | "notifications";
 
 const Admin = () => {
   const { isAdmin, isTeacher, loading, logout } = useAdmin();
@@ -121,6 +123,7 @@ const Admin = () => {
         {activeTab === "users" && !isTeacher && <UsersManager />}
         {activeTab === "classes" && isTeacher && <ClassesManager />}
         {activeTab === "results" && isTeacher && <ClassResultsManager />}
+        {activeTab === "notifications" && !isTeacher && <NotificationsManager />}
         {activeTab === "help" && <HelpGuidesManager />}
       </div>
     </div>
