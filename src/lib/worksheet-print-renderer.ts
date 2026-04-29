@@ -89,14 +89,14 @@ html, body {
 /* ─── D.1 Header ─── */
 .ws-header {
   display: block;
-  margin-bottom: 12mm;
-  padding-bottom: 8mm;
-  border-bottom: 1.5pt solid #1A1F2C;
+  margin-bottom: 8mm;
+  padding-bottom: 6mm;
+  border-bottom: 1pt solid #94A3B8;
 }
 .ws-header-top {
   display: table;
   width: 100%;
-  margin-bottom: 8pt;
+  margin-bottom: 6pt;
 }
 .ws-title-block {
   display: table-cell;
@@ -106,20 +106,20 @@ html, body {
 }
 .ws-eyebrow {
   display: block;
-  font-size: 9pt;
-  font-weight: 700;
+  font-size: 8.5pt;
+  font-weight: 600;
   color: #64748B !important;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  margin-bottom: 6pt;
+  margin-bottom: 4pt;
 }
 .ws-title {
   display: block;
-  font-size: 26pt;
+  font-size: 22pt;
   font-weight: 700;
   color: #1A1F2C !important;
   line-height: 1.1;
-  margin: 0 0 6pt 0;
+  margin: 0 0 4pt 0;
   letter-spacing: -0.01em;
 }
 .ws-subtitle {
@@ -139,8 +139,8 @@ html, body {
 }
 .ws-qr-wrap img {
   display: inline-block;
-  width: 78pt;
-  height: 78pt;
+  width: 70pt;
+  height: 70pt;
   border: 1pt solid #E5E7EB;
   border-radius: 4pt;
   padding: 2pt;
@@ -148,10 +148,10 @@ html, body {
 }
 .ws-qr-wrap > div:last-child {
   display: block;
-  margin-top: 4pt;
-  font-size: 7pt;
+  margin-top: 3pt;
+  font-size: 6.5pt;
   color: #64748B !important;
-  line-height: 1.3;
+  line-height: 1.2;
   max-width: 100pt;
   text-align: right;
 }
@@ -159,8 +159,8 @@ html, body {
 /* ─── Student fields ─── */
 .ws-fields-strip {
   display: block;
-  margin: 8pt 0 0 0;
-  padding-top: 8pt;
+  margin: 6pt 0 0 0;
+  padding-top: 6pt;
   border-top: 0.5pt solid #E5E7EB;
 }
 .ws-field {
