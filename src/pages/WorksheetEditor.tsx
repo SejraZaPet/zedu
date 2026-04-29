@@ -728,7 +728,7 @@ export default function WorksheetEditor() {
         includeAnswerKey: pdfIncludeAnswerKey,
         includeNameField: pdfIncludeNameField,
       });
-      toast({ title: "PDF vytvořeno" });
+      toast({ title: "Print dialog otevřen", description: 'Zvol „Uložit jako PDF" nebo Tisk.' });
       setPdfDialogOpen(false);
     } catch (e: any) {
       toast({
@@ -1734,7 +1734,7 @@ export default function WorksheetEditor() {
                 ) : (
                   <FileDown className="w-4 h-4 mr-1" />
                 )}
-                Stáhnout PDF
+                Tisk / PDF
               </Button>
             </div>
           </div>
@@ -1774,7 +1774,7 @@ export default function WorksheetEditor() {
               ) : (
                 <FileDown className="w-4 h-4 mr-1" />
               )}
-              Stáhnout
+              Tisk / PDF
             </Button>
           </DialogFooter>
         </DialogContent>
