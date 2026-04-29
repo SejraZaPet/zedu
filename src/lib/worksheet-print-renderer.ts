@@ -492,17 +492,92 @@ html, body {
 h2, h3 { break-after: avoid; page-break-after: avoid; }
 p, li { orphans: 2; widows: 2; }
 
-/* ─── Screen preview ─── */
+/* ─── @media screen — pro náhled v iframe ─── */
 @media screen {
-  .ws-page { padding: 20px; }
-  .ws-content { max-width: 800px; margin: 0 auto; }
+  html, body {
+    background: #F8FAFC;
+    margin: 0;
+    padding: 0;
+  }
+  .ws-page {
+    background: #FFFFFF;
+    width: 210mm;
+    min-height: 297mm;
+    margin: 20px auto;
+    padding: 14mm;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  .ws-content {
+    max-width: 100%;
+    margin: 0;
+  }
 }
 
-/* ─── Print overrides ─── */
+/* ─── @media print — pro window.print() ─── */
 @media print {
-  .ws-page, .ws-content { background: #FFFFFF !important; }
+  @page {
+    size: A4;
+    margin: 14mm 14mm 16mm 14mm;
+  }
+
+  html, body {
+    background: #FFFFFF !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .ws-page {
+    background: #FFFFFF !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: auto !important;
+    min-height: 0 !important;
+  }
+
+  .ws-content {
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+
+  /* Skrýt všechny "no-print" elementy */
+  .no-print, .print-controls {
+    display: none !important;
+  }
+
   a { color: inherit; text-decoration: none; }
-  .no-print { display: none !important; }
+
+  /* Zachovat brand barvy */
+  .ws-item-num, .ws-choice-marker, .ws-key-num {
+    color: #0F9A8B !important;
+  }
+  .ws-blank-slot {
+    border-bottom: 1.5pt solid #0F9A8B !important;
+  }
+  .ws-instructions {
+    border-left: 2pt solid #9B87C9 !important;
+  }
+
+  /* Page breaks */
+  .ws-item, .ws-offline-activity, .ws-matching-table, .ws-ordering-list {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .ws-answer-key {
+    break-before: page;
+    page-break-before: always;
+  }
+  h1, h2, h3 {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+  p, li {
+    orphans: 2;
+    widows: 2;
+  }
 }
 `;
 }
