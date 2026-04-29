@@ -608,7 +608,7 @@ function renderItem(item: WorksheetItem, showPoints: boolean): string {
     case "mcq":
       body = `<ol class="ws-choices">${(item.choices ?? [])
         .map((c, i) => `<li><span class="ws-choice-marker">${CHOICE_LETTERS[i]})</span> ${esc(c)}</li>`)
-        .join("")}</ul>`;
+        .join("")}</ol>`;
       break;
 
     case "true_false":
