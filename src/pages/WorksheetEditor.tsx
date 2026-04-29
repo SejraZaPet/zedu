@@ -1734,7 +1734,7 @@ export default function WorksheetEditor() {
                 ) : (
                   <FileDown className="w-4 h-4 mr-1" />
                 )}
-                Stáhnout PDF
+                Tisk / PDF
               </Button>
             </div>
           </div>
@@ -1774,7 +1774,7 @@ export default function WorksheetEditor() {
               ) : (
                 <FileDown className="w-4 h-4 mr-1" />
               )}
-              Stáhnout
+              Tisk / PDF
             </Button>
           </DialogFooter>
         </DialogContent>
