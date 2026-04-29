@@ -1800,6 +1800,48 @@ export default function WorksheetEditor() {
         </DialogContent>
       </Dialog>
 
+      {/* Print tip dialog */}
+      <Dialog open={showPrintTipDialog} onOpenChange={setShowPrintTipDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Před tiskem PDF</DialogTitle>
+            <DialogDescription>
+              Pro čistý PDF výstup vypněte v print dialogu záhlaví a zápatí prohlížeče.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 py-2">
+            <div className="rounded-lg bg-muted p-4 text-sm">
+              <p className="font-semibold mb-2">Postup:</p>
+              <ol className="list-decimal list-inside space-y-1.5 text-muted-foreground">
+                <li>V print dialogu klikněte „Další nastavení"</li>
+                <li>Vypněte přepínač „Záhlaví a zápatí"</li>
+                <li>Pokračujte „Uložit jako PDF"</li>
+              </ol>
+            </div>
+
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <Checkbox
+                checked={dontShowPrintTipAgain}
+                onCheckedChange={(checked) => setDontShowPrintTipAgain(!!checked)}
+              />
+              <span className="text-muted-foreground">Příště nezobrazovat</span>
+            </label>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPrintTipDialog(false)}>
+              Zrušit
+            </Button>
+            <Button onClick={handleConfirmPrintTip} disabled={pdfExporting}>
+              {pdfExporting ? (
+                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+              ) : null}
+              Pokračovat na tisk
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
 
       <Dialog
