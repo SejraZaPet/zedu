@@ -722,7 +722,7 @@ export default function WorksheetEditor() {
     });
   }
 
-  async function handleExportPdf() {
+  async function performExportPdf() {
     if (!spec || !id) return;
     setPdfExporting(true);
     try {
@@ -730,11 +730,6 @@ export default function WorksheetEditor() {
         worksheetId: id,
         includeAnswerKey: pdfIncludeAnswerKey,
         includeNameField: pdfIncludeNameField,
-      });
-      toast({
-        title: "Print dialog otevřen",
-        description: 'Pro čistý výstup vypni v dialogu „Záhlaví a zápatí" (More settings → Headers and footers). Pak zvol „Uložit jako PDF" nebo Tisk.',
-        duration: 6000,
       });
       setPdfDialogOpen(false);
     } catch (e: any) {
@@ -746,6 +741,24 @@ export default function WorksheetEditor() {
     } finally {
       setPdfExporting(false);
     }
+  }
+
+  function handleExportPdf() {
+    if (!spec || !id) return;
+    const skip = typeof window !== "undefined" && localStorage.getItem("zedu-skip-print-tip") === "true";
+    if (skip) {
+      void performExportPdf();
+    } else {
+      setShowPrintTipDialog(true);
+    }
+  }
+
+  function handleConfirmPrintTip() {
+    if (dontShowPrintTipAgain) {
+      localStorage.setItem("zedu-skip-print-tip", "true");
+    }
+    setShowPrintTipDialog(false);
+    void performExportPdf();
   }
 
   async function handlePreviewPdf() {
