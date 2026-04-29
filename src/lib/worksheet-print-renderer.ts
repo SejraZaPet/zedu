@@ -707,6 +707,9 @@ function renderFooter(spec: WorksheetSpec): string {
   const dateStr = new Date().toLocaleDateString("cs-CZ");
 
   const metaParts: string[] = [];
+  if (spec.header.subject && spec.header.subject.trim().length > 0) {
+    metaParts.push(`Předmět: ${spec.header.subject}`);
+  }
   if (pointsEnabled && meta.totalPoints > 0) {
     metaParts.push(`Celkem: ${meta.totalPoints} ${pointsLabel(meta.totalPoints)}`);
   }
@@ -718,7 +721,7 @@ function renderFooter(spec: WorksheetSpec): string {
   return `
 <div class="ws-footer">
   ZEdu · ${esc(spec.header.title)}
-  <div class="ws-footer-meta">${metaParts.join(" · ")}</div>
+  <div class="ws-footer-meta">${esc(metaParts.join(" · "))}</div>
 </div>`;
 }
 
