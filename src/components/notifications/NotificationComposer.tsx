@@ -256,7 +256,31 @@ export default function NotificationComposer({ mode, defaults, onSent }: Props) 
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="notif-content">Text zprávy</Label>
+        <div className="flex items-center justify-between gap-2">
+          <Label htmlFor="notif-content">Text zprávy</Label>
+          <div className="flex items-center gap-2">
+            <Input
+              value={aiHint}
+              onChange={(e) => setAiHint(e.target.value)}
+              placeholder="Volitelný kontext pro AI…"
+              className="h-8 w-56 text-xs"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleAiSuggest}
+              disabled={aiLoading}
+            >
+              {aiLoading ? (
+                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+              ) : (
+                <Sparkles className="w-3.5 h-3.5 mr-1.5" />
+              )}
+              Navrhnout text AI
+            </Button>
+          </div>
+        </div>
         <Textarea
           id="notif-content"
           value={content}
