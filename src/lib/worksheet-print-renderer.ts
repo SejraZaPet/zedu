@@ -740,11 +740,14 @@ function renderItem(item: WorksheetItem, showPoints: boolean): string {
     }
   }
 
+  // Pro fill_blank schovej prompt — text už je součástí blank-text
+  const showPrompt = item.type !== "fill_blank";
+
   return `
 <div class="ws-item">
   <div class="ws-item-header">
     <span class="ws-item-num">${item.itemNumber}.</span>
-    <span class="ws-item-prompt prompt">${esc(item.prompt)}</span>
+    ${showPrompt ? `<span class="ws-item-prompt prompt">${esc(item.prompt)}</span>` : ""}
     ${pointsHtml}
   </div>
   ${body}
