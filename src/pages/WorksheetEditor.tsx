@@ -295,6 +295,8 @@ export default function WorksheetEditor() {
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   const [pdfPreviewLoading, setPdfPreviewLoading] = useState(false);
   const [pdfExporting, setPdfExporting] = useState(false);
+  const [showPrintTipDialog, setShowPrintTipDialog] = useState(false);
+  const [dontShowPrintTipAgain, setDontShowPrintTipAgain] = useState(false);
   const [subjectComboOpen, setSubjectComboOpen] = useState(false);
   const [subjectSearch, setSubjectSearch] = useState("");
 
