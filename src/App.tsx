@@ -45,6 +45,7 @@ import NotificationsPage from "./pages/NotificationsPage";
 import TeacherWorksheets from "./pages/TeacherWorksheets";
 import WorksheetEditor from "./pages/WorksheetEditor";
 import StudentWorksheetView from "./pages/StudentWorksheetView";
+import TeacherNotifications from "./pages/TeacherNotifications";
 import ViewAsBanner from "./components/ViewAsBanner";
 
 const queryClient = new QueryClient();
@@ -99,6 +100,7 @@ const App = () => (
             <Route path="/ucitel/pracovni-listy" element={<ProtectedRoute><TeacherWorksheets /></ProtectedRoute>} />
             <Route path="/ucitel/pracovni-listy/:id" element={<ProtectedRoute><WorksheetEditor /></ProtectedRoute>} />
             <Route path="/student/pracovni-list/:id" element={<ProtectedRoute><StudentWorksheetView /></ProtectedRoute>} />
+            <Route path="/ucitel/notifikace" element={<ProtectedRoute><TeacherNotifications /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
