@@ -606,9 +606,9 @@ function renderItem(item: WorksheetItem, showPoints: boolean): string {
 
   switch (item.type) {
     case "mcq":
-      body = `<ul class="ws-choices">${(item.choices ?? [])
-        .map((c, i) => `<li><span class="ws-choice-marker">${CHOICE_LETTERS[i]})</span><span>${esc(c)}</span></li>`)
-        .join("")}</ul>`;
+      body = `<ol class="ws-choices">${(item.choices ?? [])
+        .map((c, i) => `<li><span class="ws-choice-marker">${CHOICE_LETTERS[i]})</span> ${esc(c)}</li>`)
+        .join("")}</ol>`;
       break;
 
     case "true_false":
