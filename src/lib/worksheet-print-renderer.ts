@@ -780,24 +780,8 @@ function renderAnswerKey(variantId: string, keys: AnswerKeyEntry[]): string {
 }
 
 function renderFooter(spec: WorksheetSpec): string {
-  const meta = spec.metadata;
-  const pointsEnabled = spec.renderConfig.pointsEnabled !== false;
-
-  const metaParts: string[] = [];
-  if (spec.header.subject && spec.header.subject.trim().length > 0) {
-    metaParts.push(`Předmět: ${spec.header.subject}`);
-  }
-  if (pointsEnabled && meta.totalPoints > 0) {
-    metaParts.push(`Celkem: ${meta.totalPoints} ${pointsLabel(meta.totalPoints)}`);
-  }
-  if (meta.totalTimeMin > 0) {
-    metaParts.push(`Čas: ~${meta.totalTimeMin} min`);
-  }
-
-  return `
-<div class="ws-footer">
+  return `<div class="ws-footer">
   ZEdu · ${esc(spec.header.title)}
-  <div class="ws-footer-meta">${esc(metaParts.join(" · "))}</div>
 </div>`;
 }
 
