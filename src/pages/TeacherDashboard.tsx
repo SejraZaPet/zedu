@@ -93,6 +93,13 @@ const TeacherDashboard = () => {
       onClick: () => navigate("/ucitel/pracovni-listy"),
     },
     {
+      icon: BookOpen,
+      title: "Plány hodin",
+      description: "Organizuj lekce do tematických plánů hodin.",
+      button: "Otevřít plány",
+      onClick: () => navigate("/ucitel/plany-hodin"),
+    },
+    {
       icon: ListTodo,
       title: "Moje úkoly",
       description: "Osobní seznam úkolů, příprav a termínů.",
