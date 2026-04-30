@@ -226,11 +226,11 @@ export default function TeacherSchedule() {
                               )}
                             </button>
                           ) : (
-                            <div className="w-full h-full flex flex-col items-center justify-center gap-1 opacity-0 hover:opacity-100 transition-opacity">
+                            <div className="w-full h-full flex flex-col items-stretch justify-center gap-1 p-1">
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                className="h-6 px-2 text-xs"
+                                className="h-7 px-2 text-xs justify-start text-muted-foreground hover:text-primary hover:bg-primary/10"
                                 onClick={() => openNew(dayIdx, period, "lesson")}
                               >
                                 <Plus className="w-3 h-3 mr-1" /> Hodina
@@ -238,7 +238,7 @@ export default function TeacherSchedule() {
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                className="h-6 px-2 text-xs"
+                                className="h-7 px-2 text-xs justify-start text-muted-foreground hover:text-foreground hover:bg-muted"
                                 onClick={() => openNew(dayIdx, period, "break")}
                               >
                                 <Coffee className="w-3 h-3 mr-1" /> Přestávka
@@ -256,7 +256,7 @@ export default function TeacherSchedule() {
         </div>
 
         <p className="text-xs text-muted-foreground mt-3">
-          Tip: Najeď myší na prázdnou buňku pro přidání hodiny nebo přestávky.
+          Tip: Klikni na buňku pro přidání hodiny nebo přestávky. Existující záznam upravíš kliknutím na něj.
         </p>
       </main>
 
