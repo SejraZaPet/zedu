@@ -48,6 +48,7 @@ import StudentWorksheetView from "./pages/StudentWorksheetView";
 import TeacherNotifications from "./pages/TeacherNotifications";
 import TeacherLessonPlans from "./pages/TeacherLessonPlans";
 import TeacherLessonPlanEditor from "./pages/TeacherLessonPlanEditor";
+import TeacherSchedule from "./pages/TeacherSchedule";
 import ViewAsBanner from "./components/ViewAsBanner";
 
 const queryClient = new QueryClient();
@@ -105,6 +106,7 @@ const App = () => (
             <Route path="/ucitel/notifikace" element={<ProtectedRoute><TeacherNotifications /></ProtectedRoute>} />
             <Route path="/ucitel/plany-hodin" element={<ProtectedRoute><TeacherLessonPlans /></ProtectedRoute>} />
             <Route path="/ucitel/plany-hodin/:id" element={<ProtectedRoute><TeacherLessonPlanEditor /></ProtectedRoute>} />
+            <Route path="/ucitel/rozvrh" element={<ProtectedRoute><TeacherSchedule /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
