@@ -941,6 +941,15 @@ export default function WorksheetEditor() {
       });
       if (error) throw error;
       const list: AiSuggestion[] = (data as any)?.suggestions ?? [];
+      if (list.length === 0) {
+        setSuggestionDialog((d) => ({ ...d, loading: false }));
+        toast({
+          title: "Žádné návrhy",
+          description: "AI nepřinesla žádné návrhy, zkus to znovu.",
+          variant: "destructive",
+        });
+        return;
+      }
       setSuggestionDialog((d) => ({ ...d, loading: false, suggestions: list }));
     } catch (err: any) {
       setSuggestionDialog((d) => ({ ...d, loading: false }));
@@ -1280,11 +1289,8 @@ export default function WorksheetEditor() {
       {/* Spacer for fixed SiteHeader (h ~70px) */}
       <div aria-hidden className="h-[70px] shrink-0" />
 
-      {/* Sticky toolbar */}
-      <div
-        className="sticky z-30 bg-background/95 backdrop-blur border-b border-border"
-        style={{ top: "70px" }}
-      >
+      {/* Sticky toolbar — top matches fixed SiteHeader height (70 px) */}
+      <div className="sticky top-[70px] z-30 bg-background/95 backdrop-blur border-b border-border pt-px">
         <div className="container mx-auto px-4 py-3 flex items-center gap-2 sm:gap-3 max-w-[1600px]">
           <Button variant="ghost" size="sm" onClick={handleBack} className="shrink-0">
             <ChevronLeft className="w-4 h-4 sm:mr-1" />
@@ -1478,10 +1484,27 @@ export default function WorksheetEditor() {
                       >
                         <Command>
                           <CommandInput
-                            placeholder="Hledej nebo napiš nový…"
+                            placeholder="Hledej nebo napiš předmět…"
                             value={subjectSearch}
                             onValueChange={setSubjectSearch}
                           />
+                          {subjectSearch.trim() && (
+                            <div className="px-2 py-1.5 border-b">
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                className="w-full justify-start font-normal"
+                                onClick={() => {
+                                  setSubject(subjectSearch.trim());
+                                  setSubjectComboOpen(false);
+                                  setSubjectSearch("");
+                                }}
+                              >
+                                <Plus className="mr-2 h-4 w-4 shrink-0" />
+                                Použít vlastní: „{subjectSearch}"
+                              </Button>
+                            </div>
+                          )}
                           <CommandList>
                             <CommandEmpty>Žádný předmět nenalezen.</CommandEmpty>
                             <CommandGroup>
@@ -1524,20 +1547,6 @@ export default function WorksheetEditor() {
                                   {s.label}
                                 </CommandItem>
                               ))}
-                              {subjectSearch && !hasMatchInList && (
-                                <CommandItem
-                                  value={`__custom__${subjectSearch}`}
-                                  onSelect={() => {
-                                    setSubject(subjectSearch);
-                                    setSubjectComboOpen(false);
-                                    setSubjectSearch("");
-                                  }}
-                                  className="border-t"
-                                >
-                                  <Plus className="mr-2 h-4 w-4" />
-                                  Použít vlastní: „{subjectSearch}"
-                                </CommandItem>
-                              )}
                             </CommandGroup>
                           </CommandList>
                         </Command>

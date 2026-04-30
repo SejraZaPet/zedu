@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(git checkout -b *)",
+      "Bash(git switch -c *)"
+    ]
+  }
+}
