@@ -55,20 +55,10 @@ async function buildPrintHtml(
     errorCorrectionLevel: "M",
   });
 
-  const urlLabel = (() => {
-    try {
-      const u = new URL(studentUrl);
-      const parts = u.pathname.split("/").filter(Boolean);
-      return `${u.hostname}/${parts[0] ?? ""}${parts.length > 1 ? "/…" : ""}`;
-    } catch {
-      return "zedu.cz/…";
-    }
-  })();
-
   const qrBlock = `
 <div class="ws-qr-wrap">
   <img src="${qrDataUrl}" alt="QR online verze" />
-  <div>Pokračuj online →<br/>${urlLabel}</div>
+  <div>Pokračuj online →<br/>zedu.cz</div>
 </div>`;
 
   // Vlož QR do header-top (před uzavírací </div> ws-header-top)
