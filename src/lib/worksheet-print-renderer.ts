@@ -109,13 +109,12 @@ html, body {
   font-size: 8.5pt;
   font-weight: 600;
   color: #64748B !important;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
+
   margin-bottom: 4pt;
 }
 .ws-title {
   display: block;
-  font-size: 22pt;
+  font-size: 26pt;
   font-weight: 700;
   color: #1A1F2C !important;
   line-height: 1.1;
@@ -216,7 +215,7 @@ html, body {
   width: 18pt;
   font-size: 14pt;
   font-weight: 700;
-  color: #0F9A8B !important;
+  color: #7C3AED !important;
   vertical-align: top;
   line-height: 1.3;
 }
@@ -259,7 +258,7 @@ html, body {
   margin-right: 6pt;
   font-size: 11pt;
   font-weight: 700;
-  color: #0F9A8B !important;
+  color: #7C3AED !important;
   vertical-align: baseline;
 }
 
@@ -325,6 +324,7 @@ html, body {
 .ws-offline-meta {
   display: block;
   font-size: 9.5pt;
+  font-weight: 400;
   color: #475569 !important;
 }
 .ws-offline-meta > span {
@@ -614,7 +614,7 @@ function renderHeader(spec: WorksheetSpec, _variant: WorksheetVariant): string {
 
   // Eyebrow: jen ROČNÍK (předmět patří do footeru — Manual D.1)
   const eyebrow = h.gradeBand && h.gradeBand.trim().length > 0
-    ? `<div class="ws-eyebrow">${esc(h.gradeBand.toUpperCase())}</div>`
+    ? `<div class="ws-eyebrow">${esc(h.gradeBand)}</div>`
     : "";
 
   const subtitle = h.subtitle && h.subtitle.trim().length > 0
