@@ -24,7 +24,7 @@ export default function TeacherLessonPlans() {
   }, [items, search]);
 
   function handleCreate() {
-    // TODO: napojit na DB
+    navigate("/ucitel/plany-hodin/novy");
   }
 
   return (
