@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { BookOpen, Plus, Search } from "lucide-react";
 
 export default function TeacherLessonPlans() {
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
 
   // Zatím bez DB – prázdný seznam
