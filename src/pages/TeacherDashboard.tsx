@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { User, GraduationCap, Sparkles, School, BarChart3, ListTodo, CalendarDays, FileText, Bell } from "lucide-react";
+import { User, GraduationCap, Sparkles, School, BarChart3, ListTodo, CalendarDays, FileText, Bell, BookOpen } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import TodayWidget from "@/components/calendar/TodayWidget";
@@ -91,6 +91,13 @@ const TeacherDashboard = () => {
       description: "Tvoř a spravuj pracovní listy pro výuku i domácí úkoly.",
       button: "Otevřít",
       onClick: () => navigate("/ucitel/pracovni-listy"),
+    },
+    {
+      icon: BookOpen,
+      title: "Plány hodin",
+      description: "Organizuj lekce do tematických plánů hodin.",
+      button: "Otevřít plány",
+      onClick: () => navigate("/ucitel/plany-hodin"),
     },
     {
       icon: ListTodo,
