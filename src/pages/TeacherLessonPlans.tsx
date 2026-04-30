@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { Button } from "@/components/ui/button";
@@ -6,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { BookOpen, Plus, Search } from "lucide-react";
 
 export default function TeacherLessonPlans() {
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
 
   // Zatím bez DB – prázdný seznam
@@ -22,7 +24,7 @@ export default function TeacherLessonPlans() {
   }, [items, search]);
 
   function handleCreate() {
-    // TODO: napojit na DB
+    navigate("/ucitel/plany-hodin/novy");
   }
 
   return (
