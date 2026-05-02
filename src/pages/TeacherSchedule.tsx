@@ -499,33 +499,47 @@ export default function TeacherSchedule() {
                               key={`c-${dayIdx}-${col.period}`}
                               className="p-1 border-b border-l border-border align-top h-20"
                             >
-                              {entry ? (
-                                <button
-                                  onClick={() => openEditLesson(entry)}
-                                  className="w-full h-full text-left rounded-md p-2 transition-colors bg-primary/10 hover:bg-primary/20"
-                                >
-                                  <div className="space-y-0.5">
-                                    <div className="font-semibold text-sm leading-tight truncate">
-                                      {entry.subject}
+                              {entry ? (() => {
+                                const style = subjectStyles.get(entry.subject.trim());
+                                const color = entry.color || style?.color || colorForSubject(entry.subject);
+                                const abbr = entry.abbreviation || style?.abbreviation || entry.subject.slice(0, 3).toUpperCase();
+                                return (
+                                  <button
+                                    onClick={() => openEditLesson(entry)}
+                                    className="w-full h-full text-left rounded-md p-2 transition-opacity hover:opacity-80 border-l-4"
+                                    style={{ backgroundColor: `${color}26`, borderLeftColor: color }}
+                                  >
+                                    <div className="space-y-0.5">
+                                      <div className="flex items-center gap-1.5">
+                                        <span
+                                          className="inline-flex items-center justify-center text-[10px] font-bold text-white px-1.5 py-0.5 rounded"
+                                          style={{ backgroundColor: color }}
+                                        >
+                                          {abbr}
+                                        </span>
+                                        <div className="font-semibold text-sm leading-tight truncate">
+                                          {entry.subject}
+                                        </div>
+                                      </div>
+                                      {entry.className && (
+                                        <div className="text-xs text-muted-foreground truncate">
+                                          {entry.className}
+                                        </div>
+                                      )}
+                                      {entry.room && (
+                                        <div className="text-xs text-muted-foreground truncate">
+                                          📍 {entry.room}
+                                        </div>
+                                      )}
+                                      {entry.mirrorBoth && data.parityMode !== "both" && (
+                                        <div className="text-[10px] text-muted-foreground">
+                                          ↔ oba týdny
+                                        </div>
+                                      )}
                                     </div>
-                                    {entry.className && (
-                                      <div className="text-xs text-muted-foreground truncate">
-                                        {entry.className}
-                                      </div>
-                                    )}
-                                    {entry.room && (
-                                      <div className="text-xs text-muted-foreground truncate">
-                                        📍 {entry.room}
-                                      </div>
-                                    )}
-                                    {entry.mirrorBoth && data.parityMode !== "both" && (
-                                      <div className="text-[10px] text-muted-foreground">
-                                        ↔ oba týdny
-                                      </div>
-                                    )}
-                                  </div>
-                                </button>
-                              ) : (
+                                  </button>
+                                );
+                              })() : (
                                 <Button
                                   size="sm"
                                   variant="ghost"
