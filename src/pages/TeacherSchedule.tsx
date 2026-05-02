@@ -260,7 +260,7 @@ export default function TeacherSchedule() {
 
                       {/* Řádek mezi hodinami: přestávka pro celý týden */}
                       {period < PERIODS.length && (
-                        <tr key={`b-${period}`} className="bg-muted/20">
+                        <tr className="bg-muted/20">
                           <td className="px-2 py-1 border-b border-r border-border align-middle">
                             {br ? (
                               <button
