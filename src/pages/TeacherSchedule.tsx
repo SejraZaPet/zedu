@@ -253,7 +253,7 @@ export default function TeacherSchedule() {
       map.get(d)!.sort((a, b) => a.sortStart.localeCompare(b.sortStart));
     }
     return map;
-  }, [currentLessons, visibleClassSlots, data.periodTimes, data.breaks, data.periods]);
+  }, [currentLessons, visibleClassSlots, data.periodTimes, data.breaks, data.periods, data.parityMode, activeTab]);
 
   function openNewLesson(day: number) {
     // pick first free period for default
