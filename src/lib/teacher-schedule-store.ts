@@ -180,17 +180,3 @@ export function expandTeacherSchedule(
   }
   return events;
 }
-      events.push({
-        id: `personal-${l.id}-${date.toISOString().slice(0, 10)}`,
-        type: "lesson",
-        title: l.subject || l.className || "Hodina",
-        start,
-        end,
-        className: l.className || undefined,
-        room: l.room || undefined,
-        subject: l.subject || undefined,
-      });
-    }
-  }
-  return events;
-}
