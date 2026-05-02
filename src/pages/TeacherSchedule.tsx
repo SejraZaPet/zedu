@@ -35,6 +35,11 @@ import {
   BookOpen,
   ExternalLink,
   X,
+  ShieldCheck,
+  Utensils,
+  CircleSlash,
+  MapPin,
+  StickyNote,
 } from "lucide-react";
 import {
   DEFAULT_PERIOD_TIMES,
@@ -43,8 +48,10 @@ import {
   buildSubjectStyleMap,
   colorForSubject,
   SUBJECT_COLORS,
+  BREAK_KIND_META,
   type LessonEntry,
   type RowBreak,
+  type BreakKind,
   type TeacherScheduleData,
   type WeekParityMode,
 } from "@/lib/teacher-schedule-store";
@@ -84,12 +91,27 @@ type ScheduleCard =
       kind: "class";
       sortStart: string;
       slot: ClassSlot;
+    }
+  | {
+      kind: "break";
+      sortStart: string;
+      brk: RowBreak;
     };
 
 const fmtTime = (t: string) => {
   if (!t) return "";
   const [h, m] = t.split(":");
   return `${parseInt(h, 10)}:${m}`;
+};
+
+/** Subtract 1 minute from "HH:MM" (used for sorting breaks before first period). */
+const prevTimeStr = (t: string): string => {
+  const [h, m] = t.split(":").map((x) => parseInt(x, 10) || 0);
+  const total = h * 60 + m - 1;
+  if (total < 0) return "00:00";
+  const hh = Math.floor(total / 60).toString().padStart(2, "0");
+  const mm = (total % 60).toString().padStart(2, "0");
+  return `${hh}:${mm}`;
 };
 
 export default function TeacherSchedule() {
@@ -192,11 +214,31 @@ export default function TeacherSchedule() {
         slot: s,
       });
     }
+    // Insert breaks at correct position. afterPeriod=0 → before first period.
+    for (const br of data.breaks) {
+      const days =
+        br.days && br.days.length > 0 ? br.days : [0, 1, 2, 3, 4];
+      // Compute sortStart: use end of `afterPeriod` (or "00:00" for 0)
+      let sortStart = "00:00";
+      if (br.afterPeriod === 0) {
+        // Place just before first period start (use first defined period start minus epsilon)
+        const firstP = data.periods[0];
+        const t = firstP ? data.periodTimes[firstP] : null;
+        sortStart = t ? prevTimeStr(t.start) : "00:00";
+      } else {
+        const t = data.periodTimes[br.afterPeriod];
+        sortStart = t?.end ?? "99:00";
+      }
+      for (const d of days) {
+        if (d < 0 || d > 4) continue;
+        map.get(d)!.push({ kind: "break", sortStart, brk: br });
+      }
+    }
     for (const d of map.keys()) {
       map.get(d)!.sort((a, b) => a.sortStart.localeCompare(b.sortStart));
     }
     return map;
-  }, [currentLessons, visibleClassSlots, data.periodTimes]);
+  }, [currentLessons, visibleClassSlots, data.periodTimes, data.breaks, data.periods]);
 
   function openNewLesson(day: number) {
     // pick first free period for default
@@ -341,23 +383,48 @@ export default function TeacherSchedule() {
       breaks: d.breaks.filter((b) => b.afterPeriod !== period),
     }));
   }
-  function addBreakAfter(afterPeriod: number) {
+  function addBreakAfter(afterPeriod: number, kind: BreakKind = "break") {
     setData((d) => ({
       ...d,
-      breaks: [...d.breaks, { afterPeriod, durationMin: 10, notes: {} }].sort(
-        (a, b) => a.afterPeriod - b.afterPeriod,
-      ),
+      breaks: [
+        ...d.breaks,
+        {
+          id: newId(),
+          afterPeriod,
+          durationMin: kind === "lunch" ? 30 : 10,
+          notes: {},
+          kind,
+          note: "",
+          location: "",
+          days: [],
+        },
+      ].sort((a, b) => a.afterPeriod - b.afterPeriod),
     }));
   }
-  function updateBreak(afterPeriod: number, patch: Partial<RowBreak>) {
+  function updateBreakById(id: string, patch: Partial<RowBreak>) {
     setData((d) => ({
       ...d,
-      breaks: d.breaks.map((b) => (b.afterPeriod === afterPeriod ? { ...b, ...patch } : b)),
+      breaks: d.breaks.map((b) => (b.id === id ? { ...b, ...patch } : b)),
     }));
   }
-  function removeBreak(afterPeriod: number) {
-    setData((d) => ({ ...d, breaks: d.breaks.filter((b) => b.afterPeriod !== afterPeriod) }));
+  function removeBreakById(id: string) {
+    setData((d) => ({ ...d, breaks: d.breaks.filter((b) => b.id !== id) }));
   }
+  /** Ensure all existing breaks have an `id` for stable updates. */
+  useEffect(() => {
+    setData((d) => {
+      let changed = false;
+      const next = d.breaks.map((b) => {
+        if (!b.id) {
+          changed = true;
+          return { ...b, id: newId() };
+        }
+        return b;
+      });
+      return changed ? { ...d, breaks: next } : d;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Stats badges
   const totalPersonal = currentLessons.length;
@@ -479,24 +546,36 @@ export default function TeacherSchedule() {
                     {items.length === 0 && (
                       <div className="text-xs text-muted-foreground/60 italic py-2">Volno</div>
                     )}
-                    {items.map((card) =>
-                      card.kind === "personal" ? (
-                        <PersonalCard
-                          key={`p-${card.lesson.id}`}
-                          lesson={card.lesson}
-                          time={card.time}
-                          subjectStyles={subjectStyles}
-                          parityMode={data.parityMode}
-                          onClick={() => openEditLesson(card.lesson)}
+                    {items.map((card, i) => {
+                      if (card.kind === "personal") {
+                        return (
+                          <PersonalCard
+                            key={`p-${card.lesson.id}`}
+                            lesson={card.lesson}
+                            time={card.time}
+                            subjectStyles={subjectStyles}
+                            parityMode={data.parityMode}
+                            onClick={() => openEditLesson(card.lesson)}
+                          />
+                        );
+                      }
+                      if (card.kind === "class") {
+                        return (
+                          <ClassCard
+                            key={`c-${card.slot.id}`}
+                            slot={card.slot}
+                            onClick={() => navigate("/ucitel/tridy")}
+                          />
+                        );
+                      }
+                      return (
+                        <BreakCard
+                          key={`b-${card.brk.id ?? card.brk.afterPeriod}-${i}`}
+                          brk={card.brk}
+                          periodTimes={data.periodTimes}
                         />
-                      ) : (
-                        <ClassCard
-                          key={`c-${card.slot.id}`}
-                          slot={card.slot}
-                          onClick={() => navigate("/ucitel/tridy")}
-                        />
-                      ),
-                    )}
+                      );
+                    })}
                   </div>
 
                   <Button
@@ -538,86 +617,105 @@ export default function TeacherSchedule() {
               />
             </Button>
           </CollapsibleTrigger>
-          <CollapsibleContent className="mt-3">
+          <CollapsibleContent className="mt-3 space-y-4">
+            {/* Periods */}
             <div className="bg-card border border-border rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Clock className="w-4 h-4 text-primary" />
+                <h3 className="text-sm font-semibold">Časy hodin</h3>
+              </div>
               <p className="text-xs text-muted-foreground mb-3">
-                Definuj časy jednotlivých hodin a vlož přestávky mezi ně. Tyto časy se používají i v
-                plánování hodin u tříd.
+                Definuj čas začátku a konce každé hodiny. Tyto časy se používají i v plánování hodin
+                u tříd.
               </p>
-              <div className="space-y-2">
-                {data.periods.map((p, idx) => {
+              <div className="space-y-1.5">
+                {data.periods.map((p) => {
                   const t = data.periodTimes[p];
-                  const br = data.breaks.find((b) => b.afterPeriod === p);
-                  const isLast = idx === data.periods.length - 1;
                   return (
-                    <div key={p}>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-medium text-sm w-16 shrink-0">{p}. hod</span>
-                        <Input
-                          type="time"
-                          value={t?.start ?? ""}
-                          onChange={(e) => updatePeriodTime(p, "start", e.target.value)}
-                          className="h-8 w-28 text-xs font-mono"
-                        />
-                        <span className="text-muted-foreground text-xs">–</span>
-                        <Input
-                          type="time"
-                          value={t?.end ?? ""}
-                          onChange={(e) => updatePeriodTime(p, "end", e.target.value)}
-                          className="h-8 w-28 text-xs font-mono"
-                        />
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => removePeriod(p)}
-                          className="h-8 px-2 text-muted-foreground hover:text-destructive"
-                          title="Odebrat hodinu"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </Button>
-                        {!isLast && !br && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-8 px-2 text-xs text-muted-foreground"
-                            onClick={() => addBreakAfter(p)}
-                            title="Přidat přestávku za tuto hodinu"
-                          >
-                            <Coffee className="w-3 h-3 mr-1" />+ přestávka
-                          </Button>
-                        )}
-                      </div>
-                      {br && !isLast && (
-                        <div className="flex items-center gap-2 ml-16 mt-1 mb-1 pl-2 border-l-2 border-muted">
-                          <Coffee className="w-3.5 h-3.5 text-muted-foreground" />
-                          <span className="text-xs text-muted-foreground">Přestávka</span>
-                          <Input
-                            type="number"
-                            min={1}
-                            max={120}
-                            value={br.durationMin}
-                            onChange={(e) =>
-                              updateBreak(p, { durationMin: parseInt(e.target.value, 10) || 0 })
-                            }
-                            className="h-7 w-16 text-xs"
-                          />
-                          <span className="text-xs text-muted-foreground">min</span>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => removeBreak(p)}
-                            className="h-7 px-2 text-muted-foreground hover:text-destructive"
-                          >
-                            <X className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      )}
+                    <div key={p} className="flex items-center gap-2 flex-wrap">
+                      <span className="font-medium text-sm w-16 shrink-0">{p}. hod</span>
+                      <Input
+                        type="time"
+                        value={t?.start ?? ""}
+                        onChange={(e) => updatePeriodTime(p, "start", e.target.value)}
+                        className="h-8 w-28 text-xs font-mono"
+                      />
+                      <span className="text-muted-foreground text-xs">–</span>
+                      <Input
+                        type="time"
+                        value={t?.end ?? ""}
+                        onChange={(e) => updatePeriodTime(p, "end", e.target.value)}
+                        className="h-8 w-28 text-xs font-mono"
+                      />
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => removePeriod(p)}
+                        className="h-8 px-2 text-muted-foreground hover:text-destructive"
+                        title="Odebrat hodinu"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </Button>
                     </div>
                   );
                 })}
                 <Button size="sm" variant="outline" onClick={addPeriod} className="mt-2">
                   <Plus className="w-3.5 h-3.5 mr-1" /> Přidat hodinu
                 </Button>
+              </div>
+            </div>
+
+            {/* Breaks & blocks */}
+            <div className="bg-card border border-border rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Coffee className="w-4 h-4 text-primary" />
+                <h3 className="text-sm font-semibold">Přestávky a další bloky</h3>
+              </div>
+              <p className="text-xs text-muted-foreground mb-3">
+                Můžeš přidat přestávku, poradu, dozor, oběd nebo volno – buď pro všechny dny, nebo
+                jen pro vybrané. Bloky lze vložit i před první hodinu (nultá hodina).
+              </p>
+
+              <div className="space-y-2">
+                {data.breaks.length === 0 && (
+                  <p className="text-xs text-muted-foreground italic">
+                    Zatím žádné přestávky ani bloky.
+                  </p>
+                )}
+                {data.breaks
+                  .slice()
+                  .sort((a, b) => a.afterPeriod - b.afterPeriod)
+                  .map((br) => (
+                    <BreakSettingRow
+                      key={br.id}
+                      brk={br}
+                      periods={data.periods}
+                      onChange={(patch) => updateBreakById(br.id!, patch)}
+                      onRemove={() => removeBreakById(br.id!)}
+                    />
+                  ))}
+              </div>
+
+              <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t border-border">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => addBreakAfter(0, "break")}
+                  title="Vlož blok před první hodinu"
+                >
+                  <Plus className="w-3.5 h-3.5 mr-1" /> Před 1. hodinu (nultá)
+                </Button>
+                {data.periods.length > 0 && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      addBreakAfter(data.periods[Math.floor(data.periods.length / 2) - 1] ?? data.periods[0], "break")
+                    }
+                  >
+                    <Plus className="w-3.5 h-3.5 mr-1" /> Přidat blok
+                  </Button>
+                )}
               </div>
             </div>
           </CollapsibleContent>
@@ -922,5 +1020,253 @@ function ClassCard({ slot, onClick }: { slot: ClassSlot; onClick: () => void }) 
         </div>
       )}
     </button>
+  );
+}
+
+/* ───────── Break / block components ───────── */
+
+function getBreakIcon(kind: BreakKind | undefined) {
+  switch (kind) {
+    case "meeting":
+      return Users;
+    case "duty":
+      return ShieldCheck;
+    case "lunch":
+      return Utensils;
+    case "free":
+      return CircleSlash;
+    case "break":
+    default:
+      return Coffee;
+  }
+}
+
+function BreakCard({
+  brk,
+  periodTimes,
+}: {
+  brk: RowBreak;
+  periodTimes: Record<number, { start: string; end: string }>;
+}) {
+  const kind: BreakKind = brk.kind ?? "break";
+  const meta = BREAK_KIND_META[kind];
+  const Icon = getBreakIcon(kind);
+  let timeLabel = "";
+  if (brk.afterPeriod === 0) {
+    timeLabel = "před 1. hod";
+  } else {
+    const t = periodTimes[brk.afterPeriod];
+    if (t) {
+      const [h, m] = t.end.split(":").map((x) => parseInt(x, 10) || 0);
+      const startTotal = h * 60 + m;
+      const endTotal = startTotal + (brk.durationMin || 0);
+      const fmt = (total: number) =>
+        `${Math.floor(total / 60)}:${(total % 60).toString().padStart(2, "0")}`;
+      timeLabel = `${fmt(startTotal)}–${fmt(endTotal)}`;
+    }
+  }
+  const title =
+    kind === "meeting"
+      ? brk.note?.trim() || "Porada"
+      : kind === "duty"
+        ? "Dozor"
+        : meta.label;
+
+  return (
+    <div
+      className="w-full rounded-md p-2 border border-dashed"
+      style={{
+        backgroundColor: `${meta.color}1A`,
+        borderColor: `${meta.color}66`,
+      }}
+      title={meta.label}
+    >
+      <div className="flex items-center gap-1 text-[11px] text-muted-foreground tabular-nums">
+        <Clock className="w-3 h-3" />
+        {timeLabel}
+        <span className="ml-auto text-[10px]">· {brk.durationMin} min</span>
+      </div>
+      <div className="flex items-center gap-1.5 mt-0.5">
+        <span
+          className="inline-flex items-center justify-center w-5 h-5 rounded shrink-0"
+          style={{ backgroundColor: meta.color }}
+        >
+          <Icon className="w-3 h-3 text-white" />
+        </span>
+        <div className="font-medium text-xs leading-tight truncate">{title}</div>
+      </div>
+      {kind === "duty" && brk.location && (
+        <div className="text-[11px] text-muted-foreground truncate flex items-center gap-1 mt-0.5">
+          <MapPin className="w-2.5 h-2.5 shrink-0" /> {brk.location}
+        </div>
+      )}
+      {kind !== "meeting" && brk.note && (
+        <div className="text-[11px] text-muted-foreground truncate flex items-center gap-1 mt-0.5">
+          <StickyNote className="w-2.5 h-2.5 shrink-0" /> {brk.note}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BreakSettingRow({
+  brk,
+  periods,
+  onChange,
+  onRemove,
+}: {
+  brk: RowBreak;
+  periods: number[];
+  onChange: (patch: Partial<RowBreak>) => void;
+  onRemove: () => void;
+}) {
+  const kind: BreakKind = brk.kind ?? "break";
+  const meta = BREAK_KIND_META[kind];
+  const Icon = getBreakIcon(kind);
+  const days = brk.days ?? [];
+  const allDays = days.length === 0;
+
+  const toggleDay = (d: number) => {
+    const next = days.includes(d) ? days.filter((x) => x !== d) : [...days, d].sort();
+    onChange({ days: next });
+  };
+
+  return (
+    <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-2">
+      <div className="flex items-center gap-2 flex-wrap">
+        <span
+          className="inline-flex items-center justify-center w-7 h-7 rounded shrink-0"
+          style={{ backgroundColor: meta.color }}
+          title={meta.label}
+        >
+          <Icon className="w-3.5 h-3.5 text-white" />
+        </span>
+
+        <Label className="text-xs text-muted-foreground">Po hodině:</Label>
+        <select
+          value={brk.afterPeriod}
+          onChange={(e) => onChange({ afterPeriod: parseInt(e.target.value, 10) })}
+          className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+        >
+          <option value={0}>před 1. hod (nultá)</option>
+          {periods.map((p) => (
+            <option key={p} value={p}>
+              po {p}. hod
+            </option>
+          ))}
+        </select>
+
+        <Label className="text-xs text-muted-foreground ml-2">Typ:</Label>
+        <select
+          value={kind}
+          onChange={(e) => onChange({ kind: e.target.value as BreakKind })}
+          className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+        >
+          {(Object.keys(BREAK_KIND_META) as BreakKind[]).map((k) => (
+            <option key={k} value={k}>
+              {BREAK_KIND_META[k].label}
+            </option>
+          ))}
+        </select>
+
+        <Label className="text-xs text-muted-foreground ml-2">Délka:</Label>
+        <Input
+          type="number"
+          min={1}
+          max={240}
+          value={brk.durationMin}
+          onChange={(e) => onChange({ durationMin: parseInt(e.target.value, 10) || 0 })}
+          className="h-8 w-16 text-xs"
+        />
+        <span className="text-xs text-muted-foreground">min</span>
+
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={onRemove}
+          className="h-8 px-2 ml-auto text-muted-foreground hover:text-destructive"
+          title="Odstranit"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </Button>
+      </div>
+
+      <div className="flex items-center gap-2 flex-wrap">
+        <Label className="text-xs text-muted-foreground">Dny:</Label>
+        <button
+          type="button"
+          onClick={() => onChange({ days: [] })}
+          className={`px-2 py-1 text-[11px] rounded-md border transition-colors ${
+            allDays
+              ? "bg-primary text-primary-foreground border-primary"
+              : "bg-card border-border hover:bg-muted"
+          }`}
+        >
+          Všechny dny
+        </button>
+        {DAYS.map((d, i) => {
+          const active = !allDays && days.includes(i);
+          return (
+            <button
+              key={d}
+              type="button"
+              onClick={() => toggleDay(i)}
+              className={`px-2 py-1 text-[11px] rounded-md border transition-colors ${
+                active
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-card border-border hover:bg-muted"
+              }`}
+            >
+              {DAYS_SHORT[i]}
+            </button>
+          );
+        })}
+      </div>
+
+      {kind === "meeting" && (
+        <div className="space-y-1">
+          <Label className="text-xs">Téma porady</Label>
+          <Input
+            value={brk.note ?? ""}
+            onChange={(e) => onChange({ note: e.target.value })}
+            placeholder="Např. Pedagogická rada – výsledky 1. pololetí"
+            className="h-8 text-xs"
+          />
+        </div>
+      )}
+      {kind === "duty" && (
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-1">
+            <Label className="text-xs">Místo dozoru</Label>
+            <Input
+              value={brk.location ?? ""}
+              onChange={(e) => onChange({ location: e.target.value })}
+              placeholder="Např. chodba 2. NP"
+              className="h-8 text-xs"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Poznámka</Label>
+            <Input
+              value={brk.note ?? ""}
+              onChange={(e) => onChange({ note: e.target.value })}
+              placeholder="Volitelné"
+              className="h-8 text-xs"
+            />
+          </div>
+        </div>
+      )}
+      {(kind === "break" || kind === "lunch" || kind === "free") && (
+        <div className="space-y-1">
+          <Label className="text-xs">Poznámka (volitelné)</Label>
+          <Input
+            value={brk.note ?? ""}
+            onChange={(e) => onChange({ note: e.target.value })}
+            placeholder="Např. Velká přestávka"
+            className="h-8 text-xs"
+          />
+        </div>
+      )}
+    </div>
   );
 }
