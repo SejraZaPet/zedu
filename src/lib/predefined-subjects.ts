@@ -1,0 +1,33 @@
+// Předdefinovaný seznam předmětů pro plánování hodin třídy
+export const PREDEFINED_SUBJECTS = [
+  "Matematika",
+  "Český jazyk a literatura",
+  "Anglický jazyk",
+  "Německý jazyk",
+  "Francouzský jazyk",
+  "Španělský jazyk",
+  "Ruský jazyk",
+  "Latina",
+  "Fyzika",
+  "Chemie",
+  "Biologie",
+  "Přírodopis",
+  "Dějepis",
+  "Zeměpis",
+  "Občanská výchova",
+  "Základy společenských věd",
+  "Informatika",
+  "Programování",
+  "Hudební výchova",
+  "Výtvarná výchova",
+  "Tělesná výchova",
+  "Pracovní činnosti",
+  "Etická výchova",
+  "Náboženství",
+  "Ekonomie",
+  "Účetnictví",
+  "Psychologie",
+  "Filozofie",
+] as const;
+
+export type PredefinedSubject = (typeof PREDEFINED_SUBJECTS)[number];
