@@ -139,6 +139,8 @@ export function expandTeacherSchedule(
   const events: CalendarEvent[] = [];
   const days = eachDayOfInterval({ start: fromDate, end: toDate });
 
+  const styleMap = buildSubjectStyleMap(schedule);
+
   for (const date of days) {
     const jsDay = date.getDay();
     if (jsDay === 0 || jsDay === 6) continue; // skip weekends
@@ -161,6 +163,23 @@ export function expandTeacherSchedule(
       if (!t) continue;
       const start = parseTime(date, t.start);
       const end = parseTime(date, t.end);
+      const style = styleMap.get(l.subject.trim());
+      events.push({
+        id: `personal-${l.id}-${date.toISOString().slice(0, 10)}`,
+        type: "lesson",
+        title: l.subject || l.className || "Hodina",
+        start,
+        end,
+        className: l.className || undefined,
+        room: l.room || undefined,
+        subject: l.subject || undefined,
+        color: l.color || style?.color,
+        abbreviation: l.abbreviation || style?.abbreviation,
+      });
+    }
+  }
+  return events;
+}
       events.push({
         id: `personal-${l.id}-${date.toISOString().slice(0, 10)}`,
         type: "lesson",
