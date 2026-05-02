@@ -55,7 +55,7 @@ const DEFAULT_PERIOD_TIMES: Record<number, PeriodTime> = {
 };
 
 const DEFAULT_BREAKS: RowBreak[] = [
-  { afterPeriod: 3, durationMin: 20, note: "Velká přestávka" },
+  { afterPeriod: 3, durationMin: 20, notes: {} },
 ];
 
 const newId = () => Math.random().toString(36).slice(2, 10);
