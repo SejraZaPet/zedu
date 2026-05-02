@@ -91,6 +91,11 @@ type ScheduleCard =
       kind: "class";
       sortStart: string;
       slot: ClassSlot;
+    }
+  | {
+      kind: "break";
+      sortStart: string;
+      brk: RowBreak;
     };
 
 const fmtTime = (t: string) => {
