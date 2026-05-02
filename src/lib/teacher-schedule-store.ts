@@ -62,10 +62,32 @@ export interface PeriodTime {
   end: string;
 }
 
+/** Type/flag of a between-period block. */
+export type BreakKind = "break" | "meeting" | "duty" | "lunch" | "free";
+
+export const BREAK_KIND_META: Record<BreakKind, { label: string; icon: string; color: string }> = {
+  break: { label: "Přestávka", icon: "Coffee", color: "#94a3b8" },
+  meeting: { label: "Porada", icon: "Users", color: "#9B6CFF" },
+  duty: { label: "Dozor", icon: "ShieldCheck", color: "#F59E0B" },
+  lunch: { label: "Oběd", icon: "Utensils", color: "#34D399" },
+  free: { label: "Volno", icon: "CircleSlash", color: "#A3A3A3" },
+};
+
 export interface RowBreak {
+  /** Use 0 to mean "before the first period". */
   afterPeriod: number;
   durationMin: number;
   notes: Record<number, string>;
+  /** Optional id so multiple breaks can share the same `afterPeriod` slot. */
+  id?: string;
+  /** Type of the block – break / meeting / duty / lunch / free. */
+  kind?: BreakKind;
+  /** For meeting: agenda/topic; for duty: optional extra note; otherwise free text. */
+  note?: string;
+  /** For duty: location (e.g. "chodba 2.NP"). */
+  location?: string;
+  /** Days (0=Mon..4=Fri) on which this block applies. Empty/undefined = every day. */
+  days?: number[];
 }
 
 export type WeekParityMode = "both" | "odd" | "even";
