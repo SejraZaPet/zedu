@@ -37,6 +37,8 @@ interface Slot {
   week_parity: "every" | "odd" | "even";
   room: string | null;
   subject_label: string | null;
+  abbreviation: string | null;
+  color: string | null;
   textbook_id: string | null;
   textbook_type: "teacher" | "global" | null;
   valid_from: string | null;
@@ -136,6 +138,8 @@ const ClassScheduleDialog = ({ classId, className, open, onOpenChange }: Props) 
     const basePayload = {
       class_id: classId,
       subject_label: value.subject,
+      abbreviation: value.abbreviation || null,
+      color: value.color || null,
       room: value.room,
       valid_from: value.validFrom,
       valid_to: value.validTo,
@@ -311,6 +315,8 @@ const ClassScheduleDialog = ({ classId, className, open, onOpenChange }: Props) 
                 day: editing.day_of_week - 1,
                 period: slotToPeriod(editing),
                 subject: editing.subject_label ?? "",
+                abbreviation: editing.abbreviation ?? "",
+                color: editing.color ?? undefined,
                 classId,
                 className,
                 room: editing.room ?? "",
