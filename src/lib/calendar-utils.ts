@@ -18,6 +18,8 @@ export type CalendarEvent = {
   assignmentId?: string;
   todoId?: string;
   priority?: "low" | "normal" | "high";
+  color?: string;
+  abbreviation?: string;
 };
 
 export type ScheduleSlotInput = {

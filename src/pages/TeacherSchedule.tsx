@@ -14,11 +14,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
-import { Coffee, Plus, Pencil, Trash2, CalendarDays, X } from "lucide-react";
+import { Coffee, Plus, Pencil, Trash2, CalendarDays, X, Check } from "lucide-react";
 import {
   DEFAULT_PERIOD_TIMES,
   loadSchedule,
   saveSchedule,
+  buildSubjectStyleMap,
+  colorForSubject,
+  SUBJECT_COLORS,
   type LessonEntry,
   type RowBreak,
   type TeacherScheduleData,
@@ -42,7 +45,10 @@ export default function TeacherSchedule() {
   }, [data]);
 
   const [editing, setEditing] = useState<LessonEntry | null>(null);
+  const [editingDays, setEditingDays] = useState<number[]>([]); // for multi-day select on new lesson
   const [isNew, setIsNew] = useState(false);
+
+  const subjectStyles = useMemo(() => buildSubjectStyleMap(data), [data]);
 
   // Which lesson list is currently shown / edited
   const currentLessons = useMemo(() => {
@@ -71,11 +77,22 @@ export default function TeacherSchedule() {
   }, [data.breaks]);
 
   function openNewLesson(day: number, period: number) {
-    setEditing({ id: newId(), day, period, subject: "", className: "", room: "" });
+    setEditing({
+      id: newId(),
+      day,
+      period,
+      subject: "",
+      abbreviation: "",
+      color: SUBJECT_COLORS[0].value,
+      className: "",
+      room: "",
+    });
+    setEditingDays([day]);
     setIsNew(true);
   }
   function openEditLesson(entry: LessonEntry) {
     setEditing({ ...entry });
+    setEditingDays([entry.day]);
     setIsNew(false);
   }
   function saveLesson() {
@@ -84,14 +101,30 @@ export default function TeacherSchedule() {
       toast({ title: "Předmět je povinný", variant: "destructive" });
       return;
     }
-    const e = editing;
-    setData((d) => {
+    const days = isNew ? (editingDays.length ? editingDays : [editing.day]) : [editing.day];
+    const baseSubject = editing.subject.trim();
+    // Auto-derive style if not set
+    const finalColor = editing.color || colorForSubject(baseSubject);
+    const finalAbbr = (editing.abbreviation?.trim() || baseSubject.slice(0, 3)).toUpperCase();
+
+    const buildEntries = (): LessonEntry[] =>
+      days.map((d, i) => ({
+        ...editing,
+        id: i === 0 ? editing.id : newId(),
+        day: d,
+        color: finalColor,
+        abbreviation: finalAbbr,
+      }));
+
+    setData((dState) => {
+      const newEntries = buildEntries();
       // "both" mode: simple list
-      if (d.parityMode === "both") {
-        return {
-          ...d,
-          lessonsBoth: [...d.lessonsBoth.filter((x) => x.id !== e.id), e],
-        };
+      if (dState.parityMode === "both") {
+        // remove any existing entries that conflict (same day+period) to avoid duplicates
+        const cleaned = dState.lessonsBoth.filter(
+          (x) => x.id !== editing.id && !newEntries.some((n) => n.day === x.day && n.period === x.period),
+        );
+        return { ...dState, lessonsBoth: [...cleaned, ...newEntries] };
       }
 
       // odd/even mode
@@ -99,33 +132,40 @@ export default function TeacherSchedule() {
       const thisListKey = activeTab === "odd" ? "lessonsOdd" : "lessonsEven";
       const otherListKey = otherSide === "odd" ? "lessonsOdd" : "lessonsEven";
 
-      if (e.mirrorBoth) {
-        // ensure a stable mirrorKey
-        const mirrorKey = e.mirrorKey ?? newId();
-        const thisEntry: LessonEntry = { ...e, mirrorBoth: true, mirrorKey };
-        // find existing twin in other list (by mirrorKey)
-        const otherList = d[otherListKey].filter((x) => x.mirrorKey !== mirrorKey);
-        const twin: LessonEntry = { ...thisEntry, id: newId() };
+      if (editing.mirrorBoth) {
+        const mirrorKey = editing.mirrorKey ?? newId();
+        const thisEntries = newEntries.map((n) => ({ ...n, mirrorBoth: true, mirrorKey }));
+        const twins = thisEntries.map((n) => ({ ...n, id: newId() }));
+        const cleanedThis = dState[thisListKey].filter(
+          (x) => x.id !== editing.id && !thisEntries.some((n) => n.day === x.day && n.period === x.period),
+        );
+        const cleanedOther = dState[otherListKey].filter(
+          (x) => x.mirrorKey !== mirrorKey && !twins.some((n) => n.day === x.day && n.period === x.period),
+        );
         return {
-          ...d,
-          [thisListKey]: [...d[thisListKey].filter((x) => x.id !== e.id), thisEntry],
-          [otherListKey]: [...otherList, twin],
+          ...dState,
+          [thisListKey]: [...cleanedThis, ...thisEntries],
+          [otherListKey]: [...cleanedOther, ...twins],
         } as TeacherScheduleData;
       }
 
-      // mirror is OFF — if it had a mirrorKey, drop the twin from other side
-      const cleanedOther = e.mirrorKey
-        ? d[otherListKey].filter((x) => x.mirrorKey !== e.mirrorKey)
-        : d[otherListKey];
-      const cleanedThis: LessonEntry = { ...e, mirrorBoth: false, mirrorKey: undefined };
+      // mirror is OFF — drop any twin from other list if previously linked
+      const cleanedOther = editing.mirrorKey
+        ? dState[otherListKey].filter((x) => x.mirrorKey !== editing.mirrorKey)
+        : dState[otherListKey];
+      const cleanedThisEntries = newEntries.map((n) => ({ ...n, mirrorBoth: false, mirrorKey: undefined }));
+      const cleanedThis = dState[thisListKey].filter(
+        (x) => x.id !== editing.id && !cleanedThisEntries.some((n) => n.day === x.day && n.period === x.period),
+      );
       return {
-        ...d,
-        [thisListKey]: [...d[thisListKey].filter((x) => x.id !== e.id), cleanedThis],
+        ...dState,
+        [thisListKey]: [...cleanedThis, ...cleanedThisEntries],
         [otherListKey]: cleanedOther,
       } as TeacherScheduleData;
     });
-    toast({ title: isNew ? "Přidáno do rozvrhu" : "Uloženo" });
+    toast({ title: isNew ? (days.length > 1 ? `Přidáno do ${days.length} dnů` : "Přidáno do rozvrhu") : "Uloženo" });
     setEditing(null);
+    setEditingDays([]);
   }
   function deleteLesson() {
     if (!editing) return;
@@ -459,33 +499,47 @@ export default function TeacherSchedule() {
                               key={`c-${dayIdx}-${col.period}`}
                               className="p-1 border-b border-l border-border align-top h-20"
                             >
-                              {entry ? (
-                                <button
-                                  onClick={() => openEditLesson(entry)}
-                                  className="w-full h-full text-left rounded-md p-2 transition-colors bg-primary/10 hover:bg-primary/20"
-                                >
-                                  <div className="space-y-0.5">
-                                    <div className="font-semibold text-sm leading-tight truncate">
-                                      {entry.subject}
+                              {entry ? (() => {
+                                const style = subjectStyles.get(entry.subject.trim());
+                                const color = entry.color || style?.color || colorForSubject(entry.subject);
+                                const abbr = entry.abbreviation || style?.abbreviation || entry.subject.slice(0, 3).toUpperCase();
+                                return (
+                                  <button
+                                    onClick={() => openEditLesson(entry)}
+                                    className="w-full h-full text-left rounded-md p-2 transition-opacity hover:opacity-80 border-l-4"
+                                    style={{ backgroundColor: `${color}26`, borderLeftColor: color }}
+                                  >
+                                    <div className="space-y-0.5">
+                                      <div className="flex items-center gap-1.5">
+                                        <span
+                                          className="inline-flex items-center justify-center text-[10px] font-bold text-white px-1.5 py-0.5 rounded"
+                                          style={{ backgroundColor: color }}
+                                        >
+                                          {abbr}
+                                        </span>
+                                        <div className="font-semibold text-sm leading-tight truncate">
+                                          {entry.subject}
+                                        </div>
+                                      </div>
+                                      {entry.className && (
+                                        <div className="text-xs text-muted-foreground truncate">
+                                          {entry.className}
+                                        </div>
+                                      )}
+                                      {entry.room && (
+                                        <div className="text-xs text-muted-foreground truncate">
+                                          📍 {entry.room}
+                                        </div>
+                                      )}
+                                      {entry.mirrorBoth && data.parityMode !== "both" && (
+                                        <div className="text-[10px] text-muted-foreground">
+                                          ↔ oba týdny
+                                        </div>
+                                      )}
                                     </div>
-                                    {entry.className && (
-                                      <div className="text-xs text-muted-foreground truncate">
-                                        {entry.className}
-                                      </div>
-                                    )}
-                                    {entry.room && (
-                                      <div className="text-xs text-muted-foreground truncate">
-                                        📍 {entry.room}
-                                      </div>
-                                    )}
-                                    {entry.mirrorBoth && data.parityMode !== "both" && (
-                                      <div className="text-[10px] text-muted-foreground">
-                                        ↔ oba týdny
-                                      </div>
-                                    )}
-                                  </div>
-                                </button>
-                              ) : (
+                                  </button>
+                                );
+                              })() : (
                                 <Button
                                   size="sm"
                                   variant="ghost"
@@ -564,31 +618,97 @@ export default function TeacherSchedule() {
                   {isNew ? "Nová hodina" : "Upravit hodinu"}
                 </DialogTitle>
                 <DialogDescription>
-                  {DAYS[editing.day]} · {editing.period}. hodina
+                  {isNew ? `${editing.period}. hodina` : `${DAYS[editing.day]} · ${editing.period}. hodina`}
                   {data.periodTimes[editing.period] &&
                     ` (${data.periodTimes[editing.period].start}–${data.periodTimes[editing.period].end})`}
                 </DialogDescription>
               </DialogHeader>
 
               <div className="space-y-3">
+                {/* Multi-day picker (new only) */}
+                {isNew && (
+                  <div className="space-y-1.5">
+                    <Label>Dny v týdnu *</Label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {DAYS.map((d, i) => {
+                        const active = editingDays.includes(i);
+                        return (
+                          <button
+                            key={d}
+                            type="button"
+                            onClick={() =>
+                              setEditingDays((prev) =>
+                                prev.includes(i) ? prev.filter((x) => x !== i) : [...prev, i],
+                              )
+                            }
+                            className={`px-3 py-1.5 text-xs rounded-md border transition-colors flex items-center gap-1 ${
+                              active
+                                ? "bg-primary text-primary-foreground border-primary"
+                                : "bg-card border-border hover:bg-muted"
+                            }`}
+                          >
+                            {active && <Check className="w-3 h-3" />}
+                            {d}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      Hodina se vytvoří ve všech vybraných dnech.
+                    </p>
+                  </div>
+                )}
+
                 <div className="space-y-1.5">
                   <Label htmlFor="subject">Předmět *</Label>
                   <Input
                     id="subject"
                     value={editing.subject}
-                    onChange={(e) => setEditing({ ...editing, subject: e.target.value })}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      const existing = subjectStyles.get(v.trim());
+                      setEditing({
+                        ...editing,
+                        subject: v,
+                        // Auto-fill style from existing subject if user hasn't customized yet
+                        color: existing?.color ?? editing.color ?? colorForSubject(v),
+                        abbreviation: existing?.abbreviation ?? editing.abbreviation,
+                      });
+                    }}
                     placeholder="Např. Matematika"
+                    list="schedule-subjects"
                   />
+                  <datalist id="schedule-subjects">
+                    {Array.from(subjectStyles.keys()).map((s) => (
+                      <option key={s} value={s} />
+                    ))}
+                  </datalist>
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="class">Třída</Label>
-                  <Input
-                    id="class"
-                    value={editing.className}
-                    onChange={(e) => setEditing({ ...editing, className: e.target.value })}
-                    placeholder="Např. 6. A"
-                  />
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="abbr">Zkratka</Label>
+                    <Input
+                      id="abbr"
+                      value={editing.abbreviation ?? ""}
+                      onChange={(e) =>
+                        setEditing({ ...editing, abbreviation: e.target.value.toUpperCase().slice(0, 5) })
+                      }
+                      placeholder="MAT"
+                      maxLength={5}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="class">Třída</Label>
+                    <Input
+                      id="class"
+                      value={editing.className}
+                      onChange={(e) => setEditing({ ...editing, className: e.target.value })}
+                      placeholder="Např. 6. A"
+                    />
+                  </div>
                 </div>
+
                 <div className="space-y-1.5">
                   <Label htmlFor="room">Místnost</Label>
                   <Input
@@ -597,6 +717,41 @@ export default function TeacherSchedule() {
                     onChange={(e) => setEditing({ ...editing, room: e.target.value })}
                     placeholder="Např. 204"
                   />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>Barva</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {SUBJECT_COLORS.map((c) => {
+                      const active = editing.color === c.value;
+                      return (
+                        <button
+                          key={c.value}
+                          type="button"
+                          onClick={() => setEditing({ ...editing, color: c.value })}
+                          className={`w-8 h-8 rounded-full border-2 transition-all flex items-center justify-center ${
+                            active ? "border-foreground scale-110" : "border-border hover:scale-105"
+                          }`}
+                          style={{ backgroundColor: c.value }}
+                          title={c.label}
+                          aria-label={c.label}
+                        >
+                          {active && <Check className="w-4 h-4 text-white" />}
+                        </button>
+                      );
+                    })}
+                    <input
+                      type="color"
+                      value={editing.color || "#6EC6D9"}
+                      onChange={(e) => setEditing({ ...editing, color: e.target.value })}
+                      className="w-8 h-8 rounded-full border border-border cursor-pointer p-0 bg-transparent"
+                      title="Vlastní barva"
+                      aria-label="Vlastní barva"
+                    />
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    Stejný předmět má v rozvrhu i kalendáři stejnou barvu.
+                  </p>
                 </div>
 
                 {data.parityMode !== "both" && (
@@ -616,6 +771,7 @@ export default function TeacherSchedule() {
                   </div>
                 )}
               </div>
+
 
               <DialogFooter className="flex-row justify-between sm:justify-between gap-2">
                 {!isNew ? (

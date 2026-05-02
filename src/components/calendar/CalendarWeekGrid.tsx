@@ -129,26 +129,38 @@ const CalendarWeekGrid = ({
                   startMin > (HOUR_END - HOUR_START) * 60
                 )
                   return null;
-                const colors = getEventColors(ev.type);
+                const defaults = getEventColors(ev.type);
+                const customColor = ev.color;
+                const bg = customColor ? `${customColor}26` : defaults.bg;
+                const border = customColor || defaults.border;
 
                 return (
                   <button
                     key={ev.id}
                     onClick={() => onEventClick?.(ev)}
-                    className="absolute rounded-md text-left px-2 py-1 overflow-hidden border text-xs hover:opacity-90 transition-opacity"
+                    className="absolute rounded-md text-left px-2 py-1 overflow-hidden border-l-4 border text-xs hover:opacity-90 transition-opacity"
                     style={{
                       top: `${startMin}px`,
                       height: `${durMin}px`,
                       left: "4px",
                       right: "4px",
-                      backgroundColor: colors.bg,
-                      borderColor: colors.border,
-                      color: colors.text,
+                      backgroundColor: bg,
+                      borderColor: border,
+                      borderLeftColor: border,
+                      color: defaults.text,
                     }}
                     title={ev.title}
                   >
-                    <div className="font-medium leading-tight truncate">
-                      {formatTime(ev.start)} {ev.title}
+                    <div className="font-medium leading-tight truncate flex items-center gap-1">
+                      {ev.abbreviation && (
+                        <span
+                          className="inline-block text-[9px] font-bold text-white px-1 py-0.5 rounded shrink-0"
+                          style={{ backgroundColor: customColor || defaults.border }}
+                        >
+                          {ev.abbreviation}
+                        </span>
+                      )}
+                      <span className="truncate">{formatTime(ev.start)} {ev.title}</span>
                     </div>
                     {ev.room && (
                       <div className="text-[10px] opacity-80 truncate">
