@@ -28,6 +28,7 @@ import {
   type WeekParityMode,
 } from "@/lib/teacher-schedule-store";
 import ClassScheduleSummary from "@/components/ClassScheduleSummary";
+import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
 
 const DAYS = ["Pondělí", "Úterý", "Středa", "Čtvrtek", "Pátek"];
 
@@ -49,6 +50,26 @@ export default function TeacherSchedule() {
   const [isNew, setIsNew] = useState(false);
 
   const subjectStyles = useMemo(() => buildSubjectStyleMap(data), [data]);
+  const { subjects: availableSubjects } = useTeacherSubjects();
+
+  /** Combined subject suggestions (teacher's textbooks/global/predefined + already-used in schedule).
+   *  Each entry knows its display label, abbreviation and color so the form can auto-fill them. */
+  const subjectSuggestions = useMemo(() => {
+    const map = new Map<string, { label: string; abbreviation?: string; color?: string }>();
+    // First add already-used subjects (preserve user's chosen styles)
+    for (const [label, style] of subjectStyles.entries()) {
+      map.set(label.toLowerCase(), { label, abbreviation: style.abbreviation, color: style.color });
+    }
+    // Then teacher's textbooks / global / predefined
+    for (const s of availableSubjects) {
+      const k = s.label.toLowerCase();
+      if (!map.has(k)) {
+        map.set(k, { label: s.label, abbreviation: s.abbreviation, color: s.color });
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => a.label.localeCompare(b.label, "cs"));
+  }, [subjectStyles, availableSubjects]);
+
 
   // Which lesson list is currently shown / edited
   const currentLessons = useMemo(() => {
@@ -666,23 +687,29 @@ export default function TeacherSchedule() {
                     value={editing.subject}
                     onChange={(e) => {
                       const v = e.target.value;
+                      const match = subjectSuggestions.find((s) => s.label.toLowerCase() === v.trim().toLowerCase());
                       const existing = subjectStyles.get(v.trim());
                       setEditing({
                         ...editing,
                         subject: v,
-                        // Auto-fill style from existing subject if user hasn't customized yet
-                        color: existing?.color ?? editing.color ?? colorForSubject(v),
-                        abbreviation: existing?.abbreviation ?? editing.abbreviation,
+                        // Auto-fill style: in-schedule first, then unified subjects, then derived color
+                        color: existing?.color ?? match?.color ?? editing.color ?? colorForSubject(v),
+                        abbreviation: existing?.abbreviation ?? match?.abbreviation ?? editing.abbreviation,
                       });
                     }}
                     placeholder="Např. Matematika"
                     list="schedule-subjects"
                   />
                   <datalist id="schedule-subjects">
-                    {Array.from(subjectStyles.keys()).map((s) => (
-                      <option key={s} value={s} />
+                    {subjectSuggestions.map((s) => (
+                      <option key={s.label} value={s.label}>
+                        {s.abbreviation ? `${s.abbreviation} · ${s.label}` : s.label}
+                      </option>
                     ))}
                   </datalist>
+                  <p className="text-[11px] text-muted-foreground">
+                    Návrhy zahrnují vaše učebnice i standardní předměty.
+                  </p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">

@@ -36,7 +36,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { PREDEFINED_SUBJECTS } from "@/lib/predefined-subjects";
+import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
 
 interface Slot {
   id: string;
@@ -101,7 +101,11 @@ const ClassScheduleDialog = ({ classId, className, open, onOpenChange }: Props) 
   const [deleteTarget, setDeleteTarget] = useState<Slot | null>(null);
 
   // Form state
-  const [subjectChoice, setSubjectChoice] = useState<string>(PREDEFINED_SUBJECTS[0]);
+  const { subjects: teacherSubjects } = useTeacherSubjects();
+  const subjectNames = teacherSubjects.map((s) => s.label);
+  const isKnownSubject = (label: string) => subjectNames.some((n) => n.toLowerCase() === label.toLowerCase());
+
+  const [subjectChoice, setSubjectChoice] = useState<string>("");
   const [customSubject, setCustomSubject] = useState("");
   const [dayOfWeek, setDayOfWeek] = useState("1");
   const [startTime, setStartTime] = useState("08:00");
@@ -171,7 +175,7 @@ const ClassScheduleDialog = ({ classId, className, open, onOpenChange }: Props) 
 
   const resetForm = () => {
     setEditing(null);
-    setSubjectChoice(PREDEFINED_SUBJECTS[0]);
+    setSubjectChoice(subjectNames[0] ?? "");
     setCustomSubject("");
     setDayOfWeek("1");
     setStartTime("08:00");
@@ -186,7 +190,7 @@ const ClassScheduleDialog = ({ classId, className, open, onOpenChange }: Props) 
   const openCreate = (preselectSubject?: string, preselectTextbookKey?: string) => {
     resetForm();
     if (preselectSubject) {
-      if ((PREDEFINED_SUBJECTS as readonly string[]).includes(preselectSubject)) {
+      if (isKnownSubject(preselectSubject)) {
         setSubjectChoice(preselectSubject);
       } else {
         setSubjectChoice(CUSTOM_SUBJECT);
@@ -200,7 +204,7 @@ const ClassScheduleDialog = ({ classId, className, open, onOpenChange }: Props) 
   const openEdit = (slot: Slot) => {
     setEditing(slot);
     const label = (slot.subject_label || "").trim();
-    if ((PREDEFINED_SUBJECTS as readonly string[]).includes(label)) {
+    if (isKnownSubject(label)) {
       setSubjectChoice(label);
       setCustomSubject("");
     } else {
@@ -451,11 +455,32 @@ const ClassScheduleDialog = ({ classId, className, open, onOpenChange }: Props) 
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="max-h-72">
-                      {PREDEFINED_SUBJECTS.map((s) => (
-                        <SelectItem key={s} value={s}>
-                          {s}
-                        </SelectItem>
-                      ))}
+                      {(() => {
+                        const groups = {
+                          teacher_textbook: { label: "Mé učebnice", items: [] as typeof teacherSubjects },
+                          global_subject: { label: "Globální předměty", items: [] as typeof teacherSubjects },
+                          predefined: { label: "Standardní předměty", items: [] as typeof teacherSubjects },
+                        };
+                        for (const s of teacherSubjects) groups[s.source].items.push(s);
+                        return (
+                          <>
+                            {(["teacher_textbook", "global_subject", "predefined"] as const).map((k) =>
+                              groups[k].items.length === 0 ? null : (
+                                <div key={k}>
+                                  <div className="px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+                                    {groups[k].label}
+                                  </div>
+                                  {groups[k].items.map((s) => (
+                                    <SelectItem key={`${k}-${s.label}`} value={s.label}>
+                                      {s.abbreviation ? `${s.abbreviation} · ${s.label}` : s.label}
+                                    </SelectItem>
+                                  ))}
+                                </div>
+                              ),
+                            )}
+                          </>
+                        );
+                      })()}
                       <SelectItem value={CUSTOM_SUBJECT}>+ Vlastní název…</SelectItem>
                     </SelectContent>
                   </Select>
