@@ -24,6 +24,7 @@ import {
   type TeacherScheduleData,
   type WeekParityMode,
 } from "@/lib/teacher-schedule-store";
+import ClassScheduleSummary from "@/components/ClassScheduleSummary";
 
 const DAYS = ["Pondělí", "Úterý", "Středa", "Čtvrtek", "Pátek"];
 
@@ -290,6 +291,11 @@ export default function TeacherSchedule() {
               Lichý / sudý zvlášť
             </button>
           </div>
+        </div>
+
+        {/* Hodiny ze tříd – synchronizováno z Třídy → ikona hodin */}
+        <div className="mb-6">
+          <ClassScheduleSummary />
         </div>
 
         {/* Sub-tabs for odd/even when parity mode is not "both" */}

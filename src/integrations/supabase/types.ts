@@ -233,6 +233,8 @@ export type Database = {
           room: string | null
           start_time: string
           subject_label: string | null
+          textbook_id: string | null
+          textbook_type: string | null
           updated_at: string
           valid_from: string | null
           valid_to: string | null
@@ -249,6 +251,8 @@ export type Database = {
           room?: string | null
           start_time: string
           subject_label?: string | null
+          textbook_id?: string | null
+          textbook_type?: string | null
           updated_at?: string
           valid_from?: string | null
           valid_to?: string | null
@@ -265,6 +269,8 @@ export type Database = {
           room?: string | null
           start_time?: string
           subject_label?: string | null
+          textbook_id?: string | null
+          textbook_type?: string | null
           updated_at?: string
           valid_from?: string | null
           valid_to?: string | null
