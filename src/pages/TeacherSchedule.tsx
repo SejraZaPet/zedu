@@ -306,7 +306,7 @@ export default function TeacherSchedule() {
                                 className="px-1 py-1 border-b border-l border-border"
                               >
                                 <Input
-                                  value={br.notes[dayIdx] ?? ""}
+                                  value={br.notes?.[dayIdx] ?? ""}
                                   onChange={(e) => updateBreakNote(period, dayIdx, e.target.value)}
                                   placeholder="Poznámka…"
                                   className="h-7 text-xs bg-transparent border-transparent hover:border-border focus:border-input"
