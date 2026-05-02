@@ -679,11 +679,14 @@ const TeacherTextbooks = () => {
     <div className="min-h-screen bg-background flex flex-col">
       <SiteHeader />
       <main className="flex-1 container mx-auto px-4 py-12 max-w-4xl" style={{ paddingTop: "calc(70px + 3rem)" }}>
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-8 gap-3">
           <div>
             <h1 className="font-heading text-3xl font-bold">Moje učebnice</h1>
-            <p className="text-muted-foreground mt-1">Učebnice se automaticky vytvářejí při přidání předmětu.</p>
+            <p className="text-muted-foreground mt-1">Učebnice se automaticky vytvářejí při přidání předmětu, nebo je můžete vytvořit ručně.</p>
           </div>
+          <Button onClick={() => setCreateOpen(true)} className="gap-1 shrink-0">
+            <Plus className="w-4 h-4" /> Nová učebnice
+          </Button>
         </div>
 
         <TextbookList
@@ -691,7 +694,13 @@ const TeacherTextbooks = () => {
           loading={loading}
           subjects={subjects?.map(s => s) || []}
           onOpen={openDetail}
-          onCreate={() => {}}
+          onCreate={() => setCreateOpen(true)}
+        />
+
+        <CreateTextbookDialog
+          open={createOpen}
+          onOpenChange={setCreateOpen}
+          onCreated={fetchTextbooks}
         />
       </main>
       <SiteFooter />
