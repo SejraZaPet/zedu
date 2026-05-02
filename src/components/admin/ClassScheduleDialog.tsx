@@ -455,11 +455,32 @@ const ClassScheduleDialog = ({ classId, className, open, onOpenChange }: Props) 
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="max-h-72">
-                      {PREDEFINED_SUBJECTS.map((s) => (
-                        <SelectItem key={s} value={s}>
-                          {s}
-                        </SelectItem>
-                      ))}
+                      {(() => {
+                        const groups = {
+                          teacher_textbook: { label: "Mé učebnice", items: [] as typeof teacherSubjects },
+                          global_subject: { label: "Globální předměty", items: [] as typeof teacherSubjects },
+                          predefined: { label: "Standardní předměty", items: [] as typeof teacherSubjects },
+                        };
+                        for (const s of teacherSubjects) groups[s.source].items.push(s);
+                        return (
+                          <>
+                            {(["teacher_textbook", "global_subject", "predefined"] as const).map((k) =>
+                              groups[k].items.length === 0 ? null : (
+                                <div key={k}>
+                                  <div className="px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+                                    {groups[k].label}
+                                  </div>
+                                  {groups[k].items.map((s) => (
+                                    <SelectItem key={`${k}-${s.label}`} value={s.label}>
+                                      {s.abbreviation ? `${s.abbreviation} · ${s.label}` : s.label}
+                                    </SelectItem>
+                                  ))}
+                                </div>
+                              ),
+                            )}
+                          </>
+                        );
+                      })()}
                       <SelectItem value={CUSTOM_SUBJECT}>+ Vlastní název…</SelectItem>
                     </SelectContent>
                   </Select>
