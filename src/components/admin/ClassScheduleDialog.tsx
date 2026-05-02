@@ -36,7 +36,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { PREDEFINED_SUBJECTS } from "@/lib/predefined-subjects";
+import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
 
 interface Slot {
   id: string;
