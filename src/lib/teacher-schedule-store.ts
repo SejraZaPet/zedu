@@ -189,6 +189,19 @@ export function expandTeacherSchedule(
       if (l.day !== dayIdx) continue;
       const t = schedule.periodTimes[l.period];
       if (!t) continue;
+      // Respect validity window
+      if (l.validFrom) {
+        const vf = new Date(l.validFrom);
+        vf.setHours(0, 0, 0, 0);
+        const d0 = new Date(date);
+        d0.setHours(0, 0, 0, 0);
+        if (d0 < vf) continue;
+      }
+      if (l.validTo) {
+        const vt = new Date(l.validTo);
+        vt.setHours(23, 59, 59, 999);
+        if (date > vt) continue;
+      }
       const start = parseTime(date, t.start);
       const end = parseTime(date, t.end);
       const style = styleMap.get(l.subject.trim());
