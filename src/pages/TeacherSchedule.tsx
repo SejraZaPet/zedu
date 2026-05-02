@@ -58,6 +58,7 @@ import {
 import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import LessonFormDialog from "@/components/schedule/LessonFormDialog";
 
 const DAYS = ["Pondělí", "Úterý", "Středa", "Čtvrtek", "Pátek"];
 const DAYS_SHORT = ["Po", "Út", "St", "Čt", "Pá"];
