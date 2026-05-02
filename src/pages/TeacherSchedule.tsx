@@ -1022,3 +1022,251 @@ function ClassCard({ slot, onClick }: { slot: ClassSlot; onClick: () => void }) 
     </button>
   );
 }
+
+/* ───────── Break / block components ───────── */
+
+function getBreakIcon(kind: BreakKind | undefined) {
+  switch (kind) {
+    case "meeting":
+      return Users;
+    case "duty":
+      return ShieldCheck;
+    case "lunch":
+      return Utensils;
+    case "free":
+      return CircleSlash;
+    case "break":
+    default:
+      return Coffee;
+  }
+}
+
+function BreakCard({
+  brk,
+  periodTimes,
+}: {
+  brk: RowBreak;
+  periodTimes: Record<number, { start: string; end: string }>;
+}) {
+  const kind: BreakKind = brk.kind ?? "break";
+  const meta = BREAK_KIND_META[kind];
+  const Icon = getBreakIcon(kind);
+  let timeLabel = "";
+  if (brk.afterPeriod === 0) {
+    timeLabel = "před 1. hod";
+  } else {
+    const t = periodTimes[brk.afterPeriod];
+    if (t) {
+      const [h, m] = t.end.split(":").map((x) => parseInt(x, 10) || 0);
+      const startTotal = h * 60 + m;
+      const endTotal = startTotal + (brk.durationMin || 0);
+      const fmt = (total: number) =>
+        `${Math.floor(total / 60)}:${(total % 60).toString().padStart(2, "0")}`;
+      timeLabel = `${fmt(startTotal)}–${fmt(endTotal)}`;
+    }
+  }
+  const title =
+    kind === "meeting"
+      ? brk.note?.trim() || "Porada"
+      : kind === "duty"
+        ? "Dozor"
+        : meta.label;
+
+  return (
+    <div
+      className="w-full rounded-md p-2 border border-dashed"
+      style={{
+        backgroundColor: `${meta.color}1A`,
+        borderColor: `${meta.color}66`,
+      }}
+      title={meta.label}
+    >
+      <div className="flex items-center gap-1 text-[11px] text-muted-foreground tabular-nums">
+        <Clock className="w-3 h-3" />
+        {timeLabel}
+        <span className="ml-auto text-[10px]">· {brk.durationMin} min</span>
+      </div>
+      <div className="flex items-center gap-1.5 mt-0.5">
+        <span
+          className="inline-flex items-center justify-center w-5 h-5 rounded shrink-0"
+          style={{ backgroundColor: meta.color }}
+        >
+          <Icon className="w-3 h-3 text-white" />
+        </span>
+        <div className="font-medium text-xs leading-tight truncate">{title}</div>
+      </div>
+      {kind === "duty" && brk.location && (
+        <div className="text-[11px] text-muted-foreground truncate flex items-center gap-1 mt-0.5">
+          <MapPin className="w-2.5 h-2.5 shrink-0" /> {brk.location}
+        </div>
+      )}
+      {kind !== "meeting" && brk.note && (
+        <div className="text-[11px] text-muted-foreground truncate flex items-center gap-1 mt-0.5">
+          <StickyNote className="w-2.5 h-2.5 shrink-0" /> {brk.note}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BreakSettingRow({
+  brk,
+  periods,
+  onChange,
+  onRemove,
+}: {
+  brk: RowBreak;
+  periods: number[];
+  onChange: (patch: Partial<RowBreak>) => void;
+  onRemove: () => void;
+}) {
+  const kind: BreakKind = brk.kind ?? "break";
+  const meta = BREAK_KIND_META[kind];
+  const Icon = getBreakIcon(kind);
+  const days = brk.days ?? [];
+  const allDays = days.length === 0;
+
+  const toggleDay = (d: number) => {
+    const next = days.includes(d) ? days.filter((x) => x !== d) : [...days, d].sort();
+    onChange({ days: next });
+  };
+
+  return (
+    <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-2">
+      <div className="flex items-center gap-2 flex-wrap">
+        <span
+          className="inline-flex items-center justify-center w-7 h-7 rounded shrink-0"
+          style={{ backgroundColor: meta.color }}
+          title={meta.label}
+        >
+          <Icon className="w-3.5 h-3.5 text-white" />
+        </span>
+
+        <Label className="text-xs text-muted-foreground">Po hodině:</Label>
+        <select
+          value={brk.afterPeriod}
+          onChange={(e) => onChange({ afterPeriod: parseInt(e.target.value, 10) })}
+          className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+        >
+          <option value={0}>před 1. hod (nultá)</option>
+          {periods.map((p) => (
+            <option key={p} value={p}>
+              po {p}. hod
+            </option>
+          ))}
+        </select>
+
+        <Label className="text-xs text-muted-foreground ml-2">Typ:</Label>
+        <select
+          value={kind}
+          onChange={(e) => onChange({ kind: e.target.value as BreakKind })}
+          className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+        >
+          {(Object.keys(BREAK_KIND_META) as BreakKind[]).map((k) => (
+            <option key={k} value={k}>
+              {BREAK_KIND_META[k].label}
+            </option>
+          ))}
+        </select>
+
+        <Label className="text-xs text-muted-foreground ml-2">Délka:</Label>
+        <Input
+          type="number"
+          min={1}
+          max={240}
+          value={brk.durationMin}
+          onChange={(e) => onChange({ durationMin: parseInt(e.target.value, 10) || 0 })}
+          className="h-8 w-16 text-xs"
+        />
+        <span className="text-xs text-muted-foreground">min</span>
+
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={onRemove}
+          className="h-8 px-2 ml-auto text-muted-foreground hover:text-destructive"
+          title="Odstranit"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </Button>
+      </div>
+
+      <div className="flex items-center gap-2 flex-wrap">
+        <Label className="text-xs text-muted-foreground">Dny:</Label>
+        <button
+          type="button"
+          onClick={() => onChange({ days: [] })}
+          className={`px-2 py-1 text-[11px] rounded-md border transition-colors ${
+            allDays
+              ? "bg-primary text-primary-foreground border-primary"
+              : "bg-card border-border hover:bg-muted"
+          }`}
+        >
+          Všechny dny
+        </button>
+        {DAYS.map((d, i) => {
+          const active = !allDays && days.includes(i);
+          return (
+            <button
+              key={d}
+              type="button"
+              onClick={() => toggleDay(i)}
+              className={`px-2 py-1 text-[11px] rounded-md border transition-colors ${
+                active
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-card border-border hover:bg-muted"
+              }`}
+            >
+              {DAYS_SHORT[i]}
+            </button>
+          );
+        })}
+      </div>
+
+      {kind === "meeting" && (
+        <div className="space-y-1">
+          <Label className="text-xs">Téma porady</Label>
+          <Input
+            value={brk.note ?? ""}
+            onChange={(e) => onChange({ note: e.target.value })}
+            placeholder="Např. Pedagogická rada – výsledky 1. pololetí"
+            className="h-8 text-xs"
+          />
+        </div>
+      )}
+      {kind === "duty" && (
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-1">
+            <Label className="text-xs">Místo dozoru</Label>
+            <Input
+              value={brk.location ?? ""}
+              onChange={(e) => onChange({ location: e.target.value })}
+              placeholder="Např. chodba 2. NP"
+              className="h-8 text-xs"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Poznámka</Label>
+            <Input
+              value={brk.note ?? ""}
+              onChange={(e) => onChange({ note: e.target.value })}
+              placeholder="Volitelné"
+              className="h-8 text-xs"
+            />
+          </div>
+        </div>
+      )}
+      {(kind === "break" || kind === "lunch" || kind === "free") && (
+        <div className="space-y-1">
+          <Label className="text-xs">Poznámka (volitelné)</Label>
+          <Input
+            value={brk.note ?? ""}
+            onChange={(e) => onChange({ note: e.target.value })}
+            placeholder="Např. Velká přestávka"
+            className="h-8 text-xs"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
