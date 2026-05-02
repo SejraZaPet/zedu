@@ -549,69 +549,111 @@ export default function TeacherSchedule() {
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-5 divide-y md:divide-y-0 md:divide-x divide-border">
-            {[0, 1, 2, 3, 4].map((dayIdx) => {
-              const items = cardsByDay.get(dayIdx) ?? [];
-              return (
-                <div key={dayIdx} className="p-3 min-h-[180px] flex flex-col">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                      <span className="md:hidden">{DAYS[dayIdx]}</span>
-                      <span className="hidden md:inline">{DAYS_SHORT[dayIdx]}</span>
-                    </div>
-                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                      {items.length}
-                    </Badge>
-                  </div>
+          {/* Aligned grid: rows = period/break slots, columns = days. */}
+          <div className="overflow-x-auto">
+            <div
+              className="grid min-w-[720px]"
+              style={{
+                gridTemplateColumns: `64px repeat(5, minmax(0, 1fr))`,
+              }}
+            >
+              {/* Header row */}
+              <div className="bg-muted/30 border-b border-border" />
+              {[0, 1, 2, 3, 4].map((dayIdx) => (
+                <div
+                  key={`h-${dayIdx}`}
+                  className="bg-muted/30 border-b border-l border-border px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide"
+                >
+                  <span className="md:hidden">{DAYS_SHORT[dayIdx]}</span>
+                  <span className="hidden md:inline">{DAYS[dayIdx]}</span>
+                </div>
+              ))}
 
-                  <div className="space-y-1.5 flex-1">
-                    {items.length === 0 && (
-                      <div className="text-xs text-muted-foreground/60 italic py-2">Volno</div>
-                    )}
-                    {items.map((card, i) => {
-                      if (card.kind === "personal") {
+              {/* Body rows */}
+              {rowSchema.map((row, rowIdx) => {
+                if (row.kind === "period") {
+                  const t = data.periodTimes[row.period];
+                  return (
+                    <div key={`row-${rowIdx}`} className="contents">
+                      <div className="border-t border-border bg-muted/10 px-2 py-2 flex flex-col items-center justify-center text-center">
+                        <span className="text-sm font-semibold leading-none">{row.period}.</span>
+                        <span className="text-[10px] text-muted-foreground leading-tight">hod</span>
+                        {t && (
+                          <span className="text-[10px] text-muted-foreground tabular-nums mt-1">
+                            {fmtTime(t.start)}
+                          </span>
+                        )}
+                      </div>
+                      {[0, 1, 2, 3, 4].map((dayIdx) => {
+                        const personal = personalByDayPeriod.get(`${dayIdx}-${row.period}`);
+                        const cls = !personal
+                          ? classByDayPeriod.get(`${dayIdx}-${row.period}`)
+                          : undefined;
                         return (
-                          <PersonalCard
-                            key={`p-${card.lesson.id}`}
-                            lesson={card.lesson}
-                            time={card.time}
-                            subjectStyles={subjectStyles}
-                            parityMode={data.parityMode}
-                            onClick={() => openEditLesson(card.lesson)}
-                          />
+                          <div
+                            key={`c-${rowIdx}-${dayIdx}`}
+                            className="border-t border-l border-border p-1.5 min-h-[84px] flex"
+                          >
+                            {personal ? (
+                              <div className="w-full">
+                                <PersonalCard
+                                  lesson={personal.lesson}
+                                  time={personal.time}
+                                  subjectStyles={subjectStyles}
+                                  parityMode={data.parityMode}
+                                  onClick={() => openEditLesson(personal.lesson)}
+                                />
+                              </div>
+                            ) : cls ? (
+                              <div className="w-full">
+                                <ClassCard
+                                  slot={cls}
+                                  onClick={() => navigate("/ucitel/tridy")}
+                                />
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => openNewLesson(dayIdx, row.period)}
+                                className="w-full rounded-md border border-dashed border-border/70 hover:border-primary hover:bg-primary/5 text-muted-foreground/60 hover:text-primary text-xs flex items-center justify-center gap-1 transition-colors min-h-[72px]"
+                                title={`Přidat ${row.period}. hodinu`}
+                              >
+                                <Plus className="w-3 h-3" />
+                                <span>Přidat</span>
+                              </button>
+                            )}
+                          </div>
                         );
-                      }
-                      if (card.kind === "class") {
-                        return (
-                          <ClassCard
-                            key={`c-${card.slot.id}`}
-                            slot={card.slot}
-                            onClick={() => navigate("/ucitel/tridy")}
-                          />
-                        );
-                      }
+                      })}
+                    </div>
+                  );
+                }
+                // Break row
+                return (
+                  <div key={`row-${rowIdx}`} className="contents">
+                    <div className="border-t border-border bg-muted/20 px-2 py-1 flex items-center justify-center">
+                      <Coffee className="w-3 h-3 text-muted-foreground" />
+                    </div>
+                    {[0, 1, 2, 3, 4].map((dayIdx) => {
+                      const br = breaksByAfterDay.get(`${row.afterPeriod}-${dayIdx}`);
                       return (
-                        <BreakCard
-                          key={`b-${card.brk.id ?? card.brk.afterPeriod}-${i}`}
-                          brk={card.brk}
-                          periodTimes={data.periodTimes}
-                        />
+                        <div
+                          key={`b-${rowIdx}-${dayIdx}`}
+                          className="border-t border-l border-border p-1.5 bg-muted/10 flex"
+                        >
+                          {br ? (
+                            <div className="w-full">
+                              <BreakCard brk={br} periodTimes={data.periodTimes} />
+                            </div>
+                          ) : (
+                            <div className="w-full" />
+                          )}
+                        </div>
                       );
                     })}
                   </div>
-
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="mt-2 w-full h-8 text-xs text-muted-foreground hover:text-primary hover:bg-primary/10 border border-dashed border-border"
-                    onClick={() => openNewLesson(dayIdx)}
-                  >
-                    <Plus className="w-3 h-3 mr-1" />
-                    Přidat hodinu
-                  </Button>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </div>
 
