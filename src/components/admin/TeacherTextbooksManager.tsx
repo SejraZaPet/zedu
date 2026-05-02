@@ -59,8 +59,22 @@ interface GradeGroup {
 
 const TeacherTextbooksManager = () => {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const { data: subjects } = useSubjects(true);
   const [textbooks, setTextbooks] = useState<Textbook[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // === New textbook dialog state ===
+  const [createOpen, setCreateOpen] = useState(false);
+  const [newSubjectMode, setNewSubjectMode] = useState<"existing" | "custom">("existing");
+  const [newSubjectId, setNewSubjectId] = useState<string>(""); // selected existing subject id
+  const [newCustomSubject, setNewCustomSubject] = useState("");
+  const [newTitle, setNewTitle] = useState("");
+  const [newDescription, setNewDescription] = useState("");
+  const [newGrades, setNewGrades] = useState<{ grade_number: number; label: string }[]>([
+    { grade_number: 1, label: "1. ročník" },
+  ]);
+  const [creatingTextbook, setCreatingTextbook] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // Views
