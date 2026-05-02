@@ -1,14 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
-import { format } from "date-fns";
-import { cs } from "date-fns/locale";
-import { CalendarIcon, Pencil, Plus, Trash2, BookOpen, Clock } from "lucide-react";
+import { Pencil, Plus, Trash2, BookOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -17,15 +12,6 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,9 +22,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
-import { loadSchedule, type PeriodTime } from "@/lib/teacher-schedule-store";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { loadSchedule } from "@/lib/teacher-schedule-store";
+import LessonFormDialog, {
+  type LessonFormPeriod,
+} from "@/components/schedule/LessonFormDialog";
 
 interface Slot {
   id: string;
