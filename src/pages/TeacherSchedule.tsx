@@ -382,6 +382,7 @@ export default function TeacherSchedule() {
   }
   function addPeriod() {
     setData((d) => {
+      if (d.periods.length >= 8) return d;
       const last = d.periods[d.periods.length - 1] ?? 0;
       const next = last + 1;
       const lastTime = d.periodTimes[last] ?? { start: "08:00", end: "08:45" };
