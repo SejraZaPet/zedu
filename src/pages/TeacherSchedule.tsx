@@ -323,8 +323,35 @@ export default function TeacherSchedule() {
             <table className="w-full text-sm border-collapse">
               <thead>
                 <tr className="bg-muted/50">
-                  <th className="p-2 border-b border-r border-border text-xs font-medium text-muted-foreground w-24 text-left">
-                    Den
+                  <th className="p-2 border-b border-r border-border text-xs font-medium text-muted-foreground w-32 text-left align-bottom">
+                    <div className="flex flex-col gap-1">
+                      <span>Den</span>
+                      <div className="flex flex-wrap gap-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 px-1.5 text-[10px]"
+                          onClick={() => addPeriod("start")}
+                          title="Přidat hodinu před první (např. nultá)"
+                        >
+                          <Plus className="w-3 h-3 mr-0.5" />
+                          hod.
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 px-1.5 text-[10px]"
+                          onClick={addLeadingBreak}
+                          disabled={
+                            data.periods.length === 0 ||
+                            breakByPeriod.has(data.periods[0] - 1)
+                          }
+                          title="Vložit přestávku před první hodinu"
+                        >
+                          <Coffee className="w-3 h-3 mr-0.5" />+
+                        </Button>
+                      </div>
+                    </div>
                   </th>
                   {columns.map((col) => {
                     if (col.kind === "period") {
@@ -368,22 +395,18 @@ export default function TeacherSchedule() {
                     return (
                       <th
                         key={`h-b-${col.afterPeriod}`}
-                        className="p-2 border-b border-l border-border bg-muted/30 w-32"
+                        className="p-1 border-b border-l border-border bg-muted/30 w-14 align-top"
                       >
-                        <div className="flex items-center justify-between gap-1 mb-1">
-                          <div className="flex items-center gap-1">
-                            <Coffee className="w-3 h-3 text-muted-foreground" />
-                            <span className="text-[11px] text-muted-foreground">přestávka</span>
-                          </div>
+                        <div className="flex flex-col items-center gap-1">
                           <button
                             onClick={() => removeBreak(col.afterPeriod)}
-                            className="text-muted-foreground hover:text-destructive p-0.5"
+                            className="self-end text-muted-foreground hover:text-destructive p-0.5"
                             aria-label="Odebrat přestávku"
+                            title="Odebrat přestávku"
                           >
                             <X className="w-3 h-3" />
                           </button>
-                        </div>
-                        <div className="flex items-center gap-1">
+                          <Coffee className="w-4 h-4 text-muted-foreground" />
                           <Input
                             type="number"
                             min={1}
@@ -394,9 +417,10 @@ export default function TeacherSchedule() {
                                 durationMin: parseInt(e.target.value, 10) || 0,
                               })
                             }
-                            className="h-7 px-1 text-xs w-14"
+                            className="h-6 px-1 text-[11px] w-11 text-center"
+                            title="Délka přestávky v minutách"
                           />
-                          <span className="text-[10px] text-muted-foreground">min</span>
+                          <span className="text-[9px] text-muted-foreground -mt-0.5">min</span>
                         </div>
                       </th>
                     );
@@ -405,7 +429,7 @@ export default function TeacherSchedule() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={addPeriod}
+                      onClick={() => addPeriod("end")}
                       className="h-8 w-full px-2"
                       title="Přidat hodinu"
                     >
@@ -448,6 +472,11 @@ export default function TeacherSchedule() {
                                         📍 {entry.room}
                                       </div>
                                     )}
+                                    {entry.mirrorBoth && data.parityMode !== "both" && (
+                                      <div className="text-[10px] text-muted-foreground">
+                                        ↔ oba týdny
+                                      </div>
+                                    )}
                                   </div>
                                 </button>
                               ) : (
@@ -463,19 +492,11 @@ export default function TeacherSchedule() {
                             </td>
                           );
                         }
-                        const br = breakByPeriod.get(col.afterPeriod)!;
                         return (
                           <td
                             key={`bc-${dayIdx}-${col.afterPeriod}`}
-                            className="p-1 border-b border-l border-border bg-muted/10 align-middle"
-                          >
-                            <Input
-                              value={br.notes?.[dayIdx] ?? ""}
-                              onChange={(e) => updateBreakNote(col.afterPeriod, dayIdx, e.target.value)}
-                              placeholder="Poznámka…"
-                              className="h-7 text-xs bg-transparent border-transparent hover:border-border"
-                            />
-                          </td>
+                            className="border-b border-l border-border bg-muted/10"
+                          />
                         );
                       })}
                       <td className="border-b border-l border-border" />
@@ -492,7 +513,6 @@ export default function TeacherSchedule() {
                     if (col.kind === "break") {
                       return <td key={`add-b-${idx}`} className="border-l border-border" />;
                     }
-                    // Show "+ break" button only if not the last period and no break already exists after it
                     const isLast = idx === columns.length - 1;
                     const nextIsBreak = !isLast && columns[idx + 1]?.kind === "break";
                     if (isLast || nextIsBreak) {
@@ -520,7 +540,7 @@ export default function TeacherSchedule() {
         </div>
 
         <p className="text-xs text-muted-foreground mt-3">
-          Tip: Tlačítkem <Plus className="inline w-3 h-3" /> vpravo přidáš hodinu. Pomocí <Minus className="inline w-3 h-3" /> v hlavičce ji odebereš.
+          Tip: Tlačítkem <Plus className="inline w-3 h-3" /> vpravo přidáš hodinu, vlevo můžeš přidat nultou hodinu nebo přestávku před první hodinou.
           Hodiny se automaticky propíší do tvého kalendáře.
         </p>
       </main>
