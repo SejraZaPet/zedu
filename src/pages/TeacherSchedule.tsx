@@ -133,35 +133,38 @@ export default function TeacherSchedule() {
     saveSchedule(data);
   }, [data]);
 
-  // Load class slots (read-only synced from Třídy)
+  // Load class slots (synced from Třídy – also editable in place)
+  const fetchClassSlots = async () => {
+    if (!user) {
+      setClassSlots([]);
+      return;
+    }
+    const { data: ct } = await supabase
+      .from("class_teachers")
+      .select("class_id")
+      .eq("user_id", user.id);
+    const classIds = (ct ?? []).map((r: any) => r.class_id);
+    if (classIds.length === 0) {
+      setClassSlots([]);
+      return;
+    }
+    const { data: slots } = await supabase
+      .from("class_schedule_slots" as any)
+      .select("*, classes(name)")
+      .in("class_id", classIds)
+      .order("day_of_week", { ascending: true })
+      .order("start_time", { ascending: true });
+    setClassSlots((slots as any) || []);
+  };
+
   useEffect(() => {
-    if (!user) return;
-    let cancelled = false;
-    (async () => {
-      const { data: ct } = await supabase
-        .from("class_teachers")
-        .select("class_id")
-        .eq("user_id", user.id);
-      const classIds = (ct ?? []).map((r: any) => r.class_id);
-      if (classIds.length === 0) {
-        if (!cancelled) setClassSlots([]);
-        return;
-      }
-      const { data: slots } = await supabase
-        .from("class_schedule_slots" as any)
-        .select("*, classes(name)")
-        .in("class_id", classIds)
-        .order("day_of_week", { ascending: true })
-        .order("start_time", { ascending: true });
-      if (!cancelled) setClassSlots((slots as any) || []);
-    })();
-    return () => {
-      cancelled = true;
-    };
+    fetchClassSlots();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const [editing, setEditing] = useState<LessonEntry | null>(null);
   const [isNew, setIsNew] = useState(false);
+  const [editingClassSlot, setEditingClassSlot] = useState<ClassSlot | null>(null);
 
   const subjectStyles = useMemo(() => buildSubjectStyleMap(data), [data]);
   const { subjects: availableSubjects } = useTeacherSubjects();
