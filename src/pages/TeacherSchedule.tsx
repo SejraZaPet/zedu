@@ -203,62 +203,83 @@ export default function TeacherSchedule() {
     return classSlots.filter((s) => s.week_parity === "every" || s.week_parity === activeTab);
   }, [classSlots, data.parityMode, activeTab]);
 
-  // Build per-day merged cards sorted by start time
-  const cardsByDay = useMemo(() => {
-    const map = new Map<number, ScheduleCard[]>();
-    for (let d = 0; d < 5; d++) map.set(d, []);
+  /** Visible periods – capped at 8 (max 8 vyučovacích hodin). */
+  const visiblePeriods = useMemo(() => data.periods.slice(0, 8), [data.periods]);
 
+  /** Build map (day, period) → personal lesson card. */
+  const personalByDayPeriod = useMemo(() => {
+    const m = new Map<string, { lesson: LessonEntry; time: { start: string; end: string } | null }>();
     for (const l of currentLessons) {
-      const t = data.periodTimes[l.period] || null;
-      map.get(l.day)!.push({
-        kind: "personal",
-        sortStart: t?.start ?? "99:99",
-        lesson: l,
-        time: t,
-      });
+      if (!visiblePeriods.includes(l.period)) continue;
+      m.set(`${l.day}-${l.period}`, { lesson: l, time: data.periodTimes[l.period] || null });
+    }
+    return m;
+  }, [currentLessons, visiblePeriods, data.periodTimes]);
+
+  /** Build map (day, period) → class slot, matching by start_time = period start. */
+  const classByDayPeriod = useMemo(() => {
+    const m = new Map<string, ClassSlot>();
+    // Build start-time → period lookup
+    const startToPeriod = new Map<string, number>();
+    for (const p of visiblePeriods) {
+      const t = data.periodTimes[p];
+      if (t) startToPeriod.set(t.start.slice(0, 5), p);
     }
     for (const s of visibleClassSlots) {
-      const dayIdx = s.day_of_week - 1; // 1=Mon → 0
+      const dayIdx = s.day_of_week - 1;
       if (dayIdx < 0 || dayIdx > 4) continue;
-      map.get(dayIdx)!.push({
-        kind: "class",
-        sortStart: s.start_time,
-        slot: s,
-      });
+      const period = startToPeriod.get((s.start_time || "").slice(0, 5));
+      if (!period) continue;
+      const key = `${dayIdx}-${period}`;
+      if (!m.has(key)) m.set(key, s);
     }
-    // Insert breaks at correct position. afterPeriod=0 → before first period.
+    return m;
+  }, [visibleClassSlots, visiblePeriods, data.periodTimes]);
+
+  /** Breaks visible per (afterPeriod, day). */
+  const breaksByAfterDay = useMemo(() => {
+    const m = new Map<string, RowBreak>();
     for (const br of data.breaks) {
-      // Filter by week parity (default = "both")
       const wp = br.weekParity ?? "both";
       if (data.parityMode !== "both" && wp !== "both" && wp !== activeTab) continue;
-      const days =
-        br.days && br.days.length > 0 ? br.days : [0, 1, 2, 3, 4];
-      // Compute sortStart: use end of `afterPeriod` (or "00:00" for 0)
-      let sortStart = "00:00";
-      if (br.afterPeriod === 0) {
-        // Place just before first period start (use first defined period start minus epsilon)
-        const firstP = data.periods[0];
-        const t = firstP ? data.periodTimes[firstP] : null;
-        sortStart = t ? prevTimeStr(t.start) : "00:00";
-      } else {
-        const t = data.periodTimes[br.afterPeriod];
-        sortStart = t?.end ?? "99:00";
-      }
+      // Only show breaks that anchor to a visible period (or 0 = before first).
+      if (br.afterPeriod !== 0 && !visiblePeriods.includes(br.afterPeriod)) continue;
+      const days = br.days && br.days.length > 0 ? br.days : [0, 1, 2, 3, 4];
       for (const d of days) {
         if (d < 0 || d > 4) continue;
-        map.get(d)!.push({ kind: "break", sortStart, brk: br });
+        const key = `${br.afterPeriod}-${d}`;
+        // If multiple breaks target the same slot, prefer first (rare).
+        if (!m.has(key)) m.set(key, br);
       }
     }
-    for (const d of map.keys()) {
-      map.get(d)!.sort((a, b) => a.sortStart.localeCompare(b.sortStart));
-    }
-    return map;
-  }, [currentLessons, visibleClassSlots, data.periodTimes, data.breaks, data.periods, data.parityMode, activeTab]);
+    return m;
+  }, [data.breaks, data.parityMode, activeTab, visiblePeriods]);
 
-  function openNewLesson(day: number) {
-    // pick first free period for default
+  /** Which afterPeriod slots have at least one break (so we render that row). */
+  const breakRowAfterPeriods = useMemo(() => {
+    const set = new Set<number>();
+    for (const key of breaksByAfterDay.keys()) {
+      const ap = parseInt(key.split("-")[0], 10);
+      set.add(ap);
+    }
+    return set;
+  }, [breaksByAfterDay]);
+
+  /** Ordered row schema: alternating period rows + active break rows. */
+  const rowSchema = useMemo(() => {
+    const rows: Array<{ kind: "break"; afterPeriod: number } | { kind: "period"; period: number }> = [];
+    if (breakRowAfterPeriods.has(0)) rows.push({ kind: "break", afterPeriod: 0 });
+    for (const p of visiblePeriods) {
+      rows.push({ kind: "period", period: p });
+      if (breakRowAfterPeriods.has(p)) rows.push({ kind: "break", afterPeriod: p });
+    }
+    return rows;
+  }, [visiblePeriods, breakRowAfterPeriods]);
+
+  function openNewLesson(day: number, presetPeriod?: number) {
     const used = new Set(currentLessons.filter((l) => l.day === day).map((l) => l.period));
-    const period = data.periods.find((p) => !used.has(p)) ?? data.periods[0] ?? 1;
+    const period =
+      presetPeriod ?? (visiblePeriods.find((p) => !used.has(p)) ?? visiblePeriods[0] ?? 1);
     setEditing({
       id: newId(),
       day,
@@ -361,6 +382,7 @@ export default function TeacherSchedule() {
   }
   function addPeriod() {
     setData((d) => {
+      if (d.periods.length >= 8) return d;
       const last = d.periods[d.periods.length - 1] ?? 0;
       const next = last + 1;
       const lastTime = d.periodTimes[last] ?? { start: "08:00", end: "08:45" };
@@ -528,69 +550,111 @@ export default function TeacherSchedule() {
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-5 divide-y md:divide-y-0 md:divide-x divide-border">
-            {[0, 1, 2, 3, 4].map((dayIdx) => {
-              const items = cardsByDay.get(dayIdx) ?? [];
-              return (
-                <div key={dayIdx} className="p-3 min-h-[180px] flex flex-col">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                      <span className="md:hidden">{DAYS[dayIdx]}</span>
-                      <span className="hidden md:inline">{DAYS_SHORT[dayIdx]}</span>
-                    </div>
-                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                      {items.length}
-                    </Badge>
-                  </div>
+          {/* Aligned grid: rows = period/break slots, columns = days. */}
+          <div className="overflow-x-auto">
+            <div
+              className="grid min-w-[720px]"
+              style={{
+                gridTemplateColumns: `64px repeat(5, minmax(0, 1fr))`,
+              }}
+            >
+              {/* Header row */}
+              <div className="bg-muted/30 border-b border-border" />
+              {[0, 1, 2, 3, 4].map((dayIdx) => (
+                <div
+                  key={`h-${dayIdx}`}
+                  className="bg-muted/30 border-b border-l border-border px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide"
+                >
+                  <span className="md:hidden">{DAYS_SHORT[dayIdx]}</span>
+                  <span className="hidden md:inline">{DAYS[dayIdx]}</span>
+                </div>
+              ))}
 
-                  <div className="space-y-1.5 flex-1">
-                    {items.length === 0 && (
-                      <div className="text-xs text-muted-foreground/60 italic py-2">Volno</div>
-                    )}
-                    {items.map((card, i) => {
-                      if (card.kind === "personal") {
+              {/* Body rows */}
+              {rowSchema.map((row, rowIdx) => {
+                if (row.kind === "period") {
+                  const t = data.periodTimes[row.period];
+                  return (
+                    <div key={`row-${rowIdx}`} className="contents">
+                      <div className="border-t border-border bg-muted/10 px-2 py-2 flex flex-col items-center justify-center text-center">
+                        <span className="text-sm font-semibold leading-none">{row.period}.</span>
+                        <span className="text-[10px] text-muted-foreground leading-tight">hod</span>
+                        {t && (
+                          <span className="text-[10px] text-muted-foreground tabular-nums mt-1">
+                            {fmtTime(t.start)}
+                          </span>
+                        )}
+                      </div>
+                      {[0, 1, 2, 3, 4].map((dayIdx) => {
+                        const personal = personalByDayPeriod.get(`${dayIdx}-${row.period}`);
+                        const cls = !personal
+                          ? classByDayPeriod.get(`${dayIdx}-${row.period}`)
+                          : undefined;
                         return (
-                          <PersonalCard
-                            key={`p-${card.lesson.id}`}
-                            lesson={card.lesson}
-                            time={card.time}
-                            subjectStyles={subjectStyles}
-                            parityMode={data.parityMode}
-                            onClick={() => openEditLesson(card.lesson)}
-                          />
+                          <div
+                            key={`c-${rowIdx}-${dayIdx}`}
+                            className="border-t border-l border-border p-1.5 min-h-[84px] flex"
+                          >
+                            {personal ? (
+                              <div className="w-full">
+                                <PersonalCard
+                                  lesson={personal.lesson}
+                                  time={personal.time}
+                                  subjectStyles={subjectStyles}
+                                  parityMode={data.parityMode}
+                                  onClick={() => openEditLesson(personal.lesson)}
+                                />
+                              </div>
+                            ) : cls ? (
+                              <div className="w-full">
+                                <ClassCard
+                                  slot={cls}
+                                  onClick={() => navigate("/ucitel/tridy")}
+                                />
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => openNewLesson(dayIdx, row.period)}
+                                className="w-full rounded-md border border-dashed border-border/70 hover:border-primary hover:bg-primary/5 text-muted-foreground/60 hover:text-primary text-xs flex items-center justify-center gap-1 transition-colors min-h-[72px]"
+                                title={`Přidat ${row.period}. hodinu`}
+                              >
+                                <Plus className="w-3 h-3" />
+                                <span>Přidat</span>
+                              </button>
+                            )}
+                          </div>
                         );
-                      }
-                      if (card.kind === "class") {
-                        return (
-                          <ClassCard
-                            key={`c-${card.slot.id}`}
-                            slot={card.slot}
-                            onClick={() => navigate("/ucitel/tridy")}
-                          />
-                        );
-                      }
+                      })}
+                    </div>
+                  );
+                }
+                // Break row
+                return (
+                  <div key={`row-${rowIdx}`} className="contents">
+                    <div className="border-t border-border bg-muted/20 px-2 py-1 flex items-center justify-center">
+                      <Coffee className="w-3 h-3 text-muted-foreground" />
+                    </div>
+                    {[0, 1, 2, 3, 4].map((dayIdx) => {
+                      const br = breaksByAfterDay.get(`${row.afterPeriod}-${dayIdx}`);
                       return (
-                        <BreakCard
-                          key={`b-${card.brk.id ?? card.brk.afterPeriod}-${i}`}
-                          brk={card.brk}
-                          periodTimes={data.periodTimes}
-                        />
+                        <div
+                          key={`b-${rowIdx}-${dayIdx}`}
+                          className="border-t border-l border-border p-1.5 bg-muted/10 flex"
+                        >
+                          {br ? (
+                            <div className="w-full">
+                              <BreakCard brk={br} periodTimes={data.periodTimes} />
+                            </div>
+                          ) : (
+                            <div className="w-full" />
+                          )}
+                        </div>
                       );
                     })}
                   </div>
-
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="mt-2 w-full h-8 text-xs text-muted-foreground hover:text-primary hover:bg-primary/10 border border-dashed border-border"
-                    onClick={() => openNewLesson(dayIdx)}
-                  >
-                    <Plus className="w-3 h-3 mr-1" />
-                    Přidat hodinu
-                  </Button>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </div>
 
