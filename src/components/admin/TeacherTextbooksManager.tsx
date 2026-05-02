@@ -910,6 +910,156 @@ const TeacherTextbooksManager = () => {
           })}
         </div>
       )}
+
+      {/* === Create new textbook dialog === */}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Nová učebnice</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            {/* Subject mode toggle */}
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant={newSubjectMode === "existing" ? "default" : "outline"}
+                onClick={() => setNewSubjectMode("existing")}
+                className="flex-1"
+                type="button"
+              >
+                Vybrat předmět
+              </Button>
+              <Button
+                size="sm"
+                variant={newSubjectMode === "custom" ? "default" : "outline"}
+                onClick={() => setNewSubjectMode("custom")}
+                className="flex-1"
+                type="button"
+              >
+                Vlastní předmět
+              </Button>
+            </div>
+
+            {newSubjectMode === "existing" ? (
+              <div>
+                <Label>Předmět *</Label>
+                <Select value={newSubjectId} onValueChange={setNewSubjectId}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Vyberte předmět…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(subjects ?? []).map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {newSubjectId && (
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {subjects
+                      ?.find((s) => s.id === newSubjectId)
+                      ?.grades.map((g) => (
+                        <Badge key={g.id} variant="secondary" className="text-[10px]">
+                          {g.label}
+                        </Badge>
+                      ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                <div>
+                  <Label>Název vlastního předmětu *</Label>
+                  <Input
+                    value={newCustomSubject}
+                    onChange={(e) => setNewCustomSubject(e.target.value)}
+                    className="mt-1"
+                    placeholder="např. Robotika"
+                  />
+                </div>
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label>Ročníky *</Label>
+                    <Button size="sm" variant="ghost" type="button" onClick={addGradeRow} className="h-7 gap-1 text-xs">
+                      <Plus className="w-3 h-3" /> Přidat
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    {newGrades.map((g, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          min={1}
+                          max={20}
+                          value={g.grade_number}
+                          onChange={(e) => updateGradeRow(i, { grade_number: parseInt(e.target.value, 10) || 1 })}
+                          className="w-20"
+                        />
+                        <Input
+                          value={g.label}
+                          onChange={(e) => updateGradeRow(i, { label: e.target.value })}
+                          placeholder={`${g.grade_number}. ročník`}
+                          className="flex-1"
+                        />
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          type="button"
+                          onClick={() => removeGradeRow(i)}
+                          className="h-9 w-9 shrink-0"
+                          disabled={newGrades.length <= 1}
+                        >
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+
+            <div>
+              <Label>Název učebnice</Label>
+              <Input
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                className="mt-1"
+                placeholder="Pokud nevyplníte, použije se název předmětu"
+              />
+            </div>
+
+            <div>
+              <Label>Popis (nepovinné)</Label>
+              <Textarea
+                value={newDescription}
+                onChange={(e) => setNewDescription(e.target.value)}
+                className="mt-1"
+                rows={2}
+                placeholder="Krátký popis učebnice…"
+              />
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <Button variant="outline" onClick={() => setCreateOpen(false)} className="flex-1" type="button">
+                Zrušit
+              </Button>
+              <Button
+                onClick={handleCreateTextbook}
+                disabled={
+                  creatingTextbook ||
+                  (newSubjectMode === "existing" && !newSubjectId) ||
+                  (newSubjectMode === "custom" && !newCustomSubject.trim())
+                }
+                className="flex-1"
+                type="button"
+              >
+                {creatingTextbook ? "Vytvářím…" : "Vytvořit učebnici"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
