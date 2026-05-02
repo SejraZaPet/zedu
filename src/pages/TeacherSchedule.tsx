@@ -1065,7 +1065,32 @@ function BreakSettingRow({
         })}
       </div>
 
-      {kind === "meeting" && (
+      <div className="flex items-center gap-2 flex-wrap">
+        <Label className="text-xs text-muted-foreground">Týden:</Label>
+        {([
+          { v: "both", label: "Oba týdny" },
+          { v: "odd", label: "Lichý týden" },
+          { v: "even", label: "Sudý týden" },
+        ] as const).map((opt) => {
+          const current = brk.weekParity ?? "both";
+          const active = current === opt.v;
+          return (
+            <button
+              key={opt.v}
+              type="button"
+              onClick={() => onChange({ weekParity: opt.v })}
+              className={`px-2 py-1 text-[11px] rounded-md border transition-colors ${
+                active
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-card border-border hover:bg-muted"
+              }`}
+            >
+              {opt.label}
+            </button>
+          );
+        })}
+      </div>
+
         <div className="space-y-1">
           <Label className="text-xs">Téma porady</Label>
           <Input
