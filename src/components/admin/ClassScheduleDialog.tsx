@@ -315,6 +315,8 @@ const ClassScheduleDialog = ({ classId, className, open, onOpenChange }: Props) 
                 day: editing.day_of_week - 1,
                 period: slotToPeriod(editing),
                 subject: editing.subject_label ?? "",
+                abbreviation: editing.abbreviation ?? "",
+                color: editing.color ?? undefined,
                 classId,
                 className,
                 room: editing.room ?? "",
