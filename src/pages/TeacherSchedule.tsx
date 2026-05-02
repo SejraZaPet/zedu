@@ -521,24 +521,36 @@ export default function TeacherSchedule() {
                     {items.length === 0 && (
                       <div className="text-xs text-muted-foreground/60 italic py-2">Volno</div>
                     )}
-                    {items.map((card) =>
-                      card.kind === "personal" ? (
-                        <PersonalCard
-                          key={`p-${card.lesson.id}`}
-                          lesson={card.lesson}
-                          time={card.time}
-                          subjectStyles={subjectStyles}
-                          parityMode={data.parityMode}
-                          onClick={() => openEditLesson(card.lesson)}
+                    {items.map((card, i) => {
+                      if (card.kind === "personal") {
+                        return (
+                          <PersonalCard
+                            key={`p-${card.lesson.id}`}
+                            lesson={card.lesson}
+                            time={card.time}
+                            subjectStyles={subjectStyles}
+                            parityMode={data.parityMode}
+                            onClick={() => openEditLesson(card.lesson)}
+                          />
+                        );
+                      }
+                      if (card.kind === "class") {
+                        return (
+                          <ClassCard
+                            key={`c-${card.slot.id}`}
+                            slot={card.slot}
+                            onClick={() => navigate("/ucitel/tridy")}
+                          />
+                        );
+                      }
+                      return (
+                        <BreakCard
+                          key={`b-${card.brk.id ?? card.brk.afterPeriod}-${i}`}
+                          brk={card.brk}
+                          periodTimes={data.periodTimes}
                         />
-                      ) : (
-                        <ClassCard
-                          key={`c-${card.slot.id}`}
-                          slot={card.slot}
-                          onClick={() => navigate("/ucitel/tridy")}
-                        />
-                      ),
-                    )}
+                      );
+                    })}
                   </div>
 
                   <Button
