@@ -45,7 +45,10 @@ export default function TeacherSchedule() {
   }, [data]);
 
   const [editing, setEditing] = useState<LessonEntry | null>(null);
+  const [editingDays, setEditingDays] = useState<number[]>([]); // for multi-day select on new lesson
   const [isNew, setIsNew] = useState(false);
+
+  const subjectStyles = useMemo(() => buildSubjectStyleMap(data), [data]);
 
   // Which lesson list is currently shown / edited
   const currentLessons = useMemo(() => {
