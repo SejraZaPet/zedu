@@ -228,6 +228,9 @@ export default function TeacherSchedule() {
     }
     // Insert breaks at correct position. afterPeriod=0 → before first period.
     for (const br of data.breaks) {
+      // Filter by week parity (default = "both")
+      const wp = br.weekParity ?? "both";
+      if (data.parityMode !== "both" && wp !== "both" && wp !== activeTab) continue;
       const days =
         br.days && br.days.length > 0 ? br.days : [0, 1, 2, 3, 4];
       // Compute sortStart: use end of `afterPeriod` (or "00:00" for 0)
@@ -250,7 +253,7 @@ export default function TeacherSchedule() {
       map.get(d)!.sort((a, b) => a.sortStart.localeCompare(b.sortStart));
     }
     return map;
-  }, [currentLessons, visibleClassSlots, data.periodTimes, data.breaks, data.periods]);
+  }, [currentLessons, visibleClassSlots, data.periodTimes, data.breaks, data.periods, data.parityMode, activeTab]);
 
   function openNewLesson(day: number) {
     // pick first free period for default
@@ -1057,6 +1060,32 @@ function BreakSettingRow({
               }`}
             >
               {DAYS_SHORT[i]}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="flex items-center gap-2 flex-wrap">
+        <Label className="text-xs text-muted-foreground">Týden:</Label>
+        {([
+          { v: "both", label: "Oba týdny" },
+          { v: "odd", label: "Lichý týden" },
+          { v: "even", label: "Sudý týden" },
+        ] as const).map((opt) => {
+          const current = brk.weekParity ?? "both";
+          const active = current === opt.v;
+          return (
+            <button
+              key={opt.v}
+              type="button"
+              onClick={() => onChange({ weekParity: opt.v })}
+              className={`px-2 py-1 text-[11px] rounded-md border transition-colors ${
+                active
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-card border-border hover:bg-muted"
+              }`}
+            >
+              {opt.label}
             </button>
           );
         })}
