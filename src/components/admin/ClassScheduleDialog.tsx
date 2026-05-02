@@ -200,6 +200,8 @@ const ClassScheduleDialog = ({ classId, className, open, onOpenChange }: Props) 
     setSubjectChoice(subjectNames[0] ?? "");
     setCustomSubject("");
     setDayOfWeek("1");
+    setTimeMode("period");
+    setPeriodNumber("1");
     setStartTime("08:00");
     setEndTime("08:45");
     setParity("every");
