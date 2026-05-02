@@ -21,6 +21,7 @@ import {
   expandScheduleSlots,
   getWeekRange,
 } from "@/lib/calendar-utils";
+import { expandTeacherSchedule, loadSchedule } from "@/lib/teacher-schedule-store";
 
 const TeacherCalendar = () => {
   const navigate = useNavigate();
@@ -81,6 +82,8 @@ const TeacherCalendar = () => {
         to,
       );
 
+      const personalEvents = expandTeacherSchedule(loadSchedule(), from, to);
+
       const assignmentEvents: CalendarEvent[] = ((assignmentsRes.data as any[]) ?? [])
         .map((a: any) => {
           const start = new Date(a.deadline);
@@ -109,7 +112,7 @@ const TeacherCalendar = () => {
         },
       );
 
-      setEvents([...lessonEvents, ...assignmentEvents, ...todoEvents]);
+      setEvents([...lessonEvents, ...personalEvents, ...assignmentEvents, ...todoEvents]);
       setLoading(false);
     })();
 
