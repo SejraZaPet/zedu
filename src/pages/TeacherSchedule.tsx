@@ -846,9 +846,79 @@ export default function TeacherSchedule() {
           setEditing(null);
         }}
       />
-    </div>
-  );
-}
+
+      {/* Edit dialog for a class-managed slot (DB-backed) */}
+      <LessonFormDialog
+        open={!!editingClassSlot}
+        onOpenChange={(o) => !o && setEditingClassSlot(null)}
+        isNew={false}
+        initial={
+          editingClassSlot
+            ? (() => {
+                const sStart = (editingClassSlot.start_time || "").slice(0, 5);
+                const matchedPeriod =
+                  data.periods.find((p) => data.periodTimes[p]?.start === sStart) ??
+                  data.periods[0] ??
+                  1;
+                return {
+                  day: editingClassSlot.day_of_week - 1,
+                  period: matchedPeriod,
+                  subject: editingClassSlot.subject_label ?? "",
+                  abbreviation: editingClassSlot.abbreviation ?? "",
+                  color: editingClassSlot.color ?? undefined,
+                  classId: editingClassSlot.class_id,
+                  className: editingClassSlot.classes?.name ?? "",
+                  room: editingClassSlot.room ?? "",
+                  validFrom: editingClassSlot.valid_from ?? null,
+                  validTo: editingClassSlot.valid_to ?? null,
+                };
+              })()
+            : null
+        }
+        periods={dialogPeriods}
+        title="Upravit hodinu třídy"
+        onDelete={async () => {
+          if (!editingClassSlot) return;
+          const { error } = await supabase
+            .from("class_schedule_slots" as any)
+            .delete()
+            .eq("id", editingClassSlot.id);
+          if (error) {
+            toast({ title: "Chyba", description: error.message, variant: "destructive" });
+            return;
+          }
+          toast({ title: "Smazáno" });
+          setEditingClassSlot(null);
+          fetchClassSlots();
+        }}
+        onSave={async ({ value, slots }) => {
+          if (!editingClassSlot) return;
+          const s = slots[0];
+          if (!s) return;
+          const { error } = await supabase
+            .from("class_schedule_slots" as any)
+            .update({
+              class_id: value.classId ?? editingClassSlot.class_id,
+              subject_label: value.subject,
+              abbreviation: value.abbreviation || null,
+              color: value.color || null,
+              room: value.room,
+              valid_from: value.validFrom,
+              valid_to: value.validTo,
+              day_of_week: s.day + 1,
+              start_time: s.start,
+              end_time: s.end,
+            })
+            .eq("id", editingClassSlot.id);
+          if (error) {
+            toast({ title: "Chyba", description: error.message, variant: "destructive" });
+            return;
+          }
+          toast({ title: "Uloženo" });
+          setEditingClassSlot(null);
+          fetchClassSlots();
+        }}
+      />
 
 /* ───────── Card components ───────── */
 
