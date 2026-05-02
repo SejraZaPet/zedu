@@ -37,6 +37,8 @@ interface Slot {
   week_parity: "every" | "odd" | "even";
   room: string | null;
   subject_label: string | null;
+  abbreviation: string | null;
+  color: string | null;
   textbook_id: string | null;
   textbook_type: "teacher" | "global" | null;
   valid_from: string | null;
