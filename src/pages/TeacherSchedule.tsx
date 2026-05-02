@@ -276,10 +276,10 @@ export default function TeacherSchedule() {
     return rows;
   }, [visiblePeriods, breakRowAfterPeriods]);
 
-  function openNewLesson(day: number) {
-    // pick first free period for default
+  function openNewLesson(day: number, presetPeriod?: number) {
     const used = new Set(currentLessons.filter((l) => l.day === day).map((l) => l.period));
-    const period = data.periods.find((p) => !used.has(p)) ?? data.periods[0] ?? 1;
+    const period =
+      presetPeriod ?? (visiblePeriods.find((p) => !used.has(p)) ?? visiblePeriods[0] ?? 1);
     setEditing({
       id: newId(),
       day,
