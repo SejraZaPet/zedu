@@ -204,11 +204,31 @@ export default function TeacherSchedule() {
         slot: s,
       });
     }
+    // Insert breaks at correct position. afterPeriod=0 → before first period.
+    for (const br of data.breaks) {
+      const days =
+        br.days && br.days.length > 0 ? br.days : [0, 1, 2, 3, 4];
+      // Compute sortStart: use end of `afterPeriod` (or "00:00" for 0)
+      let sortStart = "00:00";
+      if (br.afterPeriod === 0) {
+        // Place just before first period start (use first defined period start minus epsilon)
+        const firstP = data.periods[0];
+        const t = firstP ? data.periodTimes[firstP] : null;
+        sortStart = t ? prevTimeStr(t.start) : "00:00";
+      } else {
+        const t = data.periodTimes[br.afterPeriod];
+        sortStart = t?.end ?? "99:00";
+      }
+      for (const d of days) {
+        if (d < 0 || d > 4) continue;
+        map.get(d)!.push({ kind: "break", sortStart, brk: br });
+      }
+    }
     for (const d of map.keys()) {
       map.get(d)!.sort((a, b) => a.sortStart.localeCompare(b.sortStart));
     }
     return map;
-  }, [currentLessons, visibleClassSlots, data.periodTimes]);
+  }, [currentLessons, visibleClassSlots, data.periodTimes, data.breaks, data.periods]);
 
   function openNewLesson(day: number) {
     // pick first free period for default
