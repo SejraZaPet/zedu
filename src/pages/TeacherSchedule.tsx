@@ -34,7 +34,8 @@ interface RowBreak {
   // přestávka mezi periodou N a N+1 (afterPeriod = N), platí pro celý týden
   afterPeriod: number;
   durationMin: number;
-  note: string;
+  // poznámka per den (klíč = index dne 0..4)
+  notes: Record<number, string>;
 }
 
 const DAYS = ["Pondělí", "Úterý", "Středa", "Čtvrtek", "Pátek"];
