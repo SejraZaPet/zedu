@@ -14,38 +14,33 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
-import { Coffee, Plus, Pencil, Trash2, CalendarDays } from "lucide-react";
+import { Coffee, Plus, Pencil, Trash2, CalendarDays, X } from "lucide-react";
 
-type EntryType = "lesson" | "break";
-
-interface BaseEntry {
+interface LessonEntry {
   id: string;
-  type: EntryType;
   day: number; // 0=Po … 4=Pá
   period: number; // 1..10
-  startTime: string;
-  endTime: string;
-}
-
-interface LessonEntry extends BaseEntry {
-  type: "lesson";
   subject: string;
   className: string;
   room: string;
 }
 
-interface BreakEntry extends BaseEntry {
-  type: "break";
+interface PeriodTime {
+  start: string;
+  end: string;
+}
+
+interface RowBreak {
+  // přestávka mezi periodou N a N+1 (afterPeriod = N), platí pro celý týden
+  afterPeriod: number;
   durationMin: number;
   note: string;
 }
 
-type Entry = LessonEntry | BreakEntry;
-
 const DAYS = ["Pondělí", "Úterý", "Středa", "Čtvrtek", "Pátek"];
 const PERIODS = Array.from({ length: 10 }, (_, i) => i + 1);
 
-const DEFAULT_TIMES: Record<number, { start: string; end: string }> = {
+const DEFAULT_PERIOD_TIMES: Record<number, PeriodTime> = {
   1: { start: "08:00", end: "08:45" },
   2: { start: "08:55", end: "09:40" },
   3: { start: "09:50", end: "10:35" },
@@ -58,60 +53,52 @@ const DEFAULT_TIMES: Record<number, { start: string; end: string }> = {
   10: { start: "16:25", end: "17:10" },
 };
 
+const DEFAULT_BREAKS: RowBreak[] = [
+  { afterPeriod: 3, durationMin: 20, note: "Velká přestávka" },
+];
+
 const newId = () => Math.random().toString(36).slice(2, 10);
 
-const emptyLesson = (day: number, period: number): LessonEntry => ({
-  id: newId(),
-  type: "lesson",
-  day,
-  period,
-  startTime: DEFAULT_TIMES[period].start,
-  endTime: DEFAULT_TIMES[period].end,
-  subject: "",
-  className: "",
-  room: "",
-});
-
-const emptyBreak = (day: number, period: number): BreakEntry => ({
-  id: newId(),
-  type: "break",
-  day,
-  period,
-  startTime: DEFAULT_TIMES[period].end,
-  endTime: DEFAULT_TIMES[period + 1]?.start ?? DEFAULT_TIMES[period].end,
-  durationMin: 10,
-  note: "",
-});
-
 export default function TeacherSchedule() {
-  const [entries, setEntries] = useState<Entry[]>([]);
-  const [editing, setEditing] = useState<Entry | null>(null);
+  const [lessons, setLessons] = useState<LessonEntry[]>([]);
+  const [periodTimes, setPeriodTimes] = useState<Record<number, PeriodTime>>(DEFAULT_PERIOD_TIMES);
+  const [rowBreaks, setRowBreaks] = useState<RowBreak[]>(DEFAULT_BREAKS);
+
+  const [editing, setEditing] = useState<LessonEntry | null>(null);
   const [isNew, setIsNew] = useState(false);
 
-  const grid = useMemo(() => {
-    const map = new Map<string, Entry>();
-    entries.forEach((e) => map.set(`${e.day}-${e.period}`, e));
-    return map;
-  }, [entries]);
+  const [editingBreak, setEditingBreak] = useState<RowBreak | null>(null);
+  const [isNewBreak, setIsNewBreak] = useState(false);
 
-  function openNew(day: number, period: number, type: EntryType) {
-    const e = type === "lesson" ? emptyLesson(day, period) : emptyBreak(day, period);
-    setEditing(e);
+  const grid = useMemo(() => {
+    const map = new Map<string, LessonEntry>();
+    lessons.forEach((e) => map.set(`${e.day}-${e.period}`, e));
+    return map;
+  }, [lessons]);
+
+  const breakByPeriod = useMemo(() => {
+    const m = new Map<number, RowBreak>();
+    rowBreaks.forEach((b) => m.set(b.afterPeriod, b));
+    return m;
+  }, [rowBreaks]);
+
+  function openNewLesson(day: number, period: number) {
+    setEditing({ id: newId(), day, period, subject: "", className: "", room: "" });
     setIsNew(true);
   }
 
-  function openEdit(entry: Entry) {
+  function openEditLesson(entry: LessonEntry) {
     setEditing({ ...entry });
     setIsNew(false);
   }
 
-  function saveEntry() {
+  function saveLesson() {
     if (!editing) return;
-    if (editing.type === "lesson" && !editing.subject.trim()) {
+    if (!editing.subject.trim()) {
       toast({ title: "Předmět je povinný", variant: "destructive" });
       return;
     }
-    setEntries((prev) => {
+    setLessons((prev) => {
       const filtered = prev.filter((e) => e.id !== editing.id);
       return [...filtered, editing];
     });
@@ -119,11 +106,45 @@ export default function TeacherSchedule() {
     setEditing(null);
   }
 
-  function deleteEntry() {
+  function deleteLesson() {
     if (!editing) return;
-    setEntries((prev) => prev.filter((e) => e.id !== editing.id));
+    setLessons((prev) => prev.filter((e) => e.id !== editing.id));
     toast({ title: "Smazáno" });
     setEditing(null);
+  }
+
+  function updatePeriodTime(period: number, field: "start" | "end", value: string) {
+    setPeriodTimes((prev) => ({
+      ...prev,
+      [period]: { ...prev[period], [field]: value },
+    }));
+  }
+
+  function openNewBreak(afterPeriod: number) {
+    setEditingBreak({ afterPeriod, durationMin: 10, note: "" });
+    setIsNewBreak(true);
+  }
+
+  function openEditBreak(b: RowBreak) {
+    setEditingBreak({ ...b });
+    setIsNewBreak(false);
+  }
+
+  function saveBreak() {
+    if (!editingBreak) return;
+    setRowBreaks((prev) => {
+      const filtered = prev.filter((b) => b.afterPeriod !== editingBreak.afterPeriod);
+      return [...filtered, editingBreak].sort((a, b) => a.afterPeriod - b.afterPeriod);
+    });
+    toast({ title: isNewBreak ? "Přestávka přidána" : "Přestávka uložena" });
+    setEditingBreak(null);
+  }
+
+  function deleteBreak() {
+    if (!editingBreak) return;
+    setRowBreaks((prev) => prev.filter((b) => b.afterPeriod !== editingBreak.afterPeriod));
+    toast({ title: "Přestávka smazána" });
+    setEditingBreak(null);
   }
 
   return (
@@ -140,7 +161,7 @@ export default function TeacherSchedule() {
             <div>
               <h1 className="font-heading text-2xl font-bold">Můj rozvrh</h1>
               <p className="text-sm text-muted-foreground">
-                Týdenní rozvrh hodin – klikni na buňku pro přidání či úpravu.
+                Týdenní rozvrh – uprav časy hodin v prvním sloupci, mezi hodiny vlož přestávku.
               </p>
             </div>
           </div>
@@ -152,7 +173,7 @@ export default function TeacherSchedule() {
             <table className="w-full text-sm border-collapse">
               <thead>
                 <tr className="bg-muted/50">
-                  <th className="p-2 border-b border-r border-border text-xs font-medium text-muted-foreground w-16 text-left sticky left-0 bg-muted/50">
+                  <th className="p-2 border-b border-r border-border text-xs font-medium text-muted-foreground w-32 text-left">
                     Hodina
                   </th>
                   {DAYS.map((d) => (
@@ -166,225 +187,193 @@ export default function TeacherSchedule() {
                 </tr>
               </thead>
               <tbody>
-                {PERIODS.map((period) => (
-                  <tr key={period}>
-                    <td className="p-2 border-b border-r border-border text-xs text-muted-foreground align-top sticky left-0 bg-card">
-                      <div className="font-semibold text-foreground">{period}.</div>
-                      <div className="font-mono">{DEFAULT_TIMES[period].start}</div>
-                      <div className="font-mono">{DEFAULT_TIMES[period].end}</div>
-                    </td>
-                    {DAYS.map((_, dayIdx) => {
-                      const entry = grid.get(`${dayIdx}-${period}`);
-                      return (
-                        <td
-                          key={dayIdx}
-                          className="p-1 border-b border-l border-border align-top h-20"
-                        >
-                          {entry ? (
-                            <button
-                              onClick={() => openEdit(entry)}
-                              className={`w-full h-full text-left rounded-md p-2 transition-colors ${
-                                entry.type === "lesson"
-                                  ? "bg-primary/10 hover:bg-primary/20"
-                                  : "bg-muted hover:bg-muted/80"
-                              }`}
+                {PERIODS.map((period) => {
+                  const t = periodTimes[period];
+                  const br = breakByPeriod.get(period);
+                  return (
+                    <>
+                      <tr key={`p-${period}`}>
+                        <td className="p-2 border-b border-r border-border align-top w-32">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-semibold text-foreground text-sm">{period}.</span>
+                            <span className="text-[10px] text-muted-foreground">hodina</span>
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <Input
+                              type="time"
+                              value={t.start}
+                              onChange={(e) => updatePeriodTime(period, "start", e.target.value)}
+                              className="h-7 px-2 text-xs font-mono"
+                              aria-label={`Začátek ${period}. hodiny`}
+                            />
+                            <Input
+                              type="time"
+                              value={t.end}
+                              onChange={(e) => updatePeriodTime(period, "end", e.target.value)}
+                              className="h-7 px-2 text-xs font-mono"
+                              aria-label={`Konec ${period}. hodiny`}
+                            />
+                          </div>
+                        </td>
+                        {DAYS.map((_, dayIdx) => {
+                          const entry = grid.get(`${dayIdx}-${period}`);
+                          return (
+                            <td
+                              key={dayIdx}
+                              className="p-1 border-b border-l border-border align-top h-20"
                             >
-                              {entry.type === "lesson" ? (
-                                <div className="space-y-0.5">
-                                  <div className="font-semibold text-sm leading-tight truncate">
-                                    {entry.subject}
-                                  </div>
-                                  {entry.className && (
-                                    <div className="text-xs text-muted-foreground truncate">
-                                      {entry.className}
+                              {entry ? (
+                                <button
+                                  onClick={() => openEditLesson(entry)}
+                                  className="w-full h-full text-left rounded-md p-2 transition-colors bg-primary/10 hover:bg-primary/20"
+                                >
+                                  <div className="space-y-0.5">
+                                    <div className="font-semibold text-sm leading-tight truncate">
+                                      {entry.subject}
                                     </div>
-                                  )}
-                                  {entry.room && (
-                                    <div className="text-xs text-muted-foreground truncate">
-                                      📍 {entry.room}
-                                    </div>
-                                  )}
-                                  <div className="text-[10px] font-mono text-muted-foreground">
-                                    {entry.startTime}–{entry.endTime}
+                                    {entry.className && (
+                                      <div className="text-xs text-muted-foreground truncate">
+                                        {entry.className}
+                                      </div>
+                                    )}
+                                    {entry.room && (
+                                      <div className="text-xs text-muted-foreground truncate">
+                                        📍 {entry.room}
+                                      </div>
+                                    )}
                                   </div>
-                                </div>
+                                </button>
                               ) : (
-                                <div className="space-y-0.5">
-                                  <div className="flex items-center gap-1 text-xs font-medium">
-                                    <Coffee className="w-3 h-3" />
-                                    Přestávka
-                                  </div>
-                                  <div className="text-xs text-muted-foreground">
-                                    {entry.durationMin} min
-                                  </div>
-                                  {entry.note && (
-                                    <div className="text-[11px] text-muted-foreground line-clamp-2">
-                                      {entry.note}
-                                    </div>
-                                  )}
-                                </div>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="w-full h-full justify-center text-xs text-muted-foreground hover:text-primary hover:bg-primary/10"
+                                  onClick={() => openNewLesson(dayIdx, period)}
+                                >
+                                  <Plus className="w-3 h-3 mr-1" /> Hodina
+                                </Button>
                               )}
-                            </button>
-                          ) : (
-                            <div className="w-full h-full flex flex-col items-stretch justify-center gap-1 p-1">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-7 px-2 text-xs justify-start text-muted-foreground hover:text-primary hover:bg-primary/10"
-                                onClick={() => openNew(dayIdx, period, "lesson")}
+                            </td>
+                          );
+                        })}
+                      </tr>
+
+                      {/* Řádek mezi hodinami: přestávka pro celý týden */}
+                      {period < PERIODS.length && (
+                        <tr key={`b-${period}`} className="bg-muted/20">
+                          <td className="px-2 py-1 border-b border-r border-border align-middle">
+                            {br ? (
+                              <button
+                                onClick={() => openEditBreak(br)}
+                                className="w-full text-left rounded-md px-2 py-1 hover:bg-muted transition-colors"
                               >
-                                <Plus className="w-3 h-3 mr-1" /> Hodina
-                              </Button>
+                                <div className="flex items-center gap-1.5 text-xs font-medium">
+                                  <Coffee className="w-3 h-3" />
+                                  {br.durationMin} min
+                                </div>
+                                {br.note && (
+                                  <div className="text-[10px] text-muted-foreground line-clamp-1">
+                                    {br.note}
+                                  </div>
+                                )}
+                              </button>
+                            ) : (
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                className="h-7 px-2 text-xs justify-start text-muted-foreground hover:text-foreground hover:bg-muted"
-                                onClick={() => openNew(dayIdx, period, "break")}
+                                className="h-7 w-full px-2 text-xs justify-start text-muted-foreground hover:text-foreground"
+                                onClick={() => openNewBreak(period)}
                               >
                                 <Coffee className="w-3 h-3 mr-1" /> Přestávka
                               </Button>
-                            </div>
-                          )}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
+                            )}
+                          </td>
+                          <td colSpan={DAYS.length} className="px-3 py-1 border-b border-l border-border">
+                            {br ? (
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <span className="inline-flex items-center gap-1">
+                                  <Coffee className="w-3 h-3" />
+                                  Přestávka {br.durationMin} min
+                                </span>
+                                {br.note && <span>· {br.note}</span>}
+                                <button
+                                  onClick={() => openEditBreak(br)}
+                                  className="ml-auto text-xs text-primary hover:underline"
+                                >
+                                  Upravit
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="text-[11px] text-muted-foreground/60">
+                                — bez přestávky —
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      )}
+                    </>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         </div>
 
         <p className="text-xs text-muted-foreground mt-3">
-          Tip: Klikni na buňku pro přidání hodiny nebo přestávky. Existující záznam upravíš kliknutím na něj.
+          Tip: Časy hodin uprav přímo v prvním sloupci. Přestávky vlož mezi hodiny – platí pro celý týden.
         </p>
       </main>
 
       <SiteFooter />
 
-      {/* Dialog úpravy */}
+      {/* Dialog úpravy hodiny */}
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
         <DialogContent className="max-w-md">
           {editing && (
             <>
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
-                  {editing.type === "lesson" ? (
-                    <>
-                      <Pencil className="w-4 h-4" />
-                      {isNew ? "Nová hodina" : "Upravit hodinu"}
-                    </>
-                  ) : (
-                    <>
-                      <Coffee className="w-4 h-4" />
-                      {isNew ? "Nová přestávka" : "Upravit přestávku"}
-                    </>
-                  )}
+                  <Pencil className="w-4 h-4" />
+                  {isNew ? "Nová hodina" : "Upravit hodinu"}
                 </DialogTitle>
                 <DialogDescription>
-                  {DAYS[editing.day]} · {editing.period}. hodina
+                  {DAYS[editing.day]} · {editing.period}. hodina ({periodTimes[editing.period].start}–{periodTimes[editing.period].end})
                 </DialogDescription>
               </DialogHeader>
 
               <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="start">Začátek</Label>
-                    <Input
-                      id="start"
-                      type="time"
-                      value={editing.startTime}
-                      onChange={(e) =>
-                        setEditing({ ...editing, startTime: e.target.value } as Entry)
-                      }
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="end">Konec</Label>
-                    <Input
-                      id="end"
-                      type="time"
-                      value={editing.endTime}
-                      onChange={(e) =>
-                        setEditing({ ...editing, endTime: e.target.value } as Entry)
-                      }
-                    />
-                  </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="subject">Předmět *</Label>
+                  <Input
+                    id="subject"
+                    value={editing.subject}
+                    onChange={(e) => setEditing({ ...editing, subject: e.target.value })}
+                    placeholder="Např. Matematika"
+                  />
                 </div>
-
-                {editing.type === "lesson" ? (
-                  <>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="subject">Předmět *</Label>
-                      <Input
-                        id="subject"
-                        value={editing.subject}
-                        onChange={(e) =>
-                          setEditing({ ...editing, subject: e.target.value })
-                        }
-                        placeholder="Např. Matematika"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="class">Třída</Label>
-                      <Input
-                        id="class"
-                        value={editing.className}
-                        onChange={(e) =>
-                          setEditing({ ...editing, className: e.target.value })
-                        }
-                        placeholder="Např. 6. A"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="room">Místnost</Label>
-                      <Input
-                        id="room"
-                        value={editing.room}
-                        onChange={(e) =>
-                          setEditing({ ...editing, room: e.target.value })
-                        }
-                        placeholder="Např. 204"
-                      />
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="duration">Délka (min)</Label>
-                      <Input
-                        id="duration"
-                        type="number"
-                        min={1}
-                        max={120}
-                        value={editing.durationMin}
-                        onChange={(e) =>
-                          setEditing({
-                            ...editing,
-                            durationMin: parseInt(e.target.value, 10) || 0,
-                          })
-                        }
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="note">Poznámka</Label>
-                      <Textarea
-                        id="note"
-                        value={editing.note}
-                        onChange={(e) =>
-                          setEditing({ ...editing, note: e.target.value })
-                        }
-                        placeholder="Např. Dozor na chodbě"
-                        rows={2}
-                      />
-                    </div>
-                  </>
-                )}
+                <div className="space-y-1.5">
+                  <Label htmlFor="class">Třída</Label>
+                  <Input
+                    id="class"
+                    value={editing.className}
+                    onChange={(e) => setEditing({ ...editing, className: e.target.value })}
+                    placeholder="Např. 6. A"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="room">Místnost</Label>
+                  <Input
+                    id="room"
+                    value={editing.room}
+                    onChange={(e) => setEditing({ ...editing, room: e.target.value })}
+                    placeholder="Např. 204"
+                  />
+                </div>
               </div>
 
               <DialogFooter className="flex-row justify-between sm:justify-between gap-2">
                 {!isNew ? (
-                  <Button variant="outline" onClick={deleteEntry} className="text-destructive">
+                  <Button variant="outline" onClick={deleteLesson} className="text-destructive">
                     <Trash2 className="w-4 h-4 mr-2" />
                     Smazat
                   </Button>
@@ -395,7 +384,72 @@ export default function TeacherSchedule() {
                   <Button variant="ghost" onClick={() => setEditing(null)}>
                     Zrušit
                   </Button>
-                  <Button onClick={saveEntry}>Uložit</Button>
+                  <Button onClick={saveLesson}>Uložit</Button>
+                </div>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog úpravy přestávky */}
+      <Dialog open={!!editingBreak} onOpenChange={(o) => !o && setEditingBreak(null)}>
+        <DialogContent className="max-w-md">
+          {editingBreak && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Coffee className="w-4 h-4" />
+                  {isNewBreak ? "Nová přestávka" : "Upravit přestávku"}
+                </DialogTitle>
+                <DialogDescription>
+                  Mezi {editingBreak.afterPeriod}. a {editingBreak.afterPeriod + 1}. hodinou (platí pro celý týden)
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="duration">Délka (min)</Label>
+                  <Input
+                    id="duration"
+                    type="number"
+                    min={1}
+                    max={120}
+                    value={editingBreak.durationMin}
+                    onChange={(e) =>
+                      setEditingBreak({
+                        ...editingBreak,
+                        durationMin: parseInt(e.target.value, 10) || 0,
+                      })
+                    }
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="note">Poznámka</Label>
+                  <Textarea
+                    id="note"
+                    value={editingBreak.note}
+                    onChange={(e) => setEditingBreak({ ...editingBreak, note: e.target.value })}
+                    placeholder="Např. Dozor na chodbě"
+                    rows={2}
+                  />
+                </div>
+              </div>
+
+              <DialogFooter className="flex-row justify-between sm:justify-between gap-2">
+                {!isNewBreak ? (
+                  <Button variant="outline" onClick={deleteBreak} className="text-destructive">
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Smazat
+                  </Button>
+                ) : (
+                  <span />
+                )}
+                <div className="flex gap-2">
+                  <Button variant="ghost" onClick={() => setEditingBreak(null)}>
+                    Zrušit
+                  </Button>
+                  <Button onClick={saveBreak}>Uložit</Button>
                 </div>
               </DialogFooter>
             </>
