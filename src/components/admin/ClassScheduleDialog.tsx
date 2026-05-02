@@ -175,7 +175,7 @@ const ClassScheduleDialog = ({ classId, className, open, onOpenChange }: Props) 
 
   const resetForm = () => {
     setEditing(null);
-    setSubjectChoice(PREDEFINED_SUBJECTS[0]);
+    setSubjectChoice(subjectNames[0] ?? "");
     setCustomSubject("");
     setDayOfWeek("1");
     setStartTime("08:00");
