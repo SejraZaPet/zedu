@@ -7,6 +7,8 @@ export interface LessonEntry {
   day: number; // 0=Mon … 4=Fri
   period: number;
   subject: string;
+  abbreviation?: string; // short code shown in cell, e.g. "MAT"
+  color?: string; // hex color, e.g. "#6EC6D9"
   className: string;
   room: string;
   /** When true (only meaningful in odd/even mode), this lesson is mirrored
@@ -14,6 +16,45 @@ export interface LessonEntry {
   mirrorBoth?: boolean;
   /** Stable key linking the two mirrored copies across odd & even lists. */
   mirrorKey?: string;
+}
+
+/** Predefined palette for subject color picker. */
+export const SUBJECT_COLORS: { value: string; label: string }[] = [
+  { value: "#6EC6D9", label: "Tyrkysová" },
+  { value: "#9B6CFF", label: "Fialová" },
+  { value: "#F472B6", label: "Růžová" },
+  { value: "#F87171", label: "Červená" },
+  { value: "#FB923C", label: "Oranžová" },
+  { value: "#FBBF24", label: "Žlutá" },
+  { value: "#34D399", label: "Zelená" },
+  { value: "#60A5FA", label: "Modrá" },
+  { value: "#A3A3A3", label: "Šedá" },
+];
+
+/** Stable color for an unspecified subject (deterministic by name). */
+export function colorForSubject(subject: string): string {
+  if (!subject) return SUBJECT_COLORS[0].value;
+  let hash = 0;
+  for (let i = 0; i < subject.length; i++) hash = (hash * 31 + subject.charCodeAt(i)) >>> 0;
+  return SUBJECT_COLORS[hash % SUBJECT_COLORS.length].value;
+}
+
+/** Build a map subject → { color, abbreviation } across all lesson lists.
+ *  Same subject keeps the same visual identity everywhere. First occurrence wins. */
+export function buildSubjectStyleMap(data: TeacherScheduleData): Map<string, { color: string; abbreviation: string }> {
+  const map = new Map<string, { color: string; abbreviation: string }>();
+  const all = [...data.lessonsBoth, ...data.lessonsOdd, ...data.lessonsEven];
+  for (const l of all) {
+    const key = l.subject.trim();
+    if (!key) continue;
+    if (!map.has(key)) {
+      map.set(key, {
+        color: l.color || colorForSubject(key),
+        abbreviation: l.abbreviation?.trim() || key.slice(0, 3).toUpperCase(),
+      });
+    }
+  }
+  return map;
 }
 
 export interface PeriodTime {
