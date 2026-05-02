@@ -154,8 +154,8 @@ const TeacherClassDetail = () => {
       data?.forEach((t: any) => tbList.push({ id: t.id, title: t.title, subject: t.subject, textbook_type: "teacher" }));
     }
     if (globalIds.length > 0) {
-      const { data } = await supabase.from("textbooks").select("id,title,subject_slug").in("id", globalIds);
-      data?.forEach((t: any) => tbList.push({ id: t.id, title: t.title, subject: t.subject_slug, textbook_type: "global" }));
+      const { data } = await supabase.from("textbook_subjects").select("id,label,slug").in("id", globalIds);
+      data?.forEach((t: any) => tbList.push({ id: t.id, title: t.label, subject: t.slug, textbook_type: "global" }));
     }
     setTextbooks(tbList);
 
