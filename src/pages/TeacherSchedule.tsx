@@ -203,57 +203,78 @@ export default function TeacherSchedule() {
     return classSlots.filter((s) => s.week_parity === "every" || s.week_parity === activeTab);
   }, [classSlots, data.parityMode, activeTab]);
 
-  // Build per-day merged cards sorted by start time
-  const cardsByDay = useMemo(() => {
-    const map = new Map<number, ScheduleCard[]>();
-    for (let d = 0; d < 5; d++) map.set(d, []);
+  /** Visible periods – capped at 8 (max 8 vyučovacích hodin). */
+  const visiblePeriods = useMemo(() => data.periods.slice(0, 8), [data.periods]);
 
+  /** Build map (day, period) → personal lesson card. */
+  const personalByDayPeriod = useMemo(() => {
+    const m = new Map<string, { lesson: LessonEntry; time: { start: string; end: string } | null }>();
     for (const l of currentLessons) {
-      const t = data.periodTimes[l.period] || null;
-      map.get(l.day)!.push({
-        kind: "personal",
-        sortStart: t?.start ?? "99:99",
-        lesson: l,
-        time: t,
-      });
+      if (!visiblePeriods.includes(l.period)) continue;
+      m.set(`${l.day}-${l.period}`, { lesson: l, time: data.periodTimes[l.period] || null });
+    }
+    return m;
+  }, [currentLessons, visiblePeriods, data.periodTimes]);
+
+  /** Build map (day, period) → class slot, matching by start_time = period start. */
+  const classByDayPeriod = useMemo(() => {
+    const m = new Map<string, ClassSlot>();
+    // Build start-time → period lookup
+    const startToPeriod = new Map<string, number>();
+    for (const p of visiblePeriods) {
+      const t = data.periodTimes[p];
+      if (t) startToPeriod.set(t.start.slice(0, 5), p);
     }
     for (const s of visibleClassSlots) {
-      const dayIdx = s.day_of_week - 1; // 1=Mon → 0
+      const dayIdx = s.day_of_week - 1;
       if (dayIdx < 0 || dayIdx > 4) continue;
-      map.get(dayIdx)!.push({
-        kind: "class",
-        sortStart: s.start_time,
-        slot: s,
-      });
+      const period = startToPeriod.get((s.start_time || "").slice(0, 5));
+      if (!period) continue;
+      const key = `${dayIdx}-${period}`;
+      if (!m.has(key)) m.set(key, s);
     }
-    // Insert breaks at correct position. afterPeriod=0 → before first period.
+    return m;
+  }, [visibleClassSlots, visiblePeriods, data.periodTimes]);
+
+  /** Breaks visible per (afterPeriod, day). */
+  const breaksByAfterDay = useMemo(() => {
+    const m = new Map<string, RowBreak>();
     for (const br of data.breaks) {
-      // Filter by week parity (default = "both")
       const wp = br.weekParity ?? "both";
       if (data.parityMode !== "both" && wp !== "both" && wp !== activeTab) continue;
-      const days =
-        br.days && br.days.length > 0 ? br.days : [0, 1, 2, 3, 4];
-      // Compute sortStart: use end of `afterPeriod` (or "00:00" for 0)
-      let sortStart = "00:00";
-      if (br.afterPeriod === 0) {
-        // Place just before first period start (use first defined period start minus epsilon)
-        const firstP = data.periods[0];
-        const t = firstP ? data.periodTimes[firstP] : null;
-        sortStart = t ? prevTimeStr(t.start) : "00:00";
-      } else {
-        const t = data.periodTimes[br.afterPeriod];
-        sortStart = t?.end ?? "99:00";
-      }
+      // Only show breaks that anchor to a visible period (or 0 = before first).
+      if (br.afterPeriod !== 0 && !visiblePeriods.includes(br.afterPeriod)) continue;
+      const days = br.days && br.days.length > 0 ? br.days : [0, 1, 2, 3, 4];
       for (const d of days) {
         if (d < 0 || d > 4) continue;
-        map.get(d)!.push({ kind: "break", sortStart, brk: br });
+        const key = `${br.afterPeriod}-${d}`;
+        // If multiple breaks target the same slot, prefer first (rare).
+        if (!m.has(key)) m.set(key, br);
       }
     }
-    for (const d of map.keys()) {
-      map.get(d)!.sort((a, b) => a.sortStart.localeCompare(b.sortStart));
+    return m;
+  }, [data.breaks, data.parityMode, activeTab, visiblePeriods]);
+
+  /** Which afterPeriod slots have at least one break (so we render that row). */
+  const breakRowAfterPeriods = useMemo(() => {
+    const set = new Set<number>();
+    for (const key of breaksByAfterDay.keys()) {
+      const ap = parseInt(key.split("-")[0], 10);
+      set.add(ap);
     }
-    return map;
-  }, [currentLessons, visibleClassSlots, data.periodTimes, data.breaks, data.periods, data.parityMode, activeTab]);
+    return set;
+  }, [breaksByAfterDay]);
+
+  /** Ordered row schema: alternating period rows + active break rows. */
+  const rowSchema = useMemo(() => {
+    const rows: Array<{ kind: "break"; afterPeriod: number } | { kind: "period"; period: number }> = [];
+    if (breakRowAfterPeriods.has(0)) rows.push({ kind: "break", afterPeriod: 0 });
+    for (const p of visiblePeriods) {
+      rows.push({ kind: "period", period: p });
+      if (breakRowAfterPeriods.has(p)) rows.push({ kind: "break", afterPeriod: p });
+    }
+    return rows;
+  }, [visiblePeriods, breakRowAfterPeriods]);
 
   function openNewLesson(day: number) {
     // pick first free period for default
