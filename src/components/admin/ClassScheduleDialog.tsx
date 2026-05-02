@@ -204,7 +204,7 @@ const ClassScheduleDialog = ({ classId, className, open, onOpenChange }: Props) 
   const openEdit = (slot: Slot) => {
     setEditing(slot);
     const label = (slot.subject_label || "").trim();
-    if ((PREDEFINED_SUBJECTS as readonly string[]).includes(label)) {
+    if (isKnownSubject(label)) {
       setSubjectChoice(label);
       setCustomSubject("");
     } else {
