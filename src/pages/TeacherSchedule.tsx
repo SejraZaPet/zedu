@@ -121,7 +121,7 @@ export default function TeacherSchedule() {
 
   function addBreak(afterPeriod: number) {
     setRowBreaks((prev) =>
-      [...prev, { afterPeriod, durationMin: 10, note: "" }].sort(
+      [...prev, { afterPeriod, durationMin: 10, notes: {} } as RowBreak].sort(
         (a, b) => a.afterPeriod - b.afterPeriod,
       ),
     );
@@ -130,6 +130,16 @@ export default function TeacherSchedule() {
   function updateBreak(afterPeriod: number, patch: Partial<RowBreak>) {
     setRowBreaks((prev) =>
       prev.map((b) => (b.afterPeriod === afterPeriod ? { ...b, ...patch } : b)),
+    );
+  }
+
+  function updateBreakNote(afterPeriod: number, dayIdx: number, value: string) {
+    setRowBreaks((prev) =>
+      prev.map((b) =>
+        b.afterPeriod === afterPeriod
+          ? { ...b, notes: { ...b.notes, [dayIdx]: value } }
+          : b,
+      ),
     );
   }
 
