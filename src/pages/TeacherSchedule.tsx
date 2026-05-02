@@ -228,6 +228,9 @@ export default function TeacherSchedule() {
     }
     // Insert breaks at correct position. afterPeriod=0 → before first period.
     for (const br of data.breaks) {
+      // Filter by week parity (default = "both")
+      const wp = br.weekParity ?? "both";
+      if (data.parityMode !== "both" && wp !== "both" && wp !== activeTab) continue;
       const days =
         br.days && br.days.length > 0 ? br.days : [0, 1, 2, 3, 4];
       // Compute sortStart: use end of `afterPeriod` (or "00:00" for 0)
