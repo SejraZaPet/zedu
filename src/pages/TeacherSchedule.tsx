@@ -83,13 +83,63 @@ export default function TeacherSchedule() {
       toast({ title: "Předmět je povinný", variant: "destructive" });
       return;
     }
-    setCurrentLessons((prev) => [...prev.filter((e) => e.id !== editing.id), editing]);
+    const e = editing;
+    setData((d) => {
+      // "both" mode: simple list
+      if (d.parityMode === "both") {
+        return {
+          ...d,
+          lessonsBoth: [...d.lessonsBoth.filter((x) => x.id !== e.id), e],
+        };
+      }
+
+      // odd/even mode
+      const otherSide: "odd" | "even" = activeTab === "odd" ? "even" : "odd";
+      const thisListKey = activeTab === "odd" ? "lessonsOdd" : "lessonsEven";
+      const otherListKey = otherSide === "odd" ? "lessonsOdd" : "lessonsEven";
+
+      if (e.mirrorBoth) {
+        // ensure a stable mirrorKey
+        const mirrorKey = e.mirrorKey ?? newId();
+        const thisEntry: LessonEntry = { ...e, mirrorBoth: true, mirrorKey };
+        // find existing twin in other list (by mirrorKey)
+        const otherList = d[otherListKey].filter((x) => x.mirrorKey !== mirrorKey);
+        const twin: LessonEntry = { ...thisEntry, id: newId() };
+        return {
+          ...d,
+          [thisListKey]: [...d[thisListKey].filter((x) => x.id !== e.id), thisEntry],
+          [otherListKey]: [...otherList, twin],
+        } as TeacherScheduleData;
+      }
+
+      // mirror is OFF — if it had a mirrorKey, drop the twin from other side
+      const cleanedOther = e.mirrorKey
+        ? d[otherListKey].filter((x) => x.mirrorKey !== e.mirrorKey)
+        : d[otherListKey];
+      const cleanedThis: LessonEntry = { ...e, mirrorBoth: false, mirrorKey: undefined };
+      return {
+        ...d,
+        [thisListKey]: [...d[thisListKey].filter((x) => x.id !== e.id), cleanedThis],
+        [otherListKey]: cleanedOther,
+      } as TeacherScheduleData;
+    });
     toast({ title: isNew ? "Přidáno do rozvrhu" : "Uloženo" });
     setEditing(null);
   }
   function deleteLesson() {
     if (!editing) return;
-    setCurrentLessons((prev) => prev.filter((e) => e.id !== editing.id));
+    const e = editing;
+    setData((d) => {
+      if (d.parityMode === "both") {
+        return { ...d, lessonsBoth: d.lessonsBoth.filter((x) => x.id !== e.id) };
+      }
+      // remove from current list and twin from other list (if mirrored)
+      return {
+        ...d,
+        lessonsOdd: d.lessonsOdd.filter((x) => x.id !== e.id && (!e.mirrorKey || x.mirrorKey !== e.mirrorKey)),
+        lessonsEven: d.lessonsEven.filter((x) => x.id !== e.id && (!e.mirrorKey || x.mirrorKey !== e.mirrorKey)),
+      };
+    });
     toast({ title: "Smazáno" });
     setEditing(null);
   }
