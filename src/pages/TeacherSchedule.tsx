@@ -618,31 +618,97 @@ export default function TeacherSchedule() {
                   {isNew ? "Nová hodina" : "Upravit hodinu"}
                 </DialogTitle>
                 <DialogDescription>
-                  {DAYS[editing.day]} · {editing.period}. hodina
+                  {isNew ? `${editing.period}. hodina` : `${DAYS[editing.day]} · ${editing.period}. hodina`}
                   {data.periodTimes[editing.period] &&
                     ` (${data.periodTimes[editing.period].start}–${data.periodTimes[editing.period].end})`}
                 </DialogDescription>
               </DialogHeader>
 
               <div className="space-y-3">
+                {/* Multi-day picker (new only) */}
+                {isNew && (
+                  <div className="space-y-1.5">
+                    <Label>Dny v týdnu *</Label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {DAYS.map((d, i) => {
+                        const active = editingDays.includes(i);
+                        return (
+                          <button
+                            key={d}
+                            type="button"
+                            onClick={() =>
+                              setEditingDays((prev) =>
+                                prev.includes(i) ? prev.filter((x) => x !== i) : [...prev, i],
+                              )
+                            }
+                            className={`px-3 py-1.5 text-xs rounded-md border transition-colors flex items-center gap-1 ${
+                              active
+                                ? "bg-primary text-primary-foreground border-primary"
+                                : "bg-card border-border hover:bg-muted"
+                            }`}
+                          >
+                            {active && <Check className="w-3 h-3" />}
+                            {d}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      Hodina se vytvoří ve všech vybraných dnech.
+                    </p>
+                  </div>
+                )}
+
                 <div className="space-y-1.5">
                   <Label htmlFor="subject">Předmět *</Label>
                   <Input
                     id="subject"
                     value={editing.subject}
-                    onChange={(e) => setEditing({ ...editing, subject: e.target.value })}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      const existing = subjectStyles.get(v.trim());
+                      setEditing({
+                        ...editing,
+                        subject: v,
+                        // Auto-fill style from existing subject if user hasn't customized yet
+                        color: existing?.color ?? editing.color ?? colorForSubject(v),
+                        abbreviation: existing?.abbreviation ?? editing.abbreviation,
+                      });
+                    }}
                     placeholder="Např. Matematika"
+                    list="schedule-subjects"
                   />
+                  <datalist id="schedule-subjects">
+                    {Array.from(subjectStyles.keys()).map((s) => (
+                      <option key={s} value={s} />
+                    ))}
+                  </datalist>
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="class">Třída</Label>
-                  <Input
-                    id="class"
-                    value={editing.className}
-                    onChange={(e) => setEditing({ ...editing, className: e.target.value })}
-                    placeholder="Např. 6. A"
-                  />
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="abbr">Zkratka</Label>
+                    <Input
+                      id="abbr"
+                      value={editing.abbreviation ?? ""}
+                      onChange={(e) =>
+                        setEditing({ ...editing, abbreviation: e.target.value.toUpperCase().slice(0, 5) })
+                      }
+                      placeholder="MAT"
+                      maxLength={5}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="class">Třída</Label>
+                    <Input
+                      id="class"
+                      value={editing.className}
+                      onChange={(e) => setEditing({ ...editing, className: e.target.value })}
+                      placeholder="Např. 6. A"
+                    />
+                  </div>
                 </div>
+
                 <div className="space-y-1.5">
                   <Label htmlFor="room">Místnost</Label>
                   <Input
@@ -651,6 +717,41 @@ export default function TeacherSchedule() {
                     onChange={(e) => setEditing({ ...editing, room: e.target.value })}
                     placeholder="Např. 204"
                   />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>Barva</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {SUBJECT_COLORS.map((c) => {
+                      const active = editing.color === c.value;
+                      return (
+                        <button
+                          key={c.value}
+                          type="button"
+                          onClick={() => setEditing({ ...editing, color: c.value })}
+                          className={`w-8 h-8 rounded-full border-2 transition-all flex items-center justify-center ${
+                            active ? "border-foreground scale-110" : "border-border hover:scale-105"
+                          }`}
+                          style={{ backgroundColor: c.value }}
+                          title={c.label}
+                          aria-label={c.label}
+                        >
+                          {active && <Check className="w-4 h-4 text-white" />}
+                        </button>
+                      );
+                    })}
+                    <input
+                      type="color"
+                      value={editing.color || "#6EC6D9"}
+                      onChange={(e) => setEditing({ ...editing, color: e.target.value })}
+                      className="w-8 h-8 rounded-full border border-border cursor-pointer p-0 bg-transparent"
+                      title="Vlastní barva"
+                      aria-label="Vlastní barva"
+                    />
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    Stejný předmět má v rozvrhu i kalendáři stejnou barvu.
+                  </p>
                 </div>
 
                 {data.parityMode !== "both" && (
@@ -670,6 +771,7 @@ export default function TeacherSchedule() {
                   </div>
                 )}
               </div>
+
 
               <DialogFooter className="flex-row justify-between sm:justify-between gap-2">
                 {!isNew ? (
