@@ -263,26 +263,36 @@ export default function TeacherSchedule() {
                         <tr className="bg-muted/20">
                           <td className="px-2 py-1 border-b border-r border-border align-middle">
                             {br ? (
-                              <button
-                                onClick={() => openEditBreak(br)}
-                                className="w-full text-left rounded-md px-2 py-1 hover:bg-muted transition-colors"
-                              >
-                                <div className="flex items-center gap-1.5 text-xs font-medium">
-                                  <Coffee className="w-3 h-3" />
-                                  {br.durationMin} min
-                                </div>
-                                {br.note && (
-                                  <div className="text-[10px] text-muted-foreground line-clamp-1">
-                                    {br.note}
-                                  </div>
-                                )}
-                              </button>
+                              <div className="flex items-center gap-1">
+                                <Coffee className="w-3 h-3 text-muted-foreground shrink-0" />
+                                <Input
+                                  type="number"
+                                  min={1}
+                                  max={120}
+                                  value={br.durationMin}
+                                  onChange={(e) =>
+                                    updateBreak(period, {
+                                      durationMin: parseInt(e.target.value, 10) || 0,
+                                    })
+                                  }
+                                  className="h-7 px-2 text-xs w-14"
+                                  aria-label="Délka přestávky v minutách"
+                                />
+                                <span className="text-[10px] text-muted-foreground">min</span>
+                                <button
+                                  onClick={() => removeBreak(period)}
+                                  className="ml-auto text-muted-foreground hover:text-destructive p-1"
+                                  aria-label="Smazat přestávku"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
                             ) : (
                               <Button
                                 size="sm"
                                 variant="ghost"
                                 className="h-7 w-full px-2 text-xs justify-start text-muted-foreground hover:text-foreground"
-                                onClick={() => openNewBreak(period)}
+                                onClick={() => addBreak(period)}
                               >
                                 <Coffee className="w-3 h-3 mr-1" /> Přestávka
                               </Button>
@@ -290,19 +300,12 @@ export default function TeacherSchedule() {
                           </td>
                           <td colSpan={DAYS.length} className="px-3 py-1 border-b border-l border-border">
                             {br ? (
-                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <span className="inline-flex items-center gap-1">
-                                  <Coffee className="w-3 h-3" />
-                                  Přestávka {br.durationMin} min
-                                </span>
-                                {br.note && <span>· {br.note}</span>}
-                                <button
-                                  onClick={() => openEditBreak(br)}
-                                  className="ml-auto text-xs text-primary hover:underline"
-                                >
-                                  Upravit
-                                </button>
-                              </div>
+                              <Input
+                                value={br.note}
+                                onChange={(e) => updateBreak(period, { note: e.target.value })}
+                                placeholder="Poznámka (např. Velká přestávka, Dozor na chodbě)"
+                                className="h-7 text-xs bg-transparent border-transparent hover:border-border focus:border-input"
+                              />
                             ) : (
                               <span className="text-[11px] text-muted-foreground/60">
                                 — bez přestávky —
