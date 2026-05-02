@@ -120,31 +120,23 @@ export default function TeacherSchedule() {
     }));
   }
 
-  function openNewBreak(afterPeriod: number) {
-    setEditingBreak({ afterPeriod, durationMin: 10, note: "" });
-    setIsNewBreak(true);
+  function addBreak(afterPeriod: number) {
+    setRowBreaks((prev) =>
+      [...prev, { afterPeriod, durationMin: 10, note: "" }].sort(
+        (a, b) => a.afterPeriod - b.afterPeriod,
+      ),
+    );
   }
 
-  function openEditBreak(b: RowBreak) {
-    setEditingBreak({ ...b });
-    setIsNewBreak(false);
+  function updateBreak(afterPeriod: number, patch: Partial<RowBreak>) {
+    setRowBreaks((prev) =>
+      prev.map((b) => (b.afterPeriod === afterPeriod ? { ...b, ...patch } : b)),
+    );
   }
 
-  function saveBreak() {
-    if (!editingBreak) return;
-    setRowBreaks((prev) => {
-      const filtered = prev.filter((b) => b.afterPeriod !== editingBreak.afterPeriod);
-      return [...filtered, editingBreak].sort((a, b) => a.afterPeriod - b.afterPeriod);
-    });
-    toast({ title: isNewBreak ? "Přestávka přidána" : "Přestávka uložena" });
-    setEditingBreak(null);
-  }
-
-  function deleteBreak() {
-    if (!editingBreak) return;
-    setRowBreaks((prev) => prev.filter((b) => b.afterPeriod !== editingBreak.afterPeriod));
+  function removeBreak(afterPeriod: number) {
+    setRowBreaks((prev) => prev.filter((b) => b.afterPeriod !== afterPeriod));
     toast({ title: "Přestávka smazána" });
-    setEditingBreak(null);
   }
 
   return (
