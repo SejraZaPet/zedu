@@ -21,6 +21,7 @@ import {
   expandScheduleSlots,
   getWeekRange,
 } from "@/lib/calendar-utils";
+import { expandTeacherSchedule, loadSchedule } from "@/lib/teacher-schedule-store";
 
 const TeacherCalendar = () => {
   const navigate = useNavigate();
