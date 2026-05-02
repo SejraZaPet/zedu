@@ -151,16 +151,30 @@ export default function TeacherSchedule() {
     }));
   }
 
-  function addPeriod() {
+  function addPeriod(where: "end" | "start" = "end") {
     setData((d) => {
-      const next = (d.periods[d.periods.length - 1] ?? 0) + 1;
-      const last = d.periodTimes[d.periods[d.periods.length - 1]] ?? { start: "08:00", end: "08:45" };
+      if (where === "start") {
+        const first = d.periods[0] ?? 1;
+        const next = first - 1; // can be 0, then -1, …
+        const firstTime = d.periodTimes[first] ?? { start: "07:55", end: "08:40" };
+        return {
+          ...d,
+          periods: [next, ...d.periods],
+          periodTimes: {
+            ...d.periodTimes,
+            [next]: { start: "07:10", end: firstTime.start || "07:55" },
+          },
+        };
+      }
+      const last = d.periods[d.periods.length - 1] ?? 0;
+      const next = last + 1;
+      const lastTime = d.periodTimes[last] ?? { start: "08:00", end: "08:45" };
       return {
         ...d,
         periods: [...d.periods, next],
         periodTimes: {
           ...d.periodTimes,
-          [next]: DEFAULT_PERIOD_TIMES[next] ?? { start: last.end, end: last.end },
+          [next]: DEFAULT_PERIOD_TIMES[next] ?? { start: lastTime.end, end: lastTime.end },
         },
       };
     });
@@ -185,20 +199,23 @@ export default function TeacherSchedule() {
       ),
     }));
   }
+  function addLeadingBreak() {
+    setData((d) => {
+      if (d.periods.length === 0) return d;
+      const key = d.periods[0] - 1;
+      if (d.breaks.some((b) => b.afterPeriod === key)) return d;
+      return {
+        ...d,
+        breaks: [...d.breaks, { afterPeriod: key, durationMin: 10, notes: {} }].sort(
+          (a, b) => a.afterPeriod - b.afterPeriod,
+        ),
+      };
+    });
+  }
   function updateBreak(afterPeriod: number, patch: Partial<RowBreak>) {
     setData((d) => ({
       ...d,
       breaks: d.breaks.map((b) => (b.afterPeriod === afterPeriod ? { ...b, ...patch } : b)),
-    }));
-  }
-  function updateBreakNote(afterPeriod: number, dayIdx: number, value: string) {
-    setData((d) => ({
-      ...d,
-      breaks: d.breaks.map((b) =>
-        b.afterPeriod === afterPeriod
-          ? { ...b, notes: { ...(b.notes ?? {}), [dayIdx]: value } }
-          : b,
-      ),
     }));
   }
   function removeBreak(afterPeriod: number) {
@@ -206,27 +223,23 @@ export default function TeacherSchedule() {
   }
 
   function setParityMode(mode: WeekParityMode) {
-    setData((d) => {
-      // when switching from "both" to per-parity, seed both lists from lessonsBoth if empty
-      if (mode !== "both" && d.parityMode === "both") {
-        return {
-          ...d,
-          parityMode: mode,
-          lessonsOdd: d.lessonsOdd.length ? d.lessonsOdd : d.lessonsBoth.map((l) => ({ ...l, id: newId() })),
-          lessonsEven: d.lessonsEven.length ? d.lessonsEven : d.lessonsBoth.map((l) => ({ ...l, id: newId() })),
-        };
-      }
-      return { ...d, parityMode: mode };
-    });
+    // Lichý a sudý jsou zcela nezávislé — žádné automatické kopírování mezi nimi.
+    setData((d) => ({ ...d, parityMode: mode }));
     setActiveTab(mode === "both" ? "both" : "odd");
   }
 
-  // Build column descriptors: alternating period / break
+  // Build column descriptors: alternating period / break.
+  // A break with afterPeriod = (firstPeriod - 1) is rendered BEFORE the first period.
   const columns = useMemo(() => {
     const cols: Array<
       | { kind: "period"; period: number }
       | { kind: "break"; afterPeriod: number }
     > = [];
+    if (data.periods.length === 0) return cols;
+    const leadingKey = data.periods[0] - 1;
+    if (breakByPeriod.has(leadingKey)) {
+      cols.push({ kind: "break", afterPeriod: leadingKey });
+    }
     data.periods.forEach((p, i) => {
       cols.push({ kind: "period", period: p });
       if (i < data.periods.length - 1 && breakByPeriod.has(p)) {
