@@ -977,11 +977,15 @@ function PersonalCard({
 }
 
 function ClassCard({ slot, onClick }: { slot: ClassSlot; onClick: () => void }) {
+  const subject = slot.subject_label || "Hodina";
+  const color = slot.color || colorForSubject(subject);
+  const abbr = (slot.abbreviation || subject.slice(0, 3)).toUpperCase();
   return (
     <button
       onClick={onClick}
-      className="w-full text-left rounded-md p-2 transition-all hover:shadow-md hover:-translate-y-0.5 border border-dashed border-border bg-background/60 group"
-      title="Hodina ze třídy – uprav v sekci Třídy"
+      className="w-full text-left rounded-md p-2 transition-all hover:shadow-md hover:-translate-y-0.5 border-l-4 group"
+      style={{ backgroundColor: `${color}26`, borderLeftColor: color }}
+      title="Hodina ze třídy – klikni pro úpravu"
     >
       <div className="flex items-center gap-1 text-[11px] text-muted-foreground tabular-nums">
         <Clock className="w-3 h-3" />
@@ -989,12 +993,18 @@ function ClassCard({ slot, onClick }: { slot: ClassSlot; onClick: () => void }) 
         {slot.week_parity !== "every" && (
           <span className="ml-1 text-[10px]">({slot.week_parity === "odd" ? "lichý" : "sudý"})</span>
         )}
-        <ExternalLink className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-60 transition-opacity" />
+        <Pencil className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-60 transition-opacity" />
       </div>
-      <div className="font-semibold text-sm leading-tight truncate mt-0.5">
-        {slot.subject_label || "Hodina"}
+      <div className="flex items-center gap-1.5 mt-0.5">
+        <span
+          className="inline-flex items-center justify-center text-[10px] font-bold text-white px-1.5 py-0.5 rounded shrink-0"
+          style={{ backgroundColor: color }}
+        >
+          {abbr}
+        </span>
+        <div className="font-semibold text-sm leading-tight truncate">{subject}</div>
       </div>
-      <div className="text-xs text-muted-foreground truncate flex items-center gap-1">
+      <div className="text-xs text-muted-foreground truncate flex items-center gap-1 mt-0.5">
         <Users className="w-2.5 h-2.5 shrink-0" />
         <span className="truncate">{slot.classes?.name}</span>
         {slot.room && <span className="shrink-0">· {slot.room}</span>}
