@@ -28,6 +28,7 @@ import {
   type WeekParityMode,
 } from "@/lib/teacher-schedule-store";
 import ClassScheduleSummary from "@/components/ClassScheduleSummary";
+import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
 
 const DAYS = ["Pondělí", "Úterý", "Středa", "Čtvrtek", "Pátek"];
 
