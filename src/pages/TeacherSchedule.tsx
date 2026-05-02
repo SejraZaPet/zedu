@@ -75,8 +75,12 @@ interface ClassSlot {
   end_time: string;
   week_parity: "every" | "odd" | "even";
   subject_label: string | null;
+  abbreviation: string | null;
+  color: string | null;
   room: string | null;
   textbook_id: string | null;
+  valid_from: string | null;
+  valid_to: string | null;
   classes?: { name: string } | null;
 }
 
