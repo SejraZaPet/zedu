@@ -190,7 +190,7 @@ const ClassScheduleDialog = ({ classId, className, open, onOpenChange }: Props) 
   const openCreate = (preselectSubject?: string, preselectTextbookKey?: string) => {
     resetForm();
     if (preselectSubject) {
-      if ((PREDEFINED_SUBJECTS as readonly string[]).includes(preselectSubject)) {
+      if (isKnownSubject(preselectSubject)) {
         setSubjectChoice(preselectSubject);
       } else {
         setSubjectChoice(CUSTOM_SUBJECT);
