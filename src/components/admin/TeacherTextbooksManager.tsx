@@ -102,6 +102,167 @@ const TeacherTextbooksManager = () => {
   const [existingLessons, setExistingLessons] = useState<{ id: string; title: string; status: string }[]>([]);
   const [selectedExistingLessonId, setSelectedExistingLessonId] = useState<string>("");
 
+
+  // === Helpers for creating new textbook ===
+  const generateAccessCode = (length = 6): string => {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let result = "";
+    for (let i = 0; i < length; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  };
+
+  const slugify = (label: string): string =>
+    label
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_|_$/g, "");
+
+  const openCreateDialog = () => {
+    setNewSubjectMode("existing");
+    setNewSubjectId(subjects?.[0]?.id ?? "");
+    setNewCustomSubject("");
+    setNewTitle("");
+    setNewDescription("");
+    setNewGrades([{ grade_number: 1, label: "1. ročník" }]);
+    setCreateOpen(true);
+  };
+
+  const addGradeRow = () => {
+    setNewGrades((prev) => {
+      const next = prev.length > 0 ? Math.max(...prev.map((g) => g.grade_number)) + 1 : 1;
+      return [...prev, { grade_number: next, label: `${next}. ročník` }];
+    });
+  };
+
+  const updateGradeRow = (idx: number, patch: Partial<{ grade_number: number; label: string }>) => {
+    setNewGrades((prev) => prev.map((g, i) => (i === idx ? { ...g, ...patch } : g)));
+  };
+
+  const removeGradeRow = (idx: number) => {
+    setNewGrades((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleCreateTextbook = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      toast({ title: "Chyba", description: "Nejste přihlášen/a.", variant: "destructive" });
+      return;
+    }
+
+    setCreatingTextbook(true);
+    try {
+      let subjectSlug = "";
+      let subjectLabel = "";
+
+      if (newSubjectMode === "existing") {
+        const sel = subjects?.find((s) => s.id === newSubjectId);
+        if (!sel) {
+          toast({ title: "Chyba", description: "Vyberte předmět.", variant: "destructive" });
+          setCreatingTextbook(false);
+          return;
+        }
+        subjectSlug = sel.slug;
+        subjectLabel = sel.label;
+
+        // Prevent duplicate textbook for same teacher+subject
+        const { data: existing } = await supabase
+          .from("teacher_textbooks")
+          .select("id")
+          .eq("teacher_id", session.user.id)
+          .eq("subject", subjectSlug)
+          .maybeSingle();
+        if (existing) {
+          toast({
+            title: "Učebnice již existuje",
+            description: `Pro předmět „${subjectLabel}" už máte vytvořenou učebnici.`,
+            variant: "destructive",
+          });
+          setCreatingTextbook(false);
+          return;
+        }
+      } else {
+        // Custom: create new textbook_subjects + grades
+        const label = newCustomSubject.trim();
+        if (!label) {
+          toast({ title: "Chyba", description: "Zadejte název vlastního předmětu.", variant: "destructive" });
+          setCreatingTextbook(false);
+          return;
+        }
+        if (newGrades.length === 0) {
+          toast({ title: "Chyba", description: "Přidejte alespoň jeden ročník.", variant: "destructive" });
+          setCreatingTextbook(false);
+          return;
+        }
+        subjectLabel = label;
+        subjectSlug = slugify(label);
+
+        // Check slug uniqueness
+        const { data: existingSubj } = await supabase
+          .from("textbook_subjects")
+          .select("id")
+          .eq("slug", subjectSlug)
+          .maybeSingle();
+
+        if (existingSubj) {
+          toast({
+            title: "Předmět existuje",
+            description: "Předmět s tímto názvem již existuje. Vyberte ho ze seznamu.",
+            variant: "destructive",
+          });
+          setCreatingTextbook(false);
+          return;
+        }
+
+        const { data: createdSubj, error: subjErr } = await supabase
+          .from("textbook_subjects")
+          .insert({
+            slug: subjectSlug,
+            label: subjectLabel,
+            abbreviation: "",
+            description: "",
+            color: "#6EC6D9",
+            active: true,
+            sort_order: subjects?.length ?? 0,
+          })
+          .select("id")
+          .single();
+        if (subjErr) throw subjErr;
+
+        await supabase.from("textbook_grades").insert(
+          newGrades.map((g, i) => ({
+            subject_id: createdSubj.id,
+            grade_number: g.grade_number,
+            label: g.label.trim() || `${g.grade_number}. ročník`,
+            sort_order: i,
+          })),
+        );
+      }
+
+      // Insert teacher_textbooks
+      const { error: tbErr } = await supabase.from("teacher_textbooks").insert({
+        title: (newTitle.trim() || subjectLabel),
+        description: newDescription.trim() || `Učebnice předmětu ${subjectLabel}`,
+        subject: subjectSlug,
+        teacher_id: session.user.id,
+        access_code: generateAccessCode(),
+      } as any);
+      if (tbErr) throw tbErr;
+
+      toast({ title: "Učebnice vytvořena" });
+      queryClient.invalidateQueries({ queryKey: ["textbook-subjects"] });
+      setCreateOpen(false);
+      fetchTextbooks();
+    } catch (err: any) {
+      toast({ title: "Chyba", description: err.message ?? "Nepodařilo se vytvořit učebnici.", variant: "destructive" });
+    } finally {
+      setCreatingTextbook(false);
+    }
+  };
+
   const fetchTextbooks = async () => {
     setLoading(true);
     const { data } = await supabase
