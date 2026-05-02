@@ -112,7 +112,7 @@ const TeacherCalendar = () => {
         },
       );
 
-      setEvents([...lessonEvents, ...assignmentEvents, ...todoEvents]);
+      setEvents([...lessonEvents, ...personalEvents, ...assignmentEvents, ...todoEvents]);
       setLoading(false);
     })();
 
