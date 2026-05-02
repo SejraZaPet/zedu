@@ -1091,6 +1091,7 @@ function BreakSettingRow({
         })}
       </div>
 
+      {kind === "meeting" && (
         <div className="space-y-1">
           <Label className="text-xs">Téma porady</Label>
           <Input
