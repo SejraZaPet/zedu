@@ -299,20 +299,28 @@ export default function TeacherSchedule() {
                               </Button>
                             )}
                           </td>
-                          <td colSpan={DAYS.length} className="px-3 py-1 border-b border-l border-border">
-                            {br ? (
-                              <Input
-                                value={br.note}
-                                onChange={(e) => updateBreak(period, { note: e.target.value })}
-                                placeholder="Poznámka (např. Velká přestávka, Dozor na chodbě)"
-                                className="h-7 text-xs bg-transparent border-transparent hover:border-border focus:border-input"
-                              />
-                            ) : (
+                          {br ? (
+                            DAYS.map((_, dayIdx) => (
+                              <td
+                                key={dayIdx}
+                                className="px-1 py-1 border-b border-l border-border"
+                              >
+                                <Input
+                                  value={br.notes[dayIdx] ?? ""}
+                                  onChange={(e) => updateBreakNote(period, dayIdx, e.target.value)}
+                                  placeholder="Poznámka…"
+                                  className="h-7 text-xs bg-transparent border-transparent hover:border-border focus:border-input"
+                                  aria-label={`Poznámka přestávky ${DAYS[dayIdx]}`}
+                                />
+                              </td>
+                            ))
+                          ) : (
+                            <td colSpan={DAYS.length} className="px-3 py-1 border-b border-l border-border">
                               <span className="text-[11px] text-muted-foreground/60">
                                 — bez přestávky —
                               </span>
-                            )}
-                          </td>
+                            </td>
+                          )}
                         </tr>
                       )}
                     </Fragment>
