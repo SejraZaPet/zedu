@@ -9,6 +9,11 @@ export interface LessonEntry {
   subject: string;
   className: string;
   room: string;
+  /** When true (only meaningful in odd/even mode), this lesson is mirrored
+   *  into both odd & even week lists, sharing the same `mirrorKey`. */
+  mirrorBoth?: boolean;
+  /** Stable key linking the two mirrored copies across odd & even lists. */
+  mirrorKey?: string;
 }
 
 export interface PeriodTime {
