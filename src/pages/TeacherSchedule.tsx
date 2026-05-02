@@ -616,7 +616,7 @@ export default function TeacherSchedule() {
                               <div className="w-full">
                                 <ClassCard
                                   slot={cls}
-                                  onClick={() => navigate("/ucitel/tridy")}
+                                  onClick={() => setEditingClassSlot(cls)}
                                 />
                               </div>
                             ) : (
