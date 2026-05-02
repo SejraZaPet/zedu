@@ -34,7 +34,8 @@ interface RowBreak {
   // přestávka mezi periodou N a N+1 (afterPeriod = N), platí pro celý týden
   afterPeriod: number;
   durationMin: number;
-  note: string;
+  // poznámka per den (klíč = index dne 0..4)
+  notes: Record<number, string>;
 }
 
 const DAYS = ["Pondělí", "Úterý", "Středa", "Čtvrtek", "Pátek"];
@@ -54,7 +55,7 @@ const DEFAULT_PERIOD_TIMES: Record<number, PeriodTime> = {
 };
 
 const DEFAULT_BREAKS: RowBreak[] = [
-  { afterPeriod: 3, durationMin: 20, note: "Velká přestávka" },
+  { afterPeriod: 3, durationMin: 20, notes: {} },
 ];
 
 const newId = () => Math.random().toString(36).slice(2, 10);
@@ -120,7 +121,7 @@ export default function TeacherSchedule() {
 
   function addBreak(afterPeriod: number) {
     setRowBreaks((prev) =>
-      [...prev, { afterPeriod, durationMin: 10, note: "" }].sort(
+      [...prev, { afterPeriod, durationMin: 10, notes: {} } as RowBreak].sort(
         (a, b) => a.afterPeriod - b.afterPeriod,
       ),
     );
@@ -129,6 +130,16 @@ export default function TeacherSchedule() {
   function updateBreak(afterPeriod: number, patch: Partial<RowBreak>) {
     setRowBreaks((prev) =>
       prev.map((b) => (b.afterPeriod === afterPeriod ? { ...b, ...patch } : b)),
+    );
+  }
+
+  function updateBreakNote(afterPeriod: number, dayIdx: number, value: string) {
+    setRowBreaks((prev) =>
+      prev.map((b) =>
+        b.afterPeriod === afterPeriod
+          ? { ...b, notes: { ...b.notes, [dayIdx]: value } }
+          : b,
+      ),
     );
   }
 
@@ -288,20 +299,28 @@ export default function TeacherSchedule() {
                               </Button>
                             )}
                           </td>
-                          <td colSpan={DAYS.length} className="px-3 py-1 border-b border-l border-border">
-                            {br ? (
-                              <Input
-                                value={br.note}
-                                onChange={(e) => updateBreak(period, { note: e.target.value })}
-                                placeholder="Poznámka (např. Velká přestávka, Dozor na chodbě)"
-                                className="h-7 text-xs bg-transparent border-transparent hover:border-border focus:border-input"
-                              />
-                            ) : (
+                          {br ? (
+                            DAYS.map((_, dayIdx) => (
+                              <td
+                                key={dayIdx}
+                                className="px-1 py-1 border-b border-l border-border"
+                              >
+                                <Input
+                                  value={br.notes[dayIdx] ?? ""}
+                                  onChange={(e) => updateBreakNote(period, dayIdx, e.target.value)}
+                                  placeholder="Poznámka…"
+                                  className="h-7 text-xs bg-transparent border-transparent hover:border-border focus:border-input"
+                                  aria-label={`Poznámka přestávky ${DAYS[dayIdx]}`}
+                                />
+                              </td>
+                            ))
+                          ) : (
+                            <td colSpan={DAYS.length} className="px-3 py-1 border-b border-l border-border">
                               <span className="text-[11px] text-muted-foreground/60">
                                 — bez přestávky —
                               </span>
-                            )}
-                          </td>
+                            </td>
+                          )}
                         </tr>
                       )}
                     </Fragment>
