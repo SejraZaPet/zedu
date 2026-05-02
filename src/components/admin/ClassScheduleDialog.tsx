@@ -110,6 +110,8 @@ const ClassScheduleDialog = ({ classId, className, open, onOpenChange }: Props) 
   const [subjectChoice, setSubjectChoice] = useState<string>("");
   const [customSubject, setCustomSubject] = useState("");
   const [dayOfWeek, setDayOfWeek] = useState("1");
+  const [timeMode, setTimeMode] = useState<"period" | "manual">("period");
+  const [periodNumber, setPeriodNumber] = useState<string>("1");
   const [startTime, setStartTime] = useState("08:00");
   const [endTime, setEndTime] = useState("08:45");
   const [parity, setParity] = useState<"every" | "odd" | "even">("every");
@@ -118,6 +120,24 @@ const ClassScheduleDialog = ({ classId, className, open, onOpenChange }: Props) 
   const [validFrom, setValidFrom] = useState<Date | undefined>(undefined);
   const [validTo, setValidTo] = useState<Date | undefined>(undefined);
   const [saving, setSaving] = useState(false);
+
+  // Load teacher's personal schedule periods (from local store)
+  const teacherPeriods = useMemo(() => {
+    const sch = loadSchedule();
+    return sch.periods
+      .map((p) => ({ period: p, time: sch.periodTimes[p] as PeriodTime | undefined }))
+      .filter((x) => x.time);
+  }, [open]);
+
+  // When user picks a period, autofill start/end from teacher schedule
+  useEffect(() => {
+    if (timeMode !== "period") return;
+    const found = teacherPeriods.find((p) => String(p.period) === periodNumber);
+    if (found?.time) {
+      setStartTime(found.time.start);
+      setEndTime(found.time.end);
+    }
+  }, [timeMode, periodNumber, teacherPeriods]);
 
   const fetchTextbooks = async () => {
     if (!user) return;
