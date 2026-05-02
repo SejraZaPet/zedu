@@ -101,7 +101,11 @@ const ClassScheduleDialog = ({ classId, className, open, onOpenChange }: Props) 
   const [deleteTarget, setDeleteTarget] = useState<Slot | null>(null);
 
   // Form state
-  const [subjectChoice, setSubjectChoice] = useState<string>(PREDEFINED_SUBJECTS[0]);
+  const { subjects: teacherSubjects } = useTeacherSubjects();
+  const subjectNames = teacherSubjects.map((s) => s.label);
+  const isKnownSubject = (label: string) => subjectNames.some((n) => n.toLowerCase() === label.toLowerCase());
+
+  const [subjectChoice, setSubjectChoice] = useState<string>("");
   const [customSubject, setCustomSubject] = useState("");
   const [dayOfWeek, setDayOfWeek] = useState("1");
   const [startTime, setStartTime] = useState("08:00");
