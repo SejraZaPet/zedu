@@ -293,6 +293,11 @@ export default function TeacherSchedule() {
           </div>
         </div>
 
+        {/* Hodiny ze tříd – synchronizováno z Třídy → ikona hodin */}
+        <div className="mb-6">
+          <ClassScheduleSummary />
+        </div>
+
         {/* Sub-tabs for odd/even when parity mode is not "both" */}
         {data.parityMode !== "both" && (
           <div className="flex items-center gap-2 mb-4">
