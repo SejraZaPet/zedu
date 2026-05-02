@@ -37,6 +37,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
+import { loadSchedule, type PeriodTime } from "@/lib/teacher-schedule-store";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 interface Slot {
   id: string;
@@ -108,6 +110,8 @@ const ClassScheduleDialog = ({ classId, className, open, onOpenChange }: Props) 
   const [subjectChoice, setSubjectChoice] = useState<string>("");
   const [customSubject, setCustomSubject] = useState("");
   const [dayOfWeek, setDayOfWeek] = useState("1");
+  const [timeMode, setTimeMode] = useState<"period" | "manual">("period");
+  const [periodNumber, setPeriodNumber] = useState<string>("1");
   const [startTime, setStartTime] = useState("08:00");
   const [endTime, setEndTime] = useState("08:45");
   const [parity, setParity] = useState<"every" | "odd" | "even">("every");
@@ -116,6 +120,24 @@ const ClassScheduleDialog = ({ classId, className, open, onOpenChange }: Props) 
   const [validFrom, setValidFrom] = useState<Date | undefined>(undefined);
   const [validTo, setValidTo] = useState<Date | undefined>(undefined);
   const [saving, setSaving] = useState(false);
+
+  // Load teacher's personal schedule periods (from local store)
+  const teacherPeriods = useMemo(() => {
+    const sch = loadSchedule();
+    return sch.periods
+      .map((p) => ({ period: p, time: sch.periodTimes[p] as PeriodTime | undefined }))
+      .filter((x) => x.time);
+  }, [open]);
+
+  // When user picks a period, autofill start/end from teacher schedule
+  useEffect(() => {
+    if (timeMode !== "period") return;
+    const found = teacherPeriods.find((p) => String(p.period) === periodNumber);
+    if (found?.time) {
+      setStartTime(found.time.start);
+      setEndTime(found.time.end);
+    }
+  }, [timeMode, periodNumber, teacherPeriods]);
 
   const fetchTextbooks = async () => {
     if (!user) return;
@@ -178,6 +200,8 @@ const ClassScheduleDialog = ({ classId, className, open, onOpenChange }: Props) 
     setSubjectChoice(subjectNames[0] ?? "");
     setCustomSubject("");
     setDayOfWeek("1");
+    setTimeMode("period");
+    setPeriodNumber("1");
     setStartTime("08:00");
     setEndTime("08:45");
     setParity("every");
@@ -212,8 +236,19 @@ const ClassScheduleDialog = ({ classId, className, open, onOpenChange }: Props) 
       setCustomSubject(label);
     }
     setDayOfWeek(String(slot.day_of_week));
-    setStartTime(slot.start_time.slice(0, 5));
-    setEndTime(slot.end_time.slice(0, 5));
+    const sStart = slot.start_time.slice(0, 5);
+    const sEnd = slot.end_time.slice(0, 5);
+    setStartTime(sStart);
+    setEndTime(sEnd);
+    const matchedPeriod = teacherPeriods.find(
+      (p) => p.time?.start === sStart && p.time?.end === sEnd,
+    );
+    if (matchedPeriod) {
+      setTimeMode("period");
+      setPeriodNumber(String(matchedPeriod.period));
+    } else {
+      setTimeMode("manual");
+    }
     setParity(slot.week_parity);
     setRoom(slot.room || "");
     setTextbookSel(
@@ -565,22 +600,68 @@ const ClassScheduleDialog = ({ classId, className, open, onOpenChange }: Props) 
                   </Select>
                 </div>
 
-                <div>
-                  <Label>Začátek</Label>
-                  <Input
-                    type="time"
-                    value={startTime}
-                    onChange={(e) => setStartTime(e.target.value)}
-                  />
+                <div className="sm:col-span-2">
+                  <Label className="mb-1.5 block">Zadání času</Label>
+                  <ToggleGroup
+                    type="single"
+                    value={timeMode}
+                    onValueChange={(v) => v && setTimeMode(v as "period" | "manual")}
+                    className="justify-start"
+                  >
+                    <ToggleGroupItem value="period" className="text-xs h-8 px-3">
+                      Číslo hodiny
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="manual" className="text-xs h-8 px-3">
+                      Ruční čas
+                    </ToggleGroupItem>
+                  </ToggleGroup>
                 </div>
-                <div>
-                  <Label>Konec</Label>
-                  <Input
-                    type="time"
-                    value={endTime}
-                    onChange={(e) => setEndTime(e.target.value)}
-                  />
-                </div>
+
+                {timeMode === "period" ? (
+                  <div className="sm:col-span-2">
+                    <Label>Hodina dne</Label>
+                    {teacherPeriods.length === 0 ? (
+                      <p className="text-xs text-muted-foreground py-2">
+                        Nejprve nastavte časy hodin v sekci Rozvrh.
+                      </p>
+                    ) : (
+                      <Select value={periodNumber} onValueChange={setPeriodNumber}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {teacherPeriods.map(({ period, time }) => (
+                            <SelectItem key={period} value={String(period)}>
+                              {period}. hodina · {time!.start}–{time!.end}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      Čas se převezme z vašeho rozvrhu ({startTime}–{endTime}).
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <div>
+                      <Label>Začátek</Label>
+                      <Input
+                        type="time"
+                        value={startTime}
+                        onChange={(e) => setStartTime(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label>Konec</Label>
+                      <Input
+                        type="time"
+                        value={endTime}
+                        onChange={(e) => setEndTime(e.target.value)}
+                      />
+                    </div>
+                  </>
+                )}
 
                 <div className="sm:col-span-2">
                   <Label>Učebna</Label>
