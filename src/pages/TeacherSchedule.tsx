@@ -592,6 +592,23 @@ export default function TeacherSchedule() {
                     placeholder="Např. 204"
                   />
                 </div>
+
+                {data.parityMode !== "both" && (
+                  <div className="flex items-center justify-between rounded-md border border-border bg-muted/30 p-3">
+                    <div className="space-y-0.5 pr-3">
+                      <div className="text-sm font-medium">Propsat do obou týdnů</div>
+                      <div className="text-xs text-muted-foreground">
+                        Tato hodina se zobrazí v lichém i sudém týdnu zároveň.
+                      </div>
+                    </div>
+                    <Switch
+                      checked={!!editing.mirrorBoth}
+                      onCheckedChange={(v) =>
+                        setEditing({ ...editing, mirrorBoth: v })
+                      }
+                    />
+                  </div>
+                )}
               </div>
 
               <DialogFooter className="flex-row justify-between sm:justify-between gap-2">
