@@ -94,6 +94,8 @@ export interface RowBreak {
   location?: string;
   /** Days (0=Mon..4=Fri) on which this block applies. Empty/undefined = every day. */
   days?: number[];
+  /** Week parity for which this block applies. Defaults to "both". */
+  weekParity?: "odd" | "even" | "both";
 }
 
 export type WeekParityMode = "both" | "odd" | "even";
