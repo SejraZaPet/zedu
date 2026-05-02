@@ -234,8 +234,19 @@ const ClassScheduleDialog = ({ classId, className, open, onOpenChange }: Props) 
       setCustomSubject(label);
     }
     setDayOfWeek(String(slot.day_of_week));
-    setStartTime(slot.start_time.slice(0, 5));
-    setEndTime(slot.end_time.slice(0, 5));
+    const sStart = slot.start_time.slice(0, 5);
+    const sEnd = slot.end_time.slice(0, 5);
+    setStartTime(sStart);
+    setEndTime(sEnd);
+    const matchedPeriod = teacherPeriods.find(
+      (p) => p.time?.start === sStart && p.time?.end === sEnd,
+    );
+    if (matchedPeriod) {
+      setTimeMode("period");
+      setPeriodNumber(String(matchedPeriod.period));
+    } else {
+      setTimeMode("manual");
+    }
     setParity(slot.week_parity);
     setRoom(slot.room || "");
     setTextbookSel(
