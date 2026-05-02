@@ -191,8 +191,8 @@ export default function TeacherSchedule() {
                   const t = periodTimes[period];
                   const br = breakByPeriod.get(period);
                   return (
-                    <>
-                      <tr key={`p-${period}`}>
+                    <Fragment key={`row-${period}`}>
+                      <tr>
                         <td className="p-2 border-b border-r border-border align-top w-32">
                           <div className="flex items-center gap-2 mb-1">
                             <span className="font-semibold text-foreground text-sm">{period}.</span>
