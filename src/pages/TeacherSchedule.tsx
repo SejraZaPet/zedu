@@ -50,6 +50,26 @@ export default function TeacherSchedule() {
   const [isNew, setIsNew] = useState(false);
 
   const subjectStyles = useMemo(() => buildSubjectStyleMap(data), [data]);
+  const { subjects: availableSubjects } = useTeacherSubjects();
+
+  /** Combined subject suggestions (teacher's textbooks/global/predefined + already-used in schedule).
+   *  Each entry knows its display label, abbreviation and color so the form can auto-fill them. */
+  const subjectSuggestions = useMemo(() => {
+    const map = new Map<string, { label: string; abbreviation?: string; color?: string }>();
+    // First add already-used subjects (preserve user's chosen styles)
+    for (const [label, style] of subjectStyles.entries()) {
+      map.set(label.toLowerCase(), { label, abbreviation: style.abbreviation, color: style.color });
+    }
+    // Then teacher's textbooks / global / predefined
+    for (const s of availableSubjects) {
+      const k = s.label.toLowerCase();
+      if (!map.has(k)) {
+        map.set(k, { label: s.label, abbreviation: s.abbreviation, color: s.color });
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => a.label.localeCompare(b.label, "cs"));
+  }, [subjectStyles, availableSubjects]);
+
 
   // Which lesson list is currently shown / edited
   const currentLessons = useMemo(() => {
