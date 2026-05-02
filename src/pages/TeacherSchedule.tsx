@@ -204,22 +204,27 @@ export default function TeacherSchedule() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
-              {(["both", "odd", "even"] as WeekParityMode[]).map((mode) => (
-                <button
-                  key={mode}
-                  onClick={() => setParityMode(mode)}
-                  className={`px-3 py-1.5 text-xs rounded-md transition-colors ${
-                    data.parityMode === mode
-                      ? "bg-background shadow-sm font-medium"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {mode === "both" ? "Oba týdny stejné" : mode === "odd" ? "Lichý/Sudý" : "Lichý/Sudý"}
-                </button>
-              ))}
-            </div>
+          <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
+            <button
+              onClick={() => setParityMode("both")}
+              className={`px-3 py-1.5 text-xs rounded-md transition-colors ${
+                data.parityMode === "both"
+                  ? "bg-background shadow-sm font-medium"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Oba týdny stejné
+            </button>
+            <button
+              onClick={() => setParityMode("odd")}
+              className={`px-3 py-1.5 text-xs rounded-md transition-colors ${
+                data.parityMode !== "both"
+                  ? "bg-background shadow-sm font-medium"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Lichý / sudý zvlášť
+            </button>
           </div>
         </div>
 
