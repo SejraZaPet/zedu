@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import LessonPreviewDialog from "./LessonPreviewDialog";
 import { useSubjects } from "@/hooks/useSubjects";
@@ -57,9 +59,22 @@ interface GradeGroup {
 
 const TeacherTextbooksManager = () => {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const { data: subjects } = useSubjects(true);
   const [textbooks, setTextbooks] = useState<Textbook[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // === New textbook dialog state ===
+  const [createOpen, setCreateOpen] = useState(false);
+  const [newSubjectMode, setNewSubjectMode] = useState<"existing" | "custom">("existing");
+  const [newSubjectId, setNewSubjectId] = useState<string>(""); // selected existing subject id
+  const [newCustomSubject, setNewCustomSubject] = useState("");
+  const [newTitle, setNewTitle] = useState("");
+  const [newDescription, setNewDescription] = useState("");
+  const [newGrades, setNewGrades] = useState<{ grade_number: number; label: string }[]>([
+    { grade_number: 1, label: "1. ročník" },
+  ]);
+  const [creatingTextbook, setCreatingTextbook] = useState(false);
 
   // Views
   const [selectedTextbook, setSelectedTextbook] = useState<Textbook | null>(null);
@@ -86,6 +101,167 @@ const TeacherTextbooksManager = () => {
   const [newLessonTitle, setNewLessonTitle] = useState("");
   const [existingLessons, setExistingLessons] = useState<{ id: string; title: string; status: string }[]>([]);
   const [selectedExistingLessonId, setSelectedExistingLessonId] = useState<string>("");
+
+
+  // === Helpers for creating new textbook ===
+  const generateAccessCode = (length = 6): string => {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let result = "";
+    for (let i = 0; i < length; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  };
+
+  const slugify = (label: string): string =>
+    label
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_|_$/g, "");
+
+  const openCreateDialog = () => {
+    setNewSubjectMode("existing");
+    setNewSubjectId(subjects?.[0]?.id ?? "");
+    setNewCustomSubject("");
+    setNewTitle("");
+    setNewDescription("");
+    setNewGrades([{ grade_number: 1, label: "1. ročník" }]);
+    setCreateOpen(true);
+  };
+
+  const addGradeRow = () => {
+    setNewGrades((prev) => {
+      const next = prev.length > 0 ? Math.max(...prev.map((g) => g.grade_number)) + 1 : 1;
+      return [...prev, { grade_number: next, label: `${next}. ročník` }];
+    });
+  };
+
+  const updateGradeRow = (idx: number, patch: Partial<{ grade_number: number; label: string }>) => {
+    setNewGrades((prev) => prev.map((g, i) => (i === idx ? { ...g, ...patch } : g)));
+  };
+
+  const removeGradeRow = (idx: number) => {
+    setNewGrades((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleCreateTextbook = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      toast({ title: "Chyba", description: "Nejste přihlášen/a.", variant: "destructive" });
+      return;
+    }
+
+    setCreatingTextbook(true);
+    try {
+      let subjectSlug = "";
+      let subjectLabel = "";
+
+      if (newSubjectMode === "existing") {
+        const sel = subjects?.find((s) => s.id === newSubjectId);
+        if (!sel) {
+          toast({ title: "Chyba", description: "Vyberte předmět.", variant: "destructive" });
+          setCreatingTextbook(false);
+          return;
+        }
+        subjectSlug = sel.slug;
+        subjectLabel = sel.label;
+
+        // Prevent duplicate textbook for same teacher+subject
+        const { data: existing } = await supabase
+          .from("teacher_textbooks")
+          .select("id")
+          .eq("teacher_id", session.user.id)
+          .eq("subject", subjectSlug)
+          .maybeSingle();
+        if (existing) {
+          toast({
+            title: "Učebnice již existuje",
+            description: `Pro předmět „${subjectLabel}" už máte vytvořenou učebnici.`,
+            variant: "destructive",
+          });
+          setCreatingTextbook(false);
+          return;
+        }
+      } else {
+        // Custom: create new textbook_subjects + grades
+        const label = newCustomSubject.trim();
+        if (!label) {
+          toast({ title: "Chyba", description: "Zadejte název vlastního předmětu.", variant: "destructive" });
+          setCreatingTextbook(false);
+          return;
+        }
+        if (newGrades.length === 0) {
+          toast({ title: "Chyba", description: "Přidejte alespoň jeden ročník.", variant: "destructive" });
+          setCreatingTextbook(false);
+          return;
+        }
+        subjectLabel = label;
+        subjectSlug = slugify(label);
+
+        // Check slug uniqueness
+        const { data: existingSubj } = await supabase
+          .from("textbook_subjects")
+          .select("id")
+          .eq("slug", subjectSlug)
+          .maybeSingle();
+
+        if (existingSubj) {
+          toast({
+            title: "Předmět existuje",
+            description: "Předmět s tímto názvem již existuje. Vyberte ho ze seznamu.",
+            variant: "destructive",
+          });
+          setCreatingTextbook(false);
+          return;
+        }
+
+        const { data: createdSubj, error: subjErr } = await supabase
+          .from("textbook_subjects")
+          .insert({
+            slug: subjectSlug,
+            label: subjectLabel,
+            abbreviation: "",
+            description: "",
+            color: "#6EC6D9",
+            active: true,
+            sort_order: subjects?.length ?? 0,
+          })
+          .select("id")
+          .single();
+        if (subjErr) throw subjErr;
+
+        await supabase.from("textbook_grades").insert(
+          newGrades.map((g, i) => ({
+            subject_id: createdSubj.id,
+            grade_number: g.grade_number,
+            label: g.label.trim() || `${g.grade_number}. ročník`,
+            sort_order: i,
+          })),
+        );
+      }
+
+      // Insert teacher_textbooks
+      const { error: tbErr } = await supabase.from("teacher_textbooks").insert({
+        title: (newTitle.trim() || subjectLabel),
+        description: newDescription.trim() || `Učebnice předmětu ${subjectLabel}`,
+        subject: subjectSlug,
+        teacher_id: session.user.id,
+        access_code: generateAccessCode(),
+      } as any);
+      if (tbErr) throw tbErr;
+
+      toast({ title: "Učebnice vytvořena" });
+      queryClient.invalidateQueries({ queryKey: ["textbook-subjects"] });
+      setCreateOpen(false);
+      fetchTextbooks();
+    } catch (err: any) {
+      toast({ title: "Chyba", description: err.message ?? "Nepodařilo se vytvořit učebnici.", variant: "destructive" });
+    } finally {
+      setCreatingTextbook(false);
+    }
+  };
 
   const fetchTextbooks = async () => {
     setLoading(true);
@@ -666,11 +842,16 @@ const TeacherTextbooksManager = () => {
   // === Textbooks List ===
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="font-heading text-xl font-bold">Moje učebnice</h2>
-        <p className="text-sm text-muted-foreground">
-          Učebnice se automaticky vytvářejí při přidání předmětu v sekci Předměty.
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="font-heading text-xl font-bold">Moje učebnice</h2>
+          <p className="text-sm text-muted-foreground">
+            Učebnice se vytvářejí automaticky při přidání předmětu, nebo je můžete vytvořit ručně.
+          </p>
+        </div>
+        <Button onClick={openCreateDialog} className="gap-1 shrink-0">
+          <Plus className="w-4 h-4" /> Nová učebnice
+        </Button>
       </div>
 
       {loading ? (
@@ -679,8 +860,10 @@ const TeacherTextbooksManager = () => {
         <div className="text-center py-16 border border-dashed border-border rounded-lg">
           <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="font-heading text-lg font-semibold mb-2">Zatím nemáte žádné učebnice</h3>
-          <p className="text-muted-foreground mb-2">Učebnice se vytvoří automaticky, když přidáte nový předmět v sekci „Předměty".</p>
-          <p className="text-xs text-muted-foreground">Přejděte na tab Předměty a vytvořte svůj první předmět.</p>
+          <p className="text-muted-foreground mb-4">Vytvořte svou první učebnici tlačítkem „Nová učebnice", nebo přidejte předmět v sekci „Předměty".</p>
+          <Button onClick={openCreateDialog} className="gap-1">
+            <Plus className="w-4 h-4" /> Nová učebnice
+          </Button>
         </div>
       ) : (
         <div className="space-y-3">
@@ -727,6 +910,156 @@ const TeacherTextbooksManager = () => {
           })}
         </div>
       )}
+
+      {/* === Create new textbook dialog === */}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Nová učebnice</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            {/* Subject mode toggle */}
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant={newSubjectMode === "existing" ? "default" : "outline"}
+                onClick={() => setNewSubjectMode("existing")}
+                className="flex-1"
+                type="button"
+              >
+                Vybrat předmět
+              </Button>
+              <Button
+                size="sm"
+                variant={newSubjectMode === "custom" ? "default" : "outline"}
+                onClick={() => setNewSubjectMode("custom")}
+                className="flex-1"
+                type="button"
+              >
+                Vlastní předmět
+              </Button>
+            </div>
+
+            {newSubjectMode === "existing" ? (
+              <div>
+                <Label>Předmět *</Label>
+                <Select value={newSubjectId} onValueChange={setNewSubjectId}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Vyberte předmět…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(subjects ?? []).map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {newSubjectId && (
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {subjects
+                      ?.find((s) => s.id === newSubjectId)
+                      ?.grades.map((g) => (
+                        <Badge key={g.id} variant="secondary" className="text-[10px]">
+                          {g.label}
+                        </Badge>
+                      ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                <div>
+                  <Label>Název vlastního předmětu *</Label>
+                  <Input
+                    value={newCustomSubject}
+                    onChange={(e) => setNewCustomSubject(e.target.value)}
+                    className="mt-1"
+                    placeholder="např. Robotika"
+                  />
+                </div>
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label>Ročníky *</Label>
+                    <Button size="sm" variant="ghost" type="button" onClick={addGradeRow} className="h-7 gap-1 text-xs">
+                      <Plus className="w-3 h-3" /> Přidat
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    {newGrades.map((g, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          min={1}
+                          max={20}
+                          value={g.grade_number}
+                          onChange={(e) => updateGradeRow(i, { grade_number: parseInt(e.target.value, 10) || 1 })}
+                          className="w-20"
+                        />
+                        <Input
+                          value={g.label}
+                          onChange={(e) => updateGradeRow(i, { label: e.target.value })}
+                          placeholder={`${g.grade_number}. ročník`}
+                          className="flex-1"
+                        />
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          type="button"
+                          onClick={() => removeGradeRow(i)}
+                          className="h-9 w-9 shrink-0"
+                          disabled={newGrades.length <= 1}
+                        >
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+
+            <div>
+              <Label>Název učebnice</Label>
+              <Input
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                className="mt-1"
+                placeholder="Pokud nevyplníte, použije se název předmětu"
+              />
+            </div>
+
+            <div>
+              <Label>Popis (nepovinné)</Label>
+              <Textarea
+                value={newDescription}
+                onChange={(e) => setNewDescription(e.target.value)}
+                className="mt-1"
+                rows={2}
+                placeholder="Krátký popis učebnice…"
+              />
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <Button variant="outline" onClick={() => setCreateOpen(false)} className="flex-1" type="button">
+                Zrušit
+              </Button>
+              <Button
+                onClick={handleCreateTextbook}
+                disabled={
+                  creatingTextbook ||
+                  (newSubjectMode === "existing" && !newSubjectId) ||
+                  (newSubjectMode === "custom" && !newCustomSubject.trim())
+                }
+                className="flex-1"
+                type="button"
+              >
+                {creatingTextbook ? "Vytvářím…" : "Vytvořit učebnici"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
