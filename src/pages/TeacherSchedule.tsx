@@ -104,6 +104,16 @@ const fmtTime = (t: string) => {
   return `${parseInt(h, 10)}:${m}`;
 };
 
+/** Subtract 1 minute from "HH:MM" (used for sorting breaks before first period). */
+const prevTimeStr = (t: string): string => {
+  const [h, m] = t.split(":").map((x) => parseInt(x, 10) || 0);
+  const total = h * 60 + m - 1;
+  if (total < 0) return "00:00";
+  const hh = Math.floor(total / 60).toString().padStart(2, "0");
+  const mm = (total % 60).toString().padStart(2, "0");
+  return `${hh}:${mm}`;
+};
+
 export default function TeacherSchedule() {
   const navigate = useNavigate();
   const { user } = useAuth();
