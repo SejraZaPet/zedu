@@ -156,7 +156,6 @@ export default function TeacherSchedule() {
   }, [user]);
 
   const [editing, setEditing] = useState<LessonEntry | null>(null);
-  const [editingDays, setEditingDays] = useState<number[]>([]);
   const [isNew, setIsNew] = useState(false);
 
   const subjectStyles = useMemo(() => buildSubjectStyleMap(data), [data]);
@@ -175,6 +174,18 @@ export default function TeacherSchedule() {
     }
     return Array.from(map.values()).sort((a, b) => a.label.localeCompare(b.label, "cs"));
   }, [subjectStyles, availableSubjects]);
+
+  // Periods passed into the unified lesson dialog
+  const dialogPeriods = useMemo(
+    () =>
+      data.periods
+        .map((p) => {
+          const t = data.periodTimes[p];
+          return t ? { period: p, start: t.start, end: t.end } : null;
+        })
+        .filter((x): x is { period: number; start: string; end: string } => x !== null),
+    [data.periods, data.periodTimes],
+  );
 
   // Active list of personal lessons given current parity tab
   const currentLessons = useMemo(() => {
@@ -254,39 +265,27 @@ export default function TeacherSchedule() {
       className: "",
       room: "",
     });
-    setEditingDays([day]);
     setIsNew(true);
   }
   function openEditLesson(entry: LessonEntry) {
     setEditing({ ...entry });
-    setEditingDays([entry.day]);
     setIsNew(false);
   }
-  function saveLesson() {
-    if (!editing) return;
-    if (!editing.subject.trim()) {
-      toast({ title: "Předmět je povinný", variant: "destructive" });
-      return;
-    }
-    const days = isNew ? (editingDays.length ? editingDays : [editing.day]) : [editing.day];
-    const baseSubject = editing.subject.trim();
-    const finalColor = editing.color || colorForSubject(baseSubject);
-    const finalAbbr = (editing.abbreviation?.trim() || baseSubject.slice(0, 3)).toUpperCase();
 
+  function applyLessonResult(slots: { day: number; period: number }[], base: LessonEntry) {
     const buildEntries = (): LessonEntry[] =>
-      days.map((d, i) => ({
-        ...editing,
-        id: i === 0 ? editing.id : newId(),
-        day: d,
-        color: finalColor,
-        abbreviation: finalAbbr,
+      slots.map((s, i) => ({
+        ...base,
+        id: i === 0 ? base.id : newId(),
+        day: s.day,
+        period: s.period,
       }));
 
     setData((dState) => {
       const newEntries = buildEntries();
       if (dState.parityMode === "both") {
         const cleaned = dState.lessonsBoth.filter(
-          (x) => x.id !== editing.id && !newEntries.some((n) => n.day === x.day && n.period === x.period),
+          (x) => x.id !== base.id && !newEntries.some((n) => n.day === x.day && n.period === x.period),
         );
         return { ...dState, lessonsBoth: [...cleaned, ...newEntries] };
       }
@@ -295,12 +294,12 @@ export default function TeacherSchedule() {
       const thisListKey = activeTab === "odd" ? "lessonsOdd" : "lessonsEven";
       const otherListKey = otherSide === "odd" ? "lessonsOdd" : "lessonsEven";
 
-      if (editing.mirrorBoth) {
-        const mirrorKey = editing.mirrorKey ?? newId();
+      if (base.mirrorBoth) {
+        const mirrorKey = base.mirrorKey ?? newId();
         const thisEntries = newEntries.map((n) => ({ ...n, mirrorBoth: true, mirrorKey }));
         const twins = thisEntries.map((n) => ({ ...n, id: newId() }));
         const cleanedThis = dState[thisListKey].filter(
-          (x) => x.id !== editing.id && !thisEntries.some((n) => n.day === x.day && n.period === x.period),
+          (x) => x.id !== base.id && !thisEntries.some((n) => n.day === x.day && n.period === x.period),
         );
         const cleanedOther = dState[otherListKey].filter(
           (x) => x.mirrorKey !== mirrorKey && !twins.some((n) => n.day === x.day && n.period === x.period),
@@ -312,12 +311,12 @@ export default function TeacherSchedule() {
         } as TeacherScheduleData;
       }
 
-      const cleanedOther = editing.mirrorKey
-        ? dState[otherListKey].filter((x) => x.mirrorKey !== editing.mirrorKey)
+      const cleanedOther = base.mirrorKey
+        ? dState[otherListKey].filter((x) => x.mirrorKey !== base.mirrorKey)
         : dState[otherListKey];
       const cleanedThisEntries = newEntries.map((n) => ({ ...n, mirrorBoth: false, mirrorKey: undefined }));
       const cleanedThis = dState[thisListKey].filter(
-        (x) => x.id !== editing.id && !cleanedThisEntries.some((n) => n.day === x.day && n.period === x.period),
+        (x) => x.id !== base.id && !cleanedThisEntries.some((n) => n.day === x.day && n.period === x.period),
       );
       return {
         ...dState,
@@ -325,10 +324,8 @@ export default function TeacherSchedule() {
         [otherListKey]: cleanedOther,
       } as TeacherScheduleData;
     });
-    toast({ title: isNew ? (days.length > 1 ? `Přidáno do ${days.length} dnů` : "Přidáno do rozvrhu") : "Uloženo" });
-    setEditing(null);
-    setEditingDays([]);
   }
+
   function deleteLesson() {
     if (!editing) return;
     const e = editing;
