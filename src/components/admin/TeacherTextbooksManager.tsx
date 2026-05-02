@@ -75,7 +75,6 @@ const TeacherTextbooksManager = () => {
     { grade_number: 1, label: "1. ročník" },
   ]);
   const [creatingTextbook, setCreatingTextbook] = useState(false);
-  const [loading, setLoading] = useState(true);
 
   // Views
   const [selectedTextbook, setSelectedTextbook] = useState<Textbook | null>(null);
