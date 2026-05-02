@@ -14,11 +14,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
-import { Coffee, Plus, Pencil, Trash2, CalendarDays, X } from "lucide-react";
+import { Coffee, Plus, Pencil, Trash2, CalendarDays, X, Check } from "lucide-react";
 import {
   DEFAULT_PERIOD_TIMES,
   loadSchedule,
   saveSchedule,
+  buildSubjectStyleMap,
+  colorForSubject,
+  SUBJECT_COLORS,
   type LessonEntry,
   type RowBreak,
   type TeacherScheduleData,
