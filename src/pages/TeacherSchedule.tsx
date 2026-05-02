@@ -35,6 +35,11 @@ import {
   BookOpen,
   ExternalLink,
   X,
+  ShieldCheck,
+  Utensils,
+  CircleSlash,
+  MapPin,
+  StickyNote,
 } from "lucide-react";
 import {
   DEFAULT_PERIOD_TIMES,
@@ -43,8 +48,10 @@ import {
   buildSubjectStyleMap,
   colorForSubject,
   SUBJECT_COLORS,
+  BREAK_KIND_META,
   type LessonEntry,
   type RowBreak,
+  type BreakKind,
   type TeacherScheduleData,
   type WeekParityMode,
 } from "@/lib/teacher-schedule-store";
