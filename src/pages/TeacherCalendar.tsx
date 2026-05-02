@@ -82,6 +82,8 @@ const TeacherCalendar = () => {
         to,
       );
 
+      const personalEvents = expandTeacherSchedule(loadSchedule(), from, to);
+
       const assignmentEvents: CalendarEvent[] = ((assignmentsRes.data as any[]) ?? [])
         .map((a: any) => {
           const start = new Date(a.deadline);
