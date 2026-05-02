@@ -383,23 +383,48 @@ export default function TeacherSchedule() {
       breaks: d.breaks.filter((b) => b.afterPeriod !== period),
     }));
   }
-  function addBreakAfter(afterPeriod: number) {
+  function addBreakAfter(afterPeriod: number, kind: BreakKind = "break") {
     setData((d) => ({
       ...d,
-      breaks: [...d.breaks, { afterPeriod, durationMin: 10, notes: {} }].sort(
-        (a, b) => a.afterPeriod - b.afterPeriod,
-      ),
+      breaks: [
+        ...d.breaks,
+        {
+          id: newId(),
+          afterPeriod,
+          durationMin: kind === "lunch" ? 30 : 10,
+          notes: {},
+          kind,
+          note: "",
+          location: "",
+          days: [],
+        },
+      ].sort((a, b) => a.afterPeriod - b.afterPeriod),
     }));
   }
-  function updateBreak(afterPeriod: number, patch: Partial<RowBreak>) {
+  function updateBreakById(id: string, patch: Partial<RowBreak>) {
     setData((d) => ({
       ...d,
-      breaks: d.breaks.map((b) => (b.afterPeriod === afterPeriod ? { ...b, ...patch } : b)),
+      breaks: d.breaks.map((b) => (b.id === id ? { ...b, ...patch } : b)),
     }));
   }
-  function removeBreak(afterPeriod: number) {
-    setData((d) => ({ ...d, breaks: d.breaks.filter((b) => b.afterPeriod !== afterPeriod) }));
+  function removeBreakById(id: string) {
+    setData((d) => ({ ...d, breaks: d.breaks.filter((b) => b.id !== id) }));
   }
+  /** Ensure all existing breaks have an `id` for stable updates. */
+  useEffect(() => {
+    setData((d) => {
+      let changed = false;
+      const next = d.breaks.map((b) => {
+        if (!b.id) {
+          changed = true;
+          return { ...b, id: newId() };
+        }
+        return b;
+      });
+      return changed ? { ...d, breaks: next } : d;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Stats badges
   const totalPersonal = currentLessons.length;
