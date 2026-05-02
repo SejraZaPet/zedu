@@ -223,8 +223,10 @@ export type Database = {
       }
       class_schedule_slots: {
         Row: {
+          abbreviation: string | null
           bell_period_id: string | null
           class_id: string
+          color: string | null
           created_at: string
           created_by: string | null
           day_of_week: number
@@ -241,8 +243,10 @@ export type Database = {
           week_parity: string
         }
         Insert: {
+          abbreviation?: string | null
           bell_period_id?: string | null
           class_id: string
+          color?: string | null
           created_at?: string
           created_by?: string | null
           day_of_week: number
@@ -259,8 +263,10 @@ export type Database = {
           week_parity?: string
         }
         Update: {
+          abbreviation?: string | null
           bell_period_id?: string | null
           class_id?: string
+          color?: string | null
           created_at?: string
           created_by?: string | null
           day_of_week?: number
