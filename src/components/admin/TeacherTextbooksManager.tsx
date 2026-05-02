@@ -842,11 +842,16 @@ const TeacherTextbooksManager = () => {
   // === Textbooks List ===
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="font-heading text-xl font-bold">Moje učebnice</h2>
-        <p className="text-sm text-muted-foreground">
-          Učebnice se automaticky vytvářejí při přidání předmětu v sekci Předměty.
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="font-heading text-xl font-bold">Moje učebnice</h2>
+          <p className="text-sm text-muted-foreground">
+            Učebnice se vytvářejí automaticky při přidání předmětu, nebo je můžete vytvořit ručně.
+          </p>
+        </div>
+        <Button onClick={openCreateDialog} className="gap-1 shrink-0">
+          <Plus className="w-4 h-4" /> Nová učebnice
+        </Button>
       </div>
 
       {loading ? (
@@ -855,8 +860,10 @@ const TeacherTextbooksManager = () => {
         <div className="text-center py-16 border border-dashed border-border rounded-lg">
           <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="font-heading text-lg font-semibold mb-2">Zatím nemáte žádné učebnice</h3>
-          <p className="text-muted-foreground mb-2">Učebnice se vytvoří automaticky, když přidáte nový předmět v sekci „Předměty".</p>
-          <p className="text-xs text-muted-foreground">Přejděte na tab Předměty a vytvořte svůj první předmět.</p>
+          <p className="text-muted-foreground mb-4">Vytvořte svou první učebnici tlačítkem „Nová učebnice", nebo přidejte předmět v sekci „Předměty".</p>
+          <Button onClick={openCreateDialog} className="gap-1">
+            <Plus className="w-4 h-4" /> Nová učebnice
+          </Button>
         </div>
       ) : (
         <div className="space-y-3">
