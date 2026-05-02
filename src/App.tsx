@@ -35,6 +35,7 @@ import TeacherAssignments from "./pages/TeacherAssignments";
 import StudentAssignments from "./pages/StudentAssignments";
 import StudentAssignmentPlayer from "./pages/StudentAssignmentPlayer";
 import TeacherClasses from "./pages/TeacherClasses";
+import TeacherClassDetail from "./pages/TeacherClassDetail";
 import TeacherResults from "./pages/TeacherResults";
 import ParentDashboard from "./pages/ParentDashboard";
 import GdprPage from "./pages/GdprPage";
