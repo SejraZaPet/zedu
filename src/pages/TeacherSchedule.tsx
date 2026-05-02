@@ -919,6 +919,9 @@ export default function TeacherSchedule() {
           fetchClassSlots();
         }}
       />
+    </div>
+  );
+}
 
 /* ───────── Card components ───────── */
 
