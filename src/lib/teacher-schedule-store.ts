@@ -10,7 +10,13 @@ export interface LessonEntry {
   abbreviation?: string; // short code shown in cell, e.g. "MAT"
   color?: string; // hex color, e.g. "#6EC6D9"
   className: string;
+  /** Optional reference to a class managed in DB (classes.id). Empty = ad-hoc class label. */
+  classId?: string;
   room: string;
+  /** ISO date "YYYY-MM-DD" – lesson is shown only on/after this date in calendar. */
+  validFrom?: string;
+  /** ISO date "YYYY-MM-DD" – lesson is shown only up to/including this date. */
+  validTo?: string;
   /** When true (only meaningful in odd/even mode), this lesson is mirrored
    *  into both odd & even week lists, sharing the same `mirrorKey`. */
   mirrorBoth?: boolean;
