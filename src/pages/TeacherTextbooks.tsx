@@ -80,6 +80,7 @@ const TeacherTextbooks = () => {
   const { toast } = useToast();
   const { data: subjects } = useSubjects(true);
   const [textbooks, setTextbooks] = useState<Textbook[]>([]);
+  const [createOpen, setCreateOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // Detail view
