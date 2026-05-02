@@ -326,7 +326,13 @@ const ClassesManager = () => {
               <TableRow key={c.id}>
                 <TableCell className="font-medium">
                   <div>
-                    {c.name}
+                    <a
+                      href={`/ucitel/tridy/${c.id}`}
+                      className="hover:text-primary hover:underline cursor-pointer"
+                      onClick={(e) => { e.preventDefault(); window.location.href = `/ucitel/tridy/${c.id}`; }}
+                    >
+                      {c.name}
+                    </a>
                     {c.description && (
                       <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{c.description}</p>
                     )}

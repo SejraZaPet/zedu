@@ -35,6 +35,7 @@ import TeacherAssignments from "./pages/TeacherAssignments";
 import StudentAssignments from "./pages/StudentAssignments";
 import StudentAssignmentPlayer from "./pages/StudentAssignmentPlayer";
 import TeacherClasses from "./pages/TeacherClasses";
+import TeacherClassDetail from "./pages/TeacherClassDetail";
 import TeacherResults from "./pages/TeacherResults";
 import ParentDashboard from "./pages/ParentDashboard";
 import GdprPage from "./pages/GdprPage";
@@ -70,6 +71,7 @@ const App = () => (
             <Route path="/ucitel" element={<ProtectedRoute><TeacherDashboard /></ProtectedRoute>} />
             <Route path="/rodic" element={<ProtectedRoute><ParentDashboard /></ProtectedRoute>} />
             <Route path="/ucitel/tridy" element={<ProtectedRoute><TeacherClasses /></ProtectedRoute>} />
+            <Route path="/ucitel/tridy/:id" element={<ProtectedRoute><TeacherClassDetail /></ProtectedRoute>} />
             <Route path="/ucitel/vysledky" element={<ProtectedRoute><TeacherResults /></ProtectedRoute>} />
             <Route path="/profil" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
             <Route path="/podcast/:episodeId" element={<PodcastDetailPage />} />
