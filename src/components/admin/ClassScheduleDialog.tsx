@@ -600,22 +600,68 @@ const ClassScheduleDialog = ({ classId, className, open, onOpenChange }: Props) 
                   </Select>
                 </div>
 
-                <div>
-                  <Label>Začátek</Label>
-                  <Input
-                    type="time"
-                    value={startTime}
-                    onChange={(e) => setStartTime(e.target.value)}
-                  />
+                <div className="sm:col-span-2">
+                  <Label className="mb-1.5 block">Zadání času</Label>
+                  <ToggleGroup
+                    type="single"
+                    value={timeMode}
+                    onValueChange={(v) => v && setTimeMode(v as "period" | "manual")}
+                    className="justify-start"
+                  >
+                    <ToggleGroupItem value="period" className="text-xs h-8 px-3">
+                      Číslo hodiny
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="manual" className="text-xs h-8 px-3">
+                      Ruční čas
+                    </ToggleGroupItem>
+                  </ToggleGroup>
                 </div>
-                <div>
-                  <Label>Konec</Label>
-                  <Input
-                    type="time"
-                    value={endTime}
-                    onChange={(e) => setEndTime(e.target.value)}
-                  />
-                </div>
+
+                {timeMode === "period" ? (
+                  <div className="sm:col-span-2">
+                    <Label>Hodina dne</Label>
+                    {teacherPeriods.length === 0 ? (
+                      <p className="text-xs text-muted-foreground py-2">
+                        Nejprve nastavte časy hodin v sekci Rozvrh.
+                      </p>
+                    ) : (
+                      <Select value={periodNumber} onValueChange={setPeriodNumber}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {teacherPeriods.map(({ period, time }) => (
+                            <SelectItem key={period} value={String(period)}>
+                              {period}. hodina · {time!.start}–{time!.end}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      Čas se převezme z vašeho rozvrhu ({startTime}–{endTime}).
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <div>
+                      <Label>Začátek</Label>
+                      <Input
+                        type="time"
+                        value={startTime}
+                        onChange={(e) => setStartTime(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label>Konec</Label>
+                      <Input
+                        type="time"
+                        value={endTime}
+                        onChange={(e) => setEndTime(e.target.value)}
+                      />
+                    </div>
+                  </>
+                )}
 
                 <div className="sm:col-span-2">
                   <Label>Učebna</Label>
