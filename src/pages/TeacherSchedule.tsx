@@ -67,8 +67,6 @@ export default function TeacherSchedule() {
   const [editing, setEditing] = useState<LessonEntry | null>(null);
   const [isNew, setIsNew] = useState(false);
 
-  const [editingBreak, setEditingBreak] = useState<RowBreak | null>(null);
-  const [isNewBreak, setIsNewBreak] = useState(false);
 
   const grid = useMemo(() => {
     const map = new Map<string, LessonEntry>();
@@ -120,31 +118,23 @@ export default function TeacherSchedule() {
     }));
   }
 
-  function openNewBreak(afterPeriod: number) {
-    setEditingBreak({ afterPeriod, durationMin: 10, note: "" });
-    setIsNewBreak(true);
+  function addBreak(afterPeriod: number) {
+    setRowBreaks((prev) =>
+      [...prev, { afterPeriod, durationMin: 10, note: "" }].sort(
+        (a, b) => a.afterPeriod - b.afterPeriod,
+      ),
+    );
   }
 
-  function openEditBreak(b: RowBreak) {
-    setEditingBreak({ ...b });
-    setIsNewBreak(false);
+  function updateBreak(afterPeriod: number, patch: Partial<RowBreak>) {
+    setRowBreaks((prev) =>
+      prev.map((b) => (b.afterPeriod === afterPeriod ? { ...b, ...patch } : b)),
+    );
   }
 
-  function saveBreak() {
-    if (!editingBreak) return;
-    setRowBreaks((prev) => {
-      const filtered = prev.filter((b) => b.afterPeriod !== editingBreak.afterPeriod);
-      return [...filtered, editingBreak].sort((a, b) => a.afterPeriod - b.afterPeriod);
-    });
-    toast({ title: isNewBreak ? "Přestávka přidána" : "Přestávka uložena" });
-    setEditingBreak(null);
-  }
-
-  function deleteBreak() {
-    if (!editingBreak) return;
-    setRowBreaks((prev) => prev.filter((b) => b.afterPeriod !== editingBreak.afterPeriod));
+  function removeBreak(afterPeriod: number) {
+    setRowBreaks((prev) => prev.filter((b) => b.afterPeriod !== afterPeriod));
     toast({ title: "Přestávka smazána" });
-    setEditingBreak(null);
   }
 
   return (
@@ -263,26 +253,36 @@ export default function TeacherSchedule() {
                         <tr className="bg-muted/20">
                           <td className="px-2 py-1 border-b border-r border-border align-middle">
                             {br ? (
-                              <button
-                                onClick={() => openEditBreak(br)}
-                                className="w-full text-left rounded-md px-2 py-1 hover:bg-muted transition-colors"
-                              >
-                                <div className="flex items-center gap-1.5 text-xs font-medium">
-                                  <Coffee className="w-3 h-3" />
-                                  {br.durationMin} min
-                                </div>
-                                {br.note && (
-                                  <div className="text-[10px] text-muted-foreground line-clamp-1">
-                                    {br.note}
-                                  </div>
-                                )}
-                              </button>
+                              <div className="flex items-center gap-1">
+                                <Coffee className="w-3 h-3 text-muted-foreground shrink-0" />
+                                <Input
+                                  type="number"
+                                  min={1}
+                                  max={120}
+                                  value={br.durationMin}
+                                  onChange={(e) =>
+                                    updateBreak(period, {
+                                      durationMin: parseInt(e.target.value, 10) || 0,
+                                    })
+                                  }
+                                  className="h-7 px-2 text-xs w-14"
+                                  aria-label="Délka přestávky v minutách"
+                                />
+                                <span className="text-[10px] text-muted-foreground">min</span>
+                                <button
+                                  onClick={() => removeBreak(period)}
+                                  className="ml-auto text-muted-foreground hover:text-destructive p-1"
+                                  aria-label="Smazat přestávku"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
                             ) : (
                               <Button
                                 size="sm"
                                 variant="ghost"
                                 className="h-7 w-full px-2 text-xs justify-start text-muted-foreground hover:text-foreground"
-                                onClick={() => openNewBreak(period)}
+                                onClick={() => addBreak(period)}
                               >
                                 <Coffee className="w-3 h-3 mr-1" /> Přestávka
                               </Button>
@@ -290,19 +290,12 @@ export default function TeacherSchedule() {
                           </td>
                           <td colSpan={DAYS.length} className="px-3 py-1 border-b border-l border-border">
                             {br ? (
-                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <span className="inline-flex items-center gap-1">
-                                  <Coffee className="w-3 h-3" />
-                                  Přestávka {br.durationMin} min
-                                </span>
-                                {br.note && <span>· {br.note}</span>}
-                                <button
-                                  onClick={() => openEditBreak(br)}
-                                  className="ml-auto text-xs text-primary hover:underline"
-                                >
-                                  Upravit
-                                </button>
-                              </div>
+                              <Input
+                                value={br.note}
+                                onChange={(e) => updateBreak(period, { note: e.target.value })}
+                                placeholder="Poznámka (např. Velká přestávka, Dozor na chodbě)"
+                                className="h-7 text-xs bg-transparent border-transparent hover:border-border focus:border-input"
+                              />
                             ) : (
                               <span className="text-[11px] text-muted-foreground/60">
                                 — bez přestávky —
@@ -392,70 +385,6 @@ export default function TeacherSchedule() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog úpravy přestávky */}
-      <Dialog open={!!editingBreak} onOpenChange={(o) => !o && setEditingBreak(null)}>
-        <DialogContent className="max-w-md">
-          {editingBreak && (
-            <>
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <Coffee className="w-4 h-4" />
-                  {isNewBreak ? "Nová přestávka" : "Upravit přestávku"}
-                </DialogTitle>
-                <DialogDescription>
-                  Mezi {editingBreak.afterPeriod}. a {editingBreak.afterPeriod + 1}. hodinou (platí pro celý týden)
-                </DialogDescription>
-              </DialogHeader>
-
-              <div className="space-y-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="duration">Délka (min)</Label>
-                  <Input
-                    id="duration"
-                    type="number"
-                    min={1}
-                    max={120}
-                    value={editingBreak.durationMin}
-                    onChange={(e) =>
-                      setEditingBreak({
-                        ...editingBreak,
-                        durationMin: parseInt(e.target.value, 10) || 0,
-                      })
-                    }
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="note">Poznámka</Label>
-                  <Textarea
-                    id="note"
-                    value={editingBreak.note}
-                    onChange={(e) => setEditingBreak({ ...editingBreak, note: e.target.value })}
-                    placeholder="Např. Dozor na chodbě"
-                    rows={2}
-                  />
-                </div>
-              </div>
-
-              <DialogFooter className="flex-row justify-between sm:justify-between gap-2">
-                {!isNewBreak ? (
-                  <Button variant="outline" onClick={deleteBreak} className="text-destructive">
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Smazat
-                  </Button>
-                ) : (
-                  <span />
-                )}
-                <div className="flex gap-2">
-                  <Button variant="ghost" onClick={() => setEditingBreak(null)}>
-                    Zrušit
-                  </Button>
-                  <Button onClick={saveBreak}>Uložit</Button>
-                </div>
-              </DialogFooter>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
