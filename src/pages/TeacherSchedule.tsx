@@ -617,86 +617,105 @@ export default function TeacherSchedule() {
               />
             </Button>
           </CollapsibleTrigger>
-          <CollapsibleContent className="mt-3">
+          <CollapsibleContent className="mt-3 space-y-4">
+            {/* Periods */}
             <div className="bg-card border border-border rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Clock className="w-4 h-4 text-primary" />
+                <h3 className="text-sm font-semibold">Časy hodin</h3>
+              </div>
               <p className="text-xs text-muted-foreground mb-3">
-                Definuj časy jednotlivých hodin a vlož přestávky mezi ně. Tyto časy se používají i v
-                plánování hodin u tříd.
+                Definuj čas začátku a konce každé hodiny. Tyto časy se používají i v plánování hodin
+                u tříd.
               </p>
-              <div className="space-y-2">
-                {data.periods.map((p, idx) => {
+              <div className="space-y-1.5">
+                {data.periods.map((p) => {
                   const t = data.periodTimes[p];
-                  const br = data.breaks.find((b) => b.afterPeriod === p);
-                  const isLast = idx === data.periods.length - 1;
                   return (
-                    <div key={p}>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-medium text-sm w-16 shrink-0">{p}. hod</span>
-                        <Input
-                          type="time"
-                          value={t?.start ?? ""}
-                          onChange={(e) => updatePeriodTime(p, "start", e.target.value)}
-                          className="h-8 w-28 text-xs font-mono"
-                        />
-                        <span className="text-muted-foreground text-xs">–</span>
-                        <Input
-                          type="time"
-                          value={t?.end ?? ""}
-                          onChange={(e) => updatePeriodTime(p, "end", e.target.value)}
-                          className="h-8 w-28 text-xs font-mono"
-                        />
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => removePeriod(p)}
-                          className="h-8 px-2 text-muted-foreground hover:text-destructive"
-                          title="Odebrat hodinu"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </Button>
-                        {!isLast && !br && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-8 px-2 text-xs text-muted-foreground"
-                            onClick={() => addBreakAfter(p)}
-                            title="Přidat přestávku za tuto hodinu"
-                          >
-                            <Coffee className="w-3 h-3 mr-1" />+ přestávka
-                          </Button>
-                        )}
-                      </div>
-                      {br && !isLast && (
-                        <div className="flex items-center gap-2 ml-16 mt-1 mb-1 pl-2 border-l-2 border-muted">
-                          <Coffee className="w-3.5 h-3.5 text-muted-foreground" />
-                          <span className="text-xs text-muted-foreground">Přestávka</span>
-                          <Input
-                            type="number"
-                            min={1}
-                            max={120}
-                            value={br.durationMin}
-                            onChange={(e) =>
-                              updateBreak(p, { durationMin: parseInt(e.target.value, 10) || 0 })
-                            }
-                            className="h-7 w-16 text-xs"
-                          />
-                          <span className="text-xs text-muted-foreground">min</span>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => removeBreak(p)}
-                            className="h-7 px-2 text-muted-foreground hover:text-destructive"
-                          >
-                            <X className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      )}
+                    <div key={p} className="flex items-center gap-2 flex-wrap">
+                      <span className="font-medium text-sm w-16 shrink-0">{p}. hod</span>
+                      <Input
+                        type="time"
+                        value={t?.start ?? ""}
+                        onChange={(e) => updatePeriodTime(p, "start", e.target.value)}
+                        className="h-8 w-28 text-xs font-mono"
+                      />
+                      <span className="text-muted-foreground text-xs">–</span>
+                      <Input
+                        type="time"
+                        value={t?.end ?? ""}
+                        onChange={(e) => updatePeriodTime(p, "end", e.target.value)}
+                        className="h-8 w-28 text-xs font-mono"
+                      />
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => removePeriod(p)}
+                        className="h-8 px-2 text-muted-foreground hover:text-destructive"
+                        title="Odebrat hodinu"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </Button>
                     </div>
                   );
                 })}
                 <Button size="sm" variant="outline" onClick={addPeriod} className="mt-2">
                   <Plus className="w-3.5 h-3.5 mr-1" /> Přidat hodinu
                 </Button>
+              </div>
+            </div>
+
+            {/* Breaks & blocks */}
+            <div className="bg-card border border-border rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Coffee className="w-4 h-4 text-primary" />
+                <h3 className="text-sm font-semibold">Přestávky a další bloky</h3>
+              </div>
+              <p className="text-xs text-muted-foreground mb-3">
+                Můžeš přidat přestávku, poradu, dozor, oběd nebo volno – buď pro všechny dny, nebo
+                jen pro vybrané. Bloky lze vložit i před první hodinu (nultá hodina).
+              </p>
+
+              <div className="space-y-2">
+                {data.breaks.length === 0 && (
+                  <p className="text-xs text-muted-foreground italic">
+                    Zatím žádné přestávky ani bloky.
+                  </p>
+                )}
+                {data.breaks
+                  .slice()
+                  .sort((a, b) => a.afterPeriod - b.afterPeriod)
+                  .map((br) => (
+                    <BreakSettingRow
+                      key={br.id}
+                      brk={br}
+                      periods={data.periods}
+                      onChange={(patch) => updateBreakById(br.id!, patch)}
+                      onRemove={() => removeBreakById(br.id!)}
+                    />
+                  ))}
+              </div>
+
+              <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t border-border">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => addBreakAfter(0, "break")}
+                  title="Vlož blok před první hodinu"
+                >
+                  <Plus className="w-3.5 h-3.5 mr-1" /> Před 1. hodinu (nultá)
+                </Button>
+                {data.periods.length > 0 && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      addBreakAfter(data.periods[Math.floor(data.periods.length / 2) - 1] ?? data.periods[0], "break")
+                    }
+                  >
+                    <Plus className="w-3.5 h-3.5 mr-1" /> Přidat blok
+                  </Button>
+                )}
               </div>
             </div>
           </CollapsibleContent>
