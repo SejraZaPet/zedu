@@ -37,6 +37,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
+import { loadSchedule, type PeriodTime } from "@/lib/teacher-schedule-store";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 interface Slot {
   id: string;
