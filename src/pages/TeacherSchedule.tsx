@@ -67,8 +67,6 @@ export default function TeacherSchedule() {
   const [editing, setEditing] = useState<LessonEntry | null>(null);
   const [isNew, setIsNew] = useState(false);
 
-  const [editingBreak, setEditingBreak] = useState<RowBreak | null>(null);
-  const [isNewBreak, setIsNewBreak] = useState(false);
 
   const grid = useMemo(() => {
     const map = new Map<string, LessonEntry>();
