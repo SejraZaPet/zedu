@@ -124,7 +124,7 @@ const TeacherCalendar = () => {
   }, [authLoading, user, navigate, range]);
 
   const handleEventClick = (event: CalendarEvent) => {
-    if (event.type === "lesson") navigate("/ucitel/tridy");
+    if (event.type === "lesson") setDetailEvent(event);
     else if (event.type === "assignment") navigate("/ucitel/ulohy");
     else navigate("/todo");
   };
