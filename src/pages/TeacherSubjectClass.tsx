@@ -263,6 +263,35 @@ export default function TeacherSubjectClass() {
 
   const room = slots[0]?.room || "";
 
+  // Plans relevant to this subject + class.
+  // Match either by primary subject (legacy) or by linkedSlots.subject + classId.
+  const subjectKey = subjectLabel.trim().toLowerCase();
+  const relevantPlans = useMemo(() => {
+    return plans.filter((p) => {
+      const linked: LinkedSlot[] = p.input_data?.linkedSlots ?? [];
+      const matchesLinked = linked.some(
+        (s) =>
+          (s.classId === classId || !s.classId) &&
+          (s.subject || "").trim().toLowerCase() === subjectKey,
+      );
+      const matchesPrimary = (p.subject || "").trim().toLowerCase() === subjectKey;
+      return matchesLinked || matchesPrimary;
+    });
+  }, [plans, classId, subjectKey]);
+
+  /** Find a plan attached to a specific date (yyyy-MM-dd) for this class+subject. */
+  function findPlanForDate(dateKey: string): LessonPlanRow | undefined {
+    return relevantPlans.find((p) => {
+      const linked: LinkedSlot[] = p.input_data?.linkedSlots ?? [];
+      return linked.some(
+        (s) =>
+          s.date === dateKey &&
+          (s.classId === classId || !s.classId) &&
+          (!s.subject || s.subject.trim().toLowerCase() === subjectKey),
+      );
+    });
+  }
+
   // Aggregations
   const studentScores = useMemo(() => {
     const map = new Map<string, { total: number; max: number; submitted: number; total_assigned: number }>();
