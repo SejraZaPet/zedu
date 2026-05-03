@@ -122,6 +122,34 @@ export default function TeacherLessonPlanEditor() {
   const [lessonId, setLessonId] = useState<string>("");
   const [aiInstructions, setAiInstructions] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [planDbId, setPlanDbId] = useState<string | null>(
+    id && id !== "novy" ? id : null,
+  );
+
+  // Load existing plan from DB when editing
+  useEffect(() => {
+    if (!user || !id || id === "novy") return;
+    (async () => {
+      const { data, error } = await supabase
+        .from("lesson_plans")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
+      if (error || !data) return;
+      setPlanDbId(data.id);
+      setTitle(data.title || "Plán hodiny");
+      const input = (data.input_data as any) || {};
+      if (input.description) setDescription(input.description);
+      if (input.subject) setSubject(input.subject);
+      if (input.linkedDate) setLinkedDate(input.linkedDate);
+      if (input.linkedTime) setLinkedTime(input.linkedTime);
+      if (input.textbookId) setTextbookId(input.textbookId);
+      if (input.lessonId) setLessonId(input.lessonId);
+      if (input.classId) setClassId(input.classId);
+      if (input.phases) setPhases({ ...emptyPhases(), ...input.phases });
+    })();
+  }, [user, id]);
 
   const [dbSlots, setDbSlots] = useState<any[]>([]);
   useEffect(() => {
