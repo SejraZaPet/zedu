@@ -140,12 +140,10 @@ export default function LessonFormDialog({
   const [validTo, setValidTo] = useState<Date | undefined>();
   const [mirrorBoth, setMirrorBoth] = useState(false);
 
-  // Day → period (only used in new mode). For edit mode we just have one day.
-  const [selectedDays, setSelectedDays] = useState<number[]>([]);
-  const [dayPeriod, setDayPeriod] = useState<Record<number, number>>({});
-  // Edit mode single day/period
-  const [editDay, setEditDay] = useState<number>(0);
-  const [editPeriod, setEditPeriod] = useState<number>(defaultPeriod);
+  // Slots: list of {day, period} pairs. Multiple entries per day are allowed
+  // so a teacher can place the same subject in two different periods on the
+  // same day (e.g. two Math lessons on Thursday).
+  const [slotPairs, setSlotPairs] = useState<Array<{ day: number; period: number }>>([]);
 
   // Reset when opening
   useEffect(() => {
@@ -171,11 +169,13 @@ export default function LessonFormDialog({
     setMirrorBoth(!!initial?.mirrorBoth);
 
     const startDay = initial?.day ?? 0;
-    setSelectedDays([startDay]);
-    setDayPeriod({ [startDay]: initial?.period ?? defaultPeriod });
-    setEditDay(initial?.day ?? 0);
-    setEditPeriod(initial?.period ?? defaultPeriod);
+    setSlotPairs([{ day: startDay, period: initial?.period ?? defaultPeriod }]);
   }, [open, isNew, initial, subjects, defaultPeriod]);
+
+  const selectedDays = useMemo(
+    () => Array.from(new Set(slotPairs.map((s) => s.day))).sort(),
+    [slotPairs],
+  );
 
   // When subject changes via select → auto-fill abbreviation/color from registry
   useEffect(() => {
@@ -205,27 +205,40 @@ export default function LessonFormDialog({
   }, [periods]);
 
   function toggleDay(d: number) {
-    setSelectedDays((prev) => {
-      if (prev.includes(d)) {
-        const next = prev.filter((x) => x !== d);
-        setDayPeriod((dp) => {
-          const { [d]: _, ...rest } = dp;
-          return rest;
-        });
-        return next;
-      }
-      setDayPeriod((dp) => ({ ...dp, [d]: dp[d] ?? defaultPeriod }));
-      return [...prev, d].sort();
+    setSlotPairs((prev) => {
+      const has = prev.some((s) => s.day === d);
+      if (has) return prev.filter((s) => s.day !== d);
+      return [...prev, { day: d, period: defaultPeriod }].sort(
+        (a, b) => a.day - b.day || a.period - b.period,
+      );
     });
   }
 
+  function updateSlotPeriod(index: number, period: number) {
+    setSlotPairs((prev) => prev.map((s, i) => (i === index ? { ...s, period } : s)));
+  }
+
+  function addSlotForDay(day: number) {
+    setSlotPairs((prev) => {
+      const usedPeriods = new Set(prev.filter((s) => s.day === day).map((s) => s.period));
+      const nextPeriod =
+        periods.find((p) => !usedPeriods.has(p.period))?.period ?? defaultPeriod;
+      return [...prev, { day, period: nextPeriod }].sort(
+        (a, b) => a.day - b.day || a.period - b.period,
+      );
+    });
+  }
+
+  function removeSlotAt(index: number) {
+    setSlotPairs((prev) => prev.filter((_, i) => i !== index));
+  }
+
   function buildSlots(): LessonFormSlot[] {
-    return selectedDays
-      .map((d) => {
-        const p = dayPeriod[d] ?? defaultPeriod;
-        const t = periodById.get(p);
+    return slotPairs
+      .map(({ day, period }) => {
+        const t = periodById.get(period);
         if (!t) return null;
-        return { day: d, period: p, start: t.start, end: t.end };
+        return { day, period, start: t.start, end: t.end };
       })
       .filter((x): x is LessonFormSlot => x !== null);
   }
@@ -299,55 +312,64 @@ export default function LessonFormDialog({
               })}
             </div>
 
-            {selectedDays.length === 0 ? null : selectedDays.length === 1 ? (
-              <div className="space-y-1.5">
-                <Label>Číslo hodiny *</Label>
-                <Select
-                  value={String(dayPeriod[selectedDays[0]] ?? defaultPeriod)}
-                  onValueChange={(v) =>
-                    setDayPeriod({ ...dayPeriod, [selectedDays[0]]: parseInt(v, 10) })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {periods.map((p) => (
-                      <SelectItem key={p.period} value={String(p.period)}>
-                        {p.period}. hodina · {p.start}–{p.end}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            ) : (
+            {slotPairs.length > 0 && (
               <div className="space-y-1.5 rounded-md border border-border bg-muted/30 p-2.5">
                 <Label className="text-xs text-muted-foreground">
-                  Číslo hodiny pro každý den
+                  Číslo hodiny pro každý den (lze přidat i víc hodin do jednoho dne)
                 </Label>
                 <div className="space-y-1.5">
-                  {selectedDays.map((d) => (
-                    <div key={d} className="flex items-center gap-2">
-                      <span className="text-xs font-medium w-16 shrink-0">{DAYS[d]}</span>
-                      <Select
-                        value={String(dayPeriod[d] ?? defaultPeriod)}
-                        onValueChange={(v) =>
-                          setDayPeriod({ ...dayPeriod, [d]: parseInt(v, 10) })
-                        }
-                      >
-                        <SelectTrigger className="h-8 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {periods.map((p) => (
-                            <SelectItem key={p.period} value={String(p.period)}>
-                              {p.period}. hod · {p.start}–{p.end}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  ))}
+                  {selectedDays.map((d) => {
+                    const indices = slotPairs
+                      .map((s, i) => ({ s, i }))
+                      .filter((x) => x.s.day === d);
+                    return (
+                      <div key={d} className="space-y-1">
+                        {indices.map(({ s, i }, k) => (
+                          <div key={`${d}-${i}`} className="flex items-center gap-2">
+                            <span className="text-xs font-medium w-16 shrink-0">
+                              {k === 0 ? DAYS[d] : ""}
+                            </span>
+                            <Select
+                              value={String(s.period)}
+                              onValueChange={(v) => updateSlotPeriod(i, parseInt(v, 10))}
+                            >
+                              <SelectTrigger className="h-8 text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {periods.map((p) => (
+                                  <SelectItem key={p.period} value={String(p.period)}>
+                                    {p.period}. hod · {p.start}–{p.end}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {indices.length > 1 && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => removeSlotAt(i)}
+                                className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                                title="Odebrat tuto hodinu"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            )}
+                          </div>
+                        ))}
+                        <div className="pl-[72px]">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => addSlotForDay(d)}
+                            className="h-6 px-2 text-[11px] text-muted-foreground hover:text-foreground"
+                          >
+                            <Plus className="w-3 h-3 mr-1" /> Přidat další hodinu v tento den
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -578,8 +600,8 @@ export default function LessonFormDialog({
               Zrušit
             </Button>
             <Button onClick={handleSave} disabled={!!validationError}>
-              {selectedDays.length > 1
-                ? `Uložit do ${selectedDays.length} dnů`
+              {slotPairs.length > 1
+                ? `Uložit ${slotPairs.length} hodin`
                 : "Uložit"}
             </Button>
           </div>
