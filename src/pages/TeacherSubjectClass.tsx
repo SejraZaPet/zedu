@@ -279,24 +279,60 @@ export default function TeacherSubjectClass() {
   }, [studentScores]);
 
   function openTextbook() {
-    if (matchedSubject?.teacherTextbookId) {
-      navigate(`/ucitel/ucebnice/${matchedSubject.teacherTextbookId}/lekce`);
+    if (linkedTextbookId) {
+      navigate(`/ucitel/ucebnice/${linkedTextbookId}/lekce`);
     } else {
-      toast({
-        title: "Učebnice není propojena",
-        description: "Pro tento předmět nemáš vlastní učebnici.",
-      });
-      navigate("/ucitel/ucebnice");
+      openLinkDialog();
     }
   }
 
   function launchLesson() {
-    if (matchedSubject?.teacherTextbookId) {
-      navigate(`/ucitel/ucebnice/${matchedSubject.teacherTextbookId}/lekce?launch=1`);
+    if (linkedTextbookId) {
+      navigate(`/ucitel/ucebnice/${linkedTextbookId}/lekce?launch=1`);
     } else {
-      toast({ title: "Vyber lekci v učebnici" });
-      navigate("/ucitel/ucebnice");
+      toast({ title: "Nejdříve propoj učebnici" });
+      openLinkDialog();
     }
+  }
+
+  async function openLinkDialog() {
+    if (!user) return;
+    setLinkOpen(true);
+    if (teacherTextbooks.length === 0) {
+      const { data } = await supabase
+        .from("teacher_textbooks")
+        .select("id, title, subject, description")
+        .eq("teacher_id", user.id)
+        .order("title", { ascending: true });
+      setTeacherTextbooks((data as TeacherTextbookRow[]) ?? []);
+    }
+  }
+
+  async function linkTextbook(textbookId: string) {
+    if (!slots.length) {
+      toast({
+        title: "Chybí hodina v rozvrhu",
+        description: "Pro propojení učebnice musí mít předmět záznam v rozvrhu.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setLinking(true);
+    const ids = slots.map((s) => s.id);
+    const { error } = await supabase
+      .from("class_schedule_slots" as any)
+      .update({ textbook_id: textbookId, textbook_type: "teacher" })
+      .in("id", ids);
+    setLinking(false);
+    if (error) {
+      toast({ title: "Nepodařilo se propojit učebnici", description: error.message, variant: "destructive" });
+      return;
+    }
+    setSlots((prev) =>
+      prev.map((s) => ({ ...s, textbook_id: textbookId, textbook_type: "teacher" })),
+    );
+    setLinkOpen(false);
+    toast({ title: "Učebnice propojena" });
   }
 
   function newAssignment() {
