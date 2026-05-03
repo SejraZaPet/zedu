@@ -197,7 +197,7 @@ export default function CalendarEventDetailDialog({ event, open, onOpenChange }:
           </Button>
           <Button variant="outline" onClick={openLessonPlan} className="justify-start">
             <FileText className="h-4 w-4 mr-2" />
-            Plán hodiny
+            {linkedPlanId ? "Otevřít plán hodiny" : "Plán hodiny"}
           </Button>
           <Button onClick={launchLesson} className="justify-start">
             <PlayCircle className="h-4 w-4 mr-2" />
