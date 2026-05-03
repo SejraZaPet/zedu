@@ -143,7 +143,10 @@ const ClassScheduleDialog = ({ classId, className, open, onOpenChange }: Props) 
       room: value.room,
       valid_from: value.validFrom,
       valid_to: value.validTo,
-      week_parity: "every" as const,
+      week_parity: (value.mirrorBoth ? "every" : value.weekParity) as
+        | "every"
+        | "odd"
+        | "even",
     };
 
     if (editing) {
