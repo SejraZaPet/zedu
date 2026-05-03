@@ -60,6 +60,15 @@ interface ScheduleSlot {
   room: string | null;
   color: string | null;
   abbreviation: string | null;
+  textbook_id: string | null;
+  textbook_type: string | null;
+}
+
+interface TeacherTextbookRow {
+  id: string;
+  title: string;
+  subject: string | null;
+  description: string | null;
 }
 
 interface LessonPlanRow {
