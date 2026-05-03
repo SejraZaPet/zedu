@@ -108,6 +108,7 @@ export function expandScheduleSlots(
         subject: slot.subject_label || undefined,
         color,
         abbreviation,
+        weekParity: slot.week_parity,
       });
     }
   }
