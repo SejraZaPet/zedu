@@ -578,8 +578,8 @@ export default function LessonFormDialog({
               Zrušit
             </Button>
             <Button onClick={handleSave} disabled={!!validationError}>
-              {isNew && selectedDays.length > 1
-                ? `Přidat do ${selectedDays.length} dnů`
+              {selectedDays.length > 1
+                ? `Uložit do ${selectedDays.length} dnů`
                 : "Uložit"}
             </Button>
           </div>
