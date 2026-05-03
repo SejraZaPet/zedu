@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -77,6 +77,7 @@ interface GradeGroup {
 
 const TeacherTextbooks = () => {
   const navigate = useNavigate();
+  const { textbookId } = useParams<{ textbookId?: string }>();
   const { toast } = useToast();
   const { data: subjects } = useSubjects(true);
   const [textbooks, setTextbooks] = useState<Textbook[]>([]);
@@ -212,10 +213,20 @@ const TeacherTextbooks = () => {
     setDetailLoading(false);
   }, [subjects]);
 
+  useEffect(() => {
+    if (!textbookId || textbooks.length === 0) return;
+    const match = textbooks.find((tb) => tb.id === textbookId);
+    if (match && selectedTextbook?.id !== match.id) {
+      setSelectedTextbook(match);
+      fetchDetail(match);
+    }
+  }, [textbookId, textbooks, selectedTextbook?.id, fetchDetail]);
+
   const openDetail = useCallback(async (tb: Textbook) => {
     setSelectedTextbook(tb);
+    navigate(`/ucitel/ucebnice/${tb.id}`);
     fetchDetail(tb);
-  }, [fetchDetail]);
+  }, [fetchDetail, navigate]);
 
   const refreshDetail = useCallback(() => {
     if (selectedTextbook) fetchDetail(selectedTextbook);
@@ -387,7 +398,10 @@ const TeacherTextbooks = () => {
       <div className="min-h-screen bg-background flex flex-col">
         <SiteHeader />
         <main className="flex-1 container mx-auto px-4 py-12 max-w-4xl" style={{ paddingTop: "calc(70px + 3rem)" }}>
-          <Button variant="ghost" size="sm" onClick={() => setSelectedTextbook(null)} className="mb-4 gap-2">
+          <Button variant="ghost" size="sm" onClick={() => {
+            setSelectedTextbook(null);
+            navigate("/ucitel/ucebnice");
+          }} className="mb-4 gap-2">
             <ArrowLeft className="w-4 h-4" /> Zpět na učebnice
           </Button>
 
