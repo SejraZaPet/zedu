@@ -223,22 +223,45 @@ export default function TeacherSchedule() {
     return m;
   }, [currentLessons, visiblePeriods, data.periodTimes]);
 
-  /** Build map (day, period) → class slot, matching by start_time = period start. */
+  /** Convert "HH:MM[:SS]" to total minutes. */
+  const toMin = (t: string): number => {
+    if (!t) return -1;
+    const [h, m] = t.split(":").map((x) => parseInt(x, 10) || 0);
+    return h * 60 + m;
+  };
+
+  /** Build map (day, period) → class slot[]. Match by closest period (slot.start within period range,
+   *  or nearest by start time). Multiple slots per cell are allowed. */
   const classByDayPeriod = useMemo(() => {
-    const m = new Map<string, ClassSlot>();
-    // Build start-time → period lookup
-    const startToPeriod = new Map<string, number>();
-    for (const p of visiblePeriods) {
-      const t = data.periodTimes[p];
-      if (t) startToPeriod.set(t.start.slice(0, 5), p);
-    }
+    const m = new Map<string, ClassSlot[]>();
+    const periodInfo = visiblePeriods
+      .map((p) => {
+        const t = data.periodTimes[p];
+        if (!t) return null;
+        return { period: p, start: toMin(t.start), end: toMin(t.end) };
+      })
+      .filter((x): x is { period: number; start: number; end: number } => x !== null);
+
     for (const s of visibleClassSlots) {
       const dayIdx = s.day_of_week - 1;
       if (dayIdx < 0 || dayIdx > 4) continue;
-      const period = startToPeriod.get((s.start_time || "").slice(0, 5));
-      if (!period) continue;
-      const key = `${dayIdx}-${period}`;
-      if (!m.has(key)) m.set(key, s);
+      const slotStart = toMin((s.start_time || "").slice(0, 5));
+      if (slotStart < 0 || periodInfo.length === 0) continue;
+      // Prefer period whose [start,end) contains slot start; otherwise nearest by |start diff|.
+      let chosen = periodInfo.find((p) => slotStart >= p.start && slotStart < p.end);
+      if (!chosen) {
+        chosen = periodInfo.reduce((best, p) =>
+          Math.abs(p.start - slotStart) < Math.abs(best.start - slotStart) ? p : best,
+        periodInfo[0]);
+      }
+      const key = `${dayIdx}-${chosen.period}`;
+      const arr = m.get(key) ?? [];
+      arr.push(s);
+      m.set(key, arr);
+    }
+    // Sort each cell by start_time for stable display
+    for (const arr of m.values()) {
+      arr.sort((a, b) => toMin(a.start_time) - toMin(b.start_time));
     }
     return m;
   }, [visibleClassSlots, visiblePeriods, data.periodTimes]);
@@ -594,9 +617,9 @@ export default function TeacherSchedule() {
                       </div>
                       {[0, 1, 2, 3, 4].map((dayIdx) => {
                         const personal = personalByDayPeriod.get(`${dayIdx}-${row.period}`);
-                        const cls = !personal
-                          ? classByDayPeriod.get(`${dayIdx}-${row.period}`)
-                          : undefined;
+                        const clsList = !personal
+                          ? classByDayPeriod.get(`${dayIdx}-${row.period}`) ?? []
+                          : [];
                         return (
                           <div
                             key={`c-${rowIdx}-${dayIdx}`}
@@ -612,12 +635,15 @@ export default function TeacherSchedule() {
                                   onClick={() => openEditLesson(personal.lesson)}
                                 />
                               </div>
-                            ) : cls ? (
-                              <div className="w-full">
-                                <ClassCard
-                                  slot={cls}
-                                  onClick={() => setEditingClassSlot(cls)}
-                                />
+                            ) : clsList.length > 0 ? (
+                              <div className="w-full flex flex-col gap-1">
+                                {clsList.map((cls) => (
+                                  <ClassCard
+                                    key={cls.id}
+                                    slot={cls}
+                                    onClick={() => setEditingClassSlot(cls)}
+                                  />
+                                ))}
                               </div>
                             ) : (
                               <button
@@ -949,6 +975,7 @@ function PersonalCard({
   return (
     <button
       onClick={onClick}
+      title={lesson.subject || lesson.className || "Hodina"}
       className="w-full text-left rounded-md p-2 transition-all hover:shadow-md hover:-translate-y-0.5 border-l-4 group"
       style={{ backgroundColor: `${color}26`, borderLeftColor: color }}
     >
@@ -957,14 +984,13 @@ function PersonalCard({
         {time ? `${fmtTime(time.start)}–${fmtTime(time.end)}` : `${lesson.period}. hod`}
         <Pencil className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-60 transition-opacity" />
       </div>
-      <div className="flex items-center gap-1.5 mt-0.5">
+      <div className="mt-0.5">
         <span
-          className="inline-flex items-center justify-center text-[10px] font-bold text-white px-1.5 py-0.5 rounded shrink-0"
+          className="inline-flex items-center justify-center text-xs font-bold text-white px-2 py-0.5 rounded shrink-0"
           style={{ backgroundColor: color }}
         >
           {abbr}
         </span>
-        <div className="font-semibold text-sm leading-tight truncate">{lesson.subject}</div>
       </div>
       {lesson.className && (
         <div className="text-xs text-muted-foreground truncate mt-0.5">{lesson.className}</div>
@@ -988,7 +1014,7 @@ function ClassCard({ slot, onClick }: { slot: ClassSlot; onClick: () => void }) 
       onClick={onClick}
       className="w-full text-left rounded-md p-2 transition-all hover:shadow-md hover:-translate-y-0.5 border-l-4 group"
       style={{ backgroundColor: `${color}26`, borderLeftColor: color }}
-      title="Hodina ze třídy – klikni pro úpravu"
+      title={`${subject} – ${slot.classes?.name ?? ""}`.trim()}
     >
       <div className="flex items-center gap-1 text-[11px] text-muted-foreground tabular-nums">
         <Clock className="w-3 h-3" />
@@ -998,14 +1024,13 @@ function ClassCard({ slot, onClick }: { slot: ClassSlot; onClick: () => void }) 
         )}
         <Pencil className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-60 transition-opacity" />
       </div>
-      <div className="flex items-center gap-1.5 mt-0.5">
+      <div className="mt-0.5">
         <span
-          className="inline-flex items-center justify-center text-[10px] font-bold text-white px-1.5 py-0.5 rounded shrink-0"
+          className="inline-flex items-center justify-center text-xs font-bold text-white px-2 py-0.5 rounded shrink-0"
           style={{ backgroundColor: color }}
         >
           {abbr}
         </span>
-        <div className="font-semibold text-sm leading-tight truncate">{subject}</div>
       </div>
       <div className="text-xs text-muted-foreground truncate flex items-center gap-1 mt-0.5">
         <Users className="w-2.5 h-2.5 shrink-0" />
