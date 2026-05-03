@@ -871,11 +871,13 @@ export default function TeacherSchedule() {
                   room: editingClassSlot.room ?? "",
                   validFrom: editingClassSlot.valid_from ?? null,
                   validTo: editingClassSlot.valid_to ?? null,
+                  weekParity: editingClassSlot.week_parity ?? "every",
                 };
               })()
             : null
         }
         periods={dialogPeriods}
+        showMirrorSwitch
         title="Upravit hodinu třídy"
         onDelete={async () => {
           if (!editingClassSlot) return;
