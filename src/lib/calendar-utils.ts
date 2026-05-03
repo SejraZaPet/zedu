@@ -33,8 +33,18 @@ export type ScheduleSlotInput = {
   valid_to: string | null;
   subject_label: string;
   room: string;
+  color?: string | null;
+  abbreviation?: string | null;
   classes?: { name: string } | null;
 };
+
+function colorForSubject(subject: string): string {
+  const palette = ["#6EC6D9","#9B6CFF","#F472B6","#F87171","#FB923C","#FBBF24","#34D399","#60A5FA","#A3A3A3"];
+  if (!subject) return palette[0];
+  let hash = 0;
+  for (let i = 0; i < subject.length; i++) hash = (hash * 31 + subject.charCodeAt(i)) >>> 0;
+  return palette[hash % palette.length];
+}
 
 const parseTime = (date: Date, time: string): Date => {
   const [h, m] = time.split(":").map((x) => parseInt(x, 10));
@@ -81,6 +91,10 @@ export function expandScheduleSlots(
       const className = slot.classes?.name ?? "";
       const title = slot.subject_label?.trim() || className || "Hodina";
 
+      const subjectKey = (slot.subject_label || "").trim();
+      const color = slot.color || (subjectKey ? colorForSubject(subjectKey) : undefined);
+      const abbreviation = slot.abbreviation || (subjectKey ? subjectKey.slice(0, 3).toUpperCase() : undefined);
+
       events.push({
         id: `${slot.id}-${date.toISOString().slice(0, 10)}`,
         type: "lesson",
@@ -91,6 +105,8 @@ export function expandScheduleSlots(
         className,
         room: slot.room || undefined,
         subject: slot.subject_label || undefined,
+        color,
+        abbreviation,
       });
     }
   }
