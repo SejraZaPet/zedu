@@ -169,6 +169,7 @@ export default function LessonFormDialog({
     setValidFrom(initial?.validFrom ? new Date(initial.validFrom) : undefined);
     setValidTo(initial?.validTo ? new Date(initial.validTo) : undefined);
     setMirrorBoth(!!initial?.mirrorBoth);
+    setWeekParity(initial?.weekParity ?? "every");
 
     const startDay = initial?.day ?? 0;
     setSlotPairs([{ day: startDay, period: initial?.period ?? defaultPeriod }]);
