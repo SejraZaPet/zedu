@@ -264,6 +264,24 @@ export default function TeacherLessonPlanEditor() {
     }
   }
 
+  /** Compact summary of available blocks for the AI (type + short title). */
+  function extractBlockSummaries(blocks: any): { type: string; title: string }[] {
+    if (!Array.isArray(blocks)) return [];
+    return blocks
+      .map((b: any) => {
+        if (!b || typeof b !== "object") return null;
+        const type = b.type || b.kind || "block";
+        const title =
+          b.title ||
+          b.props?.title ||
+          (typeof b.text === "string" ? b.text.slice(0, 80) : "") ||
+          (typeof b.content === "string" ? b.content.slice(0, 80) : "") ||
+          "";
+        return { type: String(type), title: String(title).trim() };
+      })
+      .filter(Boolean) as { type: string; title: string }[];
+  }
+
   async function generateWithAI() {
     if (!subject && !aiInstructions.trim() && !selectedLesson) {
       toast({
@@ -275,11 +293,15 @@ export default function TeacherLessonPlanEditor() {
     setAiLoading(true);
     try {
       const lessonContent = selectedLesson ? extractText(selectedLesson.blocks) : "";
+      const availableLessonBlocks = selectedLesson
+        ? extractBlockSummaries(selectedLesson.blocks)
+        : [];
       const { data, error } = await supabase.functions.invoke("generate-lesson-phases", {
         body: {
           subject,
           lessonTitle: selectedLesson?.title,
           lessonContent,
+          availableLessonBlocks,
           customInstructions: aiInstructions,
           totalMin: 45,
         },
@@ -294,6 +316,7 @@ export default function TeacherLessonPlanEditor() {
             next[p.key] = {
               timeMin: String(inc.timeMin ?? ""),
               description: inc.description ?? "",
+              activities: Array.isArray(inc.activities) ? inc.activities : [],
             };
           }
         }
