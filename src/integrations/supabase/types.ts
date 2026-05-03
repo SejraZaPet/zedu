@@ -710,7 +710,7 @@ export type Database = {
           grade_band: string
           id: string
           input_data: Json
-          lesson_id: string
+          lesson_id: string | null
           slides: Json
           subject: string
           teacher_id: string
@@ -722,7 +722,7 @@ export type Database = {
           grade_band?: string
           id?: string
           input_data?: Json
-          lesson_id: string
+          lesson_id?: string | null
           slides?: Json
           subject?: string
           teacher_id: string
@@ -734,7 +734,7 @@ export type Database = {
           grade_band?: string
           id?: string
           input_data?: Json
-          lesson_id?: string
+          lesson_id?: string | null
           slides?: Json
           subject?: string
           teacher_id?: string
