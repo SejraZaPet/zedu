@@ -617,9 +617,9 @@ export default function TeacherSchedule() {
                       </div>
                       {[0, 1, 2, 3, 4].map((dayIdx) => {
                         const personal = personalByDayPeriod.get(`${dayIdx}-${row.period}`);
-                        const cls = !personal
-                          ? classByDayPeriod.get(`${dayIdx}-${row.period}`)
-                          : undefined;
+                        const clsList = !personal
+                          ? classByDayPeriod.get(`${dayIdx}-${row.period}`) ?? []
+                          : [];
                         return (
                           <div
                             key={`c-${rowIdx}-${dayIdx}`}
@@ -635,12 +635,15 @@ export default function TeacherSchedule() {
                                   onClick={() => openEditLesson(personal.lesson)}
                                 />
                               </div>
-                            ) : cls ? (
-                              <div className="w-full">
-                                <ClassCard
-                                  slot={cls}
-                                  onClick={() => setEditingClassSlot(cls)}
-                                />
+                            ) : clsList.length > 0 ? (
+                              <div className="w-full flex flex-col gap-1">
+                                {clsList.map((cls) => (
+                                  <ClassCard
+                                    key={cls.id}
+                                    slot={cls}
+                                    onClick={() => setEditingClassSlot(cls)}
+                                  />
+                                ))}
                               </div>
                             ) : (
                               <button
