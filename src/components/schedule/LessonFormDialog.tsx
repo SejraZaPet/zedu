@@ -262,6 +262,7 @@ export default function LessonFormDialog({
       validFrom: validFrom ? format(validFrom, "yyyy-MM-dd") : null,
       validTo: validTo ? format(validTo, "yyyy-MM-dd") : null,
       mirrorBoth,
+      weekParity,
     };
     await onSave({ value, slots });
   }
