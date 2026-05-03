@@ -132,15 +132,6 @@ const TeacherTextbooks = () => {
 
   useEffect(() => { fetchTextbooks(); }, []);
 
-  useEffect(() => {
-    if (!textbookId || textbooks.length === 0) return;
-    const match = textbooks.find((tb) => tb.id === textbookId);
-    if (match && selectedTextbook?.id !== match.id) {
-      setSelectedTextbook(match);
-      fetchDetail(match);
-    }
-  }, [textbookId, textbooks, selectedTextbook?.id, fetchDetail]);
-
   const fetchDetail = useCallback(async (tb: Textbook) => {
     setDetailLoading(true);
 
@@ -221,6 +212,15 @@ const TeacherTextbooks = () => {
     setGradeGroups(groups);
     setDetailLoading(false);
   }, [subjects]);
+
+  useEffect(() => {
+    if (!textbookId || textbooks.length === 0) return;
+    const match = textbooks.find((tb) => tb.id === textbookId);
+    if (match && selectedTextbook?.id !== match.id) {
+      setSelectedTextbook(match);
+      fetchDetail(match);
+    }
+  }, [textbookId, textbooks, selectedTextbook?.id, fetchDetail]);
 
   const openDetail = useCallback(async (tb: Textbook) => {
     setSelectedTextbook(tb);
