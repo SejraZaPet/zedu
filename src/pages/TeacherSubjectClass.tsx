@@ -661,6 +661,66 @@ export default function TeacherSubjectClass() {
         </Tabs>
       </main>
       <SiteFooter />
+
+      <Dialog open={linkOpen} onOpenChange={setLinkOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Propojit učebnici s předmětem</DialogTitle>
+            <DialogDescription>
+              Vyber jednu ze svých učebnic. Propojení se uloží do rozvrhu této třídy a předmětu „{subjectLabel}“.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2 max-h-72 overflow-y-auto">
+            {teacherTextbooks.length === 0 ? (
+              <Card className="p-4 text-sm text-muted-foreground text-center">
+                Zatím nemáš žádné vlastní učebnice. Vytvoř ji v sekci Moje učebnice.
+              </Card>
+            ) : (
+              teacherTextbooks.map((tb) => {
+                const isCurrent = tb.id === linkedTextbookId;
+                return (
+                  <button
+                    key={tb.id}
+                    type="button"
+                    disabled={linking}
+                    onClick={() => linkTextbook(tb.id)}
+                    className="w-full text-left rounded-lg border border-border p-3 hover:bg-accent transition disabled:opacity-50"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="font-medium truncate">{tb.title}</div>
+                        {tb.subject && (
+                          <div className="text-xs text-muted-foreground truncate">{tb.subject}</div>
+                        )}
+                      </div>
+                      {isCurrent && <Badge variant="secondary">Propojená</Badge>}
+                    </div>
+                  </button>
+                );
+              })
+            )}
+          </div>
+
+          <div className="mt-2 rounded-lg border border-dashed border-border p-3 bg-muted/30 opacity-70">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <Lock className="h-3.5 w-3.5" />
+              <Sparkles className="h-3.5 w-3.5 text-primary" />
+              Brzy: učebnice z tržiště
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Připravujeme možnost propojit ověřené učebnice z tržiště Zedu. Sleduj novinky.
+            </p>
+          </div>
+
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setLinkOpen(false)}>Zavřít</Button>
+            <Button variant="outline" onClick={() => navigate("/ucitel/ucebnice")}>
+              Spravovat učebnice
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
