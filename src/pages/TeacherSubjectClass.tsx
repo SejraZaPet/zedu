@@ -851,6 +851,87 @@ export default function TeacherSubjectClass() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={assignPlanOpen} onOpenChange={setAssignPlanOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Přiřadit existující plán hodiny</DialogTitle>
+            <DialogDescription>
+              Vyberte plán a termín v rozvrhu třídy „{klass?.name}“ pro předmět „{subjectLabel}“.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="assign-plan-select">Plán hodiny</Label>
+              {relevantPlans.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Pro tento předmět zatím nemáte žádné uložené plány.{" "}
+                  <button
+                    type="button"
+                    className="underline"
+                    onClick={() => {
+                      setAssignPlanOpen(false);
+                      newLessonPlan();
+                    }}
+                  >
+                    Vytvořit nový
+                  </button>
+                </p>
+              ) : (
+                <Select value={assignPlanId} onValueChange={setAssignPlanId}>
+                  <SelectTrigger id="assign-plan-select">
+                    <SelectValue placeholder="Vyberte plán" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {relevantPlans.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.title || "Bez názvu"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="assign-plan-date">Termín z rozvrhu</Label>
+              {upcomingLessons.length > 0 ? (
+                <Select value={assignPlanDate} onValueChange={setAssignPlanDate}>
+                  <SelectTrigger id="assign-plan-date">
+                    <SelectValue placeholder="Vyberte termín" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {upcomingLessons.map((e) => {
+                      const key = format(e.start, "yyyy-MM-dd");
+                      return (
+                        <SelectItem key={e.id} value={key}>
+                          {format(e.start, "EEE d. M. yyyy", { locale: cs })} · {formatTime(e.start)}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  id="assign-plan-date"
+                  type="date"
+                  value={assignPlanDate}
+                  onChange={(ev) => setAssignPlanDate(ev.target.value)}
+                />
+              )}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setAssignPlanOpen(false)}>Zrušit</Button>
+            <Button onClick={assignPlanToDate} disabled={assigning || !assignPlanId || !assignPlanDate}>
+              {assigning ? "Ukládám…" : "Přiřadit plán"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
