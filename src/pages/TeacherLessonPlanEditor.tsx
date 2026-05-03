@@ -129,6 +129,15 @@ export default function TeacherLessonPlanEditor() {
   const [planDbId, setPlanDbId] = useState<string | null>(
     id && id !== "novy" ? id : null,
   );
+  const [linkedSlots, setLinkedSlots] = useState<
+    {
+      subject: string;
+      classId?: string;
+      className?: string;
+      date: string;
+      time: string;
+    }[]
+  >([]);
 
   // Load existing plan from DB when editing
   useEffect(() => {
