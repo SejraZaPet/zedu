@@ -330,7 +330,7 @@ export default function TeacherSubjectClass() {
 
   function openTextbook() {
     if (linkedTextbookId) {
-      navigate(`/ucitel/ucebnice/${linkedTextbookId}/lekce`);
+      navigate(`/ucitel/ucebnice/${linkedTextbookId}`);
     } else {
       openLinkDialog();
     }
