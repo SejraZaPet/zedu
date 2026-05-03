@@ -510,14 +510,24 @@ export default function TeacherSubjectClass() {
             </div>
             <div className="flex flex-wrap gap-2">
               {linkedTextbookId ? (
-                <Button variant="outline" onClick={openTextbook}>
-                  <BookOpen className="h-4 w-4 mr-2" />
-                  Otevřít učebnici
-                </Button>
+                <div className="flex items-center gap-1">
+                  <Button variant="outline" onClick={openTextbook}>
+                    <BookOpen className="h-4 w-4 mr-2" />
+                    Otevřít učebnici
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    title="Změnit propojenou učebnici"
+                    onClick={openLinkDialog}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                </div>
               ) : (
                 <Button variant="outline" onClick={openLinkDialog}>
                   <Link2 className="h-4 w-4 mr-2" />
-                  Propojit učebnici
+                  Přiřadit učebnici
                 </Button>
               )}
               <Button onClick={launchLesson}>
