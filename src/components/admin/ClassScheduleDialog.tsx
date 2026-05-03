@@ -147,22 +147,45 @@ const ClassScheduleDialog = ({ classId, className, open, onOpenChange }: Props) 
     };
 
     if (editing) {
-      // Edit → single slot update
-      const s = lessonSlots[0];
+      // Edit → update existing row to the first slot
+      const [first, ...rest] = lessonSlots;
       const { error } = await supabase
         .from("class_schedule_slots" as any)
         .update({
           ...basePayload,
-          day_of_week: s.day + 1, // form uses 0=Mon, DB uses 1=Mon
-          start_time: s.start,
-          end_time: s.end,
+          day_of_week: first.day + 1,
+          start_time: first.start,
+          end_time: first.end,
         })
         .eq("id", editing.id);
       if (error) {
         toast({ title: "Chyba", description: error.message, variant: "destructive" });
         return;
       }
-      toast({ title: "Uloženo", description: "Hodina byla aktualizována." });
+      // Any extra days → insert as new rows
+      if (rest.length > 0) {
+        const rows = rest.map((s) => ({
+          ...basePayload,
+          day_of_week: s.day + 1,
+          start_time: s.start,
+          end_time: s.end,
+          created_by: user.id,
+        }));
+        const { error: insErr } = await supabase
+          .from("class_schedule_slots" as any)
+          .insert(rows);
+        if (insErr) {
+          toast({ title: "Chyba", description: insErr.message, variant: "destructive" });
+          return;
+        }
+      }
+      toast({
+        title: "Uloženo",
+        description:
+          rest.length > 0
+            ? `Hodina aktualizována a přidána do dalších ${rest.length} dnů.`
+            : "Hodina byla aktualizována.",
+      });
     } else {
       // New → insert one row per selected day
       const rows = lessonSlots.map((s) => ({
