@@ -16,6 +16,7 @@ import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { Button } from "@/components/ui/button";
 import CalendarWeekGrid from "@/components/calendar/CalendarWeekGrid";
+import CalendarEventDetailDialog from "@/components/calendar/CalendarEventDetailDialog";
 import {
   type CalendarEvent,
   expandScheduleSlots,
