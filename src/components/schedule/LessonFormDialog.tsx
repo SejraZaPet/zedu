@@ -70,6 +70,7 @@ export interface LessonFormValue {
   room: string;
   validFrom: string | null; // YYYY-MM-DD
   validTo: string | null;
+  weekParity: "every" | "odd" | "even";
   mirrorBoth?: boolean;
 }
 
