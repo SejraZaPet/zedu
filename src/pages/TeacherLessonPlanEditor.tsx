@@ -556,67 +556,101 @@ export default function TeacherLessonPlanEditor() {
 
           {/* Propojení s konkrétní hodinou v rozvrhu */}
           {subject && (
-            <div className="grid sm:grid-cols-2 gap-4">
+            <div className="space-y-4">
               <div className="space-y-1.5">
-                <Label htmlFor="plan-date" className="flex items-center gap-1.5">
-                  <CalendarDays className="w-3.5 h-3.5" />
-                  Datum hodiny
-                </Label>
+                <Label htmlFor="plan-class">Třída</Label>
                 <Select
-                  value={linkedDate || undefined}
+                  value={classId || undefined}
                   onValueChange={(v) => {
-                    setLinkedDate(v);
+                    setClassId(v);
+                    setLinkedDate("");
                     setLinkedTime("");
                   }}
                 >
-                  <SelectTrigger id="plan-date">
+                  <SelectTrigger id="plan-class">
                     <SelectValue
                       placeholder={
-                        availableDates.length
-                          ? "Vyber datum…"
-                          : "Žádné nadcházející hodiny v rozvrhu"
+                        teacherClasses.length ? "Vyber třídu…" : "Žádné třídy"
                       }
                     />
                   </SelectTrigger>
                   <SelectContent>
-                    {availableDates.map((d) => {
-                      const dateObj = new Date(d);
-                      const week = getISOWeek(dateObj);
-                      return (
-                        <SelectItem key={d} value={d}>
-                          {format(dateObj, "EEEE d. M. yyyy", { locale: cs })} (t. {week})
-                        </SelectItem>
-                      );
-                    })}
+                    {teacherClasses.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
+                <p className="text-xs text-muted-foreground">
+                  Termíny se filtrují podle rozvrhu této třídy pro vybraný předmět.
+                </p>
               </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="plan-time">Čas hodiny</Label>
-                <Select
-                  value={linkedTime || undefined}
-                  onValueChange={setLinkedTime}
-                  disabled={!linkedDate}
-                >
-                  <SelectTrigger id="plan-time">
-                    <SelectValue
-                      placeholder={linkedDate ? "Vyber čas…" : "Nejprve vyber datum"}
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {timeSlotsForDate.map((o) => {
-                      const v = `${o.start}-${o.end}`;
-                      const meta = [o.className, o.room].filter(Boolean).join(" · ");
-                      return (
-                        <SelectItem key={v} value={v}>
-                          {o.start} – {o.end}
-                          {meta ? ` · ${meta}` : ""}
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="plan-date" className="flex items-center gap-1.5">
+                    <CalendarDays className="w-3.5 h-3.5" />
+                    Datum hodiny
+                  </Label>
+                  <Select
+                    value={linkedDate || undefined}
+                    onValueChange={(v) => {
+                      setLinkedDate(v);
+                      setLinkedTime("");
+                    }}
+                  >
+                    <SelectTrigger id="plan-date">
+                      <SelectValue
+                        placeholder={
+                          availableDates.length
+                            ? "Vyber datum…"
+                            : classId
+                              ? "Žádné nadcházející hodiny pro tuto třídu"
+                              : "Žádné nadcházející hodiny v rozvrhu"
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableDates.map((d) => {
+                        const dateObj = new Date(d);
+                        const week = getISOWeek(dateObj);
+                        return (
+                          <SelectItem key={d} value={d}>
+                            {format(dateObj, "EEEE d. M. yyyy", { locale: cs })} (t. {week})
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="plan-time">Čas hodiny</Label>
+                  <Select
+                    value={linkedTime || undefined}
+                    onValueChange={setLinkedTime}
+                    disabled={!linkedDate}
+                  >
+                    <SelectTrigger id="plan-time">
+                      <SelectValue
+                        placeholder={linkedDate ? "Vyber čas…" : "Nejprve vyber datum"}
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {timeSlotsForDate.map((o) => {
+                        const v = `${o.start}-${o.end}`;
+                        const meta = [o.className, o.room].filter(Boolean).join(" · ");
+                        return (
+                          <SelectItem key={v} value={v}>
+                            {o.start} – {o.end}
+                            {meta ? ` · ${meta}` : ""}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
           )}
