@@ -160,9 +160,8 @@ export default function TeacherSubjectClass() {
           .eq("class_id", classId),
         supabase
           .from("lesson_plans")
-          .select("id, title, subject, created_at, updated_at")
+          .select("id, title, subject, created_at, updated_at, input_data")
           .eq("teacher_id", user.id)
-          .ilike("subject", subjectLabel)
           .order("updated_at", { ascending: false }),
         supabase
           .from("assignments")
