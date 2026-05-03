@@ -666,28 +666,72 @@ export default function TeacherLessonPlanEditor() {
             />
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="plan-subject">Předmět</Label>
-            <Select
-              value={subject || undefined}
-              onValueChange={(v) => {
-                setSubject(v);
-                setLinkedDate("");
-                setLinkedTime("");
-              }}
-            >
-              <SelectTrigger id="plan-subject">
-                <SelectValue placeholder="Vyber předmět z učebnic / rozvrhu…" />
-              </SelectTrigger>
-              <SelectContent>
-                {subjects.map((s) => (
-                  <SelectItem key={`${s.source}-${s.label}`} value={s.label}>
-                    {s.abbreviation ? `${s.abbreviation} · ${s.label}` : s.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="plan-subject">Předmět</Label>
+              <Select
+                value={subject || undefined}
+                onValueChange={(v) => {
+                  setSubject(v);
+                  setLinkedDate("");
+                  setLinkedTime("");
+                }}
+              >
+                <SelectTrigger id="plan-subject">
+                  <SelectValue
+                    placeholder={
+                      filteredSubjects.length
+                        ? "Vyber předmět…"
+                        : classId
+                          ? "Tato třída nemá v rozvrhu žádný předmět"
+                          : "Vyber předmět z učebnic / rozvrhu…"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {filteredSubjects.map((s) => (
+                    <SelectItem key={`${s.source}-${s.label}`} value={s.label}>
+                      {s.abbreviation ? `${s.abbreviation} · ${s.label}` : s.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="plan-class">Třída</Label>
+              <Select
+                value={classId || undefined}
+                onValueChange={(v) => {
+                  setClassId(v);
+                  setLinkedDate("");
+                  setLinkedTime("");
+                }}
+              >
+                <SelectTrigger id="plan-class">
+                  <SelectValue
+                    placeholder={
+                      filteredClasses.length
+                        ? "Vyber třídu…"
+                        : subject
+                          ? "Žádná třída nemá tento předmět v rozvrhu"
+                          : "Žádné třídy"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {filteredClasses.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
+          <p className="text-xs text-muted-foreground -mt-2">
+            Předmět a třída se vzájemně filtrují podle rozvrhu (rozvrhové sloty).
+          </p>
 
           {/* Učebnice + lekce */}
           <div className="grid sm:grid-cols-2 gap-4">
@@ -755,35 +799,6 @@ export default function TeacherLessonPlanEditor() {
           {/* Propojení s konkrétní hodinou v rozvrhu */}
           {subject && (
             <div className="space-y-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="plan-class">Třída</Label>
-                <Select
-                  value={classId || undefined}
-                  onValueChange={(v) => {
-                    setClassId(v);
-                    setLinkedDate("");
-                    setLinkedTime("");
-                  }}
-                >
-                  <SelectTrigger id="plan-class">
-                    <SelectValue
-                      placeholder={
-                        teacherClasses.length ? "Vyber třídu…" : "Žádné třídy"
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {teacherClasses.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  Termíny se filtrují podle rozvrhu této třídy pro vybraný předmět.
-                </p>
-              </div>
 
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
