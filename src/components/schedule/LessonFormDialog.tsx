@@ -603,7 +603,6 @@ export default function LessonFormDialog({
               {slotPairs.length > 1
                 ? `Uložit ${slotPairs.length} hodin`
                 : "Uložit"}
-                : "Uložit"}
             </Button>
           </div>
         </DialogFooter>
