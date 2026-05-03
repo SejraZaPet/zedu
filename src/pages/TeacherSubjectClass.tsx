@@ -125,6 +125,9 @@ export default function TeacherSubjectClass() {
   const [attempts, setAttempts] = useState<AttemptRow[]>([]);
   const [members, setMembers] = useState<MemberRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [linkOpen, setLinkOpen] = useState(false);
+  const [teacherTextbooks, setTeacherTextbooks] = useState<TeacherTextbookRow[]>([]);
+  const [linking, setLinking] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
