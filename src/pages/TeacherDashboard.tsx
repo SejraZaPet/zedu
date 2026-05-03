@@ -270,49 +270,19 @@ const TeacherDashboard = () => {
 
     if (id === "subjects") {
       return (
-        <div className="bg-card border border-border rounded-xl p-6">
+        <div className="bg-card border border-border rounded-xl p-6 flex flex-col h-full">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-xl bg-gradient-brand flex items-center justify-center">
               <Library className="w-5 h-5 text-white" />
             </div>
             <h2 className="font-heading text-lg font-semibold">Moje předměty</h2>
           </div>
-          {subjects.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Zatím nemáte žádné předměty. Vytvořte učebnici a začněte učit.
-            </p>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-              {subjects.map((s) => {
-                const color = s.color || colorForLabel(s.label);
-                const abbr = (s.abbreviation || s.label.slice(0, 3)).toUpperCase();
-                return (
-                  <button
-                    key={`${s.source}-${s.label}`}
-                    type="button"
-                    onClick={() =>
-                      navigate(`/ucitel/ucebnice?predmet=${encodeURIComponent(s.label)}`)
-                    }
-                    title={s.label}
-                    className="text-left rounded-lg border border-border p-3 hover:border-primary/50 hover:shadow-sm transition-all bg-background"
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                      <span
-                        className="text-xs font-bold text-white px-2 py-1 rounded"
-                        style={{ backgroundColor: color }}
-                      >
-                        {abbr}
-                      </span>
-                    </div>
-                    <div className="text-sm font-medium truncate">{s.label}</div>
-                    <div className="text-xs text-muted-foreground mt-0.5">
-                      {subjectClassCounts} {subjectClassCounts === 1 ? "třída" : subjectClassCounts >= 2 && subjectClassCounts <= 4 ? "třídy" : "tříd"}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          )}
+          <p className="text-sm text-muted-foreground mb-4 flex-1">
+            Přehled vyučovaných předmětů.
+          </p>
+          <Button onClick={() => navigate("/ucitel/predmety")} variant="outline" className="w-full">
+            Otevřít předměty
+          </Button>
         </div>
       );
     }
