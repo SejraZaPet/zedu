@@ -312,55 +312,64 @@ export default function LessonFormDialog({
               })}
             </div>
 
-            {selectedDays.length === 0 ? null : selectedDays.length === 1 ? (
-              <div className="space-y-1.5">
-                <Label>Číslo hodiny *</Label>
-                <Select
-                  value={String(dayPeriod[selectedDays[0]] ?? defaultPeriod)}
-                  onValueChange={(v) =>
-                    setDayPeriod({ ...dayPeriod, [selectedDays[0]]: parseInt(v, 10) })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {periods.map((p) => (
-                      <SelectItem key={p.period} value={String(p.period)}>
-                        {p.period}. hodina · {p.start}–{p.end}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            ) : (
+            {slotPairs.length > 0 && (
               <div className="space-y-1.5 rounded-md border border-border bg-muted/30 p-2.5">
                 <Label className="text-xs text-muted-foreground">
-                  Číslo hodiny pro každý den
+                  Číslo hodiny pro každý den (lze přidat i víc hodin do jednoho dne)
                 </Label>
                 <div className="space-y-1.5">
-                  {selectedDays.map((d) => (
-                    <div key={d} className="flex items-center gap-2">
-                      <span className="text-xs font-medium w-16 shrink-0">{DAYS[d]}</span>
-                      <Select
-                        value={String(dayPeriod[d] ?? defaultPeriod)}
-                        onValueChange={(v) =>
-                          setDayPeriod({ ...dayPeriod, [d]: parseInt(v, 10) })
-                        }
-                      >
-                        <SelectTrigger className="h-8 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {periods.map((p) => (
-                            <SelectItem key={p.period} value={String(p.period)}>
-                              {p.period}. hod · {p.start}–{p.end}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  ))}
+                  {selectedDays.map((d) => {
+                    const indices = slotPairs
+                      .map((s, i) => ({ s, i }))
+                      .filter((x) => x.s.day === d);
+                    return (
+                      <div key={d} className="space-y-1">
+                        {indices.map(({ s, i }, k) => (
+                          <div key={`${d}-${i}`} className="flex items-center gap-2">
+                            <span className="text-xs font-medium w-16 shrink-0">
+                              {k === 0 ? DAYS[d] : ""}
+                            </span>
+                            <Select
+                              value={String(s.period)}
+                              onValueChange={(v) => updateSlotPeriod(i, parseInt(v, 10))}
+                            >
+                              <SelectTrigger className="h-8 text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {periods.map((p) => (
+                                  <SelectItem key={p.period} value={String(p.period)}>
+                                    {p.period}. hod · {p.start}–{p.end}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {indices.length > 1 && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => removeSlotAt(i)}
+                                className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                                title="Odebrat tuto hodinu"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            )}
+                          </div>
+                        ))}
+                        <div className="pl-[72px]">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => addSlotForDay(d)}
+                            className="h-6 px-2 text-[11px] text-muted-foreground hover:text-foreground"
+                          >
+                            <Plus className="w-3 h-3 mr-1" /> Přidat další hodinu v tento den
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
