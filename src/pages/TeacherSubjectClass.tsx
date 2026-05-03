@@ -1,0 +1,594 @@
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { format } from "date-fns";
+import { cs } from "date-fns/locale";
+import {
+  ArrowLeft,
+  BookOpen,
+  PlayCircle,
+  MapPin,
+  Users,
+  Calendar as CalendarIcon,
+  FileText,
+  ClipboardList,
+  TrendingUp,
+  Plus,
+  CheckCircle2,
+  Clock,
+} from "lucide-react";
+import SiteHeader from "@/components/SiteHeader";
+import SiteFooter from "@/components/SiteFooter";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
+import { expandScheduleSlots, formatTime } from "@/lib/calendar-utils";
+
+interface ClassRow {
+  id: string;
+  name: string;
+  school: string;
+  field_of_study: string;
+  year: number | null;
+}
+
+interface ScheduleSlot {
+  id: string;
+  class_id: string;
+  day_of_week: number;
+  start_time: string;
+  end_time: string;
+  week_parity: "every" | "odd" | "even";
+  valid_from: string | null;
+  valid_to: string | null;
+  subject_label: string;
+  room: string | null;
+  color: string | null;
+  abbreviation: string | null;
+}
+
+interface LessonPlanRow {
+  id: string;
+  title: string;
+  subject: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface AssignmentRow {
+  id: string;
+  title: string;
+  description: string;
+  status: string;
+  deadline: string | null;
+  created_at: string;
+}
+
+interface AttemptRow {
+  assignment_id: string;
+  student_id: string;
+  status: string;
+  score: number | null;
+  max_score: number | null;
+}
+
+interface MemberRow {
+  user_id: string;
+  profiles?: { first_name: string; last_name: string } | null;
+}
+
+const decodeSubject = (raw: string) => {
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return raw;
+  }
+};
+
+export default function TeacherSubjectClass() {
+  const { subjectId = "", classId = "" } = useParams();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { user, loading: authLoading } = useAuth();
+  const { subjects } = useTeacherSubjects();
+
+  const subjectLabel = useMemo(() => decodeSubject(subjectId), [subjectId]);
+
+  const [klass, setKlass] = useState<ClassRow | null>(null);
+  const [slots, setSlots] = useState<ScheduleSlot[]>([]);
+  const [plans, setPlans] = useState<LessonPlanRow[]>([]);
+  const [assignments, setAssignments] = useState<AssignmentRow[]>([]);
+  const [attempts, setAttempts] = useState<AttemptRow[]>([]);
+  const [members, setMembers] = useState<MemberRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
+
+    let cancelled = false;
+    setLoading(true);
+    (async () => {
+      const [classRes, slotsRes, plansRes, assignRes, membersRes] = await Promise.all([
+        supabase.from("classes").select("id, name, school, field_of_study, year").eq("id", classId).maybeSingle(),
+        supabase
+          .from("class_schedule_slots" as any)
+          .select("*")
+          .eq("class_id", classId),
+        supabase
+          .from("lesson_plans")
+          .select("id, title, subject, created_at, updated_at")
+          .eq("teacher_id", user.id)
+          .ilike("subject", subjectLabel)
+          .order("updated_at", { ascending: false }),
+        supabase
+          .from("assignments")
+          .select("id, title, description, status, deadline, created_at")
+          .eq("teacher_id", user.id)
+          .eq("class_id", classId)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("class_members")
+          .select("user_id, profiles:profiles!class_members_user_id_fkey(first_name, last_name)")
+          .eq("class_id", classId),
+      ]);
+
+      if (cancelled) return;
+
+      setKlass((classRes.data as ClassRow) ?? null);
+      const allSlots = ((slotsRes.data as any[]) ?? []) as ScheduleSlot[];
+      // Filter slots to subject (case-insensitive label match)
+      const filtered = allSlots.filter(
+        (s) => (s.subject_label || "").trim().toLowerCase() === subjectLabel.trim().toLowerCase(),
+      );
+      setSlots(filtered);
+      setPlans((plansRes.data as LessonPlanRow[]) ?? []);
+      const _assignments = (assignRes.data as AssignmentRow[]) ?? [];
+      setAssignments(_assignments);
+
+      // Members – try simple shape if join failed
+      let _members = (membersRes.data as any[]) ?? [];
+      if (!_members.length || (_members[0] && !_members[0].profiles)) {
+        const { data: m2 } = await supabase
+          .from("class_members")
+          .select("user_id")
+          .eq("class_id", classId);
+        const ids = (m2 ?? []).map((r: any) => r.user_id);
+        if (ids.length) {
+          const { data: profs } = await supabase
+            .from("profiles")
+            .select("id, first_name, last_name")
+            .in("id", ids);
+          _members = (m2 ?? []).map((r: any) => ({
+            user_id: r.user_id,
+            profiles: (profs ?? []).find((p: any) => p.id === r.user_id) ?? null,
+          }));
+        }
+      }
+      setMembers(_members as MemberRow[]);
+
+      // Load attempts for these assignments
+      if (_assignments.length) {
+        const { data: aData } = await supabase
+          .from("assignment_attempts")
+          .select("assignment_id, student_id, status, score, max_score")
+          .in(
+            "assignment_id",
+            _assignments.map((a) => a.id),
+          );
+        if (!cancelled) setAttempts((aData as AttemptRow[]) ?? []);
+      } else {
+        setAttempts([]);
+      }
+
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [authLoading, user, navigate, classId, subjectLabel]);
+
+  const matchedSubject = useMemo(
+    () => subjects.find((s) => s.label.toLowerCase() === subjectLabel.toLowerCase()),
+    [subjects, subjectLabel],
+  );
+  const subjectColor = matchedSubject?.color || slots[0]?.color || "hsl(var(--primary))";
+  const abbr =
+    matchedSubject?.abbreviation ||
+    slots[0]?.abbreviation ||
+    subjectLabel.slice(0, 3).toUpperCase();
+
+  // Build past + upcoming lesson occurrences for next/previous 60 days
+  const now = new Date();
+  const past = new Date(now);
+  past.setDate(past.getDate() - 60);
+  const future = new Date(now);
+  future.setDate(future.getDate() + 60);
+
+  const occurrences = useMemo(() => {
+    const events = expandScheduleSlots(slots as any, past, future);
+    return events.sort((a, b) => a.start.getTime() - b.start.getTime());
+  }, [slots]);
+
+  const pastLessons = occurrences.filter((e) => e.end < now).slice(-15).reverse();
+  const upcomingLessons = occurrences.filter((e) => e.start >= now).slice(0, 15);
+
+  const room = slots[0]?.room || "";
+
+  // Aggregations
+  const studentScores = useMemo(() => {
+    const map = new Map<string, { total: number; max: number; submitted: number; total_assigned: number }>();
+    for (const m of members) {
+      map.set(m.user_id, { total: 0, max: 0, submitted: 0, total_assigned: assignments.length });
+    }
+    for (const a of attempts) {
+      if (a.status !== "submitted") continue;
+      const e = map.get(a.student_id);
+      if (!e) continue;
+      e.total += a.score ?? 0;
+      e.max += a.max_score ?? 0;
+      e.submitted += 1;
+    }
+    return map;
+  }, [members, attempts, assignments]);
+
+  const classAvg = useMemo(() => {
+    let total = 0;
+    let max = 0;
+    for (const v of studentScores.values()) {
+      total += v.total;
+      max += v.max;
+    }
+    return max > 0 ? Math.round((total / max) * 100) : null;
+  }, [studentScores]);
+
+  function openTextbook() {
+    if (matchedSubject?.teacherTextbookId) {
+      navigate(`/ucitel/ucebnice/${matchedSubject.teacherTextbookId}/lekce`);
+    } else {
+      toast({
+        title: "Učebnice není propojena",
+        description: "Pro tento předmět nemáš vlastní učebnici.",
+      });
+      navigate("/ucitel/ucebnice");
+    }
+  }
+
+  function launchLesson() {
+    if (matchedSubject?.teacherTextbookId) {
+      navigate(`/ucitel/ucebnice/${matchedSubject.teacherTextbookId}/lekce?launch=1`);
+    } else {
+      toast({ title: "Vyber lekci v učebnici" });
+      navigate("/ucitel/ucebnice");
+    }
+  }
+
+  function newAssignment() {
+    navigate(`/ucitel/ulohy?classId=${classId}&subject=${encodeURIComponent(subjectLabel)}`);
+  }
+
+  function newLessonPlan(date?: Date) {
+    const params = new URLSearchParams();
+    params.set("subject", subjectLabel);
+    params.set("classId", classId);
+    if (date) params.set("date", format(date, "yyyy-MM-dd"));
+    navigate(`/ucitel/plany-hodin/novy?${params.toString()}`);
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <SiteHeader />
+        <main className="flex-1 container mx-auto px-4 py-12 max-w-6xl" style={{ paddingTop: "calc(70px + 3rem)" }}>
+          <div className="text-center text-muted-foreground py-20">Načítání…</div>
+        </main>
+        <SiteFooter />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col">
+      <SiteHeader />
+      <main
+        className="flex-1 container mx-auto px-4 py-8 max-w-6xl"
+        style={{ paddingTop: "calc(70px + 2rem)" }}
+      >
+        <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="mb-4">
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Zpět
+        </Button>
+
+        {/* Header */}
+        <Card
+          className="overflow-hidden mb-6 border-l-8"
+          style={{ borderLeftColor: subjectColor }}
+        >
+          <div className="p-6 flex flex-col md:flex-row md:items-center gap-4">
+            <div
+              className="flex items-center justify-center w-16 h-16 rounded-lg text-white text-xl font-bold shrink-0"
+              style={{ backgroundColor: subjectColor }}
+            >
+              {abbr}
+            </div>
+            <div className="flex-1 min-w-0">
+              <h1 className="font-heading text-2xl md:text-3xl font-bold truncate">
+                {subjectLabel}
+              </h1>
+              <div className="flex flex-wrap gap-3 mt-1 text-sm text-muted-foreground">
+                {klass && (
+                  <span className="flex items-center gap-1">
+                    <Users className="h-4 w-4" />
+                    {klass.name}
+                    {klass.year ? ` · ${klass.year}. ročník` : ""}
+                  </span>
+                )}
+                {room && (
+                  <span className="flex items-center gap-1">
+                    <MapPin className="h-4 w-4" />
+                    {room}
+                  </span>
+                )}
+                <span className="flex items-center gap-1">
+                  <Users className="h-4 w-4" />
+                  {members.length} žáků
+                </span>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" onClick={openTextbook}>
+                <BookOpen className="h-4 w-4 mr-2" />
+                Otevřít učebnici
+              </Button>
+              <Button onClick={launchLesson}>
+                <PlayCircle className="h-4 w-4 mr-2" />
+                Spustit lekci
+              </Button>
+            </div>
+          </div>
+        </Card>
+
+        <Tabs defaultValue="stream" className="w-full">
+          <TabsList>
+            <TabsTrigger value="stream">
+              <CalendarIcon className="h-4 w-4 mr-2" />
+              Průběh
+            </TabsTrigger>
+            <TabsTrigger value="assignments">
+              <ClipboardList className="h-4 w-4 mr-2" />
+              Úkoly ({assignments.length})
+            </TabsTrigger>
+            <TabsTrigger value="results">
+              <TrendingUp className="h-4 w-4 mr-2" />
+              Výsledky
+            </TabsTrigger>
+          </TabsList>
+
+          {/* STREAM */}
+          <TabsContent value="stream" className="mt-4 space-y-6">
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Past */}
+              <section>
+                <h2 className="font-semibold mb-3 flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+                  Co jsme probrali
+                </h2>
+                {pastLessons.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Zatím žádné proběhlé hodiny.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {pastLessons.map((e) => {
+                      const dateStr = format(e.start, "EEE d. M.", { locale: cs });
+                      const planForDate = plans.find((p) =>
+                        format(new Date(p.created_at), "yyyy-MM-dd") ===
+                        format(e.start, "yyyy-MM-dd"),
+                      );
+                      return (
+                        <Card key={e.id} className="p-3">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="min-w-0">
+                              <div className="text-sm font-medium truncate">
+                                {dateStr} · {formatTime(e.start)}
+                              </div>
+                              {planForDate ? (
+                                <div className="text-xs text-muted-foreground truncate">
+                                  Plán: {planForDate.title}
+                                </div>
+                              ) : (
+                                <div className="text-xs text-muted-foreground">
+                                  Bez plánu hodiny
+                                </div>
+                              )}
+                            </div>
+                            {planForDate ? (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() =>
+                                  navigate(`/ucitel/plany-hodin/${planForDate.id}`)
+                                }
+                              >
+                                <FileText className="h-3.5 w-3.5 mr-1" />
+                                Otevřít
+                              </Button>
+                            ) : null}
+                          </div>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                )}
+              </section>
+
+              {/* Upcoming */}
+              <section>
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="font-semibold flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    Co nás čeká
+                  </h2>
+                  <Button size="sm" variant="outline" onClick={() => newLessonPlan()}>
+                    <Plus className="h-3.5 w-3.5 mr-1" />
+                    Plán hodiny
+                  </Button>
+                </div>
+                {upcomingLessons.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Žádné nadcházející hodiny.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {upcomingLessons.map((e) => (
+                      <Card key={e.id} className="p-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="text-sm font-medium truncate">
+                              {format(e.start, "EEE d. M.", { locale: cs })} · {formatTime(e.start)}
+                            </div>
+                            {e.room && (
+                              <div className="text-xs text-muted-foreground truncate">
+                                {e.room}
+                              </div>
+                            )}
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => newLessonPlan(e.start)}
+                          >
+                            <Plus className="h-3.5 w-3.5 mr-1" />
+                            Plán
+                          </Button>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </section>
+            </div>
+          </TabsContent>
+
+          {/* ASSIGNMENTS */}
+          <TabsContent value="assignments" className="mt-4">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-semibold">Zadané úkoly a testy</h2>
+              <Button size="sm" onClick={newAssignment}>
+                <Plus className="h-4 w-4 mr-1" />
+                Nový úkol
+              </Button>
+            </div>
+            {assignments.length === 0 ? (
+              <Card className="p-6 text-center text-sm text-muted-foreground">
+                Zatím nejsou zadané žádné úkoly pro tuto třídu.
+              </Card>
+            ) : (
+              <div className="space-y-2">
+                {assignments.map((a) => {
+                  const subs = attempts.filter(
+                    (t) => t.assignment_id === a.id && t.status === "submitted",
+                  ).length;
+                  return (
+                    <Card key={a.id} className="p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-medium truncate">{a.title}</h3>
+                            <Badge variant={a.status === "published" ? "default" : "secondary"}>
+                              {a.status === "published" ? "Publikováno" : a.status}
+                            </Badge>
+                          </div>
+                          {a.description && (
+                            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                              {a.description}
+                            </p>
+                          )}
+                          <div className="text-xs text-muted-foreground mt-2 flex flex-wrap gap-3">
+                            {a.deadline && (
+                              <span className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                Termín {format(new Date(a.deadline), "d. M. yyyy HH:mm", { locale: cs })}
+                              </span>
+                            )}
+                            <span>
+                              Odevzdáno {subs}/{members.length}
+                            </span>
+                          </div>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => navigate(`/ucitel/ulohy`)}
+                        >
+                          Detail
+                        </Button>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* RESULTS */}
+          <TabsContent value="results" className="mt-4 space-y-4">
+            <Card className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm text-muted-foreground">Průměr třídy</div>
+                  <div className="text-3xl font-bold">
+                    {classAvg !== null ? `${classAvg} %` : "—"}
+                  </div>
+                </div>
+                <TrendingUp className="h-10 w-10 text-primary opacity-60" />
+              </div>
+            </Card>
+
+            <Card className="p-0 overflow-hidden">
+              <div className="px-4 py-3 border-b border-border bg-muted/30 text-sm font-medium">
+                Výsledky žáků
+              </div>
+              {members.length === 0 ? (
+                <div className="p-6 text-center text-sm text-muted-foreground">
+                  Ve třídě zatím nejsou žáci.
+                </div>
+              ) : (
+                <div className="divide-y divide-border">
+                  {members.map((m) => {
+                    const sc = studentScores.get(m.user_id);
+                    const pct = sc && sc.max > 0 ? Math.round((sc.total / sc.max) * 100) : null;
+                    const name =
+                      m.profiles
+                        ? `${m.profiles.first_name} ${m.profiles.last_name}`.trim()
+                        : "Žák";
+                    return (
+                      <div
+                        key={m.user_id}
+                        className="px-4 py-2.5 flex items-center justify-between"
+                      >
+                        <div className="text-sm">{name || "Žák"}</div>
+                        <div className="flex items-center gap-4 text-sm">
+                          <span className="text-muted-foreground tabular-nums">
+                            {sc?.submitted ?? 0}/{assignments.length}
+                          </span>
+                          <span className="font-medium tabular-nums w-12 text-right">
+                            {pct !== null ? `${pct} %` : "—"}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </main>
+      <SiteFooter />
+    </div>
+  );
+}
