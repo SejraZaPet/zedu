@@ -70,6 +70,7 @@ export interface LessonFormValue {
   room: string;
   validFrom: string | null; // YYYY-MM-DD
   validTo: string | null;
+  weekParity: "every" | "odd" | "even";
   mirrorBoth?: boolean;
 }
 
@@ -139,6 +140,7 @@ export default function LessonFormDialog({
   const [validFrom, setValidFrom] = useState<Date | undefined>();
   const [validTo, setValidTo] = useState<Date | undefined>();
   const [mirrorBoth, setMirrorBoth] = useState(false);
+  const [weekParity, setWeekParity] = useState<"every" | "odd" | "even">("every");
 
   // Slots: list of {day, period} pairs. Multiple entries per day are allowed
   // so a teacher can place the same subject in two different periods on the
@@ -167,6 +169,7 @@ export default function LessonFormDialog({
     setValidFrom(initial?.validFrom ? new Date(initial.validFrom) : undefined);
     setValidTo(initial?.validTo ? new Date(initial.validTo) : undefined);
     setMirrorBoth(!!initial?.mirrorBoth);
+    setWeekParity(initial?.weekParity ?? "every");
 
     const startDay = initial?.day ?? 0;
     setSlotPairs([{ day: startDay, period: initial?.period ?? defaultPeriod }]);
@@ -259,6 +262,7 @@ export default function LessonFormDialog({
       validFrom: validFrom ? format(validFrom, "yyyy-MM-dd") : null,
       validTo: validTo ? format(validTo, "yyyy-MM-dd") : null,
       mirrorBoth,
+      weekParity,
     };
     await onSave({ value, slots });
   }
@@ -570,7 +574,35 @@ export default function LessonFormDialog({
             </div>
           </div>
 
-          {showMirrorSwitch && (
+          {/* ----- Week parity ----- */}
+          <div className="space-y-1.5">
+            <Label>Týden</Label>
+            <div className="flex gap-1.5">
+              {[
+                { v: "every", label: "Každý týden" },
+                { v: "odd", label: "Lichý týden" },
+                { v: "even", label: "Sudý týden" },
+              ].map((opt) => {
+                const active = weekParity === opt.v;
+                return (
+                  <button
+                    key={opt.v}
+                    type="button"
+                    onClick={() => setWeekParity(opt.v as "every" | "odd" | "even")}
+                    className={`px-3 py-1.5 text-xs rounded-md border transition-colors flex-1 ${
+                      active
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-card border-border hover:bg-muted"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {(showMirrorSwitch || weekParity !== "every") && (
             <div className="flex items-center justify-between rounded-md border border-border bg-muted/30 p-3">
               <div className="space-y-0.5 pr-3">
                 <div className="text-sm font-medium">Propsat do obou týdnů</div>

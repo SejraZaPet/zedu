@@ -143,7 +143,10 @@ const ClassScheduleDialog = ({ classId, className, open, onOpenChange }: Props) 
       room: value.room,
       valid_from: value.validFrom,
       valid_to: value.validTo,
-      week_parity: "every" as const,
+      week_parity: (value.mirrorBoth ? "every" : value.weekParity) as
+        | "every"
+        | "odd"
+        | "even",
     };
 
     if (editing) {
@@ -345,9 +348,11 @@ const ClassScheduleDialog = ({ classId, className, open, onOpenChange }: Props) 
                 room: editing.room ?? "",
                 validFrom: editing.valid_from ?? null,
                 validTo: editing.valid_to ?? null,
+                weekParity: editing.week_parity ?? "every",
               }
             : { classId, className }
         }
+        showMirrorSwitch
         periods={periods}
         onSave={handleSave}
         title={editing ? "Upravit hodinu" : "Nová hodina"}
