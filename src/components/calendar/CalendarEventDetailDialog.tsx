@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -15,6 +15,8 @@ import type { CalendarEvent } from "@/lib/calendar-utils";
 import { formatTime } from "@/lib/calendar-utils";
 import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { getPhasePlan } from "@/lib/lesson-phase-plans";
 
 interface Props {
@@ -32,12 +34,44 @@ export default function CalendarEventDetailDialog({ event, open, onOpenChange }:
   const navigate = useNavigate();
   const { toast } = useToast();
   const { subjects } = useTeacherSubjects();
+  const { user } = useAuth();
+  const [linkedPlanId, setLinkedPlanId] = useState<string | null>(null);
 
   const matchedTextbookId = useMemo(() => {
     if (!event?.subject) return undefined;
     const key = event.subject.trim().toLowerCase();
     return subjects.find((s) => s.label.toLowerCase() === key)?.teacherTextbookId;
   }, [subjects, event?.subject]);
+
+  const dateKey = event ? format(event.start, "yyyy-MM-dd") : "";
+  const subjectKey = event?.subject?.trim().toLowerCase() ?? "";
+  const classId = event?.classId ?? "";
+
+  useEffect(() => {
+    setLinkedPlanId(null);
+    if (!open || !event || !user) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("lesson_plans")
+        .select("id, subject, input_data")
+        .eq("teacher_id", user.id);
+      if (cancelled) return;
+      const found = (data ?? []).find((p: any) => {
+        const linked = (p.input_data?.linkedSlots ?? []) as Array<any>;
+        return linked.some(
+          (s) =>
+            s.date === dateKey &&
+            (s.classId === classId || !s.classId) &&
+            (!s.subject || s.subject.trim().toLowerCase() === subjectKey),
+        );
+      });
+      if (found) setLinkedPlanId(found.id);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, event, user, dateKey, subjectKey, classId]);
 
   if (!event) return null;
 
@@ -58,6 +92,11 @@ export default function CalendarEventDetailDialog({ event, open, onOpenChange }:
   }
 
   function openLessonPlan() {
+    if (linkedPlanId) {
+      navigate(`/ucitel/plany-hodin/${linkedPlanId}`);
+      onOpenChange(false);
+      return;
+    }
     const params = new URLSearchParams();
     if (event!.subject) params.set("subject", event!.subject);
     params.set("date", format(event!.start, "yyyy-MM-dd"));
@@ -158,7 +197,7 @@ export default function CalendarEventDetailDialog({ event, open, onOpenChange }:
           </Button>
           <Button variant="outline" onClick={openLessonPlan} className="justify-start">
             <FileText className="h-4 w-4 mr-2" />
-            Plán hodiny
+            {linkedPlanId ? "Otevřít plán hodiny" : "Plán hodiny"}
           </Button>
           <Button onClick={launchLesson} className="justify-start">
             <PlayCircle className="h-4 w-4 mr-2" />

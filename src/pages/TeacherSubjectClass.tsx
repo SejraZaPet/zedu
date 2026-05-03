@@ -33,6 +33,15 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -71,12 +80,21 @@ interface TeacherTextbookRow {
   description: string | null;
 }
 
+interface LinkedSlot {
+  subject?: string;
+  classId?: string;
+  className?: string;
+  date?: string;
+  time?: string;
+}
+
 interface LessonPlanRow {
   id: string;
   title: string;
   subject: string;
   created_at: string;
   updated_at: string;
+  input_data: any;
 }
 
 interface AssignmentRow {
@@ -128,6 +146,10 @@ export default function TeacherSubjectClass() {
   const [linkOpen, setLinkOpen] = useState(false);
   const [teacherTextbooks, setTeacherTextbooks] = useState<TeacherTextbookRow[]>([]);
   const [linking, setLinking] = useState(false);
+  const [assignPlanOpen, setAssignPlanOpen] = useState(false);
+  const [assignPlanId, setAssignPlanId] = useState<string>("");
+  const [assignPlanDate, setAssignPlanDate] = useState<string>("");
+  const [assigning, setAssigning] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -147,9 +169,8 @@ export default function TeacherSubjectClass() {
           .eq("class_id", classId),
         supabase
           .from("lesson_plans")
-          .select("id, title, subject, created_at, updated_at")
+          .select("id, title, subject, created_at, updated_at, input_data")
           .eq("teacher_id", user.id)
-          .ilike("subject", subjectLabel)
           .order("updated_at", { ascending: false }),
         supabase
           .from("assignments")
@@ -251,6 +272,35 @@ export default function TeacherSubjectClass() {
 
   const room = slots[0]?.room || "";
 
+  // Plans relevant to this subject + class.
+  // Match either by primary subject (legacy) or by linkedSlots.subject + classId.
+  const subjectKey = subjectLabel.trim().toLowerCase();
+  const relevantPlans = useMemo(() => {
+    return plans.filter((p) => {
+      const linked: LinkedSlot[] = p.input_data?.linkedSlots ?? [];
+      const matchesLinked = linked.some(
+        (s) =>
+          (s.classId === classId || !s.classId) &&
+          (s.subject || "").trim().toLowerCase() === subjectKey,
+      );
+      const matchesPrimary = (p.subject || "").trim().toLowerCase() === subjectKey;
+      return matchesLinked || matchesPrimary;
+    });
+  }, [plans, classId, subjectKey]);
+
+  /** Find a plan attached to a specific date (yyyy-MM-dd) for this class+subject. */
+  function findPlanForDate(dateKey: string): LessonPlanRow | undefined {
+    return relevantPlans.find((p) => {
+      const linked: LinkedSlot[] = p.input_data?.linkedSlots ?? [];
+      return linked.some(
+        (s) =>
+          s.date === dateKey &&
+          (s.classId === classId || !s.classId) &&
+          (!s.subject || s.subject.trim().toLowerCase() === subjectKey),
+      );
+    });
+  }
+
   // Aggregations
   const studentScores = useMemo(() => {
     const map = new Map<string, { total: number; max: number; submitted: number; total_assigned: number }>();
@@ -345,6 +395,56 @@ export default function TeacherSubjectClass() {
     params.set("classId", classId);
     if (date) params.set("date", format(date, "yyyy-MM-dd"));
     navigate(`/ucitel/plany-hodin/novy?${params.toString()}`);
+  }
+
+  function openAssignPlanDialog(date?: Date) {
+    setAssignPlanId("");
+    setAssignPlanDate(date ? format(date, "yyyy-MM-dd") : "");
+    setAssignPlanOpen(true);
+  }
+
+  async function assignPlanToDate() {
+    if (!assignPlanId || !assignPlanDate) {
+      toast({ title: "Vyber plán a datum", variant: "destructive" });
+      return;
+    }
+    const plan = plans.find((p) => p.id === assignPlanId);
+    if (!plan) return;
+    setAssigning(true);
+    const occurrence = occurrences.find(
+      (e) => format(e.start, "yyyy-MM-dd") === assignPlanDate,
+    );
+    const time = occurrence ? formatTime(occurrence.start) : undefined;
+    const existing: LinkedSlot[] = plan.input_data?.linkedSlots ?? [];
+    // Drop any prior link for the same date+class (re-assignment)
+    const cleaned = existing.filter(
+      (s) => !(s.date === assignPlanDate && (s.classId === classId || !s.classId)),
+    );
+    const next: LinkedSlot[] = [
+      ...cleaned,
+      {
+        subject: subjectLabel,
+        classId,
+        className: klass?.name,
+        date: assignPlanDate,
+        time,
+      },
+    ];
+    const newInput = { ...(plan.input_data || {}), linkedSlots: next };
+    const { error } = await supabase
+      .from("lesson_plans")
+      .update({ input_data: newInput })
+      .eq("id", plan.id);
+    setAssigning(false);
+    if (error) {
+      toast({ title: "Nepodařilo se přiřadit plán", description: error.message, variant: "destructive" });
+      return;
+    }
+    setPlans((prev) =>
+      prev.map((p) => (p.id === plan.id ? { ...p, input_data: newInput } : p)),
+    );
+    setAssignPlanOpen(false);
+    toast({ title: "Plán přiřazen k termínu" });
   }
 
   if (loading) {
@@ -458,10 +558,7 @@ export default function TeacherSubjectClass() {
                   <div className="space-y-2">
                     {pastLessons.map((e) => {
                       const dateStr = format(e.start, "EEE d. M.", { locale: cs });
-                      const planForDate = plans.find((p) =>
-                        format(new Date(p.created_at), "yyyy-MM-dd") ===
-                        format(e.start, "yyyy-MM-dd"),
-                      );
+                      const planForDate = findPlanForDate(format(e.start, "yyyy-MM-dd"));
                       return (
                         <Card key={e.id} className="p-3">
                           <div className="flex items-center justify-between gap-2">
@@ -501,44 +598,77 @@ export default function TeacherSubjectClass() {
 
               {/* Upcoming */}
               <section>
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
                   <h2 className="font-semibold flex items-center gap-2">
                     <Clock className="h-4 w-4 text-muted-foreground" />
                     Co nás čeká
                   </h2>
-                  <Button size="sm" variant="outline" onClick={() => newLessonPlan()}>
-                    <Plus className="h-3.5 w-3.5 mr-1" />
-                    Plán hodiny
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" onClick={() => openAssignPlanDialog()}>
+                      <Link2 className="h-3.5 w-3.5 mr-1" />
+                      Přiřadit existující plán
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => newLessonPlan()}>
+                      <Plus className="h-3.5 w-3.5 mr-1" />
+                      Plán hodiny
+                    </Button>
+                  </div>
                 </div>
                 {upcomingLessons.length === 0 ? (
                   <p className="text-sm text-muted-foreground">Žádné nadcházející hodiny.</p>
                 ) : (
                   <div className="space-y-2">
-                    {upcomingLessons.map((e) => (
-                      <Card key={e.id} className="p-3">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="min-w-0">
-                            <div className="text-sm font-medium truncate">
-                              {format(e.start, "EEE d. M.", { locale: cs })} · {formatTime(e.start)}
+                    {upcomingLessons.map((e) => {
+                      const dateKey = format(e.start, "yyyy-MM-dd");
+                      const planForDate = findPlanForDate(dateKey);
+                      return (
+                        <Card key={e.id} className="p-3">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="min-w-0">
+                              <div className="text-sm font-medium truncate">
+                                {format(e.start, "EEE d. M.", { locale: cs })} · {formatTime(e.start)}
+                              </div>
+                              {planForDate ? (
+                                <div className="text-xs text-muted-foreground truncate">
+                                  Plán: {planForDate.title}
+                                </div>
+                              ) : e.room ? (
+                                <div className="text-xs text-muted-foreground truncate">{e.room}</div>
+                              ) : null}
                             </div>
-                            {e.room && (
-                              <div className="text-xs text-muted-foreground truncate">
-                                {e.room}
+                            {planForDate ? (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => navigate(`/ucitel/plany-hodin/${planForDate.id}`)}
+                              >
+                                <FileText className="h-3.5 w-3.5 mr-1" />
+                                Otevřít
+                              </Button>
+                            ) : (
+                              <div className="flex gap-1">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => openAssignPlanDialog(e.start)}
+                                >
+                                  <Link2 className="h-3.5 w-3.5 mr-1" />
+                                  Přiřadit
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => newLessonPlan(e.start)}
+                                >
+                                  <Plus className="h-3.5 w-3.5 mr-1" />
+                                  Nový
+                                </Button>
                               </div>
                             )}
                           </div>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => newLessonPlan(e.start)}
-                          >
-                            <Plus className="h-3.5 w-3.5 mr-1" />
-                            Plán
-                          </Button>
-                        </div>
-                      </Card>
-                    ))}
+                        </Card>
+                      );
+                    })}
                   </div>
                 )}
               </section>
@@ -721,6 +851,87 @@ export default function TeacherSubjectClass() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={assignPlanOpen} onOpenChange={setAssignPlanOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Přiřadit existující plán hodiny</DialogTitle>
+            <DialogDescription>
+              Vyberte plán a termín v rozvrhu třídy „{klass?.name}“ pro předmět „{subjectLabel}“.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="assign-plan-select">Plán hodiny</Label>
+              {relevantPlans.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Pro tento předmět zatím nemáte žádné uložené plány.{" "}
+                  <button
+                    type="button"
+                    className="underline"
+                    onClick={() => {
+                      setAssignPlanOpen(false);
+                      newLessonPlan();
+                    }}
+                  >
+                    Vytvořit nový
+                  </button>
+                </p>
+              ) : (
+                <Select value={assignPlanId} onValueChange={setAssignPlanId}>
+                  <SelectTrigger id="assign-plan-select">
+                    <SelectValue placeholder="Vyberte plán" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {relevantPlans.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.title || "Bez názvu"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="assign-plan-date">Termín z rozvrhu</Label>
+              {upcomingLessons.length > 0 ? (
+                <Select value={assignPlanDate} onValueChange={setAssignPlanDate}>
+                  <SelectTrigger id="assign-plan-date">
+                    <SelectValue placeholder="Vyberte termín" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {upcomingLessons.map((e) => {
+                      const key = format(e.start, "yyyy-MM-dd");
+                      return (
+                        <SelectItem key={e.id} value={key}>
+                          {format(e.start, "EEE d. M. yyyy", { locale: cs })} · {formatTime(e.start)}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  id="assign-plan-date"
+                  type="date"
+                  value={assignPlanDate}
+                  onChange={(ev) => setAssignPlanDate(ev.target.value)}
+                />
+              )}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setAssignPlanOpen(false)}>Zrušit</Button>
+            <Button onClick={assignPlanToDate} disabled={assigning || !assignPlanId || !assignPlanDate}>
+              {assigning ? "Ukládám…" : "Přiřadit plán"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
