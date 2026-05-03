@@ -241,6 +241,11 @@ const TeacherCalendar = () => {
           </span>
         </div>
       </main>
+      <CalendarEventDetailDialog
+        event={detailEvent}
+        open={!!detailEvent}
+        onOpenChange={(o) => { if (!o) setDetailEvent(null); }}
+      />
       <SiteFooter />
     </div>
   );
