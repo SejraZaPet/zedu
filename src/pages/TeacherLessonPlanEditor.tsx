@@ -15,13 +15,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Clock, Save, CalendarDays } from "lucide-react";
+import {
+  ArrowLeft,
+  Clock,
+  Save,
+  CalendarDays,
+  Sparkles,
+  BookOpen,
+  Loader2,
+} from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { loadSchedule, expandTeacherSchedule } from "@/lib/teacher-schedule-store";
 import { expandScheduleSlots, formatTime } from "@/lib/calendar-utils";
+import { savePhasePlan } from "@/lib/lesson-phase-plans";
 
 interface Phase {
   key: string;
@@ -52,11 +61,21 @@ const emptyPhases = (): PhasesState =>
   }, {} as PhasesState);
 
 interface ScheduledOccurrence {
-  date: string; // YYYY-MM-DD
-  start: string; // HH:mm
+  date: string;
+  start: string;
   end: string;
   className?: string;
   room?: string;
+}
+
+interface LessonOption {
+  id: string;
+  title: string;
+  source: "teacher_textbook_lessons" | "lessons";
+  textbookId?: string;
+  textbookTitle?: string;
+  content?: string;
+  blocks?: any;
 }
 
 export default function TeacherLessonPlanEditor() {
@@ -72,8 +91,13 @@ export default function TeacherLessonPlanEditor() {
   const [subject, setSubject] = useState<string>(searchParams.get("subject") ?? "");
   const [linkedDate, setLinkedDate] = useState<string>(searchParams.get("date") ?? "");
   const [linkedTime, setLinkedTime] = useState<string>(
-    searchParams.get("start") ? `${searchParams.get("start")}-${searchParams.get("end") ?? ""}` : "",
+    searchParams.get("start")
+      ? `${searchParams.get("start")}-${searchParams.get("end") ?? ""}`
+      : "",
   );
+  const [lessonId, setLessonId] = useState<string>("");
+  const [aiInstructions, setAiInstructions] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
 
   const [dbSlots, setDbSlots] = useState<any[]>([]);
   useEffect(() => {
@@ -84,7 +108,42 @@ export default function TeacherLessonPlanEditor() {
       .then(({ data }) => setDbSlots((data as any[]) ?? []));
   }, [user]);
 
-  /** All upcoming occurrences (next 8 weeks) for the chosen subject */
+  /** Lessons available for the chosen subject (teacher textbooks) */
+  const matchedTextbookId = useMemo(() => {
+    const s = subjects.find(
+      (s) => s.label.toLowerCase() === (subject || "").trim().toLowerCase(),
+    );
+    return s?.teacherTextbookId;
+  }, [subjects, subject]);
+
+  const [lessons, setLessons] = useState<LessonOption[]>([]);
+  useEffect(() => {
+    setLessons([]);
+    setLessonId("");
+    if (!matchedTextbookId) return;
+    supabase
+      .from("teacher_textbook_lessons")
+      .select("id, title, blocks")
+      .eq("textbook_id", matchedTextbookId)
+      .order("sort_order", { ascending: true })
+      .then(({ data }) => {
+        setLessons(
+          (data ?? []).map((l: any) => ({
+            id: l.id,
+            title: l.title,
+            source: "teacher_textbook_lessons",
+            blocks: l.blocks,
+          })),
+        );
+      });
+  }, [matchedTextbookId]);
+
+  const selectedLesson = useMemo(
+    () => lessons.find((l) => l.id === lessonId),
+    [lessons, lessonId],
+  );
+
+  /** Schedule occurrences for the chosen subject */
   const occurrences = useMemo<ScheduledOccurrence[]>(() => {
     if (!subject) return [];
     const from = startOfDay(new Date());
@@ -111,20 +170,17 @@ export default function TeacherLessonPlanEditor() {
     return list;
   }, [subject, dbSlots]);
 
-  /** Distinct dates available for the chosen subject */
   const availableDates = useMemo(() => {
     const set = new Map<string, ScheduledOccurrence>();
     for (const o of occurrences) if (!set.has(o.date)) set.set(o.date, o);
     return Array.from(set.keys());
   }, [occurrences]);
 
-  /** Time slots for the selected date */
   const timeSlotsForDate = useMemo(
     () => occurrences.filter((o) => o.date === linkedDate),
     [occurrences, linkedDate],
   );
 
-  // Pre-fill abbreviation/colors not needed here. Auto-set title from subject if untouched.
   useEffect(() => {
     if (subject && title === "Nový plán hodin") {
       setTitle(`Plán hodiny – ${subject}`);
@@ -141,14 +197,113 @@ export default function TeacherLessonPlanEditor() {
     setPhases((prev) => ({ ...prev, [key]: { ...prev[key], ...patch } }));
   }
 
+  /** Extract plain text from teacher_textbook_lessons.blocks (best-effort) */
+  function extractText(blocks: any): string {
+    if (!blocks) return "";
+    if (typeof blocks === "string") return blocks;
+    try {
+      const arr = Array.isArray(blocks) ? blocks : [];
+      return arr
+        .map((b: any) => {
+          if (!b) return "";
+          if (typeof b === "string") return b;
+          return (
+            b.text ||
+            b.content ||
+            b.title ||
+            (Array.isArray(b.children)
+              ? b.children.map((c: any) => c.text || "").join(" ")
+              : "")
+          );
+        })
+        .filter(Boolean)
+        .join("\n");
+    } catch {
+      return "";
+    }
+  }
+
+  async function generateWithAI() {
+    if (!subject && !aiInstructions.trim() && !selectedLesson) {
+      toast({
+        title: "Doplň kontext",
+        description: "Vyber lekci, předmět nebo zadej vlastní pokyny pro AI.",
+      });
+      return;
+    }
+    setAiLoading(true);
+    try {
+      const lessonContent = selectedLesson ? extractText(selectedLesson.blocks) : "";
+      const { data, error } = await supabase.functions.invoke("generate-lesson-phases", {
+        body: {
+          subject,
+          lessonTitle: selectedLesson?.title,
+          lessonContent,
+          customInstructions: aiInstructions,
+          totalMin: 45,
+        },
+      });
+      if (error) throw error;
+      const incoming = (data as any)?.phases || {};
+      setPhases((prev) => {
+        const next = { ...prev };
+        for (const p of PHASES) {
+          const inc = incoming[p.key];
+          if (inc) {
+            next[p.key] = {
+              timeMin: String(inc.timeMin ?? ""),
+              description: inc.description ?? "",
+            };
+          }
+        }
+        return next;
+      });
+      if ((data as any)?.title && title === "Nový plán hodin") {
+        setTitle((data as any).title);
+      }
+      toast({ title: "Plán navržen", description: "AI vyplnila fáze hodiny." });
+    } catch (e: any) {
+      toast({
+        title: "Chyba AI",
+        description: e?.message || "Nepodařilo se vygenerovat plán.",
+        variant: "destructive",
+      });
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
   function handleSave() {
+    // Persist a clean schedule (phase + minutes) to local store keyed by
+    // subject+date+start so it shows up in the calendar lesson detail.
+    if (subject && linkedDate && linkedTime) {
+      const [start, end] = linkedTime.split("-");
+      savePhasePlan({
+        subject,
+        date: linkedDate,
+        start,
+        end,
+        title,
+        phases: PHASES.map((p) => ({
+          key: p.key,
+          title: p.title,
+          timeMin: parseInt(phases[p.key].timeMin, 10) || 0,
+        })),
+        updatedAt: new Date().toISOString(),
+      });
+    }
     toast({
       title: "Plán uložen",
       description: subject
-        ? `Předmět: ${subject}${linkedDate ? `, ${format(new Date(linkedDate), "d. M. yyyy", { locale: cs })}` : ""}${linkedTime ? `, ${linkedTime.replace("-", " – ")}` : ""}`
-        : "Ukládání do databáze bude doplněno.",
+        ? `${subject}${linkedDate ? `, ${format(new Date(linkedDate), "d. M. yyyy", { locale: cs })}` : ""}${linkedTime ? `, ${linkedTime.replace("-", " – ")}` : ""}`
+        : "Plán uložen lokálně.",
     });
   }
+
+  const summaryRows = PHASES.map((p) => ({
+    title: p.title,
+    timeMin: parseInt(phases[p.key].timeMin, 10) || 0,
+  }));
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -156,7 +311,6 @@ export default function TeacherLessonPlanEditor() {
       <div aria-hidden className="h-[70px] shrink-0" />
 
       <main className="flex-1 container mx-auto px-4 pt-8 pb-12 max-w-4xl">
-        {/* Top bar */}
         <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
           <Button
             variant="ghost"
@@ -191,7 +345,6 @@ export default function TeacherLessonPlanEditor() {
             />
           </div>
 
-          {/* Předmět */}
           <div className="space-y-1.5">
             <Label htmlFor="plan-subject">Předmět</Label>
             <Select
@@ -213,10 +366,36 @@ export default function TeacherLessonPlanEditor() {
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-xs text-muted-foreground">
-              Plán bude propojený s tímto předmětem v rozvrhu i v kalendáři.
-            </p>
           </div>
+
+          {/* Lekce z učebnice */}
+          {matchedTextbookId && (
+            <div className="space-y-1.5">
+              <Label htmlFor="plan-lesson" className="flex items-center gap-1.5">
+                <BookOpen className="w-3.5 h-3.5" />
+                Lekce z učebnice
+              </Label>
+              <Select value={lessonId || undefined} onValueChange={setLessonId}>
+                <SelectTrigger id="plan-lesson">
+                  <SelectValue
+                    placeholder={
+                      lessons.length ? "Vyber lekci…" : "V této učebnici nejsou lekce"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {lessons.map((l) => (
+                    <SelectItem key={l.id} value={l.id}>
+                      {l.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                AI navrhne strukturu hodiny na základě obsahu této lekce.
+              </p>
+            </div>
+          )}
 
           {/* Propojení s konkrétní hodinou v rozvrhu */}
           {subject && (
@@ -265,9 +444,7 @@ export default function TeacherLessonPlanEditor() {
                 >
                   <SelectTrigger id="plan-time">
                     <SelectValue
-                      placeholder={
-                        linkedDate ? "Vyber čas…" : "Nejprve vyber datum"
-                      }
+                      placeholder={linkedDate ? "Vyber čas…" : "Nejprve vyber datum"}
                     />
                   </SelectTrigger>
                   <SelectContent>
@@ -302,6 +479,39 @@ export default function TeacherLessonPlanEditor() {
               ID plánu: <span className="font-mono">{id}</span>
             </p>
           )}
+        </div>
+
+        {/* AI asistent */}
+        <div className="bg-gradient-to-br from-primary/5 to-accent/5 border border-primary/20 rounded-xl p-5 mb-6 space-y-3">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-primary" />
+            <h2 className="text-base font-semibold">AI asistent</h2>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            AI navrhne časové rozvržení a aktivity pro každou fázi.
+            {selectedLesson
+              ? " Vychází z vybrané lekce."
+              : " Vyber lekci nebo napiš vlastní pokyny."}
+          </p>
+          <Textarea
+            value={aiInstructions}
+            onChange={(e) => setAiInstructions(e.target.value)}
+            placeholder="Vlastní pokyny – např. „Zaměř se na skupinovou práci a krátké video v motivaci.“"
+            rows={2}
+          />
+          <Button onClick={generateWithAI} disabled={aiLoading} size="sm">
+            {aiLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Generuji…
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4 mr-2" />
+                Navrhnout plán
+              </>
+            )}
+          </Button>
         </div>
 
         {/* Fáze hodiny */}
@@ -359,6 +569,57 @@ export default function TeacherLessonPlanEditor() {
               </div>
             );
           })}
+        </div>
+
+        {/* Shrnutí – časový harmonogram */}
+        <div className="mt-8 bg-card border border-border rounded-xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <Clock className="w-4 h-4 text-primary" />
+              Časový harmonogram
+            </h2>
+            <span className="text-sm text-muted-foreground">
+              Celkem {totalMin} min
+            </span>
+          </div>
+          <div className="overflow-hidden rounded-lg border border-border">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-left text-xs text-muted-foreground">
+                <tr>
+                  <th className="px-3 py-2 font-medium">Fáze</th>
+                  <th className="px-3 py-2 font-medium w-24">Minut</th>
+                  <th className="px-3 py-2 font-medium w-32">Podíl</th>
+                </tr>
+              </thead>
+              <tbody>
+                {summaryRows.map((row) => {
+                  const pct = totalMin > 0 ? Math.round((row.timeMin / totalMin) * 100) : 0;
+                  return (
+                    <tr key={row.title} className="border-t border-border">
+                      <td className="px-3 py-2">{row.title}</td>
+                      <td className="px-3 py-2 tabular-nums">{row.timeMin} min</td>
+                      <td className="px-3 py-2">
+                        <div className="flex items-center gap-2">
+                          <div className="h-1.5 w-20 rounded bg-muted overflow-hidden">
+                            <div
+                              className="h-full bg-primary"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                          <span className="text-xs text-muted-foreground tabular-nums">
+                            {pct}%
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <p className="text-xs text-muted-foreground mt-3">
+            Tento harmonogram (jen fáze + časy) se po uložení zobrazí v detailu hodiny v rozvrhu i v kalendáři.
+          </p>
         </div>
       </main>
 
