@@ -220,11 +220,6 @@ export default function LessonFormDialog({
   }
 
   function buildSlots(): LessonFormSlot[] {
-    if (!isNew) {
-      const t = periodById.get(editPeriod);
-      if (!t) return [];
-      return [{ day: editDay, period: editPeriod, start: t.start, end: t.end }];
-    }
     return selectedDays
       .map((d) => {
         const p = dayPeriod[d] ?? defaultPeriod;
