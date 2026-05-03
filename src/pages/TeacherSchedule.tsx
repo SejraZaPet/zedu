@@ -606,10 +606,11 @@ export default function TeacherSchedule() {
                   const t = data.periodTimes[row.period];
                   return (
                     <div key={`row-${rowIdx}`} className="contents">
-                      <div className="border-t border-border bg-muted/10 px-1 py-1 flex flex-col items-center justify-center text-center">
-                        <span className="text-xs font-semibold leading-none">{row.period}.</span>
+                      <div className="border-t border-border bg-muted/10 px-2 py-2 flex flex-col items-center justify-center text-center">
+                        <span className="text-sm font-semibold leading-none">{row.period}.</span>
+                        <span className="text-[10px] text-muted-foreground leading-tight">hod</span>
                         {t && (
-                          <span className="text-[9px] text-muted-foreground tabular-nums mt-0.5">
+                          <span className="text-[10px] text-muted-foreground tabular-nums mt-1">
                             {fmtTime(t.start)}
                           </span>
                         )}
@@ -622,7 +623,7 @@ export default function TeacherSchedule() {
                         return (
                           <div
                             key={`c-${rowIdx}-${dayIdx}`}
-                            className="border-t border-l border-border p-0.5 min-h-[56px] flex"
+                            className="border-t border-l border-border p-1.5 min-h-[84px] flex"
                           >
                             {personal ? (
                               <div className="w-full">
@@ -635,7 +636,7 @@ export default function TeacherSchedule() {
                                 />
                               </div>
                             ) : clsList.length > 0 ? (
-                              <div className="w-full flex flex-col gap-0.5">
+                              <div className="w-full flex flex-col gap-1">
                                 {clsList.map((cls) => (
                                   <ClassCard
                                     key={cls.id}
@@ -647,10 +648,11 @@ export default function TeacherSchedule() {
                             ) : (
                               <button
                                 onClick={() => openNewLesson(dayIdx, row.period)}
-                                className="w-full rounded-md border border-dashed border-border/70 hover:border-primary hover:bg-primary/5 text-muted-foreground/60 hover:text-primary text-[10px] flex items-center justify-center transition-colors min-h-[52px]"
+                                className="w-full rounded-md border border-dashed border-border/70 hover:border-primary hover:bg-primary/5 text-muted-foreground/60 hover:text-primary text-xs flex items-center justify-center gap-1 transition-colors min-h-[72px]"
                                 title={`Přidat ${row.period}. hodinu`}
                               >
                                 <Plus className="w-3 h-3" />
+                                <span>Přidat</span>
                               </button>
                             )}
                           </div>
