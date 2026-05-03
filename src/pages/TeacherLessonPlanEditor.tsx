@@ -118,6 +118,7 @@ export default function TeacherLessonPlanEditor() {
       ? `${searchParams.get("start")}-${searchParams.get("end") ?? ""}`
       : "",
   );
+  const [textbookId, setTextbookId] = useState<string>("");
   const [lessonId, setLessonId] = useState<string>("");
   const [aiInstructions, setAiInstructions] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
@@ -131,7 +132,19 @@ export default function TeacherLessonPlanEditor() {
       .then(({ data }) => setDbSlots((data as any[]) ?? []));
   }, [user]);
 
-  /** Lessons available for the chosen subject (teacher textbooks) */
+  /** All teacher textbooks (for explicit picker, independent of subject) */
+  const [textbooks, setTextbooks] = useState<{ id: string; title: string; subject: string }[]>([]);
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("teacher_textbooks")
+      .select("id, title, subject")
+      .eq("teacher_id", user.id)
+      .order("title", { ascending: true })
+      .then(({ data }) => setTextbooks((data as any[]) ?? []));
+  }, [user]);
+
+  /** Default textbook from chosen subject */
   const matchedTextbookId = useMemo(() => {
     const s = subjects.find(
       (s) => s.label.toLowerCase() === (subject || "").trim().toLowerCase(),
@@ -139,15 +152,19 @@ export default function TeacherLessonPlanEditor() {
     return s?.teacherTextbookId;
   }, [subjects, subject]);
 
+  useEffect(() => {
+    if (matchedTextbookId && !textbookId) setTextbookId(matchedTextbookId);
+  }, [matchedTextbookId, textbookId]);
+
   const [lessons, setLessons] = useState<LessonOption[]>([]);
   useEffect(() => {
     setLessons([]);
     setLessonId("");
-    if (!matchedTextbookId) return;
+    if (!textbookId) return;
     supabase
       .from("teacher_textbook_lessons")
       .select("id, title, blocks")
-      .eq("textbook_id", matchedTextbookId)
+      .eq("textbook_id", textbookId)
       .order("sort_order", { ascending: true })
       .then(({ data }) => {
         setLessons(
@@ -155,11 +172,12 @@ export default function TeacherLessonPlanEditor() {
             id: l.id,
             title: l.title,
             source: "teacher_textbook_lessons",
+            textbookId,
             blocks: l.blocks,
           })),
         );
       });
-  }, [matchedTextbookId]);
+  }, [textbookId]);
 
   const selectedLesson = useMemo(
     () => lessons.find((l) => l.id === lessonId),
