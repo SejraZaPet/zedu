@@ -589,44 +589,77 @@ export default function TeacherSubjectClass() {
 
               {/* Upcoming */}
               <section>
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
                   <h2 className="font-semibold flex items-center gap-2">
                     <Clock className="h-4 w-4 text-muted-foreground" />
                     Co nás čeká
                   </h2>
-                  <Button size="sm" variant="outline" onClick={() => newLessonPlan()}>
-                    <Plus className="h-3.5 w-3.5 mr-1" />
-                    Plán hodiny
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" onClick={() => openAssignPlanDialog()}>
+                      <Link2 className="h-3.5 w-3.5 mr-1" />
+                      Přiřadit existující plán
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => newLessonPlan()}>
+                      <Plus className="h-3.5 w-3.5 mr-1" />
+                      Plán hodiny
+                    </Button>
+                  </div>
                 </div>
                 {upcomingLessons.length === 0 ? (
                   <p className="text-sm text-muted-foreground">Žádné nadcházející hodiny.</p>
                 ) : (
                   <div className="space-y-2">
-                    {upcomingLessons.map((e) => (
-                      <Card key={e.id} className="p-3">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="min-w-0">
-                            <div className="text-sm font-medium truncate">
-                              {format(e.start, "EEE d. M.", { locale: cs })} · {formatTime(e.start)}
+                    {upcomingLessons.map((e) => {
+                      const dateKey = format(e.start, "yyyy-MM-dd");
+                      const planForDate = findPlanForDate(dateKey);
+                      return (
+                        <Card key={e.id} className="p-3">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="min-w-0">
+                              <div className="text-sm font-medium truncate">
+                                {format(e.start, "EEE d. M.", { locale: cs })} · {formatTime(e.start)}
+                              </div>
+                              {planForDate ? (
+                                <div className="text-xs text-muted-foreground truncate">
+                                  Plán: {planForDate.title}
+                                </div>
+                              ) : e.room ? (
+                                <div className="text-xs text-muted-foreground truncate">{e.room}</div>
+                              ) : null}
                             </div>
-                            {e.room && (
-                              <div className="text-xs text-muted-foreground truncate">
-                                {e.room}
+                            {planForDate ? (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => navigate(`/ucitel/plany-hodin/${planForDate.id}`)}
+                              >
+                                <FileText className="h-3.5 w-3.5 mr-1" />
+                                Otevřít
+                              </Button>
+                            ) : (
+                              <div className="flex gap-1">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => openAssignPlanDialog(e.start)}
+                                >
+                                  <Link2 className="h-3.5 w-3.5 mr-1" />
+                                  Přiřadit
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => newLessonPlan(e.start)}
+                                >
+                                  <Plus className="h-3.5 w-3.5 mr-1" />
+                                  Nový
+                                </Button>
                               </div>
                             )}
                           </div>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => newLessonPlan(e.start)}
-                          >
-                            <Plus className="h-3.5 w-3.5 mr-1" />
-                            Plán
-                          </Button>
-                        </div>
-                      </Card>
-                    ))}
+                        </Card>
+                      );
+                    })}
                   </div>
                 )}
               </section>
