@@ -137,6 +137,10 @@ export default function TeacherSubjectClass() {
   const [linkOpen, setLinkOpen] = useState(false);
   const [teacherTextbooks, setTeacherTextbooks] = useState<TeacherTextbookRow[]>([]);
   const [linking, setLinking] = useState(false);
+  const [assignPlanOpen, setAssignPlanOpen] = useState(false);
+  const [assignPlanId, setAssignPlanId] = useState<string>("");
+  const [assignPlanDate, setAssignPlanDate] = useState<string>("");
+  const [assigning, setAssigning] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
