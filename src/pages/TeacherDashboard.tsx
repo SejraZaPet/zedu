@@ -65,7 +65,7 @@ const DEFAULT_ORDER = [
   "profile",
 ];
 
-const FULL_WIDTH_IDS = new Set(["today", "subjects", "profile"]);
+const FULL_WIDTH_IDS = new Set(["today", "profile"]);
 
 const colorForLabel = (s: string) => {
   const palette = ["#6EC6D9", "#9B6CFF", "#F472B6", "#F87171", "#FB923C", "#FBBF24", "#34D399", "#60A5FA", "#A3A3A3"];
