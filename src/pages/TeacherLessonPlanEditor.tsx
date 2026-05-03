@@ -47,10 +47,33 @@ const PHASES: Phase[] = [
   { key: "zaver", title: "Závěr", hint: "Shrnutí, domácí úkol, rozloučení." },
 ];
 
+type ActivityKind =
+  | "quiz"
+  | "worksheet"
+  | "live_game"
+  | "lesson_block"
+  | "offline_activity"
+  | "discussion";
+
+interface SuggestedActivity {
+  kind: ActivityKind;
+  title: string;
+}
+
 interface PhaseValue {
   timeMin: string;
   description: string;
+  activities?: SuggestedActivity[];
 }
+
+const ACTIVITY_META: Record<ActivityKind, { label: string; href: string | null; hrefLabel: string }> = {
+  quiz: { label: "Kvíz / interaktivní aktivita", href: "/ucitel/aktivity", hrefLabel: "Otevřít aktivity" },
+  worksheet: { label: "Pracovní list", href: "/ucitel/pracovni-listy", hrefLabel: "Pracovní listy" },
+  live_game: { label: "Živá hra", href: "/ucitel/hry", hrefLabel: "Spustit živou hru" },
+  lesson_block: { label: "Blok z učebnice", href: null, hrefLabel: "Otevřít lekci" },
+  offline_activity: { label: "Offline aktivita z učebnice", href: null, hrefLabel: "Otevřít lekci" },
+  discussion: { label: "Řízená diskuse", href: null, hrefLabel: "" },
+};
 
 type PhasesState = Record<string, PhaseValue>;
 
