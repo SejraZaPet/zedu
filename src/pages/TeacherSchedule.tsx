@@ -907,6 +907,7 @@ export default function TeacherSchedule() {
               room: value.room,
               valid_from: value.validFrom,
               valid_to: value.validTo,
+              week_parity: value.mirrorBoth ? "every" : value.weekParity,
               day_of_week: s.day + 1,
               start_time: s.start,
               end_time: s.end,
