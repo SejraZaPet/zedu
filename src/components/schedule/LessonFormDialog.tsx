@@ -170,14 +170,11 @@ export default function LessonFormDialog({
     setValidTo(initial?.validTo ? new Date(initial.validTo) : undefined);
     setMirrorBoth(!!initial?.mirrorBoth);
 
-    if (isNew) {
-      const startDay = initial?.day ?? 0;
-      setSelectedDays([startDay]);
-      setDayPeriod({ [startDay]: defaultPeriod });
-    } else {
-      setEditDay(initial?.day ?? 0);
-      setEditPeriod(initial?.period ?? defaultPeriod);
-    }
+    const startDay = initial?.day ?? 0;
+    setSelectedDays([startDay]);
+    setDayPeriod({ [startDay]: initial?.period ?? defaultPeriod });
+    setEditDay(initial?.day ?? 0);
+    setEditPeriod(initial?.period ?? defaultPeriod);
   }, [open, isNew, initial, subjects, defaultPeriod]);
 
   // When subject changes via select → auto-fill abbreviation/color from registry
