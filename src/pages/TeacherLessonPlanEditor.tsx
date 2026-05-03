@@ -23,7 +23,10 @@ import {
   Sparkles,
   BookOpen,
   Loader2,
+  Plus,
+  X,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
 import { supabase } from "@/integrations/supabase/client";
@@ -126,6 +129,15 @@ export default function TeacherLessonPlanEditor() {
   const [planDbId, setPlanDbId] = useState<string | null>(
     id && id !== "novy" ? id : null,
   );
+  const [linkedSlots, setLinkedSlots] = useState<
+    {
+      subject: string;
+      classId?: string;
+      className?: string;
+      date: string;
+      time: string;
+    }[]
+  >([]);
 
   // Load existing plan from DB when editing
   useEffect(() => {
@@ -147,6 +159,7 @@ export default function TeacherLessonPlanEditor() {
       if (input.textbookId) setTextbookId(input.textbookId);
       if (input.lessonId) setLessonId(input.lessonId);
       if (input.classId) setClassId(input.classId);
+      if (Array.isArray(input.linkedSlots)) setLinkedSlots(input.linkedSlots);
       if (input.phases) setPhases({ ...emptyPhases(), ...input.phases });
     })();
   }, [user, id]);
@@ -439,35 +452,60 @@ export default function TeacherLessonPlanEditor() {
     }
     setSaving(true);
     try {
-      // Persist a clean schedule to local store for calendar
-      if (subject && linkedDate && linkedTime) {
-        const [start, end] = linkedTime.split("-");
+      // Persist a clean schedule to local store for calendar (all linked slots)
+      const allSlots = [
+        ...linkedSlots,
+        ...(subject && linkedDate && linkedTime
+          ? [
+              {
+                subject,
+                date: linkedDate,
+                time: linkedTime,
+                classId,
+              },
+            ]
+          : []),
+      ];
+      const phaseEntries = PHASES.map((p) => ({
+        key: p.key,
+        title: p.title,
+        timeMin: parseInt(phases[p.key].timeMin, 10) || 0,
+      }));
+      const updatedAt = new Date().toISOString();
+      for (const sl of allSlots) {
+        const [start, end] = (sl.time || "").split("-");
+        if (!sl.subject || !sl.date || !start) continue;
         savePhasePlan({
-          subject,
-          date: linkedDate,
+          subject: sl.subject,
+          date: sl.date,
           start,
           end,
           title,
-          phases: PHASES.map((p) => ({
-            key: p.key,
-            title: p.title,
-            timeMin: parseInt(phases[p.key].timeMin, 10) || 0,
-          })),
-          updatedAt: new Date().toISOString(),
+          phases: phaseEntries,
+          updatedAt,
         });
       }
+
+      // Aggregated subjects (for filtering on plans list)
+      const aggSubjects = Array.from(
+        new Set(
+          [subject, ...linkedSlots.map((s) => s.subject)].filter(Boolean) as string[],
+        ),
+      );
 
       const payload = {
         teacher_id: user.id,
         title,
-        subject: subject || "",
+        subject: subject || aggSubjects[0] || "",
         grade_band: "",
         slides: [],
         input_data: {
           description,
           subject,
+          subjects: aggSubjects,
           linkedDate,
           linkedTime,
+          linkedSlots,
           textbookId,
           lessonId,
           classId,
@@ -734,6 +772,91 @@ export default function TeacherLessonPlanEditor() {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+
+              {/* Linked slots (multi-assignment) */}
+              <div className="rounded-lg border border-dashed border-border bg-muted/20 p-3 space-y-2">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <p className="text-xs font-medium">
+                    Další přiřazené termíny ({linkedSlots.length})
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={!subject || !linkedDate || !linkedTime}
+                    onClick={() => {
+                      const slot = filteredOccurrences.find(
+                        (o) =>
+                          o.date === linkedDate &&
+                          `${o.start}-${o.end}` === linkedTime,
+                      );
+                      const newSlot = {
+                        subject,
+                        classId: classId || slot?.classId,
+                        className: slot?.className,
+                        date: linkedDate,
+                        time: linkedTime,
+                      };
+                      setLinkedSlots((prev) => {
+                        const exists = prev.some(
+                          (s) =>
+                            s.subject === newSlot.subject &&
+                            s.date === newSlot.date &&
+                            s.time === newSlot.time &&
+                            s.classId === newSlot.classId,
+                        );
+                        if (exists) {
+                          toast({ title: "Termín už je přiřazen" });
+                          return prev;
+                        }
+                        return [...prev, newSlot];
+                      });
+                    }}
+                  >
+                    <Plus className="w-3.5 h-3.5 mr-1.5" />
+                    Přidat aktuální termín
+                  </Button>
+                </div>
+                {linkedSlots.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">
+                    Plán lze přiřadit i k více předmětům a hodinám. Vyber termín výše
+                    a klikni „Přidat aktuální termín".
+                  </p>
+                ) : (
+                  <ul className="flex flex-wrap gap-2">
+                    {linkedSlots.map((sl, i) => (
+                      <li key={i}>
+                        <Badge
+                          variant="secondary"
+                          className="gap-1.5 pr-1 text-xs font-normal"
+                        >
+                          <span>
+                            {sl.subject}
+                            {" · "}
+                            {sl.date
+                              ? format(new Date(sl.date), "d. M.", { locale: cs })
+                              : ""}
+                            {sl.time ? ` · ${sl.time.replace("-", "–")}` : ""}
+                            {sl.className ? ` · ${sl.className}` : ""}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setLinkedSlots((prev) =>
+                                prev.filter((_, idx) => idx !== i),
+                              )
+                            }
+                            className="rounded p-0.5 hover:bg-background/60"
+                            aria-label="Odebrat termín"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </Badge>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             </div>
           )}
