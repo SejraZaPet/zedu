@@ -574,7 +574,35 @@ export default function LessonFormDialog({
             </div>
           </div>
 
-          {showMirrorSwitch && (
+          {/* ----- Week parity ----- */}
+          <div className="space-y-1.5">
+            <Label>Týden</Label>
+            <div className="flex gap-1.5">
+              {[
+                { v: "every", label: "Každý týden" },
+                { v: "odd", label: "Lichý týden" },
+                { v: "even", label: "Sudý týden" },
+              ].map((opt) => {
+                const active = weekParity === opt.v;
+                return (
+                  <button
+                    key={opt.v}
+                    type="button"
+                    onClick={() => setWeekParity(opt.v as "every" | "odd" | "even")}
+                    className={`px-3 py-1.5 text-xs rounded-md border transition-colors flex-1 ${
+                      active
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-card border-border hover:bg-muted"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {(showMirrorSwitch || weekParity !== "every") && (
             <div className="flex items-center justify-between rounded-md border border-border bg-muted/30 p-3">
               <div className="space-y-0.5 pr-3">
                 <div className="text-sm font-medium">Propsat do obou týdnů</div>
