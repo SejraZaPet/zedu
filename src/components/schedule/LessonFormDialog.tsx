@@ -205,27 +205,40 @@ export default function LessonFormDialog({
   }, [periods]);
 
   function toggleDay(d: number) {
-    setSelectedDays((prev) => {
-      if (prev.includes(d)) {
-        const next = prev.filter((x) => x !== d);
-        setDayPeriod((dp) => {
-          const { [d]: _, ...rest } = dp;
-          return rest;
-        });
-        return next;
-      }
-      setDayPeriod((dp) => ({ ...dp, [d]: dp[d] ?? defaultPeriod }));
-      return [...prev, d].sort();
+    setSlotPairs((prev) => {
+      const has = prev.some((s) => s.day === d);
+      if (has) return prev.filter((s) => s.day !== d);
+      return [...prev, { day: d, period: defaultPeriod }].sort(
+        (a, b) => a.day - b.day || a.period - b.period,
+      );
     });
   }
 
+  function updateSlotPeriod(index: number, period: number) {
+    setSlotPairs((prev) => prev.map((s, i) => (i === index ? { ...s, period } : s)));
+  }
+
+  function addSlotForDay(day: number) {
+    setSlotPairs((prev) => {
+      const usedPeriods = new Set(prev.filter((s) => s.day === day).map((s) => s.period));
+      const nextPeriod =
+        periods.find((p) => !usedPeriods.has(p.period))?.period ?? defaultPeriod;
+      return [...prev, { day, period: nextPeriod }].sort(
+        (a, b) => a.day - b.day || a.period - b.period,
+      );
+    });
+  }
+
+  function removeSlotAt(index: number) {
+    setSlotPairs((prev) => prev.filter((_, i) => i !== index));
+  }
+
   function buildSlots(): LessonFormSlot[] {
-    return selectedDays
-      .map((d) => {
-        const p = dayPeriod[d] ?? defaultPeriod;
-        const t = periodById.get(p);
+    return slotPairs
+      .map(({ day, period }) => {
+        const t = periodById.get(period);
         if (!t) return null;
-        return { day: d, period: p, start: t.start, end: t.end };
+        return { day, period, start: t.start, end: t.end };
       })
       .filter((x): x is LessonFormSlot => x !== null);
   }
