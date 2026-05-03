@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useSubjects } from "./useSubjects";
@@ -52,55 +53,53 @@ export const useTeacherSubjects = () => {
     staleTime: 60 * 1000,
   });
 
-  const seen = new Map<string, TeacherSubject>();
+  const subjects = useMemo(() => {
+    const seen = new Map<string, TeacherSubject>();
 
-  // 1. Teacher's own textbooks — title is the user-facing subject name
-  for (const tb of teacherTextbooks) {
-    const label = (tb.title || "").trim();
-    if (!label) continue;
-    const key = label.toLowerCase();
-    if (seen.has(key)) continue;
-    // Try to enrich with metadata from a matching global subject (by slug)
-    const matchedGlobal = globalSubjects.find((g) => g.slug === tb.subject);
-    seen.set(key, {
-      label,
-      abbreviation: matchedGlobal?.abbreviation,
-      color: matchedGlobal?.color,
-      slug: tb.subject || matchedGlobal?.slug,
-      source: "teacher_textbook",
-      teacherTextbookId: tb.id,
+    for (const tb of teacherTextbooks) {
+      const label = (tb.title || "").trim();
+      if (!label) continue;
+      const key = label.toLowerCase();
+      if (seen.has(key)) continue;
+      const matchedGlobal = globalSubjects.find((g) => g.slug === tb.subject);
+      seen.set(key, {
+        label,
+        abbreviation: matchedGlobal?.abbreviation,
+        color: matchedGlobal?.color,
+        slug: tb.subject || matchedGlobal?.slug,
+        source: "teacher_textbook",
+        teacherTextbookId: tb.id,
+      });
+    }
+
+    for (const g of globalSubjects) {
+      const key = g.label.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.set(key, {
+        label: g.label,
+        abbreviation: g.abbreviation,
+        color: g.color,
+        slug: g.slug,
+        source: "global_subject",
+      });
+    }
+
+    for (const name of PREDEFINED_SUBJECTS) {
+      const key = name.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.set(key, { label: name, source: "predefined" });
+    }
+
+    return Array.from(seen.values()).sort((a, b) => {
+      const order = { teacher_textbook: 0, global_subject: 1, predefined: 2 } as const;
+      if (order[a.source] !== order[b.source]) return order[a.source] - order[b.source];
+      return a.label.localeCompare(b.label, "cs");
     });
-  }
-
-  // 2. Global subjects
-  for (const g of globalSubjects) {
-    const key = g.label.toLowerCase();
-    if (seen.has(key)) continue;
-    seen.set(key, {
-      label: g.label,
-      abbreviation: g.abbreviation,
-      color: g.color,
-      slug: g.slug,
-      source: "global_subject",
-    });
-  }
-
-  // 3. Predefined fallbacks
-  for (const name of PREDEFINED_SUBJECTS) {
-    const key = name.toLowerCase();
-    if (seen.has(key)) continue;
-    seen.set(key, { label: name, source: "predefined" });
-  }
-
-  const subjects = Array.from(seen.values()).sort((a, b) => {
-    // Teacher textbooks first, then global, then predefined; alpha within each group
-    const order = { teacher_textbook: 0, global_subject: 1, predefined: 2 } as const;
-    if (order[a.source] !== order[b.source]) return order[a.source] - order[b.source];
-    return a.label.localeCompare(b.label, "cs");
-  });
+  }, [teacherTextbooks, globalSubjects]);
 
   return {
     subjects,
     loading: loadingGlobal || loadingTeacher,
   };
 };
+
