@@ -92,6 +92,11 @@ export default function CalendarEventDetailDialog({ event, open, onOpenChange }:
   }
 
   function openLessonPlan() {
+    if (linkedPlanId) {
+      navigate(`/ucitel/plany-hodin/${linkedPlanId}`);
+      onOpenChange(false);
+      return;
+    }
     const params = new URLSearchParams();
     if (event!.subject) params.set("subject", event!.subject);
     params.set("date", format(event!.start, "yyyy-MM-dd"));
