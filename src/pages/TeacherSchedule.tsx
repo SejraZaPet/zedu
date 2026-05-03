@@ -975,6 +975,7 @@ function PersonalCard({
   return (
     <button
       onClick={onClick}
+      title={lesson.subject || lesson.className || "Hodina"}
       className="w-full text-left rounded-md p-2 transition-all hover:shadow-md hover:-translate-y-0.5 border-l-4 group"
       style={{ backgroundColor: `${color}26`, borderLeftColor: color }}
     >
@@ -983,14 +984,13 @@ function PersonalCard({
         {time ? `${fmtTime(time.start)}–${fmtTime(time.end)}` : `${lesson.period}. hod`}
         <Pencil className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-60 transition-opacity" />
       </div>
-      <div className="flex items-center gap-1.5 mt-0.5">
+      <div className="mt-0.5">
         <span
-          className="inline-flex items-center justify-center text-[10px] font-bold text-white px-1.5 py-0.5 rounded shrink-0"
+          className="inline-flex items-center justify-center text-xs font-bold text-white px-2 py-0.5 rounded shrink-0"
           style={{ backgroundColor: color }}
         >
           {abbr}
         </span>
-        <div className="font-semibold text-sm leading-tight truncate">{lesson.subject}</div>
       </div>
       {lesson.className && (
         <div className="text-xs text-muted-foreground truncate mt-0.5">{lesson.className}</div>
