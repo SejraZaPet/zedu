@@ -452,35 +452,60 @@ export default function TeacherLessonPlanEditor() {
     }
     setSaving(true);
     try {
-      // Persist a clean schedule to local store for calendar
-      if (subject && linkedDate && linkedTime) {
-        const [start, end] = linkedTime.split("-");
+      // Persist a clean schedule to local store for calendar (all linked slots)
+      const allSlots = [
+        ...linkedSlots,
+        ...(subject && linkedDate && linkedTime
+          ? [
+              {
+                subject,
+                date: linkedDate,
+                time: linkedTime,
+                classId,
+              },
+            ]
+          : []),
+      ];
+      const phaseEntries = PHASES.map((p) => ({
+        key: p.key,
+        title: p.title,
+        timeMin: parseInt(phases[p.key].timeMin, 10) || 0,
+      }));
+      const updatedAt = new Date().toISOString();
+      for (const sl of allSlots) {
+        const [start, end] = (sl.time || "").split("-");
+        if (!sl.subject || !sl.date || !start) continue;
         savePhasePlan({
-          subject,
-          date: linkedDate,
+          subject: sl.subject,
+          date: sl.date,
           start,
           end,
           title,
-          phases: PHASES.map((p) => ({
-            key: p.key,
-            title: p.title,
-            timeMin: parseInt(phases[p.key].timeMin, 10) || 0,
-          })),
-          updatedAt: new Date().toISOString(),
+          phases: phaseEntries,
+          updatedAt,
         });
       }
+
+      // Aggregated subjects (for filtering on plans list)
+      const aggSubjects = Array.from(
+        new Set(
+          [subject, ...linkedSlots.map((s) => s.subject)].filter(Boolean) as string[],
+        ),
+      );
 
       const payload = {
         teacher_id: user.id,
         title,
-        subject: subject || "",
+        subject: subject || aggSubjects[0] || "",
         grade_band: "",
         slides: [],
         input_data: {
           description,
           subject,
+          subjects: aggSubjects,
           linkedDate,
           linkedTime,
+          linkedSlots,
           textbookId,
           lessonId,
           classId,
