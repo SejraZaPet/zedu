@@ -248,8 +248,8 @@ export default function TeacherSubjectClass() {
     const fromSlot = slots.find(
       (s) => s.textbook_id && (s.textbook_type === "teacher" || !s.textbook_type),
     );
-    return fromSlot?.textbook_id || matchedSubject?.teacherTextbookId || null;
-  }, [slots, matchedSubject]);
+    return fromSlot?.textbook_id ?? null;
+  }, [slots]);
   const subjectColor = matchedSubject?.color || slots[0]?.color || "hsl(var(--primary))";
   const abbr =
     matchedSubject?.abbreviation ||
@@ -350,11 +350,19 @@ export default function TeacherSubjectClass() {
     if (!user) return;
     setLinkOpen(true);
     if (teacherTextbooks.length === 0) {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("teacher_textbooks")
         .select("id, title, subject, description")
         .eq("teacher_id", user.id)
         .order("title", { ascending: true });
+      if (error) {
+        toast({
+          title: "Nepodařilo se načíst učebnice",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
       setTeacherTextbooks((data as TeacherTextbookRow[]) ?? []);
     }
   }
