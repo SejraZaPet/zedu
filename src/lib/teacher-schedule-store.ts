@@ -213,6 +213,7 @@ export function expandTeacherSchedule(
         title: l.subject || l.className || "Hodina",
         start,
         end,
+        classId: l.classId || undefined,
         className: l.className || undefined,
         room: l.room || undefined,
         subject: l.subject || undefined,

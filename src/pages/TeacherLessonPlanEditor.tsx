@@ -161,31 +161,84 @@ export default function TeacherLessonPlanEditor() {
     setLessons([]);
     setLessonId("");
     if (!textbookId) return;
-    supabase
-      .from("teacher_textbook_lessons")
-      .select("id, title, blocks")
-      .eq("textbook_id", textbookId)
-      .order("sort_order", { ascending: true })
-      .then(({ data }) => {
-        setLessons(
-          (data ?? []).map((l: any) => ({
+    (async () => {
+      // 1) Teacher's own textbook lessons
+      const { data: ownLessons } = await supabase
+        .from("teacher_textbook_lessons")
+        .select("id, title, blocks")
+        .eq("textbook_id", textbookId)
+        .order("sort_order", { ascending: true });
+
+      const own: LessonOption[] = (ownLessons ?? []).map((l: any) => ({
+        id: l.id,
+        title: l.title,
+        source: "teacher_textbook_lessons" as const,
+        textbookId,
+        blocks: l.blocks,
+      }));
+
+      // 2) Global textbook lessons linked via subject slug of the textbook
+      const tb = textbooks.find((t) => t.id === textbookId);
+      let global: LessonOption[] = [];
+      if (tb?.subject) {
+        const { data: topics } = await supabase
+          .from("textbook_topics" as any)
+          .select("id")
+          .eq("subject", tb.subject);
+        const topicIds = (topics ?? []).map((t: any) => t.id);
+        if (topicIds.length) {
+          const { data: gl } = await supabase
+            .from("textbook_lessons" as any)
+            .select("id, title, blocks, sort_order")
+            .in("topic_id", topicIds)
+            .order("sort_order", { ascending: true });
+          global = (gl ?? []).map((l: any) => ({
             id: l.id,
             title: l.title,
-            source: "teacher_textbook_lessons",
+            source: "lessons" as const,
             textbookId,
             blocks: l.blocks,
-          })),
-        );
-      });
-  }, [textbookId]);
+          }));
+        }
+      }
+
+      setLessons([...own, ...global]);
+    })();
+  }, [textbookId, textbooks]);
 
   const selectedLesson = useMemo(
     () => lessons.find((l) => l.id === lessonId),
     [lessons, lessonId],
   );
 
+  /** Classes the teacher belongs to (for filtering schedule occurrences) */
+  const [teacherClasses, setTeacherClasses] = useState<{ id: string; name: string }[]>([]);
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data: ct } = await supabase
+        .from("class_teachers")
+        .select("class_id")
+        .eq("user_id", user.id);
+      const ids = (ct ?? []).map((r: any) => r.class_id);
+      if (!ids.length) {
+        setTeacherClasses([]);
+        return;
+      }
+      const { data: cls } = await supabase
+        .from("classes")
+        .select("id, name")
+        .in("id", ids)
+        .eq("archived", false)
+        .order("name");
+      setTeacherClasses((cls as any[]) ?? []);
+    })();
+  }, [user]);
+
+  const [classId, setClassId] = useState<string>("");
+
   /** Schedule occurrences for the chosen subject */
-  const occurrences = useMemo<ScheduledOccurrence[]>(() => {
+  const occurrences = useMemo<(ScheduledOccurrence & { classId?: string })[]>(() => {
     if (!subject) return [];
     const from = startOfDay(new Date());
     const to = addDays(from, 8 * 7);
@@ -195,9 +248,9 @@ export default function TeacherLessonPlanEditor() {
       (e) => (e.subject ?? "").trim().toLowerCase() === subject.trim().toLowerCase(),
     );
     const seen = new Set<string>();
-    const list: ScheduledOccurrence[] = [];
+    const list: (ScheduledOccurrence & { classId?: string })[] = [];
     for (const e of all.sort((a, b) => a.start.getTime() - b.start.getTime())) {
-      const key = `${format(e.start, "yyyy-MM-dd")}-${formatTime(e.start)}`;
+      const key = `${format(e.start, "yyyy-MM-dd")}-${formatTime(e.start)}-${e.classId ?? ""}`;
       if (seen.has(key)) continue;
       seen.add(key);
       list.push({
@@ -206,20 +259,26 @@ export default function TeacherLessonPlanEditor() {
         end: formatTime(e.end),
         className: e.className,
         room: e.room,
+        classId: e.classId,
       });
     }
     return list;
   }, [subject, dbSlots]);
 
+  const filteredOccurrences = useMemo(
+    () => (classId ? occurrences.filter((o) => o.classId === classId) : occurrences),
+    [occurrences, classId],
+  );
+
   const availableDates = useMemo(() => {
     const set = new Map<string, ScheduledOccurrence>();
-    for (const o of occurrences) if (!set.has(o.date)) set.set(o.date, o);
+    for (const o of filteredOccurrences) if (!set.has(o.date)) set.set(o.date, o);
     return Array.from(set.keys());
-  }, [occurrences]);
+  }, [filteredOccurrences]);
 
   const timeSlotsForDate = useMemo(
-    () => occurrences.filter((o) => o.date === linkedDate),
-    [occurrences, linkedDate],
+    () => filteredOccurrences.filter((o) => o.date === linkedDate),
+    [filteredOccurrences, linkedDate],
   );
 
   useEffect(() => {
@@ -497,67 +556,101 @@ export default function TeacherLessonPlanEditor() {
 
           {/* Propojení s konkrétní hodinou v rozvrhu */}
           {subject && (
-            <div className="grid sm:grid-cols-2 gap-4">
+            <div className="space-y-4">
               <div className="space-y-1.5">
-                <Label htmlFor="plan-date" className="flex items-center gap-1.5">
-                  <CalendarDays className="w-3.5 h-3.5" />
-                  Datum hodiny
-                </Label>
+                <Label htmlFor="plan-class">Třída</Label>
                 <Select
-                  value={linkedDate || undefined}
+                  value={classId || undefined}
                   onValueChange={(v) => {
-                    setLinkedDate(v);
+                    setClassId(v);
+                    setLinkedDate("");
                     setLinkedTime("");
                   }}
                 >
-                  <SelectTrigger id="plan-date">
+                  <SelectTrigger id="plan-class">
                     <SelectValue
                       placeholder={
-                        availableDates.length
-                          ? "Vyber datum…"
-                          : "Žádné nadcházející hodiny v rozvrhu"
+                        teacherClasses.length ? "Vyber třídu…" : "Žádné třídy"
                       }
                     />
                   </SelectTrigger>
                   <SelectContent>
-                    {availableDates.map((d) => {
-                      const dateObj = new Date(d);
-                      const week = getISOWeek(dateObj);
-                      return (
-                        <SelectItem key={d} value={d}>
-                          {format(dateObj, "EEEE d. M. yyyy", { locale: cs })} (t. {week})
-                        </SelectItem>
-                      );
-                    })}
+                    {teacherClasses.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
+                <p className="text-xs text-muted-foreground">
+                  Termíny se filtrují podle rozvrhu této třídy pro vybraný předmět.
+                </p>
               </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="plan-time">Čas hodiny</Label>
-                <Select
-                  value={linkedTime || undefined}
-                  onValueChange={setLinkedTime}
-                  disabled={!linkedDate}
-                >
-                  <SelectTrigger id="plan-time">
-                    <SelectValue
-                      placeholder={linkedDate ? "Vyber čas…" : "Nejprve vyber datum"}
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {timeSlotsForDate.map((o) => {
-                      const v = `${o.start}-${o.end}`;
-                      const meta = [o.className, o.room].filter(Boolean).join(" · ");
-                      return (
-                        <SelectItem key={v} value={v}>
-                          {o.start} – {o.end}
-                          {meta ? ` · ${meta}` : ""}
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="plan-date" className="flex items-center gap-1.5">
+                    <CalendarDays className="w-3.5 h-3.5" />
+                    Datum hodiny
+                  </Label>
+                  <Select
+                    value={linkedDate || undefined}
+                    onValueChange={(v) => {
+                      setLinkedDate(v);
+                      setLinkedTime("");
+                    }}
+                  >
+                    <SelectTrigger id="plan-date">
+                      <SelectValue
+                        placeholder={
+                          availableDates.length
+                            ? "Vyber datum…"
+                            : classId
+                              ? "Žádné nadcházející hodiny pro tuto třídu"
+                              : "Žádné nadcházející hodiny v rozvrhu"
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableDates.map((d) => {
+                        const dateObj = new Date(d);
+                        const week = getISOWeek(dateObj);
+                        return (
+                          <SelectItem key={d} value={d}>
+                            {format(dateObj, "EEEE d. M. yyyy", { locale: cs })} (t. {week})
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="plan-time">Čas hodiny</Label>
+                  <Select
+                    value={linkedTime || undefined}
+                    onValueChange={setLinkedTime}
+                    disabled={!linkedDate}
+                  >
+                    <SelectTrigger id="plan-time">
+                      <SelectValue
+                        placeholder={linkedDate ? "Vyber čas…" : "Nejprve vyber datum"}
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {timeSlotsForDate.map((o) => {
+                        const v = `${o.start}-${o.end}`;
+                        const meta = [o.className, o.room].filter(Boolean).join(" · ");
+                        return (
+                          <SelectItem key={v} value={v}>
+                            {o.start} – {o.end}
+                            {meta ? ` · ${meta}` : ""}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
           )}
