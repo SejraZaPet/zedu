@@ -23,7 +23,10 @@ import {
   Sparkles,
   BookOpen,
   Loader2,
+  Plus,
+  X,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
 import { supabase } from "@/integrations/supabase/client";
