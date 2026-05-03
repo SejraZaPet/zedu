@@ -124,8 +124,15 @@ const TeacherCalendar = () => {
   }, [authLoading, user, navigate, range]);
 
   const handleEventClick = (event: CalendarEvent) => {
-    if (event.type === "lesson") setDetailEvent(event);
-    else if (event.type === "assignment") navigate("/ucitel/ulohy");
+    if (event.type === "lesson") {
+      if (event.classId && event.subject) {
+        navigate(
+          `/ucitel/predmet/${encodeURIComponent(event.subject)}/trida/${event.classId}`,
+        );
+      } else {
+        setDetailEvent(event);
+      }
+    } else if (event.type === "assignment") navigate("/ucitel/ulohy");
     else navigate("/todo");
   };
 
