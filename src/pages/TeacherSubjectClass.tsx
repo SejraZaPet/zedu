@@ -222,6 +222,12 @@ export default function TeacherSubjectClass() {
     () => subjects.find((s) => s.label.toLowerCase() === subjectLabel.toLowerCase()),
     [subjects, subjectLabel],
   );
+  const linkedTextbookId = useMemo(() => {
+    const fromSlot = slots.find(
+      (s) => s.textbook_id && (s.textbook_type === "teacher" || !s.textbook_type),
+    );
+    return fromSlot?.textbook_id || matchedSubject?.teacherTextbookId || null;
+  }, [slots, matchedSubject]);
   const subjectColor = matchedSubject?.color || slots[0]?.color || "hsl(var(--primary))";
   const abbr =
     matchedSubject?.abbreviation ||
