@@ -8,16 +8,42 @@ const corsHeaders = {
 
 const PHASE_KEYS = ["uvod", "motivace", "hlavni", "procviceni", "reflexe", "zaver"] as const;
 
+// Allowed activity kinds — STRICTLY ZEdu features only.
+const ALLOWED_KINDS = [
+  "quiz", // Kvíz / interaktivní aktivita v ZEdu
+  "worksheet", // Pracovní list v ZEdu
+  "live_game", // Živá hra (Kahoot-like, ale v ZEdu)
+  "lesson_block", // Blok přímo z aktuálně vybrané lekce v učebnici
+  "offline_activity", // Offline aktivita popsaná v učebnici (blok typu offline)
+  "discussion", // Řízená diskuse vedená učitelem (bez nástroje)
+] as const;
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const { lessonTitle, lessonContent, subject, customInstructions, totalMin } = await req.json();
+    const {
+      lessonTitle,
+      lessonContent,
+      subject,
+      customInstructions,
+      totalMin,
+      availableLessonBlocks, // array of { type, title } from selected lesson (optional)
+    } = await req.json();
 
     const target = Number.isFinite(totalMin) && totalMin > 0 ? totalMin : 45;
-    const sysPrompt = `Jsi zkušený český pedagog. Navrhni rozvržení vyučovací hodiny (${target} minut) do 6 pevných fází:
+
+    const blocksList = Array.isArray(availableLessonBlocks) && availableLessonBlocks.length
+      ? availableLessonBlocks
+          .slice(0, 30)
+          .map((b: any, i: number) => `  ${i + 1}. [${b.type ?? "block"}] ${b.title ?? b.text ?? ""}`.trim())
+          .join("\n")
+      : "(žádné dostupné bloky)";
+
+    const sysPrompt = `Jsi zkušený český pedagog a navrhuješ plán vyučovací hodiny (${target} minut) pro platformu ZEdu.
+Navrhni 6 pevných fází:
 - uvod (Úvod)
 - motivace (Motivace)
 - hlavni (Hlavní část)
@@ -25,7 +51,23 @@ serve(async (req) => {
 - reflexe (Reflexe)
 - zaver (Závěr)
 
-U každé fáze vrať timeMin (celé číslo minut) a description (1–3 věty, konkrétní aktivita pro tuto fázi). Součet timeMin = ${target}. Vše česky.`;
+U každé fáze vrať:
+- timeMin (celé číslo minut, součet = ${target})
+- description (1–3 věty, konkrétní aktivita)
+- activities: pole 0–3 navrhovaných aktivit, KAŽDÁ s polem "kind" (POVINNĚ jedna z: ${ALLOWED_KINDS.join(", ")}) a "title"
+
+DŮLEŽITÁ PRAVIDLA pro fáze "procviceni" a "reflexe":
+- Navrhuj POUZE aktivity dostupné v ZEdu:
+  • online: kvíz / interaktivní aktivita (kind="quiz"), pracovní list (kind="worksheet"), živá hra (kind="live_game")
+  • offline: blok z učebnice (kind="lesson_block" nebo kind="offline_activity")
+  • případně řízená diskuse (kind="discussion")
+- NIKDY nezmiňuj externí nástroje ani konkurenční platformy (Kahoot, Mentimeter, Quizlet, Wordwall, Google Forms, Padlet, Microsoft Forms apod.). Místo nich vždy navrhni odpovídající ZEdu funkci.
+- Pokud používáš kind="lesson_block", vyber z dostupných bloků níže a do "title" napiš název bloku.
+
+Dostupné bloky z vybrané lekce učebnice:
+${blocksList}
+
+Vše česky.`;
 
     const userPrompt = [
       subject ? `Předmět: ${subject}` : "",
@@ -41,8 +83,20 @@ U každé fáze vrať timeMin (celé číslo minut) a description (1–3 věty, 
         properties: {
           timeMin: { type: "integer", minimum: 0 },
           description: { type: "string" },
+          activities: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                kind: { type: "string", enum: [...ALLOWED_KINDS] },
+                title: { type: "string" },
+              },
+              required: ["kind", "title"],
+              additionalProperties: false,
+            },
+          },
         },
-        required: ["timeMin", "description"],
+        required: ["timeMin", "description", "activities"],
         additionalProperties: false,
       };
     }
@@ -60,7 +114,7 @@ U každé fáze vrať timeMin (celé číslo minut) a description (1–3 věty, 
           type: "function",
           function: {
             name: "create_phases",
-            description: "Návrh fází hodiny s časovou dotací.",
+            description: "Návrh fází hodiny s časovou dotací a ZEdu aktivitami.",
             parameters: {
               type: "object",
               properties: {
