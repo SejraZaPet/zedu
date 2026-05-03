@@ -116,6 +116,41 @@ export default function CalendarEventDetailDialog({ event, open, onOpenChange }:
           )}
         </div>
 
+        {(() => {
+          const plan = getPhasePlan(
+            event.subject,
+            format(event.start, "yyyy-MM-dd"),
+            formatTime(event.start),
+          );
+          if (!plan || !plan.phases?.some((p) => p.timeMin > 0)) return null;
+          const total = plan.phases.reduce((s, p) => s + (p.timeMin || 0), 0);
+          return (
+            <div className="mt-3 rounded-lg border border-border overflow-hidden">
+              <div className="flex items-center justify-between px-3 py-2 bg-muted/40 text-xs">
+                <span className="flex items-center gap-1.5 font-medium">
+                  <Clock className="h-3.5 w-3.5 text-primary" />
+                  Harmonogram hodiny
+                </span>
+                <span className="text-muted-foreground tabular-nums">{total} min</span>
+              </div>
+              <table className="w-full text-sm">
+                <tbody>
+                  {plan.phases
+                    .filter((p) => p.timeMin > 0)
+                    .map((p) => (
+                      <tr key={p.key} className="border-t border-border">
+                        <td className="px-3 py-1.5">{p.title}</td>
+                        <td className="px-3 py-1.5 text-right tabular-nums text-muted-foreground w-20">
+                          {p.timeMin} min
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          );
+        })()}
+
         <div className="grid gap-2 mt-2">
           <Button variant="outline" onClick={openTextbook} className="justify-start">
             <BookOpen className="h-4 w-4 mr-2" />
