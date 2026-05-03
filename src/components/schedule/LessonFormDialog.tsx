@@ -140,12 +140,10 @@ export default function LessonFormDialog({
   const [validTo, setValidTo] = useState<Date | undefined>();
   const [mirrorBoth, setMirrorBoth] = useState(false);
 
-  // Day → period (only used in new mode). For edit mode we just have one day.
-  const [selectedDays, setSelectedDays] = useState<number[]>([]);
-  const [dayPeriod, setDayPeriod] = useState<Record<number, number>>({});
-  // Edit mode single day/period
-  const [editDay, setEditDay] = useState<number>(0);
-  const [editPeriod, setEditPeriod] = useState<number>(defaultPeriod);
+  // Slots: list of {day, period} pairs. Multiple entries per day are allowed
+  // so a teacher can place the same subject in two different periods on the
+  // same day (e.g. two Math lessons on Thursday).
+  const [slotPairs, setSlotPairs] = useState<Array<{ day: number; period: number }>>([]);
 
   // Reset when opening
   useEffect(() => {
@@ -171,11 +169,13 @@ export default function LessonFormDialog({
     setMirrorBoth(!!initial?.mirrorBoth);
 
     const startDay = initial?.day ?? 0;
-    setSelectedDays([startDay]);
-    setDayPeriod({ [startDay]: initial?.period ?? defaultPeriod });
-    setEditDay(initial?.day ?? 0);
-    setEditPeriod(initial?.period ?? defaultPeriod);
+    setSlotPairs([{ day: startDay, period: initial?.period ?? defaultPeriod }]);
   }, [open, isNew, initial, subjects, defaultPeriod]);
+
+  const selectedDays = useMemo(
+    () => Array.from(new Set(slotPairs.map((s) => s.day))).sort(),
+    [slotPairs],
+  );
 
   // When subject changes via select → auto-fill abbreviation/color from registry
   useEffect(() => {
