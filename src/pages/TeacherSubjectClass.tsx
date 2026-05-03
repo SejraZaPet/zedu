@@ -388,6 +388,56 @@ export default function TeacherSubjectClass() {
     navigate(`/ucitel/plany-hodin/novy?${params.toString()}`);
   }
 
+  function openAssignPlanDialog(date?: Date) {
+    setAssignPlanId("");
+    setAssignPlanDate(date ? format(date, "yyyy-MM-dd") : "");
+    setAssignPlanOpen(true);
+  }
+
+  async function assignPlanToDate() {
+    if (!assignPlanId || !assignPlanDate) {
+      toast({ title: "Vyber plán a datum", variant: "destructive" });
+      return;
+    }
+    const plan = plans.find((p) => p.id === assignPlanId);
+    if (!plan) return;
+    setAssigning(true);
+    const occurrence = occurrences.find(
+      (e) => format(e.start, "yyyy-MM-dd") === assignPlanDate,
+    );
+    const time = occurrence ? formatTime(occurrence.start) : undefined;
+    const existing: LinkedSlot[] = plan.input_data?.linkedSlots ?? [];
+    // Drop any prior link for the same date+class (re-assignment)
+    const cleaned = existing.filter(
+      (s) => !(s.date === assignPlanDate && (s.classId === classId || !s.classId)),
+    );
+    const next: LinkedSlot[] = [
+      ...cleaned,
+      {
+        subject: subjectLabel,
+        classId,
+        className: klass?.name,
+        date: assignPlanDate,
+        time,
+      },
+    ];
+    const newInput = { ...(plan.input_data || {}), linkedSlots: next };
+    const { error } = await supabase
+      .from("lesson_plans")
+      .update({ input_data: newInput })
+      .eq("id", plan.id);
+    setAssigning(false);
+    if (error) {
+      toast({ title: "Nepodařilo se přiřadit plán", description: error.message, variant: "destructive" });
+      return;
+    }
+    setPlans((prev) =>
+      prev.map((p) => (p.id === plan.id ? { ...p, input_data: newInput } : p)),
+    );
+    setAssignPlanOpen(false);
+    toast({ title: "Plán přiřazen k termínu" });
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
