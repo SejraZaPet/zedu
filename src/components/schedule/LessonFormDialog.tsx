@@ -140,6 +140,7 @@ export default function LessonFormDialog({
   const [validFrom, setValidFrom] = useState<Date | undefined>();
   const [validTo, setValidTo] = useState<Date | undefined>();
   const [mirrorBoth, setMirrorBoth] = useState(false);
+  const [weekParity, setWeekParity] = useState<"every" | "odd" | "even">("every");
 
   // Slots: list of {day, period} pairs. Multiple entries per day are allowed
   // so a teacher can place the same subject in two different periods on the
