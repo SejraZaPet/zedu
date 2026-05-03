@@ -270,112 +270,43 @@ export default function LessonFormDialog({
           <DialogDescription>
             {isNew
               ? "Hodinu lze přidat do více dní najednou. U každého dne nastavte vlastní číslo hodiny."
-              : "Uprav detaily hodiny."}
+              : "Uprav detaily hodiny – můžete také přidat tento předmět do dalších dní."}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3">
           {/* ----- Day(s) ----- */}
-          {isNew ? (
-            <div className="space-y-2">
-              <Label>Dny v týdnu *</Label>
-              <div className="flex flex-wrap gap-1.5">
-                {DAYS.map((d, i) => {
-                  const active = selectedDays.includes(i);
-                  return (
-                    <button
-                      key={d}
-                      type="button"
-                      onClick={() => toggleDay(i)}
-                      className={`px-3 py-1.5 text-xs rounded-md border transition-colors flex items-center gap-1 ${
-                        active
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-card border-border hover:bg-muted"
-                      }`}
-                    >
-                      {active && <Check className="w-3 h-3" />}
-                      {d}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Per-day period when 2+ days, otherwise single picker */}
-              {selectedDays.length === 0 ? null : selectedDays.length === 1 ? (
-                <div className="space-y-1.5">
-                  <Label>Číslo hodiny *</Label>
-                  <Select
-                    value={String(dayPeriod[selectedDays[0]] ?? defaultPeriod)}
-                    onValueChange={(v) =>
-                      setDayPeriod({ ...dayPeriod, [selectedDays[0]]: parseInt(v, 10) })
-                    }
+          <div className="space-y-2">
+            <Label>Dny v týdnu *</Label>
+            <div className="flex flex-wrap gap-1.5">
+              {DAYS.map((d, i) => {
+                const active = selectedDays.includes(i);
+                return (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => toggleDay(i)}
+                    className={`px-3 py-1.5 text-xs rounded-md border transition-colors flex items-center gap-1 ${
+                      active
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-card border-border hover:bg-muted"
+                    }`}
                   >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {periods.map((p) => (
-                        <SelectItem key={p.period} value={String(p.period)}>
-                          {p.period}. hodina · {p.start}–{p.end}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              ) : (
-                <div className="space-y-1.5 rounded-md border border-border bg-muted/30 p-2.5">
-                  <Label className="text-xs text-muted-foreground">
-                    Číslo hodiny pro každý den
-                  </Label>
-                  <div className="space-y-1.5">
-                    {selectedDays.map((d) => (
-                      <div key={d} className="flex items-center gap-2">
-                        <span className="text-xs font-medium w-16 shrink-0">{DAYS[d]}</span>
-                        <Select
-                          value={String(dayPeriod[d] ?? defaultPeriod)}
-                          onValueChange={(v) =>
-                            setDayPeriod({ ...dayPeriod, [d]: parseInt(v, 10) })
-                          }
-                        >
-                          <SelectTrigger className="h-8 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {periods.map((p) => (
-                              <SelectItem key={p.period} value={String(p.period)}>
-                                {p.period}. hod · {p.start}–{p.end}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+                    {active && <Check className="w-3 h-3" />}
+                    {d}
+                  </button>
+                );
+              })}
             </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-2">
+
+            {selectedDays.length === 0 ? null : selectedDays.length === 1 ? (
               <div className="space-y-1.5">
-                <Label>Den</Label>
-                <Select value={String(editDay)} onValueChange={(v) => setEditDay(parseInt(v, 10))}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {DAYS.map((d, i) => (
-                      <SelectItem key={d} value={String(i)}>
-                        {d}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Číslo hodiny</Label>
+                <Label>Číslo hodiny *</Label>
                 <Select
-                  value={String(editPeriod)}
-                  onValueChange={(v) => setEditPeriod(parseInt(v, 10))}
+                  value={String(dayPeriod[selectedDays[0]] ?? defaultPeriod)}
+                  onValueChange={(v) =>
+                    setDayPeriod({ ...dayPeriod, [selectedDays[0]]: parseInt(v, 10) })
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -383,14 +314,44 @@ export default function LessonFormDialog({
                   <SelectContent>
                     {periods.map((p) => (
                       <SelectItem key={p.period} value={String(p.period)}>
-                        {p.period}. hod · {p.start}–{p.end}
+                        {p.period}. hodina · {p.start}–{p.end}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="space-y-1.5 rounded-md border border-border bg-muted/30 p-2.5">
+                <Label className="text-xs text-muted-foreground">
+                  Číslo hodiny pro každý den
+                </Label>
+                <div className="space-y-1.5">
+                  {selectedDays.map((d) => (
+                    <div key={d} className="flex items-center gap-2">
+                      <span className="text-xs font-medium w-16 shrink-0">{DAYS[d]}</span>
+                      <Select
+                        value={String(dayPeriod[d] ?? defaultPeriod)}
+                        onValueChange={(v) =>
+                          setDayPeriod({ ...dayPeriod, [d]: parseInt(v, 10) })
+                        }
+                      >
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {periods.map((p) => (
+                            <SelectItem key={p.period} value={String(p.period)}>
+                              {p.period}. hod · {p.start}–{p.end}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* ----- Subject ----- */}
           <div className="space-y-1.5">
