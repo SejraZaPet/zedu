@@ -15,6 +15,9 @@ import {
   Plus,
   CheckCircle2,
   Clock,
+  Link2,
+  Sparkles,
+  Lock,
 } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
@@ -22,6 +25,14 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -49,6 +60,15 @@ interface ScheduleSlot {
   room: string | null;
   color: string | null;
   abbreviation: string | null;
+  textbook_id: string | null;
+  textbook_type: string | null;
+}
+
+interface TeacherTextbookRow {
+  id: string;
+  title: string;
+  subject: string | null;
+  description: string | null;
 }
 
 interface LessonPlanRow {
@@ -105,6 +125,9 @@ export default function TeacherSubjectClass() {
   const [attempts, setAttempts] = useState<AttemptRow[]>([]);
   const [members, setMembers] = useState<MemberRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [linkOpen, setLinkOpen] = useState(false);
+  const [teacherTextbooks, setTeacherTextbooks] = useState<TeacherTextbookRow[]>([]);
+  const [linking, setLinking] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -199,6 +222,12 @@ export default function TeacherSubjectClass() {
     () => subjects.find((s) => s.label.toLowerCase() === subjectLabel.toLowerCase()),
     [subjects, subjectLabel],
   );
+  const linkedTextbookId = useMemo(() => {
+    const fromSlot = slots.find(
+      (s) => s.textbook_id && (s.textbook_type === "teacher" || !s.textbook_type),
+    );
+    return fromSlot?.textbook_id || matchedSubject?.teacherTextbookId || null;
+  }, [slots, matchedSubject]);
   const subjectColor = matchedSubject?.color || slots[0]?.color || "hsl(var(--primary))";
   const abbr =
     matchedSubject?.abbreviation ||
@@ -250,24 +279,60 @@ export default function TeacherSubjectClass() {
   }, [studentScores]);
 
   function openTextbook() {
-    if (matchedSubject?.teacherTextbookId) {
-      navigate(`/ucitel/ucebnice/${matchedSubject.teacherTextbookId}/lekce`);
+    if (linkedTextbookId) {
+      navigate(`/ucitel/ucebnice/${linkedTextbookId}/lekce`);
     } else {
-      toast({
-        title: "Učebnice není propojena",
-        description: "Pro tento předmět nemáš vlastní učebnici.",
-      });
-      navigate("/ucitel/ucebnice");
+      openLinkDialog();
     }
   }
 
   function launchLesson() {
-    if (matchedSubject?.teacherTextbookId) {
-      navigate(`/ucitel/ucebnice/${matchedSubject.teacherTextbookId}/lekce?launch=1`);
+    if (linkedTextbookId) {
+      navigate(`/ucitel/ucebnice/${linkedTextbookId}/lekce?launch=1`);
     } else {
-      toast({ title: "Vyber lekci v učebnici" });
-      navigate("/ucitel/ucebnice");
+      toast({ title: "Nejdříve propoj učebnici" });
+      openLinkDialog();
     }
+  }
+
+  async function openLinkDialog() {
+    if (!user) return;
+    setLinkOpen(true);
+    if (teacherTextbooks.length === 0) {
+      const { data } = await supabase
+        .from("teacher_textbooks")
+        .select("id, title, subject, description")
+        .eq("teacher_id", user.id)
+        .order("title", { ascending: true });
+      setTeacherTextbooks((data as TeacherTextbookRow[]) ?? []);
+    }
+  }
+
+  async function linkTextbook(textbookId: string) {
+    if (!slots.length) {
+      toast({
+        title: "Chybí hodina v rozvrhu",
+        description: "Pro propojení učebnice musí mít předmět záznam v rozvrhu.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setLinking(true);
+    const ids = slots.map((s) => s.id);
+    const { error } = await supabase
+      .from("class_schedule_slots" as any)
+      .update({ textbook_id: textbookId, textbook_type: "teacher" })
+      .in("id", ids);
+    setLinking(false);
+    if (error) {
+      toast({ title: "Nepodařilo se propojit učebnici", description: error.message, variant: "destructive" });
+      return;
+    }
+    setSlots((prev) =>
+      prev.map((s) => ({ ...s, textbook_id: textbookId, textbook_type: "teacher" })),
+    );
+    setLinkOpen(false);
+    toast({ title: "Učebnice propojena" });
   }
 
   function newAssignment() {
@@ -343,10 +408,17 @@ export default function TeacherSubjectClass() {
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Button variant="outline" onClick={openTextbook}>
-                <BookOpen className="h-4 w-4 mr-2" />
-                Otevřít učebnici
-              </Button>
+              {linkedTextbookId ? (
+                <Button variant="outline" onClick={openTextbook}>
+                  <BookOpen className="h-4 w-4 mr-2" />
+                  Otevřít učebnici
+                </Button>
+              ) : (
+                <Button variant="outline" onClick={openLinkDialog}>
+                  <Link2 className="h-4 w-4 mr-2" />
+                  Propojit učebnici
+                </Button>
+              )}
               <Button onClick={launchLesson}>
                 <PlayCircle className="h-4 w-4 mr-2" />
                 Spustit lekci
@@ -589,6 +661,66 @@ export default function TeacherSubjectClass() {
         </Tabs>
       </main>
       <SiteFooter />
+
+      <Dialog open={linkOpen} onOpenChange={setLinkOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Propojit učebnici s předmětem</DialogTitle>
+            <DialogDescription>
+              Vyber jednu ze svých učebnic. Propojení se uloží do rozvrhu této třídy a předmětu „{subjectLabel}“.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2 max-h-72 overflow-y-auto">
+            {teacherTextbooks.length === 0 ? (
+              <Card className="p-4 text-sm text-muted-foreground text-center">
+                Zatím nemáš žádné vlastní učebnice. Vytvoř ji v sekci Moje učebnice.
+              </Card>
+            ) : (
+              teacherTextbooks.map((tb) => {
+                const isCurrent = tb.id === linkedTextbookId;
+                return (
+                  <button
+                    key={tb.id}
+                    type="button"
+                    disabled={linking}
+                    onClick={() => linkTextbook(tb.id)}
+                    className="w-full text-left rounded-lg border border-border p-3 hover:bg-accent transition disabled:opacity-50"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="font-medium truncate">{tb.title}</div>
+                        {tb.subject && (
+                          <div className="text-xs text-muted-foreground truncate">{tb.subject}</div>
+                        )}
+                      </div>
+                      {isCurrent && <Badge variant="secondary">Propojená</Badge>}
+                    </div>
+                  </button>
+                );
+              })
+            )}
+          </div>
+
+          <div className="mt-2 rounded-lg border border-dashed border-border p-3 bg-muted/30 opacity-70">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <Lock className="h-3.5 w-3.5" />
+              <Sparkles className="h-3.5 w-3.5 text-primary" />
+              Brzy: učebnice z tržiště
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Připravujeme možnost propojit ověřené učebnice z tržiště Zedu. Sleduj novinky.
+            </p>
+          </div>
+
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setLinkOpen(false)}>Zavřít</Button>
+            <Button variant="outline" onClick={() => navigate("/ucitel/ucebnice")}>
+              Spravovat učebnice
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
