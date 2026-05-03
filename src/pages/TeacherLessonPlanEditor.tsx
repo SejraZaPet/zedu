@@ -78,6 +78,13 @@ const ACTIVITY_META: Record<ActivityKind, { label: string; href: string | null; 
 type PhasesState = Record<string, PhaseValue>;
 
 const emptyPhases = (): PhasesState =>
+  // eslint-disable-next-line @typescript-eslint/no-use-before-define
+  PHASES.reduce((acc, p) => {
+    acc[p.key] = { timeMin: "", description: "", activities: [] };
+    return acc;
+  }, {} as PhasesState);
+
+const _emptyPhasesUnused = (): PhasesState =>
   PHASES.reduce((acc, p) => {
     acc[p.key] = { timeMin: "", description: "" };
     return acc;
