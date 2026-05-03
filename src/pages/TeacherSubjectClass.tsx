@@ -71,12 +71,21 @@ interface TeacherTextbookRow {
   description: string | null;
 }
 
+interface LinkedSlot {
+  subject?: string;
+  classId?: string;
+  className?: string;
+  date?: string;
+  time?: string;
+}
+
 interface LessonPlanRow {
   id: string;
   title: string;
   subject: string;
   created_at: string;
   updated_at: string;
+  input_data: any;
 }
 
 interface AssignmentRow {
