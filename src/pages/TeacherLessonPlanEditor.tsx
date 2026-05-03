@@ -341,8 +341,16 @@ export default function TeacherLessonPlanEditor() {
       .filter(Boolean) as { type: string; title: string }[];
   }
 
-  async function generateWithAI() {
-    if (!subject && !aiInstructions.trim() && !selectedLesson) {
+  async function generateWithAI(opts?: { fromLessonOnly?: boolean }) {
+    const fromLessonOnly = !!opts?.fromLessonOnly;
+    if (fromLessonOnly && !selectedLesson) {
+      toast({
+        title: "Vyber lekci",
+        description: "Pro rychlý návrh nejprve zvol učebnici a lekci.",
+      });
+      return;
+    }
+    if (!fromLessonOnly && !subject && !aiInstructions.trim() && !selectedLesson) {
       toast({
         title: "Doplň kontext",
         description: "Vyber lekci, předmět nebo zadej vlastní pokyny pro AI.",
@@ -361,7 +369,7 @@ export default function TeacherLessonPlanEditor() {
           lessonTitle: selectedLesson?.title,
           lessonContent,
           availableLessonBlocks,
-          customInstructions: aiInstructions,
+          customInstructions: fromLessonOnly ? "" : aiInstructions,
           totalMin: 45,
         },
       });
