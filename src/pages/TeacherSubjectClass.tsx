@@ -18,6 +18,7 @@ import {
   Link2,
   Sparkles,
   Lock,
+  Pencil,
 } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
