@@ -151,22 +151,29 @@ const CalendarWeekGrid = ({
                     }}
                     title={ev.title}
                   >
-                    <div className="font-medium leading-tight truncate flex items-center gap-1">
-                      {ev.abbreviation && (
+                    <div className="leading-tight flex items-center gap-1">
+                      {ev.abbreviation ? (
                         <span
-                          className="inline-block text-[9px] font-bold text-white px-1 py-0.5 rounded shrink-0"
+                          className="inline-block text-[10px] font-bold text-white px-1.5 py-0.5 rounded shrink-0"
                           style={{ backgroundColor: customColor || defaults.border }}
                         >
                           {ev.abbreviation}
                         </span>
+                      ) : (
+                        <span className="font-medium truncate">{ev.title}</span>
                       )}
-                      <span className="truncate">{formatTime(ev.start)} {ev.title}</span>
+                      {ev.weekParity === "odd" && (
+                        <span className="text-[9px] font-semibold px-1 rounded bg-background/60 border border-border shrink-0">L</span>
+                      )}
+                      {ev.weekParity === "even" && (
+                        <span className="text-[9px] font-semibold px-1 rounded bg-background/60 border border-border shrink-0">S</span>
+                      )}
                     </div>
-                    {ev.room && (
-                      <div className="text-[10px] opacity-80 truncate">
-                        {ev.room}
-                      </div>
-                    )}
+                    <div className="text-[10px] opacity-80 truncate mt-0.5">
+                      {formatTime(ev.start)}
+                      {ev.className ? ` · ${ev.className}` : ""}
+                      {ev.room ? ` · ${ev.room}` : ""}
+                    </div>
                   </button>
                 );
               })}
