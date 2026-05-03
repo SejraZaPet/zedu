@@ -223,22 +223,45 @@ export default function TeacherSchedule() {
     return m;
   }, [currentLessons, visiblePeriods, data.periodTimes]);
 
-  /** Build map (day, period) → class slot, matching by start_time = period start. */
+  /** Convert "HH:MM[:SS]" to total minutes. */
+  const toMin = (t: string): number => {
+    if (!t) return -1;
+    const [h, m] = t.split(":").map((x) => parseInt(x, 10) || 0);
+    return h * 60 + m;
+  };
+
+  /** Build map (day, period) → class slot[]. Match by closest period (slot.start within period range,
+   *  or nearest by start time). Multiple slots per cell are allowed. */
   const classByDayPeriod = useMemo(() => {
-    const m = new Map<string, ClassSlot>();
-    // Build start-time → period lookup
-    const startToPeriod = new Map<string, number>();
-    for (const p of visiblePeriods) {
-      const t = data.periodTimes[p];
-      if (t) startToPeriod.set(t.start.slice(0, 5), p);
-    }
+    const m = new Map<string, ClassSlot[]>();
+    const periodInfo = visiblePeriods
+      .map((p) => {
+        const t = data.periodTimes[p];
+        if (!t) return null;
+        return { period: p, start: toMin(t.start), end: toMin(t.end) };
+      })
+      .filter((x): x is { period: number; start: number; end: number } => x !== null);
+
     for (const s of visibleClassSlots) {
       const dayIdx = s.day_of_week - 1;
       if (dayIdx < 0 || dayIdx > 4) continue;
-      const period = startToPeriod.get((s.start_time || "").slice(0, 5));
-      if (!period) continue;
-      const key = `${dayIdx}-${period}`;
-      if (!m.has(key)) m.set(key, s);
+      const slotStart = toMin((s.start_time || "").slice(0, 5));
+      if (slotStart < 0 || periodInfo.length === 0) continue;
+      // Prefer period whose [start,end) contains slot start; otherwise nearest by |start diff|.
+      let chosen = periodInfo.find((p) => slotStart >= p.start && slotStart < p.end);
+      if (!chosen) {
+        chosen = periodInfo.reduce((best, p) =>
+          Math.abs(p.start - slotStart) < Math.abs(best.start - slotStart) ? p : best,
+        periodInfo[0]);
+      }
+      const key = `${dayIdx}-${chosen.period}`;
+      const arr = m.get(key) ?? [];
+      arr.push(s);
+      m.set(key, arr);
+    }
+    // Sort each cell by start_time for stable display
+    for (const arr of m.values()) {
+      arr.sort((a, b) => toMin(a.start_time) - toMin(b.start_time));
     }
     return m;
   }, [visibleClassSlots, visiblePeriods, data.periodTimes]);
