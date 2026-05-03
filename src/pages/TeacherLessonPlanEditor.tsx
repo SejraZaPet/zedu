@@ -47,16 +47,39 @@ const PHASES: Phase[] = [
   { key: "zaver", title: "Závěr", hint: "Shrnutí, domácí úkol, rozloučení." },
 ];
 
+type ActivityKind =
+  | "quiz"
+  | "worksheet"
+  | "live_game"
+  | "lesson_block"
+  | "offline_activity"
+  | "discussion";
+
+interface SuggestedActivity {
+  kind: ActivityKind;
+  title: string;
+}
+
 interface PhaseValue {
   timeMin: string;
   description: string;
+  activities?: SuggestedActivity[];
 }
+
+const ACTIVITY_META: Record<ActivityKind, { label: string; href: string | null; hrefLabel: string }> = {
+  quiz: { label: "Kvíz / interaktivní aktivita", href: "/ucitel/aktivity", hrefLabel: "Otevřít aktivity" },
+  worksheet: { label: "Pracovní list", href: "/ucitel/pracovni-listy", hrefLabel: "Pracovní listy" },
+  live_game: { label: "Živá hra", href: "/ucitel/hry", hrefLabel: "Spustit živou hru" },
+  lesson_block: { label: "Blok z učebnice", href: null, hrefLabel: "Otevřít lekci" },
+  offline_activity: { label: "Offline aktivita z učebnice", href: null, hrefLabel: "Otevřít lekci" },
+  discussion: { label: "Řízená diskuse", href: null, hrefLabel: "" },
+};
 
 type PhasesState = Record<string, PhaseValue>;
 
 const emptyPhases = (): PhasesState =>
   PHASES.reduce((acc, p) => {
-    acc[p.key] = { timeMin: "", description: "" };
+    acc[p.key] = { timeMin: "", description: "", activities: [] };
     return acc;
   }, {} as PhasesState);
 
@@ -95,6 +118,7 @@ export default function TeacherLessonPlanEditor() {
       ? `${searchParams.get("start")}-${searchParams.get("end") ?? ""}`
       : "",
   );
+  const [textbookId, setTextbookId] = useState<string>("");
   const [lessonId, setLessonId] = useState<string>("");
   const [aiInstructions, setAiInstructions] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
@@ -108,7 +132,19 @@ export default function TeacherLessonPlanEditor() {
       .then(({ data }) => setDbSlots((data as any[]) ?? []));
   }, [user]);
 
-  /** Lessons available for the chosen subject (teacher textbooks) */
+  /** All teacher textbooks (for explicit picker, independent of subject) */
+  const [textbooks, setTextbooks] = useState<{ id: string; title: string; subject: string }[]>([]);
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("teacher_textbooks")
+      .select("id, title, subject")
+      .eq("teacher_id", user.id)
+      .order("title", { ascending: true })
+      .then(({ data }) => setTextbooks((data as any[]) ?? []));
+  }, [user]);
+
+  /** Default textbook from chosen subject */
   const matchedTextbookId = useMemo(() => {
     const s = subjects.find(
       (s) => s.label.toLowerCase() === (subject || "").trim().toLowerCase(),
@@ -116,15 +152,19 @@ export default function TeacherLessonPlanEditor() {
     return s?.teacherTextbookId;
   }, [subjects, subject]);
 
+  useEffect(() => {
+    if (matchedTextbookId && !textbookId) setTextbookId(matchedTextbookId);
+  }, [matchedTextbookId, textbookId]);
+
   const [lessons, setLessons] = useState<LessonOption[]>([]);
   useEffect(() => {
     setLessons([]);
     setLessonId("");
-    if (!matchedTextbookId) return;
+    if (!textbookId) return;
     supabase
       .from("teacher_textbook_lessons")
       .select("id, title, blocks")
-      .eq("textbook_id", matchedTextbookId)
+      .eq("textbook_id", textbookId)
       .order("sort_order", { ascending: true })
       .then(({ data }) => {
         setLessons(
@@ -132,11 +172,12 @@ export default function TeacherLessonPlanEditor() {
             id: l.id,
             title: l.title,
             source: "teacher_textbook_lessons",
+            textbookId,
             blocks: l.blocks,
           })),
         );
       });
-  }, [matchedTextbookId]);
+  }, [textbookId]);
 
   const selectedLesson = useMemo(
     () => lessons.find((l) => l.id === lessonId),
@@ -223,6 +264,24 @@ export default function TeacherLessonPlanEditor() {
     }
   }
 
+  /** Compact summary of available blocks for the AI (type + short title). */
+  function extractBlockSummaries(blocks: any): { type: string; title: string }[] {
+    if (!Array.isArray(blocks)) return [];
+    return blocks
+      .map((b: any) => {
+        if (!b || typeof b !== "object") return null;
+        const type = b.type || b.kind || "block";
+        const title =
+          b.title ||
+          b.props?.title ||
+          (typeof b.text === "string" ? b.text.slice(0, 80) : "") ||
+          (typeof b.content === "string" ? b.content.slice(0, 80) : "") ||
+          "";
+        return { type: String(type), title: String(title).trim() };
+      })
+      .filter(Boolean) as { type: string; title: string }[];
+  }
+
   async function generateWithAI() {
     if (!subject && !aiInstructions.trim() && !selectedLesson) {
       toast({
@@ -234,11 +293,15 @@ export default function TeacherLessonPlanEditor() {
     setAiLoading(true);
     try {
       const lessonContent = selectedLesson ? extractText(selectedLesson.blocks) : "";
+      const availableLessonBlocks = selectedLesson
+        ? extractBlockSummaries(selectedLesson.blocks)
+        : [];
       const { data, error } = await supabase.functions.invoke("generate-lesson-phases", {
         body: {
           subject,
           lessonTitle: selectedLesson?.title,
           lessonContent,
+          availableLessonBlocks,
           customInstructions: aiInstructions,
           totalMin: 45,
         },
@@ -253,6 +316,7 @@ export default function TeacherLessonPlanEditor() {
             next[p.key] = {
               timeMin: String(inc.timeMin ?? ""),
               description: inc.description ?? "",
+              activities: Array.isArray(inc.activities) ? inc.activities : [],
             };
           }
         }
@@ -368,18 +432,50 @@ export default function TeacherLessonPlanEditor() {
             </Select>
           </div>
 
-          {/* Lekce z učebnice */}
-          {matchedTextbookId && (
+          {/* Učebnice + lekce */}
+          <div className="grid sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label htmlFor="plan-lesson" className="flex items-center gap-1.5">
+              <Label htmlFor="plan-textbook" className="flex items-center gap-1.5">
                 <BookOpen className="w-3.5 h-3.5" />
-                Lekce z učebnice
+                Učebnice
               </Label>
-              <Select value={lessonId || undefined} onValueChange={setLessonId}>
+              <Select
+                value={textbookId || undefined}
+                onValueChange={(v) => {
+                  setTextbookId(v);
+                  setLessonId("");
+                }}
+              >
+                <SelectTrigger id="plan-textbook">
+                  <SelectValue
+                    placeholder={textbooks.length ? "Vyber učebnici…" : "Žádné učebnice"}
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {textbooks.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="plan-lesson">Lekce z učebnice</Label>
+              <Select
+                value={lessonId || undefined}
+                onValueChange={setLessonId}
+                disabled={!textbookId}
+              >
                 <SelectTrigger id="plan-lesson">
                   <SelectValue
                     placeholder={
-                      lessons.length ? "Vyber lekci…" : "V této učebnici nejsou lekce"
+                      !textbookId
+                        ? "Nejprve vyber učebnici"
+                        : lessons.length
+                          ? "Vyber lekci…"
+                          : "V této učebnici nejsou lekce"
                     }
                   />
                 </SelectTrigger>
@@ -391,10 +487,12 @@ export default function TeacherLessonPlanEditor() {
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">
-                AI navrhne strukturu hodiny na základě obsahu této lekce.
-              </p>
             </div>
+          </div>
+          {selectedLesson && (
+            <p className="text-xs text-muted-foreground -mt-2">
+              AI bude vycházet z obsahu lekce <strong>{selectedLesson.title}</strong>.
+            </p>
           )}
 
           {/* Propojení s konkrétní hodinou v rozvrhu */}
@@ -566,6 +664,47 @@ export default function TeacherLessonPlanEditor() {
                   placeholder="Popiš aktivity v této fázi…"
                   rows={3}
                 />
+
+                {value.activities && value.activities.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    <p className="text-xs font-medium text-muted-foreground">
+                      Navržené ZEdu aktivity
+                    </p>
+                    <ul className="space-y-1.5">
+                      {value.activities.map((act, i) => {
+                        const meta = ACTIVITY_META[act.kind];
+                        const isLessonBlock =
+                          act.kind === "lesson_block" || act.kind === "offline_activity";
+                        const href = isLessonBlock
+                          ? selectedLesson?.textbookId
+                            ? `/ucitel/ucebnice/${selectedLesson.textbookId}/lekce?lesson=${selectedLesson.id}`
+                            : null
+                          : meta?.href ?? null;
+                        return (
+                          <li
+                            key={i}
+                            className="flex items-start justify-between gap-3 text-sm bg-muted/30 border border-border rounded-md px-3 py-2"
+                          >
+                            <div className="min-w-0">
+                              <div className="font-medium truncate">{act.title}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {meta?.label ?? act.kind}
+                              </div>
+                            </div>
+                            {href && meta?.hrefLabel && (
+                              <a
+                                href={href}
+                                className="text-xs text-primary hover:underline shrink-0 whitespace-nowrap"
+                              >
+                                {meta.hrefLabel} →
+                              </a>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                )}
               </div>
             );
           })}
