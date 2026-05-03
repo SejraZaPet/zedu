@@ -677,7 +677,7 @@ export default function TeacherLessonPlanEditor() {
                           act.kind === "lesson_block" || act.kind === "offline_activity";
                         const href = isLessonBlock
                           ? selectedLesson?.textbookId
-                            ? `/ucitel/ucebnice/${selectedLesson.textbookId}/lekce/${selectedLesson.id}`
+                            ? `/ucitel/ucebnice/${selectedLesson.textbookId}/lekce?lesson=${selectedLesson.id}`
                             : null
                           : meta?.href ?? null;
                         return (
