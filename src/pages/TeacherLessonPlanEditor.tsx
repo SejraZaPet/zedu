@@ -692,25 +692,40 @@ export default function TeacherLessonPlanEditor() {
               ? " Vychází z vybrané lekce."
               : " Vyber lekci nebo napiš vlastní pokyny."}
           </p>
-          <Textarea
-            value={aiInstructions}
-            onChange={(e) => setAiInstructions(e.target.value)}
-            placeholder="Vlastní pokyny – např. „Zaměř se na skupinovou práci a krátké video v motivaci.“"
-            rows={2}
-          />
-          <Button onClick={generateWithAI} disabled={aiLoading} size="sm">
-            {aiLoading ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Generuji…
-              </>
-            ) : (
-              <>
+          <div className="flex flex-col sm:flex-row gap-2 items-stretch">
+            <Textarea
+              value={aiInstructions}
+              onChange={(e) => setAiInstructions(e.target.value)}
+              placeholder="Vlastní pokyny – např. „Zaměř se na skupinovou práci a krátké video v motivaci.“"
+              rows={2}
+              className="flex-1"
+            />
+            <div className="flex sm:flex-col gap-2">
+              <Button
+                onClick={() => generateWithAI({ fromLessonOnly: true })}
+                disabled={aiLoading || !selectedLesson}
+                size="sm"
+                variant="outline"
+                title={!selectedLesson ? "Nejprve vyber lekci" : "Rychlý návrh přímo z obsahu vybrané lekce"}
+              >
                 <Sparkles className="w-4 h-4 mr-2" />
-                Navrhnout plán
-              </>
-            )}
-          </Button>
+                Navrhnout z lekce
+              </Button>
+              <Button onClick={() => generateWithAI()} disabled={aiLoading} size="sm">
+                {aiLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Generuji…
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Navrhnout plán
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
         </div>
 
         {/* Fáze hodiny */}
