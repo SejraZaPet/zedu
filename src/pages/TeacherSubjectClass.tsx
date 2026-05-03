@@ -408,10 +408,17 @@ export default function TeacherSubjectClass() {
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Button variant="outline" onClick={openTextbook}>
-                <BookOpen className="h-4 w-4 mr-2" />
-                Otevřít učebnici
-              </Button>
+              {linkedTextbookId ? (
+                <Button variant="outline" onClick={openTextbook}>
+                  <BookOpen className="h-4 w-4 mr-2" />
+                  Otevřít učebnici
+                </Button>
+              ) : (
+                <Button variant="outline" onClick={openLinkDialog}>
+                  <Link2 className="h-4 w-4 mr-2" />
+                  Propojit učebnici
+                </Button>
+              )}
               <Button onClick={launchLesson}>
                 <PlayCircle className="h-4 w-4 mr-2" />
                 Spustit lekci
