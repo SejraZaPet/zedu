@@ -549,10 +549,7 @@ export default function TeacherSubjectClass() {
                   <div className="space-y-2">
                     {pastLessons.map((e) => {
                       const dateStr = format(e.start, "EEE d. M.", { locale: cs });
-                      const planForDate = plans.find((p) =>
-                        format(new Date(p.created_at), "yyyy-MM-dd") ===
-                        format(e.start, "yyyy-MM-dd"),
-                      );
+                      const planForDate = findPlanForDate(format(e.start, "yyyy-MM-dd"));
                       return (
                         <Card key={e.id} className="p-3">
                           <div className="flex items-center justify-between gap-2">
