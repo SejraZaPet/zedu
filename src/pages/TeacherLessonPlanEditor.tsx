@@ -278,6 +278,83 @@ export default function TeacherLessonPlanEditor() {
 
   const [classId, setClassId] = useState<string>("");
 
+  /**
+   * (subject, classId) pairs derived from both the personal schedule
+   * (localStorage) and the DB-backed `class_schedule_slots`. Used to
+   * cross-filter the Subject and Class pickers.
+   */
+  const schedulePairs = useMemo(() => {
+    const pairs: { subject: string; classId?: string; className?: string }[] = [];
+    // Personal schedule (all weeks pooled)
+    const ps = loadSchedule();
+    const allLessons = [...ps.lessonsBoth, ...ps.lessonsOdd, ...ps.lessonsEven];
+    for (const l of allLessons) {
+      if (!l.subject) continue;
+      pairs.push({
+        subject: l.subject.trim(),
+        classId: l.classId || undefined,
+        className: l.className || undefined,
+      });
+    }
+    // DB schedule slots
+    for (const s of dbSlots as any[]) {
+      const subj = (s.subject_label || "").trim();
+      if (!subj) continue;
+      pairs.push({
+        subject: subj,
+        classId: s.class_id || undefined,
+        className: s.classes?.name || undefined,
+      });
+    }
+    return pairs;
+  }, [dbSlots]);
+
+  /** Class IDs that have the chosen subject scheduled. */
+  const allowedClassIds = useMemo(() => {
+    if (!subject) return null; // null = no filter
+    const set = new Set<string>();
+    const target = subject.trim().toLowerCase();
+    for (const p of schedulePairs) {
+      if (p.classId && p.subject.toLowerCase() === target) set.add(p.classId);
+    }
+    return set;
+  }, [schedulePairs, subject]);
+
+  /** Subject labels that are scheduled for the chosen class. */
+  const allowedSubjects = useMemo(() => {
+    if (!classId) return null;
+    const set = new Set<string>();
+    for (const p of schedulePairs) {
+      if (p.classId === classId) set.add(p.subject.toLowerCase());
+    }
+    return set;
+  }, [schedulePairs, classId]);
+
+  /** Filtered subject options for the Subject picker. */
+  const filteredSubjects = useMemo(() => {
+    if (!allowedSubjects) return subjects;
+    const filtered = subjects.filter((s) =>
+      allowedSubjects.has(s.label.trim().toLowerCase()),
+    );
+    // Always keep currently selected subject visible to avoid an empty trigger.
+    if (subject && !filtered.some((s) => s.label === subject)) {
+      filtered.unshift({ label: subject, source: "predefined" } as any);
+    }
+    return filtered;
+  }, [subjects, allowedSubjects, subject]);
+
+  /** Filtered classes for the Class picker. */
+  const filteredClasses = useMemo(() => {
+    if (!allowedClassIds) return teacherClasses;
+    const filtered = teacherClasses.filter((c) => allowedClassIds.has(c.id));
+    if (classId && !filtered.some((c) => c.id === classId)) {
+      const cur = teacherClasses.find((c) => c.id === classId);
+      if (cur) filtered.unshift(cur);
+    }
+    return filtered;
+  }, [teacherClasses, allowedClassIds, classId]);
+
+
   /** Schedule occurrences for the chosen subject */
   const occurrences = useMemo<(ScheduledOccurrence & { classId?: string })[]>(() => {
     if (!subject) return [];
@@ -589,28 +666,72 @@ export default function TeacherLessonPlanEditor() {
             />
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="plan-subject">Předmět</Label>
-            <Select
-              value={subject || undefined}
-              onValueChange={(v) => {
-                setSubject(v);
-                setLinkedDate("");
-                setLinkedTime("");
-              }}
-            >
-              <SelectTrigger id="plan-subject">
-                <SelectValue placeholder="Vyber předmět z učebnic / rozvrhu…" />
-              </SelectTrigger>
-              <SelectContent>
-                {subjects.map((s) => (
-                  <SelectItem key={`${s.source}-${s.label}`} value={s.label}>
-                    {s.abbreviation ? `${s.abbreviation} · ${s.label}` : s.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="plan-subject">Předmět</Label>
+              <Select
+                value={subject || undefined}
+                onValueChange={(v) => {
+                  setSubject(v);
+                  setLinkedDate("");
+                  setLinkedTime("");
+                }}
+              >
+                <SelectTrigger id="plan-subject">
+                  <SelectValue
+                    placeholder={
+                      filteredSubjects.length
+                        ? "Vyber předmět…"
+                        : classId
+                          ? "Tato třída nemá v rozvrhu žádný předmět"
+                          : "Vyber předmět z učebnic / rozvrhu…"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {filteredSubjects.map((s) => (
+                    <SelectItem key={`${s.source}-${s.label}`} value={s.label}>
+                      {s.abbreviation ? `${s.abbreviation} · ${s.label}` : s.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="plan-class">Třída</Label>
+              <Select
+                value={classId || undefined}
+                onValueChange={(v) => {
+                  setClassId(v);
+                  setLinkedDate("");
+                  setLinkedTime("");
+                }}
+              >
+                <SelectTrigger id="plan-class">
+                  <SelectValue
+                    placeholder={
+                      filteredClasses.length
+                        ? "Vyber třídu…"
+                        : subject
+                          ? "Žádná třída nemá tento předmět v rozvrhu"
+                          : "Žádné třídy"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {filteredClasses.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
+          <p className="text-xs text-muted-foreground -mt-2">
+            Předmět a třída se vzájemně filtrují podle rozvrhu (rozvrhové sloty).
+          </p>
 
           {/* Učebnice + lekce */}
           <div className="grid sm:grid-cols-2 gap-4">
@@ -678,35 +799,6 @@ export default function TeacherLessonPlanEditor() {
           {/* Propojení s konkrétní hodinou v rozvrhu */}
           {subject && (
             <div className="space-y-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="plan-class">Třída</Label>
-                <Select
-                  value={classId || undefined}
-                  onValueChange={(v) => {
-                    setClassId(v);
-                    setLinkedDate("");
-                    setLinkedTime("");
-                  }}
-                >
-                  <SelectTrigger id="plan-class">
-                    <SelectValue
-                      placeholder={
-                        teacherClasses.length ? "Vyber třídu…" : "Žádné třídy"
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {teacherClasses.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  Termíny se filtrují podle rozvrhu této třídy pro vybraný předmět.
-                </p>
-              </div>
 
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
