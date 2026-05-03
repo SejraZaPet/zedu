@@ -348,9 +348,11 @@ const ClassScheduleDialog = ({ classId, className, open, onOpenChange }: Props) 
                 room: editing.room ?? "",
                 validFrom: editing.valid_from ?? null,
                 validTo: editing.valid_to ?? null,
+                weekParity: editing.week_parity ?? "every",
               }
             : { classId, className }
         }
+        showMirrorSwitch
         periods={periods}
         onSave={handleSave}
         title={editing ? "Upravit hodinu" : "Nová hodina"}
