@@ -773,6 +773,91 @@ export default function TeacherLessonPlanEditor() {
                   </Select>
                 </div>
               </div>
+
+              {/* Linked slots (multi-assignment) */}
+              <div className="rounded-lg border border-dashed border-border bg-muted/20 p-3 space-y-2">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <p className="text-xs font-medium">
+                    Další přiřazené termíny ({linkedSlots.length})
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={!subject || !linkedDate || !linkedTime}
+                    onClick={() => {
+                      const slot = filteredOccurrences.find(
+                        (o) =>
+                          o.date === linkedDate &&
+                          `${o.start}-${o.end}` === linkedTime,
+                      );
+                      const newSlot = {
+                        subject,
+                        classId: classId || slot?.classId,
+                        className: slot?.className,
+                        date: linkedDate,
+                        time: linkedTime,
+                      };
+                      setLinkedSlots((prev) => {
+                        const exists = prev.some(
+                          (s) =>
+                            s.subject === newSlot.subject &&
+                            s.date === newSlot.date &&
+                            s.time === newSlot.time &&
+                            s.classId === newSlot.classId,
+                        );
+                        if (exists) {
+                          toast({ title: "Termín už je přiřazen" });
+                          return prev;
+                        }
+                        return [...prev, newSlot];
+                      });
+                    }}
+                  >
+                    <Plus className="w-3.5 h-3.5 mr-1.5" />
+                    Přidat aktuální termín
+                  </Button>
+                </div>
+                {linkedSlots.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">
+                    Plán lze přiřadit i k více předmětům a hodinám. Vyber termín výše
+                    a klikni „Přidat aktuální termín".
+                  </p>
+                ) : (
+                  <ul className="flex flex-wrap gap-2">
+                    {linkedSlots.map((sl, i) => (
+                      <li key={i}>
+                        <Badge
+                          variant="secondary"
+                          className="gap-1.5 pr-1 text-xs font-normal"
+                        >
+                          <span>
+                            {sl.subject}
+                            {" · "}
+                            {sl.date
+                              ? format(new Date(sl.date), "d. M.", { locale: cs })
+                              : ""}
+                            {sl.time ? ` · ${sl.time.replace("-", "–")}` : ""}
+                            {sl.className ? ` · ${sl.className}` : ""}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setLinkedSlots((prev) =>
+                                prev.filter((_, idx) => idx !== i),
+                              )
+                            }
+                            className="rounded p-0.5 hover:bg-background/60"
+                            aria-label="Odebrat termín"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </Badge>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
           )}
 
