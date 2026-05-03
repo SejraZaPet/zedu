@@ -20,6 +20,7 @@ export type CalendarEvent = {
   priority?: "low" | "normal" | "high";
   color?: string;
   abbreviation?: string;
+  weekParity?: "every" | "odd" | "even";
 };
 
 export type ScheduleSlotInput = {
@@ -107,6 +108,7 @@ export function expandScheduleSlots(
         subject: slot.subject_label || undefined,
         color,
         abbreviation,
+        weekParity: slot.week_parity,
       });
     }
   }
