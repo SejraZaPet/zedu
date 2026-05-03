@@ -161,31 +161,84 @@ export default function TeacherLessonPlanEditor() {
     setLessons([]);
     setLessonId("");
     if (!textbookId) return;
-    supabase
-      .from("teacher_textbook_lessons")
-      .select("id, title, blocks")
-      .eq("textbook_id", textbookId)
-      .order("sort_order", { ascending: true })
-      .then(({ data }) => {
-        setLessons(
-          (data ?? []).map((l: any) => ({
+    (async () => {
+      // 1) Teacher's own textbook lessons
+      const { data: ownLessons } = await supabase
+        .from("teacher_textbook_lessons")
+        .select("id, title, blocks")
+        .eq("textbook_id", textbookId)
+        .order("sort_order", { ascending: true });
+
+      const own: LessonOption[] = (ownLessons ?? []).map((l: any) => ({
+        id: l.id,
+        title: l.title,
+        source: "teacher_textbook_lessons" as const,
+        textbookId,
+        blocks: l.blocks,
+      }));
+
+      // 2) Global textbook lessons linked via subject slug of the textbook
+      const tb = textbooks.find((t) => t.id === textbookId);
+      let global: LessonOption[] = [];
+      if (tb?.subject) {
+        const { data: topics } = await supabase
+          .from("textbook_topics" as any)
+          .select("id")
+          .eq("subject", tb.subject);
+        const topicIds = (topics ?? []).map((t: any) => t.id);
+        if (topicIds.length) {
+          const { data: gl } = await supabase
+            .from("textbook_lessons" as any)
+            .select("id, title, blocks, sort_order")
+            .in("topic_id", topicIds)
+            .order("sort_order", { ascending: true });
+          global = (gl ?? []).map((l: any) => ({
             id: l.id,
             title: l.title,
-            source: "teacher_textbook_lessons",
+            source: "lessons" as const,
             textbookId,
             blocks: l.blocks,
-          })),
-        );
-      });
-  }, [textbookId]);
+          }));
+        }
+      }
+
+      setLessons([...own, ...global]);
+    })();
+  }, [textbookId, textbooks]);
 
   const selectedLesson = useMemo(
     () => lessons.find((l) => l.id === lessonId),
     [lessons, lessonId],
   );
 
+  /** Classes the teacher belongs to (for filtering schedule occurrences) */
+  const [teacherClasses, setTeacherClasses] = useState<{ id: string; name: string }[]>([]);
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data: ct } = await supabase
+        .from("class_teachers")
+        .select("class_id")
+        .eq("user_id", user.id);
+      const ids = (ct ?? []).map((r: any) => r.class_id);
+      if (!ids.length) {
+        setTeacherClasses([]);
+        return;
+      }
+      const { data: cls } = await supabase
+        .from("classes")
+        .select("id, name")
+        .in("id", ids)
+        .eq("archived", false)
+        .order("name");
+      setTeacherClasses((cls as any[]) ?? []);
+    })();
+  }, [user]);
+
+  const [classId, setClassId] = useState<string>("");
+
   /** Schedule occurrences for the chosen subject */
-  const occurrences = useMemo<ScheduledOccurrence[]>(() => {
+  const occurrences = useMemo<(ScheduledOccurrence & { classId?: string })[]>(() => {
     if (!subject) return [];
     const from = startOfDay(new Date());
     const to = addDays(from, 8 * 7);
@@ -195,9 +248,9 @@ export default function TeacherLessonPlanEditor() {
       (e) => (e.subject ?? "").trim().toLowerCase() === subject.trim().toLowerCase(),
     );
     const seen = new Set<string>();
-    const list: ScheduledOccurrence[] = [];
+    const list: (ScheduledOccurrence & { classId?: string })[] = [];
     for (const e of all.sort((a, b) => a.start.getTime() - b.start.getTime())) {
-      const key = `${format(e.start, "yyyy-MM-dd")}-${formatTime(e.start)}`;
+      const key = `${format(e.start, "yyyy-MM-dd")}-${formatTime(e.start)}-${e.classId ?? ""}`;
       if (seen.has(key)) continue;
       seen.add(key);
       list.push({
@@ -206,20 +259,26 @@ export default function TeacherLessonPlanEditor() {
         end: formatTime(e.end),
         className: e.className,
         room: e.room,
+        classId: e.classId,
       });
     }
     return list;
   }, [subject, dbSlots]);
 
+  const filteredOccurrences = useMemo(
+    () => (classId ? occurrences.filter((o) => o.classId === classId) : occurrences),
+    [occurrences, classId],
+  );
+
   const availableDates = useMemo(() => {
     const set = new Map<string, ScheduledOccurrence>();
-    for (const o of occurrences) if (!set.has(o.date)) set.set(o.date, o);
+    for (const o of filteredOccurrences) if (!set.has(o.date)) set.set(o.date, o);
     return Array.from(set.keys());
-  }, [occurrences]);
+  }, [filteredOccurrences]);
 
   const timeSlotsForDate = useMemo(
-    () => occurrences.filter((o) => o.date === linkedDate),
-    [occurrences, linkedDate],
+    () => filteredOccurrences.filter((o) => o.date === linkedDate),
+    [filteredOccurrences, linkedDate],
   );
 
   useEffect(() => {
