@@ -432,18 +432,50 @@ export default function TeacherLessonPlanEditor() {
             </Select>
           </div>
 
-          {/* Lekce z učebnice */}
-          {matchedTextbookId && (
+          {/* Učebnice + lekce */}
+          <div className="grid sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label htmlFor="plan-lesson" className="flex items-center gap-1.5">
+              <Label htmlFor="plan-textbook" className="flex items-center gap-1.5">
                 <BookOpen className="w-3.5 h-3.5" />
-                Lekce z učebnice
+                Učebnice
               </Label>
-              <Select value={lessonId || undefined} onValueChange={setLessonId}>
+              <Select
+                value={textbookId || undefined}
+                onValueChange={(v) => {
+                  setTextbookId(v);
+                  setLessonId("");
+                }}
+              >
+                <SelectTrigger id="plan-textbook">
+                  <SelectValue
+                    placeholder={textbooks.length ? "Vyber učebnici…" : "Žádné učebnice"}
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {textbooks.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="plan-lesson">Lekce z učebnice</Label>
+              <Select
+                value={lessonId || undefined}
+                onValueChange={setLessonId}
+                disabled={!textbookId}
+              >
                 <SelectTrigger id="plan-lesson">
                   <SelectValue
                     placeholder={
-                      lessons.length ? "Vyber lekci…" : "V této učebnici nejsou lekce"
+                      !textbookId
+                        ? "Nejprve vyber učebnici"
+                        : lessons.length
+                          ? "Vyber lekci…"
+                          : "V této učebnici nejsou lekce"
                     }
                   />
                 </SelectTrigger>
@@ -455,10 +487,12 @@ export default function TeacherLessonPlanEditor() {
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">
-                AI navrhne strukturu hodiny na základě obsahu této lekce.
-              </p>
             </div>
+          </div>
+          {selectedLesson && (
+            <p className="text-xs text-muted-foreground -mt-2">
+              AI bude vycházet z obsahu lekce <strong>{selectedLesson.title}</strong>.
+            </p>
           )}
 
           {/* Propojení s konkrétní hodinou v rozvrhu */}
