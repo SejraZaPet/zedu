@@ -253,7 +253,7 @@ export default function LessonFormDialog({
   const validationError =
     !resolvedSubject
       ? "Vyberte předmět."
-      : isNew && selectedDays.length === 0
+      : selectedDays.length === 0
         ? "Vyberte alespoň jeden den."
         : validFrom && validTo && validTo < validFrom
           ? "Platnost do musí být po platnosti od."
