@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -15,6 +15,8 @@ import type { CalendarEvent } from "@/lib/calendar-utils";
 import { formatTime } from "@/lib/calendar-utils";
 import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { getPhasePlan } from "@/lib/lesson-phase-plans";
 
 interface Props {
