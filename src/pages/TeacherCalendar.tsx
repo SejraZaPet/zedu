@@ -16,6 +16,7 @@ import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { Button } from "@/components/ui/button";
 import CalendarWeekGrid from "@/components/calendar/CalendarWeekGrid";
+import CalendarEventDetailDialog from "@/components/calendar/CalendarEventDetailDialog";
 import {
   type CalendarEvent,
   expandScheduleSlots,
@@ -33,6 +34,7 @@ const TeacherCalendar = () => {
   const [selectedDay, setSelectedDay] = useState<Date>(new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [detailEvent, setDetailEvent] = useState<CalendarEvent | null>(null);
 
   const range = useMemo(() => {
     if (viewMode === "day") {
@@ -122,7 +124,7 @@ const TeacherCalendar = () => {
   }, [authLoading, user, navigate, range]);
 
   const handleEventClick = (event: CalendarEvent) => {
-    if (event.type === "lesson") navigate("/ucitel/tridy");
+    if (event.type === "lesson") setDetailEvent(event);
     else if (event.type === "assignment") navigate("/ucitel/ulohy");
     else navigate("/todo");
   };
@@ -239,6 +241,11 @@ const TeacherCalendar = () => {
           </span>
         </div>
       </main>
+      <CalendarEventDetailDialog
+        event={detailEvent}
+        open={!!detailEvent}
+        onOpenChange={(o) => { if (!o) setDetailEvent(null); }}
+      />
       <SiteFooter />
     </div>
   );
