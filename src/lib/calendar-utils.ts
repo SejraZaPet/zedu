@@ -91,6 +91,10 @@ export function expandScheduleSlots(
       const className = slot.classes?.name ?? "";
       const title = slot.subject_label?.trim() || className || "Hodina";
 
+      const subjectKey = (slot.subject_label || "").trim();
+      const color = slot.color || (subjectKey ? colorForSubject(subjectKey) : undefined);
+      const abbreviation = slot.abbreviation || (subjectKey ? subjectKey.slice(0, 3).toUpperCase() : undefined);
+
       events.push({
         id: `${slot.id}-${date.toISOString().slice(0, 10)}`,
         type: "lesson",
@@ -101,6 +105,8 @@ export function expandScheduleSlots(
         className,
         room: slot.room || undefined,
         subject: slot.subject_label || undefined,
+        color,
+        abbreviation,
       });
     }
   }
