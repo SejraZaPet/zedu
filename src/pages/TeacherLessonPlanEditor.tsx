@@ -664,6 +664,47 @@ export default function TeacherLessonPlanEditor() {
                   placeholder="Popiš aktivity v této fázi…"
                   rows={3}
                 />
+
+                {value.activities && value.activities.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    <p className="text-xs font-medium text-muted-foreground">
+                      Navržené ZEdu aktivity
+                    </p>
+                    <ul className="space-y-1.5">
+                      {value.activities.map((act, i) => {
+                        const meta = ACTIVITY_META[act.kind];
+                        const isLessonBlock =
+                          act.kind === "lesson_block" || act.kind === "offline_activity";
+                        const href = isLessonBlock
+                          ? selectedLesson?.textbookId
+                            ? `/ucitel/ucebnice/${selectedLesson.textbookId}/lekce/${selectedLesson.id}`
+                            : null
+                          : meta?.href ?? null;
+                        return (
+                          <li
+                            key={i}
+                            className="flex items-start justify-between gap-3 text-sm bg-muted/30 border border-border rounded-md px-3 py-2"
+                          >
+                            <div className="min-w-0">
+                              <div className="font-medium truncate">{act.title}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {meta?.label ?? act.kind}
+                              </div>
+                            </div>
+                            {href && meta?.hrefLabel && (
+                              <a
+                                href={href}
+                                className="text-xs text-primary hover:underline shrink-0 whitespace-nowrap"
+                              >
+                                {meta.hrefLabel} →
+                              </a>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                )}
               </div>
             );
           })}
