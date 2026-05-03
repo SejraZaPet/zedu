@@ -20,6 +20,7 @@ export type CalendarEvent = {
   priority?: "low" | "normal" | "high";
   color?: string;
   abbreviation?: string;
+  weekParity?: "every" | "odd" | "even";
 };
 
 export type ScheduleSlotInput = {
