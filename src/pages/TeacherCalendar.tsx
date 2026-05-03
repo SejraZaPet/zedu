@@ -34,6 +34,7 @@ const TeacherCalendar = () => {
   const [selectedDay, setSelectedDay] = useState<Date>(new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [detailEvent, setDetailEvent] = useState<CalendarEvent | null>(null);
 
   const range = useMemo(() => {
     if (viewMode === "day") {
