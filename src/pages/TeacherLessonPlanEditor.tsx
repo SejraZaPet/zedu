@@ -278,6 +278,83 @@ export default function TeacherLessonPlanEditor() {
 
   const [classId, setClassId] = useState<string>("");
 
+  /**
+   * (subject, classId) pairs derived from both the personal schedule
+   * (localStorage) and the DB-backed `class_schedule_slots`. Used to
+   * cross-filter the Subject and Class pickers.
+   */
+  const schedulePairs = useMemo(() => {
+    const pairs: { subject: string; classId?: string; className?: string }[] = [];
+    // Personal schedule (all weeks pooled)
+    const ps = loadSchedule();
+    const allLessons = [...ps.lessonsBoth, ...ps.lessonsOdd, ...ps.lessonsEven];
+    for (const l of allLessons) {
+      if (!l.subject) continue;
+      pairs.push({
+        subject: l.subject.trim(),
+        classId: l.classId || undefined,
+        className: l.className || undefined,
+      });
+    }
+    // DB schedule slots
+    for (const s of dbSlots as any[]) {
+      const subj = (s.subject_label || "").trim();
+      if (!subj) continue;
+      pairs.push({
+        subject: subj,
+        classId: s.class_id || undefined,
+        className: s.classes?.name || undefined,
+      });
+    }
+    return pairs;
+  }, [dbSlots]);
+
+  /** Class IDs that have the chosen subject scheduled. */
+  const allowedClassIds = useMemo(() => {
+    if (!subject) return null; // null = no filter
+    const set = new Set<string>();
+    const target = subject.trim().toLowerCase();
+    for (const p of schedulePairs) {
+      if (p.classId && p.subject.toLowerCase() === target) set.add(p.classId);
+    }
+    return set;
+  }, [schedulePairs, subject]);
+
+  /** Subject labels that are scheduled for the chosen class. */
+  const allowedSubjects = useMemo(() => {
+    if (!classId) return null;
+    const set = new Set<string>();
+    for (const p of schedulePairs) {
+      if (p.classId === classId) set.add(p.subject.toLowerCase());
+    }
+    return set;
+  }, [schedulePairs, classId]);
+
+  /** Filtered subject options for the Subject picker. */
+  const filteredSubjects = useMemo(() => {
+    if (!allowedSubjects) return subjects;
+    const filtered = subjects.filter((s) =>
+      allowedSubjects.has(s.label.trim().toLowerCase()),
+    );
+    // Always keep currently selected subject visible to avoid an empty trigger.
+    if (subject && !filtered.some((s) => s.label === subject)) {
+      filtered.unshift({ label: subject, source: "predefined" } as any);
+    }
+    return filtered;
+  }, [subjects, allowedSubjects, subject]);
+
+  /** Filtered classes for the Class picker. */
+  const filteredClasses = useMemo(() => {
+    if (!allowedClassIds) return teacherClasses;
+    const filtered = teacherClasses.filter((c) => allowedClassIds.has(c.id));
+    if (classId && !filtered.some((c) => c.id === classId)) {
+      const cur = teacherClasses.find((c) => c.id === classId);
+      if (cur) filtered.unshift(cur);
+    }
+    return filtered;
+  }, [teacherClasses, allowedClassIds, classId]);
+
+
   /** Schedule occurrences for the chosen subject */
   const occurrences = useMemo<(ScheduledOccurrence & { classId?: string })[]>(() => {
     if (!subject) return [];
