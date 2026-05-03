@@ -122,6 +122,34 @@ export default function TeacherLessonPlanEditor() {
   const [lessonId, setLessonId] = useState<string>("");
   const [aiInstructions, setAiInstructions] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [planDbId, setPlanDbId] = useState<string | null>(
+    id && id !== "novy" ? id : null,
+  );
+
+  // Load existing plan from DB when editing
+  useEffect(() => {
+    if (!user || !id || id === "novy") return;
+    (async () => {
+      const { data, error } = await supabase
+        .from("lesson_plans")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
+      if (error || !data) return;
+      setPlanDbId(data.id);
+      setTitle(data.title || "Plán hodiny");
+      const input = (data.input_data as any) || {};
+      if (input.description) setDescription(input.description);
+      if (input.subject) setSubject(input.subject);
+      if (input.linkedDate) setLinkedDate(input.linkedDate);
+      if (input.linkedTime) setLinkedTime(input.linkedTime);
+      if (input.textbookId) setTextbookId(input.textbookId);
+      if (input.lessonId) setLessonId(input.lessonId);
+      if (input.classId) setClassId(input.classId);
+      if (input.phases) setPhases({ ...emptyPhases(), ...input.phases });
+    })();
+  }, [user, id]);
 
   const [dbSlots, setDbSlots] = useState<any[]>([]);
   useEffect(() => {
@@ -404,31 +432,78 @@ export default function TeacherLessonPlanEditor() {
     }
   }
 
-  function handleSave() {
-    // Persist a clean schedule (phase + minutes) to local store keyed by
-    // subject+date+start so it shows up in the calendar lesson detail.
-    if (subject && linkedDate && linkedTime) {
-      const [start, end] = linkedTime.split("-");
-      savePhasePlan({
-        subject,
-        date: linkedDate,
-        start,
-        end,
-        title,
-        phases: PHASES.map((p) => ({
-          key: p.key,
-          title: p.title,
-          timeMin: parseInt(phases[p.key].timeMin, 10) || 0,
-        })),
-        updatedAt: new Date().toISOString(),
-      });
+  async function handleSave() {
+    if (!user) {
+      toast({ title: "Nepřihlášen", description: "Přihlaš se pro uložení plánu.", variant: "destructive" });
+      return;
     }
-    toast({
-      title: "Plán uložen",
-      description: subject
-        ? `${subject}${linkedDate ? `, ${format(new Date(linkedDate), "d. M. yyyy", { locale: cs })}` : ""}${linkedTime ? `, ${linkedTime.replace("-", " – ")}` : ""}`
-        : "Plán uložen lokálně.",
-    });
+    setSaving(true);
+    try {
+      // Persist a clean schedule to local store for calendar
+      if (subject && linkedDate && linkedTime) {
+        const [start, end] = linkedTime.split("-");
+        savePhasePlan({
+          subject,
+          date: linkedDate,
+          start,
+          end,
+          title,
+          phases: PHASES.map((p) => ({
+            key: p.key,
+            title: p.title,
+            timeMin: parseInt(phases[p.key].timeMin, 10) || 0,
+          })),
+          updatedAt: new Date().toISOString(),
+        });
+      }
+
+      const payload = {
+        teacher_id: user.id,
+        title,
+        subject: subject || "",
+        grade_band: "",
+        slides: [],
+        input_data: {
+          description,
+          subject,
+          linkedDate,
+          linkedTime,
+          textbookId,
+          lessonId,
+          classId,
+          phases,
+        } as any,
+      };
+
+      let resultId = planDbId;
+      if (planDbId) {
+        const { error } = await supabase
+          .from("lesson_plans")
+          .update(payload)
+          .eq("id", planDbId);
+        if (error) throw error;
+      } else {
+        const { data, error } = await supabase
+          .from("lesson_plans")
+          .insert(payload)
+          .select("id")
+          .single();
+        if (error) throw error;
+        resultId = data.id;
+        setPlanDbId(data.id);
+        // Update URL without navigating away
+        window.history.replaceState(null, "", `/ucitel/plany-hodin/${data.id}`);
+      }
+      toast({ title: "Plán uložen" });
+    } catch (e: any) {
+      toast({
+        title: "Chyba ukládání",
+        description: e?.message || "Plán se nepodařilo uložit.",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
   }
 
   const summaryRows = PHASES.map((p) => ({
@@ -457,8 +532,8 @@ export default function TeacherLessonPlanEditor() {
               <Clock className="w-4 h-4" />
               <span>Celkem: {totalMin} min</span>
             </div>
-            <Button onClick={handleSave}>
-              <Save className="w-4 h-4 mr-2" />
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
               Uložit
             </Button>
           </div>

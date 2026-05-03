@@ -1,0 +1,1 @@
+ALTER TABLE public.lesson_plans ALTER COLUMN lesson_id DROP NOT NULL;
