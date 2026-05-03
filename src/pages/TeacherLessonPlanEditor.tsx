@@ -432,31 +432,78 @@ export default function TeacherLessonPlanEditor() {
     }
   }
 
-  function handleSave() {
-    // Persist a clean schedule (phase + minutes) to local store keyed by
-    // subject+date+start so it shows up in the calendar lesson detail.
-    if (subject && linkedDate && linkedTime) {
-      const [start, end] = linkedTime.split("-");
-      savePhasePlan({
-        subject,
-        date: linkedDate,
-        start,
-        end,
-        title,
-        phases: PHASES.map((p) => ({
-          key: p.key,
-          title: p.title,
-          timeMin: parseInt(phases[p.key].timeMin, 10) || 0,
-        })),
-        updatedAt: new Date().toISOString(),
-      });
+  async function handleSave() {
+    if (!user) {
+      toast({ title: "Nepřihlášen", description: "Přihlaš se pro uložení plánu.", variant: "destructive" });
+      return;
     }
-    toast({
-      title: "Plán uložen",
-      description: subject
-        ? `${subject}${linkedDate ? `, ${format(new Date(linkedDate), "d. M. yyyy", { locale: cs })}` : ""}${linkedTime ? `, ${linkedTime.replace("-", " – ")}` : ""}`
-        : "Plán uložen lokálně.",
-    });
+    setSaving(true);
+    try {
+      // Persist a clean schedule to local store for calendar
+      if (subject && linkedDate && linkedTime) {
+        const [start, end] = linkedTime.split("-");
+        savePhasePlan({
+          subject,
+          date: linkedDate,
+          start,
+          end,
+          title,
+          phases: PHASES.map((p) => ({
+            key: p.key,
+            title: p.title,
+            timeMin: parseInt(phases[p.key].timeMin, 10) || 0,
+          })),
+          updatedAt: new Date().toISOString(),
+        });
+      }
+
+      const payload = {
+        teacher_id: user.id,
+        title,
+        subject: subject || "",
+        grade_band: "",
+        slides: [],
+        input_data: {
+          description,
+          subject,
+          linkedDate,
+          linkedTime,
+          textbookId,
+          lessonId,
+          classId,
+          phases,
+        } as any,
+      };
+
+      let resultId = planDbId;
+      if (planDbId) {
+        const { error } = await supabase
+          .from("lesson_plans")
+          .update(payload)
+          .eq("id", planDbId);
+        if (error) throw error;
+      } else {
+        const { data, error } = await supabase
+          .from("lesson_plans")
+          .insert(payload)
+          .select("id")
+          .single();
+        if (error) throw error;
+        resultId = data.id;
+        setPlanDbId(data.id);
+        // Update URL without navigating away
+        window.history.replaceState(null, "", `/ucitel/plany-hodin/${data.id}`);
+      }
+      toast({ title: "Plán uložen" });
+    } catch (e: any) {
+      toast({
+        title: "Chyba ukládání",
+        description: e?.message || "Plán se nepodařilo uložit.",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
   }
 
   const summaryRows = PHASES.map((p) => ({
