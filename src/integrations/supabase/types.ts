@@ -1011,6 +1011,7 @@ export type Database = {
           login_password: string | null
           parent_email: string | null
           school: string
+          school_id: string | null
           status: Database["public"]["Enums"]["account_status"]
           student_code: string | null
           updated_at: string
@@ -1027,6 +1028,7 @@ export type Database = {
           login_password?: string | null
           parent_email?: string | null
           school?: string
+          school_id?: string | null
           status?: Database["public"]["Enums"]["account_status"]
           student_code?: string | null
           updated_at?: string
@@ -1043,11 +1045,44 @@ export type Database = {
           login_password?: string | null
           parent_email?: string | null
           school?: string
+          school_id?: string | null
           status?: Database["public"]["Enums"]["account_status"]
           student_code?: string | null
           updated_at?: string
           username?: string | null
           year?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      schools: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1668,6 +1703,7 @@ export type Database = {
       }
       generate_game_code: { Args: never; Returns: string }
       generate_teacher_join_code: { Args: never; Returns: string }
+      get_user_school_id: { Args: { _user_id: string }; Returns: string }
       increment_player_score: {
         Args: { _player_id: string; _score_delta: number }
         Returns: undefined
@@ -1684,6 +1720,11 @@ export type Database = {
       }
       is_enrolled_in_textbook: {
         Args: { _student_id: string; _textbook_id: string }
+        Returns: boolean
+      }
+      is_school_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_school_admin_of: {
+        Args: { _school_id: string; _user_id: string }
         Returns: boolean
       }
       join_class_as_teacher: {
@@ -1725,7 +1766,7 @@ export type Database = {
     }
     Enums: {
       account_status: "pending" | "approved" | "blocked"
-      app_role: "admin" | "user" | "teacher" | "rodic"
+      app_role: "admin" | "user" | "teacher" | "rodic" | "school_admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1854,7 +1895,7 @@ export const Constants = {
   public: {
     Enums: {
       account_status: ["pending", "approved", "blocked"],
-      app_role: ["admin", "user", "teacher", "rodic"],
+      app_role: ["admin", "user", "teacher", "rodic", "school_admin"],
     },
   },
 } as const

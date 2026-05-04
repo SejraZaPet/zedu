@@ -52,6 +52,7 @@ import TeacherLessonPlanEditor from "./pages/TeacherLessonPlanEditor";
 import TeacherSchedule from "./pages/TeacherSchedule";
 import TeacherSubjectClass from "./pages/TeacherSubjectClass";
 import TeacherSubjects from "./pages/TeacherSubjects";
+import SchoolAdmin from "./pages/SchoolAdmin";
 import ViewAsBanner from "./components/ViewAsBanner";
 
 const queryClient = new QueryClient();
@@ -69,6 +70,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+            <Route path="/skola" element={<ProtectedRoute><SchoolAdmin /></ProtectedRoute>} />
             <Route path="/student" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
             <Route path="/ucitel" element={<ProtectedRoute><TeacherDashboard /></ProtectedRoute>} />
             <Route path="/rodic" element={<ProtectedRoute><ParentDashboard /></ProtectedRoute>} />

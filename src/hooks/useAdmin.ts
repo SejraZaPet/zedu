@@ -31,6 +31,11 @@ export const useAdmin = () => {
       return;
     }
 
+    if (role === "school_admin") {
+      navigate("/skola");
+      return;
+    }
+
     if (role === "teacher" || role === "lektor") {
       // Teachers have their own panel at /ucitel, not /admin
       navigate("/ucitel");

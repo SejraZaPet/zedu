@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import { supabase } from "@/integrations/supabase/client";
 import type { Session, User } from "@supabase/supabase-js";
 
-type AppRole = "admin" | "teacher" | "lektor" | "rodic" | "user" | null;
+type AppRole = "admin" | "school_admin" | "teacher" | "lektor" | "rodic" | "user" | null;
 
 interface AuthState {
   session: Session | null;
@@ -36,7 +36,8 @@ const readViewAs = (): AppRole => {
 
 // Priority order: highest-privilege / most-specific role wins when a user has multiple rows.
 const ROLE_PRIORITY: Record<string, number> = {
-  admin: 5,
+  admin: 6,
+  school_admin: 5,
   teacher: 4,
   lektor: 3,
   rodic: 2,
