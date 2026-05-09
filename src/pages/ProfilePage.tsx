@@ -306,6 +306,21 @@ const ProfilePage = () => {
           </CardContent>
         </Card>
 
+        {/* Avatar (students) */}
+        {role === "user" && user && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Smile className="w-4 h-4 text-primary" />
+                Můj avatar
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <AvatarPicker userId={user.id} />
+            </CardContent>
+          </Card>
+        )}
+
         {/* Preferred study methods (students) */}
         {role === "user" && (
           <Card>
