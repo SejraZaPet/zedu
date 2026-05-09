@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Clock, CheckCircle2, Play, RotateCcw } from "lucide-react";
+import { Loader2, Clock, CheckCircle2, Play, RotateCcw, Lock, Monitor } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
+import { ExamTypeBadge } from "@/components/assignments/ExamTypeBadge";
 
 interface AssignmentWithAttempt {
   id: string;
