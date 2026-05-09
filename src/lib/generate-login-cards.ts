@@ -53,6 +53,9 @@ function buildStrip(user: LoginCardData): string {
       : '<div class="cred-row"><div class="cred-label">Heslo:</div><div class="cred-value cred-password">' +
         escHtml(user.password) +
         "</div></div>",
+    ...(user.pin
+      ? ['<div class="cred-row"><div class="cred-label">PIN:</div><div class="cred-value cred-password">' + escHtml(user.pin) + "</div></div>"]
+      : []),
     ...(user.role === "rodic"
       ? [
           ...(user.childCodes && user.childCodes.length > 0
