@@ -1368,6 +1368,7 @@ export default function WorksheetEditor() {
             <Button variant="outline" size="sm" onClick={() => setPdfDialogOpen(true)} className="hidden md:inline-flex">
               <Printer className="w-4 h-4 mr-1" /> Tisk/PDF
             </Button>
+            <ServerPdfButton worksheetId={id} />
 
             {/* Publish dropdown */}
             <DropdownMenu>
