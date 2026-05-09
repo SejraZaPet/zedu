@@ -662,7 +662,7 @@ export default function TeacherSchedule() {
           </div>
 
           {conflicts.conflictCells.length > 0 && (
-            <div className="mx-4 mt-3 mb-1 flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            <div className="mx-4 mt-3 mb-1 flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive print-hide">
               <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
               <div>
                 <strong className="font-semibold">Pozor:</strong> máte{" "}
