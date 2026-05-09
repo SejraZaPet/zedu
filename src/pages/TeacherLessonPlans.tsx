@@ -68,6 +68,98 @@ export default function TeacherLessonPlans() {
   const [deleteTemplateId, setDeleteTemplateId] = useState<string | null>(null);
   const [deletingTemplate, setDeletingTemplate] = useState(false);
 
+  // Shared plans
+  type SharedPlan = {
+    id: string;
+    title: string;
+    subject: string;
+    updated_at: string;
+    teacher_id: string;
+    shared_visibility: "public" | "school" | "private" | "link";
+    anonymous: boolean;
+    input_data: any;
+    author_name?: string;
+  };
+  const [sharedPlans, setSharedPlans] = useState<SharedPlan[]>([]);
+  const [sharedLoading, setSharedLoading] = useState(false);
+  const [sharedSearch, setSharedSearch] = useState("");
+  const [sharedScope, setSharedScope] = useState<"all" | "public" | "school">("all");
+  const [copyingId, setCopyingId] = useState<string | null>(null);
+
+  async function loadSharedPlans() {
+    if (!user) return;
+    setSharedLoading(true);
+    const { data } = await supabase
+      .from("lesson_plans")
+      .select("id, title, subject, updated_at, teacher_id, shared_visibility, anonymous, input_data")
+      .neq("teacher_id", user.id)
+      .in("shared_visibility", ["public", "school"])
+      .order("updated_at", { ascending: false })
+      .limit(200);
+    const rows = ((data as any[]) ?? []) as SharedPlan[];
+    // Resolve author names for non-anonymous
+    const ids = Array.from(new Set(rows.filter((r) => !r.anonymous).map((r) => r.teacher_id)));
+    let nameMap = new Map<string, string>();
+    if (ids.length) {
+      const { data: profs } = await supabase
+        .from("profiles")
+        .select("id, first_name, last_name")
+        .in("id", ids);
+      for (const p of (profs as any[]) ?? []) {
+        const nm = `${p.first_name || ""} ${p.last_name || ""}`.trim();
+        nameMap.set(p.id, nm || "Učitel");
+      }
+    }
+    for (const r of rows) {
+      r.author_name = r.anonymous ? "Anonymní učitel" : nameMap.get(r.teacher_id) || "Učitel";
+    }
+    setSharedPlans(rows);
+    setSharedLoading(false);
+  }
+
+  const filteredShared = useMemo(() => {
+    let list = sharedPlans;
+    if (sharedScope !== "all") list = list.filter((p) => p.shared_visibility === sharedScope);
+    if (sharedSearch.trim()) {
+      const q = sharedSearch.toLowerCase();
+      list = list.filter(
+        (p) =>
+          (p.title || "").toLowerCase().includes(q) ||
+          (p.subject || "").toLowerCase().includes(q) ||
+          (p.author_name || "").toLowerCase().includes(q),
+      );
+    }
+    return list;
+  }, [sharedPlans, sharedScope, sharedSearch]);
+
+  async function copySharedPlan(plan: SharedPlan) {
+    if (!user) return;
+    setCopyingId(plan.id);
+    const newInput = { ...(plan.input_data || {}) };
+    // Strip slot/date bindings — they're personal
+    delete newInput.linkedDate;
+    delete newInput.linkedTime;
+    delete newInput.linkedSlots;
+    delete newInput.classId;
+    const { error } = await supabase.from("lesson_plans").insert({
+      teacher_id: user.id,
+      title: `${plan.title} (kopie)`,
+      subject: plan.subject || "",
+      grade_band: "",
+      slides: [],
+      input_data: newInput,
+      shared_visibility: "private",
+      anonymous: false,
+    } as any);
+    setCopyingId(null);
+    if (error) {
+      toast({ title: "Kopírování se nezdařilo", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Plán zkopírován", description: "Najdete ho v záložce Plány." });
+    reload();
+  }
+
   async function confirmDeleteTemplate() {
     if (!deleteTemplateId) return;
     setDeletingTemplate(true);
