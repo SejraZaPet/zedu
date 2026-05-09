@@ -240,12 +240,14 @@ const ClassesManager = () => {
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    const { error } = await supabase.from("classes").delete().eq("id", deleteTarget.id);
+    const target = deleteTarget;
+    const { error } = await supabase.from("classes").delete().eq("id", target.id);
     if (error) {
       toast({ title: "Chyba", description: error.message, variant: "destructive" });
       return;
     }
     toast({ title: "Smazáno", description: "Třída byla odstraněna." });
+    logAudit("class_deleted", "class", target.id, { name: (target as any).name });
     setDeleteTarget(null);
     fetchClasses();
   };
