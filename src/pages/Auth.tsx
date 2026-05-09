@@ -22,7 +22,8 @@ const Auth = () => {
   const [pinValue, setPinValue] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [role, setRole] = useState<Role>("student");
+  const [role, setRole] = useState<Role | null>(null);
+  const [childCode, setChildCode] = useState("");
   const [pendingLogin, setPendingLogin] = useState(false);
   const [forgotPassword, setForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
