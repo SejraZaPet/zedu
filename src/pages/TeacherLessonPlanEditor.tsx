@@ -32,6 +32,8 @@ import {
   Lock,
   Globe,
   School,
+  Lightbulb,
+  Wand2,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import {
