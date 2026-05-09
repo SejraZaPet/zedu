@@ -37,6 +37,46 @@ const TeacherCalendar = () => {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [detailEvent, setDetailEvent] = useState<CalendarEvent | null>(null);
+  const [reflectionEvent, setReflectionEvent] = useState<CalendarEvent | null>(null);
+  /** Map of YYYY-MM-DD|subject|classId → present|missing */
+  const [reflectionMap, setReflectionMap] = useState<Record<string, "missing" | "present">>({});
+  const [reflectionVersion, setReflectionVersion] = useState(0);
+
+  async function reloadReflections(evts: CalendarEvent[]) {
+    if (!user) return;
+    const lessonEvents = evts.filter(
+      (e) => e.type === "lesson" && e.end < new Date() && e.subject && e.classId,
+    );
+    if (!lessonEvents.length) {
+      setReflectionMap({});
+      return;
+    }
+    const dates = lessonEvents.map((e) => format(e.start, "yyyy-MM-dd"));
+    const fromDate = dates.reduce((a, b) => (a < b ? a : b));
+    const toDate = dates.reduce((a, b) => (a > b ? a : b));
+    const rows = await fetchReflections({ teacherId: user.id, fromDate, toDate });
+    const present = new Set(
+      rows
+        .filter((r) => r.reflection_date)
+        .map((r) =>
+          reflectionKey({
+            subject: r.subject,
+            classId: r.class_id,
+            date: r.reflection_date!,
+          }),
+        ),
+    );
+    const next: Record<string, "missing" | "present"> = {};
+    for (const e of lessonEvents) {
+      const k = reflectionKey({
+        subject: e.subject,
+        classId: e.classId,
+        date: format(e.start, "yyyy-MM-dd"),
+      });
+      next[e.id] = present.has(k) ? "present" : "missing";
+    }
+    setReflectionMap(next);
+  }
 
   const range = useMemo(() => {
     if (viewMode === "day") {
