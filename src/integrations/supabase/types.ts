@@ -230,6 +230,30 @@ export type Database = {
           },
         ]
       }
+      class_leaderboard_baselines: {
+        Row: {
+          baseline_xp: number
+          class_id: string
+          created_at: string
+          id: string
+          student_id: string
+        }
+        Insert: {
+          baseline_xp?: number
+          class_id: string
+          created_at?: string
+          id?: string
+          student_id: string
+        }
+        Update: {
+          baseline_xp?: number
+          class_id?: string
+          created_at?: string
+          id?: string
+          student_id?: string
+        }
+        Relationships: []
+      }
       class_members: {
         Row: {
           class_id: string
@@ -414,6 +438,10 @@ export type Database = {
           description: string
           field_of_study: string
           id: string
+          leaderboard_anonymous: boolean
+          leaderboard_enabled: boolean
+          leaderboard_reset_at: string | null
+          leaderboard_reset_period: string
           name: string
           school: string
           school_id: string | null
@@ -431,6 +459,10 @@ export type Database = {
           description?: string
           field_of_study?: string
           id?: string
+          leaderboard_anonymous?: boolean
+          leaderboard_enabled?: boolean
+          leaderboard_reset_at?: string | null
+          leaderboard_reset_period?: string
           name: string
           school?: string
           school_id?: string | null
@@ -448,6 +480,10 @@ export type Database = {
           description?: string
           field_of_study?: string
           id?: string
+          leaderboard_anonymous?: boolean
+          leaderboard_enabled?: boolean
+          leaderboard_reset_at?: string | null
+          leaderboard_reset_period?: string
           name?: string
           school?: string
           school_id?: string | null
@@ -2210,6 +2246,10 @@ export type Database = {
       }
       publish_due_worksheets: { Args: never; Returns: number }
       reap_stale_export_jobs: { Args: never; Returns: number }
+      reset_class_leaderboard: {
+        Args: { _class_id: string }
+        Returns: undefined
+      }
       send_admin_notification: {
         Args: {
           _body: string

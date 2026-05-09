@@ -33,6 +33,7 @@ import LiveTeacherScreen from "./pages/LiveTeacherScreen";
 import LiveProjectorScreen from "./pages/LiveProjectorScreen";
 import TeacherAssignments from "./pages/TeacherAssignments";
 import StudentAssignments from "./pages/StudentAssignments";
+import StudentLeaderboard from "./pages/StudentLeaderboard";
 import StudentAssignmentPlayer from "./pages/StudentAssignmentPlayer";
 import TeacherClasses from "./pages/TeacherClasses";
 import TeacherClassDetail from "./pages/TeacherClassDetail";
@@ -99,6 +100,7 @@ const App = () => (
             <Route path="/student/ucebnice" element={<ProtectedRoute><StudentTextbooks /></ProtectedRoute>} />
             <Route path="/student/ucebnice/:textbookId" element={<ProtectedRoute><StudentTextbookDetail /></ProtectedRoute>} />
             <Route path="/student/ulohy" element={<ProtectedRoute><StudentAssignments /></ProtectedRoute>} />
+            <Route path="/student/zebricek" element={<ProtectedRoute><StudentLeaderboard /></ProtectedRoute>} />
             <Route path="/student/ulohy/:assignmentId" element={<ProtectedRoute><StudentAssignmentPlayer /></ProtectedRoute>} />
             <Route path="/aktivity" element={<ActivitiesPage />} />
             <Route path="/hra/ucitel/:sessionId" element={<ProtectedRoute><TeacherGameScreen /></ProtectedRoute>} />
