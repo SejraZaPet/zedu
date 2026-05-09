@@ -6,8 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Loader2, FileText, Printer, Eye, EyeOff, CheckCircle2, ArrowRightLeft, Home, BookOpen, Calendar } from "lucide-react";
+import { Loader2, FileText, Printer, Eye, EyeOff, CheckCircle2, ArrowRightLeft, Home, BookOpen, Calendar, Download } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { downloadHtmlAsPdf } from "@/lib/html-to-pdf";
 
 interface WorksheetItem {
   itemNumber: number;
@@ -112,13 +113,11 @@ const WorksheetPanel = ({ lessonPlanId, planTitle, gradeBand }: Props) => {
     }
   };
 
-  const handlePrint = () => {
+  const buildPrintHtml = (): string | null => {
     const content = printRef.current;
-    if (!content) return;
+    if (!content) return null;
     const modeLabel = worksheet?.worksheetMode === "homework" ? "Domácí úloha" : "Pracovní list";
-    const win = window.open("", "_blank");
-    if (!win) return;
-    win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8">
+    return `<!DOCTYPE html><html><head><meta charset="utf-8">
       <title>${worksheet?.title || modeLabel} – Varianta ${activeVariant}</title>
       <style>
         body { font-family: 'Segoe UI', sans-serif; padding: 2rem; color: #1a1a1a; max-width: 800px; margin: 0 auto; }
@@ -142,9 +141,47 @@ const WorksheetPanel = ({ lessonPlanId, planTitle, gradeBand }: Props) => {
         .deadline-notice { background: #fefce8; border: 1px solid #eab308; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.85rem; margin-bottom: 1rem; }
         @media print { body { padding: 1rem; } }
       </style>
-    </head><body>${content.innerHTML}</body></html>`);
+    </head><body>${content.innerHTML}</body></html>`;
+  };
+
+  const handlePrint = () => {
+    const html = buildPrintHtml();
+    if (!html) return;
+    const win = window.open("", "_blank");
+    if (!win) return;
+    win.document.write(html);
     win.document.close();
     win.print();
+  };
+
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const handleDownloadPdf = async () => {
+    const html = buildPrintHtml();
+    if (!html) return;
+    const modeLabel = worksheet?.worksheetMode === "homework" ? "domaci-uloha" : "pracovni-list";
+    const slug = (worksheet?.title || modeLabel)
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "")
+      .slice(0, 60) || modeLabel;
+    setDownloadingPdf(true);
+    try {
+      await downloadHtmlAsPdf({
+        html,
+        filename: `${slug}-varianta-${activeVariant}.pdf`,
+      });
+      toast({ title: "PDF staženo", description: "Soubor je připravený ke sdílení nebo archivaci." });
+    } catch (e: any) {
+      toast({
+        title: "Stažení PDF se nepodařilo",
+        description: e?.message || "Zkuste to prosím znovu.",
+        variant: "destructive",
+      });
+    } finally {
+      setDownloadingPdf(false);
+    }
   };
 
   const currentVariant = worksheet?.variants?.find((v) => v.id === activeVariant);
@@ -259,6 +296,21 @@ const WorksheetPanel = ({ lessonPlanId, planTitle, gradeBand }: Props) => {
               </div>
               <Button size="sm" variant="outline" className="h-7 text-xs" onClick={handlePrint}>
                 <Printer className="w-3.5 h-3.5 mr-1" />Tisk
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs"
+                onClick={handleDownloadPdf}
+                disabled={downloadingPdf}
+                title="Vygenerovat skutečný .pdf soubor pro sdílení nebo archivaci"
+              >
+                {downloadingPdf ? (
+                  <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                ) : (
+                  <Download className="w-3.5 h-3.5 mr-1" />
+                )}
+                Stáhnout PDF
               </Button>
               <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setWorksheet(null)}>
                 Nový
