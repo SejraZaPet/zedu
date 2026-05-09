@@ -174,6 +174,20 @@ const AssignmentResultsDashboard = ({ teacherId }: Props) => {
         .select("*")
         .eq("assignment_id", assignmentId);
 
+      // Get test sessions (lockdown violations)
+      const { data: tsData } = await supabase
+        .from("test_sessions" as any)
+        .select("student_id, violation_count, left_test")
+        .eq("assignment_id", assignmentId);
+      const tsByStudent: Record<string, { count: number; left: boolean }> = {};
+      (tsData as any[] || []).forEach((t: any) => {
+        const cur = tsByStudent[t.student_id] || { count: 0, left: false };
+        tsByStudent[t.student_id] = {
+          count: cur.count + (t.violation_count || 0),
+          left: cur.left || !!t.left_test,
+        };
+      });
+
       const attemptsByStudent: Record<string, any[]> = {};
       (attempts as any[] || []).forEach((att: any) => {
         if (!attemptsByStudent[att.student_id]) attemptsByStudent[att.student_id] = [];
@@ -209,6 +223,8 @@ const AssignmentResultsDashboard = ({ teacherId }: Props) => {
         const allDates = atts.map((a: any) => a.submitted_at || a.last_saved_at).filter(Boolean);
         const lastActivity = allDates.length > 0 ? allDates.sort().reverse()[0] : null;
 
+        const ts = tsByStudent[sid] || { count: 0, left: false };
+
         return {
           studentId: sid,
           firstName: profile.first_name || "",
@@ -219,6 +235,8 @@ const AssignmentResultsDashboard = ({ teacherId }: Props) => {
           bestScore,
           maxScore,
           lastActivity,
+          violationCount: ts.count,
+          leftTest: ts.left,
         };
       });
 
