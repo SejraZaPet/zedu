@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Save, KeyRound, User, Mail } from "lucide-react";
+import { ArrowLeft, Save, KeyRound, User, Mail, Sparkles, Check } from "lucide-react";
 
 const statusLabels: Record<string, string> = {
   pending: "Čeká na schválení",
@@ -58,6 +58,12 @@ const ProfilePage = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [changingPassword, setChangingPassword] = useState(false);
 
+  // Preferred study methods (students only)
+  const [methods, setMethods] = useState<{ id: string; name: string; slug: string; description: string | null }[]>([]);
+  const [preferredIds, setPreferredIds] = useState<string[]>([]);
+  const [savingPreferred, setSavingPreferred] = useState(false);
+  const MAX_PREFERRED = 3;
+
   useEffect(() => {
     if (authLoading) return;
 
@@ -92,6 +98,55 @@ const ProfilePage = () => {
 
     loadProfile();
   }, [authLoading, isLoggedIn, user, navigate, toast]);
+
+  // Load methods + preferred for students
+  useEffect(() => {
+    if (!user || role !== "user") return;
+    (async () => {
+      const [{ data: ms }, { data: prefs }] = await Promise.all([
+        supabase.from("study_methods").select("id, name, slug, description").order("name"),
+        supabase.from("student_preferred_methods").select("method_id").eq("student_id", user.id),
+      ]);
+      setMethods((ms ?? []) as any);
+      setPreferredIds(((prefs ?? []) as any[]).map((p) => p.method_id));
+    })();
+  }, [user, role]);
+
+  const togglePreferred = (id: string) => {
+    setPreferredIds((prev) => {
+      if (prev.includes(id)) return prev.filter((x) => x !== id);
+      if (prev.length >= MAX_PREFERRED) {
+        toast({ title: "Maximální počet", description: `Můžeš si vybrat nejvíce ${MAX_PREFERRED} oblíbené metody.` });
+        return prev;
+      }
+      return [...prev, id];
+    });
+  };
+
+  const handleSavePreferred = async () => {
+    if (!user) return;
+    setSavingPreferred(true);
+    const { error: delErr } = await supabase
+      .from("student_preferred_methods")
+      .delete()
+      .eq("student_id", user.id);
+    if (delErr) {
+      setSavingPreferred(false);
+      toast({ title: "Chyba", description: delErr.message, variant: "destructive" });
+      return;
+    }
+    if (preferredIds.length > 0) {
+      const rows = preferredIds.map((method_id) => ({ student_id: user.id, method_id }));
+      const { error } = await supabase.from("student_preferred_methods").insert(rows);
+      if (error) {
+        setSavingPreferred(false);
+        toast({ title: "Chyba", description: error.message, variant: "destructive" });
+        return;
+      }
+    }
+    setSavingPreferred(false);
+    toast({ title: "Uloženo", description: "Tvoje oblíbené metody byly aktualizovány." });
+  };
 
   const handleSaveProfile = async () => {
     if (!user) return;
@@ -249,6 +304,65 @@ const ProfilePage = () => {
             </Button>
           </CardContent>
         </Card>
+
+        {/* Preferred study methods (students) */}
+        {role === "user" && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-primary" />
+                Oblíbené studijní metody
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Vyber si až {MAX_PREFERRED} metody, které ti nejvíc sedí. Budou se ti zobrazovat přednostně na stránce Studijní metody.
+              </p>
+              {methods.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Načítání metod…</p>
+              ) : (
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {methods.map((m) => {
+                    const selected = preferredIds.includes(m.id);
+                    const disabled = !selected && preferredIds.length >= MAX_PREFERRED;
+                    return (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => togglePreferred(m.id)}
+                        disabled={disabled}
+                        className={`text-left rounded-lg border p-3 transition-all ${
+                          selected
+                            ? "border-primary bg-primary/5 ring-1 ring-primary/30"
+                            : "border-border hover:border-primary/40"
+                        } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <p className="font-medium text-sm">{m.name}</p>
+                            {m.description && (
+                              <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{m.description}</p>
+                            )}
+                          </div>
+                          {selected && <Check className="w-4 h-4 text-primary shrink-0 mt-0.5" />}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">
+                  Vybráno: {preferredIds.length}/{MAX_PREFERRED}
+                </span>
+                <Button onClick={handleSavePreferred} disabled={savingPreferred} className="gap-2">
+                  <Save className="w-4 h-4" />
+                  {savingPreferred ? "Ukládám…" : "Uložit oblíbené"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Parent recovery email */}
         {role === "rodic" && (
