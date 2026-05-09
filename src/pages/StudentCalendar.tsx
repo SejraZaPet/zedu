@@ -93,6 +93,7 @@ const StudentCalendar = () => {
             start,
             end: new Date(start.getTime() + 30 * 60000),
             assignmentId: a.id,
+            examType: a.exam_type ?? null,
           };
         });
 
