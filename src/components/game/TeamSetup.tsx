@@ -19,7 +19,6 @@ import {
   GamePlayer,
   GameSession,
   Team,
-  TEAM_COLORS,
   buildDefaultTeams,
   distributeRandomly,
 } from "@/lib/game-types";
