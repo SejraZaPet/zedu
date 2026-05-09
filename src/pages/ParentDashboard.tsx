@@ -80,7 +80,7 @@ const ParentDashboard = () => {
         supabase.from("student_lesson_completions").select("id").eq("user_id", sid),
         supabase.from("student_activity_results").select("score, max_score").eq("user_id", sid),
         supabase.from("assignment_attempts")
-          .select("id, status, score, max_score, assignment_id, assignments(title)")
+          .select("id, status, score, max_score, assignment_id, assignments(title, exam_type)")
           .eq("student_id", sid)
           .order("started_at", { ascending: false }),
       ]);
@@ -98,6 +98,7 @@ const ParentDashboard = () => {
           status: a.status,
           score: a.score,
           max_score: a.max_score,
+          exam_type: a.assignments?.exam_type ?? null,
         })),
       };
     }));
