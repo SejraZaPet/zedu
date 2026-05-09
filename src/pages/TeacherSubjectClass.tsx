@@ -143,6 +143,7 @@ export default function TeacherSubjectClass() {
   const [klass, setKlass] = useState<ClassRow | null>(null);
   const [slots, setSlots] = useState<ScheduleSlot[]>([]);
   const [plans, setPlans] = useState<LessonPlanRow[]>([]);
+  const [planMethods, setPlanMethods] = useState<Record<string, { id: string; name: string }>>({});
   const [assignments, setAssignments] = useState<AssignmentRow[]>([]);
   const [attempts, setAttempts] = useState<AttemptRow[]>([]);
   const [members, setMembers] = useState<MemberRow[]>([]);
@@ -201,7 +202,24 @@ export default function TeacherSubjectClass() {
         (s) => (s.subject_label || "").trim().toLowerCase() === subjectLabel.trim().toLowerCase(),
       );
       setSlots(filtered);
-      setPlans((plansRes.data as LessonPlanRow[]) ?? []);
+      const _plans = (plansRes.data as LessonPlanRow[]) ?? [];
+      setPlans(_plans);
+      // Načíst přiřazené metody pro tyto plány
+      const planIds = _plans.map((p) => p.id);
+      if (planIds.length) {
+        const { data: links } = await supabase
+          .from("lesson_method_links")
+          .select("lesson_plan_id, method_id, learning_methods(id, name)")
+          .in("lesson_plan_id", planIds);
+        const map: Record<string, { id: string; name: string }> = {};
+        ((links as any[]) ?? []).forEach((l) => {
+          const m = l.learning_methods;
+          if (m) map[l.lesson_plan_id] = { id: m.id, name: m.name };
+        });
+        if (!cancelled) setPlanMethods(map);
+      } else if (!cancelled) {
+        setPlanMethods({});
+      }
       const _assignments = (assignRes.data as AssignmentRow[]) ?? [];
       setAssignments(_assignments);
 
@@ -617,8 +635,13 @@ export default function TeacherSubjectClass() {
                                 {dateStr} · {formatTime(e.start)}
                               </div>
                               {planForDate ? (
-                                <div className="text-xs text-muted-foreground truncate">
-                                  Plán: {planForDate.title}
+                                <div className="text-xs text-muted-foreground truncate flex items-center gap-1.5 flex-wrap">
+                                  <span className="truncate">Plán: {planForDate.title}</span>
+                                  {planMethods[planForDate.id] && (
+                                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 font-normal">
+                                      {planMethods[planForDate.id].name}
+                                    </Badge>
+                                  )}
                                 </div>
                               ) : (
                                 <div className="text-xs text-muted-foreground">
@@ -703,8 +726,13 @@ export default function TeacherSubjectClass() {
                                 {format(e.start, "EEE d. M.", { locale: cs })} · {formatTime(e.start)}
                               </div>
                               {planForDate ? (
-                                <div className="text-xs text-muted-foreground truncate">
-                                  Plán: {planForDate.title}
+                                <div className="text-xs text-muted-foreground truncate flex items-center gap-1.5 flex-wrap">
+                                  <span className="truncate">Plán: {planForDate.title}</span>
+                                  {planMethods[planForDate.id] && (
+                                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 font-normal">
+                                      {planMethods[planForDate.id].name}
+                                    </Badge>
+                                  )}
                                 </div>
                               ) : e.room ? (
                                 <div className="text-xs text-muted-foreground truncate">{e.room}</div>
