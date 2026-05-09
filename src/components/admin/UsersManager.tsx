@@ -1184,6 +1184,7 @@ const UsersManager = () => {
                         role,
                         username,
                         studentCode,
+                        pin: role === "user" ? pin : undefined,
                       });
 
                       const isAdultStudent = ["ano", "yes", "true", "1"].includes(String(row.zletily || "").toLowerCase().trim());
