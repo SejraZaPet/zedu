@@ -13,8 +13,10 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from "recharts";
 import {
-  Activity, BarChart3, Clock, AlertTriangle, Users, CheckCircle2,
+  Activity, BarChart3, Clock, AlertTriangle, Users, CheckCircle2, FileSpreadsheet,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import * as XLSX from "xlsx";
 
 type ClassOpt = { id: string; name: string };
 type Attempt = {
