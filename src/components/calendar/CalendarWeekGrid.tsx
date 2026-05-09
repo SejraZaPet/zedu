@@ -168,6 +168,7 @@ const CalendarWeekGrid = ({
                       title={ev.title}
                     >
                       <div className="leading-tight flex items-center gap-1 pr-4">
+                        {ExamIcon && <ExamIcon className="w-3 h-3 shrink-0" style={{ color: customColor }} />}
                         {ev.abbreviation ? (
                           <span
                             className="inline-block text-[10px] font-bold text-white px-1.5 py-0.5 rounded shrink-0"
