@@ -1185,6 +1185,8 @@ const UsersManager = () => {
 
                       await supabase.from("user_roles").upsert({ user_id: userId, role: role as any }, { onConflict: "user_id,role", ignoreDuplicates: true });
 
+                      logAudit("user_created", "user", userId, { name: `${row.jmeno} ${row.prijmeni}`, role, source: "import" });
+
                       successCount++;
 
                       importedUsersList.push({ 
