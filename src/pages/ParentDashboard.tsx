@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { User, BookOpen, ClipboardList, CheckCircle2, Clock, Plus, Trash2, KeyRound, MessageCircle, Mail, BellOff } from "lucide-react";
+import { User, BookOpen, ClipboardList, CheckCircle2, Clock, Plus, Trash2, KeyRound, MessageCircle, Mail, BellOff, FolderOpen } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import ChildScheduleWidget from "@/components/parent/ChildScheduleWidget";
@@ -381,6 +381,15 @@ const ParentDashboard = () => {
                         Resetovat heslo
                       </Button>
                     ) : <span />}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      onClick={() => navigate(`/portfolio/${student.id}`)}
+                    >
+                      <FolderOpen className="w-3.5 h-3.5" />
+                      Portfolio dítěte
+                    </Button>
                     <Button
                       variant="ghost"
                       size="sm"
