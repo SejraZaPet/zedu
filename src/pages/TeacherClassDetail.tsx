@@ -381,6 +381,14 @@ const TeacherClassDetail = () => {
                           čeká
                         </Badge>
                       )}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-xs"
+                        onClick={() => navigate(`/portfolio/${m.user_id}`)}
+                      >
+                        Portfolio
+                      </Button>
                     </div>
                   </div>
                 );
