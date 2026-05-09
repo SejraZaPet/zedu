@@ -275,6 +275,33 @@ const SchoolAdmin = () => {
           </Dialog>
         </div>
 
+        {/* Registration code card */}
+        <Card className="mb-6">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <KeyRound className="w-4 h-4 text-primary" /> Registrační kód školy
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="flex-1">
+              <div className="font-mono text-2xl tracking-[0.4em] font-bold bg-muted/50 border border-border rounded-lg px-4 py-3 inline-block">
+                {school.registration_code ?? "—"}
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Učitelé tento kód zadají při registraci a budou automaticky přiřazeni k vaší škole.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={copyCode} disabled={!school.registration_code}>
+                <Copy className="w-4 h-4 mr-1" /> Kopírovat
+              </Button>
+              <Button variant="outline" size="sm" onClick={regenerateCode}>
+                <RefreshCw className="w-4 h-4 mr-1" /> Regenerovat
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
         <Tabs defaultValue="teachers">
           <TabsList>
             <TabsTrigger value="teachers"><GraduationCap className="w-4 h-4 mr-1" /> Učitelé ({teachers.length})</TabsTrigger>
