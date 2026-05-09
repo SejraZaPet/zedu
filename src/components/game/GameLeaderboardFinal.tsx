@@ -55,6 +55,30 @@ export const GameLeaderboardFinal = ({ session, players, responses, highlightPla
           <p className="text-muted-foreground">{session.title}</p>
         </div>
 
+        {/* Team results (when team mode) */}
+        {teamMode && teamLeaderboard.length > 0 && (
+          <div className="bg-card border border-border rounded-2xl p-5 space-y-3">
+            <div className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-primary" />
+              <h2 className="font-heading font-bold text-lg">Týmové pořadí</h2>
+            </div>
+            {teamLeaderboard.map((row, i) => (
+              <div
+                key={row.team.id}
+                className="flex items-center gap-3 p-3 rounded-lg border-2"
+                style={{ borderColor: row.team.color, background: `${row.team.color}1A` }}
+              >
+                <span className="text-2xl">{i === 0 ? "🏆" : `${i + 1}.`}</span>
+                <span className="flex-1 font-heading font-bold text-lg" style={{ color: row.team.color }}>
+                  {row.team.name}
+                </span>
+                <span className="text-xs text-muted-foreground">{row.memberCount} hráčů</span>
+                <span className="font-mono font-bold text-xl">{row.score} b.</span>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Podium */}
         <div className="flex items-end justify-center gap-4 pt-4">
           {[1, 0, 2].map((podiumIndex) => {
