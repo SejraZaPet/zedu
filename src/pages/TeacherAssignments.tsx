@@ -144,6 +144,7 @@ const TeacherAssignments = () => {
     setRandomizeOrder(false);
     setSelectedClassId("");
     setSelectedWorksheetId("");
+    setLockdownMode(false);
   };
 
   const handlePublish = async (id: string) => {
