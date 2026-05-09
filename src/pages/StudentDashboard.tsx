@@ -120,6 +120,14 @@ const StudentDashboard = () => {
         <TodayWidget role="student" />
 
 
+        {user && (
+          <PlayerProfileWidget
+            userId={user.id}
+            firstName={profile?.first_name}
+            lastName={profile?.last_name}
+          />
+        )}
+
         {user && <StudentProgressWidgets userId={user.id} />}
 
         <div className="grid gap-6 md:grid-cols-2">
