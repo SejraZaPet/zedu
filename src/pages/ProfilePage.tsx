@@ -459,6 +459,8 @@ const ProfilePage = () => {
           </Card>
         )}
 
+        <PushNotificationsCard />
+
         {/* Password change */}
         <Card>
           <CardHeader>
