@@ -37,6 +37,7 @@ const StudentMethods = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [methods, setMethods] = useState<Method[]>([]);
+  const [preferredIds, setPreferredIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState<Method | null>(null);
   const [stepIdx, setStepIdx] = useState(0);
