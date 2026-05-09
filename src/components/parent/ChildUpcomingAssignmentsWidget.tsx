@@ -17,6 +17,7 @@ interface UpcomingAssignment {
   subject: string;
   deadline: string;
   submitted: boolean;
+  exam_type: string | null;
 }
 
 const fmtDeadline = (iso: string) => {
