@@ -62,6 +62,25 @@ export default function TeacherLessonPlans() {
   const [subjectFilter, setSubjectFilter] = useState<string>("__all");
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [templates, setTemplates] = useState<
+    { id: string; title: string; description: string | null; phases_json: any; created_at: string }[]
+  >([]);
+  const [deleteTemplateId, setDeleteTemplateId] = useState<string | null>(null);
+  const [deletingTemplate, setDeletingTemplate] = useState(false);
+
+  async function confirmDeleteTemplate() {
+    if (!deleteTemplateId) return;
+    setDeletingTemplate(true);
+    const { error } = await supabase.from("lesson_plan_templates").delete().eq("id", deleteTemplateId);
+    setDeletingTemplate(false);
+    if (error) {
+      toast({ title: "Smazání se nezdařilo", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Šablona smazána" });
+      setTemplates((prev) => prev.filter((t) => t.id !== deleteTemplateId));
+    }
+    setDeleteTemplateId(null);
+  }
 
   async function reload() {
     if (!user) return;
