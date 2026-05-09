@@ -616,6 +616,19 @@ export default function TeacherSchedule() {
             </Button>
           </div>
 
+          {conflicts.conflictCells.length > 0 && (
+            <div className="mx-4 mt-3 mb-1 flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+              <div>
+                <strong className="font-semibold">Pozor:</strong> máte{" "}
+                {conflicts.conflictCells.reduce((s, c) => s + c.total, 0)} hodiny
+                ve stejnou dobu ({conflicts.conflictCells.length}{" "}
+                {conflicts.conflictCells.length === 1 ? "konflikt" : "konflikty"}).
+                Konfliktní hodiny jsou označeny červeným okrajem.
+              </div>
+            </div>
+          )}
+
           {/* Aligned grid: rows = period/break slots, columns = days. */}
           <div className="w-full">
             <div
