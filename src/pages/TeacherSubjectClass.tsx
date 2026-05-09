@@ -143,6 +143,7 @@ export default function TeacherSubjectClass() {
   const [klass, setKlass] = useState<ClassRow | null>(null);
   const [slots, setSlots] = useState<ScheduleSlot[]>([]);
   const [plans, setPlans] = useState<LessonPlanRow[]>([]);
+  const [planMethods, setPlanMethods] = useState<Record<string, { id: string; name: string }>>({});
   const [assignments, setAssignments] = useState<AssignmentRow[]>([]);
   const [attempts, setAttempts] = useState<AttemptRow[]>([]);
   const [members, setMembers] = useState<MemberRow[]>([]);
