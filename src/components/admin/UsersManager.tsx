@@ -623,6 +623,7 @@ const UsersManager = () => {
                           return;
                         }
                         await supabase.from("profiles").update({ login_password: newPassword }).eq("id", user.id);
+                        logAudit("password_reset", "user", user.id, { method: "print_label" });
                         await fetchUsers();
                         printLoginCards([{
                           firstName: user.first_name || "",
