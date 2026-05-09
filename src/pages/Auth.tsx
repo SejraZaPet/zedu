@@ -244,11 +244,32 @@ const Auth = () => {
       }
     }
 
+    // Parent: try to link child by code if signup auto-logged-in
+    let childLinked = false;
+    let childLinkFailed = false;
+    if (role === "rodic" && trimmedChildCode && signUpData?.session) {
+      const { data: student } = await supabase.rpc("find_student_by_code", { _code: trimmedChildCode });
+      const studentId = Array.isArray(student) ? student[0]?.id : (student as any)?.id;
+      if (studentId) {
+        const { error: linkErr } = await supabase
+          .from("parent_student_links")
+          .insert({ parent_id: signUpData.user!.id, student_id: studentId });
+        if (!linkErr) childLinked = true;
+        else childLinkFailed = true;
+      } else {
+        childLinkFailed = true;
+      }
+    }
+
     toast({
       title: "Registrace úspěšná",
       description:
         role === "rodic"
-          ? "Účet byl vytvořen. Přihlaste se a přidejte své děti přes kód žáka ZAK-XXXX."
+          ? childLinked
+            ? "Účet byl vytvořen a dítě bylo propojeno."
+            : childLinkFailed
+              ? "Účet byl vytvořen, ale kód dítěte se nepodařilo propojit. Zkuste to po přihlášení v sekci Rodič."
+              : "Účet byl vytvořen. Přihlaste se a přidejte své děti přes kód žáka ZAK-XXXX."
           : "Potvrďte svůj e-mail a vyčkejte na schválení účtu administrátorem.",
     });
 
