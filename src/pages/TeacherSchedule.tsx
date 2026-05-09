@@ -648,7 +648,18 @@ export default function TeacherSchedule() {
             </div>
           </div>
 
-          <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportSchedule}
+              className="gap-2"
+              disabled={classSlots.length === 0}
+            >
+              <Download className="w-4 h-4" />
+              Exportovat rozvrh
+            </Button>
+            <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
             <button
               onClick={() => setParityMode("both")}
               className={`px-3 py-1.5 text-xs rounded-md transition-colors ${
