@@ -1674,6 +1674,80 @@ export type Database = {
           },
         ]
       }
+      student_portfolio_comments: {
+        Row: {
+          author_id: string
+          body: string
+          created_at: string
+          id: string
+          item_id: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          created_at?: string
+          id?: string
+          item_id: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          item_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_portfolio_comments_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "student_portfolio_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_portfolio_items: {
+        Row: {
+          attachment_url: string | null
+          content_json: Json
+          created_at: string
+          description: string | null
+          id: string
+          student_id: string
+          subject: string | null
+          title: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          attachment_url?: string | null
+          content_json?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          student_id: string
+          subject?: string | null
+          title: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          attachment_url?: string | null
+          content_json?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          student_id?: string
+          subject?: string | null
+          title?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       student_practice_sessions: {
         Row: {
           answers_json: Json | null
@@ -2403,9 +2477,17 @@ export type Database = {
         Args: { _student_id: string; _textbook_id: string }
         Returns: boolean
       }
+      is_parent_of_student: {
+        Args: { _student_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_school_admin: { Args: { _user_id: string }; Returns: boolean }
       is_school_admin_of: {
         Args: { _school_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_teacher_of_student: {
+        Args: { _student_id: string; _user_id: string }
         Returns: boolean
       }
       join_class_as_teacher: {
