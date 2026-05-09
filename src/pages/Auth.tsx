@@ -156,6 +156,8 @@ const Auth = () => {
       setLoading(false);
     }
   };
+
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
