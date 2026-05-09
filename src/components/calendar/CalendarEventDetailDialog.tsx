@@ -17,7 +17,7 @@ import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { getPhasePlan } from "@/lib/lesson-phase-plans";
+import { getPhasePlan, type StoredPhasePlan } from "@/lib/lesson-phase-plans";
 
 interface Props {
   event: CalendarEvent | null;
