@@ -42,6 +42,12 @@ const SiteHeader = () => {
         { label: "Nápověda", href: "/napoveda", icon: HelpCircle },
       ];
     }
+    if (userRole === "school_admin") {
+      return [
+        { label: "Správa školy", href: "/skola", icon: School },
+        { label: "Nápověda", href: "/napoveda", icon: HelpCircle },
+      ];
+    }
     if (userRole === "teacher" || userRole === "lektor") {
       return [
         { label: "Přehled", href: "/ucitel", icon: LayoutDashboard },
