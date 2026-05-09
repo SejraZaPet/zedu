@@ -1344,6 +1344,7 @@ export type Database = {
           last_name: string
           login_password: string | null
           parent_email: string | null
+          parent_email_notifications: boolean
           pin_code: string | null
           school: string
           school_id: string | null
@@ -1362,6 +1363,7 @@ export type Database = {
           last_name?: string
           login_password?: string | null
           parent_email?: string | null
+          parent_email_notifications?: boolean
           pin_code?: string | null
           school?: string
           school_id?: string | null
@@ -1380,6 +1382,7 @@ export type Database = {
           last_name?: string
           login_password?: string | null
           parent_email?: string | null
+          parent_email_notifications?: boolean
           pin_code?: string | null
           school?: string
           school_id?: string | null
