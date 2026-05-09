@@ -41,6 +41,7 @@ import ParentDashboard from "./pages/ParentDashboard";
 import GdprPage from "./pages/GdprPage";
 import TodoPage from "./pages/TodoPage";
 import StudentCalendar from "./pages/StudentCalendar";
+import StudentSchedule from "./pages/StudentSchedule";
 import TeacherCalendar from "./pages/TeacherCalendar";
 import NotificationsPage from "./pages/NotificationsPage";
 import TeacherWorksheets from "./pages/TeacherWorksheets";
