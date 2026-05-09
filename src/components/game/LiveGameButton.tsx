@@ -4,7 +4,7 @@ import { Gamepad2, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { DEFAULT_GAME_SETTINGS, type GameQuestion, type GameSettings, generateGameCode } from "@/lib/game-types";
+import { DEFAULT_GAME_SETTINGS, type GameQuestion, type GameSettings, type TeamMode, generateGameCode } from "@/lib/game-types";
 import { GAME_MODES, getModeDef, type GameMode } from "@/lib/game-modes";
 import { VISUAL_THEMES, type VisualTheme } from "@/lib/game-themes";
 import {
