@@ -345,30 +345,46 @@ const TeacherClassDetail = () => {
                 <Plus className="w-4 h-4 mr-1" /> Přidat
               </Button>
             </CardHeader>
-            <CardContent className="space-y-1 max-h-72 overflow-auto">
+            <CardContent className="space-y-1 max-h-72 overflow-auto pb-20">
               {members.length === 0 && <p className="text-sm text-muted-foreground">Zatím žádní žáci.</p>}
-              {members.slice(0, 12).map((m) => (
-                <div key={m.user_id} className="flex items-center justify-between text-sm py-1.5 border-b border-border/50 last:border-0">
-                  <span>
-                    {m.first_name} {m.last_name}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    {m.student_code && (
-                      <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">{m.student_code}</code>
-                    )}
-                    {m.status === "pending" && (
-                      <Badge variant="outline" className="text-[10px] bg-yellow-500/10 text-yellow-500 border-yellow-500/30">
-                        čeká
-                      </Badge>
-                    )}
-                  </div>
+              {members.length > 0 && (
+                <div className="flex items-center gap-2 py-1.5 border-b border-border text-xs text-muted-foreground sticky top-0 bg-card">
+                  <Checkbox
+                    checked={allSelected ? true : someSelected ? "indeterminate" : false}
+                    onCheckedChange={toggleAll}
+                    aria-label="Vybrat vše"
+                  />
+                  <span>Vybrat vše</span>
                 </div>
-              ))}
-              {members.length > 12 && (
-                <Button variant="ghost" size="sm" className="w-full mt-2" onClick={() => navigate("/ucitel/tridy")}>
-                  Zobrazit všechny <ChevronRight className="w-4 h-4 ml-1" />
-                </Button>
               )}
+              {members.map((m) => {
+                const checked = selectedIds.has(m.user_id);
+                return (
+                  <div
+                    key={m.user_id}
+                    className={`flex items-center gap-2 text-sm py-1.5 border-b border-border/50 last:border-0 ${checked ? "bg-primary/5" : ""}`}
+                  >
+                    <Checkbox
+                      checked={checked}
+                      onCheckedChange={() => toggleOne(m.user_id)}
+                      aria-label={`Vybrat ${m.first_name} ${m.last_name}`}
+                    />
+                    <span className="flex-1">
+                      {m.first_name} {m.last_name}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      {m.student_code && (
+                        <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">{m.student_code}</code>
+                      )}
+                      {m.status === "pending" && (
+                        <Badge variant="outline" className="text-[10px] bg-yellow-500/10 text-yellow-500 border-yellow-500/30">
+                          čeká
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </CardContent>
           </Card>
 
