@@ -163,6 +163,12 @@ const Auth = () => {
     setLoading(true);
     setError("");
 
+    if (!role) {
+      setError("Vyberte typ účtu.");
+      setLoading(false);
+      return;
+    }
+
     if (!gdprConsent) {
       setError("Pro registraci je nutný souhlas se zpracováním osobních údajů.");
       setLoading(false);
@@ -181,6 +187,13 @@ const Auth = () => {
       return;
     }
 
+    const trimmedChildCode = childCode.trim().toUpperCase();
+    if (role === "rodic" && trimmedChildCode && !/^ZAK-[A-Z0-9]{4,}$/.test(trimmedChildCode)) {
+      setError("Kód dítěte musí být ve formátu ZAK-XXXX.");
+      setLoading(false);
+      return;
+    }
+
     const metadata: Record<string, unknown> = {
       first_name: firstName,
       last_name: lastName,
@@ -193,6 +206,9 @@ const Auth = () => {
       metadata.field_of_study = fieldOfStudy;
       metadata.year = year || null;
       metadata.class_code = classCode.trim() || null;
+    }
+    if (role === "rodic" && trimmedChildCode) {
+      metadata.child_code = trimmedChildCode;
     }
 
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
