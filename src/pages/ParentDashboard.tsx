@@ -190,10 +190,16 @@ const ParentDashboard = () => {
               Sledujte výsledky a pokrok vašeho dítěte (pouze náhled)
             </p>
           </div>
-          <Button onClick={() => setAddOpen(true)} className="gap-2 shrink-0">
-            <Plus className="w-4 h-4" />
-            Přidat dítě
-          </Button>
+          <div className="flex flex-wrap gap-2 shrink-0">
+            <Button variant="outline" onClick={() => navigate("/rodic/zpravy")} className="gap-2">
+              <MessageCircle className="w-4 h-4" />
+              Zprávy učitelům
+            </Button>
+            <Button onClick={() => setAddOpen(true)} className="gap-2">
+              <Plus className="w-4 h-4" />
+              Přidat dítě
+            </Button>
+          </div>
         </div>
 
         {students.length > 0 && (
