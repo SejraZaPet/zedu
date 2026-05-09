@@ -468,31 +468,31 @@ const Auth = () => {
           </form>
         ) : role === null ? (
           /* Step 1 — role picker */
-          <div className="space-y-4">
+          <div className="space-y-5">
             <div className="text-center">
-              <p className="text-sm font-semibold text-foreground">Vyberte svou roli</p>
+              <p className="text-base font-semibold text-foreground">Vyberte svou roli</p>
               <p className="text-xs text-muted-foreground mt-1">
                 Podle volby přizpůsobíme registrační formulář.
               </p>
             </div>
-            <div className="grid gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {([
-                { value: "teacher" as const, icon: BookOpenText, title: "Učitel / Lektor", desc: "Tvořte lekce, úkoly a sledujte výsledky tříd." },
-                { value: "student" as const, icon: GraduationCap, title: "Žák", desc: "Učte se z lekcí, plňte úkoly a hrajte aktivity." },
-                { value: "rodic" as const, icon: Users, title: "Rodič", desc: "Sledujte pokrok svého dítěte." },
+                { value: "teacher" as const, icon: BookOpenText, title: "Učitel", desc: "Tvořte lekce a sledujte třídy." },
+                { value: "student" as const, icon: GraduationCap, title: "Žák", desc: "Učte se a plňte úkoly." },
+                { value: "rodic" as const, icon: Users, title: "Rodič", desc: "Sledujte pokrok dítěte." },
               ]).map((opt) => (
                 <button
                   key={opt.value}
                   type="button"
                   onClick={() => setRole(opt.value)}
-                  className="group flex items-center gap-4 rounded-2xl border-2 border-border bg-card p-5 text-left transition-all duration-200 hover:border-primary hover:bg-primary/[0.04] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="group flex flex-col items-center justify-center text-center gap-3 rounded-2xl border-2 border-border bg-card p-5 min-h-[170px] transition-all duration-200 hover:border-primary hover:bg-primary/[0.04] hover:shadow-lg hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                    <opt.icon className="w-6 h-6" />
+                  <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                    <opt.icon className="w-7 h-7" />
                   </div>
-                  <div className="min-w-0 flex-1">
+                  <div>
                     <p className="font-heading text-base font-semibold">{opt.title}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{opt.desc}</p>
+                    <p className="text-xs text-muted-foreground mt-1 leading-snug">{opt.desc}</p>
                   </div>
                 </button>
               ))}
