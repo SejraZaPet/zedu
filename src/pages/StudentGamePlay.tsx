@@ -31,6 +31,9 @@ const StudentGamePlay = () => {
 
   const [fetchAttempts, setFetchAttempts] = useState(0);
   const { session, players, responses, loading, connectionStatus, reconnect } = useGameSession(sessionId, fetchAttempts);
+  const { user } = useAuth();
+  const myAvatar = useStudentAvatar(user?.id);
+  const myPlayer = players.find((p) => p.id === playerId);
   const [answered, setAnswered] = useState<Set<number>>(new Set());
   const [lastResult, setLastResult] = useState<{ correct: boolean; score: number } | null>(null);
   const [liveSettings, setLiveSettings] = useState<any>({});
