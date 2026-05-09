@@ -764,7 +764,7 @@ export default function TeacherSchedule() {
                 // Break row – narrow strip
                 return (
                   <div key={`row-${rowIdx}`} className="contents">
-                    <div className="border-t border-border bg-muted/30 px-1 py-0.5 flex items-center justify-center">
+                    <div className="border-t border-border bg-muted/30 px-1 py-0.5 flex items-center justify-center print-hide">
                       <Coffee className="w-2.5 h-2.5 text-muted-foreground" />
                     </div>
                     {[0, 1, 2, 3, 4].map((dayIdx) => {
@@ -772,7 +772,7 @@ export default function TeacherSchedule() {
                       return (
                         <div
                           key={`b-${rowIdx}-${dayIdx}`}
-                          className="border-t border-l border-border px-0.5 py-0.5 bg-muted/20 flex items-center"
+                          className="border-t border-l border-border px-0.5 py-0.5 bg-muted/20 flex items-center print-hide"
                         >
                           {br ? (
                             <div className="w-full">
