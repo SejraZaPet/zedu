@@ -33,6 +33,8 @@ const CalendarWeekGrid = ({
   viewMode,
   selectedDay,
   onEventClick,
+  reflectionState,
+  onReflectionClick,
 }: Props) => {
   const isMobile = useIsMobile();
 
