@@ -245,7 +245,7 @@ export default function StudentSchedule() {
                           {list.length > 0 ? (
                             <div className="w-full flex flex-col gap-1">
                               {list.map((slot) => (
-                                <ReadOnlyClassCard key={slot.id} slot={slot} />
+                                <ReadOnlyClassCard key={slot.id} slot={slot} navigate={navigate} />
                               ))}
                             </div>
                           ) : (
