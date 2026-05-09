@@ -1633,6 +1633,7 @@ export default function WorksheetEditor() {
                         pointsEnabled={spec.renderConfig?.pointsEnabled ?? true}
                         onSelect={() => setSelectedId(item.id)}
                         onDelete={() => deleteItem(item.id)}
+                        onSetPoints={(p) => updateItem(item.id, { points: p })}
                       />
                     ))}
                   </div>
