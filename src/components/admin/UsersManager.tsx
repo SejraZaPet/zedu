@@ -446,6 +446,7 @@ const UsersManager = () => {
               try {
                 const ids = Array.from(selectedIds);
                 await Promise.all(ids.map(id => supabase.functions.invoke("delete-user", { body: { userId: id } })));
+                ids.forEach(id => logAudit("user_deleted", "user", id, { bulk: true }));
                 toast({ title: "Smazáno", description: `${ids.length} uživatelů bylo odstraněno.` });
                 setSelectedIds(new Set());
                 fetchUsers();
