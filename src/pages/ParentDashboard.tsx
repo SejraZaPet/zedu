@@ -194,6 +194,17 @@ const ParentDashboard = () => {
           </Button>
         </div>
 
+        {students.length > 0 && (
+          <div className="mb-6">
+            <ChildScheduleWidget
+              studentIds={students.map((s) => s.id)}
+              studentNames={Object.fromEntries(
+                students.map((s) => [s.id, `${s.first_name} ${s.last_name}`.trim() || "Dítě"]),
+              )}
+            />
+          </div>
+        )}
+
         {students.length === 0 ? (
           <div className="bg-card border border-border rounded-2xl p-12 text-center">
             <User className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
