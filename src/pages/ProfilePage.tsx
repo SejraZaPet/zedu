@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Save, KeyRound, User, Mail, Sparkles, Check } from "lucide-react";
+import { ArrowLeft, Save, KeyRound, User, Mail, Sparkles, Check, Smile } from "lucide-react";
+import AvatarPicker from "@/components/student/AvatarPicker";
 
 const statusLabels: Record<string, string> = {
   pending: "Čeká na schválení",
@@ -304,6 +305,21 @@ const ProfilePage = () => {
             </Button>
           </CardContent>
         </Card>
+
+        {/* Avatar (students) */}
+        {role === "user" && user && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Smile className="w-4 h-4 text-primary" />
+                Můj avatar
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <AvatarPicker userId={user.id} />
+            </CardContent>
+          </Card>
+        )}
 
         {/* Preferred study methods (students) */}
         {role === "user" && (

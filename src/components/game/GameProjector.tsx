@@ -4,6 +4,8 @@ import { Progress } from "@/components/ui/progress";
 import { ArrowRight, Trophy, SkipForward } from "lucide-react";
 import { useMemo } from "react";
 import { t } from "@/lib/t";
+import { AvatarSvg } from "@/components/student/AvatarSvg";
+import { useStudentAvatars } from "@/hooks/useStudentAvatars";
 
 interface Props {
   session: GameSession;
@@ -46,6 +48,8 @@ export const GameProjector = ({ session, players, responses, countdown, onShowRe
     () => [...players].sort((a, b) => b.total_score - a.total_score).slice(0, 5),
     [players]
   );
+
+  const avatars = useStudentAvatars(leaderboard.map((p) => p.user_id));
 
   if (!question) return null;
 
@@ -126,6 +130,7 @@ export const GameProjector = ({ session, players, responses, countdown, onShowRe
                       <span className={`text-xl font-bold ${i === 0 ? "text-yellow-500" : i === 1 ? "text-gray-400" : i === 2 ? "text-amber-600" : "text-muted-foreground"}`}>
                         {i + 1}.
                       </span>
+                      <AvatarSvg slug={player.user_id ? avatars[player.user_id] : undefined} size={32} />
                       <span className="flex-1 font-medium text-foreground">{player.nickname}</span>
                       <span className="font-mono font-bold text-primary">{player.total_score}</span>
                     </div>

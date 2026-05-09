@@ -13,6 +13,9 @@ import WallActivity from "@/components/activities/WallActivity";
 import PollActivity from "@/components/activities/PollActivity";
 import PollProjectorView from "@/components/activities/PollProjectorView";
 import { Lock } from "lucide-react";
+import { AvatarSvg } from "@/components/student/AvatarSvg";
+import { useStudentAvatar } from "@/hooks/useStudentAvatars";
+import { useAuth } from "@/contexts/AuthContext";
 
 const StudentGamePlay = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -28,6 +31,9 @@ const StudentGamePlay = () => {
 
   const [fetchAttempts, setFetchAttempts] = useState(0);
   const { session, players, responses, loading, connectionStatus, reconnect } = useGameSession(sessionId, fetchAttempts);
+  const { user } = useAuth();
+  const myAvatar = useStudentAvatar(user?.id);
+  const myPlayer = players.find((p) => p.id === playerId);
   const [answered, setAnswered] = useState<Set<number>>(new Set());
   const [lastResult, setLastResult] = useState<{ correct: boolean; score: number } | null>(null);
   const [liveSettings, setLiveSettings] = useState<any>({});
@@ -130,7 +136,13 @@ const StudentGamePlay = () => {
   if (session.status === "lobby") {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
-        <div className="text-center space-y-3">
+        <div className="text-center space-y-4">
+          <div className="flex justify-center">
+            <AvatarSvg slug={myAvatar} size={96} />
+          </div>
+          {myPlayer?.nickname && (
+            <p className="font-heading text-xl font-bold">{myPlayer.nickname}</p>
+          )}
           <div className="animate-pulse text-muted-foreground text-lg">Čekej na učitele...</div>
           <p className="text-sm text-muted-foreground">Hra začne, jakmile učitel spustí prezentaci.</p>
         </div>
