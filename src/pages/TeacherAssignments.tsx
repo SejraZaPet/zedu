@@ -37,6 +37,7 @@ interface Assignment {
   created_at: string;
   activity_data: any[];
   worksheet_id?: string | null;
+  lockdown_mode?: boolean;
 }
 
 interface WorksheetOption {
