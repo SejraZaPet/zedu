@@ -681,6 +681,7 @@ export default function TeacherSchedule() {
               Lichý / sudý zvlášť
             </button>
           </div>
+          </div>
         </div>
 
         {/* Sub-tabs for odd/even when parity mode is not "both" */}
