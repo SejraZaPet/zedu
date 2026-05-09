@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Download, Users, Clock, CheckCircle2, AlertCircle, Minus, BarChart3, Filter } from "lucide-react";
+import { Loader2, Download, Users, Clock, CheckCircle2, AlertCircle, Minus, BarChart3, Filter, ShieldAlert } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
