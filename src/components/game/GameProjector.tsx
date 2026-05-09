@@ -1,7 +1,7 @@
-import { GameSession, GamePlayer, GameResponse } from "@/lib/game-types";
+import { GameSession, GamePlayer, GameResponse, computeTeamLeaderboard } from "@/lib/game-types";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { ArrowRight, Trophy, SkipForward } from "lucide-react";
+import { ArrowRight, Trophy, SkipForward, Users } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
 import { t } from "@/lib/t";
 import { AvatarSvg } from "@/components/student/AvatarSvg";
