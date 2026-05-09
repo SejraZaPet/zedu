@@ -270,11 +270,24 @@ const TeacherAssignments = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Shuffle className="w-4 h-4 text-muted-foreground" />
-                    <Label className="text-sm">Zamíchat volby u otázek</Label>
-                  </div>
-                  <Switch checked={randomizeChoices} onCheckedChange={setRandomizeChoices} />
+                  <Label className="text-sm">Zamíchat volby u otázek</Label>
+                </div>
+                <Switch checked={randomizeChoices} onCheckedChange={setRandomizeChoices} />
+              </div>
+            </div>
+
+            {/* Lockdown mode */}
+            <div className="flex items-start justify-between gap-3 p-3 border border-border rounded-lg bg-muted/30">
+              <div className="flex items-start gap-2">
+                <Lock className="w-4 h-4 text-muted-foreground mt-0.5" />
+                <div>
+                  <Label className="text-sm">Lockdown mód (bezpečný test)</Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Žák píše test ve fullscreenu, kopírování a vkládání jsou blokovány. Opuštění stránky se zaznamenává a uvidíte ho ve výsledcích.
+                  </p>
                 </div>
               </div>
+              <Switch checked={lockdownMode} onCheckedChange={setLockdownMode} />
 
               {/* Pracovní list selector */}
               <div className="p-3 border border-border rounded-lg bg-muted/30 space-y-2">
