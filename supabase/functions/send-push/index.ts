@@ -23,7 +23,22 @@ const VAPID_SUBJECT = /^(mailto:|https?:\/\/)/i.test(RAW_SUBJECT)
   ? RAW_SUBJECT
   : `mailto:${RAW_SUBJECT.includes("@") ? RAW_SUBJECT : "noreply@zedu.cz"}`;
 
-webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE);
+let _vapidReady = false;
+let _vapidError: string | null = null;
+function ensureVapid() {
+  if (_vapidReady) return true;
+  try {
+    if (!VAPID_PRIVATE) throw new Error("VAPID_PRIVATE_KEY not configured");
+    webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE);
+    _vapidReady = true;
+    _vapidError = null;
+    return true;
+  } catch (e) {
+    _vapidError = (e as Error).message;
+    console.error("[send-push] VAPID config invalid:", _vapidError, "len=", VAPID_PRIVATE.length);
+    return false;
+  }
+}
 
 interface Payload {
   recipient_id?: string;
