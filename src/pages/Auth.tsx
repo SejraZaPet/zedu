@@ -123,7 +123,39 @@ const Auth = () => {
     // Don't setLoading(false) — keep button disabled until redirect happens
   };
 
-  const handleRegister = async (e: React.FormEvent) => {
+  const handlePinLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    if (!pinUsername.trim() || !/^\d{4}$/.test(pinValue)) {
+      setError("Zadej uživatelské jméno a 4-místný PIN.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke("verify-pin", {
+        body: { username: pinUsername.trim(), pin: pinValue },
+      });
+      if (fnError || !data?.access_token) {
+        setError("Špatný PIN nebo uživatelské jméno.");
+        setLoading(false);
+        return;
+      }
+      const { error: setErr } = await supabase.auth.setSession({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+      });
+      if (setErr) {
+        setError("Nepodařilo se přihlásit, zkus to znovu.");
+        setLoading(false);
+        return;
+      }
+      setPendingLogin(true);
+      navigate("/student", { replace: true });
+    } catch {
+      setError("Špatný PIN nebo uživatelské jméno.");
+      setLoading(false);
+    }
+  };
     e.preventDefault();
     setLoading(true);
     setError("");
