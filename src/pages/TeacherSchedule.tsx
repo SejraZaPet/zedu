@@ -129,6 +129,28 @@ export default function TeacherSchedule() {
   const [activeTab, setActiveTab] = useState<ParityTab>(data.parityMode === "both" ? "both" : "odd");
   const [classSlots, setClassSlots] = useState<ClassSlot[]>([]);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [teacherName, setTeacherName] = useState<string>("");
+
+  useEffect(() => {
+    if (!user) {
+      setTeacherName("");
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("first_name,last_name,email")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      const n = `${data?.first_name ?? ""} ${data?.last_name ?? ""}`.trim();
+      setTeacherName(n || data?.email || user.email || "");
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   // Persist personal schedule
   useEffect(() => {
