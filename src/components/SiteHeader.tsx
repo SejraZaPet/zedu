@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
 import NotificationBell from "@/components/notifications/NotificationBell";
+import { useSchoolBranding } from "@/hooks/useSchoolBranding";
 
 interface NavItem {
   label: string;
