@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { User, BookOpen, ClipboardList, CheckCircle2, Clock, Plus, Trash2, KeyRound } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
+import ChildScheduleWidget from "@/components/parent/ChildScheduleWidget";
 import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
