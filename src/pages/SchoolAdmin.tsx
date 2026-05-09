@@ -72,10 +72,10 @@ const SchoolAdmin = () => {
     }
     const { data: schoolRow } = await supabase
       .from("schools")
-      .select("id, name")
+      .select("id, name, registration_code")
       .eq("id", schoolId)
       .single();
-    setSchool(schoolRow ?? null);
+    setSchool((schoolRow as any) ?? null);
 
     const { data: profs } = await supabase
       .from("profiles")
