@@ -165,7 +165,7 @@ const TeacherCalendar = () => {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, user, navigate, range]);
+  }, [authLoading, user, navigate, range, reflectionVersion]);
 
   const handleEventClick = (event: CalendarEvent) => {
     if (event.type === "lesson") {
