@@ -26,7 +26,17 @@ import {
   Plus,
   X,
   FileDown,
+  LayoutTemplate,
+  Trash2,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -564,6 +574,78 @@ export default function TeacherLessonPlanEditor() {
     }
   }
 
+  // Templates
+  const [templates, setTemplates] = useState<
+    { id: string; title: string; description: string | null; phases_json: any; created_at: string }[]
+  >([]);
+  const [saveTemplateOpen, setSaveTemplateOpen] = useState(false);
+  const [loadTemplateOpen, setLoadTemplateOpen] = useState(false);
+  const [templateTitle, setTemplateTitle] = useState("");
+  const [templateDesc, setTemplateDesc] = useState("");
+  const [templateSaving, setTemplateSaving] = useState(false);
+
+  async function reloadTemplates() {
+    if (!user) return;
+    const { data } = await supabase
+      .from("lesson_plan_templates")
+      .select("id, title, description, phases_json, created_at")
+      .eq("teacher_id", user.id)
+      .order("created_at", { ascending: false });
+    setTemplates((data as any[]) ?? []);
+  }
+  useEffect(() => {
+    reloadTemplates();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  async function handleSaveAsTemplate() {
+    if (!user) return;
+    if (!templateTitle.trim()) {
+      toast({ title: "Zadejte název šablony", variant: "destructive" });
+      return;
+    }
+    setTemplateSaving(true);
+    // Save only structure: titles, times, general descriptions. NO activities, NO lesson-specific content.
+    const phases_json = PHASES.map((p) => ({
+      key: p.key,
+      title: p.title,
+      timeMin: parseInt(phases[p.key].timeMin, 10) || 0,
+      description: phases[p.key].description || "",
+    }));
+    const { error } = await supabase.from("lesson_plan_templates").insert({
+      teacher_id: user.id,
+      title: templateTitle.trim(),
+      description: templateDesc.trim() || null,
+      phases_json,
+    });
+    setTemplateSaving(false);
+    if (error) {
+      toast({ title: "Uložení šablony se nezdařilo", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Šablona uložena" });
+    setSaveTemplateOpen(false);
+    setTemplateTitle("");
+    setTemplateDesc("");
+    reloadTemplates();
+  }
+
+  function applyTemplate(tpl: { phases_json: any }) {
+    const arr = Array.isArray(tpl.phases_json) ? tpl.phases_json : [];
+    const next = emptyPhases();
+    for (const p of arr) {
+      if (!p?.key || !next[p.key]) continue;
+      next[p.key] = {
+        timeMin: p.timeMin ? String(p.timeMin) : "",
+        description: p.description || "",
+        activities: [],
+      };
+    }
+    setPhases(next);
+    setLoadTemplateOpen(false);
+    toast({ title: "Šablona použita", description: "Fáze byly předvyplněny." });
+  }
+
   async function handleSave() {
     if (!user) {
       toast({ title: "Nepřihlášen", description: "Přihlaš se pro uložení plánu.", variant: "destructive" });
@@ -713,6 +795,19 @@ export default function TeacherLessonPlanEditor() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            <Button
+              variant="outline"
+              onClick={() => setLoadTemplateOpen(true)}
+              disabled={!templates.length}
+              title={templates.length ? "Předvyplnit fáze ze šablony" : "Zatím nemáte žádné šablony"}
+            >
+              <LayoutTemplate className="w-4 h-4 mr-2" />
+              Ze šablony
+            </Button>
+            <Button variant="outline" onClick={() => setSaveTemplateOpen(true)}>
+              <LayoutTemplate className="w-4 h-4 mr-2" />
+              Uložit jako šablonu
+            </Button>
             <Button onClick={handleSave} disabled={saving}>
               {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
               Uložit
@@ -1233,6 +1328,85 @@ export default function TeacherLessonPlanEditor() {
           </p>
         </div>
       </main>
+
+      {/* Save as template dialog */}
+      <Dialog open={saveTemplateOpen} onOpenChange={setSaveTemplateOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Uložit jako šablonu</DialogTitle>
+            <DialogDescription>
+              Uloží se pouze struktura fází (názvy, časy, obecné popisy) — bez konkrétního obsahu lekce a aktivit.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="tpl-title">Název šablony *</Label>
+              <Input
+                id="tpl-title"
+                value={templateTitle}
+                onChange={(e) => setTemplateTitle(e.target.value)}
+                placeholder="Např. Standardní 45min hodina"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="tpl-desc">Popis (volitelný)</Label>
+              <Textarea
+                id="tpl-desc"
+                value={templateDesc}
+                onChange={(e) => setTemplateDesc(e.target.value)}
+                placeholder="Kdy tuto šablonu používat…"
+                rows={2}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSaveTemplateOpen(false)} disabled={templateSaving}>
+              Zrušit
+            </Button>
+            <Button onClick={handleSaveAsTemplate} disabled={templateSaving}>
+              {templateSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+              Uložit šablonu
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Load from template dialog */}
+      <Dialog open={loadTemplateOpen} onOpenChange={setLoadTemplateOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Vyberte šablonu</DialogTitle>
+            <DialogDescription>
+              Po výběru se předvyplní fáze hodiny. Stávající obsah fází bude přepsán.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[60vh] overflow-auto space-y-2 py-2">
+            {templates.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">
+                Zatím nemáte žádné šablony.
+              </p>
+            ) : (
+              templates.map((tpl) => (
+                <button
+                  key={tpl.id}
+                  onClick={() => applyTemplate(tpl)}
+                  className="w-full text-left border border-border rounded-lg p-3 hover:border-primary/40 hover:bg-muted/30 transition-colors"
+                >
+                  <div className="font-medium text-sm">{tpl.title}</div>
+                  {tpl.description && (
+                    <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                      {tpl.description}
+                    </div>
+                  )}
+                  <div className="text-[11px] text-muted-foreground/70 mt-1">
+                    {Array.isArray(tpl.phases_json) ? tpl.phases_json.length : 0} fází
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <SiteFooter />
     </div>

@@ -29,7 +29,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { BookOpen, Plus, Search, Calendar, Loader2, Trash2 } from "lucide-react";
+import { BookOpen, Plus, Search, Calendar, Loader2, Trash2, LayoutTemplate } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
@@ -61,16 +62,43 @@ export default function TeacherLessonPlans() {
   const [subjectFilter, setSubjectFilter] = useState<string>("__all");
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [templates, setTemplates] = useState<
+    { id: string; title: string; description: string | null; phases_json: any; created_at: string }[]
+  >([]);
+  const [deleteTemplateId, setDeleteTemplateId] = useState<string | null>(null);
+  const [deletingTemplate, setDeletingTemplate] = useState(false);
+
+  async function confirmDeleteTemplate() {
+    if (!deleteTemplateId) return;
+    setDeletingTemplate(true);
+    const { error } = await supabase.from("lesson_plan_templates").delete().eq("id", deleteTemplateId);
+    setDeletingTemplate(false);
+    if (error) {
+      toast({ title: "Smazání se nezdařilo", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Šablona smazána" });
+      setTemplates((prev) => prev.filter((t) => t.id !== deleteTemplateId));
+    }
+    setDeleteTemplateId(null);
+  }
 
   async function reload() {
     if (!user) return;
     setLoading(true);
-    const { data } = await supabase
-      .from("lesson_plans")
-      .select("id, title, subject, updated_at, input_data")
-      .eq("teacher_id", user.id)
-      .order("updated_at", { ascending: false });
-    setItems((data as any[]) ?? []);
+    const [{ data: plans }, { data: tpls }] = await Promise.all([
+      supabase
+        .from("lesson_plans")
+        .select("id, title, subject, updated_at, input_data")
+        .eq("teacher_id", user.id)
+        .order("updated_at", { ascending: false }),
+      supabase
+        .from("lesson_plan_templates")
+        .select("id, title, description, phases_json, created_at")
+        .eq("teacher_id", user.id)
+        .order("created_at", { ascending: false }),
+    ]);
+    setItems((plans as any[]) ?? []);
+    setTemplates((tpls as any[]) ?? []);
     setLoading(false);
   }
 
@@ -247,84 +275,164 @@ export default function TeacherLessonPlans() {
           </Button>
         </div>
 
-        <div className="grid sm:grid-cols-[1fr_220px] gap-3 mb-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-            <Input
-              className="pl-9"
-              placeholder="Hledat plán…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-          <Select value={subjectFilter} onValueChange={setSubjectFilter}>
-            <SelectTrigger>
-              <SelectValue placeholder="Filtrovat podle předmětu" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__all">Všechny předměty</SelectItem>
-              {allSubjects.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {s}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <Tabs defaultValue="plans" className="w-full">
+          <TabsList className="mb-4">
+            <TabsTrigger value="plans">Plány ({items.length})</TabsTrigger>
+            <TabsTrigger value="templates">Šablony ({templates.length})</TabsTrigger>
+          </TabsList>
 
-        {loading ? (
-          <div className="flex items-center justify-center py-24">
-            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
-            <BookOpen className="w-12 h-12 text-muted-foreground/40" />
-            <p className="text-muted-foreground text-sm">
-              {search.trim() || subjectFilter !== "__all"
-                ? "Žádný plán neodpovídá filtru."
-                : "Zatím nemáš žádné plány hodin. Vytvoř první!"}
-            </p>
-            {!search.trim() && subjectFilter === "__all" && (
-              <Button onClick={handleCreate}>
-                <Plus className="w-4 h-4 mr-2" />
-                Nový plán
-              </Button>
-            )}
-          </div>
-        ) : (
-          <Accordion
-            type="multiple"
-            defaultValue={grouped.map(([k]) => k)}
-            className="space-y-3"
-          >
-            {grouped.map(([subjectKey, plans]) => (
-              <AccordionItem
-                key={subjectKey}
-                value={subjectKey}
-                className="border border-border rounded-xl bg-card/40 px-4"
+          <TabsContent value="plans" className="mt-0">
+            <div className="grid sm:grid-cols-[1fr_220px] gap-3 mb-6">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  className="pl-9"
+                  placeholder="Hledat plán…"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+              <Select value={subjectFilter} onValueChange={setSubjectFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filtrovat podle předmětu" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all">Všechny předměty</SelectItem>
+                  {allSubjects.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {s}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {loading ? (
+              <div className="flex items-center justify-center py-24">
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
+                <BookOpen className="w-12 h-12 text-muted-foreground/40" />
+                <p className="text-muted-foreground text-sm">
+                  {search.trim() || subjectFilter !== "__all"
+                    ? "Žádný plán neodpovídá filtru."
+                    : "Zatím nemáš žádné plány hodin. Vytvoř první!"}
+                </p>
+                {!search.trim() && subjectFilter === "__all" && (
+                  <Button onClick={handleCreate}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Nový plán
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <Accordion
+                type="multiple"
+                defaultValue={grouped.map(([k]) => k)}
+                className="space-y-3"
               >
-                <AccordionTrigger className="hover:no-underline">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-sm">
-                      {subjectKey === NO_SUBJECT ? "Bez předmětu" : subjectKey}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      ({plans.length})
-                    </span>
+                {grouped.map(([subjectKey, plans]) => (
+                  <AccordionItem
+                    key={subjectKey}
+                    value={subjectKey}
+                    className="border border-border rounded-xl bg-card/40 px-4"
+                  >
+                    <AccordionTrigger className="hover:no-underline">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-sm">
+                          {subjectKey === NO_SUBJECT ? "Bez předmětu" : subjectKey}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          ({plans.length})
+                        </span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="grid gap-3 sm:grid-cols-2 pt-1">
+                        {plans.map((plan) => (
+                          <PlanCard key={`${subjectKey}-${plan.id}`} plan={plan} />
+                        ))}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            )}
+          </TabsContent>
+
+          <TabsContent value="templates" className="mt-0">
+            {loading ? (
+              <div className="flex items-center justify-center py-24">
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : templates.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
+                <LayoutTemplate className="w-12 h-12 text-muted-foreground/40" />
+                <p className="text-muted-foreground text-sm">
+                  Zatím nemáš žádné šablony. Vytvoř plán a ulož ho jako šablonu.
+                </p>
+              </div>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {templates.map((tpl) => (
+                  <div
+                    key={tpl.id}
+                    className="bg-card border border-border rounded-xl p-5 flex flex-col gap-2 hover:border-primary/40 transition-colors group relative"
+                  >
+                    <div className="flex items-center gap-2 min-w-0 pr-8">
+                      <LayoutTemplate className="w-4 h-4 text-primary shrink-0" />
+                      <span className="font-semibold text-sm truncate">{tpl.title}</span>
+                    </div>
+                    {tpl.description && (
+                      <p className="text-xs text-muted-foreground line-clamp-2">
+                        {tpl.description}
+                      </p>
+                    )}
+                    <p className="text-[11px] text-muted-foreground/70">
+                      {Array.isArray(tpl.phases_json) ? tpl.phases_json.length : 0} fází · vytvořeno{" "}
+                      {format(new Date(tpl.created_at), "d. M. yyyy", { locale: cs })}
+                    </p>
+                    <button
+                      onClick={() => setDeleteTemplateId(tpl.id)}
+                      className="absolute top-3 right-3 p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                      aria-label="Smazat šablonu"
+                      title="Smazat šablonu"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
-                </AccordionTrigger>
-                <AccordionContent>
-                  <div className="grid gap-3 sm:grid-cols-2 pt-1">
-                    {plans.map((plan) => (
-                      <PlanCard key={`${subjectKey}-${plan.id}`} plan={plan} />
-                    ))}
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
-        )}
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </main>
+
+      <AlertDialog
+        open={!!deleteTemplateId}
+        onOpenChange={(o) => !o && setDeleteTemplateId(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Smazat šablonu?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tato akce je nevratná. Existující plány nebudou ovlivněny.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingTemplate}>Zrušit</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteTemplate}
+              disabled={deletingTemplate}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletingTemplate ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+              Smazat
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
         <AlertDialogContent>
