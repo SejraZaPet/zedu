@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { CalendarClock, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { colorForSubject } from "@/lib/teacher-schedule-store";
+import { ExamTypeBadge } from "@/components/assignments/ExamTypeBadge";
 
 interface Props {
   studentIds: string[];
