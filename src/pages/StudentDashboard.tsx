@@ -6,6 +6,7 @@ import { User, KeyRound, ClipboardList, Gamepad2, ListTodo, CalendarDays } from 
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import TodayWidget from "@/components/calendar/TodayWidget";
+import StudentProgressWidgets from "@/components/student/StudentProgressWidgets";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface Profile {
