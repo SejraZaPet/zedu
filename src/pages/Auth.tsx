@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Lock, UserPlus, LogIn, GraduationCap, BookOpenText, KeyRound, CheckCircle2, Eye, EyeOff, Users } from "lucide-react";
+import { Lock, UserPlus, LogIn, GraduationCap, BookOpenText, KeyRound, CheckCircle2, Eye, EyeOff, Users, Hash } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -17,7 +17,9 @@ const Auth = () => {
   const redirectTo = searchParams.get("redirect");
   const { toast } = useToast();
   const { isLoggedIn, role: authRole, loading: authLoading } = useAuth();
-  const [mode, setMode] = useState<"login" | "register">("login");
+  const [mode, setMode] = useState<"login" | "register" | "pin">("login");
+  const [pinUsername, setPinUsername] = useState("");
+  const [pinValue, setPinValue] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [role, setRole] = useState<Role>("student");
@@ -119,6 +121,40 @@ const Auth = () => {
     // Auth state change will trigger redirect via the useEffect above
     setPendingLogin(true);
     // Don't setLoading(false) — keep button disabled until redirect happens
+  };
+
+  const handlePinLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    if (!pinUsername.trim() || !/^\d{4}$/.test(pinValue)) {
+      setError("Zadej uživatelské jméno a 4-místný PIN.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke("verify-pin", {
+        body: { username: pinUsername.trim(), pin: pinValue },
+      });
+      if (fnError || !data?.access_token) {
+        setError("Špatný PIN nebo uživatelské jméno.");
+        setLoading(false);
+        return;
+      }
+      const { error: setErr } = await supabase.auth.setSession({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+      });
+      if (setErr) {
+        setError("Nepodařilo se přihlásit, zkus to znovu.");
+        setLoading(false);
+        return;
+      }
+      setPendingLogin(true);
+      navigate("/student", { replace: true });
+    } catch {
+      setError("Špatný PIN nebo uživatelské jméno.");
+      setLoading(false);
+    }
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -281,11 +317,13 @@ const Auth = () => {
             <Lock className="w-6 h-6 text-primary" />
           </div>
           <h1 className="font-heading text-2xl font-bold">
-            {mode === "login" ? "Přihlášení" : "Registrace"}
+            {mode === "login" ? "Přihlášení" : mode === "pin" ? "Přihlášení PINem" : "Registrace"}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             {mode === "login"
               ? "Přihlaste se do svého účtu"
+              : mode === "pin"
+              ? "Zadej uživatelské jméno a 4-místný PIN"
               : "Vytvořte si nový účet"}
           </p>
         </div>
@@ -294,7 +332,7 @@ const Auth = () => {
         <div className="flex mb-6 bg-card rounded-lg p-1 border border-border">
           <button
             onClick={() => { setMode("login"); setError(""); }}
-            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+            className={`flex-1 py-2 px-2 rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-1.5 ${
               mode === "login"
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:text-foreground"
@@ -303,8 +341,18 @@ const Auth = () => {
             <LogIn className="w-4 h-4" /> Přihlášení
           </button>
           <button
+            onClick={() => { setMode("pin"); setError(""); }}
+            className={`flex-1 py-2 px-2 rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-1.5 ${
+              mode === "pin"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Hash className="w-4 h-4" /> PIN
+          </button>
+          <button
             onClick={() => { setMode("register"); setError(""); }}
-            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+            className={`flex-1 py-2 px-2 rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-1.5 ${
               mode === "register"
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:text-foreground"
@@ -314,7 +362,42 @@ const Auth = () => {
           </button>
         </div>
 
-        {mode === "login" ? (
+        {mode === "pin" ? (
+          <form onSubmit={handlePinLogin} className="space-y-4">
+            <div>
+              <Label htmlFor="pinUsername">Uživatelské jméno</Label>
+              <Input
+                id="pinUsername"
+                type="text"
+                value={pinUsername}
+                onChange={(e) => setPinUsername(e.target.value)}
+                required
+                autoComplete="username"
+                placeholder="anovakova"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="pin">PIN (4 číslice)</Label>
+              <Input
+                id="pin"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]{4}"
+                maxLength={4}
+                value={pinValue}
+                onChange={(e) => setPinValue(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                required
+                placeholder="••••"
+                className="mt-1 text-center text-2xl tracking-[0.5em] font-mono"
+              />
+            </div>
+            {error && <p className="text-sm text-destructive">{error}</p>}
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Přihlašování..." : "Přihlásit se PINem"}
+            </Button>
+          </form>
+        ) : mode === "login" ? (
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <Label htmlFor="email">E-mail nebo uživatelské jméno</Label>
