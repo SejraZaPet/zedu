@@ -98,6 +98,7 @@ const ProfilePage = () => {
       setFieldOfStudy(data.field_of_study || "");
       setYear(data.year ? String(data.year) : "");
       setParentEmail((data as any).parent_email || "");
+      setEmailNotifications((data as any).parent_email_notifications !== false);
       setLoading(false);
     };
 
