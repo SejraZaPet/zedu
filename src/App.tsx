@@ -78,6 +78,8 @@ const App = () => (
             <Route path="/student" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
             <Route path="/ucitel" element={<ProtectedRoute><TeacherDashboard /></ProtectedRoute>} />
             <Route path="/rodic" element={<ProtectedRoute><ParentDashboard /></ProtectedRoute>} />
+            <Route path="/rodic/zpravy" element={<ProtectedRoute><ParentMessages /></ProtectedRoute>} />
+            <Route path="/ucitel/zpravy-rodicu" element={<ProtectedRoute><TeacherParentMessages /></ProtectedRoute>} />
             <Route path="/ucitel/tridy" element={<ProtectedRoute><TeacherClasses /></ProtectedRoute>} />
             <Route path="/ucitel/tridy/:id" element={<ProtectedRoute><TeacherClassDetail /></ProtectedRoute>} />
             <Route path="/ucitel/vysledky" element={<ProtectedRoute><TeacherResults /></ProtectedRoute>} />
