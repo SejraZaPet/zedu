@@ -44,6 +44,16 @@ const LiveTeacherScreen = () => {
   const isFinished = session?.status === "finished";
   const settings = session?.settings as any;
   const gameCode = session?.game_code || "";
+  const whiteboard: WhiteboardData = ((session as any)?.whiteboard_data as WhiteboardData) ?? { strokes: [], visible: false };
+  const whiteboardVisible = whiteboard.visible;
+
+  const toggleWhiteboard = useCallback(async () => {
+    if (!sessionId) return;
+    await supabase
+      .from("game_sessions")
+      .update({ whiteboard_data: { ...whiteboard, visible: !whiteboardVisible } as any })
+      .eq("id", sessionId);
+  }, [sessionId, whiteboard, whiteboardVisible]);
 
   const handleNext = useCallback(() => {
     if (!session) return;
