@@ -458,7 +458,43 @@ export default function TeacherSchedule() {
   }
 
   function setParityMode(mode: WeekParityMode) {
-    setData((d) => ({ ...d, parityMode: mode }));
+    setData((d) => {
+      if (mode === d.parityMode) return d;
+
+      // Migrate lessons so the user doesn't "lose" them when switching modes.
+      if (mode === "both") {
+        // Merge odd+even (and any existing both) into lessonsBoth, dedup by (day,period).
+        const seen = new Set<string>();
+        const merged: LessonEntry[] = [];
+        const pickFrom = (arr: LessonEntry[]) => {
+          for (const l of arr) {
+            const k = `${l.day}-${l.period}`;
+            if (seen.has(k)) continue;
+            seen.add(k);
+            merged.push({ ...l, mirrorBoth: false, mirrorKey: undefined });
+          }
+        };
+        pickFrom(d.lessonsBoth);
+        pickFrom(activeTab === "even" ? d.lessonsEven : d.lessonsOdd);
+        pickFrom(activeTab === "even" ? d.lessonsOdd : d.lessonsEven);
+        return { ...d, parityMode: mode, lessonsBoth: merged };
+      }
+
+      // Switching from "both" to odd/even: mirror lessonsBoth to both halves
+      // unless odd/even already contain something.
+      const hasSplit = d.lessonsOdd.length > 0 || d.lessonsEven.length > 0;
+      if (hasSplit) {
+        return { ...d, parityMode: mode };
+      }
+      const mirrorOdd = d.lessonsBoth.map((l) => ({ ...l, mirrorBoth: true, mirrorKey: l.id }));
+      const mirrorEven = d.lessonsBoth.map((l) => ({
+        ...l,
+        id: `${l.id}-e`,
+        mirrorBoth: true,
+        mirrorKey: l.id,
+      }));
+      return { ...d, parityMode: mode, lessonsOdd: mirrorOdd, lessonsEven: mirrorEven };
+    });
     setActiveTab(mode === "both" ? "both" : "odd");
   }
 
