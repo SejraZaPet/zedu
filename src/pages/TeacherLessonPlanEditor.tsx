@@ -660,6 +660,30 @@ export default function TeacherLessonPlanEditor() {
               <Clock className="w-4 h-4" />
               <span>Celkem: {totalMin} min</span>
             </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  <FileDown className="w-4 h-4 mr-2" />
+                  Exportovat PDF
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-72">
+                <DropdownMenuLabel>Vyberte šablonu</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => handleExportPdf("short")} className="flex-col items-start gap-0.5">
+                  <span className="font-medium">A) Krátký plán</span>
+                  <span className="text-xs text-muted-foreground">1 strana – tabulka fází s časy a aktivitami</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExportPdf("detailed")} className="flex-col items-start gap-0.5">
+                  <span className="font-medium">B) Detailní plán</span>
+                  <span className="text-xs text-muted-foreground">Pro hospitaci – cíle, kompetence, pomůcky, formy práce</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExportPdf("student")} className="flex-col items-start gap-0.5">
+                  <span className="font-medium">C) Studentský plán</span>
+                  <span className="text-xs text-muted-foreground">„Co budeme dnes dělat" – jen názvy fází a aktivity</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button onClick={handleSave} disabled={saving}>
               {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
               Uložit
