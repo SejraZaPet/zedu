@@ -595,6 +595,32 @@ export default function TeacherLessonPlanEditor() {
   const [templateDesc, setTemplateDesc] = useState("");
   const [templateSaving, setTemplateSaving] = useState(false);
 
+  // Sharing
+  const [shareOpen, setShareOpen] = useState(false);
+  const [sharedVisibility, setSharedVisibility] = useState<"private" | "public" | "school">("private");
+  const [anonymous, setAnonymous] = useState(false);
+  const [sharingSaving, setSharingSaving] = useState(false);
+
+  async function handleSaveSharing() {
+    if (!user) return;
+    if (!planDbId) {
+      toast({ title: "Nejprve uložte plán", description: "Plán musí existovat, než ho můžete sdílet.", variant: "destructive" });
+      return;
+    }
+    setSharingSaving(true);
+    const { error } = await supabase
+      .from("lesson_plans")
+      .update({ shared_visibility: sharedVisibility, anonymous } as any)
+      .eq("id", planDbId);
+    setSharingSaving(false);
+    if (error) {
+      toast({ title: "Uložení sdílení se nezdařilo", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Sdílení uloženo" });
+    setShareOpen(false);
+  }
+
   async function reloadTemplates() {
     if (!user) return;
     const { data } = await supabase
