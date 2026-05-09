@@ -38,6 +38,12 @@ export default function CalendarEventDetailDialog({ event, open, onOpenChange }:
   const { user } = useAuth();
   const [linkedPlanId, setLinkedPlanId] = useState<string | null>(null);
   const [phasePlan, setPhasePlan] = useState<StoredPhasePlan | null>(null);
+  const [reflectionMode, setReflectionMode] = useState<"full" | "quick" | null>(null);
+
+  const now = new Date();
+  const isPast = !!event && event.end < now;
+  const isOngoing =
+    !!event && event.start <= now && event.end >= now;
 
   useEffect(() => {
     let cancelled = false;
