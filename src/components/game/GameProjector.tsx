@@ -4,6 +4,8 @@ import { Progress } from "@/components/ui/progress";
 import { ArrowRight, Trophy, SkipForward } from "lucide-react";
 import { useMemo } from "react";
 import { t } from "@/lib/t";
+import { AvatarSvg } from "@/components/student/AvatarSvg";
+import { useStudentAvatars } from "@/hooks/useStudentAvatars";
 
 interface Props {
   session: GameSession;
