@@ -11,9 +11,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
-import { Home, LogOut, School as SchoolIcon, Users, GraduationCap, Plus, Trash2, ShieldCheck, ShieldOff } from "lucide-react";
+import { Home, LogOut, School as SchoolIcon, Users, GraduationCap, Plus, Trash2, ShieldCheck, ShieldOff, Copy, RefreshCw, KeyRound } from "lucide-react";
 
-interface SchoolRow { id: string; name: string; }
+interface SchoolRow { id: string; name: string; registration_code: string | null; }
 interface MemberRow {
   id: string;
   email: string;
@@ -72,10 +72,10 @@ const SchoolAdmin = () => {
     }
     const { data: schoolRow } = await supabase
       .from("schools")
-      .select("id, name")
+      .select("id, name, registration_code")
       .eq("id", schoolId)
       .single();
-    setSchool(schoolRow ?? null);
+    setSchool((schoolRow as any) ?? null);
 
     const { data: profs } = await supabase
       .from("profiles")
@@ -103,6 +103,28 @@ const SchoolAdmin = () => {
       }))
     );
     setLoading(false);
+  };
+
+  const copyCode = async () => {
+    if (!school?.registration_code) return;
+    try {
+      await navigator.clipboard.writeText(school.registration_code);
+      toast({ title: "Zkopírováno", description: `Kód ${school.registration_code} je ve schránce.` });
+    } catch {
+      toast({ title: "Chyba", description: "Nepodařilo se zkopírovat kód.", variant: "destructive" });
+    }
+  };
+
+  const regenerateCode = async () => {
+    if (!school) return;
+    if (!confirm("Vygenerovat nový registrační kód? Stávající kód přestane fungovat.")) return;
+    const { data, error } = await supabase.rpc("regenerate_school_registration_code", { _school_id: school.id });
+    if (error) {
+      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+      return;
+    }
+    setSchool({ ...school, registration_code: data as string });
+    toast({ title: "Nový kód", description: `Registrační kód školy je nyní ${data}.` });
   };
 
   const inviteUser = async () => {
@@ -252,6 +274,33 @@ const SchoolAdmin = () => {
             </DialogContent>
           </Dialog>
         </div>
+
+        {/* Registration code card */}
+        <Card className="mb-6">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <KeyRound className="w-4 h-4 text-primary" /> Registrační kód školy
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="flex-1">
+              <div className="font-mono text-2xl tracking-[0.4em] font-bold bg-muted/50 border border-border rounded-lg px-4 py-3 inline-block">
+                {school.registration_code ?? "—"}
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Učitelé tento kód zadají při registraci a budou automaticky přiřazeni k vaší škole.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={copyCode} disabled={!school.registration_code}>
+                <Copy className="w-4 h-4 mr-1" /> Kopírovat
+              </Button>
+              <Button variant="outline" size="sm" onClick={regenerateCode}>
+                <RefreshCw className="w-4 h-4 mr-1" /> Regenerovat
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         <Tabs defaultValue="teachers">
           <TabsList>

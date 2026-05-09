@@ -44,6 +44,7 @@ const Auth = () => {
   const [fieldOfStudy, setFieldOfStudy] = useState("");
   const [year, setYear] = useState("");
   const [classCode, setClassCode] = useState("");
+  const [schoolCode, setSchoolCode] = useState("");
   const [gdprConsent, setGdprConsent] = useState(false);
 
   // React to auth state changes - redirect when logged in
@@ -206,6 +207,9 @@ const Auth = () => {
       metadata.field_of_study = fieldOfStudy;
       metadata.year = year || null;
       metadata.class_code = classCode.trim() || null;
+    }
+    if (role === "teacher" && schoolCode.trim()) {
+      metadata.school_code = schoolCode.trim().toUpperCase();
     }
     if (role === "rodic" && trimmedChildCode) {
       metadata.child_code = trimmedChildCode;
@@ -541,6 +545,26 @@ const Auth = () => {
               <div>
                 <Label htmlFor="school">Škola</Label>
                 <Input id="school" value={school} onChange={(e) => setSchool(e.target.value)} className="mt-1" placeholder="Název školy" />
+              </div>
+            )}
+
+            {/* Teacher-only: school registration code */}
+            {role === "teacher" && (
+              <div>
+                <Label htmlFor="schoolCode">
+                  Kód školy <span className="text-muted-foreground font-normal">(volitelné)</span>
+                </Label>
+                <Input
+                  id="schoolCode"
+                  value={schoolCode}
+                  onChange={(e) => setSchoolCode(e.target.value.toUpperCase())}
+                  className="mt-1 font-mono uppercase tracking-widest"
+                  placeholder="ABC123"
+                  maxLength={6}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Pokud máte 6místný registrační kód své školy, zadejte ho a budete automaticky přiřazeni.
+                </p>
               </div>
             )}
 
