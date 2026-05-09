@@ -9,8 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Save, KeyRound, User, Mail, Sparkles, Check, Smile } from "lucide-react";
+import { ArrowLeft, Save, KeyRound, User, Mail, Sparkles, Check, Smile, Bell } from "lucide-react";
 import AvatarPicker from "@/components/student/AvatarPicker";
+import { Switch } from "@/components/ui/switch";
 
 const statusLabels: Record<string, string> = {
   pending: "Čeká na schválení",
@@ -34,6 +35,7 @@ interface Profile {
   status: string;
   created_at: string;
   parent_email: string | null;
+  parent_email_notifications?: boolean;
 }
 
 const ProfilePage = () => {
@@ -52,6 +54,8 @@ const ProfilePage = () => {
   // Parent recovery email
   const [parentEmail, setParentEmail] = useState("");
   const [savingParentEmail, setSavingParentEmail] = useState(false);
+  const [emailNotifications, setEmailNotifications] = useState(true);
+  const [savingEmailNotif, setSavingEmailNotif] = useState(false);
 
   // Password change
   const [showPasswordForm, setShowPasswordForm] = useState(false);
@@ -94,6 +98,7 @@ const ProfilePage = () => {
       setFieldOfStudy(data.field_of_study || "");
       setYear(data.year ? String(data.year) : "");
       setParentEmail((data as any).parent_email || "");
+      setEmailNotifications((data as any).parent_email_notifications !== false);
       setLoading(false);
     };
 
@@ -190,6 +195,23 @@ const ProfilePage = () => {
       description: 'Pro obnovu hesla použijte „Zapomenuté heslo" na přihlašovací stránce.',
       duration: 8000,
     });
+  };
+
+  const handleToggleEmailNotif = async (checked: boolean) => {
+    if (!user) return;
+    setEmailNotifications(checked);
+    setSavingEmailNotif(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ parent_email_notifications: checked } as any)
+      .eq("id", user.id);
+    setSavingEmailNotif(false);
+    if (error) {
+      setEmailNotifications(!checked);
+      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Uloženo", description: checked ? "Budete dostávat emaily." : "Emaily byly vypnuty." });
   };
 
   const handleChangePassword = async () => {
@@ -404,6 +426,33 @@ const ProfilePage = () => {
                   <Save className="w-4 h-4" />
                   {savingParentEmail ? "Ukládám…" : "Uložit"}
                 </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Email notifications (parents only) */}
+        {role === "rodic" && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Bell className="w-4 h-4 text-primary" />
+                Notifikace
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="font-medium text-sm">Dostávat emaily</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Notifikace o nových úkolech a výsledcích vašeho dítěte.
+                  </p>
+                </div>
+                <Switch
+                  checked={emailNotifications}
+                  onCheckedChange={handleToggleEmailNotif}
+                  disabled={savingEmailNotif}
+                />
               </div>
             </CardContent>
           </Card>

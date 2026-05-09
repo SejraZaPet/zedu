@@ -55,3 +55,6 @@ verify_jwt = false
 
 [functions.publish-scheduled-worksheets]
 verify_jwt = false
+
+[functions.notify-parent]
+verify_jwt = false
