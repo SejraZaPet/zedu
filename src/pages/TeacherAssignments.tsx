@@ -151,6 +151,7 @@ const TeacherAssignments = () => {
     setSelectedClassId("");
     setSelectedWorksheetId("");
     setLockdownMode(false);
+    setExamType("ukol");
   };
 
   const handlePublish = async (id: string) => {
