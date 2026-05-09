@@ -603,6 +603,140 @@ export default function TeacherLessonPlanEditor() {
   const [anonymous, setAnonymous] = useState(false);
   const [sharingSaving, setSharingSaving] = useState(false);
 
+  // Learning methods
+  type LearningMethod = {
+    id: string;
+    name: string;
+    slug: string | null;
+    description: string | null;
+    category: string | null;
+    difficulty: string | null;
+    time_range: string | null;
+    template_phases_json: any;
+  };
+  const [methods, setMethods] = useState<LearningMethod[]>([]);
+  const [selectedMethodId, setSelectedMethodId] = useState<string>("");
+  const [methodSuggestions, setMethodSuggestions] = useState<
+    { method: LearningMethod; reason: string }[]
+  >([]);
+  const [methodAiLoading, setMethodAiLoading] = useState(false);
+
+  useEffect(() => {
+    supabase
+      .from("learning_methods")
+      .select("id,name,slug,description,category,difficulty,time_range,template_phases_json")
+      .order("name", { ascending: true })
+      .then(({ data }) => setMethods((data as any[]) ?? []));
+  }, []);
+
+  // Load existing method link for the plan
+  useEffect(() => {
+    if (!planDbId) return;
+    supabase
+      .from("lesson_method_links")
+      .select("method_id")
+      .eq("lesson_plan_id", planDbId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.method_id) setSelectedMethodId(data.method_id as string);
+      });
+  }, [planDbId]);
+
+  function applyMethodTemplate(method: LearningMethod) {
+    const arr = Array.isArray(method.template_phases_json) ? method.template_phases_json : [];
+    const next = emptyPhases();
+    PHASES.forEach((p, idx) => {
+      const tp = arr[idx];
+      if (!tp) return;
+      const desc = [tp.name ? `${tp.name}` : "", tp.description ?? ""]
+        .filter(Boolean)
+        .join(" — ");
+      next[p.key] = {
+        timeMin: tp.duration ? String(tp.duration) : "",
+        description: desc,
+        activities: [],
+      };
+    });
+    setPhases(next);
+  }
+
+  async function handleSelectMethod(methodId: string) {
+    setSelectedMethodId(methodId);
+    const m = methods.find((x) => x.id === methodId);
+    if (!m) return;
+    applyMethodTemplate(m);
+    toast({
+      title: `Metoda: ${m.name}`,
+      description: "Fáze byly předvyplněny ze šablony metody.",
+    });
+    if (planDbId && user) {
+      await supabase.from("lesson_method_links").delete().eq("lesson_plan_id", planDbId);
+      const { error } = await supabase
+        .from("lesson_method_links")
+        .insert({ lesson_plan_id: planDbId, method_id: methodId });
+      if (error) {
+        toast({
+          title: "Propojení s metodou se neuložilo",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+    }
+  }
+
+  async function handleRecommendMethods() {
+    const goal = [title, description, aiInstructions].filter(Boolean).join(". ").trim();
+    if (!goal) {
+      toast({
+        title: "Zadejte cíl hodiny",
+        description: "Vyplňte název, popis nebo pokyny pro AI.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!methods.length) return;
+    setMethodAiLoading(true);
+    setMethodSuggestions([]);
+    try {
+      const { data, error } = await supabase.functions.invoke("recommend-learning-methods", {
+        body: {
+          goal,
+          subject,
+          customInstructions: aiInstructions,
+          methods: methods.map((m) => ({
+            id: m.id,
+            name: m.name,
+            category: m.category,
+            difficulty: m.difficulty,
+            time_range: m.time_range,
+            description: m.description,
+          })),
+        },
+      });
+      if (error) throw error;
+      const recs = (data?.recommendations ?? []) as { method_id: string; reason: string }[];
+      const mapped = recs
+        .map((r) => {
+          const m = methods.find((x) => x.id === r.method_id);
+          return m ? { method: m, reason: r.reason } : null;
+        })
+        .filter(Boolean) as { method: LearningMethod; reason: string }[];
+      setMethodSuggestions(mapped);
+      if (!mapped.length) {
+        toast({ title: "AI nenavrhla žádnou metodu", variant: "destructive" });
+      }
+    } catch (e: any) {
+      toast({
+        title: "AI doporučení se nezdařilo",
+        description: e?.message || "Zkuste to znovu.",
+        variant: "destructive",
+      });
+    } finally {
+      setMethodAiLoading(false);
+    }
+  }
+
+
   async function handleSaveSharing() {
     if (!user) return;
     if (!planDbId) {
