@@ -24,6 +24,7 @@ const SiteHeader = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const { isLoggedIn, role: userRole, signOut } = useAuth();
+  const { branding } = useSchoolBranding();
   const navigate = useNavigate();
   const location = useLocation();
 
