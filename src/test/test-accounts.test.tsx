@@ -61,7 +61,7 @@ describe("Test accounts – ProtectedRoute", () => {
         </MemoryRouter>,
       );
       expect(screen.getByText("SECRET_CONTENT")).toBeInTheDocument();
-      expect(screen.queryByText(/čeká na schválení/i)).not.toBeInTheDocument();
+      expect(screen.queryByRole("heading", { name: /čeká na schválení/i })).not.toBeInTheDocument();
     },
   );
 
@@ -75,7 +75,7 @@ describe("Test accounts – ProtectedRoute", () => {
         </ProtectedRoute>
       </MemoryRouter>,
     );
-    expect(screen.getByText(/čeká na schválení/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /čeká na schválení/i })).toBeInTheDocument();
     expect(screen.queryByText("SECRET_CONTENT")).not.toBeInTheDocument();
   });
 });
