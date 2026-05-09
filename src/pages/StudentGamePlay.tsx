@@ -136,7 +136,13 @@ const StudentGamePlay = () => {
   if (session.status === "lobby") {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
-        <div className="text-center space-y-3">
+        <div className="text-center space-y-4">
+          <div className="flex justify-center">
+            <AvatarSvg slug={myAvatar} size={96} />
+          </div>
+          {myPlayer?.nickname && (
+            <p className="font-heading text-xl font-bold">{myPlayer.nickname}</p>
+          )}
           <div className="animate-pulse text-muted-foreground text-lg">Čekej na učitele...</div>
           <p className="text-sm text-muted-foreground">Hra začne, jakmile učitel spustí prezentaci.</p>
         </div>
