@@ -448,13 +448,18 @@ const TeacherTextbooks = () => {
                   <Plus className="w-4 h-4 mr-1" /> Téma
                 </Button>
                 {allTopics.length > 0 && (
-                  <Button size="sm" onClick={() => {
-                    setNewLessonTitle("");
-                    setNewLessonTopicId(allTopics[0]?.id ?? "");
-                    setCreateLessonOpen(true);
-                  }}>
-                    <Plus className="w-4 h-4 mr-1" /> Lekce
-                  </Button>
+                  <>
+                    <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
+                      <FileText className="w-4 h-4 mr-1" /> Importovat soubor
+                    </Button>
+                    <Button size="sm" onClick={() => {
+                      setNewLessonTitle("");
+                      setNewLessonTopicId(allTopics[0]?.id ?? "");
+                      setCreateLessonOpen(true);
+                    }}>
+                      <Plus className="w-4 h-4 mr-1" /> Lekce
+                    </Button>
+                  </>
                 )}
               </div>
             </div>
