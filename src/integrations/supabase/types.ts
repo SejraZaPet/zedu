@@ -697,6 +697,81 @@ export type Database = {
         }
         Relationships: []
       }
+      learning_methods: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          difficulty: string | null
+          id: string
+          name: string
+          slug: string | null
+          steps_json: Json | null
+          template_phases_json: Json | null
+          time_range: string | null
+          tips: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          difficulty?: string | null
+          id?: string
+          name: string
+          slug?: string | null
+          steps_json?: Json | null
+          template_phases_json?: Json | null
+          time_range?: string | null
+          tips?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          difficulty?: string | null
+          id?: string
+          name?: string
+          slug?: string | null
+          steps_json?: Json | null
+          template_phases_json?: Json | null
+          time_range?: string | null
+          tips?: string | null
+        }
+        Relationships: []
+      }
+      lesson_method_links: {
+        Row: {
+          created_at: string
+          lesson_plan_id: string
+          method_id: string
+        }
+        Insert: {
+          created_at?: string
+          lesson_plan_id: string
+          method_id: string
+        }
+        Update: {
+          created_at?: string
+          lesson_plan_id?: string
+          method_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_method_links_lesson_plan_id_fkey"
+            columns: ["lesson_plan_id"]
+            isOneToOne: false
+            referencedRelation: "lesson_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lesson_method_links_method_id_fkey"
+            columns: ["method_id"]
+            isOneToOne: false
+            referencedRelation: "learning_methods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lesson_placements: {
         Row: {
           class_id: string | null
