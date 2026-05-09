@@ -56,6 +56,7 @@ import TeacherLessonPlanEditor from "./pages/TeacherLessonPlanEditor";
 import TeacherSchedule from "./pages/TeacherSchedule";
 import TeacherSubjectClass from "./pages/TeacherSubjectClass";
 import TeacherSubjects from "./pages/TeacherSubjects";
+import TeacherMethods from "./pages/TeacherMethods";
 import SchoolAdmin from "./pages/SchoolAdmin";
 import ViewAsBanner from "./components/ViewAsBanner";
 
@@ -124,6 +125,7 @@ const App = () => (
             <Route path="/ucitel/rozvrh" element={<ProtectedRoute><TeacherSchedule /></ProtectedRoute>} />
             <Route path="/ucitel/predmety" element={<ProtectedRoute><TeacherSubjects /></ProtectedRoute>} />
             <Route path="/ucitel/predmet/:subjectId/trida/:classId" element={<ProtectedRoute><TeacherSubjectClass /></ProtectedRoute>} />
+            <Route path="/ucitel/metody" element={<ProtectedRoute><TeacherMethods /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
