@@ -606,7 +606,9 @@ export default function TeacherSubjectClass() {
                   <div className="space-y-2">
                     {pastLessons.map((e) => {
                       const dateStr = format(e.start, "EEE d. M.", { locale: cs });
-                      const planForDate = findPlanForDate(format(e.start, "yyyy-MM-dd"));
+                      const dateKey = format(e.start, "yyyy-MM-dd");
+                      const planForDate = findPlanForDate(dateKey);
+                      const refl = reflections[reflectionKey({ subject: subjectLabel, classId, date: dateKey })];
                       return (
                         <Card key={e.id} className="p-3">
                           <div className="flex items-center justify-between gap-2">
@@ -624,19 +626,43 @@ export default function TeacherSubjectClass() {
                                 </div>
                               )}
                             </div>
-                            {planForDate ? (
+                            <div className="flex items-center gap-1">
+                              {planForDate && (
+                                <Button size="sm" variant="ghost" onClick={() => navigate(`/ucitel/plany-hodin/${planForDate.id}`)}>
+                                  <FileText className="h-3.5 w-3.5 mr-1" />
+                                  Otevřít
+                                </Button>
+                              )}
                               <Button
                                 size="sm"
-                                variant="ghost"
-                                onClick={() =>
-                                  navigate(`/ucitel/plany-hodin/${planForDate.id}`)
-                                }
+                                variant={refl ? "ghost" : "outline"}
+                                onClick={() => setReflectionEvent({ date: dateKey, subject: subjectLabel, classId, label: `${subjectLabel} · ${formatTime(e.start)}` })}
                               >
-                                <FileText className="h-3.5 w-3.5 mr-1" />
-                                Otevřít
+                                <Star className={`h-3.5 w-3.5 mr-1 ${refl ? "fill-yellow-400 text-yellow-400" : ""}`} />
+                                {refl ? "Reflexe" : "Přidat reflexi"}
                               </Button>
-                            ) : null}
+                            </div>
                           </div>
+                          {refl && (
+                            <div className="mt-2 pt-2 border-t border-border space-y-1 text-xs">
+                              {refl.rating ? (
+                                <div className="flex items-center gap-0.5">
+                                  {Array.from({ length: 5 }).map((_, i) => (
+                                    <Star key={i} className={`h-3 w-3 ${i < (refl.rating || 0) ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/40"}`} />
+                                  ))}
+                                </div>
+                              ) : null}
+                              {refl.what_worked && (
+                                <p className="text-muted-foreground"><span className="font-medium text-foreground">Fungovalo: </span>{refl.what_worked}</p>
+                              )}
+                              {refl.what_to_change && (
+                                <p className="text-muted-foreground"><span className="font-medium text-foreground">Změnit: </span>{refl.what_to_change}</p>
+                              )}
+                              {refl.quick_notes && (
+                                <p className="text-muted-foreground italic">{refl.quick_notes}</p>
+                              )}
+                            </div>
+                          )}
                         </Card>
                       );
                     })}
