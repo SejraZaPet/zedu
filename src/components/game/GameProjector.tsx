@@ -55,10 +55,50 @@ export const GameProjector = ({ session, players, responses, countdown, onShowRe
 
   const avatars = useStudentAvatars(leaderboard.map((p) => p.user_id));
 
+  // Play themed sounds for new responses on current question
+  const lastPlayedRef = useRef(0);
+  useEffect(() => {
+    if (!soundsEnabled || !theme.sounds) {
+      lastPlayedRef.current = currentResponses.length;
+      return;
+    }
+    if (currentResponses.length > lastPlayedRef.current) {
+      const last = currentResponses[currentResponses.length - 1];
+      playRecipe(last.is_correct ? theme.sounds.correct : theme.sounds.wrong);
+    }
+    lastPlayedRef.current = currentResponses.length;
+  }, [currentResponses, soundsEnabled, theme]);
+
+  useEffect(() => {
+    lastPlayedRef.current = 0;
+  }, [qi]);
+
   if (!question) return null;
 
+  const isThemed = theme.id !== "default";
+
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div
+      className={cn("min-h-screen flex flex-col relative overflow-hidden", theme.bgClass)}
+      style={theme.cssVars as React.CSSProperties}
+    >
+      {isThemed && theme.decorEmoji && (
+        <div className="pointer-events-none absolute inset-0 opacity-10 select-none">
+          {theme.decorEmoji.map((e, i) => (
+            <span
+              key={i}
+              className="absolute text-6xl md:text-8xl"
+              style={{
+                top: `${(i * 37) % 90}%`,
+                left: `${(i * 53) % 90}%`,
+                transform: `rotate(${(i * 17) % 40 - 20}deg)`,
+              }}
+            >
+              {e}
+            </span>
+          ))}
+        </div>
+      )}
       {/* Top bar */}
       <div className="flex items-center justify-between px-6 py-3 bg-card border-b border-border">
         <span className="text-sm font-medium text-muted-foreground">
