@@ -6,6 +6,7 @@ import { useMemo } from "react";
 import { t } from "@/lib/t";
 import { AvatarSvg } from "@/components/student/AvatarSvg";
 import { useStudentAvatars } from "@/hooks/useStudentAvatars";
+import { GameModeOverlay } from "@/components/game/GameModeOverlay";
 
 interface Props {
   session: GameSession;
