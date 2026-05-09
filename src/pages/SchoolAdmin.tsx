@@ -11,9 +11,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
-import { Home, LogOut, School as SchoolIcon, Users, GraduationCap, Plus, Trash2, ShieldCheck, ShieldOff } from "lucide-react";
+import { Home, LogOut, School as SchoolIcon, Users, GraduationCap, Plus, Trash2, ShieldCheck, ShieldOff, Copy, RefreshCw, KeyRound } from "lucide-react";
 
-interface SchoolRow { id: string; name: string; }
+interface SchoolRow { id: string; name: string; registration_code: string | null; }
 interface MemberRow {
   id: string;
   email: string;
