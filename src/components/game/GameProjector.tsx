@@ -222,6 +222,7 @@ export const GameProjector = ({ session, players, responses, countdown, onShowRe
           </Button>
         )}
       </div>
+      </div>
     </div>
   );
 };
