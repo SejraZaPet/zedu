@@ -17,7 +17,9 @@ const Auth = () => {
   const redirectTo = searchParams.get("redirect");
   const { toast } = useToast();
   const { isLoggedIn, role: authRole, loading: authLoading } = useAuth();
-  const [mode, setMode] = useState<"login" | "register">("login");
+  const [mode, setMode] = useState<"login" | "register" | "pin">("login");
+  const [pinUsername, setPinUsername] = useState("");
+  const [pinValue, setPinValue] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [role, setRole] = useState<Role>("student");
