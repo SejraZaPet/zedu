@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { User, BookOpen, ClipboardList, CheckCircle2, Clock, Plus, Trash2, KeyRound } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
+import ChildScheduleWidget from "@/components/parent/ChildScheduleWidget";
 import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -192,6 +193,17 @@ const ParentDashboard = () => {
             Přidat dítě
           </Button>
         </div>
+
+        {students.length > 0 && (
+          <div className="mb-6">
+            <ChildScheduleWidget
+              studentIds={students.map((s) => s.id)}
+              studentNames={Object.fromEntries(
+                students.map((s) => [s.id, `${s.first_name} ${s.last_name}`.trim() || "Dítě"]),
+              )}
+            />
+          </div>
+        )}
 
         {students.length === 0 ? (
           <div className="bg-card border border-border rounded-2xl p-12 text-center">
