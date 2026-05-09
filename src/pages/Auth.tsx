@@ -363,6 +363,23 @@ const Auth = () => {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="w-full max-w-md">
+        {branding && (
+          <div className="mb-6 rounded-xl border border-border bg-card p-4 text-center">
+            {branding.custom_logo_url && (
+              <img
+                src={branding.custom_logo_url}
+                alt={branding.name}
+                className="h-12 w-auto mx-auto mb-2 object-contain"
+              />
+            )}
+            <p className="font-heading text-base font-semibold">{branding.name}</p>
+            {branding.custom_welcome_text && (
+              <p className="text-sm text-muted-foreground mt-1 whitespace-pre-line">
+                {branding.custom_welcome_text}
+              </p>
+            )}
+          </div>
+        )}
         <div className="text-center mb-8">
           <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
             <Lock className="w-6 h-6 text-primary" />
