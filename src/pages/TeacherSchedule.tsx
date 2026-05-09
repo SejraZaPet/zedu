@@ -615,8 +615,20 @@ export default function TeacherSchedule() {
         )}
 
         {/* ───────── Unified card schedule ───────── */}
-        <div className="bg-card border border-border rounded-xl overflow-hidden">
-          <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-border bg-muted/30 flex-wrap">
+        <div className="bg-card border border-border rounded-xl overflow-hidden print-area">
+          {/* Print-only header */}
+          <div className="print-show px-4 py-3 border-b border-border">
+            <h1 className="text-xl font-bold">Rozvrh hodin</h1>
+            <div className="text-sm text-muted-foreground mt-1">
+              {teacherName}
+              {data.parityMode !== "both" && (
+                <span> · {activeTab === "odd" ? "Lichý týden" : "Sudý týden"}</span>
+              )}
+              {data.parityMode === "both" && <span> · Oba týdny</span>}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-border bg-muted/30 flex-wrap print-hide">
             <div className="flex items-center gap-2 flex-wrap">
               <Clock className="w-4 h-4 text-primary" />
               <h2 className="font-medium text-sm">Týdenní rozvrh</h2>
@@ -629,14 +641,24 @@ export default function TeacherSchedule() {
                 </Badge>
               )}
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 text-xs"
-              onClick={() => navigate("/ucitel/tridy")}
-            >
-              Spravovat třídy <ExternalLink className="w-3 h-3 ml-1" />
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs gap-1"
+                onClick={() => window.print()}
+              >
+                <Printer className="w-3 h-3" /> Tisk rozvrhu
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => navigate("/ucitel/tridy")}
+              >
+                Spravovat třídy <ExternalLink className="w-3 h-3 ml-1" />
+              </Button>
+            </div>
           </div>
 
           {conflicts.conflictCells.length > 0 && (
