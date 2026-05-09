@@ -407,13 +407,16 @@ const TeacherAssignments = () => {
           </div>
         ) : (
           <div className="space-y-3">
-            {assignments.map((a) => (
+            {assignments
+              .filter((a) => filterExamType === "__all__" || (filterExamType === "ukol" ? !a.exam_type : a.exam_type === filterExamType))
+              .map((a) => (
               <Card key={a.id} className="hover:shadow-sm transition-shadow">
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-semibold">{a.title}</h3>
+                        <ExamTypeBadge examType={a.exam_type} showDefault />
                         <Badge variant={a.status === "published" ? "default" : "secondary"} className="text-xs">
                           {a.status === "published" ? "Publikováno" : "Koncept"}
                         </Badge>
