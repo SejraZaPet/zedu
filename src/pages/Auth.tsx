@@ -332,7 +332,7 @@ const Auth = () => {
         <div className="flex mb-6 bg-card rounded-lg p-1 border border-border">
           <button
             onClick={() => { setMode("login"); setError(""); }}
-            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+            className={`flex-1 py-2 px-2 rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-1.5 ${
               mode === "login"
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:text-foreground"
@@ -341,8 +341,18 @@ const Auth = () => {
             <LogIn className="w-4 h-4" /> Přihlášení
           </button>
           <button
+            onClick={() => { setMode("pin"); setError(""); }}
+            className={`flex-1 py-2 px-2 rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-1.5 ${
+              mode === "pin"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Hash className="w-4 h-4" /> PIN
+          </button>
+          <button
             onClick={() => { setMode("register"); setError(""); }}
-            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+            className={`flex-1 py-2 px-2 rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-1.5 ${
               mode === "register"
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:text-foreground"
@@ -352,7 +362,42 @@ const Auth = () => {
           </button>
         </div>
 
-        {mode === "login" ? (
+        {mode === "pin" ? (
+          <form onSubmit={handlePinLogin} className="space-y-4">
+            <div>
+              <Label htmlFor="pinUsername">Uživatelské jméno</Label>
+              <Input
+                id="pinUsername"
+                type="text"
+                value={pinUsername}
+                onChange={(e) => setPinUsername(e.target.value)}
+                required
+                autoComplete="username"
+                placeholder="anovakova"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="pin">PIN (4 číslice)</Label>
+              <Input
+                id="pin"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]{4}"
+                maxLength={4}
+                value={pinValue}
+                onChange={(e) => setPinValue(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                required
+                placeholder="••••"
+                className="mt-1 text-center text-2xl tracking-[0.5em] font-mono"
+              />
+            </div>
+            {error && <p className="text-sm text-destructive">{error}</p>}
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Přihlašování..." : "Přihlásit se PINem"}
+            </Button>
+          </form>
+        ) : mode === "login" ? (
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <Label htmlFor="email">E-mail nebo uživatelské jméno</Label>
