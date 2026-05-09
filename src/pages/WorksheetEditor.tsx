@@ -71,6 +71,7 @@ import {
   ChevronsUpDown,
   Check,
 } from "lucide-react";
+import { usePdfExport } from "@/hooks/usePdfExport";
 import {
   Command,
   CommandEmpty,
@@ -1366,6 +1367,21 @@ export default function WorksheetEditor() {
             </Button>
             <Button variant="outline" size="sm" onClick={() => setPdfDialogOpen(true)} className="hidden md:inline-flex">
               <Printer className="w-4 h-4 mr-1" /> Tisk/PDF
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => id && serverPdf.exportOne("worksheet", id)}
+              disabled={!id || serverPdf.loading}
+              className="hidden md:inline-flex"
+              title="Vygenerovat PDF na serveru (konzistentní výstup)"
+            >
+              {serverPdf.loading ? (
+                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+              ) : (
+                <FileDown className="w-4 h-4 mr-1" />
+              )}
+              PDF (server)
             </Button>
 
             {/* Publish dropdown */}
