@@ -1,0 +1,27 @@
+{
+  "name": "ZEdu – Moderní nástroje pro vzdělávání",
+  "short_name": "ZEdu",
+  "description": "Vzdělávací platforma pro učitele, žáky a školy.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0F172A",
+  "theme_color": "#6EC6D9",
+  "lang": "cs",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
