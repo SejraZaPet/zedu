@@ -372,6 +372,7 @@ export default function TeacherLessonPlans() {
           <TabsList className="mb-4">
             <TabsTrigger value="plans">Plány ({items.length})</TabsTrigger>
             <TabsTrigger value="templates">Šablony ({templates.length})</TabsTrigger>
+            <TabsTrigger value="shared">Sdílené plány ({sharedPlans.length})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="plans" className="mt-0">
