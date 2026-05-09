@@ -7,6 +7,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ClassBulkActions } from "@/components/teacher/ClassBulkActions";
 import { LeaderboardSettingsCard } from "@/components/teacher/LeaderboardSettingsCard";
 import {
   ArrowLeft,
@@ -99,6 +101,25 @@ const TeacherClassDetail = () => {
   const [broadcasts, setBroadcasts] = useState<BroadcastRow[]>([]);
   const [avgScore, setAvgScore] = useState<number | null>(null);
   const [submittedCount, setSubmittedCount] = useState(0);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  const allSelected = members.length > 0 && selectedIds.size === members.length;
+  const someSelected = selectedIds.size > 0 && !allSelected;
+  const toggleAll = () => {
+    setSelectedIds(allSelected ? new Set() : new Set(members.map((m) => m.user_id)));
+  };
+  const toggleOne = (uid: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(uid)) next.delete(uid);
+      else next.add(uid);
+      return next;
+    });
+  };
+  const selectedMembers = useMemo(
+    () => members.filter((m) => selectedIds.has(m.user_id)),
+    [members, selectedIds],
+  );
 
   const fetchAll = async () => {
     if (!id) return;
@@ -324,30 +345,46 @@ const TeacherClassDetail = () => {
                 <Plus className="w-4 h-4 mr-1" /> Přidat
               </Button>
             </CardHeader>
-            <CardContent className="space-y-1 max-h-72 overflow-auto">
+            <CardContent className="space-y-1 max-h-72 overflow-auto pb-20">
               {members.length === 0 && <p className="text-sm text-muted-foreground">Zatím žádní žáci.</p>}
-              {members.slice(0, 12).map((m) => (
-                <div key={m.user_id} className="flex items-center justify-between text-sm py-1.5 border-b border-border/50 last:border-0">
-                  <span>
-                    {m.first_name} {m.last_name}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    {m.student_code && (
-                      <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">{m.student_code}</code>
-                    )}
-                    {m.status === "pending" && (
-                      <Badge variant="outline" className="text-[10px] bg-yellow-500/10 text-yellow-500 border-yellow-500/30">
-                        čeká
-                      </Badge>
-                    )}
-                  </div>
+              {members.length > 0 && (
+                <div className="flex items-center gap-2 py-1.5 border-b border-border text-xs text-muted-foreground sticky top-0 bg-card">
+                  <Checkbox
+                    checked={allSelected ? true : someSelected ? "indeterminate" : false}
+                    onCheckedChange={toggleAll}
+                    aria-label="Vybrat vše"
+                  />
+                  <span>Vybrat vše</span>
                 </div>
-              ))}
-              {members.length > 12 && (
-                <Button variant="ghost" size="sm" className="w-full mt-2" onClick={() => navigate("/ucitel/tridy")}>
-                  Zobrazit všechny <ChevronRight className="w-4 h-4 ml-1" />
-                </Button>
               )}
+              {members.map((m) => {
+                const checked = selectedIds.has(m.user_id);
+                return (
+                  <div
+                    key={m.user_id}
+                    className={`flex items-center gap-2 text-sm py-1.5 border-b border-border/50 last:border-0 ${checked ? "bg-primary/5" : ""}`}
+                  >
+                    <Checkbox
+                      checked={checked}
+                      onCheckedChange={() => toggleOne(m.user_id)}
+                      aria-label={`Vybrat ${m.first_name} ${m.last_name}`}
+                    />
+                    <span className="flex-1">
+                      {m.first_name} {m.last_name}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      {m.student_code && (
+                        <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">{m.student_code}</code>
+                      )}
+                      {m.status === "pending" && (
+                        <Badge variant="outline" className="text-[10px] bg-yellow-500/10 text-yellow-500 border-yellow-500/30">
+                          čeká
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </CardContent>
           </Card>
 
@@ -543,6 +580,14 @@ const TeacherClassDetail = () => {
         </div>
       </main>
       <SiteFooter />
+      {id && cls && selectedMembers.length > 0 && (
+        <ClassBulkActions
+          classId={id}
+          className={cls.name}
+          selected={selectedMembers}
+          onClear={() => setSelectedIds(new Set())}
+        />
+      )}
     </div>
   );
 };
