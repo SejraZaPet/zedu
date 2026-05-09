@@ -400,6 +400,11 @@ const TeacherAssignments = () => {
                           {a.max_attempts} {a.max_attempts === 1 ? "pokus" : "pokusy"}
                         </span>
                         {a.randomize_order && <span className="flex items-center gap-1"><Shuffle className="w-3 h-3" /> Míchání</span>}
+                        {a.lockdown_mode && (
+                          <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                            <Lock className="w-3 h-3" /> Lockdown
+                          </span>
+                        )}
                       </div>
                       <TeacherAssignmentAttachments assignmentId={a.id} />
                     </div>
