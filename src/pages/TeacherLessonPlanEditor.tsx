@@ -574,6 +574,78 @@ export default function TeacherLessonPlanEditor() {
     }
   }
 
+  // Templates
+  const [templates, setTemplates] = useState<
+    { id: string; title: string; description: string | null; phases_json: any; created_at: string }[]
+  >([]);
+  const [saveTemplateOpen, setSaveTemplateOpen] = useState(false);
+  const [loadTemplateOpen, setLoadTemplateOpen] = useState(false);
+  const [templateTitle, setTemplateTitle] = useState("");
+  const [templateDesc, setTemplateDesc] = useState("");
+  const [templateSaving, setTemplateSaving] = useState(false);
+
+  async function reloadTemplates() {
+    if (!user) return;
+    const { data } = await supabase
+      .from("lesson_plan_templates")
+      .select("id, title, description, phases_json, created_at")
+      .eq("teacher_id", user.id)
+      .order("created_at", { ascending: false });
+    setTemplates((data as any[]) ?? []);
+  }
+  useEffect(() => {
+    reloadTemplates();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  async function handleSaveAsTemplate() {
+    if (!user) return;
+    if (!templateTitle.trim()) {
+      toast({ title: "Zadejte název šablony", variant: "destructive" });
+      return;
+    }
+    setTemplateSaving(true);
+    // Save only structure: titles, times, general descriptions. NO activities, NO lesson-specific content.
+    const phases_json = PHASES.map((p) => ({
+      key: p.key,
+      title: p.title,
+      timeMin: parseInt(phases[p.key].timeMin, 10) || 0,
+      description: phases[p.key].description || "",
+    }));
+    const { error } = await supabase.from("lesson_plan_templates").insert({
+      teacher_id: user.id,
+      title: templateTitle.trim(),
+      description: templateDesc.trim() || null,
+      phases_json,
+    });
+    setTemplateSaving(false);
+    if (error) {
+      toast({ title: "Uložení šablony se nezdařilo", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Šablona uložena" });
+    setSaveTemplateOpen(false);
+    setTemplateTitle("");
+    setTemplateDesc("");
+    reloadTemplates();
+  }
+
+  function applyTemplate(tpl: { phases_json: any }) {
+    const arr = Array.isArray(tpl.phases_json) ? tpl.phases_json : [];
+    const next = emptyPhases();
+    for (const p of arr) {
+      if (!p?.key || !next[p.key]) continue;
+      next[p.key] = {
+        timeMin: p.timeMin ? String(p.timeMin) : "",
+        description: p.description || "",
+        activities: [],
+      };
+    }
+    setPhases(next);
+    setLoadTemplateOpen(false);
+    toast({ title: "Šablona použita", description: "Fáze byly předvyplněny." });
+  }
+
   async function handleSave() {
     if (!user) {
       toast({ title: "Nepřihlášen", description: "Přihlaš se pro uložení plánu.", variant: "destructive" });
