@@ -196,7 +196,18 @@ const TeacherAssignments = () => {
           </TabsList>
 
           <TabsContent value="assignments" className="space-y-4">
-            <div className="flex justify-end">
+            <div className="flex justify-between gap-2 flex-wrap">
+              <Select value={filterExamType} onValueChange={setFilterExamType}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Filtrovat podle typu" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">Všechny typy</SelectItem>
+                  {EXAM_TYPE_OPTIONS.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Button onClick={() => setShowForm(!showForm)}>
                 <Plus className="w-4 h-4 mr-2" />
                 Nová úloha
