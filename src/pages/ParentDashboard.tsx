@@ -208,7 +208,26 @@ const ParentDashboard = () => {
               <Plus className="w-4 h-4" />
               Přidat dítě
             </Button>
+        </div>
+
+        {emailNotifEnabled !== null && (
+          <div className={`mb-6 flex items-center justify-between gap-3 rounded-xl border p-3 text-sm ${
+            emailNotifEnabled
+              ? "border-primary/20 bg-primary/5 text-foreground"
+              : "border-border bg-muted/30 text-muted-foreground"
+          }`}>
+            <div className="flex items-center gap-2 min-w-0">
+              {emailNotifEnabled ? <Mail className="w-4 h-4 shrink-0 text-primary" /> : <BellOff className="w-4 h-4 shrink-0" />}
+              <span className="truncate">
+                Emailové notifikace: <strong className="font-semibold">{emailNotifEnabled ? "zapnuto" : "vypnuto"}</strong>
+                <span className="hidden sm:inline"> — dostáváte zprávy o nových úkolech a výsledcích vašeho dítěte.</span>
+              </span>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => navigate("/profil")} className="shrink-0">
+              Změnit v profilu
+            </Button>
           </div>
+        )}
         </div>
 
         {students.length > 0 && (
