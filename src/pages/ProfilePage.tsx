@@ -35,6 +35,7 @@ interface Profile {
   status: string;
   created_at: string;
   parent_email: string | null;
+  parent_email_notifications?: boolean;
 }
 
 const ProfilePage = () => {
