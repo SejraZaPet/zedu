@@ -14,6 +14,9 @@ interface Props {
   viewMode: "week" | "day";
   selectedDay?: Date;
   onEventClick?: (event: CalendarEvent) => void;
+  /** Map of event.id → reflection state for past lessons. */
+  reflectionState?: Record<string, "missing" | "present">;
+  onReflectionClick?: (event: CalendarEvent) => void;
 }
 
 const HOUR_START = 7;
