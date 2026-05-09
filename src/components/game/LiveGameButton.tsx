@@ -4,7 +4,7 @@ import { Gamepad2, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { DEFAULT_GAME_SETTINGS, type GameQuestion, type GameSettings, generateGameCode } from "@/lib/game-types";
+import { DEFAULT_GAME_SETTINGS, type GameQuestion, type GameSettings, type TeamMode, generateGameCode } from "@/lib/game-types";
 import { GAME_MODES, getModeDef, type GameMode } from "@/lib/game-modes";
 import { VISUAL_THEMES, type VisualTheme } from "@/lib/game-themes";
 import {
@@ -176,7 +176,57 @@ export const LiveGameButton = ({ title, questions }: Props) => {
               </div>
             </div>
 
-            {/* Visual theme picker */}
+            {/* Team mode */}
+            <div>
+              <Label className="text-sm mb-2 block">Týmy</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {([
+                  { id: "none", label: "Bez týmů", desc: "Individuální skóre" },
+                  { id: "random", label: "Náhodné", desc: "Auto rozdělení" },
+                  { id: "manual", label: "Ručně", desc: "Drag & drop" },
+                ] as { id: TeamMode; label: string; desc: string }[]).map((opt) => {
+                  const active = (settings.teamModeKind ?? "none") === opt.id;
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() =>
+                        setSettings((s) => ({
+                          ...s,
+                          teamModeKind: opt.id,
+                          teamMode: opt.id !== "none",
+                        }))
+                      }
+                      className={cn(
+                        "rounded-lg border p-2 text-left transition",
+                        active
+                          ? "border-primary bg-primary/10 ring-2 ring-primary/30"
+                          : "border-border hover:border-primary/50"
+                      )}
+                    >
+                      <div className="font-semibold text-sm">{opt.label}</div>
+                      <div className="text-[11px] text-muted-foreground">{opt.desc}</div>
+                    </button>
+                  );
+                })}
+              </div>
+              {(settings.teamModeKind ?? "none") !== "none" && (
+                <div className="mt-3 flex items-center gap-2">
+                  <Label className="text-sm">Počet týmů:</Label>
+                  <select
+                    className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+                    value={settings.teamCount ?? 2}
+                    onChange={(e) =>
+                      setSettings((s) => ({ ...s, teamCount: parseInt(e.target.value, 10) }))
+                    }
+                  >
+                    {[2, 3, 4, 5, 6].map((n) => (
+                      <option key={n} value={n}>{n}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
             <div>
               <Label className="text-sm mb-2 block">Vizuální téma</Label>
               <div className="grid grid-cols-2 gap-2">

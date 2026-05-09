@@ -16,6 +16,7 @@ import { Lock } from "lucide-react";
 import { AvatarSvg } from "@/components/student/AvatarSvg";
 import { useStudentAvatar } from "@/hooks/useStudentAvatars";
 import { useAuth } from "@/contexts/AuthContext";
+import { findPlayerTeam } from "@/lib/game-types";
 
 const StudentGamePlay = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -133,6 +134,8 @@ const StudentGamePlay = () => {
     );
   }
 
+  const myTeam = findPlayerTeam(session?.teams?.teams, playerId);
+
   if (session.status === "lobby") {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
@@ -142,6 +145,15 @@ const StudentGamePlay = () => {
           </div>
           {myPlayer?.nickname && (
             <p className="font-heading text-xl font-bold">{myPlayer.nickname}</p>
+          )}
+          {myTeam && (
+            <div
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full border-2 font-semibold"
+              style={{ borderColor: myTeam.color, color: myTeam.color, background: `${myTeam.color}1A` }}
+            >
+              <span className="w-2 h-2 rounded-full" style={{ background: myTeam.color }} />
+              {myTeam.name}
+            </div>
           )}
           <div className="animate-pulse text-muted-foreground text-lg">Čekej na učitele...</div>
           <p className="text-sm text-muted-foreground">Hra začne, jakmile učitel spustí prezentaci.</p>
@@ -357,6 +369,15 @@ const StudentGamePlay = () => {
   return (
     <>
       <ConnectionStatusBanner status={connectionStatus} onReconnect={reconnect} />
+      {myTeam && (
+        <div
+          className="fixed top-2 right-2 z-40 flex items-center gap-2 px-3 py-1.5 rounded-full border-2 text-sm font-semibold shadow-sm bg-background/90 backdrop-blur"
+          style={{ borderColor: myTeam.color, color: myTeam.color }}
+        >
+          <span className="w-2 h-2 rounded-full" style={{ background: myTeam.color }} />
+          {myTeam.name}
+        </div>
+      )}
       <StudentGameQuestion
         question={currentQ}
         questionIndex={qi}

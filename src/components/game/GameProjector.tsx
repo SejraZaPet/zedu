@@ -1,7 +1,7 @@
-import { GameSession, GamePlayer, GameResponse } from "@/lib/game-types";
+import { GameSession, GamePlayer, GameResponse, computeTeamLeaderboard } from "@/lib/game-types";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { ArrowRight, Trophy, SkipForward } from "lucide-react";
+import { ArrowRight, Trophy, SkipForward, Users } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
 import { t } from "@/lib/t";
 import { AvatarSvg } from "@/components/student/AvatarSvg";
@@ -51,6 +51,12 @@ export const GameProjector = ({ session, players, responses, countdown, onShowRe
   const leaderboard = useMemo(
     () => [...players].sort((a, b) => b.total_score - a.total_score).slice(0, 5),
     [players]
+  );
+
+  const teamMode = (session.settings?.teamModeKind ?? "none") !== "none";
+  const teamLeaderboard = useMemo(
+    () => computeTeamLeaderboard(session.teams?.teams, players),
+    [session.teams, players]
   );
 
   const avatars = useStudentAvatars(leaderboard.map((p) => p.user_id));
@@ -168,7 +174,32 @@ export const GameProjector = ({ session, players, responses, countdown, onShowRe
 
             {/* Leaderboard – use mode overlay for non-standard, classic list for standard */}
             {session.settings?.showLeaderboardAfterEach && (
-              (session.settings as any)?.gameMode && (session.settings as any).gameMode !== "standard" ? (
+              teamMode && teamLeaderboard.length > 0 ? (
+                <div className="bg-card border border-border rounded-2xl p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Users className="w-5 h-5 text-primary" />
+                    <h3 className="font-heading font-bold text-lg text-foreground">Týmový leaderboard</h3>
+                  </div>
+                  <div className="space-y-2">
+                    {teamLeaderboard.map((row, i) => (
+                      <div
+                        key={row.team.id}
+                        className="flex items-center gap-4 py-3 px-4 rounded-lg border-2"
+                        style={{ borderColor: row.team.color, background: `${row.team.color}1A` }}
+                      >
+                        <span className={`text-2xl font-bold ${i === 0 ? "text-yellow-500" : "text-muted-foreground"}`}>
+                          {i + 1}.
+                        </span>
+                        <span className="flex-1 font-heading font-bold text-lg" style={{ color: row.team.color }}>
+                          {row.team.name}
+                        </span>
+                        <span className="text-xs text-muted-foreground">{row.memberCount} hráčů</span>
+                        <span className="font-mono font-bold text-2xl text-foreground">{row.score}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (session.settings as any)?.gameMode && (session.settings as any).gameMode !== "standard" ? (
                 <GameModeOverlay session={session} players={players} />
               ) : (
                 <div className="bg-card border border-border rounded-2xl p-6">

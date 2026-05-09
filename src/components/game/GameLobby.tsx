@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { t } from "@/lib/t";
 import { QRCodeSVG } from "qrcode.react";
+import { TeamSetup } from "@/components/game/TeamSetup";
 
 interface Props {
   session: GameSession;
@@ -40,7 +41,7 @@ export const GameLobby = ({ session, players, onStart, isTeacher }: Props) => {
           </Button>
         </div>
       )}
-      <div className="text-center space-y-8 max-w-lg w-full">
+      <div className={`text-center space-y-8 w-full ${(session.settings?.teamModeKind ?? "none") !== "none" ? "max-w-3xl" : "max-w-lg"}`}>
         {/* Title */}
         <div className="space-y-2">
           <h1 className="text-3xl md:text-4xl font-heading font-bold text-foreground">
@@ -127,6 +128,11 @@ export const GameLobby = ({ session, players, onStart, isTeacher }: Props) => {
             )}
           </div>
         </div>
+
+        {/* Team setup (teacher only when team mode active) */}
+        {isTeacher && (session.settings?.teamModeKind ?? "none") !== "none" && players.length > 0 && (
+          <TeamSetup session={session} players={players} />
+        )}
 
         {/* Start button (teacher only) */}
         {isTeacher && onStart && (
