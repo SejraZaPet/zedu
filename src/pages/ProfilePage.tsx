@@ -431,6 +431,33 @@ const ProfilePage = () => {
           </Card>
         )}
 
+        {/* Email notifications (parents only) */}
+        {role === "rodic" && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Bell className="w-4 h-4 text-primary" />
+                Notifikace
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="font-medium text-sm">Dostávat emaily</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Notifikace o nových úkolech a výsledcích vašeho dítěte.
+                  </p>
+                </div>
+                <Switch
+                  checked={emailNotifications}
+                  onCheckedChange={handleToggleEmailNotif}
+                  disabled={savingEmailNotif}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Password change */}
         <Card>
           <CardHeader>
