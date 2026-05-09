@@ -537,6 +537,8 @@ const TeacherClassDetail = () => {
               ))}
             </CardContent>
           </Card>
+
+          {id && <LeaderboardSettingsCard classId={id} />}
         </div>
       </main>
       <SiteFooter />
