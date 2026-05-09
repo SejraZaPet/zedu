@@ -17,6 +17,7 @@ import {
 import UserDetailDialog from "./UserDetailDialog";
 
 import { printLoginCards, type LoginCardData } from "@/lib/generate-login-cards";
+import bcrypt from "bcryptjs";
 import { sendWelcomeEmail } from "@/lib/send-email";
 import {
   Select,
@@ -1137,6 +1138,8 @@ const UsersManager = () => {
                       usedUsernames.push(username);
 
                       const studentCode = 'ZAK-' + Math.random().toString(36).slice(-4).toUpperCase();
+                      const pin = String(Math.floor(1000 + Math.random() * 9000));
+                      const pinHash = await bcrypt.hash(pin, 10);
 
                       const { data: authData, error: authError } = await supabase.functions.invoke("create-user", {
                         body: { email, password, role }
@@ -1160,6 +1163,7 @@ const UsersManager = () => {
                         login_password: password,
                         username: username,
                         student_code: studentCode,
+                        pin_code: role === "user" ? pinHash : null,
                       });
 
                       if (profileError) {
@@ -1180,6 +1184,7 @@ const UsersManager = () => {
                         role,
                         username,
                         studentCode,
+                        pin: role === "user" ? pin : undefined,
                       });
 
                       const isAdultStudent = ["ano", "yes", "true", "1"].includes(String(row.zletily || "").toLowerCase().trim());
