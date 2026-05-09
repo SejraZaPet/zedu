@@ -156,8 +156,10 @@ const TeacherCalendar = () => {
         },
       );
 
-      setEvents([...lessonEvents, ...personalEvents, ...assignmentEvents, ...todoEvents]);
+      const merged = [...lessonEvents, ...personalEvents, ...assignmentEvents, ...todoEvents];
+      setEvents(merged);
       setLoading(false);
+      reloadReflections(merged);
     })();
 
     return () => {
