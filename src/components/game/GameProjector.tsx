@@ -99,8 +99,9 @@ export const GameProjector = ({ session, players, responses, countdown, onShowRe
           ))}
         </div>
       )}
+      <div className={cn("relative z-10 flex-1 flex flex-col", isThemed && "[&_.bg-card]:bg-card/80 [&_.bg-card]:backdrop-blur-sm")}>
       {/* Top bar */}
-      <div className="flex items-center justify-between px-6 py-3 bg-card border-b border-border">
+      <div className={cn("flex items-center justify-between px-6 py-3 border-b", isThemed ? "bg-black/30 border-white/10 text-white" : "bg-card border-border")}>
         <span className="text-sm font-medium text-muted-foreground">
           {t("projector.questionOf", qi + 1, totalQ)}
         </span>
