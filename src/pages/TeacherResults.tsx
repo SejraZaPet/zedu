@@ -56,6 +56,7 @@ const TeacherResults = () => {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [classMembers, setClassMembers] = useState<{ class_id: string; user_id: string }[]>([]);
+  const [profiles, setProfiles] = useState<Record<string, { first_name: string; last_name: string }>>({});
 
   // Initial load
   useEffect(() => {
