@@ -197,21 +197,25 @@ const ClassesManager = () => {
         return;
       }
       toast({ title: "Uloženo", description: "Třída byla upravena." });
+      logAudit("class_updated", "class", editingClass.id, { name: payload.name });
     } else {
       if (!user) {
         toast({ title: "Chyba", description: "Nejste přihlášen/a.", variant: "destructive" });
         setSaving(false);
         return;
       }
-      const { error } = await supabase
+      const { data: created, error } = await supabase
         .from("classes")
-        .insert({ ...payload, created_by: user.id } as any);
+        .insert({ ...payload, created_by: user.id } as any)
+        .select("id")
+        .single();
       if (error) {
         toast({ title: "Chyba", description: error.message, variant: "destructive" });
         setSaving(false);
         return;
       }
       toast({ title: "Vytvořeno", description: "Nová třída byla vytvořena." });
+      logAudit("class_created", "class", created?.id ?? null, { name: payload.name });
     }
 
     setSaving(false);
