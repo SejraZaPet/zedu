@@ -1368,6 +1368,122 @@ export default function TeacherLessonPlanEditor() {
               </Button>
             </div>
           </div>
+
+          {/* AI doporučení metod */}
+          <div className="border-t border-primary/10 pt-3 space-y-2">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <p className="text-xs text-muted-foreground">
+                Po zadání cíle hodiny vám AI doporučí 2–3 vhodné výukové metody.
+              </p>
+              <Button
+                onClick={handleRecommendMethods}
+                disabled={methodAiLoading || !methods.length}
+                size="sm"
+                variant="outline"
+              >
+                {methodAiLoading ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Lightbulb className="w-4 h-4 mr-2" />
+                )}
+                Doporučit metody
+              </Button>
+            </div>
+            {methodSuggestions.length > 0 && (
+              <div className="grid sm:grid-cols-3 gap-2 mt-2">
+                {methodSuggestions.map(({ method, reason }) => (
+                  <div
+                    key={method.id}
+                    className="bg-card border border-border rounded-lg p-3 flex flex-col gap-2"
+                  >
+                    <div>
+                      <div className="font-medium text-sm">{method.name}</div>
+                      <div className="text-[11px] text-muted-foreground mt-0.5">
+                        {[method.category, method.difficulty, method.time_range]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground line-clamp-4">{reason}</p>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="mt-auto"
+                      onClick={() => handleSelectMethod(method.id)}
+                    >
+                      <Wand2 className="w-3.5 h-3.5 mr-1.5" />
+                      Použít
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Metoda učení */}
+        <div className="bg-card border border-border rounded-xl p-5 mb-6 space-y-3">
+          <div className="flex items-center gap-2">
+            <Lightbulb className="w-4 h-4 text-primary" />
+            <h2 className="text-base font-semibold">Metoda učení</h2>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Vyberte výukovou metodu z katalogu — fáze se předvyplní podle její šablony.
+          </p>
+          <div className="grid sm:grid-cols-[1fr_auto] gap-2 items-end">
+            <div className="space-y-1.5">
+              <Label htmlFor="plan-method">Metoda</Label>
+              <Select
+                value={selectedMethodId || undefined}
+                onValueChange={handleSelectMethod}
+              >
+                <SelectTrigger id="plan-method">
+                  <SelectValue
+                    placeholder={methods.length ? "Vyber metodu…" : "Načítání metod…"}
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {methods.map((m) => (
+                    <SelectItem key={m.id} value={m.id}>
+                      {m.name}
+                      {m.category ? ` · ${m.category}` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {selectedMethodId && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={async () => {
+                  setSelectedMethodId("");
+                  if (planDbId) {
+                    await supabase
+                      .from("lesson_method_links")
+                      .delete()
+                      .eq("lesson_plan_id", planDbId);
+                  }
+                  toast({ title: "Metoda odebrána" });
+                }}
+              >
+                <X className="w-3.5 h-3.5 mr-1.5" />
+                Odebrat
+              </Button>
+            )}
+          </div>
+          {selectedMethodId && (() => {
+            const m = methods.find((x) => x.id === selectedMethodId);
+            if (!m) return null;
+            return (
+              <div className="bg-muted/30 border border-border rounded-md p-3 space-y-1.5">
+                <div className="text-xs text-muted-foreground">
+                  {[m.category, m.difficulty, m.time_range].filter(Boolean).join(" · ")}
+                </div>
+                {m.description && <p className="text-sm">{m.description}</p>}
+              </div>
+            );
+          })()}
         </div>
 
         {/* Fáze hodiny */}
