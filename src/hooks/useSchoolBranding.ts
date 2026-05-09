@@ -8,6 +8,7 @@ export interface SchoolBranding {
   custom_logo_url: string | null;
   custom_primary_color: string | null;
   custom_welcome_text: string | null;
+  registration_code: string | null;
 }
 
 const RESERVED = new Set(["www", "app", "id-preview", "preview", "zedu", "lovable", "staging"]);
