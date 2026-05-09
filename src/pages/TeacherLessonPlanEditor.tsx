@@ -906,6 +906,15 @@ export default function TeacherLessonPlanEditor() {
         // Update URL without navigating away
         window.history.replaceState(null, "", `/ucitel/plany-hodin/${data.id}`);
       }
+      // Sync method link
+      if (resultId) {
+        await supabase.from("lesson_method_links").delete().eq("lesson_plan_id", resultId);
+        if (selectedMethodId) {
+          await supabase
+            .from("lesson_method_links")
+            .insert({ lesson_plan_id: resultId, method_id: selectedMethodId });
+        }
+      }
       toast({ title: "Plán uložen" });
     } catch (e: any) {
       toast({
