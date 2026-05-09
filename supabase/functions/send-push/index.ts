@@ -9,13 +9,36 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const VAPID_PUBLIC =
   "BKv-g73e0ou_IoTM9xe2Jlld00MntQD88gmahEQV2H3a_45rXrnWIpa3h2YGB77hnxQniytP9baipmoFH1HRWQs";
-const VAPID_PRIVATE = Deno.env.get("VAPID_PRIVATE_KEY")!;
-const RAW_SUBJECT = Deno.env.get("VAPID_SUBJECT") || "mailto:noreply@zedu.cz";
+// Normalize private key: trim whitespace/quotes, convert standard b64 -> url-safe, strip '=' padding.
+const VAPID_PRIVATE = (Deno.env.get("VAPID_PRIVATE_KEY") || "")
+  .trim()
+  .replace(/^["']|["']$/g, "")
+  .replace(/\s+/g, "")
+  .replace(/\+/g, "-")
+  .replace(/\//g, "_")
+  .replace(/=+$/g, "");
+
+const RAW_SUBJECT = (Deno.env.get("VAPID_SUBJECT") || "mailto:noreply@zedu.cz").trim();
 const VAPID_SUBJECT = /^(mailto:|https?:\/\/)/i.test(RAW_SUBJECT)
   ? RAW_SUBJECT
   : `mailto:${RAW_SUBJECT.includes("@") ? RAW_SUBJECT : "noreply@zedu.cz"}`;
 
-webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE);
+let _vapidReady = false;
+let _vapidError: string | null = null;
+function ensureVapid() {
+  if (_vapidReady) return true;
+  try {
+    if (!VAPID_PRIVATE) throw new Error("VAPID_PRIVATE_KEY not configured");
+    webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE);
+    _vapidReady = true;
+    _vapidError = null;
+    return true;
+  } catch (e) {
+    _vapidError = (e as Error).message;
+    console.error("[send-push] VAPID config invalid:", _vapidError, "len=", VAPID_PRIVATE.length);
+    return false;
+  }
+}
 
 interface Payload {
   recipient_id?: string;
@@ -41,6 +64,16 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
+    if (!ensureVapid()) {
+      return new Response(
+        JSON.stringify({
+          error: "VAPID configuration invalid",
+          detail: _vapidError,
+          hint: "VAPID_PRIVATE_KEY must be a 32-byte url-safe base64 string (~43 chars, no '=' padding). Generate with: npx web-push generate-vapid-keys",
+        }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
     const body = (await req.json().catch(() => ({}))) as Payload;
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
