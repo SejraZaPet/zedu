@@ -26,6 +26,7 @@ import { BookOpen, LogOut, Home, GraduationCap, Settings, Users, School, BarChar
 
 const adminTabs = [
   { id: "dashboard", label: "Přehled", icon: LayoutDashboard },
+  { id: "stats", label: "Statistiky", icon: Activity },
   { id: "schools", label: "Školy", icon: School },
   { id: "users", label: "Uživatelé", icon: Users },
   { id: "notifications", label: "Notifikace", icon: Bell },
