@@ -202,7 +202,24 @@ export default function TeacherSubjectClass() {
         (s) => (s.subject_label || "").trim().toLowerCase() === subjectLabel.trim().toLowerCase(),
       );
       setSlots(filtered);
-      setPlans((plansRes.data as LessonPlanRow[]) ?? []);
+      const _plans = (plansRes.data as LessonPlanRow[]) ?? [];
+      setPlans(_plans);
+      // Načíst přiřazené metody pro tyto plány
+      const planIds = _plans.map((p) => p.id);
+      if (planIds.length) {
+        const { data: links } = await supabase
+          .from("lesson_method_links")
+          .select("lesson_plan_id, method_id, learning_methods(id, name)")
+          .in("lesson_plan_id", planIds);
+        const map: Record<string, { id: string; name: string }> = {};
+        ((links as any[]) ?? []).forEach((l) => {
+          const m = l.learning_methods;
+          if (m) map[l.lesson_plan_id] = { id: m.id, name: m.name };
+        });
+        if (!cancelled) setPlanMethods(map);
+      } else if (!cancelled) {
+        setPlanMethods({});
+      }
       const _assignments = (assignRes.data as AssignmentRow[]) ?? [];
       setAssignments(_assignments);
 
