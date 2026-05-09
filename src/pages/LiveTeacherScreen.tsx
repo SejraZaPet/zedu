@@ -506,6 +506,16 @@ const LiveTeacherScreen = () => {
       )}
     </div>
 
+    {sessionId && whiteboardVisible && (
+      <div className="fixed inset-0 z-40 bg-background/40 backdrop-blur-[1px]">
+        <LiveWhiteboard
+          sessionId={sessionId}
+          data={whiteboard}
+          onClose={toggleWhiteboard}
+        />
+      </div>
+    )}
+
     {sessionId && (
       <>
         <Button
