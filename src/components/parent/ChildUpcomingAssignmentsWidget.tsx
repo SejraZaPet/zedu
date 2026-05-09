@@ -154,8 +154,9 @@ const ChildUpcomingAssignmentsWidget = ({ studentIds, studentNames }: Props) => 
                     aria-hidden
                   />
                   <div className="min-w-0">
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="text-sm font-medium text-foreground truncate">{a.title}</span>
+                      <ExamTypeBadge examType={a.exam_type} />
                       {urgent && !a.submitted && (
                         <AlertTriangle className="w-3.5 h-3.5 text-red-500 shrink-0" />
                       )}
