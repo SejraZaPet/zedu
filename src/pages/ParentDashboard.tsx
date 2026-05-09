@@ -109,6 +109,14 @@ const ParentDashboard = () => {
     if (authLoading) return;
     if (!user) { navigate("/auth"); return; }
     loadAll();
+    supabase
+      .from("profiles")
+      .select("parent_email_notifications")
+      .eq("id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        setEmailNotifEnabled((data as any)?.parent_email_notifications !== false);
+      });
   }, [authLoading, user, navigate]);
 
   const handleLinkChild = async () => {
