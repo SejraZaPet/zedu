@@ -580,6 +580,14 @@ const TeacherClassDetail = () => {
         </div>
       </main>
       <SiteFooter />
+      {id && cls && selectedMembers.length > 0 && (
+        <ClassBulkActions
+          classId={id}
+          className={cls.name}
+          selected={selectedMembers}
+          onClear={() => setSelectedIds(new Set())}
+        />
+      )}
     </div>
   );
 };
