@@ -105,7 +105,7 @@ const TeacherCalendar = () => {
           .select("*, classes(name)"),
         supabase
           .from("assignments")
-          .select("id, title, deadline, class_id")
+          .select("id, title, deadline, class_id, exam_type")
           .eq("teacher_id", user.id)
           .not("deadline", "is", null)
           .gte("deadline", from.toISOString())
