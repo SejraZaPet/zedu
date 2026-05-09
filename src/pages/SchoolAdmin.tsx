@@ -105,6 +105,28 @@ const SchoolAdmin = () => {
     setLoading(false);
   };
 
+  const copyCode = async () => {
+    if (!school?.registration_code) return;
+    try {
+      await navigator.clipboard.writeText(school.registration_code);
+      toast({ title: "Zkopírováno", description: `Kód ${school.registration_code} je ve schránce.` });
+    } catch {
+      toast({ title: "Chyba", description: "Nepodařilo se zkopírovat kód.", variant: "destructive" });
+    }
+  };
+
+  const regenerateCode = async () => {
+    if (!school) return;
+    if (!confirm("Vygenerovat nový registrační kód? Stávající kód přestane fungovat.")) return;
+    const { data, error } = await supabase.rpc("regenerate_school_registration_code", { _school_id: school.id });
+    if (error) {
+      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+      return;
+    }
+    setSchool({ ...school, registration_code: data as string });
+    toast({ title: "Nový kód", description: `Registrační kód školy je nyní ${data}.` });
+  };
+
   const inviteUser = async () => {
     if (!school || !invEmail.trim()) {
       toast({ title: "Vyplňte e-mail", variant: "destructive" });
