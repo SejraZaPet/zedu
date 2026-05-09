@@ -137,3 +137,16 @@
     backface-visibility: hidden;
   }
 }
+
+@media print {
+  @page { size: A4 landscape; margin: 12mm; }
+  body * { visibility: hidden !important; }
+  .print-area, .print-area * { visibility: visible !important; }
+  .print-area { position: absolute !important; inset: 0 !important; width: 100% !important; padding: 0 !important; margin: 0 !important; background: #fff !important; }
+  .print-hide { display: none !important; }
+  .print-show { display: block !important; }
+  .print-area button { pointer-events: none; }
+  .print-area .border, .print-area .border-l, .print-area .border-t, .print-area .border-b, .print-area .border-r { border-color: #cbd5e1 !important; }
+}
+
+.print-show { display: none; }

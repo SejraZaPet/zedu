@@ -41,6 +41,7 @@ import {
   MapPin,
   StickyNote,
   AlertTriangle,
+  Printer,
 } from "lucide-react";
 import {
   DEFAULT_PERIOD_TIMES,
@@ -128,6 +129,28 @@ export default function TeacherSchedule() {
   const [activeTab, setActiveTab] = useState<ParityTab>(data.parityMode === "both" ? "both" : "odd");
   const [classSlots, setClassSlots] = useState<ClassSlot[]>([]);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [teacherName, setTeacherName] = useState<string>("");
+
+  useEffect(() => {
+    if (!user) {
+      setTeacherName("");
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("first_name,last_name,email")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      const n = `${data?.first_name ?? ""} ${data?.last_name ?? ""}`.trim();
+      setTeacherName(n || data?.email || user.email || "");
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   // Persist personal schedule
   useEffect(() => {
@@ -592,8 +615,20 @@ export default function TeacherSchedule() {
         )}
 
         {/* ───────── Unified card schedule ───────── */}
-        <div className="bg-card border border-border rounded-xl overflow-hidden">
-          <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-border bg-muted/30 flex-wrap">
+        <div className="bg-card border border-border rounded-xl overflow-hidden print-area">
+          {/* Print-only header */}
+          <div className="print-show px-4 py-3 border-b border-border">
+            <h1 className="text-xl font-bold">Rozvrh hodin</h1>
+            <div className="text-sm text-muted-foreground mt-1">
+              {teacherName}
+              {data.parityMode !== "both" && (
+                <span> · {activeTab === "odd" ? "Lichý týden" : "Sudý týden"}</span>
+              )}
+              {data.parityMode === "both" && <span> · Oba týdny</span>}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-border bg-muted/30 flex-wrap print-hide">
             <div className="flex items-center gap-2 flex-wrap">
               <Clock className="w-4 h-4 text-primary" />
               <h2 className="font-medium text-sm">Týdenní rozvrh</h2>
@@ -606,18 +641,28 @@ export default function TeacherSchedule() {
                 </Badge>
               )}
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 text-xs"
-              onClick={() => navigate("/ucitel/tridy")}
-            >
-              Spravovat třídy <ExternalLink className="w-3 h-3 ml-1" />
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs gap-1"
+                onClick={() => window.print()}
+              >
+                <Printer className="w-3 h-3" /> Tisk rozvrhu
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => navigate("/ucitel/tridy")}
+              >
+                Spravovat třídy <ExternalLink className="w-3 h-3 ml-1" />
+              </Button>
+            </div>
           </div>
 
           {conflicts.conflictCells.length > 0 && (
-            <div className="mx-4 mt-3 mb-1 flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            <div className="mx-4 mt-3 mb-1 flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive print-hide">
               <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
               <div>
                 <strong className="font-semibold">Pozor:</strong> máte{" "}
@@ -719,7 +764,7 @@ export default function TeacherSchedule() {
                 // Break row – narrow strip
                 return (
                   <div key={`row-${rowIdx}`} className="contents">
-                    <div className="border-t border-border bg-muted/30 px-1 py-0.5 flex items-center justify-center">
+                    <div className="border-t border-border bg-muted/30 px-1 py-0.5 flex items-center justify-center print-hide">
                       <Coffee className="w-2.5 h-2.5 text-muted-foreground" />
                     </div>
                     {[0, 1, 2, 3, 4].map((dayIdx) => {
@@ -727,7 +772,7 @@ export default function TeacherSchedule() {
                       return (
                         <div
                           key={`b-${rowIdx}-${dayIdx}`}
-                          className="border-t border-l border-border px-0.5 py-0.5 bg-muted/20 flex items-center"
+                          className="border-t border-l border-border px-0.5 py-0.5 bg-muted/20 flex items-center print-hide"
                         >
                           {br ? (
                             <div className="w-full">
