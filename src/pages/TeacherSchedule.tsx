@@ -40,6 +40,7 @@ import {
   CircleSlash,
   MapPin,
   StickyNote,
+  AlertTriangle,
 } from "lucide-react";
 import {
   DEFAULT_PERIOD_TIMES,
@@ -265,6 +266,41 @@ export default function TeacherSchedule() {
     }
     return m;
   }, [visibleClassSlots, visiblePeriods, data.periodTimes]);
+
+  /** Detect time conflicts within current parity view. A conflict is when the
+   *  teacher has 2+ items (personal lessons or class slots) at the same
+   *  (day, period) cell. Class slots are already pre-filtered by parity tab,
+   *  and personal lessons come from the active list, so any duplicate cell is
+   *  a real overlap. */
+  const conflicts = useMemo(() => {
+    const personalByCell = new Map<string, LessonEntry[]>();
+    for (const l of currentLessons) {
+      if (!visiblePeriods.includes(l.period)) continue;
+      const k = `${l.day}-${l.period}`;
+      const arr = personalByCell.get(k) ?? [];
+      arr.push(l);
+      personalByCell.set(k, arr);
+    }
+    const conflictPersonalIds = new Set<string>();
+    const conflictClassIds = new Set<string>();
+    const conflictCells: { day: number; period: number; total: number }[] = [];
+    const allKeys = new Set<string>([
+      ...personalByCell.keys(),
+      ...classByDayPeriod.keys(),
+    ]);
+    for (const k of allKeys) {
+      const ps = personalByCell.get(k) ?? [];
+      const cs = classByDayPeriod.get(k) ?? [];
+      const total = ps.length + cs.length;
+      if (total > 1) {
+        ps.forEach((p) => conflictPersonalIds.add(p.id));
+        cs.forEach((c) => conflictClassIds.add(c.id));
+        const [d, p] = k.split("-").map((x) => parseInt(x, 10));
+        conflictCells.push({ day: d, period: p, total });
+      }
+    }
+    return { conflictPersonalIds, conflictClassIds, conflictCells };
+  }, [currentLessons, classByDayPeriod, visiblePeriods]);
 
   /** Breaks visible per (afterPeriod, day). */
   const breaksByAfterDay = useMemo(() => {
@@ -580,6 +616,19 @@ export default function TeacherSchedule() {
             </Button>
           </div>
 
+          {conflicts.conflictCells.length > 0 && (
+            <div className="mx-4 mt-3 mb-1 flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+              <div>
+                <strong className="font-semibold">Pozor:</strong> máte{" "}
+                {conflicts.conflictCells.reduce((s, c) => s + c.total, 0)} hodiny
+                ve stejnou dobu ({conflicts.conflictCells.length}{" "}
+                {conflicts.conflictCells.length === 1 ? "konflikt" : "konflikty"}).
+                Konfliktní hodiny jsou označeny červeným okrajem.
+              </div>
+            </div>
+          )}
+
           {/* Aligned grid: rows = period/break slots, columns = days. */}
           <div className="w-full">
             <div
@@ -616,31 +665,37 @@ export default function TeacherSchedule() {
                         )}
                       </div>
                       {[0, 1, 2, 3, 4].map((dayIdx) => {
-                        const personal = personalByDayPeriod.get(`${dayIdx}-${row.period}`);
-                        const clsList = !personal
-                          ? classByDayPeriod.get(`${dayIdx}-${row.period}`) ?? []
-                          : [];
+                        const personalsAll = currentLessons.filter(
+                          (l) => l.day === dayIdx && l.period === row.period,
+                        );
+                        const clsListAll =
+                          classByDayPeriod.get(`${dayIdx}-${row.period}`) ?? [];
+                        const hasAny = personalsAll.length + clsListAll.length > 0;
+                        const isConflict =
+                          personalsAll.length + clsListAll.length > 1;
                         return (
                           <div
                             key={`c-${rowIdx}-${dayIdx}`}
                             className="border-t border-l border-border p-1.5 min-h-[84px] flex"
                           >
-                            {personal ? (
-                              <div className="w-full">
-                                <PersonalCard
-                                  lesson={personal.lesson}
-                                  time={personal.time}
-                                  subjectStyles={subjectStyles}
-                                  parityMode={data.parityMode}
-                                  onClick={() => openEditLesson(personal.lesson)}
-                                />
-                              </div>
-                            ) : clsList.length > 0 ? (
+                            {hasAny ? (
                               <div className="w-full flex flex-col gap-1">
-                                {clsList.map((cls) => (
+                                {personalsAll.map((lesson) => (
+                                  <PersonalCard
+                                    key={lesson.id}
+                                    lesson={lesson}
+                                    time={data.periodTimes[lesson.period] || null}
+                                    subjectStyles={subjectStyles}
+                                    parityMode={data.parityMode}
+                                    conflict={isConflict}
+                                    onClick={() => openEditLesson(lesson)}
+                                  />
+                                ))}
+                                {clsListAll.map((cls) => (
                                   <ClassCard
                                     key={cls.id}
                                     slot={cls}
+                                    conflict={isConflict}
                                     onClick={() => setEditingClassSlot(cls)}
                                   />
                                 ))}
@@ -959,12 +1014,14 @@ function PersonalCard({
   time,
   subjectStyles,
   parityMode,
+  conflict,
   onClick,
 }: {
   lesson: LessonEntry;
   time: { start: string; end: string } | null;
   subjectStyles: Map<string, { color: string; abbreviation: string }>;
   parityMode: WeekParityMode;
+  conflict?: boolean;
   onClick: () => void;
 }) {
   const style = subjectStyles.get(lesson.subject.trim());
@@ -975,8 +1032,8 @@ function PersonalCard({
   return (
     <button
       onClick={onClick}
-      title={`${lesson.subject || "Hodina"}${lesson.className ? ` · ${lesson.className}` : ""}${lesson.room ? ` · ${lesson.room}` : ""}${time ? ` · ${fmtTime(time.start)}–${fmtTime(time.end)}` : ""}`}
-      className="w-full text-left rounded-md p-2 transition-all hover:shadow-md hover:-translate-y-0.5 border-l-4 group"
+      title={`${conflict ? "⚠ Konflikt v rozvrhu · " : ""}${lesson.subject || "Hodina"}${lesson.className ? ` · ${lesson.className}` : ""}${lesson.room ? ` · ${lesson.room}` : ""}${time ? ` · ${fmtTime(time.start)}–${fmtTime(time.end)}` : ""}`}
+      className={`w-full text-left rounded-md p-2 transition-all hover:shadow-md hover:-translate-y-0.5 border-l-4 group ${conflict ? "ring-2 ring-destructive ring-offset-1" : ""}`}
       style={{ backgroundColor: `${color}26`, borderLeftColor: color }}
     >
       <div className="flex items-center gap-1 text-[11px] text-muted-foreground tabular-nums">
@@ -1005,7 +1062,7 @@ function PersonalCard({
   );
 }
 
-function ClassCard({ slot, onClick }: { slot: ClassSlot; onClick: () => void }) {
+function ClassCard({ slot, conflict, onClick }: { slot: ClassSlot; conflict?: boolean; onClick: () => void }) {
   const subject = slot.subject_label || "Hodina";
   const color = slot.color || colorForSubject(subject);
   const abbr = (slot.abbreviation || subject.slice(0, 3)).toUpperCase();
@@ -1013,9 +1070,9 @@ function ClassCard({ slot, onClick }: { slot: ClassSlot; onClick: () => void }) 
   return (
     <button
       onClick={onClick}
-      className="w-full text-left rounded-md p-2 transition-all hover:shadow-md hover:-translate-y-0.5 border-l-4 group"
+      className={`w-full text-left rounded-md p-2 transition-all hover:shadow-md hover:-translate-y-0.5 border-l-4 group ${conflict ? "ring-2 ring-destructive ring-offset-1" : ""}`}
       style={{ backgroundColor: `${color}26`, borderLeftColor: color }}
-      title={`${subject}${className ? ` · ${className}` : ""}${slot.room ? ` · ${slot.room}` : ""} · ${fmtTime(slot.start_time)}–${fmtTime(slot.end_time)}${slot.week_parity !== "every" ? ` (${slot.week_parity === "odd" ? "lichý" : "sudý"} týden)` : ""}`}
+      title={`${conflict ? "⚠ Konflikt v rozvrhu · " : ""}${subject}${className ? ` · ${className}` : ""}${slot.room ? ` · ${slot.room}` : ""} · ${fmtTime(slot.start_time)}–${fmtTime(slot.end_time)}${slot.week_parity !== "every" ? ` (${slot.week_parity === "odd" ? "lichý" : "sudý"} týden)` : ""}`}
     >
       <div className="flex items-center gap-1 text-[11px] text-muted-foreground tabular-nums">
         <Clock className="w-3 h-3" />
