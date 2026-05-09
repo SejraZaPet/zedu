@@ -60,7 +60,7 @@ const StudentCalendar = () => {
           .select("*, classes(name)"),
         supabase
           .from("assignments")
-          .select("id, title, deadline, class_id")
+          .select("id, title, deadline, class_id, exam_type")
           .not("deadline", "is", null)
           .gte("deadline", from.toISOString())
           .lte("deadline", to.toISOString())
@@ -93,6 +93,7 @@ const StudentCalendar = () => {
             start,
             end: new Date(start.getTime() + 30 * 60000),
             assignmentId: a.id,
+            examType: a.exam_type ?? null,
           };
         });
 

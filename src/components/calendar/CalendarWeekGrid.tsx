@@ -7,6 +7,7 @@ import {
   formatTime,
   getEventColors,
 } from "@/lib/calendar-utils";
+import { getExamTypeMeta } from "@/lib/exam-types";
 
 interface Props {
   events: CalendarEvent[];
@@ -135,9 +136,11 @@ const CalendarWeekGrid = ({
                 )
                   return null;
                 const defaults = getEventColors(ev.type);
-                const customColor = ev.color;
+                const examMeta = ev.type === "assignment" && ev.examType ? getExamTypeMeta(ev.examType) : null;
+                const customColor = ev.color || examMeta?.color;
                 const bg = customColor ? `${customColor}26` : defaults.bg;
                 const border = customColor || defaults.border;
+                const ExamIcon = examMeta?.icon;
 
                 const reflectionStatus = reflectionState?.[ev.id];
                 const showReflectionBadge =
@@ -165,6 +168,7 @@ const CalendarWeekGrid = ({
                       title={ev.title}
                     >
                       <div className="leading-tight flex items-center gap-1 pr-4">
+                        {ExamIcon && <ExamIcon className="w-3 h-3 shrink-0" style={{ color: customColor }} />}
                         {ev.abbreviation ? (
                           <span
                             className="inline-block text-[10px] font-bold text-white px-1.5 py-0.5 rounded shrink-0"

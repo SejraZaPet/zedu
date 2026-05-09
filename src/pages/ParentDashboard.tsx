@@ -19,6 +19,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { ExamTypeBadge } from "@/components/assignments/ExamTypeBadge";
 
 interface StudentInfo {
   id: string;
@@ -33,7 +34,7 @@ interface StudentStats {
   completedLessons: number;
   totalScore: number;
   totalMaxScore: number;
-  assignments: { id: string; title: string; status: string; score: number | null; max_score: number | null }[];
+  assignments: { id: string; title: string; status: string; score: number | null; max_score: number | null; exam_type: string | null }[];
 }
 
 const getInitials = (first: string, last: string) =>
@@ -80,7 +81,7 @@ const ParentDashboard = () => {
         supabase.from("student_lesson_completions").select("id").eq("user_id", sid),
         supabase.from("student_activity_results").select("score, max_score").eq("user_id", sid),
         supabase.from("assignment_attempts")
-          .select("id, status, score, max_score, assignment_id, assignments(title)")
+          .select("id, status, score, max_score, assignment_id, assignments(title, exam_type)")
           .eq("student_id", sid)
           .order("started_at", { ascending: false }),
       ]);
@@ -98,6 +99,7 @@ const ParentDashboard = () => {
           status: a.status,
           score: a.score,
           max_score: a.max_score,
+          exam_type: a.assignments?.exam_type ?? null,
         })),
       };
     }));
@@ -338,6 +340,7 @@ const ParentDashboard = () => {
                                   <Clock className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                                 )}
                                 <span className="text-xs text-foreground truncate">{a.title}</span>
+                                <ExamTypeBadge examType={a.exam_type} className="shrink-0" />
                               </div>
                               <div className="text-xs text-muted-foreground shrink-0">
                                 {isDone

@@ -22,6 +22,8 @@ import SiteFooter from "@/components/SiteFooter";
 import AssignmentResultsDashboard from "@/components/admin/AssignmentResultsDashboard";
 import RemindButton from "@/components/notifications/RemindButton";
 import TeacherAssignmentAttachments from "@/components/assignments/TeacherAssignmentAttachments";
+import { ExamTypeBadge } from "@/components/assignments/ExamTypeBadge";
+import { EXAM_TYPE_OPTIONS, type ExamType } from "@/lib/exam-types";
 
 
 interface Assignment {
@@ -38,6 +40,7 @@ interface Assignment {
   activity_data: any[];
   worksheet_id?: string | null;
   lockdown_mode?: boolean;
+  exam_type?: string | null;
 }
 
 interface WorksheetOption {
@@ -72,6 +75,8 @@ const TeacherAssignments = () => {
   const [worksheets, setWorksheets] = useState<WorksheetOption[]>([]);
   const [selectedWorksheetId, setSelectedWorksheetId] = useState<string>(prefillWorksheetId || "");
   const [lockdownMode, setLockdownMode] = useState(false);
+  const [examType, setExamType] = useState<ExamType | "ukol">("ukol");
+  const [filterExamType, setFilterExamType] = useState<string>("__all__");
 
   useEffect(() => {
     loadData();
@@ -121,6 +126,7 @@ const TeacherAssignments = () => {
         activity_data: [] as any,
         worksheet_id: selectedWorksheetId || null,
         lockdown_mode: lockdownMode,
+        exam_type: examType === "ukol" ? null : examType,
       } as any);
 
       if (error) throw error;
@@ -145,6 +151,7 @@ const TeacherAssignments = () => {
     setSelectedClassId("");
     setSelectedWorksheetId("");
     setLockdownMode(false);
+    setExamType("ukol");
   };
 
   const handlePublish = async (id: string) => {
@@ -189,7 +196,18 @@ const TeacherAssignments = () => {
           </TabsList>
 
           <TabsContent value="assignments" className="space-y-4">
-            <div className="flex justify-end">
+            <div className="flex justify-between gap-2 flex-wrap">
+              <Select value={filterExamType} onValueChange={setFilterExamType}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Filtrovat podle typu" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">Všechny typy</SelectItem>
+                  {EXAM_TYPE_OPTIONS.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Button onClick={() => setShowForm(!showForm)}>
                 <Plus className="w-4 h-4 mr-2" />
                 Nová úloha
@@ -252,6 +270,19 @@ const TeacherAssignments = () => {
                       <SelectItem value="__all__">Všichni žáci</SelectItem>
                       {classes.map((c) => (
                         <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Exam type */}
+                <div>
+                  <Label>Typ</Label>
+                  <Select value={examType} onValueChange={(v) => setExamType(v as ExamType | "ukol")}>
+                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {EXAM_TYPE_OPTIONS.map((o) => (
+                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -376,13 +407,16 @@ const TeacherAssignments = () => {
           </div>
         ) : (
           <div className="space-y-3">
-            {assignments.map((a) => (
+            {assignments
+              .filter((a) => filterExamType === "__all__" || (filterExamType === "ukol" ? !a.exam_type : a.exam_type === filterExamType))
+              .map((a) => (
               <Card key={a.id} className="hover:shadow-sm transition-shadow">
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-semibold">{a.title}</h3>
+                        <ExamTypeBadge examType={a.exam_type} showDefault />
                         <Badge variant={a.status === "published" ? "default" : "secondary"} className="text-xs">
                           {a.status === "published" ? "Publikováno" : "Koncept"}
                         </Badge>

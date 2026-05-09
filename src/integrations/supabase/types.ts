@@ -158,6 +158,7 @@ export type Database = {
           created_at: string
           deadline: string | null
           description: string
+          exam_type: string | null
           id: string
           lesson_plan_id: string | null
           lockdown_mode: boolean
@@ -177,6 +178,7 @@ export type Database = {
           created_at?: string
           deadline?: string | null
           description?: string
+          exam_type?: string | null
           id?: string
           lesson_plan_id?: string | null
           lockdown_mode?: boolean
@@ -196,6 +198,7 @@ export type Database = {
           created_at?: string
           deadline?: string | null
           description?: string
+          exam_type?: string | null
           id?: string
           lesson_plan_id?: string | null
           lockdown_mode?: boolean

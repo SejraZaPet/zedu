@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { CalendarClock, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { colorForSubject } from "@/lib/teacher-schedule-store";
+import { ExamTypeBadge } from "@/components/assignments/ExamTypeBadge";
 
 interface Props {
   studentIds: string[];
@@ -16,6 +17,7 @@ interface UpcomingAssignment {
   subject: string;
   deadline: string;
   submitted: boolean;
+  exam_type: string | null;
 }
 
 const fmtDeadline = (iso: string) => {
@@ -63,7 +65,7 @@ const ChildUpcomingAssignmentsWidget = ({ studentIds, studentNames }: Props) => 
       const nowIso = new Date().toISOString();
       const { data: assignments } = await supabase
         .from("assignments")
-        .select("id, title, deadline, lesson_plans(subject)")
+        .select("id, title, deadline, exam_type, lesson_plans(subject)")
         .eq("status", "published")
         .in("class_id", classIds)
         .gt("deadline", nowIso)
@@ -92,6 +94,7 @@ const ChildUpcomingAssignmentsWidget = ({ studentIds, studentNames }: Props) => 
         subject: a.lesson_plans?.subject || "Obecné",
         deadline: a.deadline,
         submitted: submittedSet.has(a.id),
+        exam_type: a.exam_type ?? null,
       }));
 
       if (!cancelled) {
@@ -151,8 +154,9 @@ const ChildUpcomingAssignmentsWidget = ({ studentIds, studentNames }: Props) => 
                     aria-hidden
                   />
                   <div className="min-w-0">
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="text-sm font-medium text-foreground truncate">{a.title}</span>
+                      <ExamTypeBadge examType={a.exam_type} />
                       {urgent && !a.submitted && (
                         <AlertTriangle className="w-3.5 h-3.5 text-red-500 shrink-0" />
                       )}
