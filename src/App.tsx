@@ -38,6 +38,8 @@ import TeacherClasses from "./pages/TeacherClasses";
 import TeacherClassDetail from "./pages/TeacherClassDetail";
 import TeacherResults from "./pages/TeacherResults";
 import ParentDashboard from "./pages/ParentDashboard";
+import ParentMessages from "./pages/ParentMessages";
+import TeacherParentMessages from "./pages/TeacherParentMessages";
 import GdprPage from "./pages/GdprPage";
 import TodoPage from "./pages/TodoPage";
 import StudentCalendar from "./pages/StudentCalendar";
