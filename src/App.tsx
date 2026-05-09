@@ -111,6 +111,7 @@ const App = () => (
             <Route path="/ucitel/hry" element={<ProtectedRoute><TeacherGames /></ProtectedRoute>} />
             <Route path="/live/ucitel/:sessionId" element={<ProtectedRoute><LiveTeacherScreen /></ProtectedRoute>} />
             <Route path="/live/projektor/:sessionId" element={<LiveProjectorScreen />} />
+            <Route path="/prezentace/ovladani/:sessionId" element={<ProtectedRoute><PresenterRemote /></ProtectedRoute>} />
             <Route path="/live/pripojit" element={<StudentGameJoin />} />
             <Route path="/live/student/:sessionId" element={<StudentGamePlay />} />
             <Route path="/napoveda" element={<HelpPage />} />
