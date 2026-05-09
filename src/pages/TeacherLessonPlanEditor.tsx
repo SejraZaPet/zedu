@@ -32,6 +32,8 @@ import {
   Lock,
   Globe,
   School,
+  Lightbulb,
+  Wand2,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -601,6 +603,140 @@ export default function TeacherLessonPlanEditor() {
   const [anonymous, setAnonymous] = useState(false);
   const [sharingSaving, setSharingSaving] = useState(false);
 
+  // Learning methods
+  type LearningMethod = {
+    id: string;
+    name: string;
+    slug: string | null;
+    description: string | null;
+    category: string | null;
+    difficulty: string | null;
+    time_range: string | null;
+    template_phases_json: any;
+  };
+  const [methods, setMethods] = useState<LearningMethod[]>([]);
+  const [selectedMethodId, setSelectedMethodId] = useState<string>("");
+  const [methodSuggestions, setMethodSuggestions] = useState<
+    { method: LearningMethod; reason: string }[]
+  >([]);
+  const [methodAiLoading, setMethodAiLoading] = useState(false);
+
+  useEffect(() => {
+    supabase
+      .from("learning_methods")
+      .select("id,name,slug,description,category,difficulty,time_range,template_phases_json")
+      .order("name", { ascending: true })
+      .then(({ data }) => setMethods((data as any[]) ?? []));
+  }, []);
+
+  // Load existing method link for the plan
+  useEffect(() => {
+    if (!planDbId) return;
+    supabase
+      .from("lesson_method_links")
+      .select("method_id")
+      .eq("lesson_plan_id", planDbId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.method_id) setSelectedMethodId(data.method_id as string);
+      });
+  }, [planDbId]);
+
+  function applyMethodTemplate(method: LearningMethod) {
+    const arr = Array.isArray(method.template_phases_json) ? method.template_phases_json : [];
+    const next = emptyPhases();
+    PHASES.forEach((p, idx) => {
+      const tp = arr[idx];
+      if (!tp) return;
+      const desc = [tp.name ? `${tp.name}` : "", tp.description ?? ""]
+        .filter(Boolean)
+        .join(" — ");
+      next[p.key] = {
+        timeMin: tp.duration ? String(tp.duration) : "",
+        description: desc,
+        activities: [],
+      };
+    });
+    setPhases(next);
+  }
+
+  async function handleSelectMethod(methodId: string) {
+    setSelectedMethodId(methodId);
+    const m = methods.find((x) => x.id === methodId);
+    if (!m) return;
+    applyMethodTemplate(m);
+    toast({
+      title: `Metoda: ${m.name}`,
+      description: "Fáze byly předvyplněny ze šablony metody.",
+    });
+    if (planDbId && user) {
+      await supabase.from("lesson_method_links").delete().eq("lesson_plan_id", planDbId);
+      const { error } = await supabase
+        .from("lesson_method_links")
+        .insert({ lesson_plan_id: planDbId, method_id: methodId });
+      if (error) {
+        toast({
+          title: "Propojení s metodou se neuložilo",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+    }
+  }
+
+  async function handleRecommendMethods() {
+    const goal = [title, description, aiInstructions].filter(Boolean).join(". ").trim();
+    if (!goal) {
+      toast({
+        title: "Zadejte cíl hodiny",
+        description: "Vyplňte název, popis nebo pokyny pro AI.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!methods.length) return;
+    setMethodAiLoading(true);
+    setMethodSuggestions([]);
+    try {
+      const { data, error } = await supabase.functions.invoke("recommend-learning-methods", {
+        body: {
+          goal,
+          subject,
+          customInstructions: aiInstructions,
+          methods: methods.map((m) => ({
+            id: m.id,
+            name: m.name,
+            category: m.category,
+            difficulty: m.difficulty,
+            time_range: m.time_range,
+            description: m.description,
+          })),
+        },
+      });
+      if (error) throw error;
+      const recs = (data?.recommendations ?? []) as { method_id: string; reason: string }[];
+      const mapped = recs
+        .map((r) => {
+          const m = methods.find((x) => x.id === r.method_id);
+          return m ? { method: m, reason: r.reason } : null;
+        })
+        .filter(Boolean) as { method: LearningMethod; reason: string }[];
+      setMethodSuggestions(mapped);
+      if (!mapped.length) {
+        toast({ title: "AI nenavrhla žádnou metodu", variant: "destructive" });
+      }
+    } catch (e: any) {
+      toast({
+        title: "AI doporučení se nezdařilo",
+        description: e?.message || "Zkuste to znovu.",
+        variant: "destructive",
+      });
+    } finally {
+      setMethodAiLoading(false);
+    }
+  }
+
+
   async function handleSaveSharing() {
     if (!user) return;
     if (!planDbId) {
@@ -769,6 +905,15 @@ export default function TeacherLessonPlanEditor() {
         setPlanDbId(data.id);
         // Update URL without navigating away
         window.history.replaceState(null, "", `/ucitel/plany-hodin/${data.id}`);
+      }
+      // Sync method link
+      if (resultId) {
+        await supabase.from("lesson_method_links").delete().eq("lesson_plan_id", resultId);
+        if (selectedMethodId) {
+          await supabase
+            .from("lesson_method_links")
+            .insert({ lesson_plan_id: resultId, method_id: selectedMethodId });
+        }
       }
       toast({ title: "Plán uložen" });
     } catch (e: any) {
@@ -1223,6 +1368,122 @@ export default function TeacherLessonPlanEditor() {
               </Button>
             </div>
           </div>
+
+          {/* AI doporučení metod */}
+          <div className="border-t border-primary/10 pt-3 space-y-2">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <p className="text-xs text-muted-foreground">
+                Po zadání cíle hodiny vám AI doporučí 2–3 vhodné výukové metody.
+              </p>
+              <Button
+                onClick={handleRecommendMethods}
+                disabled={methodAiLoading || !methods.length}
+                size="sm"
+                variant="outline"
+              >
+                {methodAiLoading ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Lightbulb className="w-4 h-4 mr-2" />
+                )}
+                Doporučit metody
+              </Button>
+            </div>
+            {methodSuggestions.length > 0 && (
+              <div className="grid sm:grid-cols-3 gap-2 mt-2">
+                {methodSuggestions.map(({ method, reason }) => (
+                  <div
+                    key={method.id}
+                    className="bg-card border border-border rounded-lg p-3 flex flex-col gap-2"
+                  >
+                    <div>
+                      <div className="font-medium text-sm">{method.name}</div>
+                      <div className="text-[11px] text-muted-foreground mt-0.5">
+                        {[method.category, method.difficulty, method.time_range]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground line-clamp-4">{reason}</p>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="mt-auto"
+                      onClick={() => handleSelectMethod(method.id)}
+                    >
+                      <Wand2 className="w-3.5 h-3.5 mr-1.5" />
+                      Použít
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Metoda učení */}
+        <div className="bg-card border border-border rounded-xl p-5 mb-6 space-y-3">
+          <div className="flex items-center gap-2">
+            <Lightbulb className="w-4 h-4 text-primary" />
+            <h2 className="text-base font-semibold">Metoda učení</h2>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Vyberte výukovou metodu z katalogu — fáze se předvyplní podle její šablony.
+          </p>
+          <div className="grid sm:grid-cols-[1fr_auto] gap-2 items-end">
+            <div className="space-y-1.5">
+              <Label htmlFor="plan-method">Metoda</Label>
+              <Select
+                value={selectedMethodId || undefined}
+                onValueChange={handleSelectMethod}
+              >
+                <SelectTrigger id="plan-method">
+                  <SelectValue
+                    placeholder={methods.length ? "Vyber metodu…" : "Načítání metod…"}
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {methods.map((m) => (
+                    <SelectItem key={m.id} value={m.id}>
+                      {m.name}
+                      {m.category ? ` · ${m.category}` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {selectedMethodId && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={async () => {
+                  setSelectedMethodId("");
+                  if (planDbId) {
+                    await supabase
+                      .from("lesson_method_links")
+                      .delete()
+                      .eq("lesson_plan_id", planDbId);
+                  }
+                  toast({ title: "Metoda odebrána" });
+                }}
+              >
+                <X className="w-3.5 h-3.5 mr-1.5" />
+                Odebrat
+              </Button>
+            )}
+          </div>
+          {selectedMethodId && (() => {
+            const m = methods.find((x) => x.id === selectedMethodId);
+            if (!m) return null;
+            return (
+              <div className="bg-muted/30 border border-border rounded-md p-3 space-y-1.5">
+                <div className="text-xs text-muted-foreground">
+                  {[m.category, m.difficulty, m.time_range].filter(Boolean).join(" · ")}
+                </div>
+                {m.description && <p className="text-sm">{m.description}</p>}
+              </div>
+            );
+          })()}
         </div>
 
         {/* Fáze hodiny */}
