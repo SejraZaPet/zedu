@@ -11,7 +11,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
-import { Home, LogOut, School as SchoolIcon, Users, GraduationCap, Plus, Trash2, ShieldCheck, ShieldOff, Copy, RefreshCw, KeyRound } from "lucide-react";
+import { Home, LogOut, School as SchoolIcon, Users, GraduationCap, Plus, Trash2, ShieldCheck, ShieldOff, Copy, RefreshCw, KeyRound, Palette } from "lucide-react";
+import SchoolBrandingSection from "@/components/school/SchoolBrandingSection";
 
 interface SchoolRow { id: string; name: string; registration_code: string | null; }
 interface MemberRow {
@@ -306,6 +307,7 @@ const SchoolAdmin = () => {
           <TabsList>
             <TabsTrigger value="teachers"><GraduationCap className="w-4 h-4 mr-1" /> Učitelé ({teachers.length})</TabsTrigger>
             <TabsTrigger value="students"><Users className="w-4 h-4 mr-1" /> Studenti ({students.length})</TabsTrigger>
+            <TabsTrigger value="branding"><Palette className="w-4 h-4 mr-1" /> Branding</TabsTrigger>
           </TabsList>
 
           <TabsContent value="teachers">
@@ -313,6 +315,9 @@ const SchoolAdmin = () => {
           </TabsContent>
           <TabsContent value="students">
             <MembersTable rows={students} onToggleRole={toggleRole} onRemove={removeFromSchool} kind="user" />
+          </TabsContent>
+          <TabsContent value="branding">
+            <SchoolBrandingSection schoolId={school.id} schoolName={school.name} />
           </TabsContent>
         </Tabs>
       </main>

@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
 import NotificationBell from "@/components/notifications/NotificationBell";
+import { useSchoolBranding } from "@/hooks/useSchoolBranding";
 
 interface NavItem {
   label: string;
@@ -23,6 +24,7 @@ const SiteHeader = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const { isLoggedIn, role: userRole, signOut } = useAuth();
+  const { branding } = useSchoolBranding();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -112,8 +114,18 @@ const SiteHeader = () => {
       }}
     >
       <div className="container mx-auto flex items-center justify-between h-full px-4 md:px-8">
-        <button onClick={() => navigate("/")} className="flex items-center justify-center cursor-pointer bg-transparent border-none p-0">
+        <button onClick={() => navigate("/")} className="flex items-center justify-center cursor-pointer bg-transparent border-none p-0 gap-3">
           <img src={logo} alt="Zedu" className="h-9 w-auto" />
+          {branding?.custom_logo_url && (
+            <>
+              <span className="h-6 w-px bg-border" aria-hidden />
+              <img
+                src={branding.custom_logo_url}
+                alt={branding.name}
+                className="h-8 w-auto max-w-[120px] object-contain"
+              />
+            </>
+          )}
         </button>
 
         <div className="hidden md:flex items-center gap-6">

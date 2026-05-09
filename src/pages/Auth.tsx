@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Lock, UserPlus, LogIn, GraduationCap, BookOpenText, KeyRound, CheckCircle2, Eye, EyeOff, Users, Hash } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useSchoolBranding } from "@/hooks/useSchoolBranding";
 
 type Role = "student" | "teacher" | "rodic";
 
@@ -17,6 +18,7 @@ const Auth = () => {
   const redirectTo = searchParams.get("redirect");
   const { toast } = useToast();
   const { isLoggedIn, role: authRole, loading: authLoading } = useAuth();
+  const { branding } = useSchoolBranding();
   const [mode, setMode] = useState<"login" | "register" | "pin">("login");
   const [pinUsername, setPinUsername] = useState("");
   const [pinValue, setPinValue] = useState("");
@@ -46,6 +48,13 @@ const Auth = () => {
   const [classCode, setClassCode] = useState("");
   const [schoolCode, setSchoolCode] = useState("");
   const [gdprConsent, setGdprConsent] = useState(false);
+
+  // Auto-prefill school code when accessed via school subdomain
+  useEffect(() => {
+    if (branding?.registration_code && !schoolCode) {
+      setSchoolCode(branding.registration_code);
+    }
+  }, [branding]);
 
   // React to auth state changes - redirect when logged in
   useEffect(() => {
@@ -354,6 +363,23 @@ const Auth = () => {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="w-full max-w-md">
+        {branding && (
+          <div className="mb-6 rounded-xl border border-border bg-card p-4 text-center">
+            {branding.custom_logo_url && (
+              <img
+                src={branding.custom_logo_url}
+                alt={branding.name}
+                className="h-12 w-auto mx-auto mb-2 object-contain"
+              />
+            )}
+            <p className="font-heading text-base font-semibold">{branding.name}</p>
+            {branding.custom_welcome_text && (
+              <p className="text-sm text-muted-foreground mt-1 whitespace-pre-line">
+                {branding.custom_welcome_text}
+              </p>
+            )}
+          </div>
+        )}
         <div className="text-center mb-8">
           <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
             <Lock className="w-6 h-6 text-primary" />

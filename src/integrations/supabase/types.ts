@@ -1480,25 +1480,37 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
+          custom_logo_url: string | null
+          custom_primary_color: string | null
+          custom_welcome_text: string | null
           id: string
           name: string
           registration_code: string
+          subdomain: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
           created_by?: string | null
+          custom_logo_url?: string | null
+          custom_primary_color?: string | null
+          custom_welcome_text?: string | null
           id?: string
           name: string
           registration_code?: string
+          subdomain?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
           created_by?: string | null
+          custom_logo_url?: string | null
+          custom_primary_color?: string | null
+          custom_welcome_text?: string | null
           id?: string
           name?: string
           registration_code?: string
+          subdomain?: string | null
           updated_at?: string
         }
         Relationships: []
