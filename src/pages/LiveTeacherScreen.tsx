@@ -199,6 +199,7 @@ const LiveTeacherScreen = () => {
             <Monitor className="w-4 h-4" />
             Projektor
           </Button>
+          {sessionId && <RemoteControlButton sessionId={sessionId} />}
           <Button
             size="sm"
             variant={whiteboardVisible ? "default" : "outline"}
