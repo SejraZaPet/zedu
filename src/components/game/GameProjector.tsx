@@ -53,6 +53,12 @@ export const GameProjector = ({ session, players, responses, countdown, onShowRe
     [players]
   );
 
+  const teamMode = (session.settings?.teamModeKind ?? "none") !== "none";
+  const teamLeaderboard = useMemo(
+    () => computeTeamLeaderboard(session.teams?.teams, players),
+    [session.teams, players]
+  );
+
   const avatars = useStudentAvatars(leaderboard.map((p) => p.user_id));
 
   // Play themed sounds for new responses on current question
