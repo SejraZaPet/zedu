@@ -265,6 +265,8 @@ const TeacherCalendar = () => {
             viewMode={viewMode}
             selectedDay={selectedDay}
             onEventClick={handleEventClick}
+            reflectionState={reflectionMap}
+            onReflectionClick={(ev) => setReflectionEvent(ev)}
           />
         )}
 
