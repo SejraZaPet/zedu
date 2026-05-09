@@ -1465,6 +1465,45 @@ export type Database = {
           },
         ]
       }
+      student_avatars: {
+        Row: {
+          avatar_slug: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_slug?: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_slug?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      student_badges: {
+        Row: {
+          badge_slug: string
+          earned_at: string
+          id: string
+          student_id: string
+        }
+        Insert: {
+          badge_slug: string
+          earned_at?: string
+          id?: string
+          student_id: string
+        }
+        Update: {
+          badge_slug?: string
+          earned_at?: string
+          id?: string
+          student_id?: string
+        }
+        Relationships: []
+      }
       student_lesson_completions: {
         Row: {
           completed_at: string
@@ -1567,6 +1606,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      student_xp: {
+        Row: {
+          last_activity_date: string | null
+          level: number
+          streak_days: number
+          student_id: string
+          total_xp: number
+          updated_at: string
+        }
+        Insert: {
+          last_activity_date?: string | null
+          level?: number
+          streak_days?: number
+          student_id: string
+          total_xp?: number
+          updated_at?: string
+        }
+        Update: {
+          last_activity_date?: string | null
+          level?: number
+          streak_days?: number
+          student_id?: string
+          total_xp?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       study_methods: {
         Row: {
@@ -2058,6 +2124,10 @@ export type Database = {
         Returns: {
           recipient_id: string
         }[]
+      }
+      add_xp: {
+        Args: { _amount: number; _student: string }
+        Returns: undefined
       }
       can_access_textbooks: { Args: { _user_id: string }; Returns: boolean }
       cancel_notification: { Args: { _broadcast_id: string }; Returns: boolean }
