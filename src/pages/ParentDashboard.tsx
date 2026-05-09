@@ -49,6 +49,7 @@ const ParentDashboard = () => {
   const [childCode, setChildCode] = useState("");
   const [linking, setLinking] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
+  const [emailNotifEnabled, setEmailNotifEnabled] = useState<boolean | null>(null);
 
   const loadAll = async () => {
     if (!user) return;
