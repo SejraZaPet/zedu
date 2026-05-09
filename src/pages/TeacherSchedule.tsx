@@ -1014,12 +1014,14 @@ function PersonalCard({
   time,
   subjectStyles,
   parityMode,
+  conflict,
   onClick,
 }: {
   lesson: LessonEntry;
   time: { start: string; end: string } | null;
   subjectStyles: Map<string, { color: string; abbreviation: string }>;
   parityMode: WeekParityMode;
+  conflict?: boolean;
   onClick: () => void;
 }) {
   const style = subjectStyles.get(lesson.subject.trim());
@@ -1030,8 +1032,8 @@ function PersonalCard({
   return (
     <button
       onClick={onClick}
-      title={`${lesson.subject || "Hodina"}${lesson.className ? ` · ${lesson.className}` : ""}${lesson.room ? ` · ${lesson.room}` : ""}${time ? ` · ${fmtTime(time.start)}–${fmtTime(time.end)}` : ""}`}
-      className="w-full text-left rounded-md p-2 transition-all hover:shadow-md hover:-translate-y-0.5 border-l-4 group"
+      title={`${conflict ? "⚠ Konflikt v rozvrhu · " : ""}${lesson.subject || "Hodina"}${lesson.className ? ` · ${lesson.className}` : ""}${lesson.room ? ` · ${lesson.room}` : ""}${time ? ` · ${fmtTime(time.start)}–${fmtTime(time.end)}` : ""}`}
+      className={`w-full text-left rounded-md p-2 transition-all hover:shadow-md hover:-translate-y-0.5 border-l-4 group ${conflict ? "ring-2 ring-destructive ring-offset-1" : ""}`}
       style={{ backgroundColor: `${color}26`, borderLeftColor: color }}
     >
       <div className="flex items-center gap-1 text-[11px] text-muted-foreground tabular-nums">
