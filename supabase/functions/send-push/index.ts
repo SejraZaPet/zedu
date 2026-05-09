@@ -9,8 +9,16 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const VAPID_PUBLIC =
   "BKv-g73e0ou_IoTM9xe2Jlld00MntQD88gmahEQV2H3a_45rXrnWIpa3h2YGB77hnxQniytP9baipmoFH1HRWQs";
-const VAPID_PRIVATE = Deno.env.get("VAPID_PRIVATE_KEY")!;
-const RAW_SUBJECT = Deno.env.get("VAPID_SUBJECT") || "mailto:noreply@zedu.cz";
+// Normalize private key: trim whitespace/quotes, convert standard b64 -> url-safe, strip '=' padding.
+const VAPID_PRIVATE = (Deno.env.get("VAPID_PRIVATE_KEY") || "")
+  .trim()
+  .replace(/^["']|["']$/g, "")
+  .replace(/\s+/g, "")
+  .replace(/\+/g, "-")
+  .replace(/\//g, "_")
+  .replace(/=+$/g, "");
+
+const RAW_SUBJECT = (Deno.env.get("VAPID_SUBJECT") || "mailto:noreply@zedu.cz").trim();
 const VAPID_SUBJECT = /^(mailto:|https?:\/\/)/i.test(RAW_SUBJECT)
   ? RAW_SUBJECT
   : `mailto:${RAW_SUBJECT.includes("@") ? RAW_SUBJECT : "noreply@zedu.cz"}`;
