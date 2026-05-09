@@ -296,6 +296,19 @@ const StudentAssignmentPlayer = () => {
           )}
         </div>
 
+        {/* Attachments uploader */}
+        {userId && assignment && (
+          <Card className="mb-4">
+            <CardContent className="p-4">
+              <AttachmentsUploader
+                assignmentId={assignment.id}
+                studentId={userId}
+                disabled={isReadOnly}
+              />
+            </CardContent>
+          </Card>
+        )}
+
         {/* Worksheet branch (přednost před legacy activity_data) */}
         {worksheetSpec ? (
           <WorksheetPlayer
