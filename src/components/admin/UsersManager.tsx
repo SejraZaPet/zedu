@@ -946,6 +946,12 @@ const UsersManager = () => {
 
                   printLoginCards(printCards);
 
+                  logAudit("user_created", "user", userId, {
+                    name: `${newUser.first_name} ${newUser.last_name}`,
+                    role: newUser.role,
+                    parent_account: newUser.role === "user" && createParentAccount,
+                  });
+
                   setAddUserOpen(false);
                   setNewUser({ first_name: "", last_name: "", email: "", school: "", year: "", role: "user" });
                   setCreateParentAccount(false);
