@@ -5,13 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, ChevronLeft, ChevronRight, CheckCircle2, Clock, Save, Send, ArrowLeft } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, CheckCircle2, Clock, Save, Send, ArrowLeft, Lock, AlertTriangle, Maximize } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import WorksheetPlayer from "@/components/WorksheetPlayer";
 import AttachmentsUploader from "@/components/assignments/AttachmentsUploader";
 import type { WorksheetSpec } from "@/lib/worksheet-spec";
+import { useLockdownMode } from "@/hooks/useLockdownMode";
 
 interface AssignmentData {
   id: string;
