@@ -635,8 +635,13 @@ export default function TeacherSubjectClass() {
                                 {dateStr} · {formatTime(e.start)}
                               </div>
                               {planForDate ? (
-                                <div className="text-xs text-muted-foreground truncate">
-                                  Plán: {planForDate.title}
+                                <div className="text-xs text-muted-foreground truncate flex items-center gap-1.5 flex-wrap">
+                                  <span className="truncate">Plán: {planForDate.title}</span>
+                                  {planMethods[planForDate.id] && (
+                                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 font-normal">
+                                      {planMethods[planForDate.id].name}
+                                    </Badge>
+                                  )}
                                 </div>
                               ) : (
                                 <div className="text-xs text-muted-foreground">
