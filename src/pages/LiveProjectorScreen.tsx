@@ -203,6 +203,10 @@ const LiveProjectorScreen = () => {
         </span>
         <span className="text-lg">{players.length} žáků online</span>
       </div>
+
+      {whiteboard.visible && sessionId && (
+        <LiveWhiteboard sessionId={sessionId} data={whiteboard} readOnly />
+      )}
     </div>
   );
 };
