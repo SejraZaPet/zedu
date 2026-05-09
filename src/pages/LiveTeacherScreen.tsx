@@ -5,8 +5,9 @@ import { GameLobby } from "@/components/game/GameLobby";
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Monitor, Smartphone, StickyNote, ChevronLeft, ChevronRight, Users, StopCircle, ArrowLeft } from "lucide-react";
+import { Monitor, Smartphone, StickyNote, ChevronLeft, ChevronRight, Users, StopCircle, ArrowLeft, Brain } from "lucide-react";
 import SessionExports from "@/components/live/SessionExports";
+import { AdaptiveReviewDialog } from "@/components/game/AdaptiveReview";
 import { supabase } from "@/integrations/supabase/client";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -31,6 +32,7 @@ const LiveTeacherScreen = () => {
   const [fetchAttempts, setFetchAttempts] = useState(0);
   const { session, players, responses, loading, connectionStatus, reconnect } = useGameSession(sessionId, fetchAttempts);
   const { startGame, nextQuestion, endGame } = useTeacherGameControls(sessionId);
+  const [adaptiveOpen, setAdaptiveOpen] = useState(false);
 
   const slides: SlideData[] = (session?.activity_data as any[]) || [];
   const currentIndex = session?.current_question_index ?? -1;
@@ -147,11 +149,32 @@ const LiveTeacherScreen = () => {
             <Monitor className="w-4 h-4" />
             Projektor
           </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1.5"
+            onClick={() => setAdaptiveOpen(true)}
+            title="Zobrazit otázky s nízkou úspěšností"
+          >
+            <Brain className="w-4 h-4" />
+            Adaptivní závěr
+          </Button>
           <Button size="sm" variant="destructive" onClick={endGame}>
             <StopCircle className="w-4 h-4 mr-1" /> Ukončit
           </Button>
         </div>
       </div>
+
+      {sessionId && (
+        <AdaptiveReviewDialog
+          open={adaptiveOpen}
+          onOpenChange={setAdaptiveOpen}
+          sessionId={sessionId}
+          slides={slides}
+          responses={responses}
+          currentSettings={settings}
+        />
+      )}
 
       {/* Slide strip */}
       <div className="flex gap-1 overflow-x-auto pb-1">
