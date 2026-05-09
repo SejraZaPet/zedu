@@ -10,7 +10,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { BookOpen, FileText, PlayCircle, MapPin, Users, Clock } from "lucide-react";
+import { BookOpen, FileText, PlayCircle, MapPin, Users, Clock, Star, MessageSquarePlus } from "lucide-react";
 import type { CalendarEvent } from "@/lib/calendar-utils";
 import { formatTime } from "@/lib/calendar-utils";
 import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { getPhasePlan, type StoredPhasePlan } from "@/lib/lesson-phase-plans";
+import LessonReflectionDialog from "@/components/lessons/LessonReflectionDialog";
 
 interface Props {
   event: CalendarEvent | null;
@@ -37,6 +38,12 @@ export default function CalendarEventDetailDialog({ event, open, onOpenChange }:
   const { user } = useAuth();
   const [linkedPlanId, setLinkedPlanId] = useState<string | null>(null);
   const [phasePlan, setPhasePlan] = useState<StoredPhasePlan | null>(null);
+  const [reflectionMode, setReflectionMode] = useState<"full" | "quick" | null>(null);
+
+  const now = new Date();
+  const isPast = !!event && event.end < now;
+  const isOngoing =
+    !!event && event.start <= now && event.end >= now;
 
   useEffect(() => {
     let cancelled = false;
@@ -219,8 +226,40 @@ export default function CalendarEventDetailDialog({ event, open, onOpenChange }:
             <PlayCircle className="h-4 w-4 mr-2" />
             Spustit lekci
           </Button>
+          {isOngoing && (
+            <Button
+              variant="outline"
+              onClick={() => setReflectionMode("quick")}
+              className="justify-start"
+            >
+              <MessageSquarePlus className="h-4 w-4 mr-2" />
+              Rychlá poznámka
+            </Button>
+          )}
+          {isPast && (
+            <Button
+              variant="outline"
+              onClick={() => setReflectionMode("full")}
+              className="justify-start"
+            >
+              <Star className="h-4 w-4 mr-2" />
+              Reflexe hodiny
+            </Button>
+          )}
         </div>
       </DialogContent>
+      {reflectionMode && event && (
+        <LessonReflectionDialog
+          open={!!reflectionMode}
+          onOpenChange={(o) => { if (!o) setReflectionMode(null); }}
+          subject={event.subject}
+          classId={event.classId}
+          date={format(event.start, "yyyy-MM-dd")}
+          lessonLabel={`${event.subject ?? ""}${event.className ? " · " + event.className : ""}`}
+          lessonPlanId={linkedPlanId}
+          mode={reflectionMode}
+        />
+      )}
     </Dialog>
   );
 }

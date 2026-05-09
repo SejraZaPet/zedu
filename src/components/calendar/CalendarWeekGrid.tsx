@@ -14,6 +14,9 @@ interface Props {
   viewMode: "week" | "day";
   selectedDay?: Date;
   onEventClick?: (event: CalendarEvent) => void;
+  /** Map of event.id → reflection state for past lessons. */
+  reflectionState?: Record<string, "missing" | "present">;
+  onReflectionClick?: (event: CalendarEvent) => void;
 }
 
 const HOUR_START = 7;
@@ -30,6 +33,8 @@ const CalendarWeekGrid = ({
   viewMode,
   selectedDay,
   onEventClick,
+  reflectionState,
+  onReflectionClick,
 }: Props) => {
   const isMobile = useIsMobile();
 
@@ -134,47 +139,83 @@ const CalendarWeekGrid = ({
                 const bg = customColor ? `${customColor}26` : defaults.bg;
                 const border = customColor || defaults.border;
 
+                const reflectionStatus = reflectionState?.[ev.id];
+                const showReflectionBadge =
+                  ev.type === "lesson" && !!reflectionStatus;
                 return (
-                  <button
+                  <div
                     key={ev.id}
-                    onClick={() => onEventClick?.(ev)}
-                    className="absolute rounded-md text-left px-2 py-1 overflow-hidden border-l-4 border text-xs hover:opacity-90 transition-opacity"
+                    className="absolute"
                     style={{
                       top: `${startMin}px`,
                       height: `${durMin}px`,
                       left: "4px",
                       right: "4px",
-                      backgroundColor: bg,
-                      borderColor: border,
-                      borderLeftColor: border,
-                      color: defaults.text,
                     }}
-                    title={ev.title}
                   >
-                    <div className="leading-tight flex items-center gap-1">
-                      {ev.abbreviation ? (
-                        <span
-                          className="inline-block text-[10px] font-bold text-white px-1.5 py-0.5 rounded shrink-0"
-                          style={{ backgroundColor: customColor || defaults.border }}
-                        >
-                          {ev.abbreviation}
-                        </span>
-                      ) : (
-                        <span className="font-medium truncate">{ev.title}</span>
-                      )}
-                      {ev.weekParity === "odd" && (
-                        <span className="text-[9px] font-semibold px-1 rounded bg-background/60 border border-border shrink-0">L</span>
-                      )}
-                      {ev.weekParity === "even" && (
-                        <span className="text-[9px] font-semibold px-1 rounded bg-background/60 border border-border shrink-0">S</span>
-                      )}
-                    </div>
-                    <div className="text-[10px] opacity-80 truncate mt-0.5">
-                      {formatTime(ev.start)}
-                      {ev.className ? ` · ${ev.className}` : ""}
-                      {ev.room ? ` · ${ev.room}` : ""}
-                    </div>
-                  </button>
+                    <button
+                      onClick={() => onEventClick?.(ev)}
+                      className="w-full h-full rounded-md text-left px-2 py-1 overflow-hidden border-l-4 border text-xs hover:opacity-90 transition-opacity"
+                      style={{
+                        backgroundColor: bg,
+                        borderColor: border,
+                        borderLeftColor: border,
+                        color: defaults.text,
+                      }}
+                      title={ev.title}
+                    >
+                      <div className="leading-tight flex items-center gap-1 pr-4">
+                        {ev.abbreviation ? (
+                          <span
+                            className="inline-block text-[10px] font-bold text-white px-1.5 py-0.5 rounded shrink-0"
+                            style={{ backgroundColor: customColor || defaults.border }}
+                          >
+                            {ev.abbreviation}
+                          </span>
+                        ) : (
+                          <span className="font-medium truncate">{ev.title}</span>
+                        )}
+                        {ev.weekParity === "odd" && (
+                          <span className="text-[9px] font-semibold px-1 rounded bg-background/60 border border-border shrink-0">L</span>
+                        )}
+                        {ev.weekParity === "even" && (
+                          <span className="text-[9px] font-semibold px-1 rounded bg-background/60 border border-border shrink-0">S</span>
+                        )}
+                      </div>
+                      <div className="text-[10px] opacity-80 truncate mt-0.5">
+                        {formatTime(ev.start)}
+                        {ev.className ? ` · ${ev.className}` : ""}
+                        {ev.room ? ` · ${ev.room}` : ""}
+                      </div>
+                    </button>
+                    {showReflectionBadge && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onReflectionClick?.(ev);
+                        }}
+                        className={cn(
+                          "absolute top-1 right-1 w-4 h-4 rounded-full border-2 border-background shadow-sm flex items-center justify-center text-[9px] font-bold text-white",
+                          reflectionStatus === "missing"
+                            ? "bg-red-500 hover:bg-red-600 animate-pulse"
+                            : "bg-emerald-500 hover:bg-emerald-600",
+                        )}
+                        aria-label={
+                          reflectionStatus === "missing"
+                            ? "Přidat reflexi hodiny"
+                            : "Upravit reflexi hodiny"
+                        }
+                        title={
+                          reflectionStatus === "missing"
+                            ? "Přidat reflexi hodiny"
+                            : "Reflexe uložena"
+                        }
+                      >
+                        {reflectionStatus === "present" ? "✓" : "!"}
+                      </button>
+                    )}
+                  </div>
                 );
               })}
             </div>

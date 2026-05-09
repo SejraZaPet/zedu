@@ -19,7 +19,10 @@ import {
   Sparkles,
   Lock,
   Pencil,
+  Star,
 } from "lucide-react";
+import LessonReflectionDialog from "@/components/lessons/LessonReflectionDialog";
+import { fetchReflections, reflectionKey, type LessonReflection } from "@/lib/lesson-reflections";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { Button } from "@/components/ui/button";
@@ -152,6 +155,10 @@ export default function TeacherSubjectClass() {
   const [assignPlanDate, setAssignPlanDate] = useState<string>("");
   const [assigning, setAssigning] = useState(false);
 
+  const [reflections, setReflections] = useState<Record<string, LessonReflection>>({});
+  const [reflectionEvent, setReflectionEvent] = useState<{ date: string; subject: string; classId: string; label: string } | null>(null);
+  const [reflectionVersion, setReflectionVersion] = useState(0);
+
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
@@ -269,6 +276,28 @@ export default function TeacherSubjectClass() {
   }, [slots]);
 
   const pastLessons = occurrences.filter((e) => e.end < now).slice(-15).reverse();
+
+  useEffect(() => {
+    if (!user || !classId) return;
+    const dates = pastLessons.map((e) => format(e.start, "yyyy-MM-dd"));
+    if (!dates.length) return;
+    const fromDate = dates.reduce((a, b) => (a < b ? a : b));
+    const toDate = dates.reduce((a, b) => (a > b ? a : b));
+    let cancelled = false;
+    (async () => {
+      const rows = await fetchReflections({ teacherId: user.id, fromDate, toDate });
+      if (cancelled) return;
+      const map: Record<string, LessonReflection> = {};
+      for (const r of rows) {
+        if (!r.reflection_date) continue;
+        const k = reflectionKey({ subject: r.subject, classId: r.class_id, date: r.reflection_date });
+        map[k] = r;
+      }
+      setReflections(map);
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, classId, pastLessons.length, reflectionVersion]);
   const upcomingLessons = occurrences.filter((e) => e.start >= now).slice(0, 15);
 
   const room = slots[0]?.room || "";
@@ -577,7 +606,9 @@ export default function TeacherSubjectClass() {
                   <div className="space-y-2">
                     {pastLessons.map((e) => {
                       const dateStr = format(e.start, "EEE d. M.", { locale: cs });
-                      const planForDate = findPlanForDate(format(e.start, "yyyy-MM-dd"));
+                      const dateKey = format(e.start, "yyyy-MM-dd");
+                      const planForDate = findPlanForDate(dateKey);
+                      const refl = reflections[reflectionKey({ subject: subjectLabel, classId, date: dateKey })];
                       return (
                         <Card key={e.id} className="p-3">
                           <div className="flex items-center justify-between gap-2">
@@ -595,19 +626,43 @@ export default function TeacherSubjectClass() {
                                 </div>
                               )}
                             </div>
-                            {planForDate ? (
+                            <div className="flex items-center gap-1">
+                              {planForDate && (
+                                <Button size="sm" variant="ghost" onClick={() => navigate(`/ucitel/plany-hodin/${planForDate.id}`)}>
+                                  <FileText className="h-3.5 w-3.5 mr-1" />
+                                  Otevřít
+                                </Button>
+                              )}
                               <Button
                                 size="sm"
-                                variant="ghost"
-                                onClick={() =>
-                                  navigate(`/ucitel/plany-hodin/${planForDate.id}`)
-                                }
+                                variant={refl ? "ghost" : "outline"}
+                                onClick={() => setReflectionEvent({ date: dateKey, subject: subjectLabel, classId, label: `${subjectLabel} · ${formatTime(e.start)}` })}
                               >
-                                <FileText className="h-3.5 w-3.5 mr-1" />
-                                Otevřít
+                                <Star className={`h-3.5 w-3.5 mr-1 ${refl ? "fill-yellow-400 text-yellow-400" : ""}`} />
+                                {refl ? "Reflexe" : "Přidat reflexi"}
                               </Button>
-                            ) : null}
+                            </div>
                           </div>
+                          {refl && (
+                            <div className="mt-2 pt-2 border-t border-border space-y-1 text-xs">
+                              {refl.rating ? (
+                                <div className="flex items-center gap-0.5">
+                                  {Array.from({ length: 5 }).map((_, i) => (
+                                    <Star key={i} className={`h-3 w-3 ${i < (refl.rating || 0) ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/40"}`} />
+                                  ))}
+                                </div>
+                              ) : null}
+                              {refl.what_worked && (
+                                <p className="text-muted-foreground"><span className="font-medium text-foreground">Fungovalo: </span>{refl.what_worked}</p>
+                              )}
+                              {refl.what_to_change && (
+                                <p className="text-muted-foreground"><span className="font-medium text-foreground">Změnit: </span>{refl.what_to_change}</p>
+                              )}
+                              {refl.quick_notes && (
+                                <p className="text-muted-foreground italic">{refl.quick_notes}</p>
+                              )}
+                            </div>
+                          )}
                         </Card>
                       );
                     })}
@@ -809,6 +864,17 @@ export default function TeacherSubjectClass() {
           </TabsContent>
         </Tabs>
       </main>
+      {reflectionEvent && (
+        <LessonReflectionDialog
+          open={!!reflectionEvent}
+          onOpenChange={(o) => { if (!o) setReflectionEvent(null); }}
+          subject={reflectionEvent.subject}
+          classId={reflectionEvent.classId}
+          date={reflectionEvent.date}
+          lessonLabel={reflectionEvent.label}
+          onSaved={() => setReflectionVersion((v) => v + 1)}
+        />
+      )}
       <SiteFooter />
 
       <Dialog open={linkOpen} onOpenChange={setLinkOpen}>

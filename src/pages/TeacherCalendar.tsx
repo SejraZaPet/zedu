@@ -23,6 +23,8 @@ import {
   getWeekRange,
 } from "@/lib/calendar-utils";
 import { expandTeacherSchedule, loadSchedule } from "@/lib/teacher-schedule-store";
+import LessonReflectionDialog from "@/components/lessons/LessonReflectionDialog";
+import { fetchReflections, reflectionKey } from "@/lib/lesson-reflections";
 
 const TeacherCalendar = () => {
   const navigate = useNavigate();
@@ -35,6 +37,46 @@ const TeacherCalendar = () => {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [detailEvent, setDetailEvent] = useState<CalendarEvent | null>(null);
+  const [reflectionEvent, setReflectionEvent] = useState<CalendarEvent | null>(null);
+  /** Map of YYYY-MM-DD|subject|classId → present|missing */
+  const [reflectionMap, setReflectionMap] = useState<Record<string, "missing" | "present">>({});
+  const [reflectionVersion, setReflectionVersion] = useState(0);
+
+  async function reloadReflections(evts: CalendarEvent[]) {
+    if (!user) return;
+    const lessonEvents = evts.filter(
+      (e) => e.type === "lesson" && e.end < new Date() && e.subject && e.classId,
+    );
+    if (!lessonEvents.length) {
+      setReflectionMap({});
+      return;
+    }
+    const dates = lessonEvents.map((e) => format(e.start, "yyyy-MM-dd"));
+    const fromDate = dates.reduce((a, b) => (a < b ? a : b));
+    const toDate = dates.reduce((a, b) => (a > b ? a : b));
+    const rows = await fetchReflections({ teacherId: user.id, fromDate, toDate });
+    const present = new Set(
+      rows
+        .filter((r) => r.reflection_date)
+        .map((r) =>
+          reflectionKey({
+            subject: r.subject,
+            classId: r.class_id,
+            date: r.reflection_date!,
+          }),
+        ),
+    );
+    const next: Record<string, "missing" | "present"> = {};
+    for (const e of lessonEvents) {
+      const k = reflectionKey({
+        subject: e.subject,
+        classId: e.classId,
+        date: format(e.start, "yyyy-MM-dd"),
+      });
+      next[e.id] = present.has(k) ? "present" : "missing";
+    }
+    setReflectionMap(next);
+  }
 
   const range = useMemo(() => {
     if (viewMode === "day") {
@@ -114,14 +156,16 @@ const TeacherCalendar = () => {
         },
       );
 
-      setEvents([...lessonEvents, ...personalEvents, ...assignmentEvents, ...todoEvents]);
+      const merged = [...lessonEvents, ...personalEvents, ...assignmentEvents, ...todoEvents];
+      setEvents(merged);
       setLoading(false);
+      reloadReflections(merged);
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [authLoading, user, navigate, range]);
+  }, [authLoading, user, navigate, range, reflectionVersion]);
 
   const handleEventClick = (event: CalendarEvent) => {
     if (event.type === "lesson") {
@@ -221,6 +265,8 @@ const TeacherCalendar = () => {
             viewMode={viewMode}
             selectedDay={selectedDay}
             onEventClick={handleEventClick}
+            reflectionState={reflectionMap}
+            onReflectionClick={(ev) => setReflectionEvent(ev)}
           />
         )}
 
@@ -246,8 +292,27 @@ const TeacherCalendar = () => {
             />
             Můj úkol
           </span>
+          <span className="flex items-center gap-2">
+            <span className="inline-block w-3 h-3 rounded-full bg-red-500" />
+            Chybí reflexe
+          </span>
+          <span className="flex items-center gap-2">
+            <span className="inline-block w-3 h-3 rounded-full bg-emerald-500" />
+            Reflexe uložena
+          </span>
         </div>
       </main>
+      {reflectionEvent && (
+        <LessonReflectionDialog
+          open={!!reflectionEvent}
+          onOpenChange={(o) => { if (!o) setReflectionEvent(null); }}
+          subject={reflectionEvent.subject}
+          classId={reflectionEvent.classId}
+          date={format(reflectionEvent.start, "yyyy-MM-dd")}
+          lessonLabel={`${reflectionEvent.subject ?? ""}${reflectionEvent.className ? " · " + reflectionEvent.className : ""}`}
+          onSaved={() => setReflectionVersion((v) => v + 1)}
+        />
+      )}
       <CalendarEventDetailDialog
         event={detailEvent}
         open={!!detailEvent}
