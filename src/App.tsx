@@ -105,6 +105,8 @@ const App = () => (
             <Route path="/student/ucebnice/:textbookId" element={<ProtectedRoute><StudentTextbookDetail /></ProtectedRoute>} />
             <Route path="/student/ulohy" element={<ProtectedRoute><StudentAssignments /></ProtectedRoute>} />
             <Route path="/student/zebricek" element={<ProtectedRoute><StudentLeaderboard /></ProtectedRoute>} />
+            <Route path="/student/portfolio" element={<ProtectedRoute><StudentPortfolio /></ProtectedRoute>} />
+            <Route path="/portfolio/:studentId" element={<ProtectedRoute><PortfolioView /></ProtectedRoute>} />
             <Route path="/student/ulohy/:assignmentId" element={<ProtectedRoute><StudentAssignmentPlayer /></ProtectedRoute>} />
             <Route path="/aktivity" element={<ActivitiesPage />} />
             <Route path="/hra/ucitel/:sessionId" element={<ProtectedRoute><TeacherGameScreen /></ProtectedRoute>} />
