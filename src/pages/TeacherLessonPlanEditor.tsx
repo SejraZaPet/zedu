@@ -28,7 +28,16 @@ import {
   FileDown,
   LayoutTemplate,
   Trash2,
+  Share2,
+  Lock,
+  Globe,
+  School,
 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import {
+  RadioGroup,
+  RadioGroupItem,
+} from "@/components/ui/radio-group";
 import {
   Dialog,
   DialogContent,
