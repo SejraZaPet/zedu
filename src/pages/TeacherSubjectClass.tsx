@@ -864,6 +864,17 @@ export default function TeacherSubjectClass() {
           </TabsContent>
         </Tabs>
       </main>
+      {reflectionEvent && (
+        <LessonReflectionDialog
+          open={!!reflectionEvent}
+          onOpenChange={(o) => { if (!o) setReflectionEvent(null); }}
+          subject={reflectionEvent.subject}
+          classId={reflectionEvent.classId}
+          date={reflectionEvent.date}
+          lessonLabel={reflectionEvent.label}
+          onSaved={() => setReflectionVersion((v) => v + 1)}
+        />
+      )}
       <SiteFooter />
 
       <Dialog open={linkOpen} onOpenChange={setLinkOpen}>
