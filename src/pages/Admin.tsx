@@ -116,6 +116,7 @@ const Admin = () => {
         </div>
 
         {activeTab === "dashboard" && <AdminDashboard onNavigate={(tab) => setActiveTab(tab as Tab)} isTeacher={isTeacher} />}
+        {activeTab === "stats" && !isTeacher && <SystemStats />}
         {activeTab === "textbooks" && isTeacher && <TeacherTextbooksManager />}
         {activeTab === "lessons" && isTeacher && <LessonsManager />}
         {activeTab === "outline" && isTeacher && <LessonOutlineGenerator />}
