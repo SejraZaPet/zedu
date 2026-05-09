@@ -30,7 +30,8 @@ Deno.serve(async (req) => {
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
     const body = await req.json().catch(() => ({}));
-    const requestedUserId = typeof body?.user_id === "string" ? body.user_id : callerId;
+    const providedUserId = typeof body?.user_id === "string" && body.user_id.trim().length > 0 ? body.user_id : null;
+    const requestedUserId = providedUserId ?? callerId;
 
     const { data: adminRoles } = await adminClient
       .from("user_roles")
