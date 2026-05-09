@@ -58,6 +58,12 @@ const ProfilePage = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [changingPassword, setChangingPassword] = useState(false);
 
+  // Preferred study methods (students only)
+  const [methods, setMethods] = useState<{ id: string; name: string; slug: string; description: string | null }[]>([]);
+  const [preferredIds, setPreferredIds] = useState<string[]>([]);
+  const [savingPreferred, setSavingPreferred] = useState(false);
+  const MAX_PREFERRED = 3;
+
   useEffect(() => {
     if (authLoading) return;
 
