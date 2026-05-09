@@ -13,8 +13,10 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from "recharts";
 import {
-  Activity, BarChart3, Clock, AlertTriangle, Users, CheckCircle2,
+  Activity, BarChart3, Clock, AlertTriangle, Users, CheckCircle2, FileSpreadsheet,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import * as XLSX from "xlsx";
 
 type ClassOpt = { id: string; name: string };
 type Attempt = {
@@ -54,6 +56,7 @@ const TeacherResults = () => {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [classMembers, setClassMembers] = useState<{ class_id: string; user_id: string }[]>([]);
+  const [profiles, setProfiles] = useState<Record<string, { first_name: string; last_name: string }>>({});
 
   // Initial load
   useEffect(() => {
@@ -94,12 +97,14 @@ const TeacherResults = () => {
 
       // Class members for those classes
       const classIds = classOpts.map((c) => c.id);
+      let cmRows: any[] = [];
       if (classIds.length > 0) {
         const { data: cm } = await supabase
           .from("class_members")
           .select("class_id, user_id")
           .in("class_id", classIds);
-        setClassMembers((cm ?? []) as any);
+        cmRows = (cm ?? []) as any[];
+        setClassMembers(cmRows as any);
       }
 
       // Attempts for those assignments
@@ -110,6 +115,18 @@ const TeacherResults = () => {
           .select("id, assignment_id, student_id, status, score, max_score, started_at, submitted_at, answers")
           .in("assignment_id", asgIds);
         setAttempts((at ?? []) as any);
+      }
+
+      // Profiles for student names
+      const studentIds = [...new Set(cmRows.map((m: any) => m.user_id))];
+      if (studentIds.length > 0) {
+        const { data: pf } = await supabase
+          .from("profiles")
+          .select("id, first_name, last_name")
+          .in("id", studentIds);
+        const map: Record<string, { first_name: string; last_name: string }> = {};
+        for (const p of (pf ?? []) as any[]) map[p.id] = { first_name: p.first_name || "", last_name: p.last_name || "" };
+        setProfiles(map);
       }
       setLoading(false);
     })().catch((e) => {
@@ -240,15 +257,90 @@ const TeacherResults = () => {
       .slice(0, 5);
   }, [filteredAssignments, filteredAttempts]);
 
+  const handleExportXlsx = () => {
+    const studentName = (id: string) => {
+      const p = profiles[id];
+      if (!p) return id.slice(0, 8);
+      return `${p.first_name} ${p.last_name}`.trim() || id.slice(0, 8);
+    };
+    const className = (id: string | null) => classes.find((c) => c.id === id)?.name ?? "";
+    const asgById = new Map(filteredAssignments.map((a) => [a.id, a]));
+
+    // Sheet 1: Class overview – per student
+    const scopedClassIds = classFilter === ALL ? new Set(classes.map((c) => c.id)) : new Set([classFilter]);
+    const studentIds = [...new Set(
+      classMembers.filter((m) => scopedClassIds.has(m.class_id)).map((m) => m.user_id),
+    )];
+    const overviewRows = studentIds.map((sid) => {
+      const studentAttempts = filteredAttempts.filter(
+        (a) => a.student_id === sid && a.status === "submitted",
+      );
+      const scores = studentAttempts
+        .filter((a) => a.score !== null && a.max_score && a.max_score > 0)
+        .map((a) => (a.score! / a.max_score!) * 100);
+      const avg = scores.length ? Math.round(scores.reduce((s, x) => s + x, 0) / scores.length) : 0;
+      const expected = filteredAssignments.filter((a) => {
+        if (!a.class_id) return false;
+        return classMembers.some((m) => m.class_id === a.class_id && m.user_id === sid);
+      }).length;
+      const doneIds = new Set(studentAttempts.map((a) => a.assignment_id));
+      const completionPct = expected > 0 ? Math.round((doneIds.size / expected) * 100) : 0;
+      return {
+        "Jméno": studentName(sid),
+        "Průměr (%)": avg,
+        "Dokončeno": `${doneIds.size} / ${expected}`,
+        "Dokončeno (%)": completionPct,
+      };
+    }).sort((a, b) => String(a["Jméno"]).localeCompare(String(b["Jméno"]), "cs"));
+
+    // Sheet 2: Detailed results
+    const detailRows = filteredAttempts
+      .filter((a) => a.status === "submitted")
+      .map((a) => {
+        const asg = asgById.get(a.assignment_id);
+        const pct = a.score !== null && a.max_score && a.max_score > 0
+          ? Math.round((a.score / a.max_score) * 100) : null;
+        return {
+          "Datum": a.submitted_at ? new Date(a.submitted_at).toLocaleString("cs-CZ") : "",
+          "Žák": studentName(a.student_id),
+          "Třída": className(asg?.class_id ?? null),
+          "Úkol/Test": asg?.title ?? "",
+          "Předmět": asg?.subject ?? "",
+          "Skóre": a.score ?? "",
+          "Max": a.max_score ?? "",
+          "Úspěšnost (%)": pct ?? "",
+        };
+      })
+      .sort((a, b) => String(b["Datum"]).localeCompare(String(a["Datum"])));
+
+    const wb = XLSX.utils.book_new();
+    const ws1 = XLSX.utils.json_to_sheet(overviewRows);
+    ws1["!cols"] = [{ wch: 28 }, { wch: 12 }, { wch: 14 }, { wch: 16 }];
+    XLSX.utils.book_append_sheet(wb, ws1, "Přehled třídy");
+
+    const ws2 = XLSX.utils.json_to_sheet(detailRows);
+    ws2["!cols"] = [{ wch: 18 }, { wch: 24 }, { wch: 18 }, { wch: 32 }, { wch: 18 }, { wch: 8 }, { wch: 8 }, { wch: 14 }];
+    XLSX.utils.book_append_sheet(wb, ws2, "Detailní výsledky");
+
+    const stamp = new Date().toISOString().slice(0, 10);
+    XLSX.writeFile(wb, `vysledky_${stamp}.xlsx`);
+    toast({ title: "Export dokončen", description: "Soubor XLSX byl stažen." });
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <SiteHeader />
       <main className="flex-1 container mx-auto px-4 py-12 max-w-6xl" style={{ paddingTop: "calc(70px + 3rem)" }}>
-        <div className="mb-6">
-          <h1 className="font-heading text-3xl font-bold">Výsledky a analytika</h1>
-          <p className="text-muted-foreground mt-1">
-            Přehled aktivity vašich tříd, zapojení žáků a problematické otázky.
-          </p>
+        <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h1 className="font-heading text-3xl font-bold">Výsledky a analytika</h1>
+            <p className="text-muted-foreground mt-1">
+              Přehled aktivity vašich tříd, zapojení žáků a problematické otázky.
+            </p>
+          </div>
+          <Button onClick={handleExportXlsx} disabled={loading} variant="outline">
+            <FileSpreadsheet className="w-4 h-4" /> Exportovat do Excel
+          </Button>
         </div>
 
         {/* Filters */}
