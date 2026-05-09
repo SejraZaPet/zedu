@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
@@ -34,6 +35,7 @@ const ICONS: Record<string, React.ElementType> = {
 
 const StudentMethods = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [methods, setMethods] = useState<Method[]>([]);
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState<Method | null>(null);
@@ -129,31 +131,10 @@ const StudentMethods = () => {
     setStepIdx(0);
   };
 
-  const startPractice = async () => {
+  const startPractice = () => {
     if (!practiceFor) return;
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      toast({ title: "Přihlas se prosím", variant: "destructive" });
-      return;
-    }
-    setSubmitting(true);
-    const dur = parseInt(duration, 10);
-    const { error } = await supabase.from("student_practice_sessions").insert({
-      student_id: session.user.id,
-      method_id: practiceFor.id,
-      lesson_id: selectedLesson === "none" ? null : selectedLesson,
-      duration_min: Number.isFinite(dur) && dur > 0 ? dur : null,
-      answers_json: {},
-    });
-    setSubmitting(false);
-    if (error) {
-      toast({ title: "Nepodařilo se spustit", description: error.message, variant: "destructive" });
-      return;
-    }
-    toast({
-      title: "Procvičování spuštěno",
-      description: `Pustil/a ses do metody ${practiceFor.name}. Hodně štěstí!`,
-    });
+    const lessonParam = selectedLesson !== "none" ? `?lesson=${selectedLesson}` : "";
+    navigate(`/student/metody/${practiceFor.slug}/procviceni${lessonParam}`);
     setPracticeFor(null);
     setSelectedLesson("none");
     setDuration("15");
