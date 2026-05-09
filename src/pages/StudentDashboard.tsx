@@ -100,14 +100,24 @@ const StudentDashboard = () => {
         className="flex-1 container mx-auto px-4 py-12 max-w-5xl"
         style={{ paddingTop: "calc(70px + 3rem)" }}
       >
-        <div className="mb-8">
-          <h1 className="font-heading text-3xl font-bold">
-            Ahoj, {profile?.first_name || "studente"}! 👋
-          </h1>
-          <p className="text-muted-foreground mt-1">Studentský panel</p>
+        <div className="mb-8 flex items-center gap-4">
+          <button
+            onClick={() => navigate("/profil")}
+            className="shrink-0 rounded-full ring-2 ring-primary/20 hover:ring-primary/50 transition"
+            aria-label="Změnit avatar"
+          >
+            <AvatarSvg slug={avatarSlug} size={72} />
+          </button>
+          <div>
+            <h1 className="font-heading text-3xl font-bold">
+              Ahoj, {profile?.first_name || "studente"}! 👋
+            </h1>
+            <p className="text-muted-foreground mt-1">Studentský panel</p>
+          </div>
         </div>
 
         <TodayWidget role="student" />
+
 
         {user && <StudentProgressWidgets userId={user.id} />}
 
