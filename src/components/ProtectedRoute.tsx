@@ -43,18 +43,29 @@ const ProtectedRoute = ({ children }: Props) => {
     // status not yet loaded — fall back to a one-shot fetch
     let cancelled = false;
     (async () => {
-      const { data: profile } = await supabase
+      let profile: { status?: string } | null = null;
+
+      const profileRes = await supabase
         .from("profiles")
         .select("status")
         .eq("id", user.id)
         .maybeSingle();
+
+      profile = profileRes.data;
+
+      if (profileRes.error) {
+        const fallbackRes = await supabase.functions.invoke("get-user-auth-info", {
+          body: { include_profile: true },
+        });
+        profile = fallbackRes.data?.profile ?? null;
+      }
+
       if (cancelled) return;
 
       if (!profile) {
         // Legacy admin without profile row
         if (role === "admin") setState("ok");
-        // No profile yet but auth is fresh — keep loading instead of flashing pending
-        else setState("loading");
+        else setState("pending");
         return;
       }
       if (profile.status === "approved") setState("ok");
