@@ -3,10 +3,11 @@ import { useGameSession } from "@/hooks/useGameSession";
 import { QRCodeSVG } from "qrcode.react";
 import { BookOpen } from "lucide-react";
 import WallProjectorView from "@/components/activities/WallProjectorView";
+import { AdaptiveReviewProjector } from "@/components/game/AdaptiveReview";
 
 const LiveProjectorScreen = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
-  const { session, players, loading } = useGameSession(sessionId);
+  const { session, players, responses, loading } = useGameSession(sessionId);
 
   if (loading) {
     return (
@@ -58,6 +59,17 @@ const LiveProjectorScreen = () => {
           <p className="text-2xl text-muted-foreground">{session.title}</p>
         </div>
       </div>
+    );
+  }
+
+  const adaptive = (session.settings as any)?.adaptive;
+  if (adaptive?.showProjector) {
+    return (
+      <AdaptiveReviewProjector
+        slides={slides}
+        responses={responses}
+        weakIndices={Array.isArray(adaptive.weakIndices) ? adaptive.weakIndices : undefined}
+      />
     );
   }
 
