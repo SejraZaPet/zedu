@@ -18,6 +18,8 @@ interface AssignmentWithAttempt {
   deadline: string | null;
   max_attempts: number;
   status: string;
+  exam_type: string | null;
+  lockdown_mode?: boolean;
   attempts: {
     id: string;
     attempt_number: number;
