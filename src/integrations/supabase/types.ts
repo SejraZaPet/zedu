@@ -1041,6 +1041,39 @@ export type Database = {
         }
         Relationships: []
       }
+      parent_messages: {
+        Row: {
+          content: string
+          created_at: string
+          direction: string
+          id: string
+          parent_id: string
+          read_at: string | null
+          student_id: string
+          teacher_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          direction: string
+          id?: string
+          parent_id: string
+          read_at?: string | null
+          student_id: string
+          teacher_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          direction?: string
+          id?: string
+          parent_id?: string
+          read_at?: string | null
+          student_id?: string
+          teacher_id?: string
+        }
+        Relationships: []
+      }
       parent_student_links: {
         Row: {
           created_at: string | null
