@@ -48,7 +48,8 @@ export function useGameSession(sessionId: string | undefined, refetchTrigger?: n
         ...sessionRes.data,
         activity_data: (sessionRes.data.activity_data as any) ?? [],
         settings: sessionRes.data.settings as any,
-      } as GameSession);
+        teams: (sessionRes.data as any).teams ?? { teams: [] },
+      } as unknown as GameSession);
     }
     if (playersRes.data) setPlayers(playersRes.data as GamePlayer[]);
     if (responsesRes.data) setResponses(responsesRes.data as GameResponse[]);
