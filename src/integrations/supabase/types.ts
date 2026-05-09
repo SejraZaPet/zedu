@@ -1408,6 +1408,7 @@ export type Database = {
           created_by: string | null
           id: string
           name: string
+          registration_code: string
           updated_at: string
         }
         Insert: {
@@ -1415,6 +1416,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           name: string
+          registration_code?: string
           updated_at?: string
         }
         Update: {
@@ -1422,6 +1424,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           name?: string
+          registration_code?: string
           updated_at?: string
         }
         Relationships: []
@@ -2209,6 +2212,7 @@ export type Database = {
         }[]
       }
       generate_game_code: { Args: never; Returns: string }
+      generate_school_registration_code: { Args: never; Returns: string }
       generate_teacher_join_code: { Args: never; Returns: string }
       get_user_school_id: { Args: { _user_id: string }; Returns: string }
       increment_player_score: {
@@ -2242,6 +2246,10 @@ export type Database = {
         Args: { _code: string; _user_id: string }
         Returns: string
       }
+      join_school_by_code: {
+        Args: { _code: string; _user_id: string }
+        Returns: string
+      }
       notify_deadline_soon: { Args: never; Returns: undefined }
       owns_textbook: {
         Args: { _teacher_id: string; _textbook_id: string }
@@ -2249,6 +2257,10 @@ export type Database = {
       }
       publish_due_worksheets: { Args: never; Returns: number }
       reap_stale_export_jobs: { Args: never; Returns: number }
+      regenerate_school_registration_code: {
+        Args: { _school_id: string }
+        Returns: string
+      }
       reset_class_leaderboard: {
         Args: { _class_id: string }
         Returns: undefined
