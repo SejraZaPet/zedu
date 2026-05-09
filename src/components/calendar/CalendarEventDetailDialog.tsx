@@ -176,11 +176,7 @@ export default function CalendarEventDetailDialog({ event, open, onOpenChange }:
         </div>
 
         {(() => {
-          const plan = getPhasePlan(
-            event.subject,
-            format(event.start, "yyyy-MM-dd"),
-            formatTime(event.start),
-          );
+          const plan = phasePlan;
           if (!plan || !plan.phases?.some((p) => p.timeMin > 0)) return null;
           const total = plan.phases.reduce((s, p) => s + (p.timeMin || 0), 0);
           return (
