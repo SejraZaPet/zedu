@@ -6,8 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Loader2, FileText, Printer, Eye, EyeOff, CheckCircle2, ArrowRightLeft, Home, BookOpen, Calendar } from "lucide-react";
+import { Loader2, FileText, Printer, Eye, EyeOff, CheckCircle2, ArrowRightLeft, Home, BookOpen, Calendar, Download } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { downloadHtmlAsPdf } from "@/lib/html-to-pdf";
 
 interface WorksheetItem {
   itemNumber: number;
