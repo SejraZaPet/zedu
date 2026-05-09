@@ -16,6 +16,7 @@ import PresentationEditorDialog from "@/components/admin/PresentationEditorDialo
 import TextbookGradeGroups from "@/components/admin/TextbookGradeGroups";
 import TextbookList from "@/components/admin/TextbookList";
 import CreateTextbookDialog from "@/components/admin/CreateTextbookDialog";
+import ImportTextbookFileDialog from "@/components/admin/ImportTextbookFileDialog";
 import LessonPlacementEditor, { savePlacements, type Placement } from "@/components/admin/LessonPlacementEditor";
 import type { Block } from "@/lib/textbook-config";
 import {
@@ -98,6 +99,9 @@ const TeacherTextbooks = () => {
 
   // Delete confirmation
   const [deletingLesson, setDeletingLesson] = useState<LessonItem | null>(null);
+
+  // Import file dialog
+  const [importOpen, setImportOpen] = useState(false);
 
   // Create lesson dialog
   const [createLessonOpen, setCreateLessonOpen] = useState(false);
