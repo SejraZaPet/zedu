@@ -66,12 +66,20 @@ export default function TeacherLessonPlans() {
   async function reload() {
     if (!user) return;
     setLoading(true);
-    const { data } = await supabase
-      .from("lesson_plans")
-      .select("id, title, subject, updated_at, input_data")
-      .eq("teacher_id", user.id)
-      .order("updated_at", { ascending: false });
-    setItems((data as any[]) ?? []);
+    const [{ data: plans }, { data: tpls }] = await Promise.all([
+      supabase
+        .from("lesson_plans")
+        .select("id, title, subject, updated_at, input_data")
+        .eq("teacher_id", user.id)
+        .order("updated_at", { ascending: false }),
+      supabase
+        .from("lesson_plan_templates")
+        .select("id, title, description, phases_json, created_at")
+        .eq("teacher_id", user.id)
+        .order("created_at", { ascending: false }),
+    ]);
+    setItems((plans as any[]) ?? []);
+    setTemplates((tpls as any[]) ?? []);
     setLoading(false);
   }
 
