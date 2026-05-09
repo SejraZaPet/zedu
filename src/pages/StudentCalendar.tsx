@@ -21,6 +21,8 @@ import {
   expandScheduleSlots,
   getWeekRange,
 } from "@/lib/calendar-utils";
+import { CalendarExportMenu } from "@/components/calendar/CalendarExportMenu";
+import { toExportEvent } from "@/lib/calendar-export";
 
 const StudentCalendar = () => {
   const navigate = useNavigate();
