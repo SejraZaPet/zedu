@@ -6,6 +6,7 @@ import { useMemo } from "react";
 import { t } from "@/lib/t";
 import { AvatarSvg } from "@/components/student/AvatarSvg";
 import { useStudentAvatars } from "@/hooks/useStudentAvatars";
+import { GameModeOverlay } from "@/components/game/GameModeOverlay";
 
 interface Props {
   session: GameSession;
@@ -75,7 +76,14 @@ export const GameProjector = ({ session, players, responses, countdown, onShowRe
       {/* Progress */}
       <Progress value={((qi + 1) / totalQ) * 100} className="h-1 rounded-none" />
 
-      <div className="flex-1 flex flex-col items-center justify-center p-6 md:p-12 gap-8">
+      <div className="flex-1 flex flex-col items-center justify-center p-6 md:p-12 gap-6">
+        {/* Live mode visual (race / tower / steal) */}
+        {(session.settings as any)?.gameMode && (session.settings as any).gameMode !== "standard" && (
+          <div className="w-full max-w-4xl">
+            <GameModeOverlay session={session} players={players} />
+          </div>
+        )}
+
         {/* Question */}
         <h2 className="text-3xl md:text-5xl font-heading font-bold text-foreground text-center max-w-4xl leading-tight">
           {question.question}
@@ -114,29 +122,33 @@ export const GameProjector = ({ session, players, responses, countdown, onShowRe
               </div>
             </div>
 
-            {/* Leaderboard */}
+            {/* Leaderboard – use mode overlay for non-standard, classic list for standard */}
             {session.settings?.showLeaderboardAfterEach && (
-              <div className="bg-card border border-border rounded-2xl p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <Trophy className="w-5 h-5 text-primary" />
-                  <h3 className="font-heading font-bold text-lg text-foreground">{t("projector.leaderboard")}</h3>
+              (session.settings as any)?.gameMode && (session.settings as any).gameMode !== "standard" ? (
+                <GameModeOverlay session={session} players={players} />
+              ) : (
+                <div className="bg-card border border-border rounded-2xl p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Trophy className="w-5 h-5 text-primary" />
+                    <h3 className="font-heading font-bold text-lg text-foreground">{t("projector.leaderboard")}</h3>
+                  </div>
+                  <div className="space-y-2">
+                    {leaderboard.map((player, i) => (
+                      <div
+                        key={player.id}
+                        className="flex items-center gap-4 py-2 px-3 rounded-lg bg-muted/30"
+                      >
+                        <span className={`text-xl font-bold ${i === 0 ? "text-yellow-500" : i === 1 ? "text-gray-400" : i === 2 ? "text-amber-600" : "text-muted-foreground"}`}>
+                          {i + 1}.
+                        </span>
+                        <AvatarSvg slug={player.user_id ? avatars[player.user_id] : undefined} size={32} />
+                        <span className="flex-1 font-medium text-foreground">{player.nickname}</span>
+                        <span className="font-mono font-bold text-primary">{player.total_score}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  {leaderboard.map((player, i) => (
-                    <div
-                      key={player.id}
-                      className="flex items-center gap-4 py-2 px-3 rounded-lg bg-muted/30"
-                    >
-                      <span className={`text-xl font-bold ${i === 0 ? "text-yellow-500" : i === 1 ? "text-gray-400" : i === 2 ? "text-amber-600" : "text-muted-foreground"}`}>
-                        {i + 1}.
-                      </span>
-                      <AvatarSvg slug={player.user_id ? avatars[player.user_id] : undefined} size={32} />
-                      <span className="flex-1 font-medium text-foreground">{player.nickname}</span>
-                      <span className="font-mono font-bold text-primary">{player.total_score}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              )
             )}
 
             {/* Controls */}

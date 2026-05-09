@@ -8,12 +8,15 @@ import { Button } from "@/components/ui/button";
 import { Gamepad2, Clock, Users, Trophy, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+import { getModeDef, getThemeDef } from "@/lib/game-modes";
+
 interface GameSessionRow {
   id: string;
   title: string;
   game_code: string;
   status: string;
   activity_data: any;
+  settings: any;
   created_at: string;
 }
 
@@ -97,7 +100,19 @@ const TeacherGames = () => {
                   <CardContent className="flex items-center gap-4 py-4">
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-foreground truncate">{s.title || "Bez názvu"}</h3>
-                      <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground flex-wrap">
+                        {(() => {
+                          const mode = getModeDef(s.settings?.gameMode);
+                          const theme = getThemeDef(s.settings?.gameMode, s.settings?.theme);
+                          return (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
+                              <span>{mode.emoji}</span>{mode.name}
+                              {mode.themes.length > 1 && (
+                                <span className="opacity-70">· {theme.emoji} {theme.name}</span>
+                              )}
+                            </span>
+                          );
+                        })()}
                         <span className="font-mono">{s.game_code}</span>
                         <span>•</span>
                         <span>{Array.isArray(s.activity_data) ? s.activity_data.length : 0} otázek</span>
