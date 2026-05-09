@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Loader2, Plus, CalendarIcon, Trash2, Send, Clock, Users, Shuffle, RotateCcw, Eye, EyeOff, BarChart3, FileText, ExternalLink } from "lucide-react";
+import { Loader2, Plus, CalendarIcon, Trash2, Send, Clock, Users, Shuffle, RotateCcw, Eye, EyeOff, BarChart3, FileText, ExternalLink, Lock } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -37,6 +37,7 @@ interface Assignment {
   created_at: string;
   activity_data: any[];
   worksheet_id?: string | null;
+  lockdown_mode?: boolean;
 }
 
 interface WorksheetOption {
@@ -70,6 +71,7 @@ const TeacherAssignments = () => {
   const [selectedClassId, setSelectedClassId] = useState<string>("");
   const [worksheets, setWorksheets] = useState<WorksheetOption[]>([]);
   const [selectedWorksheetId, setSelectedWorksheetId] = useState<string>(prefillWorksheetId || "");
+  const [lockdownMode, setLockdownMode] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -118,6 +120,7 @@ const TeacherAssignments = () => {
         status: "draft",
         activity_data: [] as any,
         worksheet_id: selectedWorksheetId || null,
+        lockdown_mode: lockdownMode,
       } as any);
 
       if (error) throw error;
@@ -141,6 +144,7 @@ const TeacherAssignments = () => {
     setRandomizeOrder(false);
     setSelectedClassId("");
     setSelectedWorksheetId("");
+    setLockdownMode(false);
   };
 
   const handlePublish = async (id: string) => {
@@ -266,14 +270,28 @@ const TeacherAssignments = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Shuffle className="w-4 h-4 text-muted-foreground" />
-                    <Label className="text-sm">Zamíchat volby u otázek</Label>
-                  </div>
-                  <Switch checked={randomizeChoices} onCheckedChange={setRandomizeChoices} />
+                  <Label className="text-sm">Zamíchat volby u otázek</Label>
+                </div>
+                <Switch checked={randomizeChoices} onCheckedChange={setRandomizeChoices} />
+              </div>
+            </div>
+
+            {/* Lockdown mode */}
+            <div className="flex items-start justify-between gap-3 p-3 border border-border rounded-lg bg-muted/30">
+              <div className="flex items-start gap-2">
+                <Lock className="w-4 h-4 text-muted-foreground mt-0.5" />
+                <div>
+                  <Label className="text-sm">Lockdown mód (bezpečný test)</Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Žák píše test ve fullscreenu, kopírování a vkládání jsou blokovány. Opuštění stránky se zaznamenává a uvidíte ho ve výsledcích.
+                  </p>
                 </div>
               </div>
+              <Switch checked={lockdownMode} onCheckedChange={setLockdownMode} />
+            </div>
 
-              {/* Pracovní list selector */}
-              <div className="p-3 border border-border rounded-lg bg-muted/30 space-y-2">
+            {/* Pracovní list selector */}
+            <div className="p-3 border border-border rounded-lg bg-muted/30 space-y-2">
                 <div className="flex items-center gap-2">
                   <FileText className="w-4 h-4 text-muted-foreground" />
                   <Label className="text-sm">Pracovní list (volitelné)</Label>
@@ -382,6 +400,11 @@ const TeacherAssignments = () => {
                           {a.max_attempts} {a.max_attempts === 1 ? "pokus" : "pokusy"}
                         </span>
                         {a.randomize_order && <span className="flex items-center gap-1"><Shuffle className="w-3 h-3" /> Míchání</span>}
+                        {a.lockdown_mode && (
+                          <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                            <Lock className="w-3 h-3" /> Lockdown
+                          </span>
+                        )}
                       </div>
                       <TeacherAssignmentAttachments assignmentId={a.id} />
                     </div>

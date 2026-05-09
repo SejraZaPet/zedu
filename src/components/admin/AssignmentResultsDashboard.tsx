@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Download, Users, Clock, CheckCircle2, AlertCircle, Minus, BarChart3, Filter } from "lucide-react";
+import { Loader2, Download, Users, Clock, CheckCircle2, AlertCircle, Minus, BarChart3, Filter, ShieldAlert } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -23,6 +23,8 @@ interface StudentResult {
   bestScore: number | null;
   maxScore: number | null;
   lastActivity: string | null;
+  violationCount: number;
+  leftTest: boolean;
 }
 
 interface AssignmentSummary {
@@ -172,6 +174,20 @@ const AssignmentResultsDashboard = ({ teacherId }: Props) => {
         .select("*")
         .eq("assignment_id", assignmentId);
 
+      // Get test sessions (lockdown violations)
+      const { data: tsData } = await supabase
+        .from("test_sessions" as any)
+        .select("student_id, violation_count, left_test")
+        .eq("assignment_id", assignmentId);
+      const tsByStudent: Record<string, { count: number; left: boolean }> = {};
+      (tsData as any[] || []).forEach((t: any) => {
+        const cur = tsByStudent[t.student_id] || { count: 0, left: false };
+        tsByStudent[t.student_id] = {
+          count: cur.count + (t.violation_count || 0),
+          left: cur.left || !!t.left_test,
+        };
+      });
+
       const attemptsByStudent: Record<string, any[]> = {};
       (attempts as any[] || []).forEach((att: any) => {
         if (!attemptsByStudent[att.student_id]) attemptsByStudent[att.student_id] = [];
@@ -207,6 +223,8 @@ const AssignmentResultsDashboard = ({ teacherId }: Props) => {
         const allDates = atts.map((a: any) => a.submitted_at || a.last_saved_at).filter(Boolean);
         const lastActivity = allDates.length > 0 ? allDates.sort().reverse()[0] : null;
 
+        const ts = tsByStudent[sid] || { count: 0, left: false };
+
         return {
           studentId: sid,
           firstName: profile.first_name || "",
@@ -217,6 +235,8 @@ const AssignmentResultsDashboard = ({ teacherId }: Props) => {
           bestScore,
           maxScore,
           lastActivity,
+          violationCount: ts.count,
+          leftTest: ts.left,
         };
       });
 
@@ -450,6 +470,7 @@ const AssignmentResultsDashboard = ({ teacherId }: Props) => {
                     <TableHead className="text-xs">Stav</TableHead>
                     <TableHead className="text-xs text-center">Pokusů</TableHead>
                     <TableHead className="text-xs text-center">Skóre</TableHead>
+                    <TableHead className="text-xs text-center">Porušení</TableHead>
                     <TableHead className="text-xs">Poslední aktivita</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -458,11 +479,18 @@ const AssignmentResultsDashboard = ({ teacherId }: Props) => {
                     const cfg = STATUS_CONFIG[s.status];
                     const StatusIcon = cfg.icon;
                     return (
-                      <TableRow key={s.studentId}>
+                      <TableRow key={s.studentId} className={s.leftTest ? "bg-destructive/5" : ""}>
                         <TableCell className="text-sm">
-                          <div>
-                            <span className="font-medium">{s.lastName} {s.firstName}</span>
-                            <span className="block text-xs text-muted-foreground">{s.email}</span>
+                          <div className="flex items-center gap-2">
+                            {s.leftTest && (
+                              <span title="Žák opustil test" aria-label="Žák opustil test">
+                                <ShieldAlert className="w-4 h-4 text-destructive shrink-0" />
+                              </span>
+                            )}
+                            <div>
+                              <span className="font-medium">{s.lastName} {s.firstName}</span>
+                              <span className="block text-xs text-muted-foreground">{s.email}</span>
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -474,6 +502,13 @@ const AssignmentResultsDashboard = ({ teacherId }: Props) => {
                         <TableCell className="text-center text-sm">{s.attemptCount}</TableCell>
                         <TableCell className="text-center text-sm font-medium">
                           {s.bestScore !== null ? `${s.bestScore}/${s.maxScore || "?"}` : "–"}
+                        </TableCell>
+                        <TableCell className="text-center text-sm">
+                          {s.violationCount > 0 ? (
+                            <Badge variant="destructive" className="text-[10px]">{s.violationCount}</Badge>
+                          ) : (
+                            <span className="text-muted-foreground">–</span>
+                          )}
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
                           {s.lastActivity ? format(new Date(s.lastActivity), "d.M. HH:mm", { locale: cs }) : "–"}

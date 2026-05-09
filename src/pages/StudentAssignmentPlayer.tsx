@@ -5,13 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, ChevronLeft, ChevronRight, CheckCircle2, Clock, Save, Send, ArrowLeft } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, CheckCircle2, Clock, Save, Send, ArrowLeft, Lock, AlertTriangle, Maximize } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import WorksheetPlayer from "@/components/WorksheetPlayer";
 import AttachmentsUploader from "@/components/assignments/AttachmentsUploader";
 import type { WorksheetSpec } from "@/lib/worksheet-spec";
+import { useLockdownMode } from "@/hooks/useLockdownMode";
 
 interface AssignmentData {
   id: string;
@@ -24,6 +25,7 @@ interface AssignmentData {
   activity_data: any[];
   settings: any;
   worksheet_id?: string | null;
+  lockdown_mode?: boolean;
 }
 
 interface AttemptData {
@@ -244,6 +246,24 @@ const StudentAssignmentPlayer = () => {
   const progressPercent = items.length > 0 ? (answeredCount / items.length) * 100 : 0;
   const currentItem = items[currentIndex];
 
+  // Lockdown mode (bezpečný test)
+  const lockdownEnabled = !!assignment?.lockdown_mode;
+  const lockdown = useLockdownMode({
+    enabled: lockdownEnabled,
+    assignmentId: assignment?.id ?? null,
+    studentId: userId,
+    attemptId: attempt?.id ?? null,
+    paused: isReadOnly,
+  });
+  const needsFullscreen = lockdownEnabled && !isReadOnly && !lockdown.isFullscreen;
+
+  // End lockdown session on submit
+  useEffect(() => {
+    if (lockdownEnabled && attempt?.status === "submitted") {
+      lockdown.endSession();
+    }
+  }, [lockdownEnabled, attempt?.status, lockdown]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
@@ -295,6 +315,44 @@ const StudentAssignmentPlayer = () => {
             </Badge>
           )}
         </div>
+
+        {/* Lockdown banner */}
+        {lockdownEnabled && !isReadOnly && (
+          <Card className="mb-4 border-amber-300 bg-amber-50 dark:bg-amber-950/30">
+            <CardContent className="p-3 flex items-center gap-3">
+              <Lock className="w-5 h-5 text-amber-600 shrink-0" />
+              <div className="flex-1 text-xs">
+                <p className="font-semibold text-amber-900 dark:text-amber-200">Bezpečný testovací režim</p>
+                <p className="text-amber-800 dark:text-amber-300">
+                  Test musí běžet ve fullscreenu. Kopírování je blokováno. Opuštění stránky se nahlásí učiteli.
+                  {lockdown.violationCount > 0 && (
+                    <span className="ml-1 font-semibold">Porušení: {lockdown.violationCount}</span>
+                  )}
+                </p>
+              </div>
+              {!lockdown.isFullscreen && (
+                <Button size="sm" variant="outline" onClick={lockdown.requestFullscreen}>
+                  <Maximize className="w-3.5 h-3.5 mr-1" /> Fullscreen
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {needsFullscreen && (
+          <Card className="mb-4 border-destructive">
+            <CardContent className="p-6 text-center space-y-3">
+              <AlertTriangle className="w-10 h-10 mx-auto text-destructive" />
+              <h2 className="text-lg font-bold">Spustit bezpečný režim</h2>
+              <p className="text-sm text-muted-foreground">
+                Pro tento test je nutný fullscreen mód. Klikni na tlačítko a potvrď v prohlížeči.
+              </p>
+              <Button onClick={lockdown.requestFullscreen}>
+                <Maximize className="w-4 h-4 mr-2" /> Spustit fullscreen a začít
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Attachments uploader */}
         {userId && assignment && (

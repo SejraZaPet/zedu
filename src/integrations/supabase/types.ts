@@ -160,6 +160,7 @@ export type Database = {
           description: string
           id: string
           lesson_plan_id: string | null
+          lockdown_mode: boolean
           max_attempts: number
           randomize_choices: boolean
           randomize_order: boolean
@@ -178,6 +179,7 @@ export type Database = {
           description?: string
           id?: string
           lesson_plan_id?: string | null
+          lockdown_mode?: boolean
           max_attempts?: number
           randomize_choices?: boolean
           randomize_order?: boolean
@@ -196,6 +198,7 @@ export type Database = {
           description?: string
           id?: string
           lesson_plan_id?: string | null
+          lockdown_mode?: boolean
           max_attempts?: number
           randomize_choices?: boolean
           randomize_order?: boolean
@@ -1861,6 +1864,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      test_sessions: {
+        Row: {
+          assignment_id: string
+          attempt_id: string | null
+          created_at: string
+          ended_at: string | null
+          id: string
+          left_test: boolean
+          started_at: string
+          student_id: string
+          updated_at: string
+          violation_count: number
+          violations_json: Json
+        }
+        Insert: {
+          assignment_id: string
+          attempt_id?: string | null
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          left_test?: boolean
+          started_at?: string
+          student_id: string
+          updated_at?: string
+          violation_count?: number
+          violations_json?: Json
+        }
+        Update: {
+          assignment_id?: string
+          attempt_id?: string | null
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          left_test?: boolean
+          started_at?: string
+          student_id?: string
+          updated_at?: string
+          violation_count?: number
+          violations_json?: Json
+        }
+        Relationships: []
       }
       textbook_grades: {
         Row: {
