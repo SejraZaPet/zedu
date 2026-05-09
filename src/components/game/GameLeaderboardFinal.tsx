@@ -1,8 +1,10 @@
 import { GameSession, GamePlayer, GameResponse } from "@/lib/game-types";
 import { useMemo } from "react";
-import { Trophy, Star, Home } from "lucide-react";
+import { Trophy, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { AvatarSvg } from "@/components/student/AvatarSvg";
+import { useStudentAvatars } from "@/hooks/useStudentAvatars";
 
 interface Props {
   session: GameSession;
