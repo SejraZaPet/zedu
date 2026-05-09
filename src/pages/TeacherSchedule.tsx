@@ -665,31 +665,37 @@ export default function TeacherSchedule() {
                         )}
                       </div>
                       {[0, 1, 2, 3, 4].map((dayIdx) => {
-                        const personal = personalByDayPeriod.get(`${dayIdx}-${row.period}`);
-                        const clsList = !personal
-                          ? classByDayPeriod.get(`${dayIdx}-${row.period}`) ?? []
-                          : [];
+                        const personalsAll = currentLessons.filter(
+                          (l) => l.day === dayIdx && l.period === row.period,
+                        );
+                        const clsListAll =
+                          classByDayPeriod.get(`${dayIdx}-${row.period}`) ?? [];
+                        const hasAny = personalsAll.length + clsListAll.length > 0;
+                        const isConflict =
+                          personalsAll.length + clsListAll.length > 1;
                         return (
                           <div
                             key={`c-${rowIdx}-${dayIdx}`}
                             className="border-t border-l border-border p-1.5 min-h-[84px] flex"
                           >
-                            {personal ? (
-                              <div className="w-full">
-                                <PersonalCard
-                                  lesson={personal.lesson}
-                                  time={personal.time}
-                                  subjectStyles={subjectStyles}
-                                  parityMode={data.parityMode}
-                                  onClick={() => openEditLesson(personal.lesson)}
-                                />
-                              </div>
-                            ) : clsList.length > 0 ? (
+                            {hasAny ? (
                               <div className="w-full flex flex-col gap-1">
-                                {clsList.map((cls) => (
+                                {personalsAll.map((lesson) => (
+                                  <PersonalCard
+                                    key={lesson.id}
+                                    lesson={lesson}
+                                    time={data.periodTimes[lesson.period] || null}
+                                    subjectStyles={subjectStyles}
+                                    parityMode={data.parityMode}
+                                    conflict={isConflict}
+                                    onClick={() => openEditLesson(lesson)}
+                                  />
+                                ))}
+                                {clsListAll.map((cls) => (
                                   <ClassCard
                                     key={cls.id}
                                     slot={cls}
+                                    conflict={isConflict}
                                     onClick={() => setEditingClassSlot(cls)}
                                   />
                                 ))}
