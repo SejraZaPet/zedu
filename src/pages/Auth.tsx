@@ -389,7 +389,7 @@ const Auth = () => {
             <Hash className="w-4 h-4" /> PIN
           </button>
           <button
-            onClick={() => { setMode("register"); setError(""); }}
+            onClick={() => { setMode("register"); setError(""); setRole(null); }}
             className={`flex-1 py-2 px-2 rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-1.5 ${
               mode === "register"
                 ? "bg-primary text-primary-foreground"
