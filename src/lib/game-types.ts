@@ -14,6 +14,8 @@ export interface GameSettings {
   teamMode: boolean;
   gameMode?: "standard" | "race" | "tower" | "steal";
   theme?: string;
+  visualTheme?: "default" | "castle" | "space" | "pirate";
+  soundsEnabled?: boolean;
 }
 
 export const DEFAULT_GAME_SETTINGS: GameSettings = {
@@ -24,6 +26,8 @@ export const DEFAULT_GAME_SETTINGS: GameSettings = {
   teamMode: false,
   gameMode: "standard",
   theme: "default",
+  visualTheme: "default",
+  soundsEnabled: true,
 };
 
 export interface GamePlayer {

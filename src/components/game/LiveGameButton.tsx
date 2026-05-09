@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { DEFAULT_GAME_SETTINGS, type GameQuestion, type GameSettings, generateGameCode } from "@/lib/game-types";
 import { GAME_MODES, getModeDef, type GameMode } from "@/lib/game-modes";
+import { VISUAL_THEMES, type VisualTheme } from "@/lib/game-themes";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -172,6 +173,42 @@ export const LiveGameButton = ({ title, questions }: Props) => {
                   onCheckedChange={(v) => setSettings((s) => ({ ...s, showLeaderboardAfterEach: !!v }))}
                 />
                 <Label className="text-sm">Zobrazit pořadí po každé otázce</Label>
+              </div>
+            </div>
+
+            {/* Visual theme picker */}
+            <div>
+              <Label className="text-sm mb-2 block">Vizuální téma</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {VISUAL_THEMES.map((vt) => {
+                  const active = (settings.visualTheme ?? "default") === vt.id;
+                  return (
+                    <button
+                      key={vt.id}
+                      type="button"
+                      onClick={() => setSettings((s) => ({ ...s, visualTheme: vt.id as VisualTheme }))}
+                      className={cn(
+                        "text-left rounded-lg border p-3 transition",
+                        active
+                          ? "border-primary bg-primary/10 ring-2 ring-primary/30"
+                          : "border-border hover:border-primary/50 hover:bg-muted/50",
+                      )}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-2xl">{vt.emoji}</span>
+                        <span className="font-semibold text-sm">{vt.name}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-snug">{vt.description}</p>
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="flex items-center gap-2 mt-3">
+                <Checkbox
+                  checked={settings.soundsEnabled !== false}
+                  onCheckedChange={(v) => setSettings((s) => ({ ...s, soundsEnabled: !!v }))}
+                />
+                <Label className="text-sm">Zvukové efekty (správně/špatně)</Label>
               </div>
             </div>
 

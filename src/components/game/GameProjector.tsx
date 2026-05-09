@@ -2,11 +2,13 @@ import { GameSession, GamePlayer, GameResponse } from "@/lib/game-types";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { ArrowRight, Trophy, SkipForward } from "lucide-react";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { t } from "@/lib/t";
 import { AvatarSvg } from "@/components/student/AvatarSvg";
 import { useStudentAvatars } from "@/hooks/useStudentAvatars";
 import { GameModeOverlay } from "@/components/game/GameModeOverlay";
+import { getVisualTheme, playRecipe } from "@/lib/game-themes";
+import { cn } from "@/lib/utils";
 
 interface Props {
   session: GameSession;
@@ -25,9 +27,10 @@ const ANSWER_COLORS = [
   "bg-yellow-500",
 ];
 
-const ANSWER_ICONS = ["▲", "◆", "●", "■"];
-
 export const GameProjector = ({ session, players, responses, countdown, onShowResults, onNext, onEnd }: Props) => {
+  const theme = getVisualTheme((session.settings as any)?.visualTheme);
+  const soundsEnabled = (session.settings as any)?.soundsEnabled !== false;
+  const ANSWER_ICONS = theme.answerIcons;
   const qi = session.current_question_index;
   const question = session.activity_data[qi];
   const totalQ = session.activity_data.length;
@@ -52,12 +55,53 @@ export const GameProjector = ({ session, players, responses, countdown, onShowRe
 
   const avatars = useStudentAvatars(leaderboard.map((p) => p.user_id));
 
+  // Play themed sounds for new responses on current question
+  const lastPlayedRef = useRef(0);
+  useEffect(() => {
+    if (!soundsEnabled || !theme.sounds) {
+      lastPlayedRef.current = currentResponses.length;
+      return;
+    }
+    if (currentResponses.length > lastPlayedRef.current) {
+      const last = currentResponses[currentResponses.length - 1];
+      playRecipe(last.is_correct ? theme.sounds.correct : theme.sounds.wrong);
+    }
+    lastPlayedRef.current = currentResponses.length;
+  }, [currentResponses, soundsEnabled, theme]);
+
+  useEffect(() => {
+    lastPlayedRef.current = 0;
+  }, [qi]);
+
   if (!question) return null;
 
+  const isThemed = theme.id !== "default";
+
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div
+      className={cn("min-h-screen flex flex-col relative overflow-hidden", theme.bgClass)}
+      style={theme.cssVars as React.CSSProperties}
+    >
+      {isThemed && theme.decorEmoji && (
+        <div className="pointer-events-none absolute inset-0 opacity-10 select-none">
+          {theme.decorEmoji.map((e, i) => (
+            <span
+              key={i}
+              className="absolute text-6xl md:text-8xl"
+              style={{
+                top: `${(i * 37) % 90}%`,
+                left: `${(i * 53) % 90}%`,
+                transform: `rotate(${(i * 17) % 40 - 20}deg)`,
+              }}
+            >
+              {e}
+            </span>
+          ))}
+        </div>
+      )}
+      <div className={cn("relative z-10 flex-1 flex flex-col", isThemed && "[&_.bg-card]:bg-card/80 [&_.bg-card]:backdrop-blur-sm")}>
       {/* Top bar */}
-      <div className="flex items-center justify-between px-6 py-3 bg-card border-b border-border">
+      <div className={cn("flex items-center justify-between px-6 py-3 border-b", isThemed ? "bg-black/30 border-white/10 text-white" : "bg-card border-border")}>
         <span className="text-sm font-medium text-muted-foreground">
           {t("projector.questionOf", qi + 1, totalQ)}
         </span>
@@ -177,6 +221,7 @@ export const GameProjector = ({ session, players, responses, countdown, onShowRe
             {t("teacher.buttons.showLeaderboard")}
           </Button>
         )}
+      </div>
       </div>
     </div>
   );
