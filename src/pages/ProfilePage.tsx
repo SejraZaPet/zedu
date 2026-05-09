@@ -305,6 +305,65 @@ const ProfilePage = () => {
           </CardContent>
         </Card>
 
+        {/* Preferred study methods (students) */}
+        {role === "user" && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-primary" />
+                Oblíbené studijní metody
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Vyber si až {MAX_PREFERRED} metody, které ti nejvíc sedí. Budou se ti zobrazovat přednostně na stránce Studijní metody.
+              </p>
+              {methods.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Načítání metod…</p>
+              ) : (
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {methods.map((m) => {
+                    const selected = preferredIds.includes(m.id);
+                    const disabled = !selected && preferredIds.length >= MAX_PREFERRED;
+                    return (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => togglePreferred(m.id)}
+                        disabled={disabled}
+                        className={`text-left rounded-lg border p-3 transition-all ${
+                          selected
+                            ? "border-primary bg-primary/5 ring-1 ring-primary/30"
+                            : "border-border hover:border-primary/40"
+                        } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <p className="font-medium text-sm">{m.name}</p>
+                            {m.description && (
+                              <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{m.description}</p>
+                            )}
+                          </div>
+                          {selected && <Check className="w-4 h-4 text-primary shrink-0 mt-0.5" />}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">
+                  Vybráno: {preferredIds.length}/{MAX_PREFERRED}
+                </span>
+                <Button onClick={handleSavePreferred} disabled={savingPreferred} className="gap-2">
+                  <Save className="w-4 h-4" />
+                  {savingPreferred ? "Ukládám…" : "Uložit oblíbené"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Parent recovery email */}
         {role === "rodic" && (
           <Card>
