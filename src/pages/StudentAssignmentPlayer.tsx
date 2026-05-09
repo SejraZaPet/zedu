@@ -53,6 +53,7 @@ const StudentAssignmentPlayer = () => {
   const navigate = useNavigate();
   const [assignment, setAssignment] = useState<AssignmentData | null>(null);
   const [attempt, setAttempt] = useState<AttemptData | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [saving, setSaving] = useState(false);
