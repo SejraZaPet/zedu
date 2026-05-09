@@ -115,8 +115,9 @@ const StudentAssignments = () => {
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 space-y-2">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <h3 className="font-semibold">{a.title}</h3>
+                          <ExamTypeBadge examType={a.exam_type} />
                           {status === "completed" && (
                             <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200 text-xs">
                               <CheckCircle2 className="w-3 h-3 mr-1" /> Hotovo
@@ -130,21 +131,23 @@ const StudentAssignments = () => {
                           )}
                         </div>
                         {a.description && <p className="text-sm text-muted-foreground">{a.description}</p>}
-                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
                           {a.deadline && (
                             <span className={`flex items-center gap-1 ${deadlinePassed ? "text-destructive" : ""}`}>
                               <Clock className="w-3 h-3" />
                               {new Date(a.deadline).toLocaleDateString("cs")}
                             </span>
                           )}
-                          <span>
-                            {a.attempts.filter((att) => att.status === "submitted").length}/{a.max_attempts} pokusů
-                          </span>
-                          {bestMaxScore > 0 && (
+                          {a.exam_type !== "ustni" && (
+                            <span>
+                              {a.attempts.filter((att) => att.status === "submitted").length}/{a.max_attempts} pokusů
+                            </span>
+                          )}
+                          {bestMaxScore > 0 && a.exam_type !== "ustni" && (
                             <span className="font-medium">Nejlepší: {bestScore}/{bestMaxScore}</span>
                           )}
                         </div>
-                        {inProgress && (
+                        {inProgress && a.exam_type !== "ustni" && (
                           <Progress
                             value={inProgress.progress?.completed?.length ? (inProgress.progress.completed.length / (a.max_attempts || 1)) * 100 : 0}
                             className="h-1.5"
@@ -152,25 +155,36 @@ const StudentAssignments = () => {
                         )}
                       </div>
                       <div>
-                        {status === "in_progress" && !deadlinePassed && (
+                        {a.exam_type === "ustni" ? (
+                          <Badge variant="outline" className="text-xs">Pouze pokyny</Badge>
+                        ) : a.exam_type === "digitalni" && status !== "completed" && !deadlinePassed ? (
                           <Button size="sm" onClick={() => navigate(`/student/ulohy/${a.id}`)}>
-                            <Play className="w-3.5 h-3.5 mr-1" /> Pokračovat
+                            <Monitor className="w-3.5 h-3.5 mr-1" /> Spustit test
+                            {a.lockdown_mode && <Lock className="w-3 h-3 ml-1" />}
                           </Button>
-                        )}
-                        {status === "can_retry" && !deadlinePassed && (
-                          <Button size="sm" variant="outline" onClick={() => navigate(`/student/ulohy/${a.id}`)}>
-                            <RotateCcw className="w-3.5 h-3.5 mr-1" /> Nový pokus
-                          </Button>
-                        )}
-                        {status === "not_started" && !deadlinePassed && (
-                          <Button size="sm" onClick={() => navigate(`/student/ulohy/${a.id}`)}>
-                            <Play className="w-3.5 h-3.5 mr-1" /> Začít
-                          </Button>
-                        )}
-                        {(status === "completed" || deadlinePassed) && (
-                          <Button size="sm" variant="ghost" onClick={() => navigate(`/student/ulohy/${a.id}`)}>
-                            Zobrazit
-                          </Button>
+                        ) : (
+                          <>
+                            {status === "in_progress" && !deadlinePassed && (
+                              <Button size="sm" onClick={() => navigate(`/student/ulohy/${a.id}`)}>
+                                <Play className="w-3.5 h-3.5 mr-1" /> Pokračovat
+                              </Button>
+                            )}
+                            {status === "can_retry" && !deadlinePassed && (
+                              <Button size="sm" variant="outline" onClick={() => navigate(`/student/ulohy/${a.id}`)}>
+                                <RotateCcw className="w-3.5 h-3.5 mr-1" /> Nový pokus
+                              </Button>
+                            )}
+                            {status === "not_started" && !deadlinePassed && (
+                              <Button size="sm" onClick={() => navigate(`/student/ulohy/${a.id}`)}>
+                                <Play className="w-3.5 h-3.5 mr-1" /> Začít
+                              </Button>
+                            )}
+                            {(status === "completed" || deadlinePassed) && (
+                              <Button size="sm" variant="ghost" onClick={() => navigate(`/student/ulohy/${a.id}`)}>
+                                Zobrazit
+                              </Button>
+                            )}
+                          </>
                         )}
                       </div>
                     </div>
