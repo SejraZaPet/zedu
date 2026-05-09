@@ -74,7 +74,8 @@ export function useGameSession(sessionId: string | undefined, refetchTrigger?: n
             ...payload.new,
             activity_data: ((payload.new as any).activity_data as any) ?? [],
             settings: (payload.new as any).settings as any,
-          } as GameSession);
+            teams: (payload.new as any).teams ?? { teams: [] },
+          } as unknown as GameSession);
         }
       })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "game_players", filter: `session_id=eq.${sessionId}` }, (payload) => {
