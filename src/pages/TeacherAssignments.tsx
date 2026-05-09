@@ -22,6 +22,8 @@ import SiteFooter from "@/components/SiteFooter";
 import AssignmentResultsDashboard from "@/components/admin/AssignmentResultsDashboard";
 import RemindButton from "@/components/notifications/RemindButton";
 import TeacherAssignmentAttachments from "@/components/assignments/TeacherAssignmentAttachments";
+import { ExamTypeBadge } from "@/components/assignments/ExamTypeBadge";
+import { EXAM_TYPE_OPTIONS, type ExamType } from "@/lib/exam-types";
 
 
 interface Assignment {
