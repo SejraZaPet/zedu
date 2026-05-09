@@ -2,11 +2,13 @@ import { GameSession, GamePlayer, GameResponse } from "@/lib/game-types";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { ArrowRight, Trophy, SkipForward } from "lucide-react";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { t } from "@/lib/t";
 import { AvatarSvg } from "@/components/student/AvatarSvg";
 import { useStudentAvatars } from "@/hooks/useStudentAvatars";
 import { GameModeOverlay } from "@/components/game/GameModeOverlay";
+import { getVisualTheme, playRecipe } from "@/lib/game-themes";
+import { cn } from "@/lib/utils";
 
 interface Props {
   session: GameSession;
