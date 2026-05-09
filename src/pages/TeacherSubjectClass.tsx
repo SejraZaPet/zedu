@@ -19,7 +19,10 @@ import {
   Sparkles,
   Lock,
   Pencil,
+  Star,
 } from "lucide-react";
+import LessonReflectionDialog from "@/components/lessons/LessonReflectionDialog";
+import { fetchReflections, reflectionKey, type LessonReflection } from "@/lib/lesson-reflections";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { Button } from "@/components/ui/button";
