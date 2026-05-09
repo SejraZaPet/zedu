@@ -27,9 +27,10 @@ const ANSWER_COLORS = [
   "bg-yellow-500",
 ];
 
-const ANSWER_ICONS = ["▲", "◆", "●", "■"];
-
 export const GameProjector = ({ session, players, responses, countdown, onShowResults, onNext, onEnd }: Props) => {
+  const theme = getVisualTheme((session.settings as any)?.visualTheme);
+  const soundsEnabled = (session.settings as any)?.soundsEnabled !== false;
+  const ANSWER_ICONS = theme.answerIcons;
   const qi = session.current_question_index;
   const question = session.activity_data[qi];
   const totalQ = session.activity_data.length;
