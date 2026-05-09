@@ -263,6 +263,19 @@ const TeacherAssignments = () => {
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* Exam type */}
+                <div>
+                  <Label>Typ</Label>
+                  <Select value={examType} onValueChange={(v) => setExamType(v as ExamType | "ukol")}>
+                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {EXAM_TYPE_OPTIONS.map((o) => (
+                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               {/* Randomization */}
