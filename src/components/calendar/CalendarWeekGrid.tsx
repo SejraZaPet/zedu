@@ -136,9 +136,11 @@ const CalendarWeekGrid = ({
                 )
                   return null;
                 const defaults = getEventColors(ev.type);
-                const customColor = ev.color;
+                const examMeta = ev.type === "assignment" && ev.examType ? getExamTypeMeta(ev.examType) : null;
+                const customColor = ev.color || examMeta?.color;
                 const bg = customColor ? `${customColor}26` : defaults.bg;
                 const border = customColor || defaults.border;
+                const ExamIcon = examMeta?.icon;
 
                 const reflectionStatus = reflectionState?.[ev.id];
                 const showReflectionBadge =
