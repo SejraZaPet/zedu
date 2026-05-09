@@ -49,6 +49,7 @@ const StudentMethods = () => {
 
   useEffect(() => {
     (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       const { data, error } = await supabase
         .from("study_methods")
         .select("id, name, slug, description, icon, steps_json")
@@ -57,6 +58,13 @@ const StudentMethods = () => {
         toast({ title: "Chyba načítání", description: error.message, variant: "destructive" });
       } else {
         setMethods((data ?? []) as any);
+      }
+      if (session) {
+        const { data: prefs } = await supabase
+          .from("student_preferred_methods")
+          .select("method_id")
+          .eq("student_id", session.user.id);
+        setPreferredIds(((prefs ?? []) as any[]).map((p) => p.method_id));
       }
       setLoading(false);
     })();
