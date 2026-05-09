@@ -331,11 +331,16 @@ const TeacherResults = () => {
     <div className="min-h-screen flex flex-col bg-background">
       <SiteHeader />
       <main className="flex-1 container mx-auto px-4 py-12 max-w-6xl" style={{ paddingTop: "calc(70px + 3rem)" }}>
-        <div className="mb-6">
-          <h1 className="font-heading text-3xl font-bold">Výsledky a analytika</h1>
-          <p className="text-muted-foreground mt-1">
-            Přehled aktivity vašich tříd, zapojení žáků a problematické otázky.
-          </p>
+        <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h1 className="font-heading text-3xl font-bold">Výsledky a analytika</h1>
+            <p className="text-muted-foreground mt-1">
+              Přehled aktivity vašich tříd, zapojení žáků a problematické otázky.
+            </p>
+          </div>
+          <Button onClick={handleExportXlsx} disabled={loading} variant="outline">
+            <FileSpreadsheet className="w-4 h-4" /> Exportovat do Excel
+          </Button>
         </div>
 
         {/* Filters */}
