@@ -49,6 +49,13 @@ const Auth = () => {
   const [schoolCode, setSchoolCode] = useState("");
   const [gdprConsent, setGdprConsent] = useState(false);
 
+  // Auto-prefill school code when accessed via school subdomain
+  useEffect(() => {
+    if (branding?.registration_code && !schoolCode) {
+      setSchoolCode(branding.registration_code);
+    }
+  }, [branding]);
+
   // React to auth state changes - redirect when logged in
   useEffect(() => {
     if (authLoading) return;
