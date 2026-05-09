@@ -41,7 +41,7 @@ export const GameLobby = ({ session, players, onStart, isTeacher }: Props) => {
           </Button>
         </div>
       )}
-      <div className="text-center space-y-8 max-w-lg w-full">
+      <div className={`text-center space-y-8 w-full ${(session.settings?.teamModeKind ?? "none") !== "none" ? "max-w-3xl" : "max-w-lg"}`}>
         {/* Title */}
         <div className="space-y-2">
           <h1 className="text-3xl md:text-4xl font-heading font-bold text-foreground">
