@@ -41,6 +41,7 @@ import {
   MapPin,
   StickyNote,
   AlertTriangle,
+  Printer,
 } from "lucide-react";
 import {
   DEFAULT_PERIOD_TIMES,
