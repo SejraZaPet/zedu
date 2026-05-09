@@ -10,6 +10,7 @@ import { toast } from "@/hooks/use-toast";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import WorksheetPlayer from "@/components/WorksheetPlayer";
+import AttachmentsUploader from "@/components/assignments/AttachmentsUploader";
 import type { WorksheetSpec } from "@/lib/worksheet-spec";
 
 interface AssignmentData {
