@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { User, BookOpen, ClipboardList, CheckCircle2, Clock, Plus, Trash2, KeyRound, MessageCircle } from "lucide-react";
+import { User, BookOpen, ClipboardList, CheckCircle2, Clock, Plus, Trash2, KeyRound, MessageCircle, Mail, BellOff } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import ChildScheduleWidget from "@/components/parent/ChildScheduleWidget";
@@ -49,6 +49,7 @@ const ParentDashboard = () => {
   const [childCode, setChildCode] = useState("");
   const [linking, setLinking] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
+  const [emailNotifEnabled, setEmailNotifEnabled] = useState<boolean | null>(null);
 
   const loadAll = async () => {
     if (!user) return;
@@ -108,6 +109,14 @@ const ParentDashboard = () => {
     if (authLoading) return;
     if (!user) { navigate("/auth"); return; }
     loadAll();
+    supabase
+      .from("profiles")
+      .select("parent_email_notifications")
+      .eq("id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        setEmailNotifEnabled((data as any)?.parent_email_notifications !== false);
+      });
   }, [authLoading, user, navigate]);
 
   const handleLinkChild = async () => {
@@ -199,7 +208,26 @@ const ParentDashboard = () => {
               <Plus className="w-4 h-4" />
               Přidat dítě
             </Button>
+        </div>
+
+        {emailNotifEnabled !== null && (
+          <div className={`mb-6 flex items-center justify-between gap-3 rounded-xl border p-3 text-sm ${
+            emailNotifEnabled
+              ? "border-primary/20 bg-primary/5 text-foreground"
+              : "border-border bg-muted/30 text-muted-foreground"
+          }`}>
+            <div className="flex items-center gap-2 min-w-0">
+              {emailNotifEnabled ? <Mail className="w-4 h-4 shrink-0 text-primary" /> : <BellOff className="w-4 h-4 shrink-0" />}
+              <span className="truncate">
+                Emailové notifikace: <strong className="font-semibold">{emailNotifEnabled ? "zapnuto" : "vypnuto"}</strong>
+                <span className="hidden sm:inline"> — dostáváte zprávy o nových úkolech a výsledcích vašeho dítěte.</span>
+              </span>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => navigate("/profil")} className="shrink-0">
+              Změnit v profilu
+            </Button>
           </div>
+        )}
         </div>
 
         {students.length > 0 && (
