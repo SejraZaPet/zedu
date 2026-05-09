@@ -49,6 +49,8 @@ export const GameProjector = ({ session, players, responses, countdown, onShowRe
     [players]
   );
 
+  const avatars = useStudentAvatars(leaderboard.map((p) => p.user_id));
+
   if (!question) return null;
 
   return (
