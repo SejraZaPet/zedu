@@ -27,6 +27,8 @@ export const GameLeaderboardFinal = ({ session, players, responses, highlightPla
     [players]
   );
 
+  const avatars = useStudentAvatars(sortedPlayers.map((p) => p.user_id));
+
   const totalQuestions = session.activity_data.length;
   const totalCorrect = responses.filter((r) => r.is_correct).length;
   const totalAnswers = responses.length;
