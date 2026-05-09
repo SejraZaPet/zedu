@@ -24,7 +24,15 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { to, subject, html } = await req.json();
+    const { to, subject, html, text } = await req.json();
+
+    const payload: Record<string, unknown> = {
+      from: "ZEdu <noreply@zedu.cz>",
+      to,
+      subject,
+      html,
+    };
+    if (text) payload.text = text;
 
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -32,12 +40,7 @@ Deno.serve(async (req) => {
         "Content-Type": "application/json",
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
-      body: JSON.stringify({
-        from: "ZEdu <noreply@zedu.cz>",
-        to,
-        subject,
-        html,
-      }),
+      body: JSON.stringify(payload),
     });
 
     const data = await res.json();
