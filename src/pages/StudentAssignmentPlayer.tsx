@@ -246,6 +246,24 @@ const StudentAssignmentPlayer = () => {
   const progressPercent = items.length > 0 ? (answeredCount / items.length) * 100 : 0;
   const currentItem = items[currentIndex];
 
+  // Lockdown mode (bezpečný test)
+  const lockdownEnabled = !!assignment?.lockdown_mode;
+  const lockdown = useLockdownMode({
+    enabled: lockdownEnabled,
+    assignmentId: assignment?.id ?? null,
+    studentId: userId,
+    attemptId: attempt?.id ?? null,
+    paused: isReadOnly,
+  });
+  const needsFullscreen = lockdownEnabled && !isReadOnly && !lockdown.isFullscreen;
+
+  // End lockdown session on submit
+  useEffect(() => {
+    if (lockdownEnabled && attempt?.status === "submitted") {
+      lockdown.endSession();
+    }
+  }, [lockdownEnabled, attempt?.status, lockdown]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
