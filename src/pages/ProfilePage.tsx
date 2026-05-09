@@ -273,8 +273,24 @@ const ProfilePage = () => {
             <User className="w-5 h-5 text-primary" />
             Můj profil
           </h1>
-          <Button size="sm" variant="ghost" onClick={() => navigate(-1)}>
-            <ArrowLeft className="w-4 h-4 mr-1" /> Zpět
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              const home =
+                role === "admin"
+                  ? "/admin"
+                  : role === "school_admin"
+                  ? "/skola"
+                  : role === "teacher" || role === "lektor"
+                  ? "/ucitel"
+                  : role === "rodic"
+                  ? "/rodic"
+                  : "/student";
+              navigate(home);
+            }}
+          >
+            <ArrowLeft className="w-4 h-4 mr-1" /> Zpět na hlavní stranu
           </Button>
         </div>
       </header>
