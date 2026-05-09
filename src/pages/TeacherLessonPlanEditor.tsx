@@ -193,6 +193,8 @@ export default function TeacherLessonPlanEditor() {
       if (input.classId) setClassId(input.classId);
       if (Array.isArray(input.linkedSlots)) setLinkedSlots(input.linkedSlots);
       if (input.phases) setPhases({ ...emptyPhases(), ...input.phases });
+      if ((data as any).shared_visibility) setSharedVisibility((data as any).shared_visibility);
+      if (typeof (data as any).anonymous === "boolean") setAnonymous((data as any).anonymous);
     })();
   }, [user, id]);
 
