@@ -811,6 +811,33 @@ export type Database = {
           },
         ]
       }
+      lesson_plan_templates: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          phases_json: Json
+          teacher_id: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          phases_json: Json
+          teacher_id: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          phases_json?: Json
+          teacher_id?: string
+          title?: string
+        }
+        Relationships: []
+      }
       lesson_plans: {
         Row: {
           created_at: string
