@@ -1,6 +1,6 @@
-import { GameSession, GamePlayer, GameResponse } from "@/lib/game-types";
+import { GameSession, GamePlayer, GameResponse, computeTeamLeaderboard } from "@/lib/game-types";
 import { useMemo } from "react";
-import { Trophy, Home } from "lucide-react";
+import { Trophy, Home, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { AvatarSvg } from "@/components/student/AvatarSvg";
