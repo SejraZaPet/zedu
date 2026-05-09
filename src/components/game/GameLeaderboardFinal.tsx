@@ -37,6 +37,12 @@ export const GameLeaderboardFinal = ({ session, players, responses, highlightPla
   const top3 = sortedPlayers.slice(0, 3);
   const rest = sortedPlayers.slice(3);
 
+  const teamMode = (session.settings?.teamModeKind ?? "none") !== "none";
+  const teamLeaderboard = useMemo(
+    () => computeTeamLeaderboard(session.teams?.teams, players),
+    [session.teams, players]
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5 flex flex-col items-center justify-center p-4 md:p-8">
       <div className="w-full max-w-2xl space-y-8">
