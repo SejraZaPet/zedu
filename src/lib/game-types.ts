@@ -68,6 +68,8 @@ export const DEFAULT_GAME_SETTINGS: GameSettings = {
   shuffleAnswers: true,
   showLeaderboardAfterEach: true,
   teamMode: false,
+  teamModeKind: "none",
+  teamCount: 2,
   gameMode: "standard",
   theme: "default",
   visualTheme: "default",
@@ -91,10 +93,29 @@ export interface GameSession {
   status: string;
   activity_data: GameQuestion[];
   settings: GameSettings;
+  teams?: TeamsData;
   current_question_index: number;
   question_started_at: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export function findPlayerTeam(teams: Team[] | undefined, playerId: string): Team | null {
+  if (!teams) return null;
+  return teams.find((t) => t.members.includes(playerId)) ?? null;
+}
+
+export function computeTeamLeaderboard(teams: Team[] | undefined, players: GamePlayer[]):
+  Array<{ team: Team; score: number; memberCount: number }> {
+  if (!teams || teams.length === 0) return [];
+  const byPlayer = new Map(players.map((p) => [p.id, p.total_score]));
+  return teams
+    .map((team) => ({
+      team,
+      score: team.members.reduce((sum, pid) => sum + (byPlayer.get(pid) || 0), 0),
+      memberCount: team.members.length,
+    }))
+    .sort((a, b) => b.score - a.score);
 }
 
 export interface GameResponse {
