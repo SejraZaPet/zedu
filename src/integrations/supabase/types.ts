@@ -1501,6 +1501,103 @@ export type Database = {
           },
         ]
       }
+      student_practice_sessions: {
+        Row: {
+          answers_json: Json | null
+          created_at: string
+          duration_min: number | null
+          id: string
+          lesson_id: string | null
+          method_id: string
+          score: number | null
+          student_id: string
+        }
+        Insert: {
+          answers_json?: Json | null
+          created_at?: string
+          duration_min?: number | null
+          id?: string
+          lesson_id?: string | null
+          method_id: string
+          score?: number | null
+          student_id: string
+        }
+        Update: {
+          answers_json?: Json | null
+          created_at?: string
+          duration_min?: number | null
+          id?: string
+          lesson_id?: string | null
+          method_id?: string
+          score?: number | null
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_practice_sessions_method_id_fkey"
+            columns: ["method_id"]
+            isOneToOne: false
+            referencedRelation: "study_methods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_preferred_methods: {
+        Row: {
+          created_at: string
+          method_id: string
+          student_id: string
+        }
+        Insert: {
+          created_at?: string
+          method_id: string
+          student_id: string
+        }
+        Update: {
+          created_at?: string
+          method_id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_preferred_methods_method_id_fkey"
+            columns: ["method_id"]
+            isOneToOne: false
+            referencedRelation: "study_methods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      study_methods: {
+        Row: {
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          name: string
+          slug: string
+          steps_json: Json | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+          slug: string
+          steps_json?: Json | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+          slug?: string
+          steps_json?: Json | null
+        }
+        Relationships: []
+      }
       teacher_lesson_completions: {
         Row: {
           completed_at: string
