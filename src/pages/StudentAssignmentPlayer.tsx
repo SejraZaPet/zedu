@@ -316,6 +316,44 @@ const StudentAssignmentPlayer = () => {
           )}
         </div>
 
+        {/* Lockdown banner */}
+        {lockdownEnabled && !isReadOnly && (
+          <Card className="mb-4 border-amber-300 bg-amber-50 dark:bg-amber-950/30">
+            <CardContent className="p-3 flex items-center gap-3">
+              <Lock className="w-5 h-5 text-amber-600 shrink-0" />
+              <div className="flex-1 text-xs">
+                <p className="font-semibold text-amber-900 dark:text-amber-200">Bezpečný testovací režim</p>
+                <p className="text-amber-800 dark:text-amber-300">
+                  Test musí běžet ve fullscreenu. Kopírování je blokováno. Opuštění stránky se nahlásí učiteli.
+                  {lockdown.violationCount > 0 && (
+                    <span className="ml-1 font-semibold">Porušení: {lockdown.violationCount}</span>
+                  )}
+                </p>
+              </div>
+              {!lockdown.isFullscreen && (
+                <Button size="sm" variant="outline" onClick={lockdown.requestFullscreen}>
+                  <Maximize className="w-3.5 h-3.5 mr-1" /> Fullscreen
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {needsFullscreen && (
+          <Card className="mb-4 border-destructive">
+            <CardContent className="p-6 text-center space-y-3">
+              <AlertTriangle className="w-10 h-10 mx-auto text-destructive" />
+              <h2 className="text-lg font-bold">Spustit bezpečný režim</h2>
+              <p className="text-sm text-muted-foreground">
+                Pro tento test je nutný fullscreen mód. Klikni na tlačítko a potvrď v prohlížeči.
+              </p>
+              <Button onClick={lockdown.requestFullscreen}>
+                <Maximize className="w-4 h-4 mr-2" /> Spustit fullscreen a začít
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Attachments uploader */}
         {userId && assignment && (
           <Card className="mb-4">
