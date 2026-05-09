@@ -5,7 +5,7 @@ import { GameLobby } from "@/components/game/GameLobby";
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Monitor, Smartphone, StickyNote, ChevronLeft, ChevronRight, Users, StopCircle, ArrowLeft, Brain, Plus } from "lucide-react";
+import { Monitor, Smartphone, StickyNote, ChevronLeft, ChevronRight, Users, StopCircle, ArrowLeft, Brain, Plus, Pencil } from "lucide-react";
 import SessionExports from "@/components/live/SessionExports";
 import { AdaptiveReviewDialog } from "@/components/game/AdaptiveReview";
 import { AddSlideSheet } from "@/components/game/AddSlideSheet";
@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import PollProjectorView from "@/components/activities/PollProjectorView";
+import LiveWhiteboard, { WhiteboardData } from "@/components/game/LiveWhiteboard";
 
 interface SlideData {
   slideId: string;
