@@ -40,6 +40,7 @@ interface Assignment {
   activity_data: any[];
   worksheet_id?: string | null;
   lockdown_mode?: boolean;
+  exam_type?: string | null;
 }
 
 interface WorksheetOption {
