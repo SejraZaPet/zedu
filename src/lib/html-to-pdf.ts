@@ -81,7 +81,9 @@ export async function downloadHtmlAsPdf(opts: DownloadHtmlAsPdfOptions): Promise
         image: { type: "jpeg", quality: 0.95 },
         html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
         jsPDF: { unit: "mm", format, orientation },
-        pagebreak: { mode: ["css", "legacy"] },
+        // pagebreak is supported at runtime by html2pdf.js even though
+        // its bundled types don't include it.
+        ...({ pagebreak: { mode: ["css", "legacy"] } } as Record<string, unknown>),
       })
       .from(target)
       .save();
