@@ -23,6 +23,8 @@ interface StudentResult {
   bestScore: number | null;
   maxScore: number | null;
   lastActivity: string | null;
+  violationCount: number;
+  leftTest: boolean;
 }
 
 interface AssignmentSummary {
