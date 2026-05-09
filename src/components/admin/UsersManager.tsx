@@ -598,6 +598,7 @@ const UsersManager = () => {
                             duration: 15000,
                           });
 
+                          logAudit("password_reset", "user", user.id, { method: "manual" });
                           fetchUsers();
                         }
                       }} className="text-yellow-400 hover:bg-yellow-500/10 h-7 w-7 p-0">
