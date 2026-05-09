@@ -706,6 +706,7 @@ export type Database = {
           teacher_id: string
           title: string
           updated_at: string
+          whiteboard_data: Json
         }
         Insert: {
           activity_data?: Json
@@ -719,6 +720,7 @@ export type Database = {
           teacher_id: string
           title?: string
           updated_at?: string
+          whiteboard_data?: Json
         }
         Update: {
           activity_data?: Json
@@ -732,6 +734,7 @@ export type Database = {
           teacher_id?: string
           title?: string
           updated_at?: string
+          whiteboard_data?: Json
         }
         Relationships: []
       }
