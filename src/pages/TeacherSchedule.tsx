@@ -61,6 +61,8 @@ import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import LessonFormDialog from "@/components/schedule/LessonFormDialog";
+import { downloadICS, buildScheduleRrule, type CalendarExportEvent } from "@/lib/calendar-export";
+import { Download } from "lucide-react";
 
 const DAYS = ["Pondělí", "Úterý", "Středa", "Čtvrtek", "Pátek"];
 const DAYS_SHORT = ["Po", "Út", "St", "Čt", "Pá"];
@@ -179,6 +181,61 @@ export default function TeacherSchedule() {
     fetchClassSlots();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
+
+  /** Export entire semester schedule (recurring) as .ics. */
+  const handleExportSchedule = () => {
+    if (!classSlots || classSlots.length === 0) {
+      return;
+    }
+    // Determine semester window: today → end of June (next year if past July)
+    const now = new Date();
+    const year = now.getMonth() >= 7 ? now.getFullYear() + 1 : now.getFullYear();
+    const semesterEnd = new Date(year, 5, 30, 23, 59, 59); // June 30
+
+    // Find first occurrence per slot from today.
+    const events: CalendarExportEvent[] = [];
+    for (const s of classSlots) {
+      if (!s.start_time || !s.end_time || !s.day_of_week) continue;
+      const validFrom = s.valid_from ? new Date(s.valid_from) : now;
+      const validTo = s.valid_to ? new Date(s.valid_to) : semesterEnd;
+      if (validTo < now) continue;
+
+      // First date >= max(today, validFrom) matching day_of_week (ISO Mon=1..Sun=7)
+      const baseStart = validFrom > now ? validFrom : now;
+      const targetIso = s.day_of_week; // 1..7
+      const first = new Date(baseStart);
+      first.setHours(0, 0, 0, 0);
+      // JS getDay(): Sun=0..Sat=6. Convert to ISO: Sun→7
+      const currentIso = first.getDay() === 0 ? 7 : first.getDay();
+      const diff = (targetIso - currentIso + 7) % 7;
+      first.setDate(first.getDate() + diff);
+
+      const [sh, sm] = s.start_time.split(":").map(Number);
+      const [eh, em] = s.end_time.split(":").map(Number);
+      const dtStart = new Date(first);
+      dtStart.setHours(sh, sm, 0, 0);
+      const dtEnd = new Date(first);
+      dtEnd.setHours(eh, em, 0, 0);
+
+      const rrule = buildScheduleRrule(s.week_parity, s.day_of_week, validTo);
+      const className = s.classes?.name || "";
+      const title = s.subject_label || s.abbreviation || "Hodina";
+      const locationParts = [className, s.room].filter(Boolean) as string[];
+
+      events.push({
+        uid: `slot-${s.id}@zedu.cz`,
+        title,
+        start: dtStart,
+        end: dtEnd,
+        location: locationParts.join(" · ") || undefined,
+        description: className ? `Třída: ${className}` : undefined,
+        rrule,
+      });
+    }
+
+    if (events.length === 0) return;
+    downloadICS(events, "zedu-rozvrh-semestr.ics", "ZEdu – rozvrh");
+  };
 
   const [editing, setEditing] = useState<LessonEntry | null>(null);
   const [isNew, setIsNew] = useState(false);
@@ -591,7 +648,18 @@ export default function TeacherSchedule() {
             </div>
           </div>
 
-          <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportSchedule}
+              className="gap-2"
+              disabled={classSlots.length === 0}
+            >
+              <Download className="w-4 h-4" />
+              Exportovat rozvrh
+            </Button>
+            <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
             <button
               onClick={() => setParityMode("both")}
               className={`px-3 py-1.5 text-xs rounded-md transition-colors ${
@@ -612,6 +680,7 @@ export default function TeacherSchedule() {
             >
               Lichý / sudý zvlášť
             </button>
+          </div>
           </div>
         </div>
 

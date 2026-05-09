@@ -21,6 +21,8 @@ import {
   expandScheduleSlots,
   getWeekRange,
 } from "@/lib/calendar-utils";
+import { CalendarExportMenu } from "@/components/calendar/CalendarExportMenu";
+import { toExportEvent } from "@/lib/calendar-export";
 
 const StudentCalendar = () => {
   const navigate = useNavigate();
@@ -188,21 +190,28 @@ const StudentCalendar = () => {
             </span>
           </div>
 
-          <div className="flex items-center gap-1 border border-border rounded-md p-0.5">
-            <Button
-              variant={viewMode === "week" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setViewMode("week")}
-            >
-              Týden
-            </Button>
-            <Button
-              variant={viewMode === "day" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setViewMode("day")}
-            >
-              Den
-            </Button>
+          <div className="flex items-center gap-2">
+            <CalendarExportMenu
+              events={events.map((e) => toExportEvent(e as any))}
+              filename={`zedu-kalendar-${format(weekStart, "yyyy-MM-dd")}.ics`}
+              calName="ZEdu – můj kalendář"
+            />
+            <div className="flex items-center gap-1 border border-border rounded-md p-0.5">
+              <Button
+                variant={viewMode === "week" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setViewMode("week")}
+              >
+                Týden
+              </Button>
+              <Button
+                variant={viewMode === "day" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setViewMode("day")}
+              >
+                Den
+              </Button>
+            </div>
           </div>
         </div>
 
