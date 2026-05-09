@@ -64,6 +64,16 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
+    if (!ensureVapid()) {
+      return new Response(
+        JSON.stringify({
+          error: "VAPID configuration invalid",
+          detail: _vapidError,
+          hint: "VAPID_PRIVATE_KEY must be a 32-byte url-safe base64 string (~43 chars, no '=' padding). Generate with: npx web-push generate-vapid-keys",
+        }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
     const body = (await req.json().catch(() => ({}))) as Payload;
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
