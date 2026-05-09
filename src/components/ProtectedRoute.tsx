@@ -14,7 +14,7 @@ interface Props {
 const ProtectedRoute = ({ children }: Props) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isLoggedIn, user, role, loading: authLoading } = useAuth();
+  const { isLoggedIn, user, role, status, loading: authLoading } = useAuth();
   const [state, setState] = useState<"loading" | "ok" | "pending" | "blocked">("loading");
 
   useEffect(() => {
@@ -25,30 +25,44 @@ const ProtectedRoute = ({ children }: Props) => {
       return;
     }
 
-    const checkStatus = async () => {
+    // Prefer status from AuthContext (already fetched). Avoid re-querying to prevent
+    // race conditions where RLS-protected fetch returns null briefly after login.
+    if (status === "approved") {
+      setState("ok");
+      return;
+    }
+    if (status === "blocked") {
+      setState("blocked");
+      return;
+    }
+    if (status === "pending") {
+      setState("pending");
+      return;
+    }
+
+    // status not yet loaded — fall back to a one-shot fetch
+    let cancelled = false;
+    (async () => {
       const { data: profile } = await supabase
         .from("profiles")
         .select("status")
         .eq("id", user.id)
-        .single();
+        .maybeSingle();
+      if (cancelled) return;
 
       if (!profile) {
-        // Legacy admin without profile
-        if (role === "admin") {
-          setState("ok");
-          return;
-        }
-        setState("pending");
+        // Legacy admin without profile row
+        if (role === "admin") setState("ok");
+        // No profile yet but auth is fresh — keep loading instead of flashing pending
+        else setState("loading");
         return;
       }
-
       if (profile.status === "approved") setState("ok");
       else if (profile.status === "blocked") setState("blocked");
       else setState("pending");
-    };
-
-    checkStatus();
-  }, [authLoading, isLoggedIn, user, role]);
+    })();
+    return () => { cancelled = true; };
+  }, [authLoading, isLoggedIn, user, role, status]);
 
   if (authLoading || (state === "loading" && isLoggedIn)) {
     return (
