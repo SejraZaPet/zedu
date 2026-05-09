@@ -35,6 +35,7 @@ const ICONS: Record<string, React.ElementType> = {
 
 const StudentMethods = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [methods, setMethods] = useState<Method[]>([]);
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState<Method | null>(null);
