@@ -594,6 +594,15 @@ const TeacherTextbooks = () => {
           </AlertDialogContent>
         </AlertDialog>
 
+        {/* === Import file dialog === */}
+        <ImportTextbookFileDialog
+          open={importOpen}
+          onOpenChange={setImportOpen}
+          topics={allTopics.map((t) => ({ id: t.id, title: t.title, gradeLabel: t.gradeLabel }))}
+          defaultTopicId={allTopics[0]?.id}
+          onImported={refreshDetail}
+        />
+
         {/* === Create Topic Dialog === */}
         <Dialog open={createTopicOpen} onOpenChange={setCreateTopicOpen}>
           <DialogContent>
