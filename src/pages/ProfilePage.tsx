@@ -79,11 +79,26 @@ const ProfilePage = () => {
     }
 
     const loadProfile = async () => {
-      const { data, error } = await supabase
+      let data: any = null;
+      let error: any = null;
+
+      const profileRes = await supabase
         .from("profiles")
         .select("*")
         .eq("id", user.id)
         .single();
+
+      data = profileRes.data;
+      error = profileRes.error;
+
+      if (error) {
+        const fallbackRes = await supabase.functions.invoke("get-user-auth-info", {
+          body: { include_profile: true },
+        });
+
+        data = fallbackRes.data?.profile ?? null;
+        error = fallbackRes.error ?? (data ? null : error);
+      }
 
       if (error || !data) {
         toast({ title: "Chyba", description: "Nepodařilo se načíst profil.", variant: "destructive" });
