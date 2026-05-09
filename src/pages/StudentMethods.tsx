@@ -168,29 +168,74 @@ const StudentMethods = () => {
 
         {loading ? (
           <p className="text-muted-foreground">Načítání...</p>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {methods.map((m) => {
-              const Icon = (m.icon && ICONS[m.icon]) || Brain;
-              return (
-                <button
-                  key={m.id}
-                  onClick={() => openDetail(m)}
-                  className="text-left bg-card border border-border rounded-xl p-5 hover:shadow-md hover:border-primary/40 transition-all flex flex-col"
+        ) : (() => {
+          const preferred = methods.filter((m) => preferredIds.includes(m.id));
+          const others = methods.filter((m) => !preferredIds.includes(m.id));
+
+          const renderCard = (m: Method, big: boolean) => {
+            const Icon = (m.icon && ICONS[m.icon]) || Brain;
+            return (
+              <button
+                key={m.id}
+                onClick={() => openDetail(m)}
+                className={`relative text-left bg-card border rounded-xl hover:shadow-md transition-all flex flex-col ${
+                  big
+                    ? "p-7 border-primary/40 bg-gradient-to-br from-primary/5 to-transparent shadow-sm hover:border-primary"
+                    : "p-5 border-border hover:border-primary/40"
+                }`}
+              >
+                {big && (
+                  <span className="absolute top-3 right-3 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary text-primary-foreground flex items-center gap-1">
+                    <Sparkles className="w-3 h-3" /> Oblíbená
+                  </span>
+                )}
+                <div
+                  className={`rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mb-3 ${
+                    big ? "w-16 h-16" : "w-12 h-12"
+                  }`}
                 >
-                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center mb-3">
-                    <Icon className="w-6 h-6 text-primary" />
+                  <Icon className={`text-primary ${big ? "w-8 h-8" : "w-6 h-6"}`} />
+                </div>
+                <h3 className={`font-heading font-semibold mb-1 ${big ? "text-2xl" : "text-lg"}`}>{m.name}</h3>
+                {m.description && (
+                  <p className={`text-muted-foreground ${big ? "text-base line-clamp-4" : "text-sm line-clamp-3"}`}>
+                    {m.description}
+                  </p>
+                )}
+                <span className="mt-3 text-sm font-medium text-primary">Zobrazit návod →</span>
+              </button>
+            );
+          };
+
+          return (
+            <div className="space-y-10">
+              {preferred.length > 0 && (
+                <section>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Sparkles className="w-4 h-4 text-primary" />
+                    <h2 className="font-heading text-xl font-semibold">Tvoje oblíbené</h2>
                   </div>
-                  <h3 className="font-heading font-semibold text-lg mb-1">{m.name}</h3>
-                  {m.description && (
-                    <p className="text-sm text-muted-foreground line-clamp-3">{m.description}</p>
-                  )}
-                  <span className="mt-3 text-sm font-medium text-primary">Zobrazit návod →</span>
-                </button>
-              );
-            })}
-          </div>
-        )}
+                  <div className="grid gap-5 sm:grid-cols-2">
+                    {preferred.map((m) => renderCard(m, true))}
+                  </div>
+                </section>
+              )}
+              <section>
+                {preferred.length > 0 && (
+                  <h2 className="font-heading text-xl font-semibold mb-3">Další metody</h2>
+                )}
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {others.map((m) => renderCard(m, false))}
+                </div>
+                {preferred.length === 0 && (
+                  <p className="text-xs text-muted-foreground mt-4">
+                    Tip: V profilu si můžeš vybrat až 3 oblíbené metody — budou se ti zobrazovat nahoře.
+                  </p>
+                )}
+              </section>
+            </div>
+          );
+        })()}
       </main>
       <SiteFooter />
 
