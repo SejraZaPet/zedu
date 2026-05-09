@@ -157,25 +157,19 @@ export default function TeacherSchedule() {
     saveSchedule(data);
   }, [data]);
 
-  // Load class slots (synced from Třídy – also editable in place)
+  // Load class slots (synced from Třídy – also editable in place).
+  // We rely on RLS to surface the slots the current user is allowed to see
+  // (class teacher, school admin, system admin, …) instead of pre-filtering
+  // by class_teachers — that pre-filter hid slots from admins / school admins
+  // who view the page without a class_teachers row.
   const fetchClassSlots = async () => {
     if (!user) {
-      setClassSlots([]);
-      return;
-    }
-    const { data: ct } = await supabase
-      .from("class_teachers")
-      .select("class_id")
-      .eq("user_id", user.id);
-    const classIds = (ct ?? []).map((r: any) => r.class_id);
-    if (classIds.length === 0) {
       setClassSlots([]);
       return;
     }
     const { data: slots } = await supabase
       .from("class_schedule_slots" as any)
       .select("*, classes(name)")
-      .in("class_id", classIds)
       .order("day_of_week", { ascending: true })
       .order("start_time", { ascending: true });
     setClassSlots((slots as any) || []);
