@@ -17,7 +17,7 @@ import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { getPhasePlan } from "@/lib/lesson-phase-plans";
+import { getPhasePlan, type StoredPhasePlan } from "@/lib/lesson-phase-plans";
 
 interface Props {
   event: CalendarEvent | null;
@@ -36,6 +36,26 @@ export default function CalendarEventDetailDialog({ event, open, onOpenChange }:
   const { subjects } = useTeacherSubjects();
   const { user } = useAuth();
   const [linkedPlanId, setLinkedPlanId] = useState<string | null>(null);
+  const [phasePlan, setPhasePlan] = useState<StoredPhasePlan | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!event) {
+      setPhasePlan(null);
+      return;
+    }
+    (async () => {
+      const p = await getPhasePlan(
+        event.subject,
+        format(event.start, "yyyy-MM-dd"),
+        formatTime(event.start),
+      );
+      if (!cancelled) setPhasePlan(p);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [event]);
 
   const matchedTextbookId = useMemo(() => {
     if (!event?.subject) return undefined;
@@ -156,11 +176,7 @@ export default function CalendarEventDetailDialog({ event, open, onOpenChange }:
         </div>
 
         {(() => {
-          const plan = getPhasePlan(
-            event.subject,
-            format(event.start, "yyyy-MM-dd"),
-            formatTime(event.start),
-          );
+          const plan = phasePlan;
           if (!plan || !plan.phases?.some((p) => p.timeMin > 0)) return null;
           const total = plan.phases.reduce((s, p) => s + (p.timeMin || 0), 0);
           return (
