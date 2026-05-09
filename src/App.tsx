@@ -33,6 +33,7 @@ import LiveTeacherScreen from "./pages/LiveTeacherScreen";
 import LiveProjectorScreen from "./pages/LiveProjectorScreen";
 import TeacherAssignments from "./pages/TeacherAssignments";
 import StudentAssignments from "./pages/StudentAssignments";
+import StudentLeaderboard from "./pages/StudentLeaderboard";
 import StudentAssignmentPlayer from "./pages/StudentAssignmentPlayer";
 import TeacherClasses from "./pages/TeacherClasses";
 import TeacherClassDetail from "./pages/TeacherClassDetail";
