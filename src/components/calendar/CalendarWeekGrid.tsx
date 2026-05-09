@@ -7,6 +7,7 @@ import {
   formatTime,
   getEventColors,
 } from "@/lib/calendar-utils";
+import { getExamTypeMeta } from "@/lib/exam-types";
 
 interface Props {
   events: CalendarEvent[];
