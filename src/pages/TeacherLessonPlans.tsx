@@ -196,6 +196,7 @@ export default function TeacherLessonPlans() {
 
   useEffect(() => {
     reload();
+    loadSharedPlans();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
