@@ -1,9 +1,11 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import NotificationComposer from "@/components/notifications/NotificationComposer";
 import BroadcastHistory from "@/components/notifications/BroadcastHistory";
+import { Button } from "@/components/ui/button";
+import { MessageCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
 
@@ -27,11 +29,19 @@ const TeacherNotifications = () => {
         className="flex-1 container mx-auto px-4 py-12 max-w-5xl"
         style={{ paddingTop: "calc(70px + 3rem)" }}
       >
-        <div className="mb-8">
-          <h1 className="font-heading text-3xl font-bold">Moje notifikace</h1>
-          <p className="text-muted-foreground mt-1">
-            Posílejte zprávy a připomenutí svým třídám nebo konkrétním žákům.
-          </p>
+        <div className="mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+          <div>
+            <h1 className="font-heading text-3xl font-bold">Moje notifikace</h1>
+            <p className="text-muted-foreground mt-1">
+              Posílejte zprávy a připomenutí svým třídám nebo konkrétním žákům.
+            </p>
+          </div>
+          <Button asChild variant="outline" className="gap-2 shrink-0">
+            <Link to="/ucitel/zpravy-rodicu">
+              <MessageCircle className="w-4 h-4" />
+              Zprávy od rodičů
+            </Link>
+          </Button>
         </div>
 
         <div className="space-y-6">

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { User, BookOpen, ClipboardList, CheckCircle2, Clock, Plus, Trash2, KeyRound } from "lucide-react";
+import { User, BookOpen, ClipboardList, CheckCircle2, Clock, Plus, Trash2, KeyRound, MessageCircle } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import ChildScheduleWidget from "@/components/parent/ChildScheduleWidget";
@@ -190,10 +190,16 @@ const ParentDashboard = () => {
               Sledujte výsledky a pokrok vašeho dítěte (pouze náhled)
             </p>
           </div>
-          <Button onClick={() => setAddOpen(true)} className="gap-2 shrink-0">
-            <Plus className="w-4 h-4" />
-            Přidat dítě
-          </Button>
+          <div className="flex flex-wrap gap-2 shrink-0">
+            <Button variant="outline" onClick={() => navigate("/rodic/zpravy")} className="gap-2">
+              <MessageCircle className="w-4 h-4" />
+              Zprávy učitelům
+            </Button>
+            <Button onClick={() => setAddOpen(true)} className="gap-2">
+              <Plus className="w-4 h-4" />
+              Přidat dítě
+            </Button>
+          </div>
         </div>
 
         {students.length > 0 && (
