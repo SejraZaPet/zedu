@@ -25,7 +25,20 @@ import {
   Loader2,
   Plus,
   X,
+  FileDown,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  exportLessonPlanPdf,
+  type LessonPlanTemplate,
+} from "@/lib/lesson-plan-pdf-export";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
