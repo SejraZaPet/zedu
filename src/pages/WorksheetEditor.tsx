@@ -2660,11 +2660,23 @@ function PropertiesPanel({
 
       <div className="pt-3 border-t border-border">
         <Label className="text-xs">Obrázek (URL, volitelné)</Label>
-        <Input
-          value={item.imageUrl ?? ""}
-          onChange={(e) => onUpdateItem({ imageUrl: e.target.value || undefined })}
-          placeholder="https://…"
-        />
+        <div className="flex gap-2 items-start">
+          <Input
+            value={item.imageUrl ?? ""}
+            onChange={(e) => onUpdateItem({ imageUrl: e.target.value || undefined })}
+            placeholder="https://…"
+            className="flex-1"
+          />
+          <MediaPickerDialog
+            imageOnly
+            onPick={(url) => onUpdateItem({ imageUrl: url })}
+            trigger={
+              <Button size="sm" variant="outline" type="button">
+                <FolderOpen className="w-4 h-4 mr-1" /> Z knihovny
+              </Button>
+            }
+          />
+        </div>
         {item.imageUrl && (
           <Input
             className="mt-1"
