@@ -795,6 +795,19 @@ export default function TeacherLessonPlanEditor() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            <Button
+              variant="outline"
+              onClick={() => setLoadTemplateOpen(true)}
+              disabled={!templates.length}
+              title={templates.length ? "Předvyplnit fáze ze šablony" : "Zatím nemáte žádné šablony"}
+            >
+              <LayoutTemplate className="w-4 h-4 mr-2" />
+              Ze šablony
+            </Button>
+            <Button variant="outline" onClick={() => setSaveTemplateOpen(true)}>
+              <LayoutTemplate className="w-4 h-4 mr-2" />
+              Uložit jako šablonu
+            </Button>
             <Button onClick={handleSave} disabled={saving}>
               {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
               Uložit
