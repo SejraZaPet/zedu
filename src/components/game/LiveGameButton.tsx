@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { DEFAULT_GAME_SETTINGS, type GameQuestion, type GameSettings, generateGameCode } from "@/lib/game-types";
 import { GAME_MODES, getModeDef, type GameMode } from "@/lib/game-modes";
+import { VISUAL_THEMES, type VisualTheme } from "@/lib/game-themes";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
