@@ -276,6 +276,28 @@ export default function TeacherSubjectClass() {
   }, [slots]);
 
   const pastLessons = occurrences.filter((e) => e.end < now).slice(-15).reverse();
+
+  useEffect(() => {
+    if (!user || !classId) return;
+    const dates = pastLessons.map((e) => format(e.start, "yyyy-MM-dd"));
+    if (!dates.length) return;
+    const fromDate = dates.reduce((a, b) => (a < b ? a : b));
+    const toDate = dates.reduce((a, b) => (a > b ? a : b));
+    let cancelled = false;
+    (async () => {
+      const rows = await fetchReflections({ teacherId: user.id, fromDate, toDate });
+      if (cancelled) return;
+      const map: Record<string, LessonReflection> = {};
+      for (const r of rows) {
+        if (!r.reflection_date) continue;
+        const k = reflectionKey({ subject: r.subject, classId: r.class_id, date: r.reflection_date });
+        map[k] = r;
+      }
+      setReflections(map);
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, classId, pastLessons.length, reflectionVersion]);
   const upcomingLessons = occurrences.filter((e) => e.start >= now).slice(0, 15);
 
   const room = slots[0]?.room || "";
