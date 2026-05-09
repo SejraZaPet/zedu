@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, Save, KeyRound, User, Mail, Sparkles, Check, Smile, Bell } from "lucide-react";
 import AvatarPicker from "@/components/student/AvatarPicker";
 import { Switch } from "@/components/ui/switch";
+import PushNotificationsCard from "@/components/profile/PushNotificationsCard";
 
 const statusLabels: Record<string, string> = {
   pending: "Čeká na schválení",
