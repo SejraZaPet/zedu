@@ -120,6 +120,7 @@ const TeacherAssignments = () => {
         status: "draft",
         activity_data: [] as any,
         worksheet_id: selectedWorksheetId || null,
+        lockdown_mode: lockdownMode,
       } as any);
 
       if (error) throw error;
