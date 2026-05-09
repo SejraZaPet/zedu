@@ -20,8 +20,9 @@ import ClassResultsManager from "@/components/admin/ClassResultsManager";
 import AdminDashboard from "@/components/admin/AdminDashboard";
 import NotificationsManager from "@/components/admin/NotificationsManager";
 import SchoolsManager from "@/components/admin/SchoolsManager";
+import SystemStats from "@/components/admin/SystemStats";
 import { Button } from "@/components/ui/button";
-import { BookOpen, LogOut, Home, GraduationCap, Settings, Users, School, BarChart3, LayoutDashboard, HelpCircle, ListTree, CircleHelp, Link2, Pencil, Video, Bell } from "lucide-react";
+import { BookOpen, LogOut, Home, GraduationCap, Settings, Users, School, BarChart3, LayoutDashboard, HelpCircle, ListTree, CircleHelp, Link2, Pencil, Video, Bell, Activity } from "lucide-react";
 
 const adminTabs = [
   { id: "dashboard", label: "Přehled", icon: LayoutDashboard },
