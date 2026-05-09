@@ -21,6 +21,7 @@ import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import AssignmentResultsDashboard from "@/components/admin/AssignmentResultsDashboard";
 import RemindButton from "@/components/notifications/RemindButton";
+import TeacherAssignmentAttachments from "@/components/assignments/TeacherAssignmentAttachments";
 
 
 interface Assignment {
