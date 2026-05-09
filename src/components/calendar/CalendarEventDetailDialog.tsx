@@ -36,6 +36,26 @@ export default function CalendarEventDetailDialog({ event, open, onOpenChange }:
   const { subjects } = useTeacherSubjects();
   const { user } = useAuth();
   const [linkedPlanId, setLinkedPlanId] = useState<string | null>(null);
+  const [phasePlan, setPhasePlan] = useState<StoredPhasePlan | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!event) {
+      setPhasePlan(null);
+      return;
+    }
+    (async () => {
+      const p = await getPhasePlan(
+        event.subject,
+        format(event.start, "yyyy-MM-dd"),
+        formatTime(event.start),
+      );
+      if (!cancelled) setPhasePlan(p);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [event]);
 
   const matchedTextbookId = useMemo(() => {
     if (!event?.subject) return undefined;
