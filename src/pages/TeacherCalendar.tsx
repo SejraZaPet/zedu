@@ -292,8 +292,27 @@ const TeacherCalendar = () => {
             />
             Můj úkol
           </span>
+          <span className="flex items-center gap-2">
+            <span className="inline-block w-3 h-3 rounded-full bg-red-500" />
+            Chybí reflexe
+          </span>
+          <span className="flex items-center gap-2">
+            <span className="inline-block w-3 h-3 rounded-full bg-emerald-500" />
+            Reflexe uložena
+          </span>
         </div>
       </main>
+      {reflectionEvent && (
+        <LessonReflectionDialog
+          open={!!reflectionEvent}
+          onOpenChange={(o) => { if (!o) setReflectionEvent(null); }}
+          subject={reflectionEvent.subject}
+          classId={reflectionEvent.classId}
+          date={format(reflectionEvent.start, "yyyy-MM-dd")}
+          lessonLabel={`${reflectionEvent.subject ?? ""}${reflectionEvent.className ? " · " + reflectionEvent.className : ""}`}
+          onSaved={() => setReflectionVersion((v) => v + 1)}
+        />
+      )}
       <CalendarEventDetailDialog
         event={detailEvent}
         open={!!detailEvent}
