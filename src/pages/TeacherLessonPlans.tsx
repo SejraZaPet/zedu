@@ -500,6 +500,87 @@ export default function TeacherLessonPlans() {
               </div>
             )}
           </TabsContent>
+
+          <TabsContent value="shared" className="mt-0">
+            <div className="grid sm:grid-cols-[1fr_220px] gap-3 mb-6">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  className="pl-9"
+                  placeholder="Hledat sdílené plány…"
+                  value={sharedSearch}
+                  onChange={(e) => setSharedSearch(e.target.value)}
+                />
+              </div>
+              <Select value={sharedScope} onValueChange={(v) => setSharedScope(v as any)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Vše</SelectItem>
+                  <SelectItem value="public">Veřejné</SelectItem>
+                  <SelectItem value="school">Pouze moje škola</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {sharedLoading ? (
+              <div className="flex items-center justify-center py-24">
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : filteredShared.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
+                <Share2 className="w-12 h-12 text-muted-foreground/40" />
+                <p className="text-muted-foreground text-sm">
+                  {sharedSearch.trim() || sharedScope !== "all"
+                    ? "Žádný sdílený plán neodpovídá filtru."
+                    : "Zatím nejsou k dispozici žádné sdílené plány."}
+                </p>
+              </div>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {filteredShared.map((plan) => (
+                  <div
+                    key={plan.id}
+                    className="bg-card border border-border rounded-xl p-5 flex flex-col gap-2 hover:border-primary/40 transition-colors"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      {plan.shared_visibility === "public" ? (
+                        <Globe className="w-4 h-4 text-primary shrink-0" />
+                      ) : (
+                        <School className="w-4 h-4 text-primary shrink-0" />
+                      )}
+                      <span className="font-semibold text-sm truncate">{plan.title}</span>
+                    </div>
+                    {plan.subject && (
+                      <p className="text-xs text-muted-foreground">{plan.subject}</p>
+                    )}
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <UserIcon className="w-3 h-3 shrink-0" />
+                      <span className="truncate">{plan.author_name}</span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground/70">
+                      Upraveno {format(new Date(plan.updated_at), "d. M. yyyy", { locale: cs })}
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="mt-2 self-start"
+                      onClick={() => copySharedPlan(plan)}
+                      disabled={copyingId === plan.id}
+                    >
+                      {copyingId === plan.id ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Copy className="w-4 h-4 mr-2" />
+                      )}
+                      Zkopírovat do mých plánů
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
         </Tabs>
       </main>
 
