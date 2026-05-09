@@ -4,8 +4,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import type { Block } from "@/lib/textbook-config";
 import { useState } from "react";
-import { Upload } from "lucide-react";
+import { Upload, FolderOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { MediaPickerDialog } from "@/components/media/MediaPickerDialog";
 
 interface Props {
   block: Block;
