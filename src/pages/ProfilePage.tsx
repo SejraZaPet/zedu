@@ -197,6 +197,23 @@ const ProfilePage = () => {
     });
   };
 
+  const handleToggleEmailNotif = async (checked: boolean) => {
+    if (!user) return;
+    setEmailNotifications(checked);
+    setSavingEmailNotif(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ parent_email_notifications: checked } as any)
+      .eq("id", user.id);
+    setSavingEmailNotif(false);
+    if (error) {
+      setEmailNotifications(!checked);
+      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Uloženo", description: checked ? "Budete dostávat emaily." : "Emaily byly vypnuty." });
+  };
+
   const handleChangePassword = async () => {
     if (newPassword.length < 6) {
       toast({ title: "Chyba", description: "Heslo musí mít alespoň 6 znaků.", variant: "destructive" });
