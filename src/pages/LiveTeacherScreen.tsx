@@ -66,6 +66,41 @@ const LiveTeacherScreen = () => {
     }
   }, [session, currentIndex, slides.length, nextQuestion, endGame]);
 
+  const goToIndex = useCallback(async (target: number) => {
+    if (!sessionId) return;
+    if (target < 0 || target >= slides.length) return;
+    await supabase.from("game_sessions").update({
+      current_question_index: target,
+      question_started_at: new Date().toISOString(),
+      status: "playing",
+    }).eq("id", sessionId);
+  }, [sessionId, slides.length]);
+
+  // Listen for commands from mobile remote
+  useEffect(() => {
+    if (!sessionId) return;
+    const ch = supabase.channel(presenterRemoteChannelName(sessionId), {
+      config: { broadcast: { self: false } },
+    });
+    ch.on("broadcast", { event: "remote-cmd" }, ({ payload }) => {
+      const cmd = payload?.cmd as string;
+      if (cmd === "next") handleNext();
+      else if (cmd === "prev") {
+        if (currentIndex > 0) nextQuestion(currentIndex - 2);
+      } else if (cmd === "end") {
+        endGame();
+      } else if (cmd === "goto" && typeof payload?.index === "number") {
+        goToIndex(payload.index);
+      } else if (cmd === "pause" || cmd === "resume") {
+        supabase.from("game_sessions").update({
+          settings: { ...(settings || {}), paused: cmd === "pause" },
+        }).eq("id", sessionId);
+      }
+    });
+    ch.subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [sessionId, handleNext, nextQuestion, endGame, currentIndex, goToIndex, settings]);
+
   // Refetch session data if slides arrive empty (race with DB write)
   useEffect(() => {
     if (!loading && session && slides.length === 0 && !isFinished && fetchAttempts < 8) {
