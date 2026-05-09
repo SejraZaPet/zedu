@@ -369,6 +369,15 @@ const StudentGamePlay = () => {
   return (
     <>
       <ConnectionStatusBanner status={connectionStatus} onReconnect={reconnect} />
+      {myTeam && (
+        <div
+          className="fixed top-2 right-2 z-40 flex items-center gap-2 px-3 py-1.5 rounded-full border-2 text-sm font-semibold shadow-sm bg-background/90 backdrop-blur"
+          style={{ borderColor: myTeam.color, color: myTeam.color }}
+        >
+          <span className="w-2 h-2 rounded-full" style={{ background: myTeam.color }} />
+          {myTeam.name}
+        </div>
+      )}
       <StudentGameQuestion
         question={currentQ}
         questionIndex={qi}
