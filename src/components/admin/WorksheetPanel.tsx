@@ -297,6 +297,21 @@ const WorksheetPanel = ({ lessonPlanId, planTitle, gradeBand }: Props) => {
               <Button size="sm" variant="outline" className="h-7 text-xs" onClick={handlePrint}>
                 <Printer className="w-3.5 h-3.5 mr-1" />Tisk
               </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs"
+                onClick={handleDownloadPdf}
+                disabled={downloadingPdf}
+                title="Vygenerovat skutečný .pdf soubor pro sdílení nebo archivaci"
+              >
+                {downloadingPdf ? (
+                  <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                ) : (
+                  <Download className="w-3.5 h-3.5 mr-1" />
+                )}
+                Stáhnout PDF
+              </Button>
               <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setWorksheet(null)}>
                 Nový
               </Button>
