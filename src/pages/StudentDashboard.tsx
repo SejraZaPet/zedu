@@ -106,6 +106,8 @@ const StudentDashboard = () => {
 
         <TodayWidget role="student" />
 
+        {user && <StudentProgressWidgets userId={user.id} />}
+
         <div className="grid gap-6 md:grid-cols-2">
           {/* Profil */}
           <div className="bg-card border border-border rounded-xl p-6 flex flex-col">
