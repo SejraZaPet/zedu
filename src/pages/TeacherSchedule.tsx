@@ -182,6 +182,61 @@ export default function TeacherSchedule() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
+  /** Export entire semester schedule (recurring) as .ics. */
+  const handleExportSchedule = () => {
+    if (!classSlots || classSlots.length === 0) {
+      return;
+    }
+    // Determine semester window: today → end of June (next year if past July)
+    const now = new Date();
+    const year = now.getMonth() >= 7 ? now.getFullYear() + 1 : now.getFullYear();
+    const semesterEnd = new Date(year, 5, 30, 23, 59, 59); // June 30
+
+    // Find first occurrence per slot from today.
+    const events: CalendarExportEvent[] = [];
+    for (const s of classSlots) {
+      if (!s.start_time || !s.end_time || !s.day_of_week) continue;
+      const validFrom = s.valid_from ? new Date(s.valid_from) : now;
+      const validTo = s.valid_to ? new Date(s.valid_to) : semesterEnd;
+      if (validTo < now) continue;
+
+      // First date >= max(today, validFrom) matching day_of_week (ISO Mon=1..Sun=7)
+      const baseStart = validFrom > now ? validFrom : now;
+      const targetIso = s.day_of_week; // 1..7
+      const first = new Date(baseStart);
+      first.setHours(0, 0, 0, 0);
+      // JS getDay(): Sun=0..Sat=6. Convert to ISO: Sun→7
+      const currentIso = first.getDay() === 0 ? 7 : first.getDay();
+      const diff = (targetIso - currentIso + 7) % 7;
+      first.setDate(first.getDate() + diff);
+
+      const [sh, sm] = s.start_time.split(":").map(Number);
+      const [eh, em] = s.end_time.split(":").map(Number);
+      const dtStart = new Date(first);
+      dtStart.setHours(sh, sm, 0, 0);
+      const dtEnd = new Date(first);
+      dtEnd.setHours(eh, em, 0, 0);
+
+      const rrule = buildScheduleRrule(s.week_parity, s.day_of_week, validTo);
+      const className = s.classes?.name || "";
+      const title = s.subject_label || s.abbreviation || "Hodina";
+      const locationParts = [className, s.room].filter(Boolean) as string[];
+
+      events.push({
+        uid: `slot-${s.id}@zedu.cz`,
+        title,
+        start: dtStart,
+        end: dtEnd,
+        location: locationParts.join(" · ") || undefined,
+        description: className ? `Třída: ${className}` : undefined,
+        rrule,
+      });
+    }
+
+    if (events.length === 0) return;
+    downloadICS(events, "zedu-rozvrh-semestr.ics", "ZEdu – rozvrh");
+  };
+
   const [editing, setEditing] = useState<LessonEntry | null>(null);
   const [isNew, setIsNew] = useState(false);
   const [editingClassSlot, setEditingClassSlot] = useState<ClassSlot | null>(null);
