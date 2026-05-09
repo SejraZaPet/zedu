@@ -48,7 +48,7 @@ const teacherTabs = [
   { id: "help", label: "Nápověda", icon: HelpCircle },
 ] as const;
 
-type Tab = "dashboard" | "textbooks" | "lessons" | "outline" | "mcq" | "matching" | "slide-edit" | "video-ai" | "subjects" | "users" | "classes" | "results" | "help" | "notifications" | "schools";
+type Tab = "dashboard" | "stats" | "textbooks" | "lessons" | "outline" | "mcq" | "matching" | "slide-edit" | "video-ai" | "subjects" | "users" | "classes" | "results" | "help" | "notifications" | "schools";
 
 const Admin = () => {
   const { isAdmin, isTeacher, loading, logout } = useAdmin();
