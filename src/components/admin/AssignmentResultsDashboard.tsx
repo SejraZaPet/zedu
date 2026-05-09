@@ -470,6 +470,7 @@ const AssignmentResultsDashboard = ({ teacherId }: Props) => {
                     <TableHead className="text-xs">Stav</TableHead>
                     <TableHead className="text-xs text-center">Pokusů</TableHead>
                     <TableHead className="text-xs text-center">Skóre</TableHead>
+                    <TableHead className="text-xs text-center">Porušení</TableHead>
                     <TableHead className="text-xs">Poslední aktivita</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -478,11 +479,18 @@ const AssignmentResultsDashboard = ({ teacherId }: Props) => {
                     const cfg = STATUS_CONFIG[s.status];
                     const StatusIcon = cfg.icon;
                     return (
-                      <TableRow key={s.studentId}>
+                      <TableRow key={s.studentId} className={s.leftTest ? "bg-destructive/5" : ""}>
                         <TableCell className="text-sm">
-                          <div>
-                            <span className="font-medium">{s.lastName} {s.firstName}</span>
-                            <span className="block text-xs text-muted-foreground">{s.email}</span>
+                          <div className="flex items-center gap-2">
+                            {s.leftTest && (
+                              <span title="Žák opustil test" aria-label="Žák opustil test">
+                                <ShieldAlert className="w-4 h-4 text-destructive shrink-0" />
+                              </span>
+                            )}
+                            <div>
+                              <span className="font-medium">{s.lastName} {s.firstName}</span>
+                              <span className="block text-xs text-muted-foreground">{s.email}</span>
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -494,6 +502,13 @@ const AssignmentResultsDashboard = ({ teacherId }: Props) => {
                         <TableCell className="text-center text-sm">{s.attemptCount}</TableCell>
                         <TableCell className="text-center text-sm font-medium">
                           {s.bestScore !== null ? `${s.bestScore}/${s.maxScore || "?"}` : "–"}
+                        </TableCell>
+                        <TableCell className="text-center text-sm">
+                          {s.violationCount > 0 ? (
+                            <Badge variant="destructive" className="text-[10px]">{s.violationCount}</Badge>
+                          ) : (
+                            <span className="text-muted-foreground">–</span>
+                          )}
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
                           {s.lastActivity ? format(new Date(s.lastActivity), "d.M. HH:mm", { locale: cs }) : "–"}
