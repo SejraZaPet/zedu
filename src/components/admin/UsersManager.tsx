@@ -1163,6 +1163,7 @@ const UsersManager = () => {
                         login_password: password,
                         username: username,
                         student_code: studentCode,
+                        pin_code: role === "user" ? pinHash : null,
                       });
 
                       if (profileError) {
