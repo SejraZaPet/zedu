@@ -119,8 +119,15 @@ const StudentCalendar = () => {
   }, [authLoading, user, navigate, range]);
 
   const handleEventClick = (event: CalendarEvent) => {
-    if (event.type === "lesson") navigate("/student/ucebnice");
-    else if (event.type === "assignment")
+    if (event.type === "lesson") {
+      if (event.subject && event.classId) {
+        navigate(
+          `/student/predmet/${encodeURIComponent(event.subject)}/trida/${event.classId}`,
+        );
+      } else {
+        navigate("/student/ucebnice");
+      }
+    } else if (event.type === "assignment")
       navigate(`/student/ulohy/${event.assignmentId}`);
     else navigate("/todo");
   };

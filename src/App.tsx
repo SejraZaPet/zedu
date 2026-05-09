@@ -41,6 +41,7 @@ import ParentDashboard from "./pages/ParentDashboard";
 import GdprPage from "./pages/GdprPage";
 import TodoPage from "./pages/TodoPage";
 import StudentCalendar from "./pages/StudentCalendar";
+import StudentSubjectClass from "./pages/StudentSubjectClass";
 import StudentSchedule from "./pages/StudentSchedule";
 import TeacherCalendar from "./pages/TeacherCalendar";
 import NotificationsPage from "./pages/NotificationsPage";
@@ -107,6 +108,7 @@ const App = () => (
             <Route path="/todo" element={<ProtectedRoute><TodoPage /></ProtectedRoute>} />
             <Route path="/student/kalendar" element={<ProtectedRoute><StudentCalendar /></ProtectedRoute>} />
             <Route path="/student/rozvrh" element={<ProtectedRoute><StudentSchedule /></ProtectedRoute>} />
+            <Route path="/student/predmet/:subjectId/trida/:classId" element={<ProtectedRoute><StudentSubjectClass /></ProtectedRoute>} />
             <Route path="/ucitel/kalendar" element={<ProtectedRoute><TeacherCalendar /></ProtectedRoute>} />
             <Route path="/notifikace" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
             <Route path="/ucitel/pracovni-listy" element={<ProtectedRoute><TeacherWorksheets /></ProtectedRoute>} />
