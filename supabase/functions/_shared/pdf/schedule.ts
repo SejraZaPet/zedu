@@ -1,5 +1,5 @@
 import { PDFDocument, rgb } from "npm:pdf-lib@1.17.1";
-import { PdfCtx, drawHeader } from "../_shared/pdf-engine.ts";
+import { PdfCtx, drawHeader } from "./pdf-engine.ts";
 
 interface ScheduleSlot {
   day_of_week: number; // 1=Mon ... 7=Sun

@@ -1,10 +1,10 @@
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
 import JSZip from "npm:jszip@3.10.1";
 
-import { createPdf, finalizePdf, drawFooter } from "../generate-pdf/_shared/pdf-engine.ts";
-import { buildWorksheetPdf } from "../generate-pdf/builders/worksheet.ts";
-import { buildLessonPlanPdf } from "../generate-pdf/builders/lesson-plan.ts";
-import { buildSchedulePdf } from "../generate-pdf/builders/schedule.ts";
+import { createPdf, finalizePdf, drawFooter } from "../_shared/pdf/pdf-engine.ts";
+import { buildWorksheetPdf } from "../_shared/pdf/worksheet.ts";
+import { buildLessonPlanPdf } from "../_shared/pdf/lesson-plan.ts";
+import { buildSchedulePdf } from "../_shared/pdf/schedule.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
