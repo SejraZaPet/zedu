@@ -1062,7 +1062,7 @@ function PersonalCard({
   );
 }
 
-function ClassCard({ slot, onClick }: { slot: ClassSlot; onClick: () => void }) {
+function ClassCard({ slot, conflict, onClick }: { slot: ClassSlot; conflict?: boolean; onClick: () => void }) {
   const subject = slot.subject_label || "Hodina";
   const color = slot.color || colorForSubject(subject);
   const abbr = (slot.abbreviation || subject.slice(0, 3)).toUpperCase();
@@ -1070,9 +1070,9 @@ function ClassCard({ slot, onClick }: { slot: ClassSlot; onClick: () => void }) 
   return (
     <button
       onClick={onClick}
-      className="w-full text-left rounded-md p-2 transition-all hover:shadow-md hover:-translate-y-0.5 border-l-4 group"
+      className={`w-full text-left rounded-md p-2 transition-all hover:shadow-md hover:-translate-y-0.5 border-l-4 group ${conflict ? "ring-2 ring-destructive ring-offset-1" : ""}`}
       style={{ backgroundColor: `${color}26`, borderLeftColor: color }}
-      title={`${subject}${className ? ` · ${className}` : ""}${slot.room ? ` · ${slot.room}` : ""} · ${fmtTime(slot.start_time)}–${fmtTime(slot.end_time)}${slot.week_parity !== "every" ? ` (${slot.week_parity === "odd" ? "lichý" : "sudý"} týden)` : ""}`}
+      title={`${conflict ? "⚠ Konflikt v rozvrhu · " : ""}${subject}${className ? ` · ${className}` : ""}${slot.room ? ` · ${slot.room}` : ""} · ${fmtTime(slot.start_time)}–${fmtTime(slot.end_time)}${slot.week_parity !== "every" ? ` (${slot.week_parity === "odd" ? "lichý" : "sudý"} týden)` : ""}`}
     >
       <div className="flex items-center gap-1 text-[11px] text-muted-foreground tabular-nums">
         <Clock className="w-3 h-3" />
