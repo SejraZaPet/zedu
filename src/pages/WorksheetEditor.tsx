@@ -72,7 +72,6 @@ import {
   Check,
 } from "lucide-react";
 import { usePdfExport } from "@/hooks/usePdfExport";
-import { FileDown, Loader2 } from "lucide-react";
 import {
   Command,
   CommandEmpty,
