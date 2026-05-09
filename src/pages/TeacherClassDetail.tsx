@@ -7,6 +7,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ClassBulkActions } from "@/components/teacher/ClassBulkActions";
 import { LeaderboardSettingsCard } from "@/components/teacher/LeaderboardSettingsCard";
 import {
   ArrowLeft,
@@ -99,6 +101,25 @@ const TeacherClassDetail = () => {
   const [broadcasts, setBroadcasts] = useState<BroadcastRow[]>([]);
   const [avgScore, setAvgScore] = useState<number | null>(null);
   const [submittedCount, setSubmittedCount] = useState(0);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  const allSelected = members.length > 0 && selectedIds.size === members.length;
+  const someSelected = selectedIds.size > 0 && !allSelected;
+  const toggleAll = () => {
+    setSelectedIds(allSelected ? new Set() : new Set(members.map((m) => m.user_id)));
+  };
+  const toggleOne = (uid: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(uid)) next.delete(uid);
+      else next.add(uid);
+      return next;
+    });
+  };
+  const selectedMembers = useMemo(
+    () => members.filter((m) => selectedIds.has(m.user_id)),
+    [members, selectedIds],
+  );
 
   const fetchAll = async () => {
     if (!id) return;
