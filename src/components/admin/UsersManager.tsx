@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { logAudit } from "@/lib/audit";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -445,6 +446,7 @@ const UsersManager = () => {
               try {
                 const ids = Array.from(selectedIds);
                 await Promise.all(ids.map(id => supabase.functions.invoke("delete-user", { body: { userId: id } })));
+                ids.forEach(id => logAudit("user_deleted", "user", id, { bulk: true }));
                 toast({ title: "Smazáno", description: `${ids.length} uživatelů bylo odstraněno.` });
                 setSelectedIds(new Set());
                 fetchUsers();
@@ -596,6 +598,7 @@ const UsersManager = () => {
                             duration: 15000,
                           });
 
+                          logAudit("password_reset", "user", user.id, { method: "manual" });
                           fetchUsers();
                         }
                       }} className="text-yellow-400 hover:bg-yellow-500/10 h-7 w-7 p-0">
@@ -620,6 +623,7 @@ const UsersManager = () => {
                           return;
                         }
                         await supabase.from("profiles").update({ login_password: newPassword }).eq("id", user.id);
+                        logAudit("password_reset", "user", user.id, { method: "print_label" });
                         await fetchUsers();
                         printLoginCards([{
                           firstName: user.first_name || "",
@@ -644,6 +648,7 @@ const UsersManager = () => {
                           toast({ title: "Chyba", description: error.message, variant: "destructive" });
                         } else {
                           toast({ title: "Smazáno", description: `${user.first_name} ${user.last_name} byl odstraněn.` });
+                          logAudit("user_deleted", "user", user.id, { name: `${user.first_name} ${user.last_name}`, role: user.role });
                           fetchUsers();
                         }
                       }} className="text-red-400 hover:bg-red-500/10 h-7 w-7 p-0">
@@ -941,6 +946,12 @@ const UsersManager = () => {
 
                   printLoginCards(printCards);
 
+                  logAudit("user_created", "user", userId, {
+                    name: `${newUser.first_name} ${newUser.last_name}`,
+                    role: newUser.role,
+                    parent_account: newUser.role === "user" && createParentAccount,
+                  });
+
                   setAddUserOpen(false);
                   setNewUser({ first_name: "", last_name: "", email: "", school: "", year: "", role: "user" });
                   setCreateParentAccount(false);
@@ -1173,6 +1184,8 @@ const UsersManager = () => {
                       }
 
                       await supabase.from("user_roles").upsert({ user_id: userId, role: role as any }, { onConflict: "user_id,role", ignoreDuplicates: true });
+
+                      logAudit("user_created", "user", userId, { name: `${row.jmeno} ${row.prijmeni}`, role, source: "import" });
 
                       successCount++;
 

@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { logAudit } from "@/lib/audit";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -196,21 +197,25 @@ const ClassesManager = () => {
         return;
       }
       toast({ title: "Uloženo", description: "Třída byla upravena." });
+      logAudit("class_updated", "class", editingClass.id, { name: payload.name });
     } else {
       if (!user) {
         toast({ title: "Chyba", description: "Nejste přihlášen/a.", variant: "destructive" });
         setSaving(false);
         return;
       }
-      const { error } = await supabase
+      const { data: created, error } = await supabase
         .from("classes")
-        .insert({ ...payload, created_by: user.id } as any);
+        .insert({ ...payload, created_by: user.id } as any)
+        .select("id")
+        .single();
       if (error) {
         toast({ title: "Chyba", description: error.message, variant: "destructive" });
         setSaving(false);
         return;
       }
       toast({ title: "Vytvořeno", description: "Nová třída byla vytvořena." });
+      logAudit("class_created", "class", created?.id ?? null, { name: payload.name });
     }
 
     setSaving(false);
@@ -235,12 +240,14 @@ const ClassesManager = () => {
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    const { error } = await supabase.from("classes").delete().eq("id", deleteTarget.id);
+    const target = deleteTarget;
+    const { error } = await supabase.from("classes").delete().eq("id", target.id);
     if (error) {
       toast({ title: "Chyba", description: error.message, variant: "destructive" });
       return;
     }
     toast({ title: "Smazáno", description: "Třída byla odstraněna." });
+    logAudit("class_deleted", "class", target.id, { name: (target as any).name });
     setDeleteTarget(null);
     fetchClasses();
   };
