@@ -484,6 +484,25 @@ const LiveTeacherScreen = () => {
         </div>
       )}
     </div>
+
+    {sessionId && (
+      <>
+        <Button
+          onClick={() => setAddSlideOpen(true)}
+          aria-label="Přidat slide"
+          title="Přidat slide"
+          className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 hover:shadow-xl transition-all p-0"
+        >
+          <Plus className="w-6 h-6" />
+        </Button>
+        <AddSlideSheet
+          open={addSlideOpen}
+          onOpenChange={setAddSlideOpen}
+          sessionId={sessionId}
+          slides={slides}
+        />
+      </>
+    )}
     </>
   );
 };
