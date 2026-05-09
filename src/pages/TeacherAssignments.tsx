@@ -126,6 +126,7 @@ const TeacherAssignments = () => {
         activity_data: [] as any,
         worksheet_id: selectedWorksheetId || null,
         lockdown_mode: lockdownMode,
+        exam_type: examType === "ukol" ? null : examType,
       } as any);
 
       if (error) throw error;
