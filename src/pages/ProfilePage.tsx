@@ -54,6 +54,8 @@ const ProfilePage = () => {
   // Parent recovery email
   const [parentEmail, setParentEmail] = useState("");
   const [savingParentEmail, setSavingParentEmail] = useState(false);
+  const [emailNotifications, setEmailNotifications] = useState(true);
+  const [savingEmailNotif, setSavingEmailNotif] = useState(false);
 
   // Password change
   const [showPasswordForm, setShowPasswordForm] = useState(false);
