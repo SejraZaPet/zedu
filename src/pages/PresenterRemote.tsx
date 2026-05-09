@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
-  ChevronLeft, ChevronRight, Pause, Play, StopCircle, Menu, Clock, X,
+  ChevronLeft, ChevronRight, Pause, Play, StopCircle, Menu, Clock,
 } from "lucide-react";
 import {
   Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle,
