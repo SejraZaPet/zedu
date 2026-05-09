@@ -317,11 +317,13 @@ const Auth = () => {
             <Lock className="w-6 h-6 text-primary" />
           </div>
           <h1 className="font-heading text-2xl font-bold">
-            {mode === "login" ? "Přihlášení" : "Registrace"}
+            {mode === "login" ? "Přihlášení" : mode === "pin" ? "Přihlášení PINem" : "Registrace"}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             {mode === "login"
               ? "Přihlaste se do svého účtu"
+              : mode === "pin"
+              ? "Zadej uživatelské jméno a 4-místný PIN"
               : "Vytvořte si nový účet"}
           </p>
         </div>
