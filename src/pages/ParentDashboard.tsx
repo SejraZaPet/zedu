@@ -33,7 +33,7 @@ interface StudentStats {
   completedLessons: number;
   totalScore: number;
   totalMaxScore: number;
-  assignments: { id: string; title: string; status: string; score: number | null; max_score: number | null }[];
+  assignments: { id: string; title: string; status: string; score: number | null; max_score: number | null; exam_type: string | null }[];
 }
 
 const getInitials = (first: string, last: string) =>
