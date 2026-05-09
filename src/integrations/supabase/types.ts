@@ -704,6 +704,7 @@ export type Database = {
           settings: Json
           status: string
           teacher_id: string
+          teams: Json
           title: string
           updated_at: string
           whiteboard_data: Json
@@ -718,6 +719,7 @@ export type Database = {
           settings?: Json
           status?: string
           teacher_id: string
+          teams?: Json
           title?: string
           updated_at?: string
           whiteboard_data?: Json
@@ -732,6 +734,7 @@ export type Database = {
           settings?: Json
           status?: string
           teacher_id?: string
+          teams?: Json
           title?: string
           updated_at?: string
           whiteboard_data?: Json
