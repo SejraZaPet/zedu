@@ -383,6 +383,7 @@ const TeacherAssignments = () => {
                         </span>
                         {a.randomize_order && <span className="flex items-center gap-1"><Shuffle className="w-3 h-3" /> Míchání</span>}
                       </div>
+                      <TeacherAssignmentAttachments assignmentId={a.id} />
                     </div>
                     <div className="flex gap-1">
                       {a.status === "published" && a.class_id && (
