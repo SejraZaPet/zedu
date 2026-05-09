@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { t } from "@/lib/t";
 import { QRCodeSVG } from "qrcode.react";
+import { TeamSetup } from "@/components/game/TeamSetup";
 
 interface Props {
   session: GameSession;
