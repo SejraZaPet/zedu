@@ -56,6 +56,7 @@ import TeacherLessonPlanEditor from "./pages/TeacherLessonPlanEditor";
 import TeacherSchedule from "./pages/TeacherSchedule";
 import TeacherSubjectClass from "./pages/TeacherSubjectClass";
 import TeacherSubjects from "./pages/TeacherSubjects";
+import TeacherMethods from "./pages/TeacherMethods";
 import SchoolAdmin from "./pages/SchoolAdmin";
 import ViewAsBanner from "./components/ViewAsBanner";
 
