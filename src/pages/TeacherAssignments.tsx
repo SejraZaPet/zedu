@@ -71,6 +71,7 @@ const TeacherAssignments = () => {
   const [selectedClassId, setSelectedClassId] = useState<string>("");
   const [worksheets, setWorksheets] = useState<WorksheetOption[]>([]);
   const [selectedWorksheetId, setSelectedWorksheetId] = useState<string>(prefillWorksheetId || "");
+  const [lockdownMode, setLockdownMode] = useState(false);
 
   useEffect(() => {
     loadData();
