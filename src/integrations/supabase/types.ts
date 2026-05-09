@@ -1827,6 +1827,42 @@ export type Database = {
           },
         ]
       }
+      teacher_media: {
+        Row: {
+          created_at: string
+          filename: string
+          id: string
+          mime_type: string
+          size_bytes: number
+          storage_path: string
+          tags: string[]
+          teacher_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          filename: string
+          id?: string
+          mime_type: string
+          size_bytes?: number
+          storage_path: string
+          tags?: string[]
+          teacher_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          filename?: string
+          id?: string
+          mime_type?: string
+          size_bytes?: number
+          storage_path?: string
+          tags?: string[]
+          teacher_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       teacher_textbook_enrollments: {
         Row: {
           enrolled_at: string

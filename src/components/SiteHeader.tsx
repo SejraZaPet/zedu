@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Menu, X, LogIn, LogOut, User, BookOpen, GraduationCap, LayoutDashboard, Users, BarChart3, HelpCircle, Layers, FolderOpen, Activity, TrendingUp, Gamepad2, Settings, CalendarDays, Brain, School } from "lucide-react";
+import { Menu, X, LogIn, LogOut, User, BookOpen, GraduationCap, LayoutDashboard, Users, BarChart3, HelpCircle, Layers, FolderOpen, Activity, TrendingUp, Gamepad2, Settings, CalendarDays, Brain, School, Image as ImageIcon } from "lucide-react";
 import logo from "@/assets/zedu-logo-new.png";
 import { Button } from "@/components/ui/button";
 import {
@@ -57,6 +57,7 @@ const SiteHeader = () => {
         { label: "Rozvrh", href: "/ucitel/rozvrh", icon: CalendarDays },
         { label: "Živé hry", href: "/ucitel/hry", icon: Gamepad2 },
         { label: "Třídy", href: "/ucitel/tridy", icon: FolderOpen },
+        { label: "Média", href: "/ucitel/media", icon: ImageIcon },
         { label: "Výsledky", href: "/ucitel/vysledky", icon: BarChart3 },
         { label: "Nápověda", href: "/napoveda", icon: HelpCircle },
       ];

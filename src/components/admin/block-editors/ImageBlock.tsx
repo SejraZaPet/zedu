@@ -4,8 +4,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import type { Block } from "@/lib/textbook-config";
 import { useState } from "react";
-import { Upload } from "lucide-react";
+import { Upload, FolderOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { MediaPickerDialog } from "@/components/media/MediaPickerDialog";
 
 interface Props {
   block: Block;
@@ -40,6 +41,15 @@ const ImageBlock = ({ block, onChange }: Props) => {
           <Upload className="w-4 h-4 mr-1" />{uploading ? "…" : "Nahrát"}
           <input type="file" accept="image/*" onChange={handleUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
         </Button>
+        <MediaPickerDialog
+          imageOnly
+          onPick={(url) => onChange({ ...block.props, url })}
+          trigger={
+            <Button size="sm" variant="outline">
+              <FolderOpen className="w-4 h-4 mr-1" /> Z knihovny
+            </Button>
+          }
+        />
       </div>
       {block.props.url && (
         <img src={block.props.url} alt="" className="max-h-32 rounded border border-border object-cover" />
