@@ -25,6 +25,8 @@ import {
 import { expandTeacherSchedule, loadSchedule } from "@/lib/teacher-schedule-store";
 import LessonReflectionDialog from "@/components/lessons/LessonReflectionDialog";
 import { fetchReflections, reflectionKey } from "@/lib/lesson-reflections";
+import { CalendarExportMenu } from "@/components/calendar/CalendarExportMenu";
+import { toExportEvent } from "@/lib/calendar-export";
 
 const TeacherCalendar = () => {
   const navigate = useNavigate();
