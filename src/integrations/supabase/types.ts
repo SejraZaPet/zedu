@@ -50,6 +50,51 @@ export type Database = {
         }
         Relationships: []
       }
+      assignment_attachments: {
+        Row: {
+          assignment_id: string
+          file_name: string
+          file_path: string
+          file_size: number
+          id: string
+          student_id: string
+          uploaded_at: string
+        }
+        Insert: {
+          assignment_id: string
+          file_name: string
+          file_path: string
+          file_size?: number
+          id?: string
+          student_id: string
+          uploaded_at?: string
+        }
+        Update: {
+          assignment_id?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          id?: string
+          student_id?: string
+          uploaded_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignment_attachments_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignment_attachments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assignment_attempts: {
         Row: {
           answers: Json
