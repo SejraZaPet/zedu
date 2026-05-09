@@ -99,6 +99,55 @@ const ProfilePage = () => {
     loadProfile();
   }, [authLoading, isLoggedIn, user, navigate, toast]);
 
+  // Load methods + preferred for students
+  useEffect(() => {
+    if (!user || role !== "user") return;
+    (async () => {
+      const [{ data: ms }, { data: prefs }] = await Promise.all([
+        supabase.from("study_methods").select("id, name, slug, description").order("name"),
+        supabase.from("student_preferred_methods").select("method_id").eq("student_id", user.id),
+      ]);
+      setMethods((ms ?? []) as any);
+      setPreferredIds(((prefs ?? []) as any[]).map((p) => p.method_id));
+    })();
+  }, [user, role]);
+
+  const togglePreferred = (id: string) => {
+    setPreferredIds((prev) => {
+      if (prev.includes(id)) return prev.filter((x) => x !== id);
+      if (prev.length >= MAX_PREFERRED) {
+        toast({ title: "Maximální počet", description: `Můžeš si vybrat nejvíce ${MAX_PREFERRED} oblíbené metody.` });
+        return prev;
+      }
+      return [...prev, id];
+    });
+  };
+
+  const handleSavePreferred = async () => {
+    if (!user) return;
+    setSavingPreferred(true);
+    const { error: delErr } = await supabase
+      .from("student_preferred_methods")
+      .delete()
+      .eq("student_id", user.id);
+    if (delErr) {
+      setSavingPreferred(false);
+      toast({ title: "Chyba", description: delErr.message, variant: "destructive" });
+      return;
+    }
+    if (preferredIds.length > 0) {
+      const rows = preferredIds.map((method_id) => ({ student_id: user.id, method_id }));
+      const { error } = await supabase.from("student_preferred_methods").insert(rows);
+      if (error) {
+        setSavingPreferred(false);
+        toast({ title: "Chyba", description: error.message, variant: "destructive" });
+        return;
+      }
+    }
+    setSavingPreferred(false);
+    toast({ title: "Uloženo", description: "Tvoje oblíbené metody byly aktualizovány." });
+  };
+
   const handleSaveProfile = async () => {
     if (!user) return;
     setSaving(true);
