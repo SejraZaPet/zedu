@@ -65,7 +65,7 @@ const ChildUpcomingAssignmentsWidget = ({ studentIds, studentNames }: Props) => 
       const nowIso = new Date().toISOString();
       const { data: assignments } = await supabase
         .from("assignments")
-        .select("id, title, deadline, lesson_plans(subject)")
+        .select("id, title, deadline, exam_type, lesson_plans(subject)")
         .eq("status", "published")
         .in("class_id", classIds)
         .gt("deadline", nowIso)
@@ -94,6 +94,7 @@ const ChildUpcomingAssignmentsWidget = ({ studentIds, studentNames }: Props) => 
         subject: a.lesson_plans?.subject || "Obecné",
         deadline: a.deadline,
         submitted: submittedSet.has(a.id),
+        exam_type: a.exam_type ?? null,
       }));
 
       if (!cancelled) {
