@@ -170,7 +170,15 @@ const TodayWidget = ({ role }: Props) => {
           </ul>
         )}
 
-        <div className="flex justify-end mt-3">
+        <div className="flex justify-end gap-3 mt-3">
+          {role === "student" && (
+            <button
+              onClick={() => navigate("/student/rozvrh")}
+              className="text-sm text-primary hover:underline inline-flex items-center gap-1"
+            >
+              Rozvrh třídy <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          )}
           <button
             onClick={() => navigate(calendarPath)}
             className="text-sm text-primary hover:underline inline-flex items-center gap-1"

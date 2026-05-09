@@ -64,6 +64,7 @@ const SiteHeader = () => {
       return [
         { label: "Přehled", href: "/student", icon: LayoutDashboard },
         { label: "Moje učebnice", href: "/student/ucebnice", icon: BookOpen },
+        { label: "Rozvrh", href: "/student/rozvrh", icon: CalendarDays },
         { label: "Připojit se do hry", href: "/hra/pripojit", icon: Gamepad2 },
         { label: "Nápověda", href: "/napoveda", icon: HelpCircle },
       ];
