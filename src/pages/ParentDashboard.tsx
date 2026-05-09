@@ -382,6 +382,15 @@ const ParentDashboard = () => {
                       </Button>
                     ) : <span />}
                     <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      onClick={() => navigate(`/portfolio/${student.id}`)}
+                    >
+                      <FolderOpen className="w-3.5 h-3.5" />
+                      Portfolio dítěte
+                    </Button>
+                    <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handleUnlinkChild(student.id)}
