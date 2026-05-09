@@ -25,7 +25,20 @@ import {
   Loader2,
   Plus,
   X,
+  FileDown,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  exportLessonPlanPdf,
+  type LessonPlanTemplate,
+} from "@/lib/lesson-plan-pdf-export";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
@@ -522,6 +535,35 @@ export default function TeacherLessonPlanEditor() {
     }
   }
 
+  function handleExportPdf(template: LessonPlanTemplate) {
+    try {
+      const [start, end] = (linkedTime || "").split("-");
+      const className = teacherClasses.find((c) => c.id === classId)?.name;
+      exportLessonPlanPdf(template, {
+        title: title?.trim() || "Plán hodiny",
+        subject: subject || undefined,
+        className,
+        date: linkedDate || undefined,
+        start: start || undefined,
+        end: end || undefined,
+        description: description || undefined,
+        phases: PHASES.map((p) => ({
+          key: p.key,
+          title: p.title,
+          timeMin: phases[p.key]?.timeMin ?? "",
+          description: phases[p.key]?.description ?? "",
+          activities: phases[p.key]?.activities ?? [],
+        })),
+      });
+    } catch (e: any) {
+      toast({
+        title: "Export se nezdařil",
+        description: e?.message || "Nepodařilo se otevřít okno tisku.",
+        variant: "destructive",
+      });
+    }
+  }
+
   async function handleSave() {
     if (!user) {
       toast({ title: "Nepřihlášen", description: "Přihlaš se pro uložení plánu.", variant: "destructive" });
@@ -647,6 +689,30 @@ export default function TeacherLessonPlanEditor() {
               <Clock className="w-4 h-4" />
               <span>Celkem: {totalMin} min</span>
             </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  <FileDown className="w-4 h-4 mr-2" />
+                  Exportovat PDF
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-72">
+                <DropdownMenuLabel>Vyberte šablonu</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => handleExportPdf("short")} className="flex-col items-start gap-0.5">
+                  <span className="font-medium">A) Krátký plán</span>
+                  <span className="text-xs text-muted-foreground">1 strana – tabulka fází s časy a aktivitami</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExportPdf("detailed")} className="flex-col items-start gap-0.5">
+                  <span className="font-medium">B) Detailní plán</span>
+                  <span className="text-xs text-muted-foreground">Pro hospitaci – cíle, kompetence, pomůcky, formy práce</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExportPdf("student")} className="flex-col items-start gap-0.5">
+                  <span className="font-medium">C) Studentský plán</span>
+                  <span className="text-xs text-muted-foreground">„Co budeme dnes dělat" – jen názvy fází a aktivity</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button onClick={handleSave} disabled={saving}>
               {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
               Uložit
