@@ -1,9 +1,11 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import NotificationComposer from "@/components/notifications/NotificationComposer";
 import BroadcastHistory from "@/components/notifications/BroadcastHistory";
+import { Button } from "@/components/ui/button";
+import { MessageCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
 
