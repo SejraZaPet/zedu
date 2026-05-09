@@ -5,6 +5,7 @@ import { User, BookOpen, ClipboardList, CheckCircle2, Clock, Plus, Trash2, KeyRo
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import ChildScheduleWidget from "@/components/parent/ChildScheduleWidget";
+import ChildProgressWidget from "@/components/parent/ChildProgressWidget";
 import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -195,8 +196,14 @@ const ParentDashboard = () => {
         </div>
 
         {students.length > 0 && (
-          <div className="mb-6">
+          <div className="mb-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
             <ChildScheduleWidget
+              studentIds={students.map((s) => s.id)}
+              studentNames={Object.fromEntries(
+                students.map((s) => [s.id, `${s.first_name} ${s.last_name}`.trim() || "Dítě"]),
+              )}
+            />
+            <ChildProgressWidget
               studentIds={students.map((s) => s.id)}
               studentNames={Object.fromEntries(
                 students.map((s) => [s.id, `${s.first_name} ${s.last_name}`.trim() || "Dítě"]),
