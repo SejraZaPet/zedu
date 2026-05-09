@@ -29,7 +29,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { BookOpen, Plus, Search, Calendar, Loader2, Trash2, LayoutTemplate } from "lucide-react";
+import { BookOpen, Plus, Search, Calendar, Loader2, Trash2, LayoutTemplate, Share2, Globe, School, Copy, User as UserIcon } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -68,6 +68,98 @@ export default function TeacherLessonPlans() {
   const [deleteTemplateId, setDeleteTemplateId] = useState<string | null>(null);
   const [deletingTemplate, setDeletingTemplate] = useState(false);
 
+  // Shared plans
+  type SharedPlan = {
+    id: string;
+    title: string;
+    subject: string;
+    updated_at: string;
+    teacher_id: string;
+    shared_visibility: "public" | "school" | "private" | "link";
+    anonymous: boolean;
+    input_data: any;
+    author_name?: string;
+  };
+  const [sharedPlans, setSharedPlans] = useState<SharedPlan[]>([]);
+  const [sharedLoading, setSharedLoading] = useState(false);
+  const [sharedSearch, setSharedSearch] = useState("");
+  const [sharedScope, setSharedScope] = useState<"all" | "public" | "school">("all");
+  const [copyingId, setCopyingId] = useState<string | null>(null);
+
+  async function loadSharedPlans() {
+    if (!user) return;
+    setSharedLoading(true);
+    const { data } = await supabase
+      .from("lesson_plans")
+      .select("id, title, subject, updated_at, teacher_id, shared_visibility, anonymous, input_data")
+      .neq("teacher_id", user.id)
+      .in("shared_visibility", ["public", "school"])
+      .order("updated_at", { ascending: false })
+      .limit(200);
+    const rows = ((data as any[]) ?? []) as SharedPlan[];
+    // Resolve author names for non-anonymous
+    const ids = Array.from(new Set(rows.filter((r) => !r.anonymous).map((r) => r.teacher_id)));
+    let nameMap = new Map<string, string>();
+    if (ids.length) {
+      const { data: profs } = await supabase
+        .from("profiles")
+        .select("id, first_name, last_name")
+        .in("id", ids);
+      for (const p of (profs as any[]) ?? []) {
+        const nm = `${p.first_name || ""} ${p.last_name || ""}`.trim();
+        nameMap.set(p.id, nm || "Učitel");
+      }
+    }
+    for (const r of rows) {
+      r.author_name = r.anonymous ? "Anonymní učitel" : nameMap.get(r.teacher_id) || "Učitel";
+    }
+    setSharedPlans(rows);
+    setSharedLoading(false);
+  }
+
+  const filteredShared = useMemo(() => {
+    let list = sharedPlans;
+    if (sharedScope !== "all") list = list.filter((p) => p.shared_visibility === sharedScope);
+    if (sharedSearch.trim()) {
+      const q = sharedSearch.toLowerCase();
+      list = list.filter(
+        (p) =>
+          (p.title || "").toLowerCase().includes(q) ||
+          (p.subject || "").toLowerCase().includes(q) ||
+          (p.author_name || "").toLowerCase().includes(q),
+      );
+    }
+    return list;
+  }, [sharedPlans, sharedScope, sharedSearch]);
+
+  async function copySharedPlan(plan: SharedPlan) {
+    if (!user) return;
+    setCopyingId(plan.id);
+    const newInput = { ...(plan.input_data || {}) };
+    // Strip slot/date bindings — they're personal
+    delete newInput.linkedDate;
+    delete newInput.linkedTime;
+    delete newInput.linkedSlots;
+    delete newInput.classId;
+    const { error } = await supabase.from("lesson_plans").insert({
+      teacher_id: user.id,
+      title: `${plan.title} (kopie)`,
+      subject: plan.subject || "",
+      grade_band: "",
+      slides: [],
+      input_data: newInput,
+      shared_visibility: "private",
+      anonymous: false,
+    } as any);
+    setCopyingId(null);
+    if (error) {
+      toast({ title: "Kopírování se nezdařilo", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Plán zkopírován", description: "Najdete ho v záložce Plány." });
+    reload();
+  }
+
   async function confirmDeleteTemplate() {
     if (!deleteTemplateId) return;
     setDeletingTemplate(true);
@@ -104,6 +196,7 @@ export default function TeacherLessonPlans() {
 
   useEffect(() => {
     reload();
+    loadSharedPlans();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
@@ -279,6 +372,7 @@ export default function TeacherLessonPlans() {
           <TabsList className="mb-4">
             <TabsTrigger value="plans">Plány ({items.length})</TabsTrigger>
             <TabsTrigger value="templates">Šablony ({templates.length})</TabsTrigger>
+            <TabsTrigger value="shared">Sdílené plány ({sharedPlans.length})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="plans" className="mt-0">
@@ -401,6 +495,87 @@ export default function TeacherLessonPlans() {
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="shared" className="mt-0">
+            <div className="grid sm:grid-cols-[1fr_220px] gap-3 mb-6">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  className="pl-9"
+                  placeholder="Hledat sdílené plány…"
+                  value={sharedSearch}
+                  onChange={(e) => setSharedSearch(e.target.value)}
+                />
+              </div>
+              <Select value={sharedScope} onValueChange={(v) => setSharedScope(v as any)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Vše</SelectItem>
+                  <SelectItem value="public">Veřejné</SelectItem>
+                  <SelectItem value="school">Pouze moje škola</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {sharedLoading ? (
+              <div className="flex items-center justify-center py-24">
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : filteredShared.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
+                <Share2 className="w-12 h-12 text-muted-foreground/40" />
+                <p className="text-muted-foreground text-sm">
+                  {sharedSearch.trim() || sharedScope !== "all"
+                    ? "Žádný sdílený plán neodpovídá filtru."
+                    : "Zatím nejsou k dispozici žádné sdílené plány."}
+                </p>
+              </div>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {filteredShared.map((plan) => (
+                  <div
+                    key={plan.id}
+                    className="bg-card border border-border rounded-xl p-5 flex flex-col gap-2 hover:border-primary/40 transition-colors"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      {plan.shared_visibility === "public" ? (
+                        <Globe className="w-4 h-4 text-primary shrink-0" />
+                      ) : (
+                        <School className="w-4 h-4 text-primary shrink-0" />
+                      )}
+                      <span className="font-semibold text-sm truncate">{plan.title}</span>
+                    </div>
+                    {plan.subject && (
+                      <p className="text-xs text-muted-foreground">{plan.subject}</p>
+                    )}
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <UserIcon className="w-3 h-3 shrink-0" />
+                      <span className="truncate">{plan.author_name}</span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground/70">
+                      Upraveno {format(new Date(plan.updated_at), "d. M. yyyy", { locale: cs })}
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="mt-2 self-start"
+                      onClick={() => copySharedPlan(plan)}
+                      disabled={copyingId === plan.id}
+                    >
+                      {copyingId === plan.id ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Copy className="w-4 h-4 mr-2" />
+                      )}
+                      Zkopírovat do mých plánů
+                    </Button>
                   </div>
                 ))}
               </div>

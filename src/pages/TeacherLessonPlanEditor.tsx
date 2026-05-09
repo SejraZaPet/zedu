@@ -28,7 +28,16 @@ import {
   FileDown,
   LayoutTemplate,
   Trash2,
+  Share2,
+  Lock,
+  Globe,
+  School,
 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import {
+  RadioGroup,
+  RadioGroupItem,
+} from "@/components/ui/radio-group";
 import {
   Dialog,
   DialogContent,
@@ -184,6 +193,8 @@ export default function TeacherLessonPlanEditor() {
       if (input.classId) setClassId(input.classId);
       if (Array.isArray(input.linkedSlots)) setLinkedSlots(input.linkedSlots);
       if (input.phases) setPhases({ ...emptyPhases(), ...input.phases });
+      if ((data as any).shared_visibility) setSharedVisibility((data as any).shared_visibility);
+      if (typeof (data as any).anonymous === "boolean") setAnonymous((data as any).anonymous);
     })();
   }, [user, id]);
 
@@ -584,6 +595,32 @@ export default function TeacherLessonPlanEditor() {
   const [templateDesc, setTemplateDesc] = useState("");
   const [templateSaving, setTemplateSaving] = useState(false);
 
+  // Sharing
+  const [shareOpen, setShareOpen] = useState(false);
+  const [sharedVisibility, setSharedVisibility] = useState<"private" | "public" | "school">("private");
+  const [anonymous, setAnonymous] = useState(false);
+  const [sharingSaving, setSharingSaving] = useState(false);
+
+  async function handleSaveSharing() {
+    if (!user) return;
+    if (!planDbId) {
+      toast({ title: "Nejprve uložte plán", description: "Plán musí existovat, než ho můžete sdílet.", variant: "destructive" });
+      return;
+    }
+    setSharingSaving(true);
+    const { error } = await supabase
+      .from("lesson_plans")
+      .update({ shared_visibility: sharedVisibility, anonymous } as any)
+      .eq("id", planDbId);
+    setSharingSaving(false);
+    if (error) {
+      toast({ title: "Uložení sdílení se nezdařilo", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Sdílení uloženo" });
+    setShareOpen(false);
+  }
+
   async function reloadTemplates() {
     if (!user) return;
     const { data } = await supabase
@@ -795,6 +832,15 @@ export default function TeacherLessonPlanEditor() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            <Button
+              variant="outline"
+              onClick={() => setShareOpen(true)}
+              disabled={!planDbId}
+              title={planDbId ? "Sdílet plán" : "Nejprve plán uložte"}
+            >
+              <Share2 className="w-4 h-4 mr-2" />
+              Sdílet
+            </Button>
             <Button
               variant="outline"
               onClick={() => setLoadTemplateOpen(true)}
@@ -1405,6 +1451,94 @@ export default function TeacherLessonPlanEditor() {
               ))
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Share dialog */}
+      <Dialog open={shareOpen} onOpenChange={setShareOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Sdílení plánu</DialogTitle>
+            <DialogDescription>
+              Vyberte, kdo může váš plán hodiny vidět v katalogu sdílených plánů.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <RadioGroup
+              value={sharedVisibility}
+              onValueChange={(v) => setSharedVisibility(v as any)}
+              className="space-y-2"
+            >
+              <label
+                htmlFor="vis-private"
+                className="flex items-start gap-3 border border-border rounded-lg p-3 cursor-pointer hover:border-primary/40"
+              >
+                <RadioGroupItem id="vis-private" value="private" className="mt-0.5" />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <Lock className="w-4 h-4" /> Soukromý
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Plán vidíte jen vy.
+                  </p>
+                </div>
+              </label>
+              <label
+                htmlFor="vis-school"
+                className="flex items-start gap-3 border border-border rounded-lg p-3 cursor-pointer hover:border-primary/40"
+              >
+                <RadioGroupItem id="vis-school" value="school" className="mt-0.5" />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <School className="w-4 h-4" /> Pouze moje škola
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Vidí ho učitelé z vaší školy.
+                  </p>
+                </div>
+              </label>
+              <label
+                htmlFor="vis-public"
+                className="flex items-start gap-3 border border-border rounded-lg p-3 cursor-pointer hover:border-primary/40"
+              >
+                <RadioGroupItem id="vis-public" value="public" className="mt-0.5" />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <Globe className="w-4 h-4" /> Veřejný
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Vidí ho všichni učitelé v katalogu.
+                  </p>
+                </div>
+              </label>
+            </RadioGroup>
+
+            <div className="flex items-center justify-between border border-border rounded-lg p-3">
+              <div>
+                <Label htmlFor="anon-toggle" className="text-sm font-medium">
+                  Anonymní sdílení
+                </Label>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  V katalogu se nezobrazí vaše jméno.
+                </p>
+              </div>
+              <Switch
+                id="anon-toggle"
+                checked={anonymous}
+                onCheckedChange={setAnonymous}
+                disabled={sharedVisibility === "private"}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShareOpen(false)} disabled={sharingSaving}>
+              Zrušit
+            </Button>
+            <Button onClick={handleSaveSharing} disabled={sharingSaving}>
+              {sharingSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+              Uložit
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
