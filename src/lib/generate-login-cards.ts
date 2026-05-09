@@ -9,6 +9,7 @@ export interface LoginCardData {
   username?: string;
   studentCode?: string;
   childCodes?: string[];
+  pin?: string;
 }
 
 const APP_URL = "https://www.zedu.cz";
