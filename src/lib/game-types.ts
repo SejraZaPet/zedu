@@ -12,6 +12,8 @@ export interface GameSettings {
   shuffleAnswers: boolean;
   showLeaderboardAfterEach: boolean;
   teamMode: boolean;
+  gameMode?: "standard" | "race" | "tower" | "steal";
+  theme?: string;
 }
 
 export const DEFAULT_GAME_SETTINGS: GameSettings = {
@@ -20,6 +22,8 @@ export const DEFAULT_GAME_SETTINGS: GameSettings = {
   shuffleAnswers: true,
   showLeaderboardAfterEach: true,
   teamMode: false,
+  gameMode: "standard",
+  theme: "default",
 };
 
 export interface GamePlayer {
