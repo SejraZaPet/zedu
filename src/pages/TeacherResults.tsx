@@ -97,12 +97,14 @@ const TeacherResults = () => {
 
       // Class members for those classes
       const classIds = classOpts.map((c) => c.id);
+      let cmRows: any[] = [];
       if (classIds.length > 0) {
         const { data: cm } = await supabase
           .from("class_members")
           .select("class_id, user_id")
           .in("class_id", classIds);
-        setClassMembers((cm ?? []) as any);
+        cmRows = (cm ?? []) as any[];
+        setClassMembers(cmRows as any);
       }
 
       // Attempts for those assignments
@@ -116,9 +118,7 @@ const TeacherResults = () => {
       }
 
       // Profiles for student names
-      const studentIds = [...new Set([
-        ...((cm ?? []) as any[]).map((m: any) => m.user_id),
-      ])];
+      const studentIds = [...new Set(cmRows.map((m: any) => m.user_id))];
       if (studentIds.length > 0) {
         const { data: pf } = await supabase
           .from("profiles")
