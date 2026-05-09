@@ -10,7 +10,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { BookOpen, FileText, PlayCircle, MapPin, Users, Clock } from "lucide-react";
+import { BookOpen, FileText, PlayCircle, MapPin, Users, Clock, Star, MessageSquarePlus } from "lucide-react";
 import type { CalendarEvent } from "@/lib/calendar-utils";
 import { formatTime } from "@/lib/calendar-utils";
 import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { getPhasePlan, type StoredPhasePlan } from "@/lib/lesson-phase-plans";
+import LessonReflectionDialog from "@/components/lessons/LessonReflectionDialog";
 
 interface Props {
   event: CalendarEvent | null;
