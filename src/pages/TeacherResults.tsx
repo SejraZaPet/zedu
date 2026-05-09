@@ -114,6 +114,20 @@ const TeacherResults = () => {
           .in("assignment_id", asgIds);
         setAttempts((at ?? []) as any);
       }
+
+      // Profiles for student names
+      const studentIds = [...new Set([
+        ...((cm ?? []) as any[]).map((m: any) => m.user_id),
+      ])];
+      if (studentIds.length > 0) {
+        const { data: pf } = await supabase
+          .from("profiles")
+          .select("id, first_name, last_name")
+          .in("id", studentIds);
+        const map: Record<string, { first_name: string; last_name: string }> = {};
+        for (const p of (pf ?? []) as any[]) map[p.id] = { first_name: p.first_name || "", last_name: p.last_name || "" };
+        setProfiles(map);
+      }
       setLoading(false);
     })().catch((e) => {
       toast({ title: "Chyba načítání", description: e.message, variant: "destructive" });
