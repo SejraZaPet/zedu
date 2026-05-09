@@ -29,17 +29,37 @@ Deno.serve(async (req) => {
     const callerId = claimsData.claims.sub;
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
-    const { data: roles } = await adminClient.from("user_roles").select("role").eq("user_id", callerId).eq("role", "admin");
-    if (!roles?.length) {
+    const body = await req.json().catch(() => ({}));
+    const requestedUserId = typeof body?.user_id === "string" ? body.user_id : callerId;
+
+    const { data: adminRoles } = await adminClient
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", callerId)
+      .eq("role", "admin");
+    const isAdmin = Boolean(adminRoles?.length);
+
+    if (requestedUserId !== callerId && !isAdmin) {
       return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: corsHeaders });
     }
 
-    const { user_id } = await req.json();
-    if (!user_id) {
+    if (body?.include_profile === true) {
+      const [{ data: profile }, { data: userRoles }] = await Promise.all([
+        adminClient.from("profiles").select("*").eq("id", requestedUserId).maybeSingle(),
+        adminClient.from("user_roles").select("role").eq("user_id", requestedUserId),
+      ]);
+
+      return new Response(JSON.stringify({
+        profile,
+        roles: (userRoles ?? []).map((row) => row.role),
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    if (!requestedUserId) {
       return new Response(JSON.stringify({ error: "user_id required" }), { status: 400, headers: corsHeaders });
     }
 
-    const { data: { user }, error } = await adminClient.auth.admin.getUserById(user_id);
+    const { data: { user }, error } = await adminClient.auth.admin.getUserById(requestedUserId);
     if (error || !user) {
       return new Response(JSON.stringify({ error: "User not found" }), { status: 404, headers: corsHeaders });
     }
