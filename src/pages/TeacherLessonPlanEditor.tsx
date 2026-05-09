@@ -552,7 +552,7 @@ export default function TeacherLessonPlanEditor() {
       for (const sl of allSlots) {
         const [start, end] = (sl.time || "").split("-");
         if (!sl.subject || !sl.date || !start) continue;
-        savePhasePlan({
+        await savePhasePlan({
           subject: sl.subject,
           date: sl.date,
           start,
