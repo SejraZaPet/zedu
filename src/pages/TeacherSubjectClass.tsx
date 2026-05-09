@@ -155,6 +155,10 @@ export default function TeacherSubjectClass() {
   const [assignPlanDate, setAssignPlanDate] = useState<string>("");
   const [assigning, setAssigning] = useState(false);
 
+  const [reflections, setReflections] = useState<Record<string, LessonReflection>>({});
+  const [reflectionEvent, setReflectionEvent] = useState<{ date: string; subject: string; classId: string; label: string } | null>(null);
+  const [reflectionVersion, setReflectionVersion] = useState(0);
+
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
