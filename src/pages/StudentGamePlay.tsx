@@ -16,6 +16,7 @@ import { Lock } from "lucide-react";
 import { AvatarSvg } from "@/components/student/AvatarSvg";
 import { useStudentAvatar } from "@/hooks/useStudentAvatars";
 import { useAuth } from "@/contexts/AuthContext";
+import { findPlayerTeam } from "@/lib/game-types";
 
 const StudentGamePlay = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
