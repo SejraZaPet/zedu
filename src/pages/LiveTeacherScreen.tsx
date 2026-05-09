@@ -5,7 +5,7 @@ import { GameLobby } from "@/components/game/GameLobby";
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Monitor, Smartphone, StickyNote, ChevronLeft, ChevronRight, Users, StopCircle, ArrowLeft, Brain, Plus } from "lucide-react";
+import { Monitor, Smartphone, StickyNote, ChevronLeft, ChevronRight, Users, StopCircle, ArrowLeft, Brain, Plus, Pencil } from "lucide-react";
 import SessionExports from "@/components/live/SessionExports";
 import { AdaptiveReviewDialog } from "@/components/game/AdaptiveReview";
 import { AddSlideSheet } from "@/components/game/AddSlideSheet";
@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import PollProjectorView from "@/components/activities/PollProjectorView";
+import LiveWhiteboard, { WhiteboardData } from "@/components/game/LiveWhiteboard";
 
 interface SlideData {
   slideId: string;
@@ -43,6 +44,16 @@ const LiveTeacherScreen = () => {
   const isFinished = session?.status === "finished";
   const settings = session?.settings as any;
   const gameCode = session?.game_code || "";
+  const whiteboard: WhiteboardData = ((session as any)?.whiteboard_data as WhiteboardData) ?? { strokes: [], visible: false };
+  const whiteboardVisible = whiteboard.visible;
+
+  const toggleWhiteboard = useCallback(async () => {
+    if (!sessionId) return;
+    await supabase
+      .from("game_sessions")
+      .update({ whiteboard_data: { ...whiteboard, visible: !whiteboardVisible } as any })
+      .eq("id", sessionId);
+  }, [sessionId, whiteboard, whiteboardVisible]);
 
   const handleNext = useCallback(() => {
     if (!session) return;
@@ -150,6 +161,16 @@ const LiveTeacherScreen = () => {
           >
             <Monitor className="w-4 h-4" />
             Projektor
+          </Button>
+          <Button
+            size="sm"
+            variant={whiteboardVisible ? "default" : "outline"}
+            className="gap-1.5"
+            onClick={toggleWhiteboard}
+            title="Živá tabule"
+          >
+            <Pencil className="w-4 h-4" />
+            {whiteboardVisible ? "Skrýt tabuli" : "Tabule"}
           </Button>
           <Button
             size="sm"
@@ -484,6 +505,16 @@ const LiveTeacherScreen = () => {
         </div>
       )}
     </div>
+
+    {sessionId && whiteboardVisible && (
+      <div className="fixed inset-0 z-40 bg-background/40 backdrop-blur-[1px]">
+        <LiveWhiteboard
+          sessionId={sessionId}
+          data={whiteboard}
+          onClose={toggleWhiteboard}
+        />
+      </div>
+    )}
 
     {sessionId && (
       <>

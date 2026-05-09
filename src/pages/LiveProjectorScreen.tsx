@@ -4,6 +4,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { BookOpen } from "lucide-react";
 import WallProjectorView from "@/components/activities/WallProjectorView";
 import { AdaptiveReviewProjector } from "@/components/game/AdaptiveReview";
+import LiveWhiteboard, { WhiteboardData } from "@/components/game/LiveWhiteboard";
 
 const LiveProjectorScreen = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -83,10 +84,11 @@ const LiveProjectorScreen = () => {
   }
 
   const progressPct = slides.length > 0 ? ((currentIndex + 1) / slides.length) * 100 : 0;
+  const whiteboard: WhiteboardData = ((session as any).whiteboard_data as WhiteboardData) ?? { strokes: [], visible: false };
 
   // Slide content
   return (
-    <div className="min-h-screen flex flex-col text-white" style={{ background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)" }}>
+    <div className="min-h-screen flex flex-col text-white relative" style={{ background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)" }}>
       {/* Progress bar */}
       <div className="h-2 bg-white/10">
         <div
@@ -201,6 +203,10 @@ const LiveProjectorScreen = () => {
         </span>
         <span className="text-lg">{players.length} žáků online</span>
       </div>
+
+      {whiteboard.visible && sessionId && (
+        <LiveWhiteboard sessionId={sessionId} data={whiteboard} readOnly />
+      )}
     </div>
   );
 };
