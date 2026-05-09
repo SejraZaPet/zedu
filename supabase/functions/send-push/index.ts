@@ -10,7 +10,10 @@ const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const VAPID_PUBLIC =
   "BKv-g73e0ou_IoTM9xe2Jlld00MntQD88gmahEQV2H3a_45rXrnWIpa3h2YGB77hnxQniytP9baipmoFH1HRWQs";
 const VAPID_PRIVATE = Deno.env.get("VAPID_PRIVATE_KEY")!;
-const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT") || "mailto:noreply@zedu.cz";
+const RAW_SUBJECT = Deno.env.get("VAPID_SUBJECT") || "mailto:noreply@zedu.cz";
+const VAPID_SUBJECT = /^(mailto:|https?:\/\/)/i.test(RAW_SUBJECT)
+  ? RAW_SUBJECT
+  : `mailto:${RAW_SUBJECT.includes("@") ? RAW_SUBJECT : "noreply@zedu.cz"}`;
 
 webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE);
 
