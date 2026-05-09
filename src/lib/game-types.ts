@@ -26,6 +26,8 @@ export const DEFAULT_GAME_SETTINGS: GameSettings = {
   teamMode: false,
   gameMode: "standard",
   theme: "default",
+  visualTheme: "default",
+  soundsEnabled: true,
 };
 
 export interface GamePlayer {
