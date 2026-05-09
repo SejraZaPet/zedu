@@ -1,8 +1,8 @@
 // Send Web Push notifications to all subscriptions of a recipient.
 // Triggered by the DB trigger `notifications_send_push` after a new row in `notifications`,
 // or invoked manually with `{ test: true }` from the client.
-import { corsHeaders } from "@supabase/supabase-js/cors";
-import { createClient } from "@supabase/supabase-js";
+import { corsHeaders } from "npm:@supabase/supabase-js@2.95.0/cors";
+import { createClient } from "npm:@supabase/supabase-js@2.95.0";
 import webpush from "npm:web-push@3.6.7";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
