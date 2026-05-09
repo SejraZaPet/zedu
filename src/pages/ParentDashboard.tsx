@@ -210,6 +210,14 @@ const ParentDashboard = () => {
                 students.map((s) => [s.id, `${s.first_name} ${s.last_name}`.trim() || "Dítě"]),
               )}
             />
+            <div className="lg:col-span-2">
+              <ChildUpcomingAssignmentsWidget
+                studentIds={students.map((s) => s.id)}
+                studentNames={Object.fromEntries(
+                  students.map((s) => [s.id, `${s.first_name} ${s.last_name}`.trim() || "Dítě"]),
+                )}
+              />
+            </div>
           </div>
         )}
 
