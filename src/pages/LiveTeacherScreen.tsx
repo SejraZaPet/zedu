@@ -164,6 +164,16 @@ const LiveTeacherScreen = () => {
           </Button>
           <Button
             size="sm"
+            variant={whiteboardVisible ? "default" : "outline"}
+            className="gap-1.5"
+            onClick={toggleWhiteboard}
+            title="Živá tabule"
+          >
+            <Pencil className="w-4 h-4" />
+            {whiteboardVisible ? "Skrýt tabuli" : "Tabule"}
+          </Button>
+          <Button
+            size="sm"
             variant="outline"
             className="gap-1.5"
             onClick={() => setAdaptiveOpen(true)}
