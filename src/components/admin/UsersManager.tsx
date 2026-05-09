@@ -648,6 +648,7 @@ const UsersManager = () => {
                           toast({ title: "Chyba", description: error.message, variant: "destructive" });
                         } else {
                           toast({ title: "Smazáno", description: `${user.first_name} ${user.last_name} byl odstraněn.` });
+                          logAudit("user_deleted", "user", user.id, { name: `${user.first_name} ${user.last_name}`, role: user.role });
                           fetchUsers();
                         }
                       }} className="text-red-400 hover:bg-red-500/10 h-7 w-7 p-0">
