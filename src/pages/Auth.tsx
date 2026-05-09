@@ -208,6 +208,9 @@ const Auth = () => {
       metadata.year = year || null;
       metadata.class_code = classCode.trim() || null;
     }
+    if (role === "teacher" && schoolCode.trim()) {
+      metadata.school_code = schoolCode.trim().toUpperCase();
+    }
     if (role === "rodic" && trimmedChildCode) {
       metadata.child_code = trimmedChildCode;
     }
