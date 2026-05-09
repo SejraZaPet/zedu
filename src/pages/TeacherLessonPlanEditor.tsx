@@ -535,6 +535,35 @@ export default function TeacherLessonPlanEditor() {
     }
   }
 
+  function handleExportPdf(template: LessonPlanTemplate) {
+    try {
+      const [start, end] = (linkedTime || "").split("-");
+      const className = teacherClasses.find((c) => c.id === classId)?.name;
+      exportLessonPlanPdf(template, {
+        title: title?.trim() || "Plán hodiny",
+        subject: subject || undefined,
+        className,
+        date: linkedDate || undefined,
+        start: start || undefined,
+        end: end || undefined,
+        description: description || undefined,
+        phases: PHASES.map((p) => ({
+          key: p.key,
+          title: p.title,
+          timeMin: phases[p.key]?.timeMin ?? "",
+          description: phases[p.key]?.description ?? "",
+          activities: phases[p.key]?.activities ?? [],
+        })),
+      });
+    } catch (e: any) {
+      toast({
+        title: "Export se nezdařil",
+        description: e?.message || "Nepodařilo se otevřít okno tisku.",
+        variant: "destructive",
+      });
+    }
+  }
+
   async function handleSave() {
     if (!user) {
       toast({ title: "Nepřihlášen", description: "Přihlaš se pro uložení plánu.", variant: "destructive" });
