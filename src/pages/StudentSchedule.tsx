@@ -45,6 +45,7 @@ const toMin = (t: string): number => {
 };
 
 export default function StudentSchedule() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [slots, setSlots] = useState<ClassSlot[]>([]);
   const [loading, setLoading] = useState(true);
