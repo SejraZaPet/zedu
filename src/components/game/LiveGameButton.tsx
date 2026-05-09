@@ -176,6 +176,42 @@ export const LiveGameButton = ({ title, questions }: Props) => {
               </div>
             </div>
 
+            {/* Visual theme picker */}
+            <div>
+              <Label className="text-sm mb-2 block">Vizuální téma</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {VISUAL_THEMES.map((vt) => {
+                  const active = (settings.visualTheme ?? "default") === vt.id;
+                  return (
+                    <button
+                      key={vt.id}
+                      type="button"
+                      onClick={() => setSettings((s) => ({ ...s, visualTheme: vt.id as VisualTheme }))}
+                      className={cn(
+                        "text-left rounded-lg border p-3 transition",
+                        active
+                          ? "border-primary bg-primary/10 ring-2 ring-primary/30"
+                          : "border-border hover:border-primary/50 hover:bg-muted/50",
+                      )}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-2xl">{vt.emoji}</span>
+                        <span className="font-semibold text-sm">{vt.name}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-snug">{vt.description}</p>
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="flex items-center gap-2 mt-3">
+                <Checkbox
+                  checked={settings.soundsEnabled !== false}
+                  onCheckedChange={(v) => setSettings((s) => ({ ...s, soundsEnabled: !!v }))}
+                />
+                <Label className="text-sm">Zvukové efekty (správně/špatně)</Label>
+              </div>
+            </div>
+
             <p className="text-xs text-muted-foreground">
               {questions.length} {questions.length === 1 ? "otázka" : questions.length < 5 ? "otázky" : "otázek"} připraveno
             </p>
