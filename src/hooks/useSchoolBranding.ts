@@ -71,7 +71,7 @@ export function useSchoolBranding() {
     (async () => {
       const { data } = await supabase
         .from("schools")
-        .select("id, name, subdomain, custom_logo_url, custom_primary_color, custom_welcome_text")
+        .select("id, name, subdomain, custom_logo_url, custom_primary_color, custom_welcome_text, registration_code")
         .eq("subdomain", sub)
         .maybeSingle();
       if (!active) return;
