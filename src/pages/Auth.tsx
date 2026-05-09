@@ -18,6 +18,7 @@ const Auth = () => {
   const redirectTo = searchParams.get("redirect");
   const { toast } = useToast();
   const { isLoggedIn, role: authRole, loading: authLoading } = useAuth();
+  const { branding } = useSchoolBranding();
   const [mode, setMode] = useState<"login" | "register" | "pin">("login");
   const [pinUsername, setPinUsername] = useState("");
   const [pinValue, setPinValue] = useState("");
