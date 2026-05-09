@@ -272,14 +272,31 @@ export default function StudentSchedule() {
   );
 }
 
-function ReadOnlyClassCard({ slot }: { slot: ClassSlot }) {
+function ReadOnlyClassCard({
+  slot,
+  navigate,
+}: {
+  slot: ClassSlot;
+  navigate: (path: string) => void;
+}) {
   const subject = slot.subject_label || "Hodina";
   const color = slot.color || colorForSubject(subject);
   const abbr = (slot.abbreviation || subject.slice(0, 3)).toUpperCase();
   const className = slot.classes?.name ?? "";
+  const canNavigate = !!slot.subject_label;
   return (
-    <div
-      className="w-full text-left rounded-md p-2 border-l-4"
+    <button
+      type="button"
+      disabled={!canNavigate}
+      onClick={() =>
+        canNavigate &&
+        navigate(
+          `/student/predmet/${encodeURIComponent(slot.subject_label!)}/trida/${slot.class_id}`,
+        )
+      }
+      className={`w-full text-left rounded-md p-2 border-l-4 transition-all ${
+        canNavigate ? "hover:shadow-md hover:-translate-y-0.5 cursor-pointer" : ""
+      }`}
       style={{ backgroundColor: `${color}26`, borderLeftColor: color }}
       title={`${subject}${className ? ` · ${className}` : ""}${slot.room ? ` · ${slot.room}` : ""} · ${fmtTime(slot.start_time)}–${fmtTime(slot.end_time)}${slot.week_parity !== "every" ? ` (${slot.week_parity === "odd" ? "lichý" : "sudý"} týden)` : ""}`}
     >
@@ -312,6 +329,6 @@ function ReadOnlyClassCard({ slot }: { slot: ClassSlot }) {
           <span className="truncate">učebnice propojena</span>
         </div>
       )}
-    </div>
+    </button>
   );
 }
