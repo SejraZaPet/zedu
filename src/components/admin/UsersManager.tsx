@@ -1138,6 +1138,8 @@ const UsersManager = () => {
                       usedUsernames.push(username);
 
                       const studentCode = 'ZAK-' + Math.random().toString(36).slice(-4).toUpperCase();
+                      const pin = String(Math.floor(1000 + Math.random() * 9000));
+                      const pinHash = await bcrypt.hash(pin, 10);
 
                       const { data: authData, error: authError } = await supabase.functions.invoke("create-user", {
                         body: { email, password, role }
