@@ -10,6 +10,7 @@ import { toast } from "@/hooks/use-toast";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import WorksheetPlayer from "@/components/WorksheetPlayer";
+import AttachmentsUploader from "@/components/assignments/AttachmentsUploader";
 import type { WorksheetSpec } from "@/lib/worksheet-spec";
 
 interface AssignmentData {
@@ -52,6 +53,7 @@ const StudentAssignmentPlayer = () => {
   const navigate = useNavigate();
   const [assignment, setAssignment] = useState<AssignmentData | null>(null);
   const [attempt, setAttempt] = useState<AttemptData | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -74,6 +76,7 @@ const StudentAssignmentPlayer = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { navigate("/auth"); return; }
+      setUserId(user.id);
 
       // Load assignment
       const { data: aData, error: aErr } = await supabase
@@ -292,6 +295,19 @@ const StudentAssignmentPlayer = () => {
             </Badge>
           )}
         </div>
+
+        {/* Attachments uploader */}
+        {userId && assignment && (
+          <Card className="mb-4">
+            <CardContent className="p-4">
+              <AttachmentsUploader
+                assignmentId={assignment.id}
+                studentId={userId}
+                disabled={isReadOnly}
+              />
+            </CardContent>
+          </Card>
+        )}
 
         {/* Worksheet branch (přednost před legacy activity_data) */}
         {worksheetSpec ? (
