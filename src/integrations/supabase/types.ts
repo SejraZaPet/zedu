@@ -840,11 +840,13 @@ export type Database = {
       }
       lesson_plans: {
         Row: {
+          anonymous: boolean
           created_at: string
           grade_band: string
           id: string
           input_data: Json
           lesson_id: string | null
+          shared_visibility: string
           slides: Json
           subject: string
           teacher_id: string
@@ -852,11 +854,13 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          anonymous?: boolean
           created_at?: string
           grade_band?: string
           id?: string
           input_data?: Json
           lesson_id?: string | null
+          shared_visibility?: string
           slides?: Json
           subject?: string
           teacher_id: string
@@ -864,11 +868,13 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          anonymous?: boolean
           created_at?: string
           grade_band?: string
           id?: string
           input_data?: Json
           lesson_id?: string | null
+          shared_visibility?: string
           slides?: Json
           subject?: string
           teacher_id?: string
