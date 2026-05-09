@@ -891,6 +891,56 @@ export type Database = {
           },
         ]
       }
+      lesson_reflections: {
+        Row: {
+          class_id: string | null
+          created_at: string
+          id: string
+          lesson_plan_id: string | null
+          quick_notes: string | null
+          rating: number | null
+          reflection_date: string | null
+          subject: string | null
+          teacher_id: string
+          what_to_change: string | null
+          what_worked: string | null
+        }
+        Insert: {
+          class_id?: string | null
+          created_at?: string
+          id?: string
+          lesson_plan_id?: string | null
+          quick_notes?: string | null
+          rating?: number | null
+          reflection_date?: string | null
+          subject?: string | null
+          teacher_id: string
+          what_to_change?: string | null
+          what_worked?: string | null
+        }
+        Update: {
+          class_id?: string | null
+          created_at?: string
+          id?: string
+          lesson_plan_id?: string | null
+          quick_notes?: string | null
+          rating?: number | null
+          reflection_date?: string | null
+          subject?: string | null
+          teacher_id?: string
+          what_to_change?: string | null
+          what_worked?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_reflections_lesson_plan_id_fkey"
+            columns: ["lesson_plan_id"]
+            isOneToOne: false
+            referencedRelation: "lesson_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lesson_topic_assignments: {
         Row: {
           created_at: string
