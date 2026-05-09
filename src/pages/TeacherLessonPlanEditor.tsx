@@ -834,6 +834,15 @@ export default function TeacherLessonPlanEditor() {
             </DropdownMenu>
             <Button
               variant="outline"
+              onClick={() => setShareOpen(true)}
+              disabled={!planDbId}
+              title={planDbId ? "Sdílet plán" : "Nejprve plán uložte"}
+            >
+              <Share2 className="w-4 h-4 mr-2" />
+              Sdílet
+            </Button>
+            <Button
+              variant="outline"
               onClick={() => setLoadTemplateOpen(true)}
               disabled={!templates.length}
               title={templates.length ? "Předvyplnit fáze ze šablony" : "Zatím nemáte žádné šablony"}
