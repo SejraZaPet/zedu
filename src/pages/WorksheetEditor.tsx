@@ -1633,6 +1633,7 @@ export default function WorksheetEditor() {
                         pointsEnabled={spec.renderConfig?.pointsEnabled ?? true}
                         onSelect={() => setSelectedId(item.id)}
                         onDelete={() => deleteItem(item.id)}
+                        onSetPoints={(p) => updateItem(item.id, { points: p })}
                       />
                     ))}
                   </div>
@@ -2011,12 +2012,14 @@ function SortableItemBlock({
   pointsEnabled,
   onSelect,
   onDelete,
+  onSetPoints,
 }: {
   item: WorksheetItem;
   selected: boolean;
   pointsEnabled: boolean;
   onSelect: () => void;
   onDelete: () => void;
+  onSetPoints: (points: number) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: item.id,
@@ -2077,6 +2080,32 @@ function SortableItemBlock({
         <div className="text-sm line-clamp-2">
           {item.prompt || <em className="text-muted-foreground">Bez textu</em>}
         </div>
+        {pointsEnabled && (
+          <div
+            className="flex items-center gap-1 mt-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <span className="text-[10px] text-muted-foreground mr-1">Body:</span>
+            {[1, 2, 3, 5].map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSetPoints(n);
+                }}
+                aria-label={`Nastavit ${n} bodů`}
+                className={`h-6 min-w-6 px-2 rounded text-xs font-medium border transition-colors ${
+                  item.points === n
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-background text-muted-foreground border-border hover:bg-muted"
+                }`}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
       <button
         onClick={(e) => {
