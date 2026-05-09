@@ -76,6 +76,7 @@ const StudentAssignmentPlayer = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { navigate("/auth"); return; }
+      setUserId(user.id);
 
       // Load assignment
       const { data: aData, error: aErr } = await supabase
