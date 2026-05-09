@@ -23,6 +23,8 @@ import {
   getWeekRange,
 } from "@/lib/calendar-utils";
 import { expandTeacherSchedule, loadSchedule } from "@/lib/teacher-schedule-store";
+import LessonReflectionDialog from "@/components/lessons/LessonReflectionDialog";
+import { fetchReflections, reflectionKey } from "@/lib/lesson-reflections";
 
 const TeacherCalendar = () => {
   const navigate = useNavigate();
