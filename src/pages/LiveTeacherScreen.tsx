@@ -14,6 +14,8 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import PollProjectorView from "@/components/activities/PollProjectorView";
 import LiveWhiteboard, { WhiteboardData } from "@/components/game/LiveWhiteboard";
+import RemoteControlButton from "@/components/live/RemoteControlButton";
+import { presenterRemoteChannelName } from "@/pages/PresenterRemote";
 
 interface SlideData {
   slideId: string;
