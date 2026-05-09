@@ -22,7 +22,8 @@ const Auth = () => {
   const [pinValue, setPinValue] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [role, setRole] = useState<Role>("student");
+  const [role, setRole] = useState<Role | null>(null);
+  const [childCode, setChildCode] = useState("");
   const [pendingLogin, setPendingLogin] = useState(false);
   const [forgotPassword, setForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
@@ -162,6 +163,12 @@ const Auth = () => {
     setLoading(true);
     setError("");
 
+    if (!role) {
+      setError("Vyberte typ účtu.");
+      setLoading(false);
+      return;
+    }
+
     if (!gdprConsent) {
       setError("Pro registraci je nutný souhlas se zpracováním osobních údajů.");
       setLoading(false);
@@ -180,6 +187,13 @@ const Auth = () => {
       return;
     }
 
+    const trimmedChildCode = childCode.trim().toUpperCase();
+    if (role === "rodic" && trimmedChildCode && !/^ZAK-[A-Z0-9]{4,}$/.test(trimmedChildCode)) {
+      setError("Kód dítěte musí být ve formátu ZAK-XXXX.");
+      setLoading(false);
+      return;
+    }
+
     const metadata: Record<string, unknown> = {
       first_name: firstName,
       last_name: lastName,
@@ -192,6 +206,9 @@ const Auth = () => {
       metadata.field_of_study = fieldOfStudy;
       metadata.year = year || null;
       metadata.class_code = classCode.trim() || null;
+    }
+    if (role === "rodic" && trimmedChildCode) {
+      metadata.child_code = trimmedChildCode;
     }
 
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
@@ -227,11 +244,32 @@ const Auth = () => {
       }
     }
 
+    // Parent: try to link child by code if signup auto-logged-in
+    let childLinked = false;
+    let childLinkFailed = false;
+    if (role === "rodic" && trimmedChildCode && signUpData?.session) {
+      const { data: student } = await supabase.rpc("find_student_by_code", { _code: trimmedChildCode });
+      const studentId = Array.isArray(student) ? student[0]?.id : (student as any)?.id;
+      if (studentId) {
+        const { error: linkErr } = await supabase
+          .from("parent_student_links")
+          .insert({ parent_id: signUpData.user!.id, student_id: studentId });
+        if (!linkErr) childLinked = true;
+        else childLinkFailed = true;
+      } else {
+        childLinkFailed = true;
+      }
+    }
+
     toast({
       title: "Registrace úspěšná",
       description:
         role === "rodic"
-          ? "Účet byl vytvořen. Přihlaste se a přidejte své děti přes kód žáka ZAK-XXXX."
+          ? childLinked
+            ? "Účet byl vytvořen a dítě bylo propojeno."
+            : childLinkFailed
+              ? "Účet byl vytvořen, ale kód dítěte se nepodařilo propojit. Zkuste to po přihlášení v sekci Rodič."
+              : "Účet byl vytvořen. Přihlaste se a přidejte své děti přes kód žáka ZAK-XXXX."
           : "Potvrďte svůj e-mail a vyčkejte na schválení účtu administrátorem.",
     });
 
@@ -351,7 +389,7 @@ const Auth = () => {
             <Hash className="w-4 h-4" /> PIN
           </button>
           <button
-            onClick={() => { setMode("register"); setError(""); }}
+            onClick={() => { setMode("register"); setError(""); setRole(null); }}
             className={`flex-1 py-2 px-2 rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-1.5 ${
               mode === "register"
                 ? "bg-primary text-primary-foreground"
@@ -428,50 +466,60 @@ const Auth = () => {
               {loading ? "Přihlašování..." : "Přihlásit se"}
             </Button>
           </form>
+        ) : role === null ? (
+          /* Step 1 — role picker */
+          <div className="space-y-4">
+            <div className="text-center">
+              <p className="text-sm font-semibold text-foreground">Vyberte svou roli</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Podle volby přizpůsobíme registrační formulář.
+              </p>
+            </div>
+            <div className="grid gap-3">
+              {([
+                { value: "teacher" as const, icon: BookOpenText, title: "Učitel / Lektor", desc: "Tvořte lekce, úkoly a sledujte výsledky tříd." },
+                { value: "student" as const, icon: GraduationCap, title: "Žák", desc: "Učte se z lekcí, plňte úkoly a hrajte aktivity." },
+                { value: "rodic" as const, icon: Users, title: "Rodič", desc: "Sledujte pokrok svého dítěte." },
+              ]).map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setRole(opt.value)}
+                  className="group flex items-center gap-4 rounded-2xl border-2 border-border bg-card p-5 text-left transition-all duration-200 hover:border-primary hover:bg-primary/[0.04] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                    <opt.icon className="w-6 h-6" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-heading text-base font-semibold">{opt.title}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{opt.desc}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
         ) : (
           <form onSubmit={handleRegister} className="space-y-5">
-            {/* Role selector */}
-            <div>
-              <p className="text-sm font-semibold text-foreground mb-2">Vyberte typ účtu</p>
-              <div className="grid grid-cols-3 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setRole("student")}
-                  className={`flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all duration-200 ${
-                    role === "student"
-                      ? "border-primary bg-primary/[0.06] shadow-sm"
-                      : "border-border bg-card hover:border-muted-foreground/30"
-                  }`}
-                >
-                  <GraduationCap className={`w-6 h-6 ${role === "student" ? "text-primary" : "text-muted-foreground"}`} />
-                  <span className={`text-sm font-semibold ${role === "student" ? "text-primary" : "text-foreground"}`}>Žák</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRole("teacher")}
-                  className={`flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all duration-200 ${
-                    role === "teacher"
-                      ? "border-primary bg-primary/[0.06] shadow-sm"
-                      : "border-border bg-card hover:border-muted-foreground/30"
-                  }`}
-                >
-                  <BookOpenText className={`w-6 h-6 ${role === "teacher" ? "text-primary" : "text-muted-foreground"}`} />
-                  <span className={`text-sm font-semibold text-center leading-tight ${role === "teacher" ? "text-primary" : "text-foreground"}`}>Učitel / Lektor</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRole("rodic")}
-                  className={`flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all duration-200 ${
-                    role === "rodic"
-                      ? "border-primary bg-primary/[0.06] shadow-sm"
-                      : "border-border bg-card hover:border-muted-foreground/30"
-                  }`}
-                >
-                  <Users className={`w-6 h-6 ${role === "rodic" ? "text-primary" : "text-muted-foreground"}`} />
-                  <span className={`text-sm font-semibold ${role === "rodic" ? "text-primary" : "text-foreground"}`}>Rodič</span>
-                </button>
+            {/* Selected role + change link */}
+            <div className="flex items-center justify-between rounded-xl border border-border bg-muted/30 px-4 py-3">
+              <div className="flex items-center gap-3 min-w-0">
+                {role === "teacher" && <BookOpenText className="w-5 h-5 text-primary shrink-0" />}
+                {role === "student" && <GraduationCap className="w-5 h-5 text-primary shrink-0" />}
+                {role === "rodic" && <Users className="w-5 h-5 text-primary shrink-0" />}
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground">Typ účtu</p>
+                  <p className="text-sm font-semibold truncate">
+                    {role === "teacher" ? "Učitel / Lektor" : role === "student" ? "Žák" : "Rodič"}
+                  </p>
+                </div>
               </div>
-              <p className="text-xs text-muted-foreground mt-2">Podle zvolené role se zobrazí odpovídající registrační údaje.</p>
+              <button
+                type="button"
+                onClick={() => { setRole(null); setError(""); }}
+                className="text-xs text-primary hover:underline shrink-0"
+              >
+                Změnit
+              </button>
             </div>
 
             {/* Common fields */}
@@ -512,9 +560,27 @@ const Auth = () => {
                 <div>
                   <Label htmlFor="classCode">Kód třídy <span className="text-muted-foreground font-normal">(volitelné)</span></Label>
                   <Input id="classCode" value={classCode} onChange={(e) => setClassCode(e.target.value)} className="mt-1 font-mono" placeholder="např. AB12CD" maxLength={10} />
-                  <p className="text-xs text-muted-foreground mt-1">Pokud máte kód třídy od učitele, zadejte ho zde.</p>
+                  <p className="text-xs text-muted-foreground mt-1">Pokud máš kód třídy od učitele, zadej ho sem.</p>
                 </div>
               </>
+            )}
+
+            {/* Parent-only fields */}
+            {role === "rodic" && (
+              <div>
+                <Label htmlFor="childCode">Kód dítěte <span className="text-muted-foreground font-normal">(volitelné)</span></Label>
+                <Input
+                  id="childCode"
+                  value={childCode}
+                  onChange={(e) => setChildCode(e.target.value.toUpperCase())}
+                  className="mt-1 font-mono uppercase"
+                  placeholder="ZAK-XXXX"
+                  maxLength={20}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Kód získáte od dítěte v jeho profilu. Pokud ho nemáte teď, můžete dítě přidat později v sekci Rodič.
+                </p>
+              </div>
             )}
 
             {/* Password */}
