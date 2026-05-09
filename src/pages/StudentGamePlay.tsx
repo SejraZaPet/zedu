@@ -13,6 +13,9 @@ import WallActivity from "@/components/activities/WallActivity";
 import PollActivity from "@/components/activities/PollActivity";
 import PollProjectorView from "@/components/activities/PollProjectorView";
 import { Lock } from "lucide-react";
+import { AvatarSvg } from "@/components/student/AvatarSvg";
+import { useStudentAvatar } from "@/hooks/useStudentAvatars";
+import { useAuth } from "@/contexts/AuthContext";
 
 const StudentGamePlay = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
