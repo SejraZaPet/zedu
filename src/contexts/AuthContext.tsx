@@ -44,17 +44,42 @@ const ROLE_PRIORITY: Record<string, number> = {
   user: 1,
 };
 
-const fetchRoleAndStatus = async (userId: string): Promise<{ role: AppRole; status: string | null }> => {
-  const [rolesRes, profileRes] = await Promise.all([
-    supabase.from("user_roles").select("role").eq("user_id", userId),
-    supabase.from("profiles").select("status").eq("id", userId).single(),
-  ]);
-  const roles = (rolesRes.data ?? []).map((r: any) => r.role as string);
+const resolveBestRole = (roles: string[]): AppRole => {
   const best = roles.sort((a, b) => (ROLE_PRIORITY[b] ?? 0) - (ROLE_PRIORITY[a] ?? 0))[0];
-  return {
-    role: (best as AppRole) || "user",
-    status: profileRes.data?.status ?? null,
-  };
+  return (best as AppRole) || "user";
+};
+
+const fetchRoleAndStatus = async (userId: string): Promise<{ role: AppRole; status: string | null }> => {
+  try {
+    const [rolesRes, profileRes] = await Promise.all([
+      supabase.from("user_roles").select("role").eq("user_id", userId),
+      supabase.from("profiles").select("status").eq("id", userId).single(),
+    ]);
+
+    if (rolesRes.error || profileRes.error) {
+      throw rolesRes.error || profileRes.error;
+    }
+
+    const roles = (rolesRes.data ?? []).map((r: any) => r.role as string);
+    return {
+      role: resolveBestRole(roles),
+      status: profileRes.data?.status ?? null,
+    };
+  } catch {
+    const { data, error } = await supabase.functions.invoke("get-user-auth-info", {
+      body: { include_profile: true },
+    });
+
+    if (error) {
+      return { role: null, status: null };
+    }
+
+    const roles = Array.isArray(data?.roles) ? data.roles.filter((role: unknown): role is string => typeof role === "string") : [];
+    return {
+      role: resolveBestRole(roles),
+      status: typeof data?.profile?.status === "string" ? data.profile.status : null,
+    };
+  }
 };
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
