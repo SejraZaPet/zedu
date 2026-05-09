@@ -267,6 +267,41 @@ export default function TeacherSchedule() {
     return m;
   }, [visibleClassSlots, visiblePeriods, data.periodTimes]);
 
+  /** Detect time conflicts within current parity view. A conflict is when the
+   *  teacher has 2+ items (personal lessons or class slots) at the same
+   *  (day, period) cell. Class slots are already pre-filtered by parity tab,
+   *  and personal lessons come from the active list, so any duplicate cell is
+   *  a real overlap. */
+  const conflicts = useMemo(() => {
+    const personalByCell = new Map<string, LessonEntry[]>();
+    for (const l of currentLessons) {
+      if (!visiblePeriods.includes(l.period)) continue;
+      const k = `${l.day}-${l.period}`;
+      const arr = personalByCell.get(k) ?? [];
+      arr.push(l);
+      personalByCell.set(k, arr);
+    }
+    const conflictPersonalIds = new Set<string>();
+    const conflictClassIds = new Set<string>();
+    const conflictCells: { day: number; period: number; total: number }[] = [];
+    const allKeys = new Set<string>([
+      ...personalByCell.keys(),
+      ...classByDayPeriod.keys(),
+    ]);
+    for (const k of allKeys) {
+      const ps = personalByCell.get(k) ?? [];
+      const cs = classByDayPeriod.get(k) ?? [];
+      const total = ps.length + cs.length;
+      if (total > 1) {
+        ps.forEach((p) => conflictPersonalIds.add(p.id));
+        cs.forEach((c) => conflictClassIds.add(c.id));
+        const [d, p] = k.split("-").map((x) => parseInt(x, 10));
+        conflictCells.push({ day: d, period: p, total });
+      }
+    }
+    return { conflictPersonalIds, conflictClassIds, conflictCells };
+  }, [currentLessons, classByDayPeriod, visiblePeriods]);
+
   /** Breaks visible per (afterPeriod, day). */
   const breaksByAfterDay = useMemo(() => {
     const m = new Map<string, RowBreak>();
