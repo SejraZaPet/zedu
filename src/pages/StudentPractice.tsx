@@ -395,6 +395,32 @@ const StudentPractice = () => {
                               </div>
                             )}
 
+                            {q.type === "true_false" && (
+                              <div className="flex gap-2">
+                                {[true, false].map((v) => {
+                                  const selected = userAns === v;
+                                  const isCorrect = submitted && Boolean(q.correct_answer) === v;
+                                  return (
+                                    <button
+                                      key={String(v)}
+                                      type="button"
+                                      disabled={submitted}
+                                      onClick={() => setAns(i, v)}
+                                      className={`flex-1 px-4 py-2 rounded-md border text-sm font-medium transition-colors ${
+                                        isCorrect
+                                          ? "border-emerald-500/50 bg-emerald-500/10"
+                                          : selected
+                                          ? "border-primary bg-primary/5"
+                                          : "border-border hover:bg-muted/50"
+                                      }`}
+                                    >
+                                      {v ? "Pravda" : "Nepravda"}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
+
                             {q.type === "short_answer" && (
                               <Input
                                 value={typeof userAns === "string" ? userAns : ""}
