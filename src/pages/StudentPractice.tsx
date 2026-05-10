@@ -14,12 +14,15 @@ import {
 } from "lucide-react";
 
 type Question = {
-  type: "open" | "short_answer" | "multiple_choice";
-  prompt: string;
+  type: "open" | "short_answer" | "multiple_choice" | "true_false";
+  prompt?: string;
+  text?: string;
   options?: string[];
   correct_index?: number;
-  correct_answer?: string;
+  correct_answer?: string | boolean;
   hint?: string;
+  difficulty?: "easy" | "medium" | "hard";
+  topic?: string;
 };
 
 type Phase = {
@@ -36,25 +39,37 @@ type PracticeData = {
     lesson_title?: string;
     phases: Phase[];
   };
+  recommendation?: string;
+  target_difficulty?: "easy" | "medium" | "hard";
 };
 
 const norm = (s: string) =>
   s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 
-function evaluate(q: Question, answer: string | number | undefined): boolean | null {
-  if (q.type === "open") return null; // no auto-scoring
+function evaluate(q: Question, answer: string | number | boolean | undefined): boolean | null {
+  if (q.type === "open") return null;
   if (q.type === "multiple_choice") {
     if (typeof answer !== "number" || typeof q.correct_index !== "number") return false;
     return answer === q.correct_index;
   }
+  if (q.type === "true_false") {
+    if (typeof answer !== "boolean") return false;
+    return answer === Boolean(q.correct_answer);
+  }
   if (q.type === "short_answer") {
-    if (typeof answer !== "string" || !q.correct_answer) return false;
+    if (typeof answer !== "string" || typeof q.correct_answer !== "string") return false;
     const a = norm(answer);
     const c = norm(q.correct_answer);
     return a.length > 0 && (a === c || a.includes(c) || c.includes(a));
   }
   return false;
 }
+
+const DIFFICULTY_META: Record<string, { label: string; cls: string }> = {
+  easy:   { label: "Snadná",  cls: "bg-emerald-500/10 text-emerald-700 border-emerald-500/30" },
+  medium: { label: "Střední", cls: "bg-amber-500/10 text-amber-700 border-amber-500/30" },
+  hard:   { label: "Těžká",   cls: "bg-rose-500/10 text-rose-700 border-rose-500/30" },
+};
 
 const StudentPractice = () => {
   const { slug } = useParams<{ slug: string }>();
