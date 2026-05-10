@@ -743,6 +743,12 @@ const TeacherTextbooks = () => {
           onOpenChange={setCreateOpen}
           onCreated={fetchTextbooks}
         />
+
+        <CreateFromTemplateDialog
+          open={createFromTemplateOpen}
+          onOpenChange={setCreateFromTemplateOpen}
+          onCreated={fetchTextbooks}
+        />
       </main>
       <SiteFooter />
 
