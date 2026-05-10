@@ -22,8 +22,9 @@ import NotificationsManager from "@/components/admin/NotificationsManager";
 import SchoolsManager from "@/components/admin/SchoolsManager";
 import SystemStats from "@/components/admin/SystemStats";
 import AuditLogViewer from "@/components/admin/AuditLogViewer";
+import TextbookTemplatesManager from "@/components/admin/TextbookTemplatesManager";
 import { Button } from "@/components/ui/button";
-import { BookOpen, LogOut, Home, GraduationCap, Settings, Users, School, BarChart3, LayoutDashboard, HelpCircle, ListTree, CircleHelp, Link2, Pencil, Video, Bell, Activity, FileText } from "lucide-react";
+import { BookOpen, LogOut, Home, GraduationCap, Settings, Users, School, BarChart3, LayoutDashboard, HelpCircle, ListTree, CircleHelp, Link2, Pencil, Video, Bell, Activity, FileText, Sparkles } from "lucide-react";
 
 const adminTabs = [
   { id: "dashboard", label: "Přehled", icon: LayoutDashboard },
