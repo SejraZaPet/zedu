@@ -191,8 +191,8 @@ const StudentPractice = () => {
   const totalScorable = scorable.length;
   const percent = totalScorable > 0 ? Math.round((score / totalScorable) * 100) : 0;
 
-  const setAns = (idx: number, value: string | number) =>
-    setAnswers((prev) => ({ ...prev, [String(idx)]: value }));
+  const setAns = (idx: number, value: string | number | boolean) =>
+    setAnswers((prev) => ({ ...prev, [String(idx)]: value as any }));
 
   const handleSubmit = async () => {
     setSubmitted(true);
