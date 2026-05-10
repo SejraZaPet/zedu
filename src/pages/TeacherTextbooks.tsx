@@ -16,6 +16,8 @@ import PresentationEditorDialog from "@/components/admin/PresentationEditorDialo
 import TextbookGradeGroups from "@/components/admin/TextbookGradeGroups";
 import TextbookList from "@/components/admin/TextbookList";
 import CreateTextbookDialog from "@/components/admin/CreateTextbookDialog";
+import CreateFromTemplateDialog from "@/components/admin/CreateFromTemplateDialog";
+import SaveAsTemplateDialog from "@/components/admin/SaveAsTemplateDialog";
 import ImportTextbookFileDialog from "@/components/admin/ImportTextbookFileDialog";
 import LessonPlacementEditor, { savePlacements, type Placement } from "@/components/admin/LessonPlacementEditor";
 import type { Block } from "@/lib/textbook-config";
