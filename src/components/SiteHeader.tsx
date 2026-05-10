@@ -57,7 +57,7 @@ const SiteHeader = () => {
         { label: "Rozvrh", href: "/ucitel/rozvrh", icon: CalendarDays },
         { label: "Živé hry", href: "/ucitel/hry", icon: Gamepad2 },
         { label: "Třídy", href: "/ucitel/tridy", icon: FolderOpen },
-        { label: "Média", href: "/ucitel/media", icon: ImageIcon, ShoppingBag },
+        { label: "Média", href: "/ucitel/media", icon: ImageIcon },
         { label: "Výsledky", href: "/ucitel/vysledky", icon: BarChart3 },
         { label: "Marketplace", href: "/marketplace", icon: ShoppingBag },
         { label: "Moje publikace", href: "/ucitel/publikace", icon: Layers },
