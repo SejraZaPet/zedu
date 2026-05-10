@@ -65,6 +65,9 @@ import TeacherMethods from "./pages/TeacherMethods";
 import StudentMethods from "./pages/StudentMethods";
 import StudentPractice from "./pages/StudentPractice";
 import SchoolAdmin from "./pages/SchoolAdmin";
+import MarketplacePage from "./pages/MarketplacePage";
+import MarketplaceDetailPage from "./pages/MarketplaceDetailPage";
+import TeacherPublications from "./pages/TeacherPublications";
 import ViewAsBanner from "./components/ViewAsBanner";
 
 const queryClient = new QueryClient();
