@@ -68,14 +68,6 @@ const Hero = () => {
           </h1>
 
           <p
-            className="text-base md:text-lg text-white/80 max-w-xl mx-auto animate-fade-in-up leading-relaxed"
-            style={{ animationDelay: "0.3s" }}
-          >
-            Interaktivní učebnice, aktivity a procvičování v jedné platformě
-            pro moderní výuku.
-          </p>
-
-          <p
             className="text-base md:text-lg text-white/75 max-w-xl mx-auto mb-8 mt-4 animate-fade-in-up leading-relaxed"
             style={{ animationDelay: "0.4s" }}
           >
