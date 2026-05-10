@@ -678,6 +678,14 @@ const TeacherTextbooks = () => {
           </DialogContent>
         </Dialog>
 
+        <SaveAsTemplateDialog
+          open={saveAsTemplateOpen}
+          onOpenChange={setSaveAsTemplateOpen}
+          textbookId={selectedTextbook.id}
+          textbookTitle={selectedTextbook.title}
+          subjectSlug={selectedTextbook.subject}
+        />
+
         <PresentationEditorDialog
           presentationLesson={presentationLesson}
           pendingSlides={pendingSlides}
