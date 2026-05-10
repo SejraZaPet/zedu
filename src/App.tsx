@@ -65,6 +65,9 @@ import TeacherMethods from "./pages/TeacherMethods";
 import StudentMethods from "./pages/StudentMethods";
 import StudentPractice from "./pages/StudentPractice";
 import SchoolAdmin from "./pages/SchoolAdmin";
+import MarketplacePage from "./pages/MarketplacePage";
+import MarketplaceDetailPage from "./pages/MarketplaceDetailPage";
+import TeacherPublications from "./pages/TeacherPublications";
 import ViewAsBanner from "./components/ViewAsBanner";
 
 const queryClient = new QueryClient();
@@ -140,6 +143,9 @@ const App = () => (
             <Route path="/ucitel/metody" element={<ProtectedRoute><TeacherMethods /></ProtectedRoute>} />
             <Route path="/student/metody" element={<ProtectedRoute><StudentMethods /></ProtectedRoute>} />
             <Route path="/student/metody/:slug/procviceni" element={<ProtectedRoute><StudentPractice /></ProtectedRoute>} />
+            <Route path="/marketplace" element={<ProtectedRoute><MarketplacePage /></ProtectedRoute>} />
+            <Route path="/marketplace/:id" element={<ProtectedRoute><MarketplaceDetailPage /></ProtectedRoute>} />
+            <Route path="/ucitel/publikace" element={<ProtectedRoute><TeacherPublications /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

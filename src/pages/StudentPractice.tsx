@@ -14,12 +14,15 @@ import {
 } from "lucide-react";
 
 type Question = {
-  type: "open" | "short_answer" | "multiple_choice";
-  prompt: string;
+  type: "open" | "short_answer" | "multiple_choice" | "true_false";
+  prompt?: string;
+  text?: string;
   options?: string[];
   correct_index?: number;
-  correct_answer?: string;
+  correct_answer?: string | boolean;
   hint?: string;
+  difficulty?: "easy" | "medium" | "hard";
+  topic?: string;
 };
 
 type Phase = {
@@ -36,25 +39,37 @@ type PracticeData = {
     lesson_title?: string;
     phases: Phase[];
   };
+  recommendation?: string;
+  target_difficulty?: "easy" | "medium" | "hard";
 };
 
 const norm = (s: string) =>
   s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 
-function evaluate(q: Question, answer: string | number | undefined): boolean | null {
-  if (q.type === "open") return null; // no auto-scoring
+function evaluate(q: Question, answer: string | number | boolean | undefined): boolean | null {
+  if (q.type === "open") return null;
   if (q.type === "multiple_choice") {
     if (typeof answer !== "number" || typeof q.correct_index !== "number") return false;
     return answer === q.correct_index;
   }
+  if (q.type === "true_false") {
+    if (typeof answer !== "boolean") return false;
+    return answer === Boolean(q.correct_answer);
+  }
   if (q.type === "short_answer") {
-    if (typeof answer !== "string" || !q.correct_answer) return false;
+    if (typeof answer !== "string" || typeof q.correct_answer !== "string") return false;
     const a = norm(answer);
     const c = norm(q.correct_answer);
     return a.length > 0 && (a === c || a.includes(c) || c.includes(a));
   }
   return false;
 }
+
+const DIFFICULTY_META: Record<string, { label: string; cls: string }> = {
+  easy:   { label: "Snadná",  cls: "bg-emerald-500/10 text-emerald-700 border-emerald-500/30" },
+  medium: { label: "Střední", cls: "bg-amber-500/10 text-amber-700 border-amber-500/30" },
+  hard:   { label: "Těžká",   cls: "bg-rose-500/10 text-rose-700 border-rose-500/30" },
+};
 
 const StudentPractice = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -66,7 +81,7 @@ const StudentPractice = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<PracticeData | null>(null);
-  const [answers, setAnswers] = useState<Record<string, string | number>>({});
+  const [answers, setAnswers] = useState<Record<string, string | number | boolean>>({});
   const [submitted, setSubmitted] = useState(false);
   const [startedAt, setStartedAt] = useState<number>(Date.now());
   const [savingSession, setSavingSession] = useState(false);
@@ -98,10 +113,41 @@ const StudentPractice = () => {
         setLoading(false);
         return;
       }
-      const { data: fnData, error: fnErr } = await supabase.functions.invoke(
-        "generate-practice",
-        { body: { method_id: method.id, lesson_id: lessonId } },
-      );
+      // Use RAG endpoint when a lesson is specified, otherwise fall back to generic.
+      let fnData: any = null;
+      let fnErr: any = null;
+      if (lessonId) {
+        const { data: { session } } = await supabase.auth.getSession();
+        const ragRes = await supabase.functions.invoke("ai-practice-rag", {
+          body: { lesson_id: lessonId, student_id: session?.user.id, method: slug },
+        });
+        if (ragRes.error || ragRes.data?.error) {
+          fnErr = ragRes.error || { message: ragRes.data?.error };
+        } else {
+          // Adapt to existing PracticeData shape
+          fnData = {
+            method: { id: method.id, name: slug, slug },
+            lesson: ragRes.data.lesson,
+            practice: {
+              method_name: slug,
+              lesson_title: ragRes.data.lesson?.title,
+              phases: [{
+                phase_name: "Procvičování z lekce",
+                phase_intro: `AI připravila otázky přímo z obsahu lekce. Cílová obtížnost: ${ragRes.data.target_difficulty ?? "medium"}.`,
+                questions: ragRes.data.questions ?? [],
+              }],
+            },
+            recommendation: ragRes.data.recommendation,
+            target_difficulty: ragRes.data.target_difficulty,
+          };
+        }
+      } else {
+        const r = await supabase.functions.invoke("generate-practice", {
+          body: { method_id: method.id, lesson_id: lessonId },
+        });
+        fnData = r.data;
+        fnErr = r.error;
+      }
       if (cancelled) return;
       if (fnErr) {
         setError(fnErr.message || "Nepodařilo se vygenerovat cvičení.");
@@ -145,8 +191,8 @@ const StudentPractice = () => {
   const totalScorable = scorable.length;
   const percent = totalScorable > 0 ? Math.round((score / totalScorable) * 100) : 0;
 
-  const setAns = (idx: number, value: string | number) =>
-    setAnswers((prev) => ({ ...prev, [String(idx)]: value }));
+  const setAns = (idx: number, value: string | number | boolean) =>
+    setAnswers((prev) => ({ ...prev, [String(idx)]: value as any }));
 
   const handleSubmit = async () => {
     setSubmitted(true);
@@ -249,6 +295,12 @@ const StudentPractice = () => {
                   </div>
                 </div>
                 {totalScorable > 0 && <Progress value={percent} className="h-2" />}
+                {data.recommendation && (
+                  <div className="mt-4 p-3 rounded-lg bg-background/60 border border-border">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">Doporučení k opakování</p>
+                    <p className="text-sm">{data.recommendation}</p>
+                  </div>
+                )}
                 <div className="flex gap-2 mt-4">
                   <Button onClick={handleRetry} className="gap-2" disabled={savingSession}>
                     <RotateCcw className="w-4 h-4" /> Zkusit znovu
@@ -293,10 +345,17 @@ const StudentPractice = () => {
                             }`}
                           >
                             <div className="flex items-start justify-between gap-2 mb-3">
-                              <p className="font-medium">
-                                <span className="text-muted-foreground mr-2">{i + 1}.</span>
-                                {q.prompt}
-                              </p>
+                              <div className="flex-1">
+                                <p className="font-medium">
+                                  <span className="text-muted-foreground mr-2">{i + 1}.</span>
+                                  {q.text ?? q.prompt}
+                                </p>
+                                {q.difficulty && (
+                                  <span className={`inline-block mt-2 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border ${DIFFICULTY_META[q.difficulty]?.cls ?? ""}`}>
+                                    {DIFFICULTY_META[q.difficulty]?.label ?? q.difficulty}
+                                  </span>
+                                )}
+                              </div>
                               {submitted && result === true && (
                                 <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
                               )}
@@ -331,6 +390,32 @@ const StudentPractice = () => {
                                       />
                                       <span className="text-sm">{opt}</span>
                                     </label>
+                                  );
+                                })}
+                              </div>
+                            )}
+
+                            {q.type === "true_false" && (
+                              <div className="flex gap-2">
+                                {[true, false].map((v) => {
+                                  const selected = userAns === v;
+                                  const isCorrect = submitted && Boolean(q.correct_answer) === v;
+                                  return (
+                                    <button
+                                      key={String(v)}
+                                      type="button"
+                                      disabled={submitted}
+                                      onClick={() => setAns(i, v)}
+                                      className={`flex-1 px-4 py-2 rounded-md border text-sm font-medium transition-colors ${
+                                        isCorrect
+                                          ? "border-emerald-500/50 bg-emerald-500/10"
+                                          : selected
+                                          ? "border-primary bg-primary/5"
+                                          : "border-border hover:bg-muted/50"
+                                      }`}
+                                    >
+                                      {v ? "Pravda" : "Nepravda"}
+                                    </button>
                                   );
                                 })}
                               </div>

@@ -58,3 +58,6 @@ verify_jwt = false
 
 [functions.notify-parent]
 verify_jwt = false
+
+[functions.ai-practice-rag]
+verify_jwt = false

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Menu, X, LogIn, LogOut, User, BookOpen, GraduationCap, LayoutDashboard, Users, BarChart3, HelpCircle, Layers, FolderOpen, Activity, TrendingUp, Gamepad2, Settings, CalendarDays, Brain, School, Image as ImageIcon } from "lucide-react";
+import { Menu, X, LogIn, LogOut, User, BookOpen, GraduationCap, LayoutDashboard, Users, BarChart3, HelpCircle, Layers, FolderOpen, Activity, TrendingUp, Gamepad2, Settings, CalendarDays, Brain, School, Image as ImageIcon, ShoppingBag } from "lucide-react";
 import logo from "@/assets/zedu-logo-new.png";
 import { Button } from "@/components/ui/button";
 import {
@@ -57,8 +57,10 @@ const SiteHeader = () => {
         { label: "Rozvrh", href: "/ucitel/rozvrh", icon: CalendarDays },
         { label: "Živé hry", href: "/ucitel/hry", icon: Gamepad2 },
         { label: "Třídy", href: "/ucitel/tridy", icon: FolderOpen },
-        { label: "Média", href: "/ucitel/media", icon: ImageIcon },
+        { label: "Média", href: "/ucitel/media", icon: ImageIcon, ShoppingBag },
         { label: "Výsledky", href: "/ucitel/vysledky", icon: BarChart3 },
+        { label: "Marketplace", href: "/marketplace", icon: ShoppingBag },
+        { label: "Moje publikace", href: "/ucitel/publikace", icon: Layers },
         { label: "Nápověda", href: "/napoveda", icon: HelpCircle },
       ];
     }
