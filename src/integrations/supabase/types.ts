@@ -1168,6 +1168,150 @@ export type Database = {
         }
         Relationships: []
       }
+      marketplace_listings: {
+        Row: {
+          cover_url: string | null
+          created_at: string
+          currency: string
+          description: string
+          downloads: number
+          grade: number | null
+          id: string
+          preview_content: Json
+          price: number
+          rating: number
+          rating_count: number
+          seller_id: string
+          status: string
+          subject: string
+          textbook_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          cover_url?: string | null
+          created_at?: string
+          currency?: string
+          description?: string
+          downloads?: number
+          grade?: number | null
+          id?: string
+          preview_content?: Json
+          price?: number
+          rating?: number
+          rating_count?: number
+          seller_id: string
+          status?: string
+          subject?: string
+          textbook_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          cover_url?: string | null
+          created_at?: string
+          currency?: string
+          description?: string
+          downloads?: number
+          grade?: number | null
+          id?: string
+          preview_content?: Json
+          price?: number
+          rating?: number
+          rating_count?: number
+          seller_id?: string
+          status?: string
+          subject?: string
+          textbook_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_listings_textbook_id_fkey"
+            columns: ["textbook_id"]
+            isOneToOne: true
+            referencedRelation: "teacher_textbooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketplace_purchases: {
+        Row: {
+          buyer_id: string
+          created_at: string
+          currency: string
+          id: string
+          listing_id: string
+          payment_status: string
+          price_paid: number
+          stripe_payment_id: string | null
+        }
+        Insert: {
+          buyer_id: string
+          created_at?: string
+          currency?: string
+          id?: string
+          listing_id: string
+          payment_status?: string
+          price_paid?: number
+          stripe_payment_id?: string | null
+        }
+        Update: {
+          buyer_id?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          listing_id?: string
+          payment_status?: string
+          price_paid?: number
+          stripe_payment_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_purchases_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketplace_reviews: {
+        Row: {
+          comment: string
+          created_at: string
+          id: string
+          listing_id: string
+          rating: number
+          reviewer_id: string
+        }
+        Insert: {
+          comment?: string
+          created_at?: string
+          id?: string
+          listing_id: string
+          rating: number
+          reviewer_id: string
+        }
+        Update: {
+          comment?: string
+          created_at?: string
+          id?: string
+          listing_id?: string
+          rating?: number
+          reviewer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_reviews_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_broadcasts: {
         Row: {
           content: string
@@ -1748,6 +1892,33 @@ export type Database = {
           title?: string
           type?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      student_practice_recommendations: {
+        Row: {
+          generated_at: string
+          id: string
+          lesson_id: string | null
+          recommendation: string
+          student_id: string
+          weak_topics: Json
+        }
+        Insert: {
+          generated_at?: string
+          id?: string
+          lesson_id?: string | null
+          recommendation?: string
+          student_id: string
+          weak_topics?: Json
+        }
+        Update: {
+          generated_at?: string
+          id?: string
+          lesson_id?: string | null
+          recommendation?: string
+          student_id?: string
+          weak_topics?: Json
         }
         Relationships: []
       }
