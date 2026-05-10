@@ -113,10 +113,41 @@ const StudentPractice = () => {
         setLoading(false);
         return;
       }
-      const { data: fnData, error: fnErr } = await supabase.functions.invoke(
-        "generate-practice",
-        { body: { method_id: method.id, lesson_id: lessonId } },
-      );
+      // Use RAG endpoint when a lesson is specified, otherwise fall back to generic.
+      let fnData: any = null;
+      let fnErr: any = null;
+      if (lessonId) {
+        const { data: { session } } = await supabase.auth.getSession();
+        const ragRes = await supabase.functions.invoke("ai-practice-rag", {
+          body: { lesson_id: lessonId, student_id: session?.user.id, method: slug },
+        });
+        if (ragRes.error || ragRes.data?.error) {
+          fnErr = ragRes.error || { message: ragRes.data?.error };
+        } else {
+          // Adapt to existing PracticeData shape
+          fnData = {
+            method: { id: method.id, name: slug, slug },
+            lesson: ragRes.data.lesson,
+            practice: {
+              method_name: slug,
+              lesson_title: ragRes.data.lesson?.title,
+              phases: [{
+                phase_name: "Procvičování z lekce",
+                phase_intro: `AI připravila otázky přímo z obsahu lekce. Cílová obtížnost: ${ragRes.data.target_difficulty ?? "medium"}.`,
+                questions: ragRes.data.questions ?? [],
+              }],
+            },
+            recommendation: ragRes.data.recommendation,
+            target_difficulty: ragRes.data.target_difficulty,
+          };
+        }
+      } else {
+        const r = await supabase.functions.invoke("generate-practice", {
+          body: { method_id: method.id, lesson_id: lessonId },
+        });
+        fnData = r.data;
+        fnErr = r.error;
+      }
       if (cancelled) return;
       if (fnErr) {
         setError(fnErr.message || "Nepodařilo se vygenerovat cvičení.");
