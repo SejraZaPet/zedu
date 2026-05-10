@@ -42,7 +42,7 @@ const Hero = () => {
           className="absolute inset-0 pointer-events-none"
           style={{
             background:
-              "linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.25) 35%, rgba(0,0,0,0.12) 60%, rgba(0,0,0,0) 100%)",
+              "linear-gradient(180deg, rgba(0,0,0,0.40) 0%, rgba(0,0,0,0.35) 40%, rgba(0,0,0,0.30) 70%, rgba(0,0,0,0.15) 100%)",
           }}
         />
 
@@ -68,14 +68,6 @@ const Hero = () => {
           </h1>
 
           <p
-            className="text-base md:text-lg text-white/80 max-w-xl mx-auto animate-fade-in-up leading-relaxed"
-            style={{ animationDelay: "0.3s" }}
-          >
-            Interaktivní učebnice, aktivity a procvičování v jedné platformě
-            pro moderní výuku.
-          </p>
-
-          <p
             className="text-base md:text-lg text-white/75 max-w-xl mx-auto mb-8 mt-4 animate-fade-in-up leading-relaxed"
             style={{ animationDelay: "0.4s" }}
           >
@@ -94,7 +86,7 @@ const Hero = () => {
             </button>
             <button
               onClick={() => document.querySelector('#jak-to-funguje')?.scrollIntoView({ behavior: 'smooth' })}
-              className="border-2 border-white/40 text-white rounded-2xl px-8 py-4 text-lg hover:bg-white/10 transition-all inline-flex items-center justify-center"
+              className="bg-white/20 backdrop-blur-sm border border-white/30 text-white font-semibold rounded-2xl px-8 py-4 text-lg hover:bg-white/30 transition-all inline-flex items-center justify-center"
             >
               <Play className="w-5 h-5 mr-2" /> Jak to funguje ↓
             </button>
