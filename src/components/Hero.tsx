@@ -74,6 +74,38 @@ const Hero = () => {
             Interaktivní učebnice, aktivity a procvičování v jedné platformě
             pro moderní výuku.
           </p>
+
+          <p
+            className="text-base md:t-lg text-white/75 max-w-xl mx-auto mb-8 mt-4 animate-fade-in-up leading-relaxed"
+            style={{ animationDelay: "0.4s" }}
+          >
+            Kompletní platforma pro moderní výuku. Učebnice, živé hry, rozvrh a AI — vše na jednom místě.
+          </p>
+
+          <div
+            className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up"
+            style={{ animationDelay: "0.5s" }}
+          >
+            <button
+              onClick={() => navigate("/auth")}
+              className="bg-white text-primary font-semibold rounded-2xl px-8 py-4 text-lg shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all inline-flex items-center justify-center"
+            >
+              <Rocket className="w-5 h-5 mr-2" /> Vyzkoušet zdarma
+            </button>
+            <button
+              onClick={() => document.querySelector('#jak-to-funguje')?.scrollIntoView({ behavior: 'smooth' })}
+              className="border-2 border-white/40 text-white rounded-2xl px-8 py-4 text-lg hover:bg-white/10 transition-all inline-flex items-center justify-center"
+            >
+              <Play className="w-5 h-5 mr-2" /> Jak to funguje ↓
+            </button>
+          </div>
+
+          <p
+            className="text-xs text-white/40 mt-4 animate-fade-in-up"
+            style={{ animationDelay: "0.6s" }}
+          >
+            Zdarma pro všechny učitele. Bez platební karty.
+          </p>
         </div>
       </section>
 
