@@ -56,6 +56,15 @@ const Auth = () => {
     }
   }, [branding]);
 
+  // Preselect role + register mode from ?role= query param
+  useEffect(() => {
+    const r = searchParams.get("role");
+    if (r === "teacher" || r === "student" || r === "rodic") {
+      setRole(r);
+      setMode("register");
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // React to auth state changes - redirect when logged in
   useEffect(() => {
     if (authLoading) return;
