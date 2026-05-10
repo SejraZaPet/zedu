@@ -720,9 +720,14 @@ const TeacherTextbooks = () => {
             <h1 className="font-heading text-3xl font-bold">Moje učebnice</h1>
             <p className="text-muted-foreground mt-1">Učebnice se automaticky vytvářejí při přidání předmětu, nebo je můžete vytvořit ručně.</p>
           </div>
-          <Button onClick={() => setCreateOpen(true)} className="gap-1 shrink-0">
-            <Plus className="w-4 h-4" /> Nová učebnice
-          </Button>
+          <div className="flex gap-2 shrink-0">
+            <Button variant="outline" onClick={() => setCreateFromTemplateOpen(true)} className="gap-1">
+              <Sparkles className="w-4 h-4" /> Vytvořit ze šablony
+            </Button>
+            <Button onClick={() => setCreateOpen(true)} className="gap-1">
+              <Plus className="w-4 h-4" /> Nová učebnice
+            </Button>
+          </div>
         </div>
 
         <TextbookList
