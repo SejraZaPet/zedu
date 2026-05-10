@@ -45,7 +45,7 @@ export async function listPublishedListings(
 
   const { data, error } = await q;
   if (error) throw error;
-  return (data ?? []) as MarketplaceListing[];
+  return (data ?? []) as unknown as MarketplaceListing[];
 }
 
 export async function getListing(id: string) {
@@ -55,7 +55,7 @@ export async function getListing(id: string) {
     .eq("id", id)
     .maybeSingle();
   if (error) throw error;
-  return data as MarketplaceListing | null;
+  return data as unknown as MarketplaceListing | null;
 }
 
 export async function getListingPreview(textbookId: string) {
@@ -110,7 +110,7 @@ export async function listMyListings(sellerId: string) {
     .eq("seller_id", sellerId)
     .order("created_at", { ascending: false });
   if (error) throw error;
-  return (data ?? []) as MarketplaceListing[];
+  return (data ?? []) as unknown as MarketplaceListing[];
 }
 
 export async function listReviews(listingId: string) {
