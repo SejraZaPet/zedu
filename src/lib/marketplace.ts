@@ -31,7 +31,7 @@ export async function listPublishedListings(
   filters: MarketplaceFilters = {},
 ): Promise<MarketplaceListing[]> {
   let q = supabase
-    .from("marketplace_listings")
+    .from("marketplace_listings" as any)
     .select("*")
     .eq("status", "published")
     .order("downloads", { ascending: false });
@@ -50,7 +50,7 @@ export async function listPublishedListings(
 
 export async function getListing(id: string) {
   const { data, error } = await supabase
-    .from("marketplace_listings")
+    .from("marketplace_listings" as any)
     .select("*")
     .eq("id", id)
     .maybeSingle();
@@ -79,7 +79,7 @@ export async function purchaseListing(listing: MarketplaceListing) {
     data: { session },
   } = await supabase.auth.getSession();
   if (!session) throw new Error("Musíš se přihlásit.");
-  const { error } = await supabase.from("marketplace_purchases").insert({
+  const { error } = await supabase.from("marketplace_purchases" as any).insert({
     listing_id: listing.id,
     buyer_id: session.user.id,
     price_paid: listing.price,
@@ -95,7 +95,7 @@ export async function hasPurchased(listingId: string) {
   } = await supabase.auth.getSession();
   if (!session) return false;
   const { data } = await supabase
-    .from("marketplace_purchases")
+    .from("marketplace_purchases" as any)
     .select("id")
     .eq("listing_id", listingId)
     .eq("buyer_id", session.user.id)
@@ -105,7 +105,7 @@ export async function hasPurchased(listingId: string) {
 
 export async function listMyListings(sellerId: string) {
   const { data, error } = await supabase
-    .from("marketplace_listings")
+    .from("marketplace_listings" as any)
     .select("*")
     .eq("seller_id", sellerId)
     .order("created_at", { ascending: false });
@@ -115,7 +115,7 @@ export async function listMyListings(sellerId: string) {
 
 export async function listReviews(listingId: string) {
   const { data, error } = await supabase
-    .from("marketplace_reviews")
+    .from("marketplace_reviews" as any)
     .select("id, rating, comment, created_at, reviewer_id")
     .eq("listing_id", listingId)
     .order("created_at", { ascending: false });
@@ -133,7 +133,7 @@ export async function addReview(
   } = await supabase.auth.getSession();
   if (!session) throw new Error("Musíš se přihlásit.");
   const { error } = await supabase
-    .from("marketplace_reviews")
+    .from("marketplace_reviews" as any)
     .upsert(
       {
         listing_id: listingId,

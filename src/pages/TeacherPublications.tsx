@@ -59,7 +59,7 @@ const TeacherPublications = () => {
       toast({ title: "Vyplň povinná pole", variant: "destructive" });
       return;
     }
-    const { error } = await supabase.from("marketplace_listings").insert({
+    const { error } = await supabase.from("marketplace_listings" as any).insert({
       seller_id: userId,
       textbook_id: form.textbook_id,
       title: form.title,
@@ -82,7 +82,7 @@ const TeacherPublications = () => {
 
   const toggleStatus = async (l: MarketplaceListing) => {
     const next = l.status === "published" ? "draft" : "published";
-    await supabase.from("marketplace_listings").update({ status: next }).eq("id", l.id);
+    await supabase.from("marketplace_listings" as any).update({ status: next }).eq("id", l.id);
     if (userId) reload(userId);
   };
 
