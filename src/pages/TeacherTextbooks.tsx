@@ -85,6 +85,8 @@ const TeacherTextbooks = () => {
   const { data: subjects } = useSubjects(true);
   const [textbooks, setTextbooks] = useState<Textbook[]>([]);
   const [createOpen, setCreateOpen] = useState(false);
+  const [createFromTemplateOpen, setCreateFromTemplateOpen] = useState(false);
+  const [saveAsTemplateOpen, setSaveAsTemplateOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // Detail view
