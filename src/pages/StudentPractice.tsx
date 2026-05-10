@@ -345,10 +345,17 @@ const StudentPractice = () => {
                             }`}
                           >
                             <div className="flex items-start justify-between gap-2 mb-3">
-                              <p className="font-medium">
-                                <span className="text-muted-foreground mr-2">{i + 1}.</span>
-                                {q.prompt}
-                              </p>
+                              <div className="flex-1">
+                                <p className="font-medium">
+                                  <span className="text-muted-foreground mr-2">{i + 1}.</span>
+                                  {q.text ?? q.prompt}
+                                </p>
+                                {q.difficulty && (
+                                  <span className={`inline-block mt-2 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border ${DIFFICULTY_META[q.difficulty]?.cls ?? ""}`}>
+                                    {DIFFICULTY_META[q.difficulty]?.label ?? q.difficulty}
+                                  </span>
+                                )}
+                              </div>
                               {submitted && result === true && (
                                 <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
                               )}
