@@ -81,7 +81,7 @@ const StudentPractice = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<PracticeData | null>(null);
-  const [answers, setAnswers] = useState<Record<string, string | number>>({});
+  const [answers, setAnswers] = useState<Record<string, string | number | boolean>>({});
   const [submitted, setSubmitted] = useState(false);
   const [startedAt, setStartedAt] = useState<number>(Date.now());
   const [savingSession, setSavingSession] = useState(false);
