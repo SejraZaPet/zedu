@@ -42,7 +42,7 @@ const Hero = () => {
           className="absolute inset-0 pointer-events-none"
           style={{
             background:
-              "linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.25) 35%, rgba(0,0,0,0.12) 60%, rgba(0,0,0,0) 100%)",
+              "linear-gradient(180deg, rgba(0,0,0,0.40) 0%, rgba(0,0,0,0.35) 40%, rgba(0,0,0,0.30) 70%, rgba(0,0,0,0.15) 100%)",
           }}
         />
 
