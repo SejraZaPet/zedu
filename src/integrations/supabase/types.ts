@@ -2233,6 +2233,45 @@ export type Database = {
         }
         Relationships: []
       }
+      textbook_templates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string
+          grade_range: unknown
+          id: string
+          is_public: boolean
+          name: string
+          structure_json: Json
+          subject: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          grade_range?: unknown
+          id?: string
+          is_public?: boolean
+          name: string
+          structure_json?: Json
+          subject?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          grade_range?: unknown
+          id?: string
+          is_public?: boolean
+          name?: string
+          structure_json?: Json
+          subject?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       textbook_topics: {
         Row: {
           created_at: string
