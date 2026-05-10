@@ -59,6 +59,13 @@ const SiteFooter = () => {
             </a>
           </div>
         </div>
+
+        <div className="border-t border-border mt-10 pt-6 text-center">
+          <p className="text-xs text-muted-foreground">
+            © {new Date().getFullYear()} Zedu. Všechna práva vyhrazena.
+          </p>
+        </div>
+      </div>
     </footer>
   );
 };
