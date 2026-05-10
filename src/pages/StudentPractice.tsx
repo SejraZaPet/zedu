@@ -295,6 +295,12 @@ const StudentPractice = () => {
                   </div>
                 </div>
                 {totalScorable > 0 && <Progress value={percent} className="h-2" />}
+                {data.recommendation && (
+                  <div className="mt-4 p-3 rounded-lg bg-background/60 border border-border">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">Doporučení k opakování</p>
+                    <p className="text-sm">{data.recommendation}</p>
+                  </div>
+                )}
                 <div className="flex gap-2 mt-4">
                   <Button onClick={handleRetry} className="gap-2" disabled={savingSession}>
                     <RotateCcw className="w-4 h-4" /> Zkusit znovu
