@@ -59,6 +59,8 @@ const SiteHeader = () => {
         { label: "Třídy", href: "/ucitel/tridy", icon: FolderOpen },
         { label: "Média", href: "/ucitel/media", icon: ImageIcon },
         { label: "Výsledky", href: "/ucitel/vysledky", icon: BarChart3 },
+        { label: "Marketplace", href: "/marketplace", icon: ShoppingBag },
+        { label: "Moje publikace", href: "/ucitel/publikace", icon: Layers },
         { label: "Nápověda", href: "/napoveda", icon: HelpCircle },
       ];
     }
