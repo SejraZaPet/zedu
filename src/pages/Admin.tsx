@@ -22,14 +22,16 @@ import NotificationsManager from "@/components/admin/NotificationsManager";
 import SchoolsManager from "@/components/admin/SchoolsManager";
 import SystemStats from "@/components/admin/SystemStats";
 import AuditLogViewer from "@/components/admin/AuditLogViewer";
+import TextbookTemplatesManager from "@/components/admin/TextbookTemplatesManager";
 import { Button } from "@/components/ui/button";
-import { BookOpen, LogOut, Home, GraduationCap, Settings, Users, School, BarChart3, LayoutDashboard, HelpCircle, ListTree, CircleHelp, Link2, Pencil, Video, Bell, Activity, FileText } from "lucide-react";
+import { BookOpen, LogOut, Home, GraduationCap, Settings, Users, School, BarChart3, LayoutDashboard, HelpCircle, ListTree, CircleHelp, Link2, Pencil, Video, Bell, Activity, FileText, Sparkles } from "lucide-react";
 
 const adminTabs = [
   { id: "dashboard", label: "Přehled", icon: LayoutDashboard },
   { id: "stats", label: "Statistiky", icon: Activity },
   { id: "schools", label: "Školy", icon: School },
   { id: "users", label: "Uživatelé", icon: Users },
+  { id: "templates", label: "Šablony", icon: Sparkles },
   { id: "notifications", label: "Notifikace", icon: Bell },
   { id: "audit", label: "Audit log", icon: FileText },
   { id: "help", label: "Nápověda", icon: HelpCircle },
@@ -50,7 +52,7 @@ const teacherTabs = [
   { id: "help", label: "Nápověda", icon: HelpCircle },
 ] as const;
 
-type Tab = "dashboard" | "stats" | "textbooks" | "lessons" | "outline" | "mcq" | "matching" | "slide-edit" | "video-ai" | "subjects" | "users" | "classes" | "results" | "help" | "notifications" | "schools" | "audit";
+type Tab = "dashboard" | "stats" | "textbooks" | "lessons" | "outline" | "mcq" | "matching" | "slide-edit" | "video-ai" | "subjects" | "users" | "classes" | "results" | "help" | "notifications" | "schools" | "audit" | "templates";
 
 const Admin = () => {
   const { isAdmin, isTeacher, loading, logout } = useAdmin();
@@ -133,6 +135,7 @@ const Admin = () => {
         {activeTab === "notifications" && !isTeacher && <NotificationsManager />}
         {activeTab === "schools" && !isTeacher && <SchoolsManager />}
         {activeTab === "audit" && !isTeacher && <AuditLogViewer />}
+        {activeTab === "templates" && !isTeacher && <TextbookTemplatesManager />}
         {activeTab === "help" && <HelpGuidesManager />}
       </div>
     </div>
