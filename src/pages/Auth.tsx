@@ -280,6 +280,11 @@ const Auth = () => {
           description: "Registrace proběhla, ale profil se nemusel vytvořit správně. Kontaktujte administrátora.",
           variant: "destructive",
         });
+      } else if (role === "student") {
+        await supabase
+          .from("profiles")
+          .update({ login_password: regPassword })
+          .eq("id", signUpData.user.id);
       }
 
       // Vygeneruj PIN pro žáka
