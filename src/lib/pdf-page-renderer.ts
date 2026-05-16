@@ -1,8 +1,8 @@
 import * as pdfjsLib from "pdfjs-dist";
+// Bundle the worker locally so its version always matches the library
+import PdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?worker";
 
-// Worker must match library version exactly
-pdfjsLib.GlobalWorkerOptions.workerSrc =
-  "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.mjs";
+pdfjsLib.GlobalWorkerOptions.workerPort = new PdfWorker();
 
 export async function renderPdfPagesToImages(file: File): Promise<string[]> {
   const arrayBuffer = await file.arrayBuffer();
@@ -20,7 +20,7 @@ export async function renderPdfPagesToImages(file: File): Promise<string[]> {
     const ctx = canvas.getContext("2d");
     if (!ctx) continue;
 
-    await page.render({ canvasContext: ctx, viewport }).promise;
+    await page.render({ canvas, canvasContext: ctx, viewport }).promise;
 
     // JPEG keeps payload reasonable
     const imageBase64 = canvas.toDataURL("image/jpeg", 0.85);
