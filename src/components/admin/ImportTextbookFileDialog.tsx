@@ -219,6 +219,13 @@ const ImportTextbookFileDialog = ({
               />
             </div>
 
+            {processing && progress && (
+              <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm text-primary">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>{progress}</span>
+              </div>
+            )}
+
             <DialogFooter>
               <Button variant="ghost" onClick={() => handleClose(false)} disabled={processing}>
                 Zrušit
