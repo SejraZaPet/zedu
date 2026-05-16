@@ -118,6 +118,7 @@ async function extractDocxText(bytes: Uint8Array) {
   const unzipped = unzipSync(bytes);
   const docXml = unzipped["word/document.xml"];
   if (!docXml) return "";
+
   const xml = textDecoder.decode(docXml);
   const paragraphs = [...xml.matchAll(/<w:p[\s\S]*?<\/w:p>/g)]
     .map((match) => {
@@ -128,8 +129,8 @@ async function extractDocxText(bytes: Uint8Array) {
       return texts.join(" ").trim();
     })
     .filter(Boolean);
-  return paragraphs.join("
-");
+
+  return paragraphs.join("\n");
 }
 
 async function extractPptxText(bytes: Uint8Array) {
@@ -149,19 +150,19 @@ async function extractPptxText(bytes: Uint8Array) {
     const texts = [...xml.matchAll(/<a:t[^>]*>([\s\S]*?)<\/a:t>/g)]
       .map((m) => stripXml(m[1]))
       .filter(Boolean);
+
     if (texts.length > 0) {
-      slides.push(`--- Slide ---
-${texts.join("
-")}`);
+      slides.push(`--- Slide ---\n${texts.join("\n")}`);
     }
   }
 
-  return slides.join("
-
-");
+  return slides.join("\n\n");
 }
 
-async function callGatewayWithFile(apiKey: string, body: { fileBase64: string; fileName: string; mimeType: string; mode: "single" | "split" }) {
+async function callGatewayWithFile(
+  apiKey: string,
+  body: { fileBase64: string; fileName: string; mimeType: string; mode: "single" | "split" },
+) {
   const userPrompt = `Zpracuj soubor "${body.fileName}" a převeď jeho kompletní obsah do editovatelných bloků ZEdu. Režim: ${body.mode}.`;
 
   const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -207,13 +208,11 @@ async function callGatewayWithFile(apiKey: string, body: { fileBase64: string; f
   return response.json();
 }
 
-async function callGatewayWithText(apiKey: string, payload: { extractedText: string; fileName: string; mimeType: string; mode: "single" | "split" }) {
-  const userPrompt = `Soubor: ${payload.fileName}
-MIME: ${payload.mimeType}
-Režim: ${payload.mode}
-
-OBSAH DOKUMENTU:
-${payload.extractedText}`;
+async function callGatewayWithText(
+  apiKey: string,
+  payload: { extractedText: string; fileName: string; mimeType: string; mode: "single" | "split" },
+) {
+  const userPrompt = `Soubor: ${payload.fileName}\nMIME: ${payload.mimeType}\nRežim: ${payload.mode}\n\nOBSAH DOKUMENTU:\n${payload.extractedText}`;
 
   const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
@@ -255,18 +254,26 @@ function normalizeBlock(block: any) {
   const id = typeof block?.id === "string" && /^[a-zA-Z0-9]{6,}$/.test(block.id)
     ? block.id.slice(0, 12)
     : crypto.randomUUID().replace(/-/g, "").slice(0, 6);
-
   const props = typeof block?.props === "object" && block.props ? block.props : {};
 
   switch (type) {
     case "heading":
-      return { id, type, visible: true, props: { text: String(props.text ?? "").trim(), level: props.level === 3 ? 3 : 2 } };
+      return {
+        id,
+        type,
+        visible: true,
+        props: { text: String(props.text ?? "").trim(), level: props.level === 3 ? 3 : 2 },
+      };
     case "bullet_list":
       return {
         id,
         type,
         visible: true,
-        props: { items: Array.isArray(props.items) ? props.items.map((item: unknown) => String(item).trim()).filter(Boolean) : [] },
+        props: {
+          items: Array.isArray(props.items)
+            ? props.items.map((item: unknown) => String(item).trim()).filter(Boolean)
+            : [],
+        },
       };
     case "table":
       return {
@@ -276,42 +283,61 @@ function normalizeBlock(block: any) {
         props: {
           headers: Array.isArray(props.headers) ? props.headers.map((item: unknown) => String(item)) : [],
           rows: Array.isArray(props.rows)
-            ? props.rows.map((row: unknown) => Array.isArray(row) ? row.map((cell: unknown) => String(cell)) : [])
+            ? props.rows.map((row: unknown) => (Array.isArray(row) ? row.map((cell: unknown) => String(cell)) : []))
             : [],
         },
       };
     case "callout":
-      return { id, type, visible: true, props: { text: String(props.text ?? "").trim(), calloutType: "note" } };
+      return {
+        id,
+        type,
+        visible: true,
+        props: { text: String(props.text ?? "").trim(), calloutType: "note" },
+      };
     case "quote":
-      return { id, type, visible: true, props: { text: String(props.text ?? "").trim(), author: String(props.author ?? "") } };
+      return {
+        id,
+        type,
+        visible: true,
+        props: { text: String(props.text ?? "").trim(), author: String(props.author ?? "") },
+      };
     case "divider":
       return { id, type, visible: true, props: { style: "line" } };
     default:
-      return { id, type: "paragraph", visible: true, props: { text: String(props.text ?? block?.text ?? "").trim() } };
+      return {
+        id,
+        type: "paragraph",
+        visible: true,
+        props: { text: String(props.text ?? block?.text ?? "").trim() },
+      };
   }
 }
 
 function normalizeLessons(payload: any, fallbackTitle: string, mode: "single" | "split") {
   const lessons = Array.isArray(payload?.lessons) ? payload.lessons : [];
+
   const normalized = lessons
     .map((lesson: any, index: number) => ({
-      title: String(lesson?.title ?? `${fallbackTitle} ${index + 1}`).trim().slice(0, 200) || `${fallbackTitle} ${index + 1}`,
-      blocks: Array.isArray(lesson?.blocks) ? lesson.blocks.map(normalizeBlock).filter((block: any) => {
-        if (block.type === "heading" || block.type === "paragraph" || block.type === "quote" || block.type === "callout") {
-          return Boolean(String(block.props.text ?? "").trim());
-        }
-        if (block.type === "bullet_list") return block.props.items.length > 0;
-        if (block.type === "table") return block.props.headers.length > 0 || block.props.rows.length > 0;
-        return true;
-      }) : [],
+      title:
+        String(lesson?.title ?? `${fallbackTitle} ${index + 1}`).trim().slice(0, 200) ||
+        `${fallbackTitle} ${index + 1}`,
+      blocks: Array.isArray(lesson?.blocks)
+        ? lesson.blocks
+            .map(normalizeBlock)
+            .filter((block: any) => {
+              if (["heading", "paragraph", "quote", "callout"].includes(block.type)) {
+                return Boolean(String(block.props.text ?? "").trim());
+              }
+              if (block.type === "bullet_list") return block.props.items.length > 0;
+              if (block.type === "table") return block.props.headers.length > 0 || block.props.rows.length > 0;
+              return true;
+            })
+        : [],
     }))
     .filter((lesson: any) => lesson.blocks.length > 0);
 
   if (mode === "single" && normalized.length > 1) {
-    return [{
-      title: fallbackTitle,
-      blocks: normalized.flatMap((lesson: any) => lesson.blocks),
-    }];
+    return [{ title: fallbackTitle, blocks: normalized.flatMap((lesson: any) => lesson.blocks) }];
   }
 
   return normalized;
@@ -332,6 +358,7 @@ serve(async (req) => {
     const effectiveMode = mode === "split" ? "split" : "single";
     const cleanMimeType = typeof mimeType === "string" && mimeType ? mimeType : "application/pdf";
     const approxBytes = Math.ceil(String(fileBase64).length * 0.75);
+
     if (approxBytes > MAX_BASE64_BYTES) {
       return jsonResponse({ error: "Soubor je příliš velký. Limit je 25 MB." }, 400);
     }
@@ -348,6 +375,7 @@ serve(async (req) => {
       });
     } catch (fileError) {
       console.error("File mode failed, trying fallback:", fileError);
+
       const lower = String(fileName).toLowerCase();
       const bytes = decodeBase64(String(fileBase64));
       let extractedText = "";
@@ -380,11 +408,7 @@ serve(async (req) => {
       throw new Error("AI nedokázala z dokumentu vytvořit žádné bloky.");
     }
 
-    return jsonResponse({
-      lessons,
-      blocks,
-      blockCount: blocks.length,
-    });
+    return jsonResponse({ lessons, blocks, blockCount: blocks.length });
   } catch (err) {
     console.error("process-file-content error:", err);
     return jsonResponse({ error: err instanceof Error ? err.message : "Neznámá chyba" }, 500);
