@@ -223,22 +223,23 @@ export default function TeacherLessonPlanEditor() {
     let cancelled = false;
     setLoadingTextbooks(true);
 
-    supabase
-      .from("teacher_textbooks")
-      .select("id, title, subject")
-      .order("title", { ascending: true })
-      .then(({ data, error }) => {
-        if (cancelled) return;
-        if (error) {
-          console.warn("[TeacherLessonPlanEditor] textbooks load failed:", error.message);
-          setTextbooks([]);
-        } else {
-          setTextbooks((data as any[]) ?? []);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoadingTextbooks(false);
-      });
+    (async () => {
+      const { data, error } = await supabase
+        .from("teacher_textbooks")
+        .select("id, title, subject")
+        .order("title", { ascending: true });
+
+      if (cancelled) return;
+
+      if (error) {
+        console.warn("[TeacherLessonPlanEditor] textbooks load failed:", error.message);
+        setTextbooks([]);
+      } else {
+        setTextbooks((data as any[]) ?? []);
+      }
+
+      setLoadingTextbooks(false);
+    })();
 
     return () => {
       cancelled = true;
