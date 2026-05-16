@@ -220,18 +220,19 @@ const LiveTeacherScreen = () => {
       {/* Slide strip */}
       <div className="flex gap-1 overflow-x-auto pb-1">
         {slides.map((_, i) => (
-          <div
+          <button
             key={i}
-            className={`flex-shrink-0 w-8 h-8 rounded flex items-center justify-center text-xs font-medium ${
+            onClick={() => goToIndex(i)}
+            className={`flex-shrink-0 w-8 h-8 rounded flex items-center justify-center text-xs font-medium cursor-pointer transition-colors ${
               i === currentIndex
                 ? "bg-primary text-primary-foreground"
                 : i < currentIndex
-                ? "bg-muted text-muted-foreground"
-                : "bg-muted/50 text-muted-foreground/50"
+                ? "bg-muted text-muted-foreground hover:bg-muted/80"
+                : "bg-muted/50 text-muted-foreground/50 hover:bg-muted/70"
             }`}
           >
             {i + 1}
-          </div>
+          </button>
         ))}
       </div>
 
