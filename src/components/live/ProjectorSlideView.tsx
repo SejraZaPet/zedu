@@ -84,7 +84,7 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
                       {currentSlide.projector.headline}
                     </h2>
                   )}
-                  <div className="w-full max-w-6xl text-2xl space-y-6 overflow-hidden [&_*]:!text-white [&_h1]:!text-white [&_h2]:!text-white [&_h3]:!text-white [&_.bg-card]:!bg-white/10 [&_.bg-muted\/40]:!bg-white/10 [&_.bg-muted\/30]:!bg-white/10 [&_.border]:!border-white/20">
+                  <div className="w-full max-w-6xl text-2xl space-y-6 overflow-y-auto max-h-full pr-2 [&_*]:!text-white [&_h1]:!text-white [&_h2]:!text-white [&_h3]:!text-white [&_.bg-card]:!bg-white/10 [&_.bg-muted\/40]:!bg-white/10 [&_.bg-muted\/30]:!bg-white/10 [&_.border]:!border-white/20">
                     {currentSlide.blocks.map((b: any, i: number) => (
                       <LessonBlock key={b.id || i} block={b} blockIndex={i} isTeacher={false} />
                     ))}
