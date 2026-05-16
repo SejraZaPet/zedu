@@ -262,14 +262,14 @@ export const PresentationEditorDialog = ({
                   )}
                 </div>
                 <p className="text-[10px] text-muted-foreground mt-2 leading-tight">
-                  Formátování: <code>## podnadpis</code>, <code>• odrážka</code>, <code>**tučně**</code>, sloupce <code>A | B | C</code>.
+                  Náhled odráží přesně to, jak slide uvidí žáci na projektoru i v učebnici.
                 </p>
               </div>
 
               {/* Form */}
               <div className="space-y-3">
                 <div>
-                  <Label className="text-xs">Nadpis (projektor)</Label>
+                  <Label className="text-xs">Nadpis slidu</Label>
                   <Input
                     value={currentSlide.projector?.headline || ""}
                     onChange={(e) => {
@@ -280,18 +280,17 @@ export const PresentationEditorDialog = ({
                   />
                 </div>
                 <div>
-                  <Label className="text-xs">Text (projektor)</Label>
-                  <Textarea
-                    rows={6}
-                    className="font-mono text-xs"
-                    value={currentSlide.projector?.body || ""}
-                    onChange={(e) => {
-                      const updated = [...pendingSlides];
-                      updated[editingSlideIndex] = { ...updated[editingSlideIndex], projector: { ...updated[editingSlideIndex].projector, body: e.target.value } };
-                      setPendingSlides(updated);
-                    }}
-                    placeholder={"## Podnadpis\n• První bod\n• Druhý bod\n**Důležité** zvýraznění"}
-                  />
+                  <Label className="text-xs">Obsah slidu (bloky jako v učebnici)</Label>
+                  <div className="mt-2 border border-border rounded-lg p-3 bg-muted/20 max-h-[55vh] overflow-y-auto">
+                    <BlockEditor
+                      blocks={((currentSlide as any).blocks || []) as Block[]}
+                      onChange={(blocks) => {
+                        const updated = [...pendingSlides];
+                        updated[editingSlideIndex] = { ...updated[editingSlideIndex], blocks };
+                        setPendingSlides(updated);
+                      }}
+                    />
+                  </div>
                 </div>
                 <div>
                   <Label className="text-xs">Instrukce pro žáka</Label>
