@@ -520,6 +520,57 @@ const ProfilePage = () => {
           </Card>
         )}
 
+        {role === "user" && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <KeyRound className="w-5 h-5 text-primary" /> Přihlášení PINem
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {profile?.username && (
+                <div>
+                  <Label>Uživatelské jméno</Label>
+                  <p className="text-lg font-mono font-semibold">{profile.username}</p>
+                  <p className="text-xs text-muted-foreground">Použijte při přihlášení PINem</p>
+                </div>
+              )}
+              <div>
+                <Label>PIN stav</Label>
+                <p className="text-sm text-muted-foreground">
+                  {profile?.pin_code ? "✅ PIN je nastavený" : "❌ PIN není nastavený"}
+                </p>
+              </div>
+              <Separator />
+              <div>
+                <Label htmlFor="newPin">{profile?.pin_code ? "Změnit PIN" : "Nastavit PIN"}</Label>
+                <div className="flex gap-2 mt-1">
+                  <Input
+                    id="newPin"
+                    type={showPin ? "text" : "password"}
+                    inputMode="numeric"
+                    pattern="\d{4}"
+                    maxLength={4}
+                    placeholder="4 číslice"
+                    value={newPin}
+                    onChange={(e) => setNewPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                    className="w-32"
+                  />
+                  <Button variant="ghost" size="sm" onClick={() => setShowPin(!showPin)}>
+                    {showPin ? "Skrýt" : "Zobrazit"}
+                  </Button>
+                  <Button onClick={handleChangePin} disabled={savingPin || newPin.length !== 4}>
+                    <Save className="w-4 h-4 mr-1" /> Uložit
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  PIN slouží pro rychlé přihlášení bez emailu. Zadejte uživatelské jméno + PIN.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <PushNotificationsCard />
 
         {/* Password change */}
