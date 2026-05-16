@@ -351,6 +351,13 @@ const ImportTextbookFileDialog = ({
               </p>
             </div>
 
+            <div className="bg-muted/50 rounded-lg p-3 text-sm text-muted-foreground space-y-1">
+              <p className="font-medium text-foreground">ℹ️ Co import zvládne:</p>
+              <p>✅ Nadpisy, odstavce, seznamy, tabulky, citáty</p>
+              <p>⚠️ Obrázky z dokumentu se nepřenesou — doplňte je ručně v editoru lekce</p>
+              <p>📎 Podporované formáty: PDF, DOCX, PPTX (max 25 MB)</p>
+            </div>
+
             <div className="space-y-2 rounded-lg border border-border p-3">
               <Label htmlFor="manual-text" className="text-sm">
                 Pojistka: vložte text ručně (volitelné)
