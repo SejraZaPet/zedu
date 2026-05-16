@@ -87,7 +87,7 @@ const ImportTextbookFileDialog = ({
     try {
       const fileBase64 = await fileToBase64(file);
       const { data, error } = await supabase.functions.invoke("import-textbook-file", {
-        body: { fileBase64, filename: file.name, mimeType: file.type },
+        body: { fileBase64, filename: file.name, mimeType: file.type, mode: singleLesson ? "single" : "split" },
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
