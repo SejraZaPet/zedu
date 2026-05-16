@@ -2751,6 +2751,7 @@ export type Database = {
         }
         Returns: string
       }
+      set_user_pin: { Args: { _pin: string }; Returns: Json }
       verify_pin_login: {
         Args: { _pin: string; _username: string }
         Returns: Json
