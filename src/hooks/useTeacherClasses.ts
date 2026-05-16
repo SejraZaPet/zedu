@@ -10,9 +10,9 @@ export interface TeacherClassOption {
 }
 
 /**
- * Returns the list of classes the current teacher belongs to (via class_teachers).
- * Used for the "Třída" select inside the unified lesson modal so teachers pick
- * a real class instead of typing free text.
+ * Returns the list of classes the current teacher belongs to (via class_teachers
+ * or as the creator). Used for the "Třída" select inside the unified lesson
+ * modal so teachers pick a real class instead of typing free text.
  */
 export const useTeacherClasses = () => {
   const { data = [], isLoading } = useQuery<TeacherClassOption[]>({
@@ -20,19 +20,16 @@ export const useTeacherClasses = () => {
     queryFn: async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return [];
-      const { data: ct, error: ctErr } = await supabase
-        .from("class_teachers")
-        .select("class_id")
-        .eq("user_id", session.user.id);
-      if (ctErr) throw ctErr;
-      const classIds = (ct ?? []).map((r: any) => r.class_id);
-      if (classIds.length === 0) return [];
+      const userId = session.user.id;
+
+      // Načti třídy kde jsem učitel NEBO tvůrce
       const { data: classes, error } = await supabase
         .from("classes")
-        .select("id, name, school, field_of_study, year, archived")
-        .in("id", classIds)
+        .select("id, name, school, field_of_study, year, archived, created_by")
         .eq("archived", false)
+        .or(`created_by.eq.${userId},id.in.(select class_id from class_teachers where user_id='${userId}')`)
         .order("name");
+
       if (error) throw error;
       return (classes ?? []).map((c: any) => ({
         id: c.id,
