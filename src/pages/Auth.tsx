@@ -152,20 +152,30 @@ const Auth = () => {
     }
     setLoading(true);
     try {
-      const { data, error: fnError } = await supabase.functions.invoke("verify-pin", {
-        body: { username: pinUsername.trim(), pin: pinValue },
+      // 1. Ověř PIN přes RPC (PostgreSQL crypt, ne JS bcrypt)
+      const { data: result, error: rpcError } = await supabase.rpc("verify_pin_login", {
+        _username: pinUsername.trim(),
+        _pin: pinValue,
       });
-      if (fnError || !data?.access_token) {
-        setError("Špatný PIN nebo uživatelské jméno.");
+      const pinResult = result as { error?: string; email?: string; password?: string } | null;
+      if (rpcError || pinResult?.error) {
+        setError(pinResult?.error || "Špatný PIN nebo uživatelské jméno.");
         setLoading(false);
         return;
       }
-      const { error: setErr } = await supabase.auth.setSession({
-        access_token: data.access_token,
-        refresh_token: data.refresh_token,
-      });
-      if (setErr) {
-        setError("Nepodařilo se přihlásit, zkus to znovu.");
+      // 2. Přihlas se emailem + login_password
+      if (pinResult?.email && pinResult?.password) {
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: pinResult.email,
+          password: pinResult.password,
+        });
+        if (signInError) {
+          setError("PIN ověřen, ale přihlášení selhalo. Zkuste se přihlásit emailem.");
+          setLoading(false);
+          return;
+        }
+      } else {
+        setError("PIN ověřen, ale chybí přihlašovací údaje. Kontaktujte administrátora.");
         setLoading(false);
         return;
       }
