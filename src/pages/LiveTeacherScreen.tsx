@@ -16,6 +16,7 @@ import PollProjectorView from "@/components/activities/PollProjectorView";
 import LiveWhiteboard, { WhiteboardData } from "@/components/game/LiveWhiteboard";
 import RemoteControlButton from "@/components/live/RemoteControlButton";
 import { presenterRemoteChannelName } from "@/pages/PresenterRemote";
+import ProjectorSlideView from "@/components/live/ProjectorSlideView";
 
 interface SlideData {
   slideId: string;
