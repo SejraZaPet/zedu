@@ -167,8 +167,104 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
     onChange([...blocks, createDefaultBlock(type)]);
   };
 
+  const [dragOver, setDragOver] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  const uploadImageFile = async (file: File): Promise<string | null> => {
+    const ext = (file.name.split(".").pop() || file.type.split("/")[1] || "png").toLowerCase();
+    const path = `${crypto.randomUUID()}.${ext}`;
+    const { error } = await supabase.storage
+      .from("lesson-images")
+      .upload(path, file, { contentType: file.type || `image/${ext}`, upsert: false });
+    if (error) {
+      console.warn("Image upload failed:", error);
+      return null;
+    }
+    const { data } = supabase.storage.from("lesson-images").getPublicUrl(path);
+    return data.publicUrl;
+  };
+
+  const appendImageBlock = (url: string, caption = "") => {
+    const newBlock = {
+      id: crypto.randomUUID(),
+      type: "image",
+      visible: true,
+      props: { url, caption, width: "full", alignment: "center" },
+    } as unknown as Block;
+    onChange([...blocks, newBlock]);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const files = Array.from(e.dataTransfer.files).filter((f) => f.type.startsWith("image/"));
+    if (files.length === 0) return;
+    setUploading(true);
+    try {
+      let added = 0;
+      for (const file of files) {
+        const url = await uploadImageFile(file);
+        if (!url) continue;
+        appendImageBlock(url, file.name.replace(/\.[^.]+$/, ""));
+        added++;
+      }
+      if (added > 0) toast.success(`Přidáno ${added} obrázků`);
+      else toast.error("Nahrání obrázku se nezdařilo.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  useEffect(() => {
+    const handlePaste = async (e: ClipboardEvent) => {
+      const items = Array.from(e.clipboardData?.items || []);
+      const imageItem = items.find((i) => i.type.startsWith("image/"));
+      if (!imageItem) return;
+      // Don't hijack paste when user is typing in an input/textarea/contentEditable
+      const target = e.target as HTMLElement | null;
+      if (target) {
+        const tag = target.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA" || target.isContentEditable) return;
+      }
+      e.preventDefault();
+      const file = imageItem.getAsFile();
+      if (!file) return;
+      setUploading(true);
+      try {
+        const url = await uploadImageFile(file);
+        if (url) {
+          appendImageBlock(url);
+          toast.success("Obrázek vložen");
+        } else {
+          toast.error("Nahrání obrázku se nezdařilo.");
+        }
+      } finally {
+        setUploading(false);
+      }
+    };
+    document.addEventListener("paste", handlePaste);
+    return () => document.removeEventListener("paste", handlePaste);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [blocks]);
+
   return (
-    <div className="space-y-3">
+    <div
+      onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+      onDragLeave={(e) => {
+        // Only clear when leaving the wrapper itself
+        if (e.currentTarget === e.target) setDragOver(false);
+      }}
+      onDrop={handleDrop}
+      className={`relative space-y-3 rounded-lg transition ${dragOver ? "ring-2 ring-primary ring-offset-2 bg-primary/5" : ""}`}
+    >
+      {dragOver && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-primary/10 rounded-lg pointer-events-none">
+          <p className="text-lg font-medium text-primary">📷 Pusťte obrázek sem</p>
+        </div>
+      )}
+      {uploading && (
+        <div className="text-xs text-muted-foreground">Nahrávám obrázek…</div>
+      )}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={blocks.map((b) => b.id)} strategy={verticalListSortingStrategy}>
           {blocks.map((block) => (
@@ -186,7 +282,7 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
 
       {blocks.length === 0 && (
         <div className="text-center py-8 text-sm text-muted-foreground border border-dashed border-border rounded-lg">
-          Zatím žádné bloky. Přidejte první blok níže.
+          Zatím žádné bloky. Přidejte první blok níže, nebo přetáhněte obrázek z počítače.
         </div>
       )}
 
