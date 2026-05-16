@@ -10,6 +10,21 @@ import { LessonBlock } from "@/components/LessonBlockRenderer";
 
 const LiveProjectorScreen = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
+  const navigate = useNavigate();
+  const handleClose = () => {
+    if (window.opener) window.close();
+    else navigate(-1);
+  };
+  const CloseButton = () => (
+    <Button
+      onClick={handleClose}
+      variant="ghost"
+      size="sm"
+      className="fixed top-4 right-4 z-50 gap-1.5 bg-background/80 hover:bg-background backdrop-blur"
+    >
+      <X className="w-4 h-4" /> Zavřít
+    </Button>
+  );
   const { session, players, responses, loading } = useGameSession(sessionId);
 
   if (loading) {
