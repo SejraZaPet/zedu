@@ -351,6 +351,23 @@ const ImportTextbookFileDialog = ({
               </p>
             </div>
 
+            <div className="space-y-2 rounded-lg border border-border p-3">
+              <Label htmlFor="manual-text" className="text-sm">
+                Pojistka: vložte text ručně (volitelné)
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Pokud AI při importu vymýšlí obsah nebo přeskakuje text, otevřete PDF v prohlížeči, označte vše (Ctrl+A), zkopírujte (Ctrl+C) a vložte sem. Tento text má přednost před automatickou extrakcí.
+              </p>
+              <Textarea
+                id="manual-text"
+                value={manualText}
+                onChange={(e) => setManualText(e.target.value)}
+                rows={4}
+                placeholder="Sem vložte přesný text z PDF / prezentace…"
+                disabled={processing}
+              />
+            </div>
+
             <div className="flex items-start justify-between gap-4 rounded-lg border border-border p-3">
               <div className="space-y-0.5">
                 <Label htmlFor="single-lesson-toggle" className="text-sm">
