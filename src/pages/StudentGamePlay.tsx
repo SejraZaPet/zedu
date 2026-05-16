@@ -181,10 +181,18 @@ const StudentGamePlay = () => {
                 {currentSlideData.projector.headline}
               </h1>
             )}
-            {!currentSlideData.tableData && !currentSlideData.cardData && currentSlideData.projector?.body && (
-              <p className="text-base text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                {currentSlideData.projector.body}
-              </p>
+            {Array.isArray(currentSlideData.blocks) && currentSlideData.blocks.length > 0 ? (
+              <div className="space-y-4 text-base text-foreground">
+                {currentSlideData.blocks.map((b: any, i: number) => (
+                  <LessonBlockRenderer key={b.id || i} block={b} blockIndex={i} isTeacher={false} />
+                ))}
+              </div>
+            ) : (
+              !currentSlideData.tableData && !currentSlideData.cardData && currentSlideData.projector?.body && (
+                <p className="text-base text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                  {currentSlideData.projector.body}
+                </p>
+              )
             )}
             {currentSlideData.tableData && (
               <div className="overflow-x-auto mt-3">
