@@ -466,9 +466,17 @@ const SlideCanvas = ({
   }
 
   const stage = (
-    <div
-      className={`flex h-full flex-col overflow-hidden ${darkMode ? "text-white" : "text-foreground"}`}
-    >
+    <SlideBody
+      slide={slide}
+      editable={editable}
+      darkMode={darkMode}
+      onChangeHeadline={onChangeHeadline}
+      onChangeBlock={onChangeBlock}
+      onMoveBlock={onMoveBlock}
+      onDeleteBlock={onDeleteBlock}
+      onChangeHeroImage={onChangeHeroImage}
+    />
+  );
       <div className="flex-1 flex flex-col items-center justify-start px-12 py-10 gap-6 min-h-0 overflow-hidden">
         {body}
       </div>
