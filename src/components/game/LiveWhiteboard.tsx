@@ -130,11 +130,14 @@ const LiveWhiteboard = ({ sessionId, data, readOnly = false, onClose, overlay = 
     if (!cvs || !cont) return;
     const resize = () => {
       const r = cont.getBoundingClientRect();
+      const logicalWidth = cont.clientWidth || Math.round(r.width);
+      const logicalHeight = cont.clientHeight || Math.round(r.height);
+      if (!logicalWidth || !logicalHeight) return;
       const dpr = window.devicePixelRatio || 1;
-      cvs.width = Math.max(1, Math.floor(r.width * dpr));
-      cvs.height = Math.max(1, Math.floor(r.height * dpr));
-      cvs.style.width = `${r.width}px`;
-      cvs.style.height = `${r.height}px`;
+      cvs.width = Math.max(1, Math.floor(logicalWidth * dpr));
+      cvs.height = Math.max(1, Math.floor(logicalHeight * dpr));
+      cvs.style.width = `${logicalWidth}px`;
+      cvs.style.height = `${logicalHeight}px`;
       const ctx = cvs.getContext("2d");
       ctx?.setTransform(dpr, 0, 0, dpr, 0, 0);
       rerender();
@@ -147,10 +150,12 @@ const LiveWhiteboard = ({ sessionId, data, readOnly = false, onClose, overlay = 
 
   useEffect(() => {
     const cvs = canvasRef.current;
+    const cont = containerRef.current;
     if (!cvs) return;
     const ctx = cvs.getContext("2d");
     if (!ctx) return;
-    const w = cvs.clientWidth, h = cvs.clientHeight;
+    const w = cont?.clientWidth || cvs.clientWidth;
+    const h = cont?.clientHeight || cvs.clientHeight;
     ctx.clearRect(0, 0, w, h);
     for (const s of strokes) renderStroke(ctx, s, w, h);
     if (drawingRef.current) renderStroke(ctx, drawingRef.current, w, h);
@@ -174,8 +179,8 @@ const LiveWhiteboard = ({ sessionId, data, readOnly = false, onClose, overlay = 
   }, [persist, data.visible]);
 
   const getRelative = (e: PointerEvent | React.PointerEvent): [number, number] => {
-    const cvs = canvasRef.current!;
-    const r = cvs.getBoundingClientRect();
+    const cont = containerRef.current!;
+    const r = cont.getBoundingClientRect();
     const x = r.width > 0 ? (e.clientX - r.left) / r.width : 0;
     const y = r.height > 0 ? (e.clientY - r.top) / r.height : 0;
     return [Math.max(0, Math.min(1, x)), Math.max(0, Math.min(1, y))];
@@ -305,7 +310,7 @@ const LiveWhiteboard = ({ sessionId, data, readOnly = false, onClose, overlay = 
       </div>
 
       {!readOnly && (
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 flex flex-wrap items-center gap-1 bg-card border border-border rounded-xl shadow-lg p-1.5">
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 flex flex-wrap items-center gap-1 rounded-xl border border-border bg-background/95 p-1.5 text-foreground shadow-lg backdrop-blur supports-[backdrop-filter]:bg-background/85">
           {tools.map((t) => (
             <Button
               key={t.id}
@@ -362,7 +367,12 @@ const LiveWhiteboard = ({ sessionId, data, readOnly = false, onClose, overlay = 
           {onClose && (
             <>
               <div className="h-6 w-px bg-border mx-1" />
-              <Button size="sm" variant="outline" onClick={onClose} className="h-8 gap-1">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onClose}
+                className="h-8 gap-1 border-border bg-background text-foreground hover:bg-muted"
+              >
                 <X className="w-4 h-4" /> Skrýt tabuli
               </Button>
             </>
