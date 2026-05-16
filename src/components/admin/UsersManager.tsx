@@ -296,7 +296,7 @@ const UsersManager = () => {
           Hromadný import
           <input
             type="file"
-            accept=".xlsx,.csv"
+            accept=".csv"
             className="sr-only"
             onChange={async (e) => {
               const file = e.target.files?.[0];
@@ -310,70 +310,32 @@ const UsersManager = () => {
                 console.log("Začínám zpracování souboru...");
                 let rows: any[] = [];
 
-                if (file.name.endsWith(".csv")) {
-                  const text = await file.text();
-                  const lines = text.split("\n").filter(Boolean);
-                  const headers = lines[0].split(",").map(h => h.trim().toLowerCase().replace(/"/g, ""));
-                  rows = lines.slice(1).map(line => {
-                    const values = line.split(",").map(v => v.trim().replace(/"/g, ""));
-                    return Object.fromEntries(headers.map((h, i) => [h, values[i] || ""]));
+                const text = await file.text();
+                const lines = text.split("\n").filter(Boolean);
+                const rawHeaders = lines[0].split(",").map(h => h.trim().toLowerCase().replace(/"/g, ""));
+                const keyMap: Record<string, string> = {
+                  "jmeno": "jmeno", "prijmeni": "prijmeni",
+                  "e-mail": "email", "email": "email",
+                  "e-mail_rodice": "email_rodice", "email_rodice": "email_rodice",
+                  "e-mail rodice": "email_rodice", "email rodice": "email_rodice",
+                  "skola": "skola", "trida": "trida", "rocnik": "rocnik", "role": "role",
+                  "zletily": "zletily", "zletilý": "zletily", "zletila": "zletily", "adult": "zletily",
+                };
+                rows = lines.slice(1).map(line => {
+                  const values = line.split(",").map(v => v.trim().replace(/"/g, ""));
+                  const obj: any = {};
+                  rawHeaders.forEach((h, i) => {
+                    const key = keyMap[h] || h;
+                    obj[key] = values[i] || "";
                   });
-                } else {
-                  const XLSX = await import("xlsx");
-                  const buffer = await file.arrayBuffer();
-                  const wb = XLSX.read(buffer, { type: "array" });
-                  const ws = wb.Sheets[wb.SheetNames[0]];
-                  const allRows = XLSX.utils.sheet_to_json(ws, { raw: false, defval: "", header: 1 }) as any[][];
-
-                  let headerRowIndex = allRows.findIndex((row: any[]) =>
-                    row.some((cell: any) => String(cell).toLowerCase().includes("jméno") || String(cell).toLowerCase().includes("jmeno"))
-                  );
-                  if (headerRowIndex === -1) headerRowIndex = 0;
-
-                  const headers = allRows[headerRowIndex].map((h: any) =>
-                    String(h)
-                      .toLowerCase()
-                      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-                      .replace(/\s*\*/g, "")
-                      .trim()
-                      .replace(/\s+/g, "_")
-                  );
-
-                  const keyMap: Record<string, string> = {
-                    "jmeno": "jmeno",
-                    "prijmeni": "prijmeni",
-                    "e-mail": "email",
-                    "email": "email",
-                    "e-mail_rodice": "email_rodice",
-                    "email_rodice": "email_rodice",
-                    "skola": "skola",
-                    "trida": "trida",
-                    "rocnik": "rocnik",
-                    "role": "role",
-                    "zletily": "zletily",
-                    "zletilý": "zletily",
-                    "zletila": "zletily",
-                    "adult": "zletily",
-                  };
-
-                  rows = allRows
-                    .slice(headerRowIndex + 1)
-                    .map((row: any[]) => {
-                      const obj: any = {};
-                      headers.forEach((h: string, i: number) => {
-                        const key = keyMap[h] || h;
-                        obj[key] = row[i] != null ? String(row[i]).trim() : "";
-                      });
-                      return obj;
-                    })
-                    .filter((r: any) =>
-                      r.jmeno &&
-                      r.prijmeni &&
-                      !r.jmeno.toLowerCase().includes("jméno") &&
-                      !r.jmeno.toLowerCase().includes("křestní") &&
-                      !r.jmeno.toLowerCase().includes("jmeno")
-                    );
-                }
+                  return obj;
+                }).filter((r: any) =>
+                  r.jmeno && r.prijmeni &&
+                  !r.jmeno.toLowerCase().includes("křestní") &&
+                  !r.jmeno.toLowerCase().includes("krestni") &&
+                  !r.jmeno.toLowerCase().includes("vzorový") &&
+                  !r.jmeno.toLowerCase().includes("vzorovy")
+                );
 
                 console.log("Řádky před filtrem:", rows.length, rows[0]);
                 rows = rows.filter((r: any) => r.jmeno && r.prijmeni &&
@@ -385,6 +347,7 @@ const UsersManager = () => {
                 console.log("Řádky po filtru:", rows.length);
                 setImportPreview(rows);
               } catch (err: any) {
+                console.error("Chyba při zpracování souboru:", err);
                 setImportErrors([`Chyba při čtení souboru: ${err.message}`]);
               }
             }}
