@@ -1,7 +1,8 @@
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useGameSession } from "@/hooks/useGameSession";
 import { QRCodeSVG } from "qrcode.react";
-import { BookOpen } from "lucide-react";
+import { BookOpen, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import WallProjectorView from "@/components/activities/WallProjectorView";
 import { AdaptiveReviewProjector } from "@/components/game/AdaptiveReview";
 import LiveWhiteboard, { WhiteboardData } from "@/components/game/LiveWhiteboard";
@@ -9,11 +10,27 @@ import { LessonBlock } from "@/components/LessonBlockRenderer";
 
 const LiveProjectorScreen = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
+  const navigate = useNavigate();
+  const handleClose = () => {
+    if (window.opener) window.close();
+    else navigate(-1);
+  };
+  const CloseButton = () => (
+    <Button
+      onClick={handleClose}
+      variant="ghost"
+      size="sm"
+      className="fixed top-4 right-4 z-50 gap-1.5 bg-background/80 hover:bg-background backdrop-blur"
+    >
+      <X className="w-4 h-4" /> Zavřít
+    </Button>
+  );
   const { session, players, responses, loading } = useGameSession(sessionId);
 
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
+        <CloseButton />
         <p className="text-2xl text-muted-foreground">Načítání...</p>
       </div>
     );
@@ -22,6 +39,7 @@ const LiveProjectorScreen = () => {
   if (!session) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
+        <CloseButton />
         <p className="text-2xl text-muted-foreground">Prezentace nenalezena</p>
       </div>
     );
@@ -37,6 +55,7 @@ const LiveProjectorScreen = () => {
   if (session.status === "lobby") {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-12 gap-8 text-white" style={{ background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)" }}>
+        <CloseButton />
         <h1 className="text-6xl font-bold text-center">{session.title}</h1>
         <p className="text-2xl text-gray-300">Připojte se k prezentaci</p>
         <div className="bg-white rounded-3xl p-8 mb-10 shadow-2xl">
@@ -55,10 +74,12 @@ const LiveProjectorScreen = () => {
   if (session.status === "finished") {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-12">
+        <CloseButton />
         <div className="text-center space-y-6">
           <p className="text-9xl">🎉</p>
           <h1 className="text-6xl font-bold text-foreground">Prezentace dokončena</h1>
           <p className="text-2xl text-muted-foreground">{session.title}</p>
+          <Button onClick={handleClose} size="lg" className="mt-4">Zavřít prezentaci</Button>
         </div>
       </div>
     );
@@ -67,11 +88,14 @@ const LiveProjectorScreen = () => {
   const adaptive = (session.settings as any)?.adaptive;
   if (adaptive?.showProjector) {
     return (
-      <AdaptiveReviewProjector
-        slides={slides}
-        responses={responses}
-        weakIndices={Array.isArray(adaptive.weakIndices) ? adaptive.weakIndices : undefined}
-      />
+      <>
+        <CloseButton />
+        <AdaptiveReviewProjector
+          slides={slides}
+          responses={responses}
+          weakIndices={Array.isArray(adaptive.weakIndices) ? adaptive.weakIndices : undefined}
+        />
+      </>
     );
   }
 
@@ -79,6 +103,7 @@ const LiveProjectorScreen = () => {
   if (!currentSlide) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
+        <CloseButton />
         <p className="text-3xl text-muted-foreground">Čekejte na učitele...</p>
       </div>
     );
@@ -90,6 +115,7 @@ const LiveProjectorScreen = () => {
   // Slide content
   return (
     <div className="min-h-screen flex flex-col text-white relative" style={{ background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)" }}>
+      <CloseButton />
       {/* Progress bar */}
       <div className="h-2 bg-white/10">
         <div
