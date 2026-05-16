@@ -137,7 +137,7 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
                 </div>
               )}
 
-              {currentSlide.cardData && (
+              {currentSlide.cardData && !(currentSlide.blocks && currentSlide.blocks.length > 0) && (
                 <div className="grid grid-cols-3 gap-6 w-full max-w-6xl shrink-0">
                   {currentSlide.cardData.map((card: any, i: number) => (
                     <div key={i} className="bg-card border border-border rounded-2xl p-8 shadow-sm min-w-0">
