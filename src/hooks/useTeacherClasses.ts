@@ -22,7 +22,8 @@ export const useTeacherClasses = () => {
       if (!session) return [];
       const userId = session.user.id;
 
-      const [ctRes, createdRes, visibleRes] = await Promise.all([
+      const [rolesRes, ctRes, createdRes, visibleRes] = await Promise.all([
+        supabase.from("user_roles").select("role").eq("user_id", userId),
         supabase.from("class_teachers").select("class_id").eq("user_id", userId),
         supabase
           .from("classes")
@@ -37,11 +38,15 @@ export const useTeacherClasses = () => {
           .order("name"),
       ]);
 
+      if (rolesRes.error) throw rolesRes.error;
       if (ctRes.error) throw ctRes.error;
       if (createdRes.error) throw createdRes.error;
       if (visibleRes.error) throw visibleRes.error;
 
+      const roles = new Set((rolesRes.data ?? []).map((r: any) => r.role));
+      const canSeeAllVisibleClasses = roles.has("admin") || roles.has("school_admin");
       const memberIds = (ctRes.data ?? []).map((r: any) => r.class_id).filter(Boolean);
+      const memberIdSet = new Set(memberIds);
       const byId = new Map<string, TeacherClassOption>();
 
       for (const c of (createdRes.data ?? []) as any[]) {
@@ -55,7 +60,7 @@ export const useTeacherClasses = () => {
       }
 
       for (const c of (visibleRes.data ?? []) as any[]) {
-        if (!memberIds.includes(c.id) && !byId.has(c.id)) continue;
+        if (!canSeeAllVisibleClasses && !memberIdSet.has(c.id) && !byId.has(c.id)) continue;
         byId.set(c.id, {
           id: c.id,
           name: c.name,
