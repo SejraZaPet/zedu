@@ -42,7 +42,26 @@ export function usePresentationLauncher() {
 
     const savedSlides = (data as any)?.presentation_slides;
     if (savedSlides && Array.isArray(savedSlides) && savedSlides.length > 0) {
-      slides = savedSlides;
+      // Hydrate legacy slides (saved before blocks-based rendering) with blocks from the lesson
+      const needsHydration = savedSlides.some(
+        (s: any) => !Array.isArray(s.blocks) || s.blocks.length === 0,
+      );
+      if (needsHydration) {
+        const fresh = blocksToSlides(lesson.blocks || [], lesson.title);
+        const freshByHeadline = new Map<string, any>();
+        for (const f of fresh) {
+          const key = (f.projector?.headline || "").trim().toLowerCase();
+          if (key && !freshByHeadline.has(key)) freshByHeadline.set(key, f);
+        }
+        slides = savedSlides.map((s: any) => {
+          if (Array.isArray(s.blocks) && s.blocks.length > 0) return s;
+          const key = (s.projector?.headline || "").trim().toLowerCase();
+          const match = freshByHeadline.get(key);
+          return match ? { ...s, blocks: match.blocks || [] } : s;
+        });
+      } else {
+        slides = savedSlides;
+      }
       saved = true;
     } else {
       slides = blocksToSlides(lesson.blocks || [], lesson.title);
