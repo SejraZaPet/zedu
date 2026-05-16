@@ -18,6 +18,7 @@ import BlockEditor from "@/components/admin/BlockEditor";
 import type { Block } from "@/lib/textbook-config";
 import { Loader2, Upload, FileText, Trash2, Sparkles } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { extractTextFromFile } from "@/lib/file-import-processor";
 
 interface TopicOption {
   id: string;
@@ -41,18 +42,7 @@ interface Props {
 }
 
 const ACCEPT = ".pdf,.docx,.pptx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation";
-const MAX_BYTES = 15 * 1024 * 1024;
-
-const fileToBase64 = (file: File): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      resolve(result.split(",", 2)[1] ?? "");
-    };
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
+const MAX_BYTES = 25 * 1024 * 1024;
 
 const ImportTextbookFileDialog = ({
   open, onOpenChange, topics, defaultTopicId, onImported,
@@ -64,12 +54,14 @@ const ImportTextbookFileDialog = ({
   const [topicId, setTopicId] = useState<string>(defaultTopicId ?? "");
   const [saving, setSaving] = useState(false);
   const [singleLesson, setSingleLesson] = useState(true);
+  const [progress, setProgress] = useState<string>("");
 
   const reset = () => {
     setFile(null);
     setDrafts([]);
     setProcessing(false);
     setSaving(false);
+    setProgress("");
   };
 
   const handleClose = (v: boolean) => {
@@ -80,14 +72,29 @@ const ImportTextbookFileDialog = ({
   const handleProcess = async () => {
     if (!file) return;
     if (file.size > MAX_BYTES) {
-      toast({ title: "Soubor je příliš velký", description: "Maximálně 15 MB.", variant: "destructive" });
+      toast({ title: "Soubor je příliš velký", description: "Maximálně 25 MB.", variant: "destructive" });
       return;
     }
     setProcessing(true);
+    setProgress("Čtu soubor…");
     try {
-      const fileBase64 = await fileToBase64(file);
+      const lower = file.name.toLowerCase();
+      const kind = lower.endsWith(".pdf") ? "PDF" : lower.endsWith(".pptx") ? "prezentace" : "dokumentu";
+      setProgress(`Extrahuji text z ${kind}…`);
+      const rawText = await extractTextFromFile(file);
+
+      if (!rawText || rawText.trim().length < 20) {
+        throw new Error("Soubor neobsahuje dostatek textu k importu.");
+      }
+
+      setProgress("AI strukturuje obsah…");
       const { data, error } = await supabase.functions.invoke("import-textbook-file", {
-        body: { fileBase64, filename: file.name, mimeType: file.type, mode: singleLesson ? "single" : "split" },
+        body: {
+          rawText,
+          filename: file.name,
+          mimeType: file.type,
+          mode: singleLesson ? "single" : "split",
+        },
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
@@ -110,6 +117,7 @@ const ImportTextbookFileDialog = ({
       toast({ title: "Import selhal", description: err.message ?? "Neznámá chyba", variant: "destructive" });
     } finally {
       setProcessing(false);
+      setProgress("");
     }
   };
 
@@ -188,7 +196,7 @@ const ImportTextbookFileDialog = ({
                 </p>
               )}
               <p className="text-xs text-muted-foreground mt-3">
-                Podporované formáty: PDF, DOCX, PPTX. Maximálně 15 MB.
+                Podporované formáty: PDF, DOCX, PPTX. Maximálně 25 MB. Text z PDF/PPTX se extrahuje v prohlížeči.
               </p>
             </div>
 
@@ -210,6 +218,13 @@ const ImportTextbookFileDialog = ({
                 disabled={processing}
               />
             </div>
+
+            {processing && progress && (
+              <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm text-primary">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>{progress}</span>
+              </div>
+            )}
 
             <DialogFooter>
               <Button variant="ghost" onClick={() => handleClose(false)} disabled={processing}>

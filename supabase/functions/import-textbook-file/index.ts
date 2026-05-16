@@ -261,40 +261,49 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => null);
     if (!body) return jsonResponse({ error: "Invalid JSON" }, 400);
 
-    const { fileBase64, filename, mimeType, mode } = body as {
+    const { fileBase64, filename, mimeType, mode, rawText } = body as {
       fileBase64?: string;
       filename?: string;
       mimeType?: string;
       mode?: "single" | "split";
+      rawText?: string;
     };
 
-    if (!fileBase64 || !filename) {
-      return jsonResponse({ error: "Chybí fileBase64 nebo filename" }, 400);
+    if (!filename) {
+      return jsonResponse({ error: "Chybí filename" }, 400);
     }
 
     const effectiveMode: "single" | "split" = mode === "split" ? "split" : "single";
 
-    const bytes = decodeBase64(fileBase64);
-    if (bytes.byteLength > MAX_BYTES) {
-      return jsonResponse({ error: "Soubor je příliš velký (max 15 MB)." }, 400);
-    }
-
-    const lower = filename.toLowerCase();
     let text = "";
-    if (lower.endsWith(".pdf") || mimeType === "application/pdf") {
-      text = await extractFromPdf(bytes);
-    } else if (
-      lower.endsWith(".docx") ||
-      mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-    ) {
-      text = await extractFromDocx(bytes);
-    } else if (
-      lower.endsWith(".pptx") ||
-      mimeType === "application/vnd.openxmlformats-officedocument.presentationml.presentation"
-    ) {
-      text = await extractFromPptx(bytes);
+
+    if (typeof rawText === "string" && rawText.trim().length > 0) {
+      // Client-side extraction path (preferred for PDF/PPTX in browser).
+      text = rawText;
+    } else if (fileBase64) {
+      // Legacy server-side extraction fallback.
+      const bytes = decodeBase64(fileBase64);
+      if (bytes.byteLength > MAX_BYTES) {
+        return jsonResponse({ error: "Soubor je příliš velký (max 15 MB)." }, 400);
+      }
+      const lower = filename.toLowerCase();
+      if (lower.endsWith(".pdf") || mimeType === "application/pdf") {
+        text = await extractFromPdf(bytes);
+      } else if (
+        lower.endsWith(".docx") ||
+        mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      ) {
+        text = await extractFromDocx(bytes);
+      } else if (
+        lower.endsWith(".pptx") ||
+        mimeType === "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+      ) {
+        text = await extractFromPptx(bytes);
+      } else {
+        return jsonResponse({ error: "Nepodporovaný formát. Podporuje: PDF, DOCX, PPTX." }, 400);
+      }
     } else {
-      return jsonResponse({ error: "Nepodporovaný formát. Podporuje: PDF, DOCX, PPTX." }, 400);
+      return jsonResponse({ error: "Chybí rawText nebo fileBase64." }, 400);
     }
 
     text = text.replace(/[\u0000-\u001F\u007F]/g, (c) => (c === "\n" ? "\n" : " "))
