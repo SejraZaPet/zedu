@@ -95,6 +95,39 @@ const ImportTextbookFileDialog = ({
     try {
       const base64 = await readFileAsBase64(file);
 
+      // Render PDF pages to images (frontend) for visual fidelity
+      let pageImageUrls: string[] = [];
+      const isPdf = /\.pdf$/i.test(file.name) || file.type === "application/pdf";
+      if (isPdf) {
+        try {
+          setProgress("Renderuji stránky PDF...");
+          const { renderPdfPagesToImages } = await import("@/lib/pdf-page-renderer");
+          const pageImages = await renderPdfPagesToImages(file);
+
+          if (pageImages.length > 0) {
+            setProgress(`Nahrávám ${pageImages.length} stránek do úložiště...`);
+            const folder = `pdf-import/${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+            for (let i = 0; i < pageImages.length; i++) {
+              const dataUrl = pageImages[i];
+              const blob = await (await fetch(dataUrl)).blob();
+              const path = `${folder}/page-${i + 1}.jpg`;
+              const { error: upErr } = await supabase.storage
+                .from("lesson-images")
+                .upload(path, blob, { contentType: "image/jpeg", upsert: true });
+              if (upErr) {
+                console.warn("Upload stránky selhal:", upErr);
+                pageImageUrls.push("");
+                continue;
+              }
+              const { data: urlData } = supabase.storage.from("lesson-images").getPublicUrl(path);
+              pageImageUrls.push(urlData.publicUrl);
+            }
+          }
+        } catch (err) {
+          console.warn("Nelze renderovat PDF stránky jako obrázky:", err);
+        }
+      }
+
       setProgress("AI analyzuje dokument...");
       const { data, error } = await supabase.functions.invoke("process-file-content", {
         body: {
@@ -116,11 +149,51 @@ const ImportTextbookFileDialog = ({
         blockCount?: number;
       };
 
-      const lessons = Array.isArray(response.lessons)
+      const makeImageBlock = (url: string, pageIdx: number): Block => ({
+        id: crypto.randomUUID(),
+        type: "image",
+        visible: true,
+        props: {
+          url,
+          caption: `Stránka ${pageIdx + 1}`,
+          width: "full",
+          alignment: "center",
+        },
+      } as unknown as Block);
+
+      const enrichBlocksWithPages = (blocks: Block[]): Block[] => {
+        const valid = pageImageUrls.filter(Boolean);
+        if (valid.length === 0) return blocks;
+        const out: Block[] = [];
+        let pageIdx = 0;
+        if (pageImageUrls[0]) out.push(makeImageBlock(pageImageUrls[0], 0));
+        for (const block of blocks) {
+          out.push(block);
+          if ((block as any)?.type === "divider") {
+            pageIdx++;
+            if (pageImageUrls[pageIdx]) out.push(makeImageBlock(pageImageUrls[pageIdx], pageIdx));
+          }
+        }
+        // Append any leftover pages so nothing is lost
+        for (let i = pageIdx + 1; i < pageImageUrls.length; i++) {
+          if (pageImageUrls[i]) out.push(makeImageBlock(pageImageUrls[i], i));
+        }
+        return out;
+      };
+
+      const rawLessons = Array.isArray(response.lessons)
         ? response.lessons
         : response.blocks
           ? [{ title: file.name.replace(/\.(pdf|pptx|docx)$/i, ""), blocks: response.blocks }]
           : [];
+
+      const lessons = rawLessons.map((lesson, idx) => ({
+        ...lesson,
+        blocks:
+          idx === 0
+            ? enrichBlocksWithPages(Array.isArray(lesson.blocks) ? lesson.blocks : [])
+            : (Array.isArray(lesson.blocks) ? lesson.blocks : []),
+      }));
 
       const normalizedLessons = lessons
         .map((lesson, index) => ({
