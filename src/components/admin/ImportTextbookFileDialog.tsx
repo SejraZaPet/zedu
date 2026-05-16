@@ -17,6 +17,29 @@ import BlockEditor from "@/components/admin/BlockEditor";
 import type { Block } from "@/lib/textbook-config";
 import { Loader2, Upload, FileText, Trash2, Sparkles } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
+
+// Lehký PDF text extractor bez závislostí — hledá Tj a TJ operátory v raw PDF.
+async function extractPdfText(file: File): Promise<string> {
+  const buffer = await file.arrayBuffer();
+  const bytes = new Uint8Array(buffer);
+  const raw = new TextDecoder("latin1").decode(bytes);
+
+  const lines: string[] = [];
+  const unicodeMatches = raw.matchAll(/\(([^)]{2,})\)\s*Tj/g);
+  for (const m of unicodeMatches) {
+    const decoded = m[1]
+      .replace(/\\n/g, "\n").replace(/\\r/g, "\n").replace(/\\t/g, " ")
+      .replace(/\\\(/g, "(").replace(/\\\)/g, ")").replace(/\\\\/g, "\\");
+    if (decoded.trim()) lines.push(decoded.trim());
+  }
+  const tjArrays = raw.matchAll(/\[([^\]]{2,})\]\s*TJ/gi);
+  for (const m of tjArrays) {
+    const texts = [...m[1].matchAll(/\(([^)]*)\)/g)].map((p) => p[1]).join("");
+    if (texts.trim()) lines.push(texts.trim());
+  }
+  return lines.join("\n");
+}
 
 interface TopicOption {
   id: string;
