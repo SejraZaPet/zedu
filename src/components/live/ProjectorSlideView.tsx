@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { BookOpen } from "lucide-react";
 import WallProjectorView from "@/components/activities/WallProjectorView";
-import { LessonBlock } from "@/components/LessonBlockRenderer";
+import { SlideBody } from "@/components/admin/SlideCanvas";
 
 const STAGE_WIDTH = 1600;
 const STAGE_HEIGHT = 900;
