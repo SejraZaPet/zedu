@@ -1,7 +1,15 @@
 // Import textbook file: extract text from PDF/DOCX/PPTX and turn it into block-structured lessons via Lovable AI.
-import { extractText, getDocumentProxy } from "npm:unpdf@0.12.1";
 import mammoth from "npm:mammoth@1.8.0";
 import JSZip from "npm:jszip@3.10.1";
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = "";
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
