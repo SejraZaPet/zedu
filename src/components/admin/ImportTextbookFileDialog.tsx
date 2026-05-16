@@ -93,13 +93,19 @@ const ImportTextbookFileDialog = ({
       if ((data as any)?.error) throw new Error((data as any).error);
 
       const lessons = ((data as any).lessons ?? []) as { title: string; blocks: Block[] }[];
+      const totalBlocks = lessons.reduce((sum, l) => sum + (l.blocks?.length ?? 0), 0);
       setDrafts(lessons.map((l, i) => ({
         id: `draft-${i}-${Date.now()}`,
         title: l.title,
         blocks: l.blocks,
         include: true,
       })));
-      toast({ title: "Náhled připraven", description: `${lessons.length} návrhů lekcí.` });
+      toast({
+        title: "Import dokončen",
+        description: singleLesson
+          ? `Vytvořeno ${totalBlocks} bloků v 1 lekci. Můžete je upravit před uložením.`
+          : `${lessons.length} návrhů lekcí, celkem ${totalBlocks} bloků.`,
+      });
     } catch (err: any) {
       toast({ title: "Import selhal", description: err.message ?? "Neznámá chyba", variant: "destructive" });
     } finally {
