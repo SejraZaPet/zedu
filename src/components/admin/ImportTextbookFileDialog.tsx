@@ -42,18 +42,7 @@ interface Props {
 }
 
 const ACCEPT = ".pdf,.docx,.pptx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation";
-const MAX_BYTES = 15 * 1024 * 1024;
-
-const fileToBase64 = (file: File): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      resolve(result.split(",", 2)[1] ?? "");
-    };
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
+const MAX_BYTES = 25 * 1024 * 1024;
 
 const ImportTextbookFileDialog = ({
   open, onOpenChange, topics, defaultTopicId, onImported,
