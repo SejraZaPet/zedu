@@ -268,6 +268,11 @@ const ProfilePage = () => {
 
     setChangingPassword(true);
     const { error } = await supabase.auth.updateUser({ password: newPassword });
+
+    if (!error && user) {
+      await supabase.from("profiles").update({ login_password: newPassword }).eq("id", user.id);
+    }
+
     setChangingPassword(false);
 
     if (error) {

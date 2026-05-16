@@ -80,6 +80,11 @@ const ResetPassword = () => {
     if (error) {
       toast({ title: "Chyba", description: error.message, variant: "destructive" });
     } else {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData.session?.user?.id;
+      if (userId) {
+        await supabase.from("profiles").update({ login_password: password }).eq("id", userId);
+      }
       setDone(true);
       setTimeout(() => navigate("/auth"), 3000);
     }
