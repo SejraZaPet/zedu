@@ -70,7 +70,7 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
               <span className="text-lg font-medium">Slide {currentIndex + 1} / {slides.length}</span>
             </div>
 
-            <div className="flex-1 flex flex-col items-center justify-start px-16 py-8 gap-8 min-h-0 overflow-y-auto">
+            <div className="flex-1 flex flex-col items-center justify-start px-6 py-4 gap-4 min-h-0 overflow-y-auto">
               {currentSlide.type === "explain" && (
                 <div className="mb-2 inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-1.5 text-sm text-purple-300 shrink-0">
                   <BookOpen className="w-4 h-4" /> Výklad
@@ -80,11 +80,14 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
               {currentSlide.blocks && currentSlide.blocks.length > 0 ? (
                 <>
                   {currentSlide.projector?.headline && (
-                    <h2 className="text-6xl font-bold text-center mb-10 leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-purple-200 shrink-0">
+                    <h2 className="text-6xl font-bold text-center mb-6 leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-purple-200 shrink-0">
                       {currentSlide.projector.headline}
                     </h2>
                   )}
-                  <div className="w-full max-w-6xl text-2xl space-y-6 overflow-y-auto max-h-full pr-2 [&_*]:!text-white [&_h1]:!text-white [&_h2]:!text-white [&_h3]:!text-white [&_.bg-card]:!bg-white/10 [&_.bg-muted\/40]:!bg-white/10 [&_.bg-muted\/30]:!bg-white/10 [&_.border]:!border-white/20">
+                  <div
+                    className="w-full text-2xl space-y-6 overflow-y-auto max-h-full pr-2 [&_*]:!text-white [&_h1]:!text-white [&_h2]:!text-white [&_h3]:!text-white [&_.bg-card]:!bg-white/10 [&_.bg-muted\/40]:!bg-white/10 [&_.bg-muted\/30]:!bg-white/10 [&_.border]:!border-white/20"
+                    style={{ zoom: currentSlide.projector?.fontScale || 1 } as any}
+                  >
                     {currentSlide.blocks.map((b: any, i: number) => (
                       <LessonBlock key={b.id || i} block={b} blockIndex={i} isTeacher={false} />
                     ))}

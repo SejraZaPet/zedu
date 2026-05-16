@@ -128,15 +128,18 @@ function ProjectorPreview({ slide, darkPreview, formatSlideBody }: { slide: any;
         }}
       >
         <div className="flex h-full flex-col overflow-hidden">
-          <div className="flex-1 flex flex-col items-center justify-start px-16 py-12 gap-8 min-h-0 overflow-hidden">
+          <div className="flex-1 flex flex-col items-center justify-start px-6 py-4 gap-4 min-h-0 overflow-hidden">
             {hasBlocks ? (
               <>
                 {headline && (
-                  <h2 className={`text-6xl font-bold text-center mb-6 leading-tight shrink-0 ${darkPreview ? "bg-clip-text text-transparent bg-gradient-to-r from-white to-purple-200" : ""}`}>
+                  <h2 className={`text-6xl font-bold text-center mb-4 leading-tight shrink-0 ${darkPreview ? "bg-clip-text text-transparent bg-gradient-to-r from-white to-purple-200" : ""}`}>
                     {headline}
                   </h2>
                 )}
-                <div className={`w-full max-w-6xl text-2xl space-y-6 pointer-events-none ${darkPreview ? "[&_*]:!text-white [&_h1]:!text-white [&_h2]:!text-white [&_h3]:!text-white [&_.bg-card]:!bg-white/10 [&_.bg-muted\\/40]:!bg-white/10 [&_.bg-muted\\/30]:!bg-white/10 [&_.border]:!border-white/20" : ""}`}>
+                <div
+                  className={`w-full text-2xl space-y-6 pointer-events-none ${darkPreview ? "[&_*]:!text-white [&_h1]:!text-white [&_h2]:!text-white [&_h3]:!text-white [&_.bg-card]:!bg-white/10 [&_.bg-muted\\/40]:!bg-white/10 [&_.bg-muted\\/30]:!bg-white/10 [&_.border]:!border-white/20" : ""}`}
+                  style={{ zoom: slide?.projector?.fontScale || 1 } as any}
+                >
                   {slide.blocks.map((b: any, i: number) => (
                     <LessonBlock key={b.id || i} block={b} blockIndex={i} isTeacher={false} />
                   ))}
@@ -144,11 +147,12 @@ function ProjectorPreview({ slide, darkPreview, formatSlideBody }: { slide: any;
               </>
             ) : (
               <>
-                <h2 className={`text-6xl font-bold text-center mb-6 leading-tight shrink-0 ${darkPreview ? "bg-clip-text text-transparent bg-gradient-to-r from-white to-purple-200" : ""}`}>
+                <h2 className={`text-6xl font-bold text-center mb-4 leading-tight shrink-0 ${darkPreview ? "bg-clip-text text-transparent bg-gradient-to-r from-white to-purple-200" : ""}`}>
                   {headline || <span className="opacity-40">Nadpis slidu</span>}
                 </h2>
                 <div
-                  className={`text-2xl leading-relaxed w-full max-w-5xl ${darkPreview ? "text-gray-300" : "text-foreground/85"}`}
+                  className={`text-2xl leading-relaxed w-full ${darkPreview ? "text-gray-300" : "text-foreground/85"}`}
+                  style={{ zoom: slide?.projector?.fontScale || 1 } as any}
                   dangerouslySetInnerHTML={{
                     __html: formatSlideBody(body || "") || '<p class="opacity-40">Text slidu…</p>',
                   }}
@@ -327,6 +331,31 @@ export const PresentationEditorDialog = ({
                       updated[editingSlideIndex] = { ...updated[editingSlideIndex], projector: { ...updated[editingSlideIndex].projector, headline: e.target.value } };
                       setPendingSlides(updated);
                     }}
+                  />
+                </div>
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <Label className="text-xs">Velikost písma</Label>
+                    <span className="text-xs text-muted-foreground tabular-nums">
+                      {Math.round(((currentSlide.projector?.fontScale as number) || 1) * 100)}%
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0.7}
+                    max={1.6}
+                    step={0.05}
+                    value={(currentSlide.projector?.fontScale as number) || 1}
+                    onChange={(e) => {
+                      const v = parseFloat(e.target.value);
+                      const updated = [...pendingSlides];
+                      updated[editingSlideIndex] = {
+                        ...updated[editingSlideIndex],
+                        projector: { ...updated[editingSlideIndex].projector, fontScale: v },
+                      };
+                      setPendingSlides(updated);
+                    }}
+                    className="w-full accent-primary"
                   />
                 </div>
                 <div>
