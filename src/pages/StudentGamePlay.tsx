@@ -12,6 +12,7 @@ import WallResponsesList from "@/components/activities/WallResponsesList";
 import WallActivity from "@/components/activities/WallActivity";
 import PollActivity from "@/components/activities/PollActivity";
 import PollProjectorView from "@/components/activities/PollProjectorView";
+import QuizActivity from "@/components/activities/QuizActivity";
 import { Lock } from "lucide-react";
 import { AvatarSvg } from "@/components/student/AvatarSvg";
 import { useStudentAvatar } from "@/hooks/useStudentAvatars";
