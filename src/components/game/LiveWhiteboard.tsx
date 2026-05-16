@@ -367,7 +367,12 @@ const LiveWhiteboard = ({ sessionId, data, readOnly = false, onClose, overlay = 
           {onClose && (
             <>
               <div className="h-6 w-px bg-border mx-1" />
-              <Button size="sm" variant="outline" onClick={onClose} className="h-8 gap-1">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onClose}
+                className="h-8 gap-1 border-border bg-background text-foreground hover:bg-muted"
+              >
                 <X className="w-4 h-4" /> Skrýt tabuli
               </Button>
             </>
