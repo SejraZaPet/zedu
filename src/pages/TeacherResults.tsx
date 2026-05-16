@@ -16,7 +16,7 @@ import {
   Activity, BarChart3, Clock, AlertTriangle, Users, CheckCircle2, FileSpreadsheet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import * as XLSX from "xlsx";
+import { downloadCSV } from "@/lib/csv-export";
 
 type ClassOpt = { id: string; name: string };
 type Attempt = {
