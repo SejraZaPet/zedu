@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -81,6 +81,85 @@ function formatSlideBody(text: string): string {
     i++;
   }
   return out.join("");
+}
+
+
+const STAGE_W = 1600;
+const STAGE_H = 900;
+
+/**
+ * Mini replica of ProjectorSlideView so editor preview matches projector 1:1.
+ */
+function ProjectorPreview({ slide, darkPreview, formatSlideBody }: { slide: any; darkPreview: boolean; formatSlideBody: (s: string) => string }) {
+  const frameRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(0.3);
+
+  useEffect(() => {
+    const el = frameRef.current;
+    if (!el) return;
+    const update = () => {
+      const w = el.clientWidth;
+      const h = el.clientHeight;
+      if (!w || !h) return;
+      setScale(Math.min(w / STAGE_W, h / STAGE_H));
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const bgStyle = darkPreview
+    ? { background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)" }
+    : { background: "hsl(var(--background))" };
+
+  const hasBlocks = slide?.blocks && slide.blocks.length > 0;
+  const headline = slide?.projector?.headline;
+  const body = slide?.projector?.body;
+
+  return (
+    <div ref={frameRef} className="relative aspect-video w-full rounded-xl overflow-hidden shadow-lg border border-border" style={bgStyle}>
+      <div
+        className={`absolute left-1/2 top-1/2 origin-center ${darkPreview ? "text-white" : "text-foreground"}`}
+        style={{
+          width: `${STAGE_W}px`,
+          height: `${STAGE_H}px`,
+          transform: `translate(-50%, -50%) scale(${scale})`,
+        }}
+      >
+        <div className="flex h-full flex-col overflow-hidden">
+          <div className="flex-1 flex flex-col items-center justify-start px-16 py-12 gap-8 min-h-0 overflow-hidden">
+            {hasBlocks ? (
+              <>
+                {headline && (
+                  <h2 className={`text-6xl font-bold text-center mb-6 leading-tight shrink-0 ${darkPreview ? "bg-clip-text text-transparent bg-gradient-to-r from-white to-purple-200" : ""}`}>
+                    {headline}
+                  </h2>
+                )}
+                <div className={`w-full max-w-6xl text-2xl space-y-6 pointer-events-none ${darkPreview ? "[&_*]:!text-white [&_h1]:!text-white [&_h2]:!text-white [&_h3]:!text-white [&_.bg-card]:!bg-white/10 [&_.bg-muted\\/40]:!bg-white/10 [&_.bg-muted\\/30]:!bg-white/10 [&_.border]:!border-white/20" : ""}`}>
+                  {slide.blocks.map((b: any, i: number) => (
+                    <LessonBlock key={b.id || i} block={b} blockIndex={i} isTeacher={false} />
+                  ))}
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 className={`text-6xl font-bold text-center mb-6 leading-tight shrink-0 ${darkPreview ? "bg-clip-text text-transparent bg-gradient-to-r from-white to-purple-200" : ""}`}>
+                  {headline || <span className="opacity-40">Nadpis slidu</span>}
+                </h2>
+                <div
+                  className={`text-2xl leading-relaxed w-full max-w-5xl ${darkPreview ? "text-gray-300" : "text-foreground/85"}`}
+                  dangerouslySetInnerHTML={{
+                    __html: formatSlideBody(body || "") || '<p class="opacity-40">Text slidu…</p>',
+                  }}
+                />
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export const PresentationEditorDialog = ({
@@ -230,42 +309,8 @@ export const PresentationEditorDialog = ({
                     {darkPreview ? "Světlý" : "Tmavý"}
                   </button>
                 </div>
-                <div
-                  className={`rounded-xl p-6 aspect-video flex flex-col shadow-lg overflow-hidden ${
-                    darkPreview
-                      ? "bg-gradient-to-br from-slate-800 to-slate-900 text-white"
-                      : "bg-background text-foreground border border-border"
-                  }`}
-                >
-                  {(currentSlide as any)?.blocks && (currentSlide as any).blocks.length > 0 ? (
-                    <div className={`overflow-y-auto flex-1 ${darkPreview ? "[&_*]:!text-white [&_h1]:!text-white [&_h2]:!text-white [&_h3]:!text-white [&_.bg-card]:!bg-white/5 [&_.bg-muted\\/40]:!bg-white/10" : ""}`}>
-                      {currentSlide?.projector?.headline && (
-                        <h2 className="text-2xl md:text-3xl font-bold mb-4">
-                          {currentSlide.projector.headline}
-                        </h2>
-                      )}
-                      <div className="space-y-4 pointer-events-none">
-                        {(currentSlide as any).blocks.map((b: any, i: number) => (
-                          <LessonBlock key={b.id || i} block={b} blockIndex={i} isTeacher />
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <h2 className="text-xl md:text-2xl font-bold mb-3 text-center">
-                        {currentSlide?.projector?.headline || <span className="opacity-40">Nadpis slidu</span>}
-                      </h2>
-                      <div
-                        className={`text-sm leading-relaxed overflow-y-auto flex-1 ${darkPreview ? "text-white/85" : "text-foreground/85"}`}
-                        dangerouslySetInnerHTML={{
-                          __html:
-                            formatSlideBody(currentSlide?.projector?.body || "") ||
-                            '<p class="opacity-40">Text slidu…</p>',
-                        }}
-                      />
-                    </>
-                  )}
-                </div>
+                <ProjectorPreview slide={currentSlide} darkPreview={darkPreview} formatSlideBody={formatSlideBody} />
+
                 <p className="text-[10px] text-muted-foreground mt-2 leading-tight">
                   Náhled odráží přesně to, jak slide uvidí žáci na projektoru i v učebnici.
                 </p>
