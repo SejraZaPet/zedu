@@ -217,9 +217,9 @@ const ImportTextbookFileDialog = ({
               </Button>
               <Button onClick={handleProcess} disabled={!file || processing}>
                 {processing ? (
-                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Zpracovávám…</>
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> AI analyzuje dokument…</>
                 ) : (
-                  <><Upload className="w-4 h-4 mr-2" /> Zpracovat</>
+                  <><Upload className="w-4 h-4 mr-2" /> Zpracovat pomocí AI</>
                 )}
               </Button>
             </DialogFooter>
