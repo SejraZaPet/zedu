@@ -148,11 +148,12 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
       flush();
       const headline = getText(props);
       if (!headline) continue;
-      current = newSlide(headline);
+      current = newSlide(headline, block);
       continue;
     }
 
     if (!current) current = newSlide("");
+    current.blocks.push(block);
 
     const converted = blockToBodyText(block);
     appendBody(converted.text);
