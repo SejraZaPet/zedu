@@ -17,6 +17,7 @@ import LiveWhiteboard, { WhiteboardData } from "@/components/game/LiveWhiteboard
 import RemoteControlButton from "@/components/live/RemoteControlButton";
 import { presenterRemoteChannelName } from "@/pages/PresenterRemote";
 import ProjectorSlideView from "@/components/live/ProjectorSlideView";
+import { LessonBlock } from "@/components/LessonBlockRenderer";
 
 interface SlideData {
   slideId: string;
