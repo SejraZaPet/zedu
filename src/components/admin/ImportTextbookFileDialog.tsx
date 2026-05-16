@@ -54,12 +54,14 @@ const ImportTextbookFileDialog = ({
   const [topicId, setTopicId] = useState<string>(defaultTopicId ?? "");
   const [saving, setSaving] = useState(false);
   const [singleLesson, setSingleLesson] = useState(true);
+  const [progress, setProgress] = useState<string>("");
 
   const reset = () => {
     setFile(null);
     setDrafts([]);
     setProcessing(false);
     setSaving(false);
+    setProgress("");
   };
 
   const handleClose = (v: boolean) => {
@@ -70,14 +72,29 @@ const ImportTextbookFileDialog = ({
   const handleProcess = async () => {
     if (!file) return;
     if (file.size > MAX_BYTES) {
-      toast({ title: "Soubor je příliš velký", description: "Maximálně 15 MB.", variant: "destructive" });
+      toast({ title: "Soubor je příliš velký", description: "Maximálně 25 MB.", variant: "destructive" });
       return;
     }
     setProcessing(true);
+    setProgress("Čtu soubor…");
     try {
-      const fileBase64 = await fileToBase64(file);
+      const lower = file.name.toLowerCase();
+      const kind = lower.endsWith(".pdf") ? "PDF" : lower.endsWith(".pptx") ? "prezentace" : "dokumentu";
+      setProgress(`Extrahuji text z ${kind}…`);
+      const rawText = await extractTextFromFile(file);
+
+      if (!rawText || rawText.trim().length < 20) {
+        throw new Error("Soubor neobsahuje dostatek textu k importu.");
+      }
+
+      setProgress("AI strukturuje obsah…");
       const { data, error } = await supabase.functions.invoke("import-textbook-file", {
-        body: { fileBase64, filename: file.name, mimeType: file.type, mode: singleLesson ? "single" : "split" },
+        body: {
+          rawText,
+          filename: file.name,
+          mimeType: file.type,
+          mode: singleLesson ? "single" : "split",
+        },
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
@@ -100,6 +117,7 @@ const ImportTextbookFileDialog = ({
       toast({ title: "Import selhal", description: err.message ?? "Neznámá chyba", variant: "destructive" });
     } finally {
       setProcessing(false);
+      setProgress("");
     }
   };
 
