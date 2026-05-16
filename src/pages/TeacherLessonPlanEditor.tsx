@@ -62,6 +62,7 @@ import {
 } from "@/lib/lesson-plan-pdf-export";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
+import { useTeacherClasses } from "@/hooks/useTeacherClasses";
 import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -289,28 +290,7 @@ export default function TeacherLessonPlanEditor() {
   );
 
   /** Classes the teacher belongs to (for filtering schedule occurrences) */
-  const [teacherClasses, setTeacherClasses] = useState<{ id: string; name: string }[]>([]);
-  useEffect(() => {
-    if (!user) return;
-    (async () => {
-      const { data: ct } = await supabase
-        .from("class_teachers")
-        .select("class_id")
-        .eq("user_id", user.id);
-      const ids = (ct ?? []).map((r: any) => r.class_id);
-      if (!ids.length) {
-        setTeacherClasses([]);
-        return;
-      }
-      const { data: cls } = await supabase
-        .from("classes")
-        .select("id, name")
-        .in("id", ids)
-        .eq("archived", false)
-        .order("name");
-      setTeacherClasses((cls as any[]) ?? []);
-    })();
-  }, [user]);
+  const { classes: teacherClasses } = useTeacherClasses();
 
   const [classId, setClassId] = useState<string>("");
 
