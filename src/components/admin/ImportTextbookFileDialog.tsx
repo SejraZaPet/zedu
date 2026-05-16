@@ -255,7 +255,7 @@ const ImportTextbookFileDialog = ({
       setDrafts(normalizedLessons);
       toast({
         title: "Import dokončen",
-        description: `Import dokončen: ${totalBlocks} bloků vytvořeno`,
+        description: `Vytvořeno ${totalBlocks} bloků. Obrázky z dokumentu doplňte ručně v editoru.`,
       });
     } catch (err: any) {
       console.error("Import error:", err);
@@ -349,6 +349,13 @@ const ImportTextbookFileDialog = ({
               <p className="text-xs text-muted-foreground mt-3">
                 Podporované formáty: PDF, DOCX, PPTX. Maximálně 25 MB. Soubor se bezpečně odešle do backendu k AI analýze.
               </p>
+            </div>
+
+            <div className="bg-muted/50 rounded-lg p-3 text-sm text-muted-foreground space-y-1">
+              <p className="font-medium text-foreground">ℹ️ Co import zvládne:</p>
+              <p>✅ Nadpisy, odstavce, seznamy, tabulky, citáty</p>
+              <p>⚠️ Obrázky z dokumentu se nepřenesou — doplňte je ručně v editoru lekce</p>
+              <p>📎 Podporované formáty: PDF, DOCX, PPTX (max 25 MB)</p>
             </div>
 
             <div className="space-y-2 rounded-lg border border-border p-3">
