@@ -142,6 +142,7 @@ export const PresentationEditorDialog = ({
                     projector: { headline: "", body: "" },
                     device: { instructions: "Sledujte výklad." },
                     teacherNotes: "",
+                    blocks: [],
                   };
                   const updated = [...pendingSlides];
                   updated.splice(editingSlideIndex + 1, 0, newSlide);
@@ -157,6 +158,7 @@ export const PresentationEditorDialog = ({
                     projector: { headline: "Aktivita", body: "" },
                     device: { instructions: "Splňte aktivitu na svém zařízení." },
                     teacherNotes: "",
+                    blocks: [],
                     activitySpec: { activityType: "true_false", question: "", statements: [] },
                   };
                   const updated = [...pendingSlides];
@@ -173,6 +175,7 @@ export const PresentationEditorDialog = ({
                     projector: { headline: "Zeď odpovědí", body: "" },
                     device: { instructions: "Napište svou odpověď." },
                     teacherNotes: "",
+                    blocks: [],
                     activitySpec: { activityType: "wall", question: "", anonymous: false },
                   };
                   const updated = [...pendingSlides];
@@ -189,6 +192,7 @@ export const PresentationEditorDialog = ({
                     projector: { headline: "Kvíz", body: "" },
                     device: { instructions: "Vyberte správnou odpověď." },
                     teacherNotes: "",
+                    blocks: [],
                     activitySpec: { activityType: "quiz", question: "", options: [], correctIndex: 0 },
                   };
                   const updated = [...pendingSlides];
