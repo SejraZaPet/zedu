@@ -65,10 +65,12 @@ const BLOCK_TOOL = {
 };
 
 const SYSTEM_PROMPT = `Jsi expert na zpracování vzdělávacích materiálů pro platformu ZEdu.
-Dostaneš PDF, DOCX nebo PPTX a musíš převést VEŠKERÝ textový obsah do editovatelných bloků.
+Dostaneš text z PDF, DOCX nebo PPTX a musíš převést VEŠKERÝ textový obsah do editovatelných bloků.
+
+DŮLEŽITÉ: Použij VÝHRADNĚ text z dokumentu. NEVYMÝŠLEJ žádný vlastní obsah. Pokud text neobsahuje informaci, NEVKLÁDEJ ji. Struktura musí přesně odpovídat originálnímu dokumentu.
 
 PRAVIDLA:
-- Zachovej veškerý text, nic nevynechávej.
+- Zachovej veškerý text z dokumentu doslovně, nic nevynechávej a nic nedoplňuj.
 - Každý slide nebo stránku odděl blokem divider.
 - Hlavní nadpisy používej jako heading s level 2.
 - Podnadpisy používej jako heading s level 3.
