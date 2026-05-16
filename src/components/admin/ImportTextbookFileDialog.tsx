@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -18,7 +17,6 @@ import BlockEditor from "@/components/admin/BlockEditor";
 import type { Block } from "@/lib/textbook-config";
 import { Loader2, Upload, FileText, Trash2, Sparkles } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
-import { extractTextFromFile } from "@/lib/file-import-processor";
 
 interface TopicOption {
   id: string;
@@ -43,6 +41,21 @@ interface Props {
 
 const ACCEPT = ".pdf,.docx,.pptx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation";
 const MAX_BYTES = 25 * 1024 * 1024;
+
+const readFileAsBase64 = (file: File) => new Promise<string>((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onload = () => {
+    const result = typeof reader.result === "string" ? reader.result : "";
+    const [, base64 = ""] = result.split(",");
+    if (!base64) {
+      reject(new Error("Soubor se nepodařilo převést do base64."));
+      return;
+    }
+    resolve(base64);
+  };
+  reader.onerror = () => reject(new Error("Nelze načíst soubor."));
+  reader.readAsDataURL(file);
+});
 
 const ImportTextbookFileDialog = ({
   open, onOpenChange, topics, defaultTopicId, onImported,
@@ -75,46 +88,66 @@ const ImportTextbookFileDialog = ({
       toast({ title: "Soubor je příliš velký", description: "Maximálně 25 MB.", variant: "destructive" });
       return;
     }
+
     setProcessing(true);
-    setProgress("Čtu soubor…");
+    setProgress("Načítám soubor...");
+
     try {
-      const lower = file.name.toLowerCase();
-      const kind = lower.endsWith(".pdf") ? "PDF" : lower.endsWith(".pptx") ? "prezentace" : "dokumentu";
-      setProgress(`Extrahuji text z ${kind}…`);
-      const rawText = await extractTextFromFile(file);
+      const base64 = await readFileAsBase64(file);
 
-      if (!rawText || rawText.trim().length < 20) {
-        throw new Error("Soubor neobsahuje dostatek textu k importu.");
-      }
-
-      setProgress("AI strukturuje obsah…");
-      const { data, error } = await supabase.functions.invoke("import-textbook-file", {
+      setProgress("AI analyzuje dokument...");
+      const { data, error } = await supabase.functions.invoke("process-file-content", {
         body: {
-          rawText,
-          filename: file.name,
-          mimeType: file.type,
+          fileBase64: base64,
+          fileName: file.name,
+          mimeType: file.type || "application/pdf",
           mode: singleLesson ? "single" : "split",
         },
       });
-      if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
 
-      const lessons = ((data as any).lessons ?? []) as { title: string; blocks: Block[] }[];
-      const totalBlocks = lessons.reduce((sum, l) => sum + (l.blocks?.length ?? 0), 0);
-      setDrafts(lessons.map((l, i) => ({
-        id: `draft-${i}-${Date.now()}`,
-        title: l.title,
-        blocks: l.blocks,
-        include: true,
-      })));
+      if (error) throw error;
+      if ((data as { error?: string } | null)?.error) {
+        throw new Error((data as { error: string }).error);
+      }
+
+      const response = (data ?? {}) as {
+        lessons?: { title?: string; blocks?: Block[] }[];
+        blocks?: Block[];
+        blockCount?: number;
+      };
+
+      const lessons = Array.isArray(response.lessons)
+        ? response.lessons
+        : response.blocks
+          ? [{ title: file.name.replace(/\.(pdf|pptx|docx)$/i, ""), blocks: response.blocks }]
+          : [];
+
+      const normalizedLessons = lessons
+        .map((lesson, index) => ({
+          id: `draft-${index}-${Date.now()}`,
+          title: (lesson.title || file.name.replace(/\.(pdf|pptx|docx)$/i, "")).trim() || `Lekce ${index + 1}`,
+          blocks: Array.isArray(lesson.blocks) ? lesson.blocks : [],
+          include: true,
+        }))
+        .filter((lesson) => lesson.blocks.length > 0);
+
+      if (normalizedLessons.length === 0) {
+        throw new Error("AI nedokázala z dokumentu extrahovat žádné editovatelné bloky.");
+      }
+
+      const totalBlocks = normalizedLessons.reduce((sum, lesson) => sum + lesson.blocks.length, 0);
+      setDrafts(normalizedLessons);
       toast({
         title: "Import dokončen",
-        description: singleLesson
-          ? `Vytvořeno ${totalBlocks} bloků v 1 lekci. Můžete je upravit před uložením.`
-          : `${lessons.length} návrhů lekcí, celkem ${totalBlocks} bloků.`,
+        description: `Import dokončen: ${totalBlocks} bloků vytvořeno`,
       });
     } catch (err: any) {
-      toast({ title: "Import selhal", description: err.message ?? "Neznámá chyba", variant: "destructive" });
+      console.error("Import error:", err);
+      toast({
+        title: "Import selhal",
+        description: err?.message || "Neznámá chyba",
+        variant: "destructive",
+      });
     } finally {
       setProcessing(false);
       setProgress("");
@@ -135,6 +168,7 @@ const ImportTextbookFileDialog = ({
       toast({ title: "Vyberte téma", description: "Lekce musí být zařazené pod téma.", variant: "destructive" });
       return;
     }
+
     setSaving(true);
     try {
       const { data: existing } = await supabase
@@ -143,13 +177,14 @@ const ImportTextbookFileDialog = ({
         .eq("topic_id", topicId)
         .order("sort_order", { ascending: false })
         .limit(1);
-      let nextOrder = existing && existing.length > 0 ? ((existing[0] as any).sort_order ?? 0) + 1 : 0;
 
-      const payload = toImport.map((d) => ({
-        title: d.title.trim().slice(0, 200),
+      let nextOrder = existing && existing.length > 0 ? ((existing[0] as { sort_order?: number }).sort_order ?? 0) + 1 : 0;
+
+      const payload = toImport.map((draft) => ({
+        title: draft.title.trim().slice(0, 200),
         topic_id: topicId,
         sort_order: nextOrder++,
-        blocks: d.blocks as any,
+        blocks: draft.blocks as any,
         status: "draft",
       }));
 
@@ -176,7 +211,7 @@ const ImportTextbookFileDialog = ({
             Importovat soubor do učebnice
           </DialogTitle>
           <DialogDescription>
-            Nahrajte PDF, DOCX nebo PPTX. AI rozdělí obsah na lekce, které si můžete před uložením upravit.
+            Nahrajte PDF, DOCX nebo PPTX. AI přečte soubor a připraví editovatelné bloky, které si můžete před uložením upravit.
           </DialogDescription>
         </DialogHeader>
 
@@ -196,7 +231,7 @@ const ImportTextbookFileDialog = ({
                 </p>
               )}
               <p className="text-xs text-muted-foreground mt-3">
-                Podporované formáty: PDF, DOCX, PPTX. Maximálně 25 MB. Text z PDF/PPTX se extrahuje v prohlížeči.
+                Podporované formáty: PDF, DOCX, PPTX. Maximálně 25 MB. Soubor se bezpečně odešle do backendu k AI analýze.
               </p>
             </div>
 
@@ -208,7 +243,7 @@ const ImportTextbookFileDialog = ({
                 <p className="text-xs text-muted-foreground">
                   {singleLesson
                     ? "Všechny stránky souboru se sloučí do jedné scrollovatelné lekce."
-                    : "Každá stránka/sekce se vytvoří jako samostatná lekce."}
+                    : "AI zkusí obsah rozdělit do více samostatných lekcí."}
                 </p>
               </div>
               <Switch
@@ -232,7 +267,7 @@ const ImportTextbookFileDialog = ({
               </Button>
               <Button onClick={handleProcess} disabled={!file || processing}>
                 {processing ? (
-                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> AI analyzuje dokument…</>
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> AI analyzuje dokument...</>
                 ) : (
                   <><Upload className="w-4 h-4 mr-2" /> Zpracovat pomocí AI</>
                 )}
@@ -262,7 +297,7 @@ const ImportTextbookFileDialog = ({
                 Návrhy lekcí ({drafts.filter((d) => d.include).length}/{drafts.length})
               </p>
               <Accordion type="multiple" className="border border-border rounded-lg">
-                {drafts.map((d, i) => (
+                {drafts.map((d) => (
                   <AccordionItem key={d.id} value={d.id} className="px-3">
                     <div className="flex items-center gap-2 py-2">
                       <input
