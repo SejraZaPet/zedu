@@ -70,7 +70,7 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
               <span className="text-lg font-medium">Slide {currentIndex + 1} / {slides.length}</span>
             </div>
 
-            <div className="flex-1 flex flex-col items-center justify-center px-16 py-8 gap-8 min-h-0 overflow-hidden">
+            <div className="flex-1 flex flex-col items-center justify-start px-16 py-8 gap-8 min-h-0 overflow-y-auto">
               {currentSlide.type === "explain" && (
                 <div className="mb-2 inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-1.5 text-sm text-purple-300 shrink-0">
                   <BookOpen className="w-4 h-4" /> Výklad
