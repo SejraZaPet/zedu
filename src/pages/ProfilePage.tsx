@@ -37,6 +37,8 @@ interface Profile {
   created_at: string;
   parent_email: string | null;
   parent_email_notifications?: boolean;
+  pin_code: string | null;
+  username: string | null;
 }
 
 const ProfilePage = () => {
