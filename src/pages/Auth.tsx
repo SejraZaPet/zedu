@@ -286,12 +286,7 @@ const Auth = () => {
       if (role === "student") {
         try {
           const pin = String(Math.floor(1000 + Math.random() * 9000));
-          const bcrypt = await import("bcryptjs");
-          const pinHash = await bcrypt.hash(pin, 10);
-          await supabase
-            .from("profiles")
-            .update({ pin_code: pinHash })
-            .eq("id", signUpData.user.id);
+          await supabase.rpc("set_user_pin", { _pin: pin });
           toast({
             title: "Váš PIN pro rychlé přihlášení",
             description: `Váš 4místný PIN je: ${pin}. Zapamatujte si ho — slouží pro rychlé přihlášení bez emailu. Najdete ho také v profilu.`,
