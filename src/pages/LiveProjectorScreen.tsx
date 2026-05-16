@@ -1,7 +1,8 @@
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useGameSession } from "@/hooks/useGameSession";
 import { QRCodeSVG } from "qrcode.react";
-import { BookOpen } from "lucide-react";
+import { BookOpen, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import WallProjectorView from "@/components/activities/WallProjectorView";
 import { AdaptiveReviewProjector } from "@/components/game/AdaptiveReview";
 import LiveWhiteboard, { WhiteboardData } from "@/components/game/LiveWhiteboard";
