@@ -32,6 +32,7 @@ interface Props {
   onClose?: () => void;
   /** when true, renders a transparent overlay covering its parent */
   overlay?: boolean;
+  className?: string;
 }
 
 const drawArrow = (ctx: CanvasRenderingContext2D, x1: number, y1: number, x2: number, y2: number) => {
@@ -96,7 +97,7 @@ const renderStroke = (ctx: CanvasRenderingContext2D, s: Stroke, w: number, h: nu
   ctx.restore();
 };
 
-const LiveWhiteboard = ({ sessionId, data, readOnly = false, onClose, overlay = true }: Props) => {
+const LiveWhiteboard = ({ sessionId, data, readOnly = false, onClose, overlay = true, className }: Props) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const drawingRef = useRef<Stroke | null>(null);
@@ -175,8 +176,8 @@ const LiveWhiteboard = ({ sessionId, data, readOnly = false, onClose, overlay = 
   const getRelative = (e: PointerEvent | React.PointerEvent): [number, number] => {
     const cvs = canvasRef.current!;
     const r = cvs.getBoundingClientRect();
-    const x = (e.clientX - r.left) / r.width;
-    const y = (e.clientY - r.top) / r.height;
+    const x = r.width > 0 ? (e.clientX - r.left) / r.width : 0;
+    const y = r.height > 0 ? (e.clientY - r.top) / r.height : 0;
     return [Math.max(0, Math.min(1, x)), Math.max(0, Math.min(1, y))];
   };
 
@@ -283,7 +284,7 @@ const LiveWhiteboard = ({ sessionId, data, readOnly = false, onClose, overlay = 
 
   return (
     <div
-      className={overlay ? "absolute inset-0 z-40" : "relative w-full h-full"}
+      className={overlay ? `absolute inset-0 z-40 ${className ?? ""}`.trim() : `relative w-full h-full ${className ?? ""}`.trim()}
       style={{ pointerEvents: readOnly ? "none" : "auto" }}
     >
       <div ref={containerRef} className="absolute inset-0">
