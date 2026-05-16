@@ -203,6 +203,7 @@ const ImportTextbookFileDialog = ({
                 onCheckedChange={setSingleLesson}
                 disabled={processing}
               />
+            </div>
 
             <DialogFooter>
               <Button variant="ghost" onClick={() => handleClose(false)} disabled={processing}>
