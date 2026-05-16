@@ -243,7 +243,14 @@ const Auth = () => {
     });
 
     if (signUpError) {
-      setError(signUpError.message);
+      const msg = signUpError.message || "";
+      if (/Database error saving new user/i.test(msg)) {
+        setError("Registrace selhala. Tento email už může být použitý. Zkuste se přihlásit nebo kontaktujte administrátora.");
+      } else if (/already registered|already been registered|user_already_exists/i.test(msg)) {
+        setError("Tento email je již zaregistrovaný. Zkuste se přihlásit.");
+      } else {
+        setError(msg);
+      }
       setLoading(false);
       return;
     }
