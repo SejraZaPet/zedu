@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LessonBlock } from "@/components/LessonBlockRenderer";
+import BlockEditor from "@/components/admin/BlockEditor";
+import type { Block } from "@/lib/textbook-config";
 
 interface Props {
   presentationLesson: { title: string } | null;
