@@ -186,6 +186,24 @@ const ImportTextbookFileDialog = ({
               </p>
             </div>
 
+            <div className="flex items-start justify-between gap-4 rounded-lg border border-border p-3">
+              <div className="space-y-0.5">
+                <Label htmlFor="single-lesson-toggle" className="text-sm">
+                  Importovat jako jednu lekci
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  {singleLesson
+                    ? "Všechny stránky souboru se sloučí do jedné scrollovatelné lekce."
+                    : "Každá stránka/sekce se vytvoří jako samostatná lekce."}
+                </p>
+              </div>
+              <Switch
+                id="single-lesson-toggle"
+                checked={singleLesson}
+                onCheckedChange={setSingleLesson}
+                disabled={processing}
+              />
+
             <DialogFooter>
               <Button variant="ghost" onClick={() => handleClose(false)} disabled={processing}>
                 Zrušit
