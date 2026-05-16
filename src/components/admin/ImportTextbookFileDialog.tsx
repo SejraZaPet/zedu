@@ -153,14 +153,32 @@ const ImportTextbookFileDialog = ({
         }
       }
 
+      // Try to extract clean text from PDF on the frontend so AI gets real content, not hallucinations.
+      let extractedText = "";
+      if (manualText.trim().length >= 20) {
+        extractedText = manualText.trim();
+      } else if (isPdf) {
+        try {
+          setProgress("Extrahuji text z PDF...");
+          extractedText = await extractPdfText(file);
+        } catch (err) {
+          console.warn("PDF text extraction failed:", err);
+        }
+      }
+
       setProgress("AI analyzuje dokument...");
+      const invokeBody: Record<string, unknown> = {
+        fileName: file.name,
+        mimeType: file.type || "application/pdf",
+        mode: singleLesson ? "single" : "split",
+      };
+      if (extractedText.length >= 100) {
+        invokeBody.extractedText = extractedText;
+      } else {
+        invokeBody.fileBase64 = base64;
+      }
       const { data, error } = await supabase.functions.invoke("process-file-content", {
-        body: {
-          fileBase64: base64,
-          fileName: file.name,
-          mimeType: file.type || "application/pdf",
-          mode: singleLesson ? "single" : "split",
-        },
+        body: invokeBody,
       });
 
       if (error) throw error;
