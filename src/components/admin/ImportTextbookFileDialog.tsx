@@ -196,7 +196,7 @@ const ImportTextbookFileDialog = ({
                 </p>
               )}
               <p className="text-xs text-muted-foreground mt-3">
-                Podporované formáty: PDF, DOCX, PPTX. Maximálně 15 MB.
+                Podporované formáty: PDF, DOCX, PPTX. Maximálně 25 MB. Text z PDF/PPTX se extrahuje v prohlížeči.
               </p>
             </div>
 
