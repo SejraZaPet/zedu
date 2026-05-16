@@ -18,6 +18,7 @@ import BlockEditor from "@/components/admin/BlockEditor";
 import type { Block } from "@/lib/textbook-config";
 import { Loader2, Upload, FileText, Trash2, Sparkles } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { extractTextFromFile } from "@/lib/file-import-processor";
 
 interface TopicOption {
   id: string;
