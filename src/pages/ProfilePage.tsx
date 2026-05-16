@@ -77,17 +77,13 @@ const ProfilePage = () => {
       return;
     }
     setSavingPin(true);
-    const bcrypt = await import("bcryptjs");
-    const hash = await bcrypt.hash(newPin, 10);
-    const { error } = await supabase
-      .from("profiles")
-      .update({ pin_code: hash })
-      .eq("id", user!.id);
-    if (error) {
-      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+    const { data, error } = await supabase.rpc("set_user_pin", { _pin: newPin });
+    const result = data as { error?: string; success?: boolean } | null;
+    if (error || result?.error) {
+      toast({ title: "Chyba", description: result?.error || error?.message, variant: "destructive" });
     } else {
       toast({ title: "PIN změněn" });
-      setProfile((prev) => prev ? { ...prev, pin_code: hash } : prev);
+      setProfile((prev) => prev ? { ...prev, pin_code: "set" } : prev);
       setNewPin("");
       setShowPin(false);
     }
