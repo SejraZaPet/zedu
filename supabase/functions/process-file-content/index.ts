@@ -350,54 +350,71 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const { fileBase64, fileName, mimeType, mode } = await req.json();
-    if (!fileBase64 || !fileName) {
-      return jsonResponse({ error: "Missing fileBase64 or fileName" }, 400);
+    const { fileBase64, fileName, mimeType, mode, extractedText } = await req.json();
+    if (!fileName) {
+      return jsonResponse({ error: "Missing fileName" }, 400);
+    }
+    if (!fileBase64 && !extractedText) {
+      return jsonResponse({ error: "Missing fileBase64 or extractedText" }, 400);
     }
 
     const effectiveMode = mode === "split" ? "split" : "single";
     const cleanMimeType = typeof mimeType === "string" && mimeType ? mimeType : "application/pdf";
-    const approxBytes = Math.ceil(String(fileBase64).length * 0.75);
 
-    if (approxBytes > MAX_BASE64_BYTES) {
-      return jsonResponse({ error: "Soubor je příliš velký. Limit je 25 MB." }, 400);
+    if (fileBase64) {
+      const approxBytes = Math.ceil(String(fileBase64).length * 0.75);
+      if (approxBytes > MAX_BASE64_BYTES) {
+        return jsonResponse({ error: "Soubor je příliš velký. Limit je 25 MB." }, 400);
+      }
     }
 
     const baseTitle = String(fileName).replace(/\.[^.]+$/, "").trim() || "Importovaná lekce";
 
     let aiResult: any;
-    try {
-      aiResult = await callGatewayWithFile(LOVABLE_API_KEY, {
-        fileBase64: String(fileBase64),
-        fileName: String(fileName),
-        mimeType: cleanMimeType,
-        mode: effectiveMode,
-      });
-    } catch (fileError) {
-      console.error("File mode failed, trying fallback:", fileError);
 
-      const lower = String(fileName).toLowerCase();
-      const bytes = decodeBase64(String(fileBase64));
-      let extractedText = "";
-
-      if (lower.endsWith(".docx")) {
-        extractedText = await extractDocxText(bytes);
-      } else if (lower.endsWith(".pptx")) {
-        extractedText = await extractPptxText(bytes);
-      } else if (lower.endsWith(".pdf")) {
-        extractedText = "[PDF soubor - fallback neumí extrakci bez nativní podpory dokumentů v AI. Zkuste znovu kratší dokument nebo ověřte AI file input.]";
-      }
-
-      if (!extractedText || extractedText.length < 50) {
-        throw fileError instanceof Error ? fileError : new Error("AI nepodporuje přímé čtení tohoto souboru.");
-      }
-
+    // Priority 1: extractedText provided by frontend (most reliable, no hallucinations)
+    if (typeof extractedText === "string" && extractedText.trim().length >= 50) {
       aiResult = await callGatewayWithText(LOVABLE_API_KEY, {
-        extractedText,
+        extractedText: extractedText.trim(),
         fileName: String(fileName),
         mimeType: cleanMimeType,
         mode: effectiveMode,
       });
+    } else {
+      // Priority 2: try AI with the raw file (PDF/image multimodal)
+      try {
+        aiResult = await callGatewayWithFile(LOVABLE_API_KEY, {
+          fileBase64: String(fileBase64),
+          fileName: String(fileName),
+          mimeType: cleanMimeType,
+          mode: effectiveMode,
+        });
+      } catch (fileError) {
+        console.error("File mode failed, trying server-side extraction fallback:", fileError);
+
+        const lower = String(fileName).toLowerCase();
+        const bytes = decodeBase64(String(fileBase64));
+        let fallbackText = "";
+
+        if (lower.endsWith(".docx")) {
+          fallbackText = await extractDocxText(bytes);
+        } else if (lower.endsWith(".pptx")) {
+          fallbackText = await extractPptxText(bytes);
+        }
+
+        if (!fallbackText || fallbackText.length < 50) {
+          throw fileError instanceof Error
+            ? fileError
+            : new Error("AI nedokázala přečíst dokument. Zkopírujte text ručně do textového pole.");
+        }
+
+        aiResult = await callGatewayWithText(LOVABLE_API_KEY, {
+          extractedText: fallbackText,
+          fileName: String(fileName),
+          mimeType: cleanMimeType,
+          mode: effectiveMode,
+        });
+      }
     }
 
     const parsed = ensureToolArguments(aiResult);
