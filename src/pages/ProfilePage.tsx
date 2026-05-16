@@ -66,6 +66,34 @@ const ProfilePage = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [changingPassword, setChangingPassword] = useState(false);
 
+  // PIN
+  const [newPin, setNewPin] = useState("");
+  const [showPin, setShowPin] = useState(false);
+  const [savingPin, setSavingPin] = useState(false);
+
+  const handleChangePin = async () => {
+    if (!/^\d{4}$/.test(newPin)) {
+      toast({ title: "PIN musí být 4 číslice", variant: "destructive" });
+      return;
+    }
+    setSavingPin(true);
+    const bcrypt = await import("bcryptjs");
+    const hash = await bcrypt.hash(newPin, 10);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ pin_code: hash })
+      .eq("id", user!.id);
+    if (error) {
+      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "PIN změněn" });
+      setProfile((prev) => prev ? { ...prev, pin_code: hash } : prev);
+      setNewPin("");
+      setShowPin(false);
+    }
+    setSavingPin(false);
+  };
+
   // Preferred study methods (students only)
   const [methods, setMethods] = useState<{ id: string; name: string; slug: string; description: string | null }[]>([]);
   const [preferredIds, setPreferredIds] = useState<string[]>([]);
