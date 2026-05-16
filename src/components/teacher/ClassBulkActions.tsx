@@ -171,17 +171,12 @@ export function ClassBulkActions({ classId, className, selected, onClear }: Prop
         };
       });
 
-      const wb = XLSX.utils.book_new();
-      const ws1 = XLSX.utils.json_to_sheet(summary);
-      XLSX.utils.book_append_sheet(wb, ws1, "Žáci");
-      if (detail.length > 0) {
-        const ws2 = XLSX.utils.json_to_sheet(detail);
-        XLSX.utils.book_append_sheet(wb, ws2, "Pokusy");
-      }
-
       const safeName = className.replace(/[^a-zA-Z0-9-_]+/g, "_") || "trida";
       const stamp = new Date().toISOString().slice(0, 10);
-      XLSX.writeFile(wb, `${safeName}_vysledky_${stamp}.xlsx`);
+      downloadCSV(`${safeName}_vysledky_${stamp}_prehled.csv`, summary);
+      if (detail.length > 0) {
+        downloadCSV(`${safeName}_vysledky_${stamp}_pokusy.csv`, detail);
+      }
       toast.success("Export stažen.");
     } catch (e: any) {
       toast.error(e.message || "Nepodařilo se vytvořit export.");
