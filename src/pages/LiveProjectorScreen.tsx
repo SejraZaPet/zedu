@@ -7,6 +7,7 @@ import WallProjectorView from "@/components/activities/WallProjectorView";
 import { AdaptiveReviewProjector } from "@/components/game/AdaptiveReview";
 import LiveWhiteboard, { WhiteboardData } from "@/components/game/LiveWhiteboard";
 import { LessonBlock } from "@/components/LessonBlockRenderer";
+import ProjectorSlideView from "@/components/live/ProjectorSlideView";
 
 const LiveProjectorScreen = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
