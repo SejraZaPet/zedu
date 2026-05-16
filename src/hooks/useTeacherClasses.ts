@@ -22,35 +22,50 @@ export const useTeacherClasses = () => {
       if (!session) return [];
       const userId = session.user.id;
 
-      // 1) IDs tříd, kde jsem v class_teachers
-      const { data: ctRows, error: ctErr } = await supabase
-        .from("class_teachers")
-        .select("class_id")
-        .eq("user_id", userId);
-      if (ctErr) throw ctErr;
-      const memberIds = (ctRows ?? []).map((r: any) => r.class_id).filter(Boolean);
+      const [ctRes, createdRes, visibleRes] = await Promise.all([
+        supabase.from("class_teachers").select("class_id").eq("user_id", userId),
+        supabase
+          .from("classes")
+          .select("id, name, school, field_of_study, year")
+          .eq("archived", false)
+          .eq("created_by", userId)
+          .order("name"),
+        supabase
+          .from("classes")
+          .select("id, name, school, field_of_study, year")
+          .eq("archived", false)
+          .order("name"),
+      ]);
 
-      // 2) Třídy, které jsem vytvořil NEBO ve kterých jsem učitel
-      const orParts = [`created_by.eq.${userId}`];
-      if (memberIds.length > 0) {
-        orParts.push(`id.in.(${memberIds.join(",")})`);
+      if (ctRes.error) throw ctRes.error;
+      if (createdRes.error) throw createdRes.error;
+      if (visibleRes.error) throw visibleRes.error;
+
+      const memberIds = (ctRes.data ?? []).map((r: any) => r.class_id).filter(Boolean);
+      const byId = new Map<string, TeacherClassOption>();
+
+      for (const c of (createdRes.data ?? []) as any[]) {
+        byId.set(c.id, {
+          id: c.id,
+          name: c.name,
+          school: c.school,
+          field_of_study: c.field_of_study,
+          year: c.year,
+        });
       }
 
-      const { data: classes, error } = await supabase
-        .from("classes")
-        .select("id, name, school, field_of_study, year, archived, created_by")
-        .eq("archived", false)
-        .or(orParts.join(","))
-        .order("name");
+      for (const c of (visibleRes.data ?? []) as any[]) {
+        if (!memberIds.includes(c.id) && !byId.has(c.id)) continue;
+        byId.set(c.id, {
+          id: c.id,
+          name: c.name,
+          school: c.school,
+          field_of_study: c.field_of_study,
+          year: c.year,
+        });
+      }
 
-      if (error) throw error;
-      return (classes ?? []).map((c: any) => ({
-        id: c.id,
-        name: c.name,
-        school: c.school,
-        field_of_study: c.field_of_study,
-        year: c.year,
-      }));
+      return Array.from(byId.values()).sort((a, b) => a.name.localeCompare(b.name, "cs"));
     },
     staleTime: 60 * 1000,
   });
