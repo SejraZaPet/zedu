@@ -63,6 +63,7 @@ const ImportTextbookFileDialog = ({
   const [drafts, setDrafts] = useState<DraftLesson[]>([]);
   const [topicId, setTopicId] = useState<string>(defaultTopicId ?? "");
   const [saving, setSaving] = useState(false);
+  const [singleLesson, setSingleLesson] = useState(true);
 
   const reset = () => {
     setFile(null);
