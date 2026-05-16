@@ -78,21 +78,9 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
               )}
 
               {currentSlide.blocks && currentSlide.blocks.length > 0 ? (
-                <>
-                  {currentSlide.projector?.headline && (
-                    <h2 className="text-6xl font-bold text-center mb-6 leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-purple-200 shrink-0">
-                      {currentSlide.projector.headline}
-                    </h2>
-                  )}
-                  <div
-                    className="w-full text-2xl space-y-6 overflow-y-auto max-h-full pr-2 [&_*]:!text-white [&_h1]:!text-white [&_h2]:!text-white [&_h3]:!text-white [&_.bg-card]:!bg-white/10 [&_.bg-muted\/40]:!bg-white/10 [&_.bg-muted\/30]:!bg-white/10 [&_.border]:!border-white/20"
-                    style={{ zoom: currentSlide.projector?.fontScale || 1 } as any}
-                  >
-                    {currentSlide.blocks.map((b: any, i: number) => (
-                      <LessonBlock key={b.id || i} block={b} blockIndex={i} isTeacher={false} />
-                    ))}
-                  </div>
-                </>
+                <div className="w-full flex-1 min-h-0">
+                  <SlideBody slide={currentSlide} darkMode />
+                </div>
               ) : (
                 <>
                   {currentSlide.projector?.headline && (
