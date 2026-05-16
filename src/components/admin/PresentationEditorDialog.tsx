@@ -334,6 +334,31 @@ export const PresentationEditorDialog = ({
                   />
                 </div>
                 <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <Label className="text-xs">Velikost písma</Label>
+                    <span className="text-xs text-muted-foreground tabular-nums">
+                      {Math.round(((currentSlide.projector?.fontScale as number) || 1) * 100)}%
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0.7}
+                    max={1.6}
+                    step={0.05}
+                    value={(currentSlide.projector?.fontScale as number) || 1}
+                    onChange={(e) => {
+                      const v = parseFloat(e.target.value);
+                      const updated = [...pendingSlides];
+                      updated[editingSlideIndex] = {
+                        ...updated[editingSlideIndex],
+                        projector: { ...updated[editingSlideIndex].projector, fontScale: v },
+                      };
+                      setPendingSlides(updated);
+                    }}
+                    className="w-full accent-primary"
+                  />
+                </div>
+                <div>
                   <Label className="text-xs">Obsah slidu (bloky jako v učebnici)</Label>
                   <div className="mt-2 border border-border rounded-lg p-3 bg-muted/20 max-h-[55vh] overflow-y-auto">
                     <BlockEditor
