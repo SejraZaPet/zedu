@@ -275,7 +275,7 @@ const LiveWhiteboard = ({ sessionId, data, readOnly = false, onClose, overlay = 
           onPointerLeave={finishStroke}
           className="absolute inset-0"
           style={{
-            background: readOnly ? "transparent" : "rgba(255,255,255,0.85)",
+            background: "transparent",
             touchAction: "none",
             cursor: readOnly ? "default" : tool === "eraser" ? "cell" : "crosshair",
           }}

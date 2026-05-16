@@ -16,6 +16,7 @@ import PollProjectorView from "@/components/activities/PollProjectorView";
 import LiveWhiteboard, { WhiteboardData } from "@/components/game/LiveWhiteboard";
 import RemoteControlButton from "@/components/live/RemoteControlButton";
 import { presenterRemoteChannelName } from "@/pages/PresenterRemote";
+import ProjectorSlideView from "@/components/live/ProjectorSlideView";
 
 interface SlideData {
   slideId: string;
@@ -544,13 +545,24 @@ const LiveTeacherScreen = () => {
       )}
     </div>
 
-    {sessionId && whiteboardVisible && (
-      <div className="fixed inset-0 z-40 bg-background/40 backdrop-blur-[1px]">
-        <LiveWhiteboard
+    {sessionId && whiteboardVisible && currentSlide && (
+      <div className="fixed inset-0 z-40 overflow-auto">
+        <ProjectorSlideView
           sessionId={sessionId}
-          data={whiteboard}
-          onClose={toggleWhiteboard}
+          session={session}
+          currentSlide={currentSlide}
+          currentIndex={currentIndex}
+          slides={slides}
+          players={players}
+          gameCode={gameCode}
         />
+        <div className="fixed inset-0 z-50">
+          <LiveWhiteboard
+            sessionId={sessionId}
+            data={whiteboard}
+            onClose={toggleWhiteboard}
+          />
+        </div>
       </div>
     )}
 
