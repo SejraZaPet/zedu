@@ -1,7 +1,15 @@
 // Import textbook file: extract text from PDF/DOCX/PPTX and turn it into block-structured lessons via Lovable AI.
-import { extractText, getDocumentProxy } from "npm:unpdf@0.12.1";
 import mammoth from "npm:mammoth@1.8.0";
 import JSZip from "npm:jszip@3.10.1";
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = "";
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -29,12 +37,47 @@ function decodeBase64(b64: string): Uint8Array {
 }
 
 async function extractFromPdf(bytes: Uint8Array): Promise<string> {
-  const pdf = await getDocumentProxy(bytes);
-  const { text } = await extractText(pdf, { mergePages: false });
-  if (Array.isArray(text)) {
-    return text.map((t, i) => `--- Strana ${i + 1} ---\n${t}`).join("\n\n");
+  const apiKey = Deno.env.get("LOVABLE_API_KEY");
+  if (!apiKey) throw new Error("LOVABLE_API_KEY not configured");
+
+  const base64 = bytesToBase64(bytes);
+  const dataUrl = `data:application/pdf;base64,${base64}`;
+
+  const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: "google/gemini-2.5-flash",
+      messages: [
+        {
+          role: "system",
+          content:
+            "Extrahuj veškerý text z dodaného PDF dokumentu. Zachovej pořadí stránek. Pro každou stránku začni řádkem '--- Strana N ---' (N je číslo stránky od 1). Vrať čistý text bez markdownu, bez HTML, bez komentářů. Nezkracuj, nevynechávej žádný obsah.",
+        },
+        {
+          role: "user",
+          content: [
+            { type: "text", text: "Extrahuj kompletní text z tohoto PDF." },
+            { type: "image_url", image_url: { url: dataUrl } },
+          ],
+        },
+      ],
+    }),
+  });
+
+  if (res.status === 429) throw new Error("Překročen limit AI – zkuste to znovu za chvíli.");
+  if (res.status === 402) throw new Error("Vyčerpán AI kredit. Doplňte ho v Lovable.");
+  if (!res.ok) throw new Error(`AI extrakce PDF selhala (${res.status}): ${await res.text()}`);
+
+  const data = await res.json();
+  const text = data.choices?.[0]?.message?.content;
+  if (!text || typeof text !== "string") {
+    throw new Error("AI nevrátila žádný text z PDF.");
   }
-  return String(text ?? "");
+  return text;
 }
 
 async function extractFromDocx(bytes: Uint8Array): Promise<string> {
