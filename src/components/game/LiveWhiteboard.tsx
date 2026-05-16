@@ -107,8 +107,21 @@ const LiveWhiteboard = ({ sessionId, data, readOnly = false, onClose, overlay = 
   const [color, setColor] = useState("#000000");
   const [width, setWidth] = useState(WIDTHS[1]);
   const [redoStack, setRedoStack] = useState<Stroke[]>([]);
+  // Optimistic local strokes — shown immediately, dropped once they appear in `data.strokes`
+  const [pendingStrokes, setPendingStrokes] = useState<Stroke[]>([]);
+  const pendingPersistRef = useRef<Promise<void> | null>(null);
 
-  const strokes = data.strokes ?? [];
+  const remoteStrokes = data.strokes ?? [];
+  const strokes = useMemo(() => {
+    if (pendingStrokes.length === 0) return remoteStrokes;
+    const remoteIds = new Set(remoteStrokes.map((s) => s.id));
+    const pendingFiltered = pendingStrokes.filter((s) => !remoteIds.has(s.id));
+    if (pendingFiltered.length !== pendingStrokes.length) {
+      // Schedule cleanup after render
+      queueMicrotask(() => setPendingStrokes(pendingFiltered));
+    }
+    return [...remoteStrokes, ...pendingFiltered];
+  }, [remoteStrokes, pendingStrokes]);
 
   useEffect(() => {
     const cvs = canvasRef.current;
@@ -143,10 +156,16 @@ const LiveWhiteboard = ({ sessionId, data, readOnly = false, onClose, overlay = 
   });
 
   const persist = useCallback(async (next: WhiteboardData) => {
-    await supabase
-      .from("game_sessions")
-      .update({ whiteboard_data: next as any })
-      .eq("id", sessionId);
+    // Serialize writes to avoid out-of-order DB updates
+    const prev = pendingPersistRef.current ?? Promise.resolve();
+    const p = prev.then(async () => {
+      await supabase
+        .from("game_sessions")
+        .update({ whiteboard_data: next as any })
+        .eq("id", sessionId);
+    });
+    pendingPersistRef.current = p;
+    return p;
   }, [sessionId]);
 
   const commitStrokes = useCallback((next: Stroke[]) => {
@@ -211,9 +230,11 @@ const LiveWhiteboard = ({ sessionId, data, readOnly = false, onClose, overlay = 
     const stroke = drawingRef.current;
     drawingRef.current = null;
     if (stroke.points.length < 1) { rerender(); return; }
-    const next = [...strokes, stroke];
+    // Optimistically show the stroke immediately
+    setPendingStrokes((p) => [...p, stroke]);
     setRedoStack([]);
-    commitStrokes(next);
+    // Persist in background — order is serialized via persist()
+    commitStrokes([...remoteStrokes, ...pendingStrokes, stroke]);
   };
 
   const undo = useCallback(() => {

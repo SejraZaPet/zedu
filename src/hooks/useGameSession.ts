@@ -70,12 +70,19 @@ export function useGameSession(sessionId: string | undefined, refetchTrigger?: n
       .channel(`game-${sessionId}-${Date.now()}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "game_sessions", filter: `id=eq.${sessionId}` }, (payload) => {
         if (payload.new) {
-          setSession({
-            ...payload.new,
-            activity_data: ((payload.new as any).activity_data as any) ?? [],
-            settings: (payload.new as any).settings as any,
-            teams: (payload.new as any).teams ?? { teams: [] },
-          } as unknown as GameSession);
+          // Merge with previous state to guard against partial payloads (e.g. when only whiteboard_data changes)
+          setSession((prev) => {
+            const incoming = payload.new as any;
+            const merged = { ...(prev as any), ...incoming };
+            // Preserve heavy fields if incoming has them as null/empty due to replica identity quirks
+            if ((incoming.activity_data == null || (Array.isArray(incoming.activity_data) && incoming.activity_data.length === 0)) && prev?.activity_data) {
+              merged.activity_data = prev.activity_data;
+            }
+            if (incoming.settings == null && (prev as any)?.settings) merged.settings = (prev as any).settings;
+            merged.activity_data = merged.activity_data ?? [];
+            merged.teams = merged.teams ?? { teams: [] };
+            return merged as unknown as GameSession;
+          });
         }
       })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "game_players", filter: `session_id=eq.${sessionId}` }, (payload) => {

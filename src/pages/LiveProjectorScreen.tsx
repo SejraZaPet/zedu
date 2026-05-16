@@ -100,12 +100,11 @@ const LiveProjectorScreen = () => {
     );
   }
 
-  // No slide yet
+  // No slide yet — keep projector gradient background instead of jarring white screen
   if (!currentSlide) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)" }}>
         <CloseButton />
-        <p className="text-3xl text-muted-foreground">Čekejte na učitele...</p>
       </div>
     );
   }
