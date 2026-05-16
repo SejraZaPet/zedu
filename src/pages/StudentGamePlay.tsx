@@ -312,6 +312,38 @@ const StudentGamePlay = () => {
                       />
                     );
                   })()
+                ) : (currentSlideData as any).activitySpec?.activityType === "mcq" ? (
+                  (() => {
+                    const spec = (currentSlideData as any).activitySpec || {};
+                    const quiz = {
+                      question: spec.question || currentSlideData.projector?.headline || "",
+                      answers: (spec.options || []).map((o: any) => ({
+                        text: o.text ?? String(o),
+                        correct: !!(o.correct ?? o.isCorrect),
+                      })),
+                    };
+                    return (
+                      <QuizActivity
+                        quiz={quiz}
+                        onComplete={async (score, maxScore) => {
+                          if (!sessionId || !playerId) return;
+                          try {
+                            await supabase.from("game_responses").insert({
+                              session_id: sessionId,
+                              player_id: playerId,
+                              question_index: session?.current_question_index ?? 0,
+                              answer: {},
+                              is_correct: score > 0,
+                              score: maxScore > 0 ? Math.round((score / maxScore) * 100) : 0,
+                              response_time_ms: 0,
+                            });
+                          } catch (e) {
+                            console.error("Failed to save mcq result:", e);
+                          }
+                        }}
+                      />
+                    );
+                  })()
                 ) : (
                   <LessonBlockRenderer
                     block={{
