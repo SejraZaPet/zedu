@@ -179,16 +179,14 @@ async function callGatewayWithFile(
           role: "user",
           content: [
             {
-              type: "file",
-              file: {
-                filename: body.fileName,
-                content_type: body.mimeType || "application/pdf",
-                data: body.fileBase64,
-              },
-            },
-            {
               type: "text",
               text: userPrompt,
+            },
+            {
+              type: "image_url",
+              image_url: {
+                url: `data:${body.mimeType || "application/pdf"};base64,${body.fileBase64}`,
+              },
             },
           ],
         },
