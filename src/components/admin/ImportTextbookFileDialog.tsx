@@ -255,7 +255,7 @@ const ImportTextbookFileDialog = ({
       setDrafts(normalizedLessons);
       toast({
         title: "Import dokončen",
-        description: `Import dokončen: ${totalBlocks} bloků vytvořeno`,
+        description: `Vytvořeno ${totalBlocks} bloků. Obrázky z dokumentu doplňte ručně v editoru.`,
       });
     } catch (err: any) {
       console.error("Import error:", err);
