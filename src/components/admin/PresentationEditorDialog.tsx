@@ -99,6 +99,26 @@ export const PresentationEditorDialog = ({
   const [darkPreview, setDarkPreview] = useState(true);
   const currentSlide = pendingSlides[editingSlideIndex];
 
+  // Migrate legacy slides: if a slide has projector.body text but no blocks,
+  // seed a paragraph block so the text becomes inline-editable in the canvas.
+  useEffect(() => {
+    if (!currentSlide) return;
+    const hasBlocks = Array.isArray(currentSlide.blocks) && currentSlide.blocks.length > 0;
+    const bodyText: string = currentSlide.projector?.body || "";
+    if (!hasBlocks && bodyText.trim()) {
+      const seeded = createDefaultBlock("paragraph");
+      seeded.props = { ...seeded.props, text: bodyText };
+      const updated = [...pendingSlides];
+      updated[editingSlideIndex] = {
+        ...currentSlide,
+        blocks: [seeded],
+        projector: { ...currentSlide.projector, body: "" },
+      };
+      setPendingSlides(updated);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editingSlideIndex, currentSlide?.slideId]);
+
   return (
     <>
       <Dialog open={!!presentationLesson && pendingSlides.length > 0} onOpenChange={(open) => { if (!open) onClose(); }}>
