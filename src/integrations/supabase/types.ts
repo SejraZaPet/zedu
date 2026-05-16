@@ -2751,6 +2751,10 @@ export type Database = {
         }
         Returns: string
       }
+      verify_pin_login: {
+        Args: { _pin: string; _username: string }
+        Returns: Json
+      }
     }
     Enums: {
       account_status: "pending" | "approved" | "blocked"
