@@ -230,9 +230,11 @@ const LiveWhiteboard = ({ sessionId, data, readOnly = false, onClose, overlay = 
     const stroke = drawingRef.current;
     drawingRef.current = null;
     if (stroke.points.length < 1) { rerender(); return; }
-    const next = [...strokes, stroke];
+    // Optimistically show the stroke immediately
+    setPendingStrokes((p) => [...p, stroke]);
     setRedoStack([]);
-    commitStrokes(next);
+    // Persist in background — order is serialized via persist()
+    commitStrokes([...remoteStrokes, ...pendingStrokes, stroke]);
   };
 
   const undo = useCallback(() => {
