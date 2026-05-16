@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -5,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Monitor, Plus, Trash2, ChevronDown, Save } from "lucide-react";
+import { Monitor, Plus, Trash2, ChevronDown, Save, Sun, Moon } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -30,6 +31,55 @@ interface Props {
   onCloseExisting: () => void;
 }
 
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function formatInline(s: string): string {
+  return escapeHtml(s).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+}
+
+function formatSlideBody(text: string): string {
+  if (!text) return "";
+  const lines = text.split("\n");
+  const out: string[] = [];
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    // table block: consecutive lines containing " | "
+    if (line.includes(" | ")) {
+      const tableLines: string[] = [];
+      while (i < lines.length && lines[i].includes(" | ")) {
+        tableLines.push(lines[i]);
+        i++;
+      }
+      const rows = tableLines.map((l) =>
+        l.split(" | ").map((c) => `<td class="border border-current/20 px-2 py-1">${formatInline(c.trim())}</td>`).join(""),
+      );
+      out.push(`<table class="border-collapse my-2 text-xs"><tbody>${rows.map((r) => `<tr>${r}</tr>`).join("")}</tbody></table>`);
+      continue;
+    }
+    if (line.startsWith("• ") || line.startsWith("- ")) {
+      const items: string[] = [];
+      while (i < lines.length && (lines[i].startsWith("• ") || lines[i].startsWith("- "))) {
+        items.push(`<li>${formatInline(lines[i].slice(2))}</li>`);
+        i++;
+      }
+      out.push(`<ul class="list-disc pl-5 space-y-1 my-1">${items.join("")}</ul>`);
+      continue;
+    }
+    if (line.startsWith("## ")) {
+      out.push(`<h3 class="font-semibold text-base mt-2 mb-1">${formatInline(line.slice(3))}</h3>`);
+    } else if (line.trim() === "") {
+      out.push("<br/>");
+    } else {
+      out.push(`<p class="my-1">${formatInline(line)}</p>`);
+    }
+    i++;
+  }
+  return out.join("");
+}
+
 export const PresentationEditorDialog = ({
   presentationLesson, pendingSlides, setPendingSlides,
   editingSlideIndex, setEditingSlideIndex,
@@ -37,10 +87,13 @@ export const PresentationEditorDialog = ({
   existingSession, onContinueExisting, onLaunchNew, onCloseExisting,
 }: Props) => {
   const { toast } = useToast();
+  const [darkPreview, setDarkPreview] = useState(true);
+  const currentSlide = pendingSlides[editingSlideIndex];
+
   return (
     <>
       <Dialog open={!!presentationLesson && pendingSlides.length > 0} onOpenChange={(open) => { if (!open) onClose(); }}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 flex-wrap">
               <span>Upravit prezentaci – {presentationLesson?.title}</span>
@@ -49,18 +102,29 @@ export const PresentationEditorDialog = ({
               </Badge>
             </DialogTitle>
           </DialogHeader>
-          <div className="flex gap-1 flex-wrap mb-4">
-            {pendingSlides.map((_, i) => (
+
+          {/* Slide thumbnails */}
+          <div className="flex gap-2 overflow-x-auto pb-2 mb-2">
+            {pendingSlides.map((slide, i) => (
               <button
                 key={i}
                 onClick={() => setEditingSlideIndex(i)}
-                className={`w-8 h-8 rounded text-xs font-medium ${i === editingSlideIndex ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}
+                className={`flex-shrink-0 w-28 h-16 rounded-md border-2 p-1.5 text-left overflow-hidden transition-colors ${
+                  i === editingSlideIndex ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/50"
+                }`}
               >
-                {i + 1}
+                <div className="text-[8px] text-muted-foreground mb-0.5">Slide {i + 1}</div>
+                <div className="text-[9px] font-bold truncate leading-tight">
+                  {slide.projector?.headline || `Bez nadpisu`}
+                </div>
+                <div className="text-[8px] text-muted-foreground line-clamp-2 leading-tight">
+                  {slide.projector?.body?.slice(0, 60) || ""}
+                </div>
               </button>
             ))}
           </div>
-          <div className="flex gap-2 mb-4">
+
+          <div className="flex gap-2 mb-4 flex-wrap">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button size="sm" variant="outline" className="gap-1">
@@ -143,150 +207,191 @@ export const PresentationEditorDialog = ({
               </Button>
             )}
           </div>
-          {pendingSlides[editingSlideIndex] && (
-            <div className="space-y-3">
+
+          {currentSlide && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Live preview */}
               <div>
-                <Label className="text-xs">Nadpis (projektor)</Label>
-                <Input
-                  value={pendingSlides[editingSlideIndex].projector?.headline || ""}
-                  onChange={(e) => {
-                    const updated = [...pendingSlides];
-                    updated[editingSlideIndex] = { ...updated[editingSlideIndex], projector: { ...updated[editingSlideIndex].projector, headline: e.target.value } };
-                    setPendingSlides(updated);
-                  }}
-                />
-              </div>
-              <div>
-                <Label className="text-xs">Text (projektor)</Label>
-                <Textarea
-                  rows={4}
-                  value={pendingSlides[editingSlideIndex].projector?.body || ""}
-                  onChange={(e) => {
-                    const updated = [...pendingSlides];
-                    updated[editingSlideIndex] = { ...updated[editingSlideIndex], projector: { ...updated[editingSlideIndex].projector, body: e.target.value } };
-                    setPendingSlides(updated);
-                  }}
-                />
-              </div>
-              {(pendingSlides[editingSlideIndex] as any)?.tableData && (
-                <div>
-                  <Label className="text-xs">Tabulka (náhled)</Label>
-                  <div className="overflow-x-auto mt-1 border border-border rounded-lg">
-                    <table className="w-full text-xs border-collapse">
-                      <thead>
-                        <tr>
-                          {(pendingSlides[editingSlideIndex] as any).tableData.headers.map((h: string, i: number) => (
-                            <th key={i} className="border border-border bg-muted px-2 py-1 text-left font-semibold">{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(pendingSlides[editingSlideIndex] as any).tableData.rows.map((row: string[], ri: number) => (
-                          <tr key={ri}>
-                            {row.map((cell: string, ci: number) => (
-                              <td key={ci} className="border border-border px-2 py-1">{cell}</td>
+                <div className="flex items-center justify-between mb-2">
+                  <Label className="text-xs">Náhled slidu</Label>
+                  <button
+                    type="button"
+                    onClick={() => setDarkPreview((v) => !v)}
+                    className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {darkPreview ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+                    {darkPreview ? "Světlý" : "Tmavý"}
+                  </button>
+                </div>
+                <div
+                  className={`rounded-xl p-6 aspect-video flex flex-col shadow-lg overflow-hidden ${
+                    darkPreview
+                      ? "bg-gradient-to-br from-slate-800 to-slate-900 text-white"
+                      : "bg-gradient-to-br from-brand-turquoise/10 to-brand-lavender/10 text-foreground border border-border"
+                  }`}
+                >
+                  <h2 className="text-xl md:text-2xl font-bold mb-3 text-center">
+                    {currentSlide?.projector?.headline || <span className="opacity-40">Nadpis slidu</span>}
+                  </h2>
+                  <div
+                    className={`text-sm leading-relaxed overflow-y-auto flex-1 ${darkPreview ? "text-white/85" : "text-foreground/85"}`}
+                    dangerouslySetInnerHTML={{
+                      __html:
+                        formatSlideBody(currentSlide?.projector?.body || "") ||
+                        '<p class="opacity-40">Text slidu…</p>',
+                    }}
+                  />
+                  {(currentSlide as any)?.tableData && (
+                    <div className="overflow-x-auto mt-2">
+                      <table className="text-xs border-collapse">
+                        <thead>
+                          <tr>
+                            {(currentSlide as any).tableData.headers.map((h: string, i: number) => (
+                              <th key={i} className={`border px-2 py-1 font-semibold ${darkPreview ? "border-white/20 bg-white/10" : "border-foreground/20 bg-foreground/5"}`}>{h}</th>
                             ))}
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-              <div>
-                <Label className="text-xs">Instrukce pro žáka</Label>
-                <Input
-                  value={pendingSlides[editingSlideIndex].device?.instructions || ""}
-                  onChange={(e) => {
-                    const updated = [...pendingSlides];
-                    updated[editingSlideIndex] = { ...updated[editingSlideIndex], device: { ...updated[editingSlideIndex].device, instructions: e.target.value } };
-                    setPendingSlides(updated);
-                  }}
-                />
-              </div>
-              {pendingSlides[editingSlideIndex]?.type === "activity" && (
-                <div className="space-y-3 pt-3 border-t border-border">
-                  <div>
-                    <Label className="text-xs">Typ aktivity</Label>
-                    <Select
-                      value={(pendingSlides[editingSlideIndex] as any).activitySpec?.activityType || "true_false"}
-                      onValueChange={(v) => {
-                        const updated = [...pendingSlides];
-                        updated[editingSlideIndex] = {
-                          ...updated[editingSlideIndex],
-                          activitySpec: { ...(updated[editingSlideIndex] as any).activitySpec, activityType: v },
-                        };
-                        setPendingSlides(updated);
-                      }}
-                    >
-                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="true_false">Pravda / Nepravda</SelectItem>
-                        <SelectItem value="quiz">Kvíz</SelectItem>
-                        <SelectItem value="wall">Zeď odpovědí</SelectItem>
-                        <SelectItem value="flashcards">Kartičky</SelectItem>
-                        <SelectItem value="matching">Párování</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  {(pendingSlides[editingSlideIndex] as any).activitySpec?.activityType === "wall" && (
-                    <>
-                      <div>
-                        <Label className="text-xs">Otázka pro žáky</Label>
-                        <Textarea
-                          rows={2}
-                          value={(pendingSlides[editingSlideIndex] as any).activitySpec?.question || ""}
-                          onChange={(e) => {
-                            const updated = [...pendingSlides];
-                            updated[editingSlideIndex] = {
-                              ...updated[editingSlideIndex],
-                              activitySpec: { ...(updated[editingSlideIndex] as any).activitySpec, question: e.target.value },
-                            };
-                            setPendingSlides(updated);
-                          }}
-                          placeholder="Napište otázku pro žáky..."
-                        />
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Checkbox
-                          checked={(pendingSlides[editingSlideIndex] as any).activitySpec?.anonymous === true}
-                          onCheckedChange={(v) => {
-                            const updated = [...pendingSlides];
-                            updated[editingSlideIndex] = {
-                              ...updated[editingSlideIndex],
-                              activitySpec: { ...(updated[editingSlideIndex] as any).activitySpec, anonymous: !!v },
-                            };
-                            setPendingSlides(updated);
-                          }}
-                          id="slide-wall-anonymous"
-                        />
-                        <Label htmlFor="slide-wall-anonymous" className="text-xs cursor-pointer">
-                          Anonymní odpovědi
-                        </Label>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Checkbox
-                          checked={(pendingSlides[editingSlideIndex] as any).activitySpec?.allowMultiple === true}
-                          onCheckedChange={(v) => {
-                            const updated = [...pendingSlides];
-                            updated[editingSlideIndex] = {
-                              ...updated[editingSlideIndex],
-                              activitySpec: { ...(updated[editingSlideIndex] as any).activitySpec, allowMultiple: !!v },
-                            };
-                            setPendingSlides(updated);
-                          }}
-                          id="slide-wall-multiple"
-                        />
-                        <Label htmlFor="slide-wall-multiple" className="text-xs cursor-pointer">
-                          Povolit více odpovědí od jednoho žáka
-                        </Label>
-                      </div>
-                    </>
+                        </thead>
+                        <tbody>
+                          {(currentSlide as any).tableData.rows.map((row: string[], ri: number) => (
+                            <tr key={ri}>
+                              {row.map((cell: string, ci: number) => (
+                                <td key={ci} className={`border px-2 py-1 ${darkPreview ? "border-white/20" : "border-foreground/20"}`}>{cell}</td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   )}
                 </div>
-              )}
+                <p className="text-[10px] text-muted-foreground mt-2 leading-tight">
+                  Formátování: <code>## podnadpis</code>, <code>• odrážka</code>, <code>**tučně**</code>, sloupce <code>A | B | C</code>.
+                </p>
+              </div>
+
+              {/* Form */}
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-xs">Nadpis (projektor)</Label>
+                  <Input
+                    value={currentSlide.projector?.headline || ""}
+                    onChange={(e) => {
+                      const updated = [...pendingSlides];
+                      updated[editingSlideIndex] = { ...updated[editingSlideIndex], projector: { ...updated[editingSlideIndex].projector, headline: e.target.value } };
+                      setPendingSlides(updated);
+                    }}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Text (projektor)</Label>
+                  <Textarea
+                    rows={6}
+                    className="font-mono text-xs"
+                    value={currentSlide.projector?.body || ""}
+                    onChange={(e) => {
+                      const updated = [...pendingSlides];
+                      updated[editingSlideIndex] = { ...updated[editingSlideIndex], projector: { ...updated[editingSlideIndex].projector, body: e.target.value } };
+                      setPendingSlides(updated);
+                    }}
+                    placeholder={"## Podnadpis\n• První bod\n• Druhý bod\n**Důležité** zvýraznění"}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Instrukce pro žáka</Label>
+                  <Input
+                    value={currentSlide.device?.instructions || ""}
+                    onChange={(e) => {
+                      const updated = [...pendingSlides];
+                      updated[editingSlideIndex] = { ...updated[editingSlideIndex], device: { ...updated[editingSlideIndex].device, instructions: e.target.value } };
+                      setPendingSlides(updated);
+                    }}
+                  />
+                </div>
+                {currentSlide?.type === "activity" && (
+                  <div className="space-y-3 pt-3 border-t border-border">
+                    <div>
+                      <Label className="text-xs">Typ aktivity</Label>
+                      <Select
+                        value={(currentSlide as any).activitySpec?.activityType || "true_false"}
+                        onValueChange={(v) => {
+                          const updated = [...pendingSlides];
+                          updated[editingSlideIndex] = {
+                            ...updated[editingSlideIndex],
+                            activitySpec: { ...(updated[editingSlideIndex] as any).activitySpec, activityType: v },
+                          };
+                          setPendingSlides(updated);
+                        }}
+                      >
+                        <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="true_false">Pravda / Nepravda</SelectItem>
+                          <SelectItem value="quiz">Kvíz</SelectItem>
+                          <SelectItem value="wall">Zeď odpovědí</SelectItem>
+                          <SelectItem value="flashcards">Kartičky</SelectItem>
+                          <SelectItem value="matching">Párování</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {(currentSlide as any).activitySpec?.activityType === "wall" && (
+                      <>
+                        <div>
+                          <Label className="text-xs">Otázka pro žáky</Label>
+                          <Textarea
+                            rows={2}
+                            value={(currentSlide as any).activitySpec?.question || ""}
+                            onChange={(e) => {
+                              const updated = [...pendingSlides];
+                              updated[editingSlideIndex] = {
+                                ...updated[editingSlideIndex],
+                                activitySpec: { ...(updated[editingSlideIndex] as any).activitySpec, question: e.target.value },
+                              };
+                              setPendingSlides(updated);
+                            }}
+                            placeholder="Napište otázku pro žáky..."
+                          />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            checked={(currentSlide as any).activitySpec?.anonymous === true}
+                            onCheckedChange={(v) => {
+                              const updated = [...pendingSlides];
+                              updated[editingSlideIndex] = {
+                                ...updated[editingSlideIndex],
+                                activitySpec: { ...(updated[editingSlideIndex] as any).activitySpec, anonymous: !!v },
+                              };
+                              setPendingSlides(updated);
+                            }}
+                            id="slide-wall-anonymous"
+                          />
+                          <Label htmlFor="slide-wall-anonymous" className="text-xs cursor-pointer">
+                            Anonymní odpovědi
+                          </Label>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            checked={(currentSlide as any).activitySpec?.allowMultiple === true}
+                            onCheckedChange={(v) => {
+                              const updated = [...pendingSlides];
+                              updated[editingSlideIndex] = {
+                                ...updated[editingSlideIndex],
+                                activitySpec: { ...(updated[editingSlideIndex] as any).activitySpec, allowMultiple: !!v },
+                              };
+                              setPendingSlides(updated);
+                            }}
+                            id="slide-wall-multiple"
+                          />
+                          <Label htmlFor="slide-wall-multiple" className="text-xs cursor-pointer">
+                            Povolit více odpovědí od jednoho žáka
+                          </Label>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           )}
+
           <DialogFooter className="gap-2 mt-4">
             {onSave && (
               <Button
