@@ -1244,6 +1244,47 @@ const ActivityBlock = ({ block, onChange }: Props) => {
           </Select>
         </div>
       </div>
+      <div className="flex gap-3 items-end">
+        <div className="flex-1">
+          <Label className="text-xs">Forma práce</Label>
+          <Select
+            value={p.workMode || "individual"}
+            onValueChange={(v) => onChange({ ...p, workMode: v })}
+          >
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="individual">👤 Individuální práce</SelectItem>
+              <SelectItem value="pairs">👥 Práce ve dvojicích</SelectItem>
+              <SelectItem value="group">👨‍👩‍👧‍👦 Skupinová práce</SelectItem>
+              <SelectItem value="whole_class">🏫 Společně se třídou</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        {(p.workMode === "group" || p.workMode === "pairs") && (
+          <div className="w-40">
+            <Label className="text-xs">
+              {p.workMode === "pairs" ? "Velikost dvojic" : "Velikost skupiny"}
+            </Label>
+            <Input
+              type="number"
+              min={2}
+              max={10}
+              value={p.groupSize ?? (p.workMode === "pairs" ? 2 : 4)}
+              onChange={(e) => onChange({ ...p, groupSize: Math.max(2, Math.min(10, Number(e.target.value) || 2)) })}
+            />
+          </div>
+        )}
+        {p.workMode === "group" && (
+          <div className="flex-1">
+            <Label className="text-xs">Pokyn k rozdělení (volitelné)</Label>
+            <Input
+              placeholder="Např. „Rozdělte se podle řad"
+              value={p.groupingHint || ""}
+              onChange={(e) => onChange({ ...p, groupingHint: e.target.value })}
+            />
+          </div>
+        )}
+      </div>
       <div>
         <Label className="text-xs">Instrukce pro studenta</Label>
         <Textarea

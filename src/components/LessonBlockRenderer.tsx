@@ -284,9 +284,27 @@ export const LessonBlock = ({ block, blockIndex, onActivityComplete, isTeacher }
         }
       }
 
+      const workModeLabels: Record<string, string> = {
+        individual: "👤 Individuální práce",
+        pairs: "👥 Práce ve dvojicích",
+        group: "👨‍👩‍👧‍👦 Skupinová práce",
+        whole_class: "🏫 Společně se třídou",
+      };
+      const workMode = p.workMode || "individual";
+      const workModeLabel = workModeLabels[workMode] || workModeLabels.individual;
+
       const activityInner = (
         <div className="rounded-lg border border-primary/20 bg-card p-5 space-y-3">
-          {p.title && <h3 className="font-heading text-lg text-primary uppercase tracking-wide">{p.title}</h3>}
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            {p.title && <h3 className="font-heading text-lg text-primary uppercase tracking-wide">{p.title}</h3>}
+            <span className="inline-flex items-center gap-1 text-xs font-medium text-primary bg-primary/10 rounded-full px-2.5 py-1">
+              {workModeLabel}
+              {(workMode === "group" || workMode === "pairs") && p.groupSize ? ` · ${p.groupSize}` : ""}
+            </span>
+          </div>
+          {workMode === "group" && p.groupingHint && (
+            <p className="text-xs text-muted-foreground italic">{p.groupingHint}</p>
+          )}
           {p.instructions && (
             <p className="text-sm text-muted-foreground leading-relaxed bg-muted/30 rounded-md px-4 py-2.5">
               {p.instructions}
