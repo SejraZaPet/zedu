@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { ClipboardList, MessageSquare, Download, X, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import * as XLSX from "xlsx";
+import { downloadCSV } from "@/lib/csv-export";
 
 export interface BulkMember {
   user_id: string;
