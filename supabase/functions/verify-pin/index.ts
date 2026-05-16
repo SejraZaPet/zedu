@@ -1,5 +1,4 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import bcrypt from "https://esm.sh/bcryptjs@2.4.3";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -24,55 +23,35 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { data: profile, error: pErr } = await admin
-      .from("profiles")
-      .select("id, email, pin_code, login_password")
-      .eq("username", String(username).toLowerCase().trim())
-      .maybeSingle();
+    const { data, error: rpcError } = await admin.rpc("verify_pin_login", {
+      _username: String(username).trim(),
+      _pin: String(pin),
+    });
 
-    if (pErr || !profile || !profile.pin_code) {
-      return new Response(JSON.stringify({ error: "Uživatel nebo PIN nenalezen" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const ok = await bcrypt.compare(String(pin), profile.pin_code);
-    if (!ok) {
-      return new Response(JSON.stringify({ error: "Nesprávný PIN" }), {
+    const result = data as { error?: string; email?: string } | null;
+    if (rpcError || result?.error || !result?.email) {
+      return new Response(JSON.stringify({ error: result?.error || "Špatný PIN nebo uživatelské jméno." }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    if (!profile.login_password) {
-      return new Response(JSON.stringify({ error: "Účet nemá uložené heslo, kontaktujte učitele" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Vytvoř session pomocí uloženého hesla
-    const anon = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!
-    );
-    const { data: session, error: sErr } = await anon.auth.signInWithPassword({
-      email: profile.email,
-      password: profile.login_password,
+    const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
+      type: "magiclink",
+      email: result.email,
     });
 
-    if (sErr || !session.session) {
-      return new Response(JSON.stringify({ error: "Nepodařilo se přihlásit" }), {
+    const tokenHash = linkData?.properties?.hashed_token;
+    if (linkError || !tokenHash) {
+      return new Response(JSON.stringify({ error: linkError?.message || "Nepodařilo se vytvořit přihlašovací relaci." }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     return new Response(JSON.stringify({
-      access_token: session.session.access_token,
-      refresh_token: session.session.refresh_token,
-      user_id: profile.id,
+      email: result.email,
+      token_hash: tokenHash,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
