@@ -17,6 +17,29 @@ import BlockEditor from "@/components/admin/BlockEditor";
 import type { Block } from "@/lib/textbook-config";
 import { Loader2, Upload, FileText, Trash2, Sparkles } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
+
+// Lehký PDF text extractor bez závislostí — hledá Tj a TJ operátory v raw PDF.
+async function extractPdfText(file: File): Promise<string> {
+  const buffer = await file.arrayBuffer();
+  const bytes = new Uint8Array(buffer);
+  const raw = new TextDecoder("latin1").decode(bytes);
+
+  const lines: string[] = [];
+  const unicodeMatches = raw.matchAll(/\(([^)]{2,})\)\s*Tj/g);
+  for (const m of unicodeMatches) {
+    const decoded = m[1]
+      .replace(/\\n/g, "\n").replace(/\\r/g, "\n").replace(/\\t/g, " ")
+      .replace(/\\\(/g, "(").replace(/\\\)/g, ")").replace(/\\\\/g, "\\");
+    if (decoded.trim()) lines.push(decoded.trim());
+  }
+  const tjArrays = raw.matchAll(/\[([^\]]{2,})\]\s*TJ/gi);
+  for (const m of tjArrays) {
+    const texts = [...m[1].matchAll(/\(([^)]*)\)/g)].map((p) => p[1]).join("");
+    if (texts.trim()) lines.push(texts.trim());
+  }
+  return lines.join("\n");
+}
 
 interface TopicOption {
   id: string;
@@ -68,6 +91,7 @@ const ImportTextbookFileDialog = ({
   const [saving, setSaving] = useState(false);
   const [singleLesson, setSingleLesson] = useState(true);
   const [progress, setProgress] = useState<string>("");
+  const [manualText, setManualText] = useState<string>("");
 
   const reset = () => {
     setFile(null);
@@ -75,6 +99,7 @@ const ImportTextbookFileDialog = ({
     setProcessing(false);
     setSaving(false);
     setProgress("");
+    setManualText("");
   };
 
   const handleClose = (v: boolean) => {
@@ -128,14 +153,32 @@ const ImportTextbookFileDialog = ({
         }
       }
 
+      // Try to extract clean text from PDF on the frontend so AI gets real content, not hallucinations.
+      let extractedText = "";
+      if (manualText.trim().length >= 20) {
+        extractedText = manualText.trim();
+      } else if (isPdf) {
+        try {
+          setProgress("Extrahuji text z PDF...");
+          extractedText = await extractPdfText(file);
+        } catch (err) {
+          console.warn("PDF text extraction failed:", err);
+        }
+      }
+
       setProgress("AI analyzuje dokument...");
+      const invokeBody: Record<string, unknown> = {
+        fileName: file.name,
+        mimeType: file.type || "application/pdf",
+        mode: singleLesson ? "single" : "split",
+      };
+      if (extractedText.length >= 100) {
+        invokeBody.extractedText = extractedText;
+      } else {
+        invokeBody.fileBase64 = base64;
+      }
       const { data, error } = await supabase.functions.invoke("process-file-content", {
-        body: {
-          fileBase64: base64,
-          fileName: file.name,
-          mimeType: file.type || "application/pdf",
-          mode: singleLesson ? "single" : "split",
-        },
+        body: invokeBody,
       });
 
       if (error) throw error;
@@ -306,6 +349,23 @@ const ImportTextbookFileDialog = ({
               <p className="text-xs text-muted-foreground mt-3">
                 Podporované formáty: PDF, DOCX, PPTX. Maximálně 25 MB. Soubor se bezpečně odešle do backendu k AI analýze.
               </p>
+            </div>
+
+            <div className="space-y-2 rounded-lg border border-border p-3">
+              <Label htmlFor="manual-text" className="text-sm">
+                Pojistka: vložte text ručně (volitelné)
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Pokud AI při importu vymýšlí obsah nebo přeskakuje text, otevřete PDF v prohlížeči, označte vše (Ctrl+A), zkopírujte (Ctrl+C) a vložte sem. Tento text má přednost před automatickou extrakcí.
+              </p>
+              <Textarea
+                id="manual-text"
+                value={manualText}
+                onChange={(e) => setManualText(e.target.value)}
+                rows={4}
+                placeholder="Sem vložte přesný text z PDF / prezentace…"
+                disabled={processing}
+              />
             </div>
 
             <div className="flex items-start justify-between gap-4 rounded-lg border border-border p-3">
