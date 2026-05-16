@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import BlockEditor from "@/components/admin/BlockEditor";
 import type { Block } from "@/lib/textbook-config";
 import { Loader2, Upload, FileText, Trash2, Sparkles } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 interface TopicOption {
   id: string;
@@ -62,6 +63,7 @@ const ImportTextbookFileDialog = ({
   const [drafts, setDrafts] = useState<DraftLesson[]>([]);
   const [topicId, setTopicId] = useState<string>(defaultTopicId ?? "");
   const [saving, setSaving] = useState(false);
+  const [singleLesson, setSingleLesson] = useState(true);
 
   const reset = () => {
     setFile(null);
@@ -85,7 +87,7 @@ const ImportTextbookFileDialog = ({
     try {
       const fileBase64 = await fileToBase64(file);
       const { data, error } = await supabase.functions.invoke("import-textbook-file", {
-        body: { fileBase64, filename: file.name, mimeType: file.type },
+        body: { fileBase64, filename: file.name, mimeType: file.type, mode: singleLesson ? "single" : "split" },
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
@@ -182,6 +184,25 @@ const ImportTextbookFileDialog = ({
               <p className="text-xs text-muted-foreground mt-3">
                 Podporované formáty: PDF, DOCX, PPTX. Maximálně 15 MB.
               </p>
+            </div>
+
+            <div className="flex items-start justify-between gap-4 rounded-lg border border-border p-3">
+              <div className="space-y-0.5">
+                <Label htmlFor="single-lesson-toggle" className="text-sm">
+                  Importovat jako jednu lekci
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  {singleLesson
+                    ? "Všechny stránky souboru se sloučí do jedné scrollovatelné lekce."
+                    : "Každá stránka/sekce se vytvoří jako samostatná lekce."}
+                </p>
+              </div>
+              <Switch
+                id="single-lesson-toggle"
+                checked={singleLesson}
+                onCheckedChange={setSingleLesson}
+                disabled={processing}
+              />
             </div>
 
             <DialogFooter>
