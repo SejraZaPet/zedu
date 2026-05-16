@@ -216,6 +216,12 @@ const ClassesManager = () => {
       }
       toast({ title: "Vytvořeno", description: "Nová třída byla vytvořena." });
       logAudit("class_created", "class", created?.id ?? null, { name: payload.name });
+      // Automaticky přiřaď tvůrce jako učitele třídy
+      if (created?.id) {
+        await supabase
+          .from("class_teachers")
+          .insert({ class_id: created.id, user_id: user.id, role: "owner" });
+      }
     }
 
     setSaving(false);
