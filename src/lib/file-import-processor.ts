@@ -1,13 +1,11 @@
 // Client-side file text extraction for textbook import.
 // PDF via pdfjs-dist, PPTX via jszip (XML), DOCX via mammoth.
 
-const PDFJS_WORKER_SRC =
-  "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.mjs";
-
 export async function extractTextFromPDF(file: File): Promise<string> {
   const pdfjsLib: any = await import("pdfjs-dist");
   try {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_SRC;
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
   } catch {
     // ignore — some bundles expose differently
   }
