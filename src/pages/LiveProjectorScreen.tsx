@@ -115,25 +115,42 @@ const LiveProjectorScreen = () => {
           </div>
         )}
 
-        {currentSlide.projector?.headline && (
-          <h2 className="text-6xl font-bold text-center mb-10 leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-purple-200">
-            {currentSlide.projector.headline}
-          </h2>
-        )}
+        {(currentSlide as any).blocks && (currentSlide as any).blocks.length > 0 ? (
+          <>
+            {currentSlide.projector?.headline && (
+              <h2 className="text-6xl font-bold text-center mb-10 leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-purple-200">
+                {currentSlide.projector.headline}
+              </h2>
+            )}
+            <div className="w-full max-w-6xl text-2xl space-y-6 [&_*]:!text-white [&_h1]:!text-white [&_h2]:!text-white [&_h3]:!text-white [&_.bg-card]:!bg-white/10 [&_.bg-muted\/40]:!bg-white/10 [&_.bg-muted\/30]:!bg-white/10 [&_.border]:!border-white/20">
+              {(currentSlide as any).blocks.map((b: any, i: number) => (
+                <LessonBlock key={b.id || i} block={b} blockIndex={i} isTeacher={false} />
+              ))}
+            </div>
+          </>
+        ) : (
+          <>
+            {currentSlide.projector?.headline && (
+              <h2 className="text-6xl font-bold text-center mb-10 leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-purple-200">
+                {currentSlide.projector.headline}
+              </h2>
+            )}
 
-        {!(currentSlide as any).tableData && !(currentSlide as any).cardData && currentSlide.projector?.body && (
-          <div className="text-2xl text-gray-300 leading-relaxed space-y-3 w-full max-w-5xl">
-            {currentSlide.projector.body.split('\n').filter(Boolean).map((line: string, i: number) => (
-              <p key={i} className={line.startsWith('•') ? "flex items-start gap-3" : "text-center"}>
-                {line.startsWith('•') ? (
-                  <>
-                    <span className="text-purple-400 mt-1 flex-shrink-0">•</span>
-                    <span>{line.substring(1).trim()}</span>
-                  </>
-                ) : line}
-              </p>
-            ))}
-          </div>
+            {!(currentSlide as any).tableData && !(currentSlide as any).cardData && currentSlide.projector?.body && (
+              <div className="text-2xl text-gray-300 leading-relaxed space-y-3 w-full max-w-5xl">
+                {currentSlide.projector.body.split('\n').filter(Boolean).map((line: string, i: number) => (
+                  <p key={i} className={line.startsWith('•') ? "flex items-start gap-3" : "text-center"}>
+                    {line.startsWith('•') ? (
+                      <>
+                        <span className="text-purple-400 mt-1 flex-shrink-0">•</span>
+                        <span>{line.substring(1).trim()}</span>
+                      </>
+                    ) : line}
+                  </p>
+                ))}
+              </div>
+            )}
+          </>
         )}
 
         {(currentSlide as any).tableData && (
