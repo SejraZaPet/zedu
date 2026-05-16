@@ -125,7 +125,7 @@ const Auth = () => {
 
       if (profile?.status === "pending") {
         await supabase.auth.signOut();
-        setError("Váš účet čeká na schválení administrátorem.");
+        setError("Váš účet čeká na ověření emailu. Zkontrolujte svou emailovou schránku a klikněte na verifikační odkaz.");
         setLoading(false);
         return;
       }
