@@ -534,14 +534,14 @@ const LiveTeacherScreen = () => {
           slides={slides}
           players={players}
           gameCode={gameCode}
+          overlayContent={(
+            <LiveWhiteboard
+              sessionId={sessionId}
+              data={whiteboard}
+              onClose={toggleWhiteboard}
+            />
+          )}
         />
-        <div className="fixed inset-0 z-50">
-          <LiveWhiteboard
-            sessionId={sessionId}
-            data={whiteboard}
-            onClose={toggleWhiteboard}
-          />
-        </div>
       </div>
     )}
 
