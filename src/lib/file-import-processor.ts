@@ -4,8 +4,10 @@
 export async function extractTextFromPDF(file: File): Promise<string> {
   const pdfjsLib: any = await import("pdfjs-dist");
   try {
-    pdfjsLib.GlobalWorkerOptions.workerSrc =
-      `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+    pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+      "pdfjs-dist/build/pdf.worker.min.mjs",
+      import.meta.url,
+    ).toString();
   } catch {
     // ignore — some bundles expose differently
   }
