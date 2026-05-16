@@ -157,16 +157,17 @@ const Auth = () => {
         _username: pinUsername.trim(),
         _pin: pinValue,
       });
-      if (rpcError || result?.error) {
-        setError(result?.error || "Špatný PIN nebo uživatelské jméno.");
+      const pinResult = result as { error?: string; email?: string; password?: string } | null;
+      if (rpcError || pinResult?.error) {
+        setError(pinResult?.error || "Špatný PIN nebo uživatelské jméno.");
         setLoading(false);
         return;
       }
       // 2. Přihlas se emailem + login_password
-      if (result?.email && result?.password) {
+      if (pinResult?.email && pinResult?.password) {
         const { error: signInError } = await supabase.auth.signInWithPassword({
-          email: result.email,
-          password: result.password,
+          email: pinResult.email,
+          password: pinResult.password,
         });
         if (signInError) {
           setError("PIN ověřen, ale přihlášení selhalo. Zkuste se přihlásit emailem.");
