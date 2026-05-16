@@ -313,18 +313,10 @@ const TeacherResults = () => {
       })
       .sort((a, b) => String(b["Datum"]).localeCompare(String(a["Datum"])));
 
-    const wb = XLSX.utils.book_new();
-    const ws1 = XLSX.utils.json_to_sheet(overviewRows);
-    ws1["!cols"] = [{ wch: 28 }, { wch: 12 }, { wch: 14 }, { wch: 16 }];
-    XLSX.utils.book_append_sheet(wb, ws1, "Přehled třídy");
-
-    const ws2 = XLSX.utils.json_to_sheet(detailRows);
-    ws2["!cols"] = [{ wch: 18 }, { wch: 24 }, { wch: 18 }, { wch: 32 }, { wch: 18 }, { wch: 8 }, { wch: 8 }, { wch: 14 }];
-    XLSX.utils.book_append_sheet(wb, ws2, "Detailní výsledky");
-
     const stamp = new Date().toISOString().slice(0, 10);
-    XLSX.writeFile(wb, `vysledky_${stamp}.xlsx`);
-    toast({ title: "Export dokončen", description: "Soubor XLSX byl stažen." });
+    downloadCSV(`vysledky_${stamp}_prehled.csv`, overviewRows);
+    downloadCSV(`vysledky_${stamp}_detail.csv`, detailRows);
+    toast({ title: "Export dokončen", description: "Soubory CSV byly staženy." });
   };
 
   return (
