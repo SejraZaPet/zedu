@@ -22,12 +22,25 @@ export const useTeacherClasses = () => {
       if (!session) return [];
       const userId = session.user.id;
 
-      // Načti třídy kde jsem učitel NEBO tvůrce
+      // 1) IDs tříd, kde jsem v class_teachers
+      const { data: ctRows, error: ctErr } = await supabase
+        .from("class_teachers")
+        .select("class_id")
+        .eq("user_id", userId);
+      if (ctErr) throw ctErr;
+      const memberIds = (ctRows ?? []).map((r: any) => r.class_id).filter(Boolean);
+
+      // 2) Třídy, které jsem vytvořil NEBO ve kterých jsem učitel
+      const orParts = [`created_by.eq.${userId}`];
+      if (memberIds.length > 0) {
+        orParts.push(`id.in.(${memberIds.join(",")})`);
+      }
+
       const { data: classes, error } = await supabase
         .from("classes")
         .select("id, name, school, field_of_study, year, archived, created_by")
         .eq("archived", false)
-        .or(`created_by.eq.${userId},id.in.(select class_id from class_teachers where user_id='${userId}')`)
+        .or(orParts.join(","))
         .order("name");
 
       if (error) throw error;
