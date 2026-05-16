@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useSubjects } from "./useSubjects";
 import { PREDEFINED_SUBJECTS } from "@/lib/predefined-subjects";
+import { useAuth } from "@/contexts/AuthContext";
 
 /**
  * A subject available to a teacher across the app.
@@ -36,20 +37,20 @@ export interface TeacherSubject {
  * source of truth drives the schedule, class scheduling and lesson editor.
  */
 export const useTeacherSubjects = () => {
+  const { user, loading: authLoading } = useAuth();
   const { data: globalSubjects = [], isLoading: loadingGlobal } = useSubjects(true);
 
   const { data: teacherTextbooks = [], isLoading: loadingTeacher } = useQuery({
-    queryKey: ["teacher-textbooks-for-subjects"],
+    queryKey: ["teacher-textbooks-for-subjects", user?.id],
     queryFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return [];
       const { data, error } = await supabase
         .from("teacher_textbooks")
         .select("id, title, subject")
-        .eq("teacher_id", session.user.id);
+        .order("title", { ascending: true });
       if (error) throw error;
       return data ?? [];
     },
+    enabled: !authLoading && !!user,
     staleTime: 60 * 1000,
   });
 

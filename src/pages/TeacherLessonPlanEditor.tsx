@@ -143,7 +143,7 @@ export default function TeacherLessonPlanEditor() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { subjects } = useTeacherSubjects();
 
   const [title, setTitle] = useState("Nový plán hodin");
@@ -212,15 +212,39 @@ export default function TeacherLessonPlanEditor() {
 
   /** All teacher textbooks (for explicit picker, independent of subject) */
   const [textbooks, setTextbooks] = useState<{ id: string; title: string; subject: string }[]>([]);
+  const [loadingTextbooks, setLoadingTextbooks] = useState(false);
   useEffect(() => {
-    if (!user) return;
-    supabase
-      .from("teacher_textbooks")
-      .select("id, title, subject")
-      .eq("teacher_id", user.id)
-      .order("title", { ascending: true })
-      .then(({ data }) => setTextbooks((data as any[]) ?? []));
-  }, [user]);
+    if (authLoading) return;
+    if (!user) {
+      setTextbooks([]);
+      return;
+    }
+
+    let cancelled = false;
+    setLoadingTextbooks(true);
+
+    (async () => {
+      const { data, error } = await supabase
+        .from("teacher_textbooks")
+        .select("id, title, subject")
+        .order("title", { ascending: true });
+
+      if (cancelled) return;
+
+      if (error) {
+        console.warn("[TeacherLessonPlanEditor] textbooks load failed:", error.message);
+        setTextbooks([]);
+      } else {
+        setTextbooks((data as any[]) ?? []);
+      }
+
+      setLoadingTextbooks(false);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user, authLoading]);
 
   /** Default textbook from chosen subject */
   const matchedTextbookId = useMemo(() => {
@@ -1081,7 +1105,7 @@ export default function TeacherLessonPlanEditor() {
               >
                 <SelectTrigger id="plan-textbook">
                   <SelectValue
-                    placeholder={textbooks.length ? "Vyber učebnici…" : "Žádné učebnice"}
+                    placeholder={loadingTextbooks ? "Načítám učebnice…" : textbooks.length ? "Vyber učebnici…" : "Žádné učebnice"}
                   />
                 </SelectTrigger>
                 <SelectContent>
