@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LessonBlock } from "@/components/LessonBlockRenderer";
+import BlockEditor from "@/components/admin/BlockEditor";
+import type { Block } from "@/lib/textbook-config";
 
 interface Props {
   presentationLesson: { title: string } | null;
@@ -94,7 +96,7 @@ export const PresentationEditorDialog = ({
   return (
     <>
       <Dialog open={!!presentationLesson && pendingSlides.length > 0} onOpenChange={(open) => { if (!open) onClose(); }}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-7xl max-h-[92vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 flex-wrap">
               <span>Upravit prezentaci – {presentationLesson?.title}</span>
@@ -140,6 +142,7 @@ export const PresentationEditorDialog = ({
                     projector: { headline: "", body: "" },
                     device: { instructions: "Sledujte výklad." },
                     teacherNotes: "",
+                    blocks: [],
                   };
                   const updated = [...pendingSlides];
                   updated.splice(editingSlideIndex + 1, 0, newSlide);
@@ -155,6 +158,7 @@ export const PresentationEditorDialog = ({
                     projector: { headline: "Aktivita", body: "" },
                     device: { instructions: "Splňte aktivitu na svém zařízení." },
                     teacherNotes: "",
+                    blocks: [],
                     activitySpec: { activityType: "true_false", question: "", statements: [] },
                   };
                   const updated = [...pendingSlides];
@@ -171,6 +175,7 @@ export const PresentationEditorDialog = ({
                     projector: { headline: "Zeď odpovědí", body: "" },
                     device: { instructions: "Napište svou odpověď." },
                     teacherNotes: "",
+                    blocks: [],
                     activitySpec: { activityType: "wall", question: "", anonymous: false },
                   };
                   const updated = [...pendingSlides];
@@ -187,6 +192,7 @@ export const PresentationEditorDialog = ({
                     projector: { headline: "Kvíz", body: "" },
                     device: { instructions: "Vyberte správnou odpověď." },
                     teacherNotes: "",
+                    blocks: [],
                     activitySpec: { activityType: "quiz", question: "", options: [], correctIndex: 0 },
                   };
                   const updated = [...pendingSlides];
@@ -233,9 +239,14 @@ export const PresentationEditorDialog = ({
                 >
                   {(currentSlide as any)?.blocks && (currentSlide as any).blocks.length > 0 ? (
                     <div className={`overflow-y-auto flex-1 ${darkPreview ? "[&_*]:!text-white [&_h1]:!text-white [&_h2]:!text-white [&_h3]:!text-white [&_.bg-card]:!bg-white/5 [&_.bg-muted\\/40]:!bg-white/10" : ""}`}>
-                      <div className="space-y-3 text-sm pointer-events-none">
+                      {currentSlide?.projector?.headline && (
+                        <h2 className="text-2xl md:text-3xl font-bold mb-4">
+                          {currentSlide.projector.headline}
+                        </h2>
+                      )}
+                      <div className="space-y-4 pointer-events-none">
                         {(currentSlide as any).blocks.map((b: any, i: number) => (
-                          <LessonBlock key={i} block={b} blockIndex={i} isTeacher />
+                          <LessonBlock key={b.id || i} block={b} blockIndex={i} isTeacher />
                         ))}
                       </div>
                     </div>
@@ -256,14 +267,14 @@ export const PresentationEditorDialog = ({
                   )}
                 </div>
                 <p className="text-[10px] text-muted-foreground mt-2 leading-tight">
-                  Formátování: <code>## podnadpis</code>, <code>• odrážka</code>, <code>**tučně**</code>, sloupce <code>A | B | C</code>.
+                  Náhled odráží přesně to, jak slide uvidí žáci na projektoru i v učebnici.
                 </p>
               </div>
 
               {/* Form */}
               <div className="space-y-3">
                 <div>
-                  <Label className="text-xs">Nadpis (projektor)</Label>
+                  <Label className="text-xs">Nadpis slidu</Label>
                   <Input
                     value={currentSlide.projector?.headline || ""}
                     onChange={(e) => {
@@ -274,18 +285,17 @@ export const PresentationEditorDialog = ({
                   />
                 </div>
                 <div>
-                  <Label className="text-xs">Text (projektor)</Label>
-                  <Textarea
-                    rows={6}
-                    className="font-mono text-xs"
-                    value={currentSlide.projector?.body || ""}
-                    onChange={(e) => {
-                      const updated = [...pendingSlides];
-                      updated[editingSlideIndex] = { ...updated[editingSlideIndex], projector: { ...updated[editingSlideIndex].projector, body: e.target.value } };
-                      setPendingSlides(updated);
-                    }}
-                    placeholder={"## Podnadpis\n• První bod\n• Druhý bod\n**Důležité** zvýraznění"}
-                  />
+                  <Label className="text-xs">Obsah slidu (bloky jako v učebnici)</Label>
+                  <div className="mt-2 border border-border rounded-lg p-3 bg-muted/20 max-h-[55vh] overflow-y-auto">
+                    <BlockEditor
+                      blocks={((currentSlide as any).blocks || []) as Block[]}
+                      onChange={(blocks) => {
+                        const updated = [...pendingSlides];
+                        updated[editingSlideIndex] = { ...updated[editingSlideIndex], blocks };
+                        setPendingSlides(updated);
+                      }}
+                    />
+                  </div>
                 </div>
                 <div>
                   <Label className="text-xs">Instrukce pro žáka</Label>
