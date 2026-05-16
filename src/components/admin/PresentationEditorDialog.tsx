@@ -230,42 +230,8 @@ export const PresentationEditorDialog = ({
                     {darkPreview ? "Světlý" : "Tmavý"}
                   </button>
                 </div>
-                <div
-                  className={`rounded-xl p-6 aspect-video flex flex-col shadow-lg overflow-hidden ${
-                    darkPreview
-                      ? "bg-gradient-to-br from-slate-800 to-slate-900 text-white"
-                      : "bg-background text-foreground border border-border"
-                  }`}
-                >
-                  {(currentSlide as any)?.blocks && (currentSlide as any).blocks.length > 0 ? (
-                    <div className={`overflow-y-auto flex-1 ${darkPreview ? "[&_*]:!text-white [&_h1]:!text-white [&_h2]:!text-white [&_h3]:!text-white [&_.bg-card]:!bg-white/5 [&_.bg-muted\\/40]:!bg-white/10" : ""}`}>
-                      {currentSlide?.projector?.headline && (
-                        <h2 className="text-2xl md:text-3xl font-bold mb-4">
-                          {currentSlide.projector.headline}
-                        </h2>
-                      )}
-                      <div className="space-y-4 pointer-events-none">
-                        {(currentSlide as any).blocks.map((b: any, i: number) => (
-                          <LessonBlock key={b.id || i} block={b} blockIndex={i} isTeacher />
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <h2 className="text-xl md:text-2xl font-bold mb-3 text-center">
-                        {currentSlide?.projector?.headline || <span className="opacity-40">Nadpis slidu</span>}
-                      </h2>
-                      <div
-                        className={`text-sm leading-relaxed overflow-y-auto flex-1 ${darkPreview ? "text-white/85" : "text-foreground/85"}`}
-                        dangerouslySetInnerHTML={{
-                          __html:
-                            formatSlideBody(currentSlide?.projector?.body || "") ||
-                            '<p class="opacity-40">Text slidu…</p>',
-                        }}
-                      />
-                    </>
-                  )}
-                </div>
+                <ProjectorPreview slide={currentSlide} darkPreview={darkPreview} formatSlideBody={formatSlideBody} />
+
                 <p className="text-[10px] text-muted-foreground mt-2 leading-tight">
                   Náhled odráží přesně to, jak slide uvidí žáci na projektoru i v učebnici.
                 </p>
