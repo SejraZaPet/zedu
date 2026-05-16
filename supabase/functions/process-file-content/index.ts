@@ -212,7 +212,7 @@ async function callGatewayWithText(
   apiKey: string,
   payload: { extractedText: string; fileName: string; mimeType: string; mode: "single" | "split" },
 ) {
-  const userPrompt = `Soubor: ${payload.fileName}\nMIME: ${payload.mimeType}\nRežim: ${payload.mode}\n\nOBSAH DOKUMENTU:\n${payload.extractedText}`;
+  const userPrompt = `Zpracuj tento extrahovaný text z dokumentu "${payload.fileName}" a převeď ho do JSON bloků. ZACHOVEJ PŘESNĚ text z dokumentu, NEVYMÝŠLEJ vlastní obsah. Režim: ${payload.mode} (split = rozděl podle slidů/sekcí, single = jedna lekce).\n\nEXTRAHOVANÝ TEXT:\n${payload.extractedText}`;
 
   const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
