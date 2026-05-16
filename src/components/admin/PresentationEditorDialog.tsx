@@ -239,9 +239,14 @@ export const PresentationEditorDialog = ({
                 >
                   {(currentSlide as any)?.blocks && (currentSlide as any).blocks.length > 0 ? (
                     <div className={`overflow-y-auto flex-1 ${darkPreview ? "[&_*]:!text-white [&_h1]:!text-white [&_h2]:!text-white [&_h3]:!text-white [&_.bg-card]:!bg-white/5 [&_.bg-muted\\/40]:!bg-white/10" : ""}`}>
-                      <div className="space-y-3 text-sm pointer-events-none">
+                      {currentSlide?.projector?.headline && (
+                        <h2 className="text-2xl md:text-3xl font-bold mb-4">
+                          {currentSlide.projector.headline}
+                        </h2>
+                      )}
+                      <div className="space-y-4 pointer-events-none">
                         {(currentSlide as any).blocks.map((b: any, i: number) => (
-                          <LessonBlock key={i} block={b} blockIndex={i} isTeacher />
+                          <LessonBlock key={b.id || i} block={b} blockIndex={i} isTeacher />
                         ))}
                       </div>
                     </div>
