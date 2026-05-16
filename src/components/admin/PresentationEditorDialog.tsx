@@ -228,41 +228,31 @@ export const PresentationEditorDialog = ({
                   className={`rounded-xl p-6 aspect-video flex flex-col shadow-lg overflow-hidden ${
                     darkPreview
                       ? "bg-gradient-to-br from-slate-800 to-slate-900 text-white"
-                      : "bg-gradient-to-br from-brand-turquoise/10 to-brand-lavender/10 text-foreground border border-border"
+                      : "bg-background text-foreground border border-border"
                   }`}
                 >
-                  <h2 className="text-xl md:text-2xl font-bold mb-3 text-center">
-                    {currentSlide?.projector?.headline || <span className="opacity-40">Nadpis slidu</span>}
-                  </h2>
-                  <div
-                    className={`text-sm leading-relaxed overflow-y-auto flex-1 ${darkPreview ? "text-white/85" : "text-foreground/85"}`}
-                    dangerouslySetInnerHTML={{
-                      __html:
-                        formatSlideBody(currentSlide?.projector?.body || "") ||
-                        '<p class="opacity-40">Text slidu…</p>',
-                    }}
-                  />
-                  {(currentSlide as any)?.tableData && (
-                    <div className="overflow-x-auto mt-2">
-                      <table className="text-xs border-collapse">
-                        <thead>
-                          <tr>
-                            {(currentSlide as any).tableData.headers.map((h: string, i: number) => (
-                              <th key={i} className={`border px-2 py-1 font-semibold ${darkPreview ? "border-white/20 bg-white/10" : "border-foreground/20 bg-foreground/5"}`}>{h}</th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {(currentSlide as any).tableData.rows.map((row: string[], ri: number) => (
-                            <tr key={ri}>
-                              {row.map((cell: string, ci: number) => (
-                                <td key={ci} className={`border px-2 py-1 ${darkPreview ? "border-white/20" : "border-foreground/20"}`}>{cell}</td>
-                              ))}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                  {(currentSlide as any)?.blocks && (currentSlide as any).blocks.length > 0 ? (
+                    <div className={`overflow-y-auto flex-1 ${darkPreview ? "[&_*]:!text-white [&_h1]:!text-white [&_h2]:!text-white [&_h3]:!text-white [&_.bg-card]:!bg-white/5 [&_.bg-muted\\/40]:!bg-white/10" : ""}`}>
+                      <div className="space-y-3 text-sm pointer-events-none">
+                        {(currentSlide as any).blocks.map((b: any, i: number) => (
+                          <LessonBlock key={i} block={b} blockIndex={i} isTeacher />
+                        ))}
+                      </div>
                     </div>
+                  ) : (
+                    <>
+                      <h2 className="text-xl md:text-2xl font-bold mb-3 text-center">
+                        {currentSlide?.projector?.headline || <span className="opacity-40">Nadpis slidu</span>}
+                      </h2>
+                      <div
+                        className={`text-sm leading-relaxed overflow-y-auto flex-1 ${darkPreview ? "text-white/85" : "text-foreground/85"}`}
+                        dangerouslySetInnerHTML={{
+                          __html:
+                            formatSlideBody(currentSlide?.projector?.body || "") ||
+                            '<p class="opacity-40">Text slidu…</p>',
+                        }}
+                      />
+                    </>
                   )}
                 </div>
                 <p className="text-[10px] text-muted-foreground mt-2 leading-tight">
