@@ -91,6 +91,7 @@ const ImportTextbookFileDialog = ({
   const [saving, setSaving] = useState(false);
   const [singleLesson, setSingleLesson] = useState(true);
   const [progress, setProgress] = useState<string>("");
+  const [manualText, setManualText] = useState<string>("");
 
   const reset = () => {
     setFile(null);
@@ -98,6 +99,7 @@ const ImportTextbookFileDialog = ({
     setProcessing(false);
     setSaving(false);
     setProgress("");
+    setManualText("");
   };
 
   const handleClose = (v: boolean) => {
