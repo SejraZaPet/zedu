@@ -122,12 +122,10 @@ const LiveProjectorScreen = () => {
         slides={slides}
         players={players}
         gameCode={gameCode}
+        overlayContent={whiteboard.visible && sessionId ? (
+          <LiveWhiteboard sessionId={sessionId} data={whiteboard} readOnly className="pointer-events-none" />
+        ) : null}
       />
-      {whiteboard.visible && sessionId && (
-        <div className="fixed inset-0 z-40 pointer-events-none">
-          <LiveWhiteboard sessionId={sessionId} data={whiteboard} readOnly />
-        </div>
-      )}
     </div>
   );
 };
