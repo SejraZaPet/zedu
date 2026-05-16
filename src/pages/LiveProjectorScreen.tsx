@@ -115,6 +115,7 @@ const LiveProjectorScreen = () => {
   // Slide content
   return (
     <div className="min-h-screen flex flex-col text-white relative" style={{ background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)" }}>
+      <CloseButton />
       {/* Progress bar */}
       <div className="h-2 bg-white/10">
         <div
