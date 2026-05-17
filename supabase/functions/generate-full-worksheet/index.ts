@@ -10,6 +10,7 @@ const DEFAULT_TYPES = [
   "mcq", "true_false", "fill_blank", "matching", "ordering",
   "short_answer", "open_answer", "section_header", "write_lines",
   "instruction_box", "two_boxes", "flow_steps",
+  "sorting", "flashcards", "word_search",
 ];
 
 serve(async (req) => {
