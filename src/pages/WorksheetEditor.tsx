@@ -162,6 +162,15 @@ const ITEM_TYPES: ItemType[] = [
   "open_answer",
 ];
 
+const LAYOUT_BLOCK_TYPES: ItemType[] = [
+  "section_header",
+  "write_lines",
+  "instruction_box",
+  "two_boxes",
+  "qr_link",
+  "flow_steps",
+];
+
 const OFFLINE_MODES: OfflineMode[] = [
   "discussion",
   "group_work",
