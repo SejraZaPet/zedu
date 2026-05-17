@@ -34,6 +34,7 @@ interface LessonItem {
 interface TopicItem {
   id: string;
   title: string;
+  sort_order: number;
   lessons: LessonItem[];
 }
 
@@ -56,6 +57,7 @@ interface Props {
   onOpenWorksheet: (lesson: LessonItem) => void;
   onPreviewLesson: (lesson: LessonItem) => void;
   onReorderLessons?: (topicId: string, orderedLessons: LessonItem[]) => void;
+  onReorderTopics?: (grade: number, orderedTopics: TopicItem[]) => void;
 }
 
 const SortableLessonRow = ({
@@ -205,6 +207,87 @@ const TopicLessonsList = ({
   );
 };
 
+const SortableTopic = ({
+  topic,
+  onEditLesson,
+  onDeleteLesson,
+  onAddLesson,
+  onEditTopic,
+  onDeleteTopic,
+  onOpenPresentation,
+  onOpenWorksheet,
+  onReorderLessons,
+}: {
+  topic: TopicItem;
+  onEditLesson: (l: LessonItem) => void;
+  onDeleteLesson: (l: LessonItem) => void;
+  onAddLesson: (topicId: string) => void;
+  onEditTopic: (t: { id: string; title: string }) => void;
+  onDeleteTopic: (topicId: string, lessonCount: number) => void;
+  onOpenPresentation: (l: LessonItem) => void;
+  onOpenWorksheet: (l: LessonItem) => void;
+  onReorderLessons?: (topicId: string, orderedLessons: LessonItem[]) => void;
+}) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: topic.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="border border-border rounded-md">
+      {/* Topic header */}
+      <div className="flex items-center gap-2 px-3 py-2 bg-muted/10">
+        <button
+          type="button"
+          className="touch-none cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground shrink-0"
+          aria-label="Přesunout téma"
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical className="w-4 h-4" />
+        </button>
+        <FolderOpen className="w-4 h-4 text-primary" />
+        <span className="text-sm font-medium flex-1">{topic.title}</span>
+        <Badge variant="secondary" className="text-[10px]">
+          {topic.lessons.length} {topic.lessons.length === 1 ? "lekce" : "lekcí"}
+        </Badge>
+        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onEditTopic({ id: topic.id, title: topic.title })}>
+          <Pencil className="w-3.5 h-3.5" />
+        </Button>
+        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onDeleteTopic(topic.id, topic.lessons.length)}>
+          <Trash2 className="w-3.5 h-3.5 text-destructive" />
+        </Button>
+      </div>
+
+      {/* Lessons */}
+      {topic.lessons.length > 0 && (
+        <TopicLessonsList
+          topic={topic}
+          onEditLesson={onEditLesson}
+          onDeleteLesson={onDeleteLesson}
+          onOpenPresentation={onOpenPresentation}
+          onOpenWorksheet={onOpenWorksheet}
+          onReorderLessons={onReorderLessons}
+        />
+      )}
+
+      {/* Quick add lesson to this topic */}
+      <div className="border-t border-border px-3 py-1.5">
+        <Button
+          size="sm"
+          variant="ghost"
+          className="text-xs h-7 gap-1 text-muted-foreground hover:text-foreground"
+          onClick={() => onAddLesson(topic.id)}
+        >
+          <Plus className="w-3 h-3" /> Přidat lekci
+        </Button>
+      </div>
+    </div>
+  );
+};
+
 const TextbookGradeGroups = ({
   gradeGroups,
   onEditLesson,
@@ -215,62 +298,58 @@ const TextbookGradeGroups = ({
   onOpenPresentation,
   onOpenWorksheet,
   onReorderLessons,
+  onReorderTopics,
 }: Props) => {
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
   return (
     <div className="space-y-3">
-      {gradeGroups.map((group) => (
-        <div key={group.grade} className="border border-border rounded-lg overflow-hidden">
-          <div className="bg-muted/30 px-4 py-2 border-b border-border">
-            <h4 className="text-sm font-semibold">{group.label}</h4>
-          </div>
-          <div className="p-2 space-y-2">
-            {group.topics.length === 0 ? (
-              <p className="text-xs text-muted-foreground py-2 text-center">Žádná témata</p>
-            ) : group.topics.map((topic) => (
-              <div key={topic.id} className="border border-border rounded-md">
-                {/* Topic header */}
-                <div className="flex items-center gap-2 px-3 py-2 bg-muted/10">
-                  <FolderOpen className="w-4 h-4 text-primary" />
-                  <span className="text-sm font-medium flex-1">{topic.title}</span>
-                  <Badge variant="secondary" className="text-[10px]">
-                    {topic.lessons.length} {topic.lessons.length === 1 ? "lekce" : "lekcí"}
-                  </Badge>
-                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onEditTopic({ id: topic.id, title: topic.title })}>
-                    <Pencil className="w-3.5 h-3.5" />
-                  </Button>
-                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onDeleteTopic(topic.id, topic.lessons.length)}>
-                    <Trash2 className="w-3.5 h-3.5 text-destructive" />
-                  </Button>
-                </div>
+      {gradeGroups.map((group) => {
+        const handleTopicDragEnd = (event: DragEndEvent) => {
+          const { active, over } = event;
+          if (!over || active.id === over.id) return;
+          const oldIndex = group.topics.findIndex((t) => t.id === active.id);
+          const newIndex = group.topics.findIndex((t) => t.id === over.id);
+          if (oldIndex < 0 || newIndex < 0) return;
+          const next = arrayMove(group.topics, oldIndex, newIndex);
+          onReorderTopics?.(group.grade, next);
+        };
 
-                {/* Lessons */}
-                {topic.lessons.length > 0 && (
-                  <TopicLessonsList
-                    topic={topic}
-                    onEditLesson={onEditLesson}
-                    onDeleteLesson={onDeleteLesson}
-                    onOpenPresentation={onOpenPresentation}
-                    onOpenWorksheet={onOpenWorksheet}
-                    onReorderLessons={onReorderLessons}
-                  />
-                )}
-
-                {/* Quick add lesson to this topic */}
-                <div className="border-t border-border px-3 py-1.5">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="text-xs h-7 gap-1 text-muted-foreground hover:text-foreground"
-                    onClick={() => onAddLesson(topic.id)}
-                  >
-                    <Plus className="w-3 h-3" /> Přidat lekci
-                  </Button>
-                </div>
-              </div>
-            ))}
+        return (
+          <div key={group.grade} className="border border-border rounded-lg overflow-hidden">
+            <div className="bg-muted/30 px-4 py-2 border-b border-border">
+              <h4 className="text-sm font-semibold">{group.label}</h4>
+            </div>
+            <div className="p-2 space-y-2">
+              {group.topics.length === 0 ? (
+                <p className="text-xs text-muted-foreground py-2 text-center">Žádná témata</p>
+              ) : (
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleTopicDragEnd}>
+                  <SortableContext items={group.topics.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+                    {group.topics.map((topic) => (
+                      <SortableTopic
+                        key={topic.id}
+                        topic={topic}
+                        onEditLesson={onEditLesson}
+                        onDeleteLesson={onDeleteLesson}
+                        onAddLesson={onAddLesson}
+                        onEditTopic={onEditTopic}
+                        onDeleteTopic={onDeleteTopic}
+                        onOpenPresentation={onOpenPresentation}
+                        onOpenWorksheet={onOpenWorksheet}
+                        onReorderLessons={onReorderLessons}
+                      />
+                    ))}
+                  </SortableContext>
+                </DndContext>
+              )}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 };

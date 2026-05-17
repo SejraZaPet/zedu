@@ -92,6 +92,7 @@ const fromLocalInput = (s: string): string | null => {
 interface TopicItem {
   id: string;
   title: string;
+  sort_order: number;
   lessons: LessonItem[];
 }
 
@@ -245,7 +246,7 @@ const TeacherTextbooks = () => {
             if (!allLessons.some(l => l.id === pl.id)) allLessons.push(pl);
           }
 
-          return { id: t.id, title: t.title, lessons: allLessons } as TopicItem;
+          return { id: t.id, title: t.title, sort_order: t.sort_order ?? 0, lessons: allLessons } as TopicItem;
         });
 
       return { grade: g.grade_number, label: g.label, topics: gradeTopics };
@@ -704,6 +705,15 @@ const TeacherTextbooks = () => {
                     return supabase.from(lesson.source).update({ sort_order: i }).eq("id", lesson.id);
                   }));
                   toast({ title: "Pořadí uloženo" });
+                }}
+                onReorderTopics={async (grade, ordered) => {
+                  // Optimistic update
+                  setGradeGroups((prev) => prev.map((g) => g.grade === grade ? { ...g, topics: ordered.map((t, i) => ({ ...t, sort_order: i })) } : g));
+                  // Persist
+                  await Promise.all(ordered.map((topic, i) => {
+                    return supabase.from("textbook_topics").update({ sort_order: i }).eq("id", topic.id);
+                  }));
+                  toast({ title: "Pořadí témat uloženo" });
                 }}
               />
             )}
