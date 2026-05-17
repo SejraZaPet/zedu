@@ -3906,7 +3906,8 @@ function PropertiesPanel({
         onPickFromLesson={onPickFromLesson}
       />
 
-
+      <div className="pt-3 border-t border-border">
+        <Label className="text-xs">Obrázek (URL, volitelné)</Label>
         <div className="flex gap-2 items-start">
           <Input
             value={item.imageUrl ?? ""}
