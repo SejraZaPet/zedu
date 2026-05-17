@@ -4,7 +4,7 @@ import { GameLobby } from "@/components/game/GameLobby";
 import { StudentGameQuestion } from "@/components/game/StudentGameQuestion";
 import { GameLeaderboardFinal } from "@/components/game/GameLeaderboardFinal";
 import { ConnectionStatusBanner } from "@/components/game/ConnectionStatusBanner";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { serverTsToClientMs } from "@/lib/clock-sync";
 import LessonBlockRenderer from "@/components/LessonBlockRenderer";
