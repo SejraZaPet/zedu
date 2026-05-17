@@ -752,7 +752,150 @@ export default function WorksheetEditor() {
     setSelectedId(newItem.id);
   }
 
-  function addTemplate(templateId: WorksheetTemplateId) {
+  /** Map lesson activity → worksheet ItemType. */
+  function mapLessonActivityToItemType(at: string): ItemType {
+    switch (at) {
+      case "flashcards": return "flashcards";
+      case "matching": return "matching";
+      case "sorting": return "sorting";
+      case "ordering": return "ordering";
+      case "image_label": return "image_label";
+      case "image_hotspot": return "image_hotspot";
+      case "crossword": return "crossword";
+      case "fill_blanks":
+      case "fill_choice": return "fill_blank";
+      case "true_false": return "true_false";
+      case "quiz": return "mcq";
+      case "memory_game":
+      case "reveal_cards": return "flashcards";
+      case "wall": return "open_answer";
+      default: return "open_answer";
+    }
+  }
+
+  /** Insert a worksheet item prefilled from a lesson activity block. */
+  function addItemFromLessonActivity(activity: LessonActivity) {
+    if (!spec) return;
+    const type = mapLessonActivityToItemType(activity.activityType);
+    const variantId = spec.variants[0].variantId;
+    const base = createDefaultItem(type, items.length + 1);
+    const p = activity.props as any;
+    const promptText =
+      activity.instructions?.trim() || activity.title || base.prompt;
+
+    const patch: Partial<WorksheetItem> = { prompt: promptText };
+    let correct: string | string[] | undefined;
+
+    if (type === "flashcards") {
+      const src = Array.isArray(p.flashcards)
+        ? p.flashcards
+        : Array.isArray(p.memoryGame?.pairs)
+        ? p.memoryGame.pairs.map((x: any) => ({ front: x.a, back: x.b }))
+        : Array.isArray(p.revealCards?.cards)
+        ? p.revealCards.cards.map((x: any) => ({ front: x.front ?? x.title ?? "", back: x.back ?? x.text ?? "" }))
+        : [];
+      if (src.length) patch.flashcards = src.map((c: any) => ({ front: String(c.front ?? ""), back: String(c.back ?? "") }));
+    } else if (type === "matching") {
+      const pairs = Array.isArray(p.matching?.pairs) ? p.matching.pairs : [];
+      if (pairs.length) {
+        patch.matchPairs = pairs.map((x: any) => ({ left: String(x.left ?? x.a ?? ""), right: String(x.right ?? x.b ?? "") }));
+        correct = patch.matchPairs.map((pp) => `${pp.left}=${pp.right}`);
+      }
+    } else if (type === "ordering") {
+      const arr = Array.isArray(p.ordering?.items) ? p.ordering.items : Array.isArray(p.ordering) ? p.ordering : [];
+      if (arr.length) {
+        patch.orderItems = arr.map((x: any) => String(typeof x === "string" ? x : x.text ?? ""));
+        correct = patch.orderItems;
+      }
+    } else if (type === "sorting") {
+      const cats = Array.isArray(p.sorting?.categories) ? p.sorting.categories : [];
+      const its = Array.isArray(p.sorting?.items) ? p.sorting.items : [];
+      if (cats.length) patch.sortingCategories = cats.map((c: any, i: number) => ({ id: String(c.id ?? `c${i}`), label: String(c.label ?? c.name ?? `Kategorie ${i + 1}`) }));
+      if (its.length) patch.sortingItems = its.map((it: any) => ({ text: String(it.text ?? ""), categoryId: String(it.categoryId ?? it.category ?? "") }));
+    } else if (type === "image_label") {
+      const il = p.imageLabel ?? {};
+      const markers = Array.isArray(il.markers) ? il.markers : [];
+      if (markers.length) {
+        patch.imageLabels = markers.map((m: any, i: number) => ({
+          number: Number(m.number ?? i + 1),
+          xPercent: Number(m.xPercent ?? m.x ?? 50),
+          yPercent: Number(m.yPercent ?? m.y ?? 50),
+          answer: String(m.answer ?? m.label ?? ""),
+        }));
+      }
+      if (typeof il.imageUrl === "string") patch.lessonRefContent = il.imageUrl;
+      if (typeof il.tolerance === "number") patch.imageTolerance = il.tolerance;
+      if (typeof il.shuffleWords === "boolean") patch.imageShuffleWords = il.shuffleWords;
+    } else if (type === "image_hotspot") {
+      const ih = p.imageHotspot ?? {};
+      const hs = Array.isArray(ih.hotspots) ? ih.hotspots : [];
+      if (hs.length) {
+        patch.imageHotspots = hs.map((h: any, i: number) => ({
+          number: Number(h.number ?? i + 1),
+          xPercent: Number(h.xPercent ?? h.x ?? 50),
+          yPercent: Number(h.yPercent ?? h.y ?? 50),
+          question: String(h.question ?? h.label ?? ""),
+        }));
+      }
+      if (typeof ih.imageUrl === "string") patch.lessonRefContent = ih.imageUrl;
+    } else if (type === "crossword") {
+      const entries = Array.isArray(p.crossword?.entries) ? p.crossword.entries : [];
+      if (entries.length) {
+        patch.crosswordEntries = entries.map((e: any, i: number) => ({
+          answer: String(e.answer ?? "").toUpperCase(),
+          clue: String(e.clue ?? ""),
+          direction: e.direction === "down" ? "down" : "across",
+          row: Number(e.row ?? 0),
+          col: Number(e.col ?? 0),
+          number: Number(e.number ?? i + 1),
+        }));
+      }
+    } else if (type === "fill_blank") {
+      if (activity.activityType === "fill_blanks") {
+        const txt = String(p.fillBlanks?.text ?? "");
+        const tokens: string[] = Array.isArray(p.fillBlanks?.tokens) ? p.fillBlanks.tokens.map((t: any) => String(t)) : [];
+        patch.blankText = txt || tokens.map(() => "___").join(" ");
+        if (tokens.length) correct = tokens;
+      } else {
+        const tokens: string[] = Array.isArray(p.fillChoice?.tokens) ? p.fillChoice.tokens.map((t: any) => String(t)) : [];
+        const options: string[] = Array.isArray(p.fillChoice?.options) ? p.fillChoice.options.map((t: any) => String(t)) : [];
+        patch.blankText = tokens.length ? tokens.map(() => "___").join(" ") : "___";
+        if (options.length) correct = options;
+      }
+    } else if (type === "true_false") {
+      const stmts = Array.isArray(p.trueFalse?.statements) ? p.trueFalse.statements : [];
+      if (stmts.length) {
+        patch.prompt = String(stmts[0].statement ?? promptText);
+        correct = stmts[0].correct ? "true" : "false";
+      }
+    } else if (type === "mcq") {
+      const q = p.quiz ?? {};
+      const answers: any[] = Array.isArray(q.answers) ? q.answers : [];
+      if (q.question) patch.prompt = String(q.question);
+      if (answers.length) {
+        patch.choices = answers.map((a: any) => String(a.text ?? ""));
+        const correctOne = answers.find((a: any) => a.correct);
+        if (correctOne) correct = String(correctOne.text ?? "");
+      }
+    }
+
+    const newItem: WorksheetItem = { ...base, ...patch };
+    const newKey = createDefaultAnswerKey(newItem);
+    const finalKey = correct !== undefined ? { ...newKey, correctAnswer: correct } : newKey;
+    updateSpec((s) => ({
+      ...s,
+      variants: s.variants.map((v, idx) =>
+        idx === 0 ? { ...v, items: [...v.items, newItem] } : v
+      ),
+      answerKeys: {
+        ...s.answerKeys,
+        [variantId]: [...(s.answerKeys[variantId] ?? []), finalKey],
+      },
+    }));
+    setSelectedId(newItem.id);
+    toast({ title: "Aktivita z lekce vložena", description: activity.title });
+  }
+
     if (!spec) return;
     const variantId = spec.variants[0].variantId;
     const startNumber = items.length + 1;
