@@ -865,6 +865,8 @@ export type Database = {
           grade_number: number
           id: string
           lesson_id: string
+          scheduled_publish_at: string | null
+          status: string
           subject_slug: string
           topic_id: string | null
         }
@@ -874,6 +876,8 @@ export type Database = {
           grade_number: number
           id?: string
           lesson_id: string
+          scheduled_publish_at?: string | null
+          status?: string
           subject_slug: string
           topic_id?: string | null
         }
@@ -883,6 +887,8 @@ export type Database = {
           grade_number?: number
           id?: string
           lesson_id?: string
+          scheduled_publish_at?: string | null
+          status?: string
           subject_slug?: string
           topic_id?: string | null
         }
@@ -1107,21 +1113,27 @@ export type Database = {
           created_at: string
           id: string
           lesson_id: string
+          scheduled_publish_at: string | null
           sort_order: number
+          status: string
           topic_id: string
         }
         Insert: {
           created_at?: string
           id?: string
           lesson_id: string
+          scheduled_publish_at?: string | null
           sort_order?: number
+          status?: string
           topic_id: string
         }
         Update: {
           created_at?: string
           id?: string
           lesson_id?: string
+          scheduled_publish_at?: string | null
           sort_order?: number
+          status?: string
           topic_id?: string
         }
         Relationships: [
