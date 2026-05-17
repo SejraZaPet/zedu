@@ -51,6 +51,7 @@ import {
 import {
   ChevronLeft,
   ChevronDown,
+  ChevronUp,
   GripVertical,
   Trash2,
   Plus,
@@ -871,6 +872,19 @@ export default function WorksheetEditor() {
     }));
   }
 
+  function moveItem(itemId: string, direction: -1 | 1) {
+    if (!spec) return;
+    const idx = items.findIndex((it) => it.id === itemId);
+    if (idx < 0) return;
+    const newIdx = idx + direction;
+    if (newIdx < 0 || newIdx >= items.length) return;
+    const reordered = arrayMove(items, idx, newIdx);
+    updateSpec((s) => ({
+      ...s,
+      variants: s.variants.map((v, i) => (i === 0 ? { ...v, items: reordered } : v)),
+    }));
+  }
+
   async function togglePublish() {
     if (!id) return;
     const next = status === "published" ? "draft" : "published";
@@ -1459,22 +1473,13 @@ export default function WorksheetEditor() {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* Mobile: open properties drawer */}
-            <Button
-              variant="outline"
-              size="sm"
-              className="lg:hidden shrink-0"
-              onClick={() => setMobilePropsOpen(true)}
-              title="Vlastnosti"
-            >
-              <PanelRight className="w-4 h-4" />
-            </Button>
           </div>
         </div>
       </div>
 
       <main className="flex-1 container mx-auto px-4 pt-8 pb-6 max-w-[1600px] w-full">
-        <div className="grid gap-4 lg:grid-cols-[240px_minmax(0,1fr)_340px]">
+        <div className="grid gap-4 lg:grid-cols-[240px_minmax(0,1fr)]">
+
           {/* ── PALETA ── */}
           <aside className="hidden lg:block bg-card border border-border rounded-xl p-4 lg:sticky lg:top-[140px] lg:max-h-[calc(100vh-160px)] lg:overflow-y-auto">
             {paletteContent}
@@ -1665,6 +1670,48 @@ export default function WorksheetEditor() {
               </div>
             </div>
 
+            {/* Náhled přiřazené lekce */}
+            <Collapsible defaultOpen={false} className="mb-6">
+              <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground w-full justify-between py-2 px-3 rounded-lg bg-muted/50 transition-colors [&[data-state=open]>svg]:rotate-180">
+                <span className="flex items-center gap-2">
+                  <BookOpen className="w-4 h-4" />
+                  Náhled přiřazené lekce
+                  {activeLessonId && allLessons.find((l) => l.id === activeLessonId)?.title && (
+                    <span className="text-xs text-foreground/70 truncate max-w-[260px]">
+                      — {allLessons.find((l) => l.id === activeLessonId)?.title}
+                    </span>
+                  )}
+                </span>
+                <ChevronDown className="w-4 h-4 transition-transform" />
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="max-h-[400px] overflow-y-auto border border-border rounded-lg p-4 mt-2 bg-card">
+                  {!activeLessonId ? (
+                    <p className="text-sm text-muted-foreground">
+                      Žádná lekce není přiřazena. Vyberte aktivní lekci v paletě vlevo nebo propojte lekci tlačítkem „Přidat další lekci".
+                    </p>
+                  ) : lessonBlocks.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      Lekce nemá žádný obsah k zobrazení.
+                    </p>
+                  ) : (
+                    <div className="space-y-3 text-sm">
+                      {lessonBlocks.map((b) => (
+                        <div key={b.id} className="pb-2 border-b border-border/50 last:border-0">
+                          <div className="font-semibold text-foreground mb-1">{b.title}</div>
+                          {b.text && b.text !== b.title && (
+                            <div className="text-muted-foreground whitespace-pre-wrap text-xs leading-relaxed">
+                              {b.text}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+
             {/* Bloky otázek */}
             {items.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
@@ -1675,17 +1722,26 @@ export default function WorksheetEditor() {
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                 <SortableContext items={items.map((it) => it.id)} strategy={verticalListSortingStrategy}>
                   <div className="space-y-3">
-                    {items.map((item) => (
-                      <SortableItemBlock
-                        key={item.id}
-                        item={item}
-                        selected={item.id === selectedId}
-                        pointsEnabled={spec.renderConfig?.pointsEnabled ?? true}
-                        onSelect={() => setSelectedId(item.id)}
-                        onDelete={() => deleteItem(item.id)}
-                        onSetPoints={(p) => updateItem(item.id, { points: p })}
-                      />
-                    ))}
+                    {items.map((item) => {
+                      const ak = answerKeys.find((a) => a.itemId === item.id) ?? null;
+                      return (
+                        <SortableItemBlock
+                          key={item.id}
+                          item={item}
+                          answerKey={ak}
+                          expanded={item.id === selectedId}
+                          pointsEnabled={spec.renderConfig?.pointsEnabled ?? true}
+                          onExpand={() => setSelectedId(item.id)}
+                          onCollapse={() => setSelectedId(null)}
+                          onDelete={() => deleteItem(item.id)}
+                          onUpdateItem={(p) => updateItem(item.id, p)}
+                          onUpdateKey={(p) => updateAnswerKey(item.id, p)}
+                          onApplyRefined={(refined) => replaceItem(item.id, refined)}
+                          onMoveUp={() => moveItem(item.id, -1)}
+                          onMoveDown={() => moveItem(item.id, 1)}
+                        />
+                      );
+                    })}
                   </div>
                 </SortableContext>
               </DndContext>
@@ -1719,30 +1775,16 @@ export default function WorksheetEditor() {
               </Select>
             </div>
           </section>
-
-          {/* ── PROPERTIES ── */}
-          <aside className="hidden lg:block bg-card border border-border rounded-xl p-4 min-w-0 lg:sticky lg:top-[140px] lg:max-h-[calc(100vh-160px)] lg:overflow-y-auto lg:overflow-x-hidden">
-            {propertiesContent}
-          </aside>
         </div>
       </main>
 
-      {/* Mobile drawers (palette + properties) */}
+      {/* Mobile drawer (palette) */}
       <Sheet open={mobilePaletteOpen} onOpenChange={setMobilePaletteOpen}>
         <SheetContent side="left" className="w-[88vw] sm:max-w-sm overflow-y-auto p-4">
           <SheetHeader className="mb-3">
             <SheetTitle>Paleta</SheetTitle>
           </SheetHeader>
           {paletteContent}
-        </SheetContent>
-      </Sheet>
-
-      <Sheet open={mobilePropsOpen} onOpenChange={setMobilePropsOpen}>
-        <SheetContent side="right" className="w-[92vw] sm:max-w-md overflow-y-auto p-4">
-          <SheetHeader className="mb-3">
-            <SheetTitle>Vlastnosti bloku</SheetTitle>
-          </SheetHeader>
-          {propertiesContent}
         </SheetContent>
       </Sheet>
 
@@ -2067,20 +2109,557 @@ function SaveIndicator({ state }: { state: SaveState }) {
 
 // ─────────────────────────── Sortable block (canvas) ───────────────────────────
 
-function SortableItemBlock({
+/**
+ * Renders the type-specific editor fields, image picker, and answer space config.
+ * Shared between collapsed/expanded block view (used in expanded only).
+ */
+function TypeSpecificEditor({
   item,
-  selected,
-  pointsEnabled,
-  onSelect,
-  onDelete,
-  onSetPoints,
+  answerKey,
+  onUpdateItem,
+  onUpdateKey,
 }: {
   item: WorksheetItem;
-  selected: boolean;
+  answerKey: AnswerKeyEntry | null;
+  onUpdateItem: (p: Partial<WorksheetItem>) => void;
+  onUpdateKey: (p: Partial<AnswerKeyEntry>) => void;
+}) {
+  return (
+    <div className="space-y-4 text-sm">
+      {item.type === "mcq" && (
+        <div>
+          <Label className="text-xs mb-1 block">Volby (zaškrtni správnou)</Label>
+          {(item.choices ?? []).map((c, idx) => {
+            const correct = answerKey?.correctAnswer === c;
+            return (
+              <div key={idx} className="flex gap-2 mb-1.5">
+                <button
+                  type="button"
+                  onClick={() => onUpdateKey({ correctAnswer: c })}
+                  className={`shrink-0 w-7 h-7 rounded-full border flex items-center justify-center text-xs ${
+                    correct ? "bg-primary border-primary text-primary-foreground" : "border-border"
+                  }`}
+                  title="Označit jako správnou"
+                >
+                  {correct ? "✓" : ""}
+                </button>
+                <Input
+                  value={c}
+                  onChange={(e) => {
+                    const next = [...(item.choices ?? [])];
+                    next[idx] = e.target.value;
+                    onUpdateItem({ choices: next });
+                    if (correct) onUpdateKey({ correctAnswer: e.target.value });
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    const next = (item.choices ?? []).filter((_, i) => i !== idx);
+                    onUpdateItem({ choices: next });
+                  }}
+                >
+                  <X className="w-3 h-3" />
+                </Button>
+              </div>
+            );
+          })}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => onUpdateItem({ choices: [...(item.choices ?? []), "Nová volba"] })}
+          >
+            <Plus className="w-3 h-3 mr-1" /> Přidat volbu
+          </Button>
+        </div>
+      )}
+
+      {item.type === "true_false" && (
+        <div>
+          <Label className="text-xs mb-1 block">Správná odpověď</Label>
+          <Select
+            value={String(answerKey?.correctAnswer ?? "true")}
+            onValueChange={(v) => onUpdateKey({ correctAnswer: v })}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="true">Pravda</SelectItem>
+              <SelectItem value="false">Nepravda</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
+      {item.type === "fill_blank" && (
+        <div>
+          <Label className="text-xs">Text s ___ (3 podtržítka jako mezera)</Label>
+          <Textarea
+            value={item.blankText ?? ""}
+            onChange={(e) => onUpdateItem({ blankText: e.target.value })}
+            rows={3}
+          />
+          <Label className="text-xs mt-2">Správná odpověď (oddělená čárkami pro více mezer)</Label>
+          <Input
+            value={Array.isArray(answerKey?.correctAnswer) ? answerKey?.correctAnswer.join(", ") : (answerKey?.correctAnswer as string ?? "")}
+            onChange={(e) =>
+              onUpdateKey({
+                correctAnswer: e.target.value.includes(",")
+                  ? e.target.value.split(",").map((s) => s.trim())
+                  : e.target.value,
+              })
+            }
+          />
+        </div>
+      )}
+
+      {item.type === "matching" && (
+        <div>
+          <Label className="text-xs mb-1 block">Páry</Label>
+          {(item.matchPairs ?? []).map((p, idx) => (
+            <div key={idx} className="flex gap-1 mb-1.5">
+              <Input
+                value={p.left}
+                onChange={(e) => {
+                  const next = [...(item.matchPairs ?? [])];
+                  next[idx] = { ...next[idx], left: e.target.value };
+                  onUpdateItem({ matchPairs: next });
+                  onUpdateKey({ correctAnswer: next.map((x) => `${x.left}=${x.right}`) });
+                }}
+                placeholder="Levý"
+              />
+              <Input
+                value={p.right}
+                onChange={(e) => {
+                  const next = [...(item.matchPairs ?? [])];
+                  next[idx] = { ...next[idx], right: e.target.value };
+                  onUpdateItem({ matchPairs: next });
+                  onUpdateKey({ correctAnswer: next.map((x) => `${x.left}=${x.right}`) });
+                }}
+                placeholder="Pravý"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  const next = (item.matchPairs ?? []).filter((_, i) => i !== idx);
+                  onUpdateItem({ matchPairs: next });
+                  onUpdateKey({ correctAnswer: next.map((x) => `${x.left}=${x.right}`) });
+                }}
+              >
+                <X className="w-3 h-3" />
+              </Button>
+            </div>
+          ))}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const next = [...(item.matchPairs ?? []), { left: "", right: "" }];
+              onUpdateItem({ matchPairs: next });
+            }}
+          >
+            <Plus className="w-3 h-3 mr-1" /> Přidat pár
+          </Button>
+        </div>
+      )}
+
+      {item.type === "ordering" && (
+        <div>
+          <Label className="text-xs mb-1 block">Položky (ve správném pořadí)</Label>
+          {(item.orderItems ?? []).map((o, idx) => (
+            <div key={idx} className="flex gap-1 mb-1.5">
+              <span className="text-xs text-muted-foreground self-center w-4">{idx + 1}.</span>
+              <Input
+                value={o}
+                onChange={(e) => {
+                  const next = [...(item.orderItems ?? [])];
+                  next[idx] = e.target.value;
+                  onUpdateItem({ orderItems: next });
+                  onUpdateKey({ correctAnswer: next });
+                }}
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  const next = (item.orderItems ?? []).filter((_, i) => i !== idx);
+                  onUpdateItem({ orderItems: next });
+                  onUpdateKey({ correctAnswer: next });
+                }}
+              >
+                <X className="w-3 h-3" />
+              </Button>
+            </div>
+          ))}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const next = [...(item.orderItems ?? []), "Nová položka"];
+              onUpdateItem({ orderItems: next });
+              onUpdateKey({ correctAnswer: next });
+            }}
+          >
+            <Plus className="w-3 h-3 mr-1" /> Přidat položku
+          </Button>
+        </div>
+      )}
+
+      {item.type === "short_answer" && (
+        <div>
+          <Label className="text-xs">Správná odpověď</Label>
+          <Input
+            value={(answerKey?.correctAnswer as string) ?? ""}
+            onChange={(e) => onUpdateKey({ correctAnswer: e.target.value })}
+          />
+          <Label className="text-xs mt-2">Vysvětlení (volitelné)</Label>
+          <Textarea
+            value={answerKey?.explanation ?? ""}
+            onChange={(e) => onUpdateKey({ explanation: e.target.value })}
+            rows={2}
+          />
+        </div>
+      )}
+
+      {item.type === "open_answer" && (
+        <div>
+          <Label className="text-xs">Hodnotící kritéria (rubric)</Label>
+          <Textarea
+            value={answerKey?.rubric ?? ""}
+            onChange={(e) => onUpdateKey({ rubric: e.target.value })}
+            rows={3}
+          />
+        </div>
+      )}
+
+      {item.type === "offline_activity" && (
+        <div className="space-y-3 rounded-lg border border-dashed border-accent/40 bg-accent/5 p-3">
+          <div>
+            <Label className="text-xs">Režim aktivity</Label>
+            <Select
+              value={item.offlineMode ?? "discussion"}
+              onValueChange={(v) => onUpdateItem({ offlineMode: v as OfflineMode })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {(Object.entries(OFFLINE_MODE_LABELS) as [OfflineMode, string][]).map(([k, label]) => (
+                  <SelectItem key={k} value={k}>{label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label className="text-xs">Velikost skupiny</Label>
+              <Select
+                value={item.groupSize ?? "class"}
+                onValueChange={(v) => onUpdateItem({ groupSize: v as GroupSize })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(Object.entries(GROUP_SIZE_LABELS) as [GroupSize, string][]).map(([k, label]) => (
+                    <SelectItem key={k} value={k}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Délka (min)</Label>
+              <Input
+                type="number"
+                min={0}
+                value={item.durationMin ?? 0}
+                onChange={(e) =>
+                  onUpdateItem({
+                    durationMin: Number(e.target.value) || 0,
+                    timeEstimateSec: (Number(e.target.value) || 0) * 60,
+                  })
+                }
+              />
+            </div>
+          </div>
+          <div>
+            <Label className="text-xs">Pokyny pro hodnocení (volitelné)</Label>
+            <Textarea
+              value={answerKey?.rubric ?? ""}
+              onChange={(e) => onUpdateKey({ rubric: e.target.value })}
+              rows={2}
+              placeholder="Např. body za aktivní účast, splnění zadání…"
+            />
+          </div>
+        </div>
+      )}
+
+      {item.type === "section_header" && (
+        <div className="rounded-lg border border-dashed border-border bg-muted/30 p-3 text-xs text-muted-foreground">
+          Nadpis sekce. Vyplňte název v poli „Otázka / zadání" výše.
+        </div>
+      )}
+
+      {item.type === "write_lines" && (
+        <div className="space-y-2 rounded-lg border border-dashed border-border bg-muted/30 p-3">
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label className="text-xs">Počet řádků</Label>
+              <Input
+                type="number"
+                min={1}
+                max={20}
+                value={item.lineCount ?? 3}
+                onChange={(e) =>
+                  onUpdateItem({
+                    lineCount: Math.max(1, Math.min(20, Number(e.target.value) || 1)),
+                    answerSpace: {
+                      ...item.answerSpace,
+                      type: "lines",
+                      lineCount: Math.max(1, Math.min(20, Number(e.target.value) || 1)),
+                    },
+                  })
+                }
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Styl čáry</Label>
+              <Select
+                value={item.lineStyle ?? "dotted"}
+                onValueChange={(v) => onUpdateItem({ lineStyle: v as any })}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="dotted">Tečkovaný</SelectItem>
+                  <SelectItem value="solid">Plný</SelectItem>
+                  <SelectItem value="dashed">Čárkovaný</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {item.type === "instruction_box" && (
+        <div className="grid grid-cols-2 gap-2 rounded-lg border border-dashed border-border bg-muted/30 p-3">
+          <div>
+            <Label className="text-xs">Ikona</Label>
+            <Select
+              value={item.instructionIcon ?? "info"}
+              onValueChange={(v) => onUpdateItem({ instructionIcon: v as any })}
+            >
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="info">ℹ️ Info</SelectItem>
+                <SelectItem value="video">🎥 Video</SelectItem>
+                <SelectItem value="write">✏️ Zápis</SelectItem>
+                <SelectItem value="discuss">💬 Diskuse</SelectItem>
+                <SelectItem value="group">👥 Skupina</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className="text-xs">Barva</Label>
+            <Select
+              value={item.instructionVariant ?? "blue"}
+              onValueChange={(v) => onUpdateItem({ instructionVariant: v as any })}
+            >
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="blue">Modrá</SelectItem>
+                <SelectItem value="yellow">Žlutá</SelectItem>
+                <SelectItem value="green">Zelená</SelectItem>
+                <SelectItem value="purple">Fialová</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      )}
+
+      {item.type === "two_boxes" && (
+        <div className="grid grid-cols-2 gap-3 rounded-lg border border-dashed border-border bg-muted/30 p-3">
+          <div>
+            <Label className="text-xs">Levý box: nadpis</Label>
+            <Input
+              value={item.leftTitle ?? ""}
+              onChange={(e) => onUpdateItem({ leftTitle: e.target.value })}
+            />
+            <Label className="text-xs mt-2">Obsah (text nebo „lines:5")</Label>
+            <Textarea
+              value={item.leftContent ?? ""}
+              onChange={(e) => onUpdateItem({ leftContent: e.target.value })}
+              rows={3}
+            />
+          </div>
+          <div>
+            <Label className="text-xs">Pravý box: nadpis</Label>
+            <Input
+              value={item.rightTitle ?? ""}
+              onChange={(e) => onUpdateItem({ rightTitle: e.target.value })}
+            />
+            <Label className="text-xs mt-2">Obsah (text nebo „lines:5")</Label>
+            <Textarea
+              value={item.rightContent ?? ""}
+              onChange={(e) => onUpdateItem({ rightContent: e.target.value })}
+              rows={3}
+            />
+          </div>
+        </div>
+      )}
+
+      {item.type === "qr_link" && (
+        <div className="space-y-2 rounded-lg border border-dashed border-border bg-muted/30 p-3">
+          <Label className="text-xs">URL pro QR kód</Label>
+          <Input
+            value={item.qrUrl ?? ""}
+            onChange={(e) => onUpdateItem({ qrUrl: e.target.value })}
+            placeholder="https://…"
+          />
+        </div>
+      )}
+
+      {item.type === "flow_steps" && (
+        <div className="space-y-2 rounded-lg border border-dashed border-border bg-muted/30 p-3">
+          <Label className="text-xs">Kroky (každý řádek = jeden krok)</Label>
+          <Textarea
+            value={(item.flowSteps ?? []).join("\n")}
+            onChange={(e) =>
+              onUpdateItem({
+                flowSteps: e.target.value.split("\n").filter((s) => s.trim()),
+              })
+            }
+            rows={5}
+            placeholder={"Krok 1\nKrok 2\nKrok 3"}
+          />
+          <div>
+            <Label className="text-xs">Směr</Label>
+            <Select
+              value={item.flowDirection ?? "vertical"}
+              onValueChange={(v) => onUpdateItem({ flowDirection: v as any })}
+            >
+              <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="vertical">↓ Svisle</SelectItem>
+                <SelectItem value="horizontal">→ Vodorovně</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      )}
+
+      <div className="pt-3 border-t border-border">
+        <Label className="text-xs">Obrázek (URL, volitelné)</Label>
+        <div className="flex gap-2 items-start">
+          <Input
+            value={item.imageUrl ?? ""}
+            onChange={(e) => onUpdateItem({ imageUrl: e.target.value || undefined })}
+            placeholder="https://…"
+            className="flex-1"
+          />
+          <MediaPickerDialog
+            imageOnly
+            onPick={(url) => onUpdateItem({ imageUrl: url })}
+            trigger={
+              <Button size="sm" variant="outline" type="button">
+                <FolderOpen className="w-4 h-4 mr-1" /> Z knihovny
+              </Button>
+            }
+          />
+        </div>
+        {item.imageUrl && (
+          <Input
+            className="mt-1"
+            value={item.imageAlt ?? ""}
+            onChange={(e) => onUpdateItem({ imageAlt: e.target.value })}
+            placeholder="Popisek obrázku"
+          />
+        )}
+      </div>
+
+      <div className="pt-3 border-t border-border">
+        <Label className="text-xs">Prostor pro odpověď (tisk)</Label>
+        <Select
+          value={item.answerSpace.type}
+          onValueChange={(v) =>
+            onUpdateItem({ answerSpace: { ...item.answerSpace, type: v as any } })
+          }
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">Žádný</SelectItem>
+            <SelectItem value="lines">Linky</SelectItem>
+            <SelectItem value="grid">Mřížka</SelectItem>
+            <SelectItem value="blank">Prázdný box</SelectItem>
+          </SelectContent>
+        </Select>
+        {item.answerSpace.type !== "none" && (
+          <div className="grid grid-cols-2 gap-2 mt-1">
+            <Input
+              type="number"
+              value={item.answerSpace.heightMm}
+              onChange={(e) =>
+                onUpdateItem({
+                  answerSpace: { ...item.answerSpace, heightMm: Number(e.target.value) || 0 },
+                })
+              }
+              placeholder="Výška (mm)"
+            />
+            {item.answerSpace.type === "lines" && (
+              <Input
+                type="number"
+                value={item.answerSpace.lineCount ?? 0}
+                onChange={(e) =>
+                  onUpdateItem({
+                    answerSpace: { ...item.answerSpace, lineCount: Number(e.target.value) || 0 },
+                  })
+                }
+                placeholder="Počet linek"
+              />
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SortableItemBlock({
+  item,
+  answerKey,
+  expanded,
+  pointsEnabled,
+  onExpand,
+  onCollapse,
+  onDelete,
+  onUpdateItem,
+  onUpdateKey,
+  onApplyRefined,
+  onMoveUp,
+  onMoveDown,
+}: {
+  item: WorksheetItem;
+  answerKey: AnswerKeyEntry | null;
+  expanded: boolean;
   pointsEnabled: boolean;
-  onSelect: () => void;
+  onExpand: () => void;
+  onCollapse: () => void;
   onDelete: () => void;
-  onSetPoints: (points: number) => void;
+  onUpdateItem: (p: Partial<WorksheetItem>) => void;
+  onUpdateKey: (p: Partial<AnswerKeyEntry>) => void;
+  onApplyRefined: (refined: WorksheetItem) => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: item.id,
@@ -2094,90 +2673,166 @@ function SortableItemBlock({
   const isOffline = item.type === "offline_activity";
   const offlineMeta = isOffline && item.offlineMode ? OFFLINE_MODE_META[item.offlineMode] : null;
   const OfflineIcon = offlineMeta?.icon;
+  const typeLabel = ITEM_TYPE_LABELS[item.type].label;
+
+  if (!expanded) {
+    return (
+      <div
+        ref={setNodeRef}
+        style={style}
+        onClick={onExpand}
+        className={`group flex items-center gap-3 p-3 rounded-lg border transition-colors cursor-pointer ${
+          isOffline
+            ? "border-accent/40 bg-accent/5 hover:border-accent/60"
+            : "border-border bg-background hover:border-primary/40 hover:bg-muted/30"
+        }`}
+      >
+        <button
+          {...attributes}
+          {...listeners}
+          className="text-muted-foreground hover:text-foreground touch-none cursor-grab active:cursor-grabbing"
+          onClick={(e) => e.stopPropagation()}
+          aria-label="Přesunout"
+        >
+          <GripVertical className="w-4 h-4" />
+        </button>
+        <div className="flex-shrink-0 w-7 h-7 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center">
+          {item.itemNumber}
+        </div>
+        {isOffline && OfflineIcon ? (
+          <OfflineIcon className="w-3.5 h-3.5 text-accent shrink-0" />
+        ) : null}
+        <span className="text-xs text-muted-foreground shrink-0 hidden sm:inline">{typeLabel}</span>
+        <span className="text-sm flex-1 truncate">
+          {item.prompt || <em className="text-muted-foreground">Bez zadání</em>}
+        </span>
+        {pointsEnabled && item.points > 0 && (
+          <span className="text-xs text-muted-foreground shrink-0">{item.points} b</span>
+        )}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+          className="text-muted-foreground hover:text-destructive p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+          aria-label="Smazat"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      onClick={onSelect}
-      className={`flex items-start gap-2 p-3 rounded-lg border transition-colors cursor-pointer ${
-        selected
-          ? "border-primary bg-primary/5"
-          : isOffline
-          ? "border-accent/40 bg-accent/5 hover:bg-accent/10"
-          : "border-border bg-background hover:bg-muted/40"
-      }`}
+      className="border-2 border-primary rounded-xl p-4 bg-card shadow-md"
     >
-      <button
-        {...attributes}
-        {...listeners}
-        className="text-muted-foreground hover:text-foreground touch-none mt-0.5"
-        onClick={(e) => e.stopPropagation()}
-        aria-label="Přesunout"
-      >
-        <GripVertical className="w-4 h-4" />
-      </button>
-      <div className="flex-shrink-0 w-7 h-7 rounded-full bg-muted text-xs font-semibold flex items-center justify-center">
-        {item.itemNumber}
-      </div>
-      <div className="flex-1 min-w-0">
-        {isOffline && offlineMeta && OfflineIcon ? (
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-accent-foreground/80 mb-1">
-            <OfflineIcon className="w-3.5 h-3.5 text-accent" />
-            <span>
-              {offlineMeta.label}
-              {item.groupSize ? ` · ${GROUP_SIZE_LABELS[item.groupSize]}` : ""}
-              {item.durationMin ? ` · ${item.durationMin} min` : ""}
-            </span>
-            {pointsEnabled && (
-              <span className="text-muted-foreground font-normal">· {item.points} b</span>
-            )}
-          </div>
-        ) : (
-          <div className="text-xs text-muted-foreground mb-0.5">
-            {ITEM_TYPE_LABELS[item.type].label}{pointsEnabled ? ` · ${item.points} b` : ""}
-          </div>
-        )}
-        <div className="text-sm line-clamp-2">
-          {item.prompt || <em className="text-muted-foreground">Bez textu</em>}
-        </div>
-        {pointsEnabled && (
-          <div
-            className="flex items-center gap-1 mt-2"
-            onClick={(e) => e.stopPropagation()}
+      <div className="flex items-center justify-between gap-2 mb-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <button
+            {...attributes}
+            {...listeners}
+            className="text-muted-foreground hover:text-foreground touch-none cursor-grab active:cursor-grabbing"
+            aria-label="Přesunout"
           >
-            <span className="text-[10px] text-muted-foreground mr-1">Body:</span>
-            {[1, 2, 3, 5].map((n) => (
-              <button
-                key={n}
+            <GripVertical className="w-4 h-4" />
+          </button>
+          <div className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground text-xs font-semibold flex items-center justify-center">
+            {item.itemNumber}
+          </div>
+          <span className="text-xs font-medium text-primary truncate">{typeLabel}</span>
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
+          <Button size="sm" variant="ghost" onClick={onMoveUp} title="Nahoru" className="h-8 w-8 p-0">
+            <ChevronUp className="w-4 h-4" />
+          </Button>
+          <Button size="sm" variant="ghost" onClick={onMoveDown} title="Dolů" className="h-8 w-8 p-0">
+            <ChevronDown className="w-4 h-4" />
+          </Button>
+          <Button size="sm" variant="ghost" onClick={onCollapse} className="h-8">
+            <Check className="w-4 h-4 mr-1" /> Hotovo
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="text-destructive hover:text-destructive h-8 w-8 p-0"
+            onClick={onDelete}
+            title="Smazat blok"
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+
+      <Textarea
+        value={item.prompt}
+        onChange={(e) => onUpdateItem({ prompt: e.target.value })}
+        placeholder="Otázka / zadání…"
+        rows={2}
+        className="mb-3"
+      />
+
+      <TypeSpecificEditor
+        item={item}
+        answerKey={answerKey}
+        onUpdateItem={onUpdateItem}
+        onUpdateKey={onUpdateKey}
+      />
+
+      <AiBlockChat item={item} onApplyRefined={onApplyRefined} />
+
+      <div className="flex flex-wrap items-center gap-3 mt-4 pt-3 border-t border-border">
+        {pointsEnabled && (
+          <div className="flex items-center gap-1">
+            <Label className="text-xs mr-1">Body:</Label>
+            {[1, 2, 3, 5].map((p) => (
+              <Button
+                key={p}
+                size="sm"
                 type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onSetPoints(n);
-                }}
-                aria-label={`Nastavit ${n} bodů`}
-                className={`h-6 min-w-6 px-2 rounded text-xs font-medium border transition-colors ${
-                  item.points === n
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "bg-background text-muted-foreground border-border hover:bg-muted"
-                }`}
+                variant={item.points === p ? "default" : "outline"}
+                onClick={() => onUpdateItem({ points: p })}
+                className="h-7 min-w-8 px-2 text-xs"
               >
-                {n}
-              </button>
+                {p}
+              </Button>
             ))}
           </div>
         )}
+        <div className="flex items-center gap-1">
+          <Label className="text-xs">Obtížnost:</Label>
+          <Select
+            value={item.difficulty}
+            onValueChange={(v) => onUpdateItem({ difficulty: v as Difficulty })}
+          >
+            <SelectTrigger className="w-24 h-7 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="easy">Lehká</SelectItem>
+              <SelectItem value="medium">Střední</SelectItem>
+              <SelectItem value="hard">Těžká</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex items-center gap-1">
+          <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+          <Input
+            type="number"
+            min={0}
+            value={Math.round((item.timeEstimateSec || 0) / 60) || ""}
+            onChange={(e) => {
+              const m = parseInt(e.target.value) || 0;
+              onUpdateItem({ timeEstimateSec: m * 60, durationMin: m });
+            }}
+            className="w-16 h-7 text-xs"
+            placeholder="min"
+          />
+          <span className="text-xs text-muted-foreground">min</span>
+        </div>
       </div>
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onDelete();
-        }}
-        className="text-muted-foreground hover:text-destructive p-1"
-        aria-label="Smazat"
-      >
-        <Trash2 className="w-4 h-4" />
-      </button>
     </div>
   );
 }
