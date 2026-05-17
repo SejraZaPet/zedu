@@ -163,8 +163,14 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
     onChange(blocks.filter((b) => b.id !== id));
   };
 
-  const addBlock = (type: Block["type"]) => {
-    onChange([...blocks, createDefaultBlock(type)]);
+  const addBlock = (type: Block["type"], index?: number) => {
+    if (index === undefined || index >= blocks.length) {
+      onChange([...blocks, createDefaultBlock(type)]);
+    } else {
+      const next = [...blocks];
+      next.splice(index, 0, createDefaultBlock(type));
+      onChange(next);
+    }
   };
 
   const [dragOver, setDragOver] = useState(false);
