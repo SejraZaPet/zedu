@@ -60,6 +60,47 @@ export function splitLessonContent(content: string): LessonBlock[] {
     .slice(0, 30); // safety cap
 }
 
+/** Aktivita extrahovaná z lekce — připravená k převedení na položku pracovního listu. */
+export interface LessonActivity {
+  /** Stabilní ID v rámci lekce (index bloku). */
+  id: string;
+  /** Typ aktivity z lekce (např. "flashcards", "quiz", …). */
+  activityType: string;
+  /** Lidsky čitelný titulek aktivity. */
+  title: string;
+  /** Volitelné zadání/úvod aktivity. */
+  instructions?: string;
+  /** Raw props bloku — používá se k namapování dat na worksheet item. */
+  props: Record<string, unknown>;
+}
+
+/**
+ * Vrátí seznam aktivit nalezených v blocích lekce (jsonb `blocks`).
+ * Učitel z nich může vytvářet odpovídající bloky v pracovním listu.
+ */
+export function extractActivitiesFromBlocks(blocks: unknown): LessonActivity[] {
+  if (!Array.isArray(blocks)) return [];
+  const out: LessonActivity[] = [];
+  (blocks as any[]).forEach((b, idx) => {
+    if (!b || typeof b !== "object" || b.type !== "activity") return;
+    const p = (b.props ?? {}) as Record<string, unknown>;
+    const at = String(p.activityType ?? "flashcards");
+    const title =
+      (typeof p.title === "string" && p.title.trim()) ||
+      `Aktivita ${idx + 1}`;
+    const instructions =
+      typeof p.instructions === "string" ? p.instructions : undefined;
+    out.push({
+      id: `lesson-activity-${idx}`,
+      activityType: at,
+      title: title.length > 80 ? title.slice(0, 80) + "…" : title,
+      instructions,
+      props: p,
+    });
+  });
+  return out;
+}
+
 /**
  * Extrahuje plain-text / markdown z blokové struktury (jsonb `blocks`)
  * používané v učitelských lekcích a textbook_lessons.
