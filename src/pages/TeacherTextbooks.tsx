@@ -122,6 +122,8 @@ const TeacherTextbooks = () => {
   const [editingLesson, setEditingLesson] = useState<LessonItem | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
   const [lessonPlacements, setLessonPlacements] = useState<Placement[]>([]);
+  const [lessonAssignments, setLessonAssignments] = useState<Assignment[]>([]);
+  const [heroUploading, setHeroUploading] = useState(false);
   const [saving, setSaving] = useState(false);
 
   // Delete confirmation
