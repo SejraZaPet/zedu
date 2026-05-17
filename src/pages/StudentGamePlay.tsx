@@ -4,7 +4,7 @@ import { GameLobby } from "@/components/game/GameLobby";
 import { StudentGameQuestion } from "@/components/game/StudentGameQuestion";
 import { GameLeaderboardFinal } from "@/components/game/GameLeaderboardFinal";
 import { ConnectionStatusBanner } from "@/components/game/ConnectionStatusBanner";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { serverTsToClientMs } from "@/lib/clock-sync";
 import LessonBlockRenderer from "@/components/LessonBlockRenderer";
@@ -372,14 +372,8 @@ const StudentGamePlay = () => {
           </div>
 
           {whiteboard.visible && whiteboard.strokes.length > 0 && (
-            <div className="fixed inset-0 z-30 pointer-events-none">
-              <LiveWhiteboard
-                sessionId={sessionId || ""}
-                data={whiteboard}
-                readOnly
-                overlay
-                className="pointer-events-none"
-              />
+            <div className="fixed inset-0 z-30 pointer-events-none overflow-hidden">
+              <WhiteboardOverlay stageW={1600} stageH={900} sessionId={sessionId || ""} data={whiteboard} />
             </div>
           )}
         </div>
@@ -428,3 +422,55 @@ const StudentGamePlay = () => {
 };
 
 export default StudentGamePlay;
+
+const WhiteboardOverlay = ({
+  stageW,
+  stageH,
+  sessionId,
+  data,
+}: {
+  stageW: number;
+  stageH: number;
+  sessionId: string;
+  data: WhiteboardData;
+}) => {
+  const frameRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    const el = frameRef.current;
+    if (!el) return;
+    const update = () => {
+      const w = el.clientWidth;
+      const h = el.clientHeight;
+      if (!w || !h) return;
+      setScale(Math.min(w / stageW, h / stageH));
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    window.addEventListener("resize", update);
+    return () => { ro.disconnect(); window.removeEventListener("resize", update); };
+  }, [stageW, stageH]);
+
+  return (
+    <div ref={frameRef} className="absolute inset-0">
+      <div
+        className="absolute left-1/2 top-1/2 origin-center"
+        style={{
+          width: `${stageW}px`,
+          height: `${stageH}px`,
+          transform: `translate(-50%, -50%) scale(${scale})`,
+        }}
+      >
+        <LiveWhiteboard
+          sessionId={sessionId}
+          data={data}
+          readOnly
+          overlay
+          className="pointer-events-none"
+        />
+      </div>
+    </div>
+  );
+};
