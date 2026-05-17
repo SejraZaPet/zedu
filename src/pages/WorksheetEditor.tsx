@@ -1311,6 +1311,10 @@ export default function WorksheetEditor() {
               <div className="text-sm font-medium">{ITEM_TYPE_LABELS[type].label}</div>
               <div className="text-xs text-muted-foreground line-clamp-1">
                 {ITEM_TYPE_LABELS[type].description}
+              </div>
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="mt-5 pt-4 border-t border-border">
@@ -1328,10 +1332,6 @@ export default function WorksheetEditor() {
               <div className="text-xs text-muted-foreground line-clamp-1">
                 {ITEM_TYPE_LABELS[type].description}
               </div>
-            </button>
-          ))}
-        </div>
-      </div>
             </button>
           ))}
         </div>
