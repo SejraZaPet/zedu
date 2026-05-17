@@ -362,6 +362,23 @@ const LiveWhiteboard = ({ sessionId, data, readOnly = false, onClose, overlay = 
           )}
         </div>
       )}
+
+      <div ref={containerRef} className="absolute inset-0">
+        <canvas
+          ref={canvasRef}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={finishStroke}
+          onPointerCancel={finishStroke}
+          onPointerLeave={finishStroke}
+          className="absolute inset-0"
+          style={{
+            background: "transparent",
+            touchAction: "none",
+            cursor: readOnly ? "default" : tool === "eraser" ? "cell" : "crosshair",
+          }}
+        />
+      </div>
     </div>
   );
 };
