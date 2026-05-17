@@ -130,6 +130,17 @@ import {
   type LessonBlock,
 } from "@/lib/lesson-content-splitter";
 import { useSubjects } from "@/hooks/useSubjects";
+import {
+  LessonContentPickerSheet,
+  AiSuggestFromLessonDialog,
+  type AiGeneratedItem,
+} from "@/components/worksheet/LessonContentTools";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 type LessonOption = {
   id: string;
