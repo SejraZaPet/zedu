@@ -120,6 +120,7 @@ import {
   createDefaultItem,
   createDefaultAnswerKey,
   recomputeMetadata,
+  nextItemId,
   ITEM_TYPE_LABELS,
   OFFLINE_MODE_LABELS,
   GROUP_SIZE_LABELS,
