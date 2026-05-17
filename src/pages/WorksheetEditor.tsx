@@ -957,6 +957,56 @@ export default function WorksheetEditor() {
   const [pickerForItem, setPickerForItem] = useState<string | null>(null);
   const [aiPickerForItem, setAiPickerForItem] = useState<string | null>(null);
 
+  /** Insert text from a lesson block into the targeted worksheet item. */
+  function applyLessonBlockToItem(itemId: string, block: LessonBlock) {
+    const it = items.find((x) => x.id === itemId);
+    if (!it) return;
+    const text = block.text;
+    const patch: Partial<WorksheetItem> = { prompt: text };
+
+    if (it.type === "fill_blank") {
+      // Naive helper: blank out first long word per sentence (>= 5 chars).
+      let blanked = text;
+      const longWord = text.match(/\b[\p{L}]{5,}\b/u);
+      if (longWord) blanked = text.replace(longWord[0], "___");
+      patch.blankText = blanked;
+    } else if (it.type === "section_header") {
+      patch.prompt = block.title || text.slice(0, 80);
+    } else if (it.type === "write_lines" || it.type === "instruction_box") {
+      patch.prompt = text;
+    }
+    updateItem(itemId, patch);
+    toast({ title: "Obsah z lekce vložen" });
+  }
+
+  /** Apply AI-generated suggestion to an existing item (preserves points/difficulty/timing). */
+  function applyAiSuggestionToItem(itemId: string, g: AiGeneratedItem) {
+    const it = items.find((x) => x.id === itemId);
+    if (!it) return;
+    const patch: Partial<WorksheetItem> = { prompt: g.prompt };
+    if (g.choices) patch.choices = g.choices;
+    if (g.matchPairs) patch.matchPairs = g.matchPairs;
+    if (g.orderItems) patch.orderItems = g.orderItems;
+    if (g.blankText) patch.blankText = g.blankText;
+    updateItem(itemId, patch);
+
+    // Answer key update
+    let correct: string | string[] | undefined;
+    if (it.type === "mcq") correct = g.correctChoice ?? g.choices?.[0];
+    else if (it.type === "true_false")
+      correct = g.correctBoolean === undefined ? undefined : g.correctBoolean ? "true" : "false";
+    else if (it.type === "fill_blank") correct = g.blankAnswers;
+    else if (it.type === "matching")
+      correct = (g.matchPairs ?? []).map((p) => `${p.left}=${p.right}`);
+    else if (it.type === "ordering") correct = g.orderItems;
+    else if (it.type === "short_answer") correct = g.shortAnswer;
+    if (correct !== undefined) updateAnswerKey(itemId, { correctAnswer: correct });
+    if (g.rubric) updateAnswerKey(itemId, { rubric: g.rubric });
+    toast({ title: "AI návrh aplikován" });
+  }
+
+
+
   // ── AI: load suggestions for a lesson block ──
   async function openSuggestionsForBlock(block: LessonBlock) {
     setSuggestionDialog({
