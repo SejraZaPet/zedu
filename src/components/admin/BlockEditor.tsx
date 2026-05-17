@@ -158,7 +158,11 @@ InsertButton.displayName = "InsertButton";
 
 const BlockEditor = ({ blocks, onChange }: Props) => {
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
@@ -387,7 +391,21 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
     return () => document.removeEventListener("paste", handlePaste);
   }, []);
 
-  const blockIds = useMemo(() => blocks.map((b) => b.id), [blocks]);
+  const stableBlockIdsRef = useRef<string[]>(blocks.map((b) => b.id));
+  const blockIds = useMemo(() => {
+    const nextIds = blocks.map((b) => b.id);
+    const prevIds = stableBlockIdsRef.current;
+
+    if (
+      prevIds.length === nextIds.length &&
+      prevIds.every((id, index) => id === nextIds[index])
+    ) {
+      return prevIds;
+    }
+
+    stableBlockIdsRef.current = nextIds;
+    return nextIds;
+  }, [blocks]);
 
   return (
     <div
