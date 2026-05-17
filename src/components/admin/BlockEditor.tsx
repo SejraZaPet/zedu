@@ -239,28 +239,32 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
     }
   };
 
-  const updateBlock = (id: string, props: Record<string, any>) => {
+  const updateBlock = useCallback((id: string, props: Record<string, any>) => {
     commit(blocks.map((b) => (b.id === id ? { ...b, props } : b)));
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [blocks]);
 
-  const duplicateBlock = (id: string) => {
+  const duplicateBlock = useCallback((id: string) => {
     const idx = blocks.findIndex((b) => b.id === id);
     const original = blocks[idx];
     const copy: Block = { ...original, id: crypto.randomUUID(), props: { ...original.props } };
     const next = [...blocks];
     next.splice(idx + 1, 0, copy);
     commit(next);
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [blocks]);
 
-  const toggleBlock = (id: string) => {
+  const toggleBlock = useCallback((id: string) => {
     commit(blocks.map((b) => (b.id === id ? { ...b, visible: !b.visible } : b)));
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [blocks]);
 
-  const deleteBlock = (id: string) => {
+  const deleteBlock = useCallback((id: string) => {
     commit(blocks.filter((b) => b.id !== id));
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [blocks]);
 
-  const addBlock = (type: Block["type"], index?: number) => {
+  const addBlock = useCallback((type: Block["type"], index?: number) => {
     if (index === undefined || index >= blocks.length) {
       commit([...blocks, createDefaultBlock(type)]);
     } else {
@@ -268,7 +272,48 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
       next.splice(index, 0, createDefaultBlock(type));
       commit(next);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [blocks]);
+
+  const insertBlockAfter = useCallback((afterId: string, type: Block["type"]) => {
+    const idx = blocks.findIndex((b) => b.id === afterId);
+    const newBlock = createDefaultBlock(type);
+    const next = [...blocks];
+    next.splice(idx + 1, 0, newBlock);
+    commit(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [blocks]);
+
+  const [dragOver, setDragOver] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  const uploadImageFile = async (file: File): Promise<string | null> => {
+    const ext = (file.name.split(".").pop() || file.type.split("/")[1] || "png").toLowerCase();
+    const path = `${crypto.randomUUID()}.${ext}`;
+    const { error } = await supabase.storage
+      .from("lesson-images")
+      .upload(path, file, { contentType: file.type || `image/${ext}`, upsert: false });
+    if (error) {
+      console.warn("Image upload failed:", error);
+      return null;
+    }
+    const { data } = supabase.storage.from("lesson-images").getPublicUrl(path);
+    return data.publicUrl;
   };
+
+  const blocksRef = useRef(blocks);
+  blocksRef.current = blocks;
+
+  const appendImageBlock = useCallback((url: string, caption = "") => {
+    const newBlock = {
+      id: crypto.randomUUID(),
+      type: "image",
+      visible: true,
+      props: { url, caption, width: "full", alignment: "center" },
+    } as unknown as Block;
+    commit([...blocksRef.current, newBlock]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [dragOver, setDragOver] = useState(false);
   const [uploading, setUploading] = useState(false);
