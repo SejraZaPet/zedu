@@ -278,6 +278,13 @@ export const ITEM_TYPE_LABELS: Record<ItemType, { label: string; description: st
   two_boxes: { label: "Dva boxy", description: "Dva boxy vedle sebe pro porovnání nebo úkoly" },
   qr_link: { label: "QR kód", description: "QR kód s odkazem na video, kvíz nebo web" },
   flow_steps: { label: "Diagram kroků", description: "Kroky propojené šipkami (postup, fáze)" },
+  crossword: { label: "Křížovka", description: "Tisknutelná křížovka s nápovědami" },
+  word_search: { label: "Osmisměrka", description: "Mřížka písmen se slovy k vyhledání" },
+  sorting: { label: "Třídění do kategorií", description: "Žák řadí položky do kategorií" },
+  flashcards: { label: "Kartičky k vystřižení", description: "Páry pojem/vysvětlení pro tisk a stříhání" },
+  image_label: { label: "Popisky obrázku", description: "Očíslované části obrázku k pojmenování" },
+  image_hotspot: { label: "Body na obrázku", description: "Otázky vázané ke konkrétním bodům obrázku" },
+  lesson_reference: { label: "Obsah z lekce", description: "Vloží pasáž z přiřazené lekce jako kontext" },
 };
 
 export const OFFLINE_MODE_LABELS: Record<import("@/lib/worksheet-spec").OfflineMode, string> = {
