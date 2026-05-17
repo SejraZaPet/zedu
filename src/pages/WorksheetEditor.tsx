@@ -129,7 +129,9 @@ import { OFFLINE_MODE_META } from "@/lib/worksheet-offline-meta";
 import {
   splitLessonContent,
   extractTextFromBlocks,
+  extractActivitiesFromBlocks,
   type LessonBlock,
+  type LessonActivity,
 } from "@/lib/lesson-content-splitter";
 import { useSubjects } from "@/hooks/useSubjects";
 import {
