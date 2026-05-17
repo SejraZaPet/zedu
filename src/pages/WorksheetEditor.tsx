@@ -1803,6 +1803,9 @@ export default function WorksheetEditor() {
                           onApplyRefined={(refined) => replaceItem(item.id, refined)}
                           onMoveUp={() => moveItem(item.id, -1)}
                           onMoveDown={() => moveItem(item.id, 1)}
+                          hasLesson={lessonBlocks.length > 0}
+                          onPickFromLesson={() => setPickerForItem(item.id)}
+                          onAiFromLesson={() => setAiPickerForItem(item.id)}
                         />
                       );
                     })}
