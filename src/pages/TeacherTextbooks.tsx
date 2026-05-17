@@ -290,7 +290,7 @@ const TeacherTextbooks = () => {
     if (lesson.source === "textbook_lessons") {
       const { data } = await supabase
         .from("lesson_topic_assignments")
-        .select("id, topic_id, sort_order, textbook_topics(id, title, subject, grade)")
+        .select("id, topic_id, sort_order, status, scheduled_publish_at, textbook_topics(id, title, subject, grade)")
         .eq("lesson_id", lesson.id);
       if (data) {
         setLessonAssignments(
@@ -301,6 +301,8 @@ const TeacherTextbooks = () => {
             grade: row.textbook_topics?.grade ?? 1,
             topic_title: row.textbook_topics?.title ?? "",
             sort_order: row.sort_order,
+            status: row.status ?? "published",
+            scheduled_publish_at: row.scheduled_publish_at ?? null,
           })),
         );
       }
