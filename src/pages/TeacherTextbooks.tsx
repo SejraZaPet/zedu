@@ -31,7 +31,11 @@ import {
 import {
   BookOpen, Users, ArrowLeft, Copy, Eye, FolderOpen, ChevronRight,
   Pencil, Trash2, Plus, Save, Loader2, X, FileText, Play, Sparkles, BookmarkPlus,
+  MoreVertical, Archive, ArchiveRestore,
 } from "lucide-react";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { blocksToSlides } from "@/lib/blocks-to-slides";
 import { usePresentationLauncher } from "@/hooks/usePresentationLauncher";
 import {
@@ -47,6 +51,9 @@ interface Textbook {
   access_code: string;
   visibility: string;
   created_at: string;
+  updated_at?: string;
+  archived?: boolean;
+  order_index?: number;
 }
 
 interface Enrollment {
@@ -103,6 +110,11 @@ const TeacherTextbooks = () => {
 
   // Delete confirmation
   const [deletingLesson, setDeletingLesson] = useState<LessonItem | null>(null);
+
+  // Textbook-level actions
+  const [renameTextbookOpen, setRenameTextbookOpen] = useState(false);
+  const [renameTextbookTitle, setRenameTextbookTitle] = useState("");
+  const [deleteTextbookOpen, setDeleteTextbookOpen] = useState(false);
 
   // Import file dialog
   const [importOpen, setImportOpen] = useState(false);
@@ -296,6 +308,53 @@ const TeacherTextbooks = () => {
     setDeletingLesson(null);
   };
 
+  // === Textbook-level actions ===
+  const handleRenameTextbook = async () => {
+    if (!selectedTextbook || !renameTextbookTitle.trim()) return;
+    const { error } = await supabase
+      .from("teacher_textbooks")
+      .update({ title: renameTextbookTitle.trim() })
+      .eq("id", selectedTextbook.id);
+    if (error) {
+      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Učebnice přejmenována" });
+      setSelectedTextbook({ ...selectedTextbook, title: renameTextbookTitle.trim() });
+      setRenameTextbookOpen(false);
+      fetchTextbooks();
+    }
+  };
+
+  const handleArchiveTextbook = async () => {
+    if (!selectedTextbook) return;
+    const { error } = await supabase
+      .from("teacher_textbooks")
+      .update({ archived: true } as any)
+      .eq("id", selectedTextbook.id);
+    if (error) {
+      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Učebnice archivována" });
+      setSelectedTextbook(null);
+      navigate("/ucitel/ucebnice");
+      fetchTextbooks();
+    }
+  };
+
+  const handleDeleteTextbook = async () => {
+    if (!selectedTextbook) return;
+    const { error } = await supabase.from("teacher_textbooks").delete().eq("id", selectedTextbook.id);
+    if (error) {
+      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Učebnice smazána" });
+      setDeleteTextbookOpen(false);
+      setSelectedTextbook(null);
+      navigate("/ucitel/ucebnice");
+      fetchTextbooks();
+    }
+  };
+
   // === Topic CRUD ===
   const handleCreateTopic = async () => {
     if (!newTopicTitle.trim() || !selectedTextbook) return;
@@ -435,6 +494,38 @@ const TeacherTextbooks = () => {
                   <Copy className="w-3 h-3" />
                 </Button>
               </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" variant="outline" className="h-9 w-9 p-0">
+                    <MoreVertical className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => {
+                    setRenameTextbookTitle(selectedTextbook.title);
+                    setRenameTextbookOpen(true);
+                  }}>
+                    <Pencil className="w-4 h-4 mr-2" /> Přejmenovat
+                  </DropdownMenuItem>
+                  {selectedTextbook.archived ? (
+                    <DropdownMenuItem onClick={async () => {
+                      const { error } = await supabase.from("teacher_textbooks").update({ archived: false } as any).eq("id", selectedTextbook.id);
+                      if (error) toast({ title: "Chyba", description: error.message, variant: "destructive" });
+                      else { toast({ title: "Učebnice obnovena" }); setSelectedTextbook({ ...selectedTextbook, archived: false }); fetchTextbooks(); }
+                    }}>
+                      <ArchiveRestore className="w-4 h-4 mr-2" /> Obnovit
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem onClick={handleArchiveTextbook}>
+                      <Archive className="w-4 h-4 mr-2" /> Archivovat
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="text-destructive" onClick={() => setDeleteTextbookOpen(true)}>
+                    <Trash2 className="w-4 h-4 mr-2" /> Smazat učebnici
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
 
@@ -678,6 +769,38 @@ const TeacherTextbooks = () => {
           </DialogContent>
         </Dialog>
 
+        {/* === Rename Textbook Dialog === */}
+        <Dialog open={renameTextbookOpen} onOpenChange={setRenameTextbookOpen}>
+          <DialogContent>
+            <DialogHeader><DialogTitle>Přejmenovat učebnici</DialogTitle></DialogHeader>
+            <div className="space-y-4 mt-2">
+              <div>
+                <Label>Název učebnice</Label>
+                <Input value={renameTextbookTitle} onChange={(e) => setRenameTextbookTitle(e.target.value)} className="mt-1" />
+              </div>
+              <Button onClick={handleRenameTextbook} disabled={!renameTextbookTitle.trim()} className="w-full">Uložit</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* === Delete Textbook Confirmation === */}
+        <AlertDialog open={deleteTextbookOpen} onOpenChange={setDeleteTextbookOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Smazat učebnici</AlertDialogTitle>
+              <AlertDialogDescription>
+                Opravdu chcete smazat učebnici „{selectedTextbook?.title}"? Smaže se včetně všech lekcí. Tuto akci nelze vrátit.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Zrušit</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteTextbook} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Smazat
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
         <SaveAsTemplateDialog
           open={saveAsTemplateOpen}
           onOpenChange={setSaveAsTemplateOpen}
@@ -747,6 +870,7 @@ const TeacherTextbooks = () => {
           subjects={subjects?.map(s => s) || []}
           onOpen={openDetail}
           onCreate={() => setCreateOpen(true)}
+          onChanged={fetchTextbooks}
         />
 
         <CreateTextbookDialog
