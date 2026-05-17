@@ -178,6 +178,32 @@ export interface WorksheetItem {
   instructionVariant?: InstructionVariant;
   /** Ikona instrukce (pro instruction_box) */
   instructionIcon?: InstructionIcon;
+
+  // ─── v1.2 — Activity bloky ───
+  /** Křížovka — slova a souřadnice */
+  crosswordEntries?: CrosswordEntry[];
+  /** Šířka mřížky křížovky (sloupců). Default 12. */
+  crosswordCols?: number;
+  /** Výška mřížky křížovky (řádků). Default 12. */
+  crosswordRows?: number;
+  /** Osmisměrka — slova k vyhledání */
+  wordSearchWords?: string[];
+  /** Osmisměrka — velikost mřížky (čtverec). Default 12. */
+  wordSearchSize?: number;
+  /** Sorting — kategorie */
+  sortingCategories?: SortingCategory[];
+  /** Sorting — položky k zařazení (zamíchané) */
+  sortingItems?: SortingItem[];
+  /** Flashcards páry */
+  flashcards?: Flashcard[];
+  /** Popisky obrázku (image_label) */
+  imageLabels?: ImageLabel[];
+  /** Hotspoty (image_hotspot) */
+  imageHotspots?: ImageHotspot[];
+  /** Lesson reference — id bloku/ů z lekce, jejichž obsah se zde má vykreslit */
+  lessonRefBlockIds?: string[];
+  /** Lesson reference — zachycený text/obsah pro tisk (snapshot) */
+  lessonRefContent?: string;
 }
 
 export interface AnswerKeyEntry {
