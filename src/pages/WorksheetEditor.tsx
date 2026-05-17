@@ -953,6 +953,9 @@ export default function WorksheetEditor() {
     };
   }, [pdfPreviewUrl]);
 
+  // ── Per-block lesson pickers ──
+  const [pickerForItem, setPickerForItem] = useState<string | null>(null);
+  const [aiPickerForItem, setAiPickerForItem] = useState<string | null>(null);
 
   // ── AI: load suggestions for a lesson block ──
   async function openSuggestionsForBlock(block: LessonBlock) {
