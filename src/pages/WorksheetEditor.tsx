@@ -1678,6 +1678,48 @@ export default function WorksheetEditor() {
               </div>
             </div>
 
+            {/* Náhled přiřazené lekce */}
+            <Collapsible defaultOpen={false} className="mb-6">
+              <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground w-full justify-between py-2 px-3 rounded-lg bg-muted/50 transition-colors [&[data-state=open]>svg]:rotate-180">
+                <span className="flex items-center gap-2">
+                  <BookOpen className="w-4 h-4" />
+                  Náhled přiřazené lekce
+                  {activeLessonId && allLessons.find((l) => l.id === activeLessonId)?.title && (
+                    <span className="text-xs text-foreground/70 truncate max-w-[260px]">
+                      — {allLessons.find((l) => l.id === activeLessonId)?.title}
+                    </span>
+                  )}
+                </span>
+                <ChevronDown className="w-4 h-4 transition-transform" />
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="max-h-[400px] overflow-y-auto border border-border rounded-lg p-4 mt-2 bg-card">
+                  {!activeLessonId ? (
+                    <p className="text-sm text-muted-foreground">
+                      Žádná lekce není přiřazena. Vyberte aktivní lekci v paletě vlevo nebo propojte lekci tlačítkem „Přidat další lekci".
+                    </p>
+                  ) : lessonBlocks.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      Lekce nemá žádný obsah k zobrazení.
+                    </p>
+                  ) : (
+                    <div className="space-y-3 text-sm">
+                      {lessonBlocks.map((b) => (
+                        <div key={b.id} className="pb-2 border-b border-border/50 last:border-0">
+                          <div className="font-semibold text-foreground mb-1">{b.title}</div>
+                          {b.text && b.text !== b.title && (
+                            <div className="text-muted-foreground whitespace-pre-wrap text-xs leading-relaxed">
+                              {b.text}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+
             {/* Bloky otázek */}
             {items.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
