@@ -111,6 +111,8 @@ const LiveProjectorScreen = () => {
 
   const whiteboard: WhiteboardData = ((session as any).whiteboard_data as WhiteboardData) ?? { strokes: [], visible: false };
 
+  const scrollTop = (session.settings as any)?.projectorScrollTop ?? 0;
+
   return (
     <div className="relative">
       <CloseButton />
@@ -122,6 +124,7 @@ const LiveProjectorScreen = () => {
         slides={slides}
         players={players}
         gameCode={gameCode}
+        scrollTop={scrollTop}
         overlayContent={whiteboard.visible && sessionId ? (
           <LiveWhiteboard sessionId={sessionId} data={whiteboard} readOnly className="pointer-events-none" />
         ) : null}
