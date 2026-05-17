@@ -18,6 +18,7 @@ import LiveWhiteboard, { WhiteboardData } from "@/components/game/LiveWhiteboard
 import RemoteControlButton from "@/components/live/RemoteControlButton";
 import { presenterRemoteChannelName } from "@/pages/PresenterRemote";
 import ProjectorSlideView from "@/components/live/ProjectorSlideView";
+import { useSwipe } from "@/hooks/useSwipe";
 import { LessonBlock } from "@/components/LessonBlockRenderer";
 
 interface SlideData {
@@ -105,6 +106,11 @@ const LiveTeacherScreen = () => {
     }).eq("id", sessionId);
   }, [sessionId, slides.length]);
 
+  const swipeHandlers = useSwipe({
+    onSwipeLeft: () => { if (currentIndex < slides.length - 1) handleNext(); },
+    onSwipeRight: () => { if (currentIndex > 0) nextQuestion(currentIndex - 2); },
+  });
+
   // Listen for commands from mobile remote
   useEffect(() => {
     if (!sessionId) return;
@@ -182,7 +188,7 @@ const LiveTeacherScreen = () => {
   return (
     <>
     <ConnectionStatusBanner status={connectionStatus} onReconnect={reconnect} />
-    <div className="min-h-screen bg-background p-6 max-w-4xl mx-auto space-y-6">
+    <div className="min-h-screen bg-background p-6 max-w-4xl mx-auto space-y-6" {...swipeHandlers}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
