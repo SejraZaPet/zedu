@@ -228,6 +228,40 @@ export const PresentationEditorDialog = ({
                 }}>
                   ❓ Kvíz (výběr odpovědi)
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => {
+                  const newSlide = {
+                    slideId: `slide-poll-${Date.now()}`,
+                    type: "activity",
+                    projector: { headline: "Hlasování", body: "" },
+                    device: { instructions: "Vyberte svou odpověď." },
+                    teacherNotes: "",
+                    blocks: [],
+                    activitySpec: { activityType: "poll", question: "", options: [] },
+                  };
+                  const updated = [...pendingSlides];
+                  updated.splice(editingSlideIndex + 1, 0, newSlide);
+                  setPendingSlides(updated);
+                  setEditingSlideIndex(editingSlideIndex + 1);
+                }}>
+                  📊 Hlasování / Mentimetr
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => {
+                  const newSlide = {
+                    slideId: `slide-activity-${Date.now()}`,
+                    type: "activity",
+                    projector: { headline: "Aktivita", body: "" },
+                    device: { instructions: "Splňte aktivitu na svém zařízení." },
+                    teacherNotes: "",
+                    blocks: [],
+                    activitySpec: { activityType: "flashcards", question: "", cards: [] },
+                  };
+                  const updated = [...pendingSlides];
+                  updated.splice(editingSlideIndex + 1, 0, newSlide);
+                  setPendingSlides(updated);
+                  setEditingSlideIndex(editingSlideIndex + 1);
+                }}>
+                  ➕ Další aktivita…
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
             {pendingSlides.length > 1 && (
