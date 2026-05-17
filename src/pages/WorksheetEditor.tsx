@@ -959,6 +959,15 @@ export default function WorksheetEditor() {
   const [pickerForItem, setPickerForItem] = useState<string | null>(null);
   const [aiPickerForItem, setAiPickerForItem] = useState<string | null>(null);
 
+  // ── AI: generate whole worksheet from lesson ──
+  const [showAiGenerateDialog, setShowAiGenerateDialog] = useState(false);
+  const [aiMode, setAiMode] = useState<string>("classwork");
+  const [aiCount, setAiCount] = useState<string>("8");
+  const [aiDifficulty, setAiDifficulty] = useState<string>("mixed");
+  const [aiCustomHint, setAiCustomHint] = useState<string>("");
+  const [aiReplaceMode, setAiReplaceMode] = useState<string>("replace");
+  const [aiGenerating, setAiGenerating] = useState(false);
+
   /** Insert text from a lesson block into the targeted worksheet item. */
   function applyLessonBlockToItem(itemId: string, block: LessonBlock) {
     const it = items.find((x) => x.id === itemId);
