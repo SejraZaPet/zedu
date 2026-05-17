@@ -221,6 +221,37 @@ const LessonPlacementEditor = ({ lessonId, placements, onChange }: Props) => {
                     </Select>
                   </div>
                 )}
+
+                <div className="grid grid-cols-2 gap-2 pt-1 border-t border-border/50">
+                  <div>
+                    <Label className="text-[10px] text-muted-foreground">Stav publikování</Label>
+                    <Select
+                      value={p.status ?? "published"}
+                      onValueChange={(v) => updatePlacement(i, {
+                        status: v,
+                        scheduled_publish_at: v === "scheduled" ? p.scheduled_publish_at ?? null : null,
+                      })}
+                    >
+                      <SelectTrigger className="h-8 text-xs mt-0.5"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="draft">Koncept</SelectItem>
+                        <SelectItem value="scheduled">Naplánováno</SelectItem>
+                        <SelectItem value="published">Publikováno</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {(p.status ?? "published") === "scheduled" && (
+                    <div>
+                      <Label className="text-[10px] text-muted-foreground">Publikovat v</Label>
+                      <Input
+                        type="datetime-local"
+                        value={toLocalInput(p.scheduled_publish_at)}
+                        onChange={(e) => updatePlacement(i, { scheduled_publish_at: fromLocalInput(e.target.value) })}
+                        className="h-8 text-xs mt-0.5"
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
             );
           })}
