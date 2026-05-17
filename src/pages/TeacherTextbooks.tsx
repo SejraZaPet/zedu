@@ -308,6 +308,53 @@ const TeacherTextbooks = () => {
     setDeletingLesson(null);
   };
 
+  // === Textbook-level actions ===
+  const handleRenameTextbook = async () => {
+    if (!selectedTextbook || !renameTextbookTitle.trim()) return;
+    const { error } = await supabase
+      .from("teacher_textbooks")
+      .update({ title: renameTextbookTitle.trim() })
+      .eq("id", selectedTextbook.id);
+    if (error) {
+      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Učebnice přejmenována" });
+      setSelectedTextbook({ ...selectedTextbook, title: renameTextbookTitle.trim() });
+      setRenameTextbookOpen(false);
+      fetchTextbooks();
+    }
+  };
+
+  const handleArchiveTextbook = async () => {
+    if (!selectedTextbook) return;
+    const { error } = await supabase
+      .from("teacher_textbooks")
+      .update({ archived: true } as any)
+      .eq("id", selectedTextbook.id);
+    if (error) {
+      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Učebnice archivována" });
+      setSelectedTextbook(null);
+      navigate("/ucitel/ucebnice");
+      fetchTextbooks();
+    }
+  };
+
+  const handleDeleteTextbook = async () => {
+    if (!selectedTextbook) return;
+    const { error } = await supabase.from("teacher_textbooks").delete().eq("id", selectedTextbook.id);
+    if (error) {
+      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Učebnice smazána" });
+      setDeleteTextbookOpen(false);
+      setSelectedTextbook(null);
+      navigate("/ucitel/ucebnice");
+      fetchTextbooks();
+    }
+  };
+
   // === Topic CRUD ===
   const handleCreateTopic = async () => {
     if (!newTopicTitle.trim() || !selectedTextbook) return;
