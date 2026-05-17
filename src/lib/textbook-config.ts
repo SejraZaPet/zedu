@@ -36,6 +36,40 @@ export interface Block {
   props: Record<string, any>;
 }
 
+export const normalizeBlocks = (blocks: Block[] | null | undefined): Block[] => {
+  if (!Array.isArray(blocks)) return [];
+
+  const seen = new Set<string>();
+  let changed = false;
+
+  const normalized = blocks.map((block) => {
+    const nextId = typeof block?.id === "string" && block.id.trim() ? block.id : crypto.randomUUID();
+    const hasDuplicate = seen.has(nextId);
+    const finalId = hasDuplicate ? crypto.randomUUID() : nextId;
+
+    seen.add(finalId);
+
+    const nextBlock: Block = {
+      id: finalId,
+      type: block?.type,
+      visible: typeof block?.visible === "boolean" ? block.visible : true,
+      props: block?.props && typeof block.props === "object" ? block.props : {},
+    } as Block;
+
+    if (
+      finalId !== block?.id ||
+      nextBlock.visible !== block?.visible ||
+      nextBlock.props !== block?.props
+    ) {
+      changed = true;
+    }
+
+    return nextBlock;
+  });
+
+  return changed ? normalized : blocks;
+};
+
 export const BLOCK_TYPES: { type: BlockType; label: string; icon: string }[] = [
   { type: "heading", label: "Nadpis", icon: "H" },
   { type: "paragraph", label: "Text", icon: "¶" },
