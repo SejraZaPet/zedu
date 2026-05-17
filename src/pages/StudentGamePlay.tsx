@@ -422,3 +422,55 @@ const StudentGamePlay = () => {
 };
 
 export default StudentGamePlay;
+
+const WhiteboardOverlay = ({
+  stageW,
+  stageH,
+  sessionId,
+  data,
+}: {
+  stageW: number;
+  stageH: number;
+  sessionId: string;
+  data: WhiteboardData;
+}) => {
+  const frameRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    const el = frameRef.current;
+    if (!el) return;
+    const update = () => {
+      const w = el.clientWidth;
+      const h = el.clientHeight;
+      if (!w || !h) return;
+      setScale(Math.min(w / stageW, h / stageH));
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    window.addEventListener("resize", update);
+    return () => { ro.disconnect(); window.removeEventListener("resize", update); };
+  }, [stageW, stageH]);
+
+  return (
+    <div ref={frameRef} className="absolute inset-0">
+      <div
+        className="absolute left-1/2 top-1/2 origin-center"
+        style={{
+          width: `${stageW}px`,
+          height: `${stageH}px`,
+          transform: `translate(-50%, -50%) scale(${scale})`,
+        }}
+      >
+        <LiveWhiteboard
+          sessionId={sessionId}
+          data={data}
+          readOnly
+          overlay
+          className="pointer-events-none"
+        />
+      </div>
+    </div>
+  );
+};
