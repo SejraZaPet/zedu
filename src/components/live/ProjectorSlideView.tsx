@@ -26,7 +26,14 @@ interface Props {
 const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, slides, players, gameCode, overlayContent, scrollTop }: Props) => {
   const progressPct = slides.length > 0 ? ((currentIndex + 1) / slides.length) * 100 : 0;
   const frameRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    if (scrollTop !== undefined && scrollRef.current) {
+      scrollRef.current.scrollTop = scrollTop;
+    }
+  }, [scrollTop]);
 
   useEffect(() => {
     const frame = frameRef.current;
