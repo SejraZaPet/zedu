@@ -8,6 +8,7 @@ import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { serverTsToClientMs } from "@/lib/clock-sync";
 import LessonBlockRenderer from "@/components/LessonBlockRenderer";
+import SlideCanvas from "@/components/admin/SlideCanvas";
 import WallResponsesList from "@/components/activities/WallResponsesList";
 import WallActivity from "@/components/activities/WallActivity";
 import PollActivity from "@/components/activities/PollActivity";
