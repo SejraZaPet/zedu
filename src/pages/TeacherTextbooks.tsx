@@ -47,6 +47,9 @@ interface Textbook {
   access_code: string;
   visibility: string;
   created_at: string;
+  updated_at?: string;
+  archived?: boolean;
+  order_index?: number;
 }
 
 interface Enrollment {
