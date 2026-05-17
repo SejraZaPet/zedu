@@ -14,6 +14,7 @@ import WallActivity from "@/components/activities/WallActivity";
 import PollActivity from "@/components/activities/PollActivity";
 import PollProjectorView from "@/components/activities/PollProjectorView";
 import QuizActivity from "@/components/activities/QuizActivity";
+import LiveWhiteboard, { WhiteboardData } from "@/components/game/LiveWhiteboard";
 import { Lock } from "lucide-react";
 import { AvatarSvg } from "@/components/student/AvatarSvg";
 import { useStudentAvatar } from "@/hooks/useStudentAvatars";
@@ -169,6 +170,7 @@ const StudentGamePlay = () => {
   }
 
   const qi = session.current_question_index;
+  const whiteboard: WhiteboardData = ((session as any).whiteboard_data as WhiteboardData) ?? { strokes: [], visible: false };
   const currentSlideData = (session?.activity_data as any[])?.[qi];
   const isSlideFormat = currentSlideData && currentSlideData.projector !== undefined && !currentSlideData.question;
 
@@ -360,6 +362,15 @@ const StudentGamePlay = () => {
               Slide {qi + 1} / {(session?.activity_data as any[])?.length ?? 0}
             </p>
           </div>
+
+          {whiteboard.visible && whiteboard.strokes.length > 0 && (
+            <LiveWhiteboard
+              sessionId={sessionId || ""}
+              data={whiteboard}
+              readOnly
+              className="pointer-events-none"
+            />
+          )}
         </div>
       </>
     );
