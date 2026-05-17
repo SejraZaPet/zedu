@@ -1,9 +1,13 @@
+import { useRef } from "react";
 import type { WorksheetItem } from "@/lib/worksheet-spec";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Trash2, Plus } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Slider } from "@/components/ui/slider";
+import { Trash2, Plus, ImageIcon } from "lucide-react";
+import { MediaPickerDialog } from "@/components/media/MediaPickerDialog";
 
 interface Props {
   item: WorksheetItem;
