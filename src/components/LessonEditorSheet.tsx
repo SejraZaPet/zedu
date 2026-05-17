@@ -207,13 +207,50 @@ const LessonEditorSheet = ({ lessonId, open, onOpenChange, onSaved }: Props) => 
                 </div>
                 <div>
                   <Label>Stav</Label>
-                  <Select value={lesson.status} onValueChange={(v) => setLesson({ ...lesson, status: v })}>
+                  <Select
+                    value={lesson.status}
+                    onValueChange={(v) =>
+                      setLesson({
+                        ...lesson,
+                        status: v,
+                        scheduled_publish_at: v === "scheduled" ? lesson.scheduled_publish_at : null,
+                      })
+                    }
+                  >
                     <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="draft">Koncept</SelectItem>
+                      <SelectItem value="scheduled">Naplánováno</SelectItem>
                       <SelectItem value="published">Publikováno</SelectItem>
                     </SelectContent>
                   </Select>
+                  {lesson.status === "scheduled" && (
+                    <div className="mt-2">
+                      <Label className="text-xs text-muted-foreground">Publikovat v</Label>
+                      <Input
+                        type="datetime-local"
+                        value={toLocalInput(lesson.scheduled_publish_at)}
+                        onChange={(e) =>
+                          setLesson({ ...lesson, scheduled_publish_at: fromLocalInput(e.target.value) })
+                        }
+                        className="mt-1"
+                      />
+                      <p className="text-[11px] text-muted-foreground mt-1">
+                        Lekce se automaticky publikuje v tento čas.
+                      </p>
+                    </div>
+                  )}
+                  {lesson.status === "published" && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="mt-2 w-full"
+                      onClick={() => setLesson({ ...lesson, status: "draft", scheduled_publish_at: null })}
+                    >
+                      Vrátit do konceptu
+                    </Button>
+                  )}
                 </div>
                 <div>
                   <Label>Hero obrázek</Label>
