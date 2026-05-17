@@ -41,6 +41,7 @@ const LiveTeacherScreen = () => {
   const { startGame, nextQuestion, endGame } = useTeacherGameControls(sessionId);
   const [adaptiveOpen, setAdaptiveOpen] = useState(false);
   const [addSlideOpen, setAddSlideOpen] = useState(false);
+  const [resultsPanelOpen, setResultsPanelOpen] = useState(false);
 
   const slides: SlideData[] = (session?.activity_data as any[]) || [];
   const currentIndex = session?.current_question_index ?? -1;
