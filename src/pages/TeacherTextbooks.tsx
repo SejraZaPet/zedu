@@ -10,7 +10,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useSubjects } from "@/hooks/useSubjects";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
-import BlockEditor from "@/components/admin/BlockEditor";
 import LessonPreviewDialog from "@/components/admin/LessonPreviewDialog";
 import PresentationEditorDialog from "@/components/admin/PresentationEditorDialog";
 import TextbookGradeGroups from "@/components/admin/TextbookGradeGroups";
@@ -19,8 +18,7 @@ import CreateTextbookDialog from "@/components/admin/CreateTextbookDialog";
 import CreateFromTemplateDialog from "@/components/admin/CreateFromTemplateDialog";
 import SaveAsTemplateDialog from "@/components/admin/SaveAsTemplateDialog";
 import ImportTextbookFileDialog from "@/components/admin/ImportTextbookFileDialog";
-import LessonPlacementEditor, { savePlacements, type Placement } from "@/components/admin/LessonPlacementEditor";
-import LessonAssignments, { type Assignment } from "@/components/admin/LessonAssignments";
+import TeacherTextbookLessonEditorSheet from "@/components/teacher/TeacherTextbookLessonEditorSheet";
 import type { Block } from "@/lib/textbook-config";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -122,9 +120,6 @@ const TeacherTextbooks = () => {
   // Lesson editor sheet
   const [editingLesson, setEditingLesson] = useState<LessonItem | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
-  const [lessonPlacements, setLessonPlacements] = useState<Placement[]>([]);
-  const [lessonAssignments, setLessonAssignments] = useState<Assignment[]>([]);
-  const [heroUploading, setHeroUploading] = useState(false);
   const [saving, setSaving] = useState(false);
 
   // Delete confirmation
