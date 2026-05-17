@@ -473,6 +473,7 @@ export default function WorksheetEditor() {
   useEffect(() => {
     if (!activeLessonId) {
       setActiveLessonContent("");
+      setActiveLessonActivities([]);
       return;
     }
     const opt = allLessons.find((l) => l.id === activeLessonId);
