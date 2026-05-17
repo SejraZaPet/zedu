@@ -14,6 +14,7 @@ import WallActivity from "@/components/activities/WallActivity";
 import PollActivity from "@/components/activities/PollActivity";
 import PollProjectorView from "@/components/activities/PollProjectorView";
 import QuizActivity from "@/components/activities/QuizActivity";
+import LiveWhiteboard, { WhiteboardData } from "@/components/game/LiveWhiteboard";
 import { Lock } from "lucide-react";
 import { AvatarSvg } from "@/components/student/AvatarSvg";
 import { useStudentAvatar } from "@/hooks/useStudentAvatars";
