@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -82,7 +82,7 @@ const BlockRenderer = ({ block, onChange }: { block: Block; onChange: (props: Re
   }
 };
 
-const SortableBlock = ({
+const SortableBlock = React.memo(({
   block,
   onUpdate,
   onDuplicate,
@@ -90,10 +90,10 @@ const SortableBlock = ({
   onDelete,
 }: {
   block: Block;
-  onUpdate: (props: Record<string, any>) => void;
-  onDuplicate: () => void;
-  onToggle: () => void;
-  onDelete: () => void;
+  onUpdate: (id: string, props: Record<string, any>) => void;
+  onDuplicate: (id: string) => void;
+  onToggle: (id: string) => void;
+  onDelete: (id: string) => void;
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: block.id });
 
@@ -104,6 +104,7 @@ const SortableBlock = ({
   };
 
   const typeLabel = BLOCK_TYPES.find((t) => t.type === block.type)?.label ?? block.type;
+  const handleUpdate = useCallback((props: Record<string, any>) => onUpdate(block.id, props), [onUpdate, block.id]);
 
   return (
     <div ref={setNodeRef} style={style} className={`border rounded-lg bg-card ${!block.visible ? "opacity-50" : ""} ${isDragging ? "border-primary" : "border-border"}`}>
@@ -112,22 +113,47 @@ const SortableBlock = ({
           <GripVertical className="w-4 h-4" />
         </button>
         <span className="text-xs font-medium text-muted-foreground flex-1">{typeLabel}</span>
-        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onToggle} title={block.visible ? "Skrýt" : "Zobrazit"}>
+        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onToggle(block.id)} title={block.visible ? "Skrýt" : "Zobrazit"}>
           {block.visible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
         </Button>
-        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onDuplicate} title="Duplikovat">
+        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onDuplicate(block.id)} title="Duplikovat">
           <Copy className="w-3.5 h-3.5" />
         </Button>
-        <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={onDelete} title="Smazat">
+        <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => onDelete(block.id)} title="Smazat">
           <Trash2 className="w-3.5 h-3.5" />
         </Button>
       </div>
       <div className="p-3">
-        <BlockRenderer block={block} onChange={onUpdate} />
+        <BlockRenderer block={block} onChange={handleUpdate} />
       </div>
     </div>
   );
-};
+});
+SortableBlock.displayName = "SortableBlock";
+
+const InsertButton = React.memo(({ afterId, onInsert }: { afterId: string; onInsert: (afterId: string, type: Block["type"]) => void }) => (
+  <div className="flex justify-center py-0.5 group">
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className="opacity-0 group-hover:opacity-100 transition-opacity h-5 w-5 rounded-full bg-primary/10 hover:bg-primary/20 flex items-center justify-center"
+          title="Vložit blok zde"
+        >
+          <Plus className="w-3 h-3 text-primary" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="center" className="w-48 max-h-[360px] overflow-y-auto overflow-x-hidden">
+        {BLOCK_TYPES.map((bt) => (
+          <DropdownMenuItem key={bt.type} onClick={() => onInsert(afterId, bt.type)} className="py-1.5 px-2 text-sm">
+            <span className="w-5 text-center mr-2">{bt.icon}</span>{bt.label}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  </div>
+));
+InsertButton.displayName = "InsertButton";
 
 const BlockEditor = ({ blocks, onChange }: Props) => {
   const sensors = useSensors(
@@ -155,37 +181,40 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
     forceRender((n) => n + 1);
   }, [blocks]);
 
-  const commit = (next: Block[]) => {
-    // Truncate redo branch and push new state
+  const blocksRef = useRef(blocks);
+  blocksRef.current = blocks;
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+
+  const commit = useCallback((next: Block[]) => {
     const newHistory = historyRef.current.slice(0, indexRef.current + 1);
     newHistory.push(next);
-    // Cap history length
     if (newHistory.length > 100) newHistory.shift();
     historyRef.current = newHistory;
     indexRef.current = newHistory.length - 1;
     skipNextSyncRef.current = true;
-    onChange(next);
+    onChangeRef.current(next);
     forceRender((n) => n + 1);
-  };
+  }, []);
 
   const canUndo = indexRef.current > 0;
   const canRedo = indexRef.current < historyRef.current.length - 1;
 
-  const undo = () => {
-    if (!canUndo) return;
+  const undo = useCallback(() => {
+    if (indexRef.current <= 0) return;
     indexRef.current -= 1;
     skipNextSyncRef.current = true;
-    onChange(historyRef.current[indexRef.current]);
+    onChangeRef.current(historyRef.current[indexRef.current]);
     forceRender((n) => n + 1);
-  };
+  }, []);
 
-  const redo = () => {
-    if (!canRedo) return;
+  const redo = useCallback(() => {
+    if (indexRef.current >= historyRef.current.length - 1) return;
     indexRef.current += 1;
     skipNextSyncRef.current = true;
-    onChange(historyRef.current[indexRef.current]);
+    onChangeRef.current(historyRef.current[indexRef.current]);
     forceRender((n) => n + 1);
-  };
+  }, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -202,48 +231,59 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [undo, redo]);
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
     if (over && active.id !== over.id) {
-      const oldIndex = blocks.findIndex((b) => b.id === active.id);
-      const newIndex = blocks.findIndex((b) => b.id === over.id);
-      commit(arrayMove(blocks, oldIndex, newIndex));
+      const cur = blocksRef.current;
+      const oldIndex = cur.findIndex((b) => b.id === active.id);
+      const newIndex = cur.findIndex((b) => b.id === over.id);
+      commit(arrayMove(cur, oldIndex, newIndex));
     }
-  };
+  }, [commit]);
 
-  const updateBlock = (id: string, props: Record<string, any>) => {
-    commit(blocks.map((b) => (b.id === id ? { ...b, props } : b)));
-  };
+  const updateBlock = useCallback((id: string, props: Record<string, any>) => {
+    commit(blocksRef.current.map((b) => (b.id === id ? { ...b, props } : b)));
+  }, [commit]);
 
-  const duplicateBlock = (id: string) => {
-    const idx = blocks.findIndex((b) => b.id === id);
-    const original = blocks[idx];
+  const duplicateBlock = useCallback((id: string) => {
+    const cur = blocksRef.current;
+    const idx = cur.findIndex((b) => b.id === id);
+    if (idx < 0) return;
+    const original = cur[idx];
     const copy: Block = { ...original, id: crypto.randomUUID(), props: { ...original.props } };
-    const next = [...blocks];
+    const next = [...cur];
     next.splice(idx + 1, 0, copy);
     commit(next);
-  };
+  }, [commit]);
 
-  const toggleBlock = (id: string) => {
-    commit(blocks.map((b) => (b.id === id ? { ...b, visible: !b.visible } : b)));
-  };
+  const toggleBlock = useCallback((id: string) => {
+    commit(blocksRef.current.map((b) => (b.id === id ? { ...b, visible: !b.visible } : b)));
+  }, [commit]);
 
-  const deleteBlock = (id: string) => {
-    commit(blocks.filter((b) => b.id !== id));
-  };
+  const deleteBlock = useCallback((id: string) => {
+    commit(blocksRef.current.filter((b) => b.id !== id));
+  }, [commit]);
 
-  const addBlock = (type: Block["type"], index?: number) => {
-    if (index === undefined || index >= blocks.length) {
-      commit([...blocks, createDefaultBlock(type)]);
+  const addBlock = useCallback((type: Block["type"], index?: number) => {
+    const cur = blocksRef.current;
+    if (index === undefined || index >= cur.length) {
+      commit([...cur, createDefaultBlock(type)]);
     } else {
-      const next = [...blocks];
+      const next = [...cur];
       next.splice(index, 0, createDefaultBlock(type));
       commit(next);
     }
-  };
+  }, [commit]);
+
+  const insertBlockAfter = useCallback((afterId: string, type: Block["type"]) => {
+    const cur = blocksRef.current;
+    const idx = cur.findIndex((b) => b.id === afterId);
+    const next = [...cur];
+    next.splice(idx + 1, 0, createDefaultBlock(type));
+    commit(next);
+  }, [commit]);
 
   const [dragOver, setDragOver] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -262,16 +302,15 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
     return data.publicUrl;
   };
 
-  const appendImageBlock = (url: string, caption = "") => {
+  const appendImageBlock = useCallback((url: string, caption = "") => {
     const newBlock = {
       id: crypto.randomUUID(),
       type: "image",
       visible: true,
       props: { url, caption, width: "full", alignment: "center" },
     } as unknown as Block;
-    commit([...blocks, newBlock]);
-  };
-
+    commit([...blocksRef.current, newBlock]);
+  }, [commit]);
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(false);
@@ -322,8 +361,7 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
     };
     document.addEventListener("paste", handlePaste);
     return () => document.removeEventListener("paste", handlePaste);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [blocks]);
+  }, []);
 
   return (
     <div
@@ -368,39 +406,18 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={blocks.map((b) => b.id)} strategy={verticalListSortingStrategy}>
           {blocks.map((block, idx) => (
-            <div key={block.id}>
+            <React.Fragment key={block.id}>
               <SortableBlock
                 block={block}
-                onUpdate={(props) => updateBlock(block.id, props)}
-                onDuplicate={() => duplicateBlock(block.id)}
-                onToggle={() => toggleBlock(block.id)}
-                onDelete={() => deleteBlock(block.id)}
+                onUpdate={updateBlock}
+                onDuplicate={duplicateBlock}
+                onToggle={toggleBlock}
+                onDelete={deleteBlock}
               />
               {idx < blocks.length - 1 && (
-                <div className="group relative h-2 hover:h-8 transition-all flex items-center justify-center">
-                  <div className="absolute inset-x-0 top-1/2 h-px bg-transparent group-hover:bg-border" />
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        size="icon"
-                        variant="outline"
-                        className="relative h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
-                        title="Vložit blok zde"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="center" className="w-48 max-h-[360px] overflow-y-auto overflow-x-hidden">
-                      {BLOCK_TYPES.map((bt) => (
-                        <DropdownMenuItem key={bt.type} onClick={() => addBlock(bt.type, idx + 1)} className="py-1.5 px-2 text-sm">
-                          <span className="w-5 text-center mr-2">{bt.icon}</span>{bt.label}
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
+                <InsertButton afterId={block.id} onInsert={insertBlockAfter} />
               )}
-            </div>
+            </React.Fragment>
           ))}
         </SortableContext>
       </DndContext>
