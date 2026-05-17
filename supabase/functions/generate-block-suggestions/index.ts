@@ -106,15 +106,28 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({}));
-    const blockText = String(body.blockText ?? "").slice(0, 4000);
-    const lessonTitle = String(body.lessonTitle ?? "").slice(0, 200);
-    const lessonSubject = String(body.lessonSubject ?? "").slice(0, 100);
-    const userInstruction = String(body.userInstruction ?? "").slice(0, 500);
+    const blockText = String(body.blockText ?? "").trim().slice(0, 4000);
+    const lessonTitle = String(body.lessonTitle ?? "").trim().slice(0, 200);
+    const lessonSubject = String(body.lessonSubject ?? "").trim().slice(0, 100);
+    const userInstruction = String(body.userInstruction ?? "").trim().slice(0, 500);
     const variantCount = 3;
 
-    if (!blockText || blockText.length < 10) {
+    // Combined context must give AI something to work with. We accept short
+    // block snippets (e.g. heading-only blocks) as long as we have lesson
+    // title/subject or a user instruction to fall back on.
+    const hasMinimumContext =
+      blockText.length >= 3 &&
+      (blockText.length >= 10 ||
+        lessonTitle.length > 0 ||
+        lessonSubject.length > 0 ||
+        userInstruction.length > 0);
+
+    if (!hasMinimumContext) {
       return new Response(
-        JSON.stringify({ error: "blockText is too short" }),
+        JSON.stringify({
+          error:
+            "Pasáž je příliš krátká. Doplňte do lekce více textu nebo přidejte pokyn pro AI.",
+        }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
