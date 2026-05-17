@@ -125,6 +125,29 @@ export function createDefaultItem(type: ItemType, itemNumber: number): Worksheet
         durationMin: 10,
         answerSpace: { type: "lines", heightMm: 40, lineCount: 6 },
       };
+    case "section_header":
+      return { ...base, prompt: "Název sekce", points: 0, timeEstimateSec: 0,
+        answerSpace: { type: "none", heightMm: 0 }, tags: ["section_heading"] };
+    case "write_lines":
+      return { ...base, prompt: "Zapište definici:", points: 0, timeEstimateSec: 120,
+        lineCount: 4, lineStyle: "dotted",
+        answerSpace: { type: "lines", heightMm: 30, lineCount: 4 } };
+    case "instruction_box":
+      return { ...base, prompt: "Pracujte s učebnicí a zapište si hlavní body.", points: 0,
+        timeEstimateSec: 0, instructionVariant: "blue", instructionIcon: "info",
+        answerSpace: { type: "none", heightMm: 0 } };
+    case "two_boxes":
+      return { ...base, prompt: "Porovnejte:", points: 0, timeEstimateSec: 120,
+        leftTitle: "Box 1", leftContent: "lines:4",
+        rightTitle: "Box 2", rightContent: "lines:4",
+        answerSpace: { type: "none", heightMm: 0 } };
+    case "qr_link":
+      return { ...base, prompt: "Naskenuj QR kód:", points: 0, timeEstimateSec: 0,
+        qrUrl: "", answerSpace: { type: "none", heightMm: 0 } };
+    case "flow_steps":
+      return { ...base, prompt: "Postup:", points: 0, timeEstimateSec: 60,
+        flowSteps: ["Krok 1", "Krok 2", "Krok 3"], flowDirection: "vertical",
+        answerSpace: { type: "none", heightMm: 0 } };
   }
 }
 
