@@ -421,7 +421,7 @@ const StudentGamePlay = () => {
   );
 };
 
-export default StudentGamePlay;
+
 
 const WhiteboardOverlay = ({
   stageW,
@@ -474,3 +474,5 @@ const WhiteboardOverlay = ({
     </div>
   );
 };
+
+export default StudentGamePlay;
