@@ -53,14 +53,8 @@ const SiteHeader = () => {
     if (userRole === "teacher" || userRole === "lektor") {
       return [
         { label: "Přehled", href: "/ucitel", icon: LayoutDashboard },
-        { label: "Moje učebnice", href: "/ucitel/ucebnice", icon: BookOpen },
-        { label: "Rozvrh", href: "/ucitel/rozvrh", icon: CalendarDays },
-        { label: "Živé hry", href: "/ucitel/hry", icon: Gamepad2 },
+        { label: "Kalendář", href: "/ucitel/rozvrh", icon: CalendarDays },
         { label: "Třídy", href: "/ucitel/tridy", icon: FolderOpen },
-        { label: "Média", href: "/ucitel/media", icon: ImageIcon },
-        { label: "Výsledky", href: "/ucitel/vysledky", icon: BarChart3 },
-        { label: "Marketplace", href: "/marketplace", icon: ShoppingBag },
-        { label: "Moje publikace", href: "/ucitel/publikace", icon: Layers },
         { label: "Nápověda", href: "/napoveda", icon: HelpCircle },
       ];
     }
