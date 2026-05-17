@@ -20,6 +20,7 @@ import UserDetailDialog from "./UserDetailDialog";
 import { printLoginCards, type LoginCardData } from "@/lib/generate-login-cards";
 import bcrypt from "bcryptjs";
 import { sendWelcomeEmail } from "@/lib/send-email";
+import * as XLSX from "xlsx";
 import {
   Select,
   SelectContent,
