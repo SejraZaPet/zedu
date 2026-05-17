@@ -1972,41 +1972,6 @@ export default function WorksheetEditor() {
               </DndContext>
             )}
 
-            {/* Add button */}
-            <div className="mt-6 pt-4 border-t border-border">
-              <Select onValueChange={(v) => addItem(v as ItemType)}>
-                <SelectTrigger className="w-full">
-                  <Plus className="w-4 h-4 mr-1" />
-                  <SelectValue placeholder="Přidat otázku" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectLabel>Otázky</SelectLabel>
-                    {ITEM_TYPES.map((t) => (
-                      <SelectItem key={t} value={t}>
-                        {ITEM_TYPE_LABELS[t].label}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                  <SelectGroup>
-                    <SelectLabel>Layoutové bloky</SelectLabel>
-                    {LAYOUT_BLOCK_TYPES.map((t) => (
-                      <SelectItem key={t} value={t}>
-                        {ITEM_TYPE_LABELS[t].label}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                  <SelectGroup>
-                    <SelectLabel>Aktivity & obsah z lekce</SelectLabel>
-                    {ACTIVITY_BLOCK_TYPES.map((t) => (
-                      <SelectItem key={t} value={t}>
-                        {ITEM_TYPE_LABELS[t].label}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
           </section>
         </div>
       </main>
