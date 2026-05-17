@@ -870,6 +870,7 @@ const TeacherTextbooks = () => {
           subjects={subjects?.map(s => s) || []}
           onOpen={openDetail}
           onCreate={() => setCreateOpen(true)}
+          onChanged={fetchTextbooks}
         />
 
         <CreateTextbookDialog
