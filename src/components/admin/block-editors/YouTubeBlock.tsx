@@ -1,5 +1,8 @@
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Play } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -29,6 +32,7 @@ const extractYouTubeId = (url: string): string | null => {
 const YouTubeBlock = ({ block, onChange }: Props) => {
   const videoId = extractYouTubeId(block.props.url || "");
   const isInvalid = block.props.url && !videoId;
+  const [showPlayer, setShowPlayer] = useState(false);
 
   return (
     <div className="space-y-3">
@@ -46,13 +50,35 @@ const YouTubeBlock = ({ block, onChange }: Props) => {
       </div>
 
       {videoId && (
-        <div className="aspect-video w-full max-w-sm rounded overflow-hidden border border-border">
-          <iframe
-            src={`https://www.youtube-nocookie.com/embed/${videoId}`}
-            className="w-full h-full"
-            allowFullScreen
-            title="YouTube preview"
-          />
+        <div className="aspect-video w-full max-w-sm rounded overflow-hidden border border-border relative bg-muted">
+          {showPlayer ? (
+            <iframe
+              src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1`}
+              className="w-full h-full"
+              allowFullScreen
+              title="YouTube preview"
+            />
+          ) : (
+            <>
+              <img
+                src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`}
+                alt="Náhled videa"
+                className="w-full h-full object-cover"
+                loading="lazy"
+                draggable={false}
+              />
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={() => setShowPlayer(true)}
+                className="absolute inset-0 m-auto h-10 w-10 rounded-full p-0 shadow-lg"
+                title="Přehrát náhled"
+              >
+                <Play className="w-4 h-4" />
+              </Button>
+            </>
+          )}
         </div>
       )}
 
