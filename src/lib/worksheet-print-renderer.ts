@@ -921,20 +921,49 @@ function renderItem(item: WorksheetItem, showPoints: boolean): string {
       </div>`;
     }
 
-    case "image_label":
+    case "image_label": {
+      const rows = item.imageLabels ?? [];
+      const dots = rows.map((r) =>
+        `<div style="position:absolute;left:${r.xPercent}%;top:${r.yPercent}%;transform:translate(-50%,-50%);width:22px;height:22px;border-radius:50%;background:#6EC6D9;color:#fff;font-weight:bold;font-size:10pt;text-align:center;line-height:22px;border:2px solid #fff;box-shadow:0 0 0 1px #333;">${r.number}</div>`,
+      ).join("");
+      const imgHtml = item.imageUrl
+        ? `<div style="position:relative;display:inline-block;max-width:100%;"><img src="${esc(item.imageUrl)}" alt="${esc(item.imageAlt ?? "")}" style="max-height:260px;border:1px solid #ccc;border-radius:6px;display:block;" />${dots}</div>`
+        : `<div style="width:280px;height:170px;background:#eee;display:grid;place-items:center;color:#888;font-size:9pt;border:1px dashed #aaa;border-radius:6px;">Bez obrázku</div>`;
+      // Word bank — shuffled when item.imageShuffleWords !== false
+      const answers = rows.map((r) => r.answer).filter(Boolean);
+      const shuffle = item.imageShuffleWords !== false;
+      const bank = shuffle
+        ? answers
+            .map((a) => ({ a, k: Math.sin((item.id.length + a.length) * 9301 + a.charCodeAt(0)) }))
+            .sort((x, y) => x.k - y.k)
+            .map((o) => o.a)
+        : answers;
+      const bankHtml = bank.length
+        ? `<div style="margin:6px 0 8px;padding:6px 8px;border:1px dashed #888;border-radius:6px;font-size:10pt;background:#f8fafc;">
+            <b>Nápověda — slova k použití:</b> ${bank.map(esc).join(" &nbsp;·&nbsp; ")}
+          </div>`
+        : "";
+      const list = rows.map((r) =>
+        `<li style="margin:3px 0;"><b>${r.number}.</b> <span style="display:inline-block;border-bottom:1px solid #555;min-width:55%;height:14pt;"></span></li>`,
+      ).join("");
+      return `<div style="margin:8px 0;">
+        ${item.prompt ? `<p style="font-size:10pt;margin:0 0 6px;font-weight:500;">${esc(item.prompt)}</p>` : ""}
+        ${imgHtml}
+        ${bankHtml}
+        <ol style="margin:4px 0 0;padding-left:18px;font-size:10pt;list-style:none;">${list}</ol>
+      </div>`;
+    }
+
     case "image_hotspot": {
-      const isLabel = item.type === "image_label";
-      const rows = isLabel ? (item.imageLabels ?? []) : (item.imageHotspots ?? []);
-      const dots = rows.map((r: any) =>
-        `<div style="position:absolute;left:${r.xPercent}%;top:${r.yPercent}%;transform:translate(-50%,-50%);width:22px;height:22px;border-radius:50%;background:${isLabel ? "#6EC6D9" : "#9B6CFF"};color:#fff;font-weight:bold;font-size:10pt;text-align:center;line-height:22px;border:2px solid #fff;box-shadow:0 0 0 1px #333;">${r.number}</div>`,
+      const rows = item.imageHotspots ?? [];
+      const dots = rows.map((r) =>
+        `<div style="position:absolute;left:${r.xPercent}%;top:${r.yPercent}%;transform:translate(-50%,-50%);width:22px;height:22px;border-radius:50%;background:#9B6CFF;color:#fff;font-weight:bold;font-size:10pt;text-align:center;line-height:22px;border:2px solid #fff;box-shadow:0 0 0 1px #333;">${r.number}</div>`,
       ).join("");
       const imgHtml = item.imageUrl
         ? `<div style="position:relative;display:inline-block;max-width:100%;"><img src="${esc(item.imageUrl)}" alt="${esc(item.imageAlt ?? "")}" style="max-height:240px;border:1px solid #ccc;border-radius:6px;display:block;" />${dots}</div>`
         : `<div style="width:280px;height:170px;background:#eee;display:grid;place-items:center;color:#888;font-size:9pt;border:1px dashed #aaa;border-radius:6px;">Bez obrázku</div>`;
-      const list = rows.map((r: any) =>
-        isLabel
-          ? `<li><b>${r.number}.</b> ____________________________</li>`
-          : `<li><b>${r.number}.</b> ${esc(r.question)}</li>`,
+      const list = rows.map((r) =>
+        `<li><b>${r.number}.</b> ${esc(r.question)}</li>`,
       ).join("");
       return `<div style="margin:8px 0;">
         ${item.prompt ? `<p style="font-size:10pt;margin:0 0 6px;font-weight:500;">${esc(item.prompt)}</p>` : ""}
