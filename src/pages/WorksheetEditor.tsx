@@ -2702,8 +2702,160 @@ function PropertiesPanel({
         </div>
       )}
 
-      <div className="pt-3 border-t border-border">
-        <Label className="text-xs">Obrázek (URL, volitelné)</Label>
+      {item.type === "section_header" && (
+        <div className="rounded-lg border border-dashed border-border bg-muted/30 p-3 text-xs text-muted-foreground">
+          Nadpis sekce. Vyplňte název v poli „Otázka" výše. Bez bodů a bez odpovědi.
+        </div>
+      )}
+
+      {item.type === "write_lines" && (
+        <div className="space-y-2 rounded-lg border border-dashed border-border bg-muted/30 p-3">
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label className="text-xs">Počet řádků</Label>
+              <Input
+                type="number"
+                min={1}
+                max={20}
+                value={item.lineCount ?? 3}
+                onChange={(e) =>
+                  onUpdateItem({
+                    lineCount: Math.max(1, Math.min(20, Number(e.target.value) || 1)),
+                    answerSpace: {
+                      ...item.answerSpace,
+                      type: "lines",
+                      lineCount: Math.max(1, Math.min(20, Number(e.target.value) || 1)),
+                    },
+                  })
+                }
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Styl čáry</Label>
+              <Select
+                value={item.lineStyle ?? "dotted"}
+                onValueChange={(v) => onUpdateItem({ lineStyle: v as any })}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="dotted">Tečkovaný</SelectItem>
+                  <SelectItem value="solid">Plný</SelectItem>
+                  <SelectItem value="dashed">Čárkovaný</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {item.type === "instruction_box" && (
+        <div className="grid grid-cols-2 gap-2 rounded-lg border border-dashed border-border bg-muted/30 p-3">
+          <div>
+            <Label className="text-xs">Ikona</Label>
+            <Select
+              value={item.instructionIcon ?? "info"}
+              onValueChange={(v) => onUpdateItem({ instructionIcon: v as any })}
+            >
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="info">ℹ️ Info</SelectItem>
+                <SelectItem value="video">🎥 Video</SelectItem>
+                <SelectItem value="write">✏️ Zápis</SelectItem>
+                <SelectItem value="discuss">💬 Diskuse</SelectItem>
+                <SelectItem value="group">👥 Skupina</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className="text-xs">Barva</Label>
+            <Select
+              value={item.instructionVariant ?? "blue"}
+              onValueChange={(v) => onUpdateItem({ instructionVariant: v as any })}
+            >
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="blue">Modrá</SelectItem>
+                <SelectItem value="yellow">Žlutá</SelectItem>
+                <SelectItem value="green">Zelená</SelectItem>
+                <SelectItem value="purple">Fialová</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      )}
+
+      {item.type === "two_boxes" && (
+        <div className="grid grid-cols-2 gap-3 rounded-lg border border-dashed border-border bg-muted/30 p-3">
+          <div>
+            <Label className="text-xs">Levý box: nadpis</Label>
+            <Input
+              value={item.leftTitle ?? ""}
+              onChange={(e) => onUpdateItem({ leftTitle: e.target.value })}
+            />
+            <Label className="text-xs mt-2">Obsah (text nebo „lines:5")</Label>
+            <Textarea
+              value={item.leftContent ?? ""}
+              onChange={(e) => onUpdateItem({ leftContent: e.target.value })}
+              rows={3}
+            />
+          </div>
+          <div>
+            <Label className="text-xs">Pravý box: nadpis</Label>
+            <Input
+              value={item.rightTitle ?? ""}
+              onChange={(e) => onUpdateItem({ rightTitle: e.target.value })}
+            />
+            <Label className="text-xs mt-2">Obsah (text nebo „lines:5")</Label>
+            <Textarea
+              value={item.rightContent ?? ""}
+              onChange={(e) => onUpdateItem({ rightContent: e.target.value })}
+              rows={3}
+            />
+          </div>
+        </div>
+      )}
+
+      {item.type === "qr_link" && (
+        <div className="space-y-2 rounded-lg border border-dashed border-border bg-muted/30 p-3">
+          <Label className="text-xs">URL pro QR kód</Label>
+          <Input
+            value={item.qrUrl ?? ""}
+            onChange={(e) => onUpdateItem({ qrUrl: e.target.value })}
+            placeholder="https://…"
+          />
+        </div>
+      )}
+
+      {item.type === "flow_steps" && (
+        <div className="space-y-2 rounded-lg border border-dashed border-border bg-muted/30 p-3">
+          <Label className="text-xs">Kroky (každý řádek = jeden krok)</Label>
+          <Textarea
+            value={(item.flowSteps ?? []).join("\n")}
+            onChange={(e) =>
+              onUpdateItem({
+                flowSteps: e.target.value.split("\n").filter((s) => s.trim()),
+              })
+            }
+            rows={5}
+            placeholder={"Krok 1\nKrok 2\nKrok 3"}
+          />
+          <div>
+            <Label className="text-xs">Směr</Label>
+            <Select
+              value={item.flowDirection ?? "vertical"}
+              onValueChange={(v) => onUpdateItem({ flowDirection: v as any })}
+            >
+              <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="vertical">↓ Svisle</SelectItem>
+                <SelectItem value="horizontal">→ Vodorovně</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      )}
+
+
         <div className="flex gap-2 items-start">
           <Input
             value={item.imageUrl ?? ""}
