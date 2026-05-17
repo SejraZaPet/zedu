@@ -2,7 +2,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useGameSession, useTeacherGameControls } from "@/hooks/useGameSession";
 import { ConnectionStatusBanner } from "@/components/game/ConnectionStatusBanner";
 import { GameLobby } from "@/components/game/GameLobby";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Monitor, Smartphone, StickyNote, ChevronLeft, ChevronRight, Users, StopCircle, ArrowLeft, Brain, Plus, Pencil, BarChart3 } from "lucide-react";
@@ -42,6 +42,8 @@ const LiveTeacherScreen = () => {
   const [adaptiveOpen, setAdaptiveOpen] = useState(false);
   const [addSlideOpen, setAddSlideOpen] = useState(false);
   const [resultsPanelOpen, setResultsPanelOpen] = useState(false);
+  const projectorPreviewRef = useRef<HTMLDivElement>(null);
+  const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const slides: SlideData[] = (session?.activity_data as any[]) || [];
   const currentIndex = session?.current_question_index ?? -1;
@@ -60,6 +62,29 @@ const LiveTeacherScreen = () => {
       .update({ whiteboard_data: { ...whiteboard, visible: !whiteboardVisible } as any })
       .eq("id", sessionId);
   }, [sessionId, whiteboard, whiteboardVisible]);
+
+  const handleProjectorScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
+    const scrollTop = e.currentTarget.scrollTop;
+    scrollTimerRef.current = setTimeout(async () => {
+      if (!sessionId) return;
+      await supabase.from("game_sessions").update({
+        settings: { ...(settings || {}), projectorScrollTop: scrollTop },
+      }).eq("id", sessionId);
+    }, 100);
+  }, [sessionId, settings]);
+
+  // Reset scroll position when slide changes
+  useEffect(() => {
+    if (!sessionId) return;
+    supabase.from("game_sessions").update({
+      settings: { ...(settings || {}), projectorScrollTop: 0 },
+    }).eq("id", sessionId);
+    if (projectorPreviewRef.current) {
+      projectorPreviewRef.current.scrollTop = 0;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentIndex]);
 
   const handleNext = useCallback(() => {
     if (!session) return;
@@ -371,7 +396,11 @@ const LiveTeacherScreen = () => {
           <Badge>{SLIDE_TYPE_LABELS[currentSlide.type] || currentSlide.type}</Badge>
 
           {/* Projector */}
-          <div className="border border-border rounded-lg p-6 bg-background">
+          <div
+            ref={projectorPreviewRef}
+            onScroll={handleProjectorScroll}
+            className="border border-border rounded-lg p-6 bg-background max-h-[60vh] overflow-y-auto"
+          >
             <div className="flex items-center gap-2 mb-3 text-xs font-medium text-muted-foreground">
               <Monitor className="w-4 h-4" /> PROJEKTOR
             </div>

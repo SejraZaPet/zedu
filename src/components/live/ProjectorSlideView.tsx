@@ -15,6 +15,7 @@ interface Props {
   players: any[];
   gameCode: string;
   overlayContent?: ReactNode;
+  scrollTop?: number;
 }
 
 /**
@@ -22,10 +23,17 @@ interface Props {
  * Used by both LiveProjectorScreen and LiveTeacherScreen (under whiteboard overlay)
  * so that whiteboard strokes align identically in both views.
  */
-const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, slides, players, gameCode, overlayContent }: Props) => {
+const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, slides, players, gameCode, overlayContent, scrollTop }: Props) => {
   const progressPct = slides.length > 0 ? ((currentIndex + 1) / slides.length) * 100 : 0;
   const frameRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    if (scrollTop !== undefined && scrollRef.current) {
+      scrollRef.current.scrollTop = scrollTop;
+    }
+  }, [scrollTop]);
 
   useEffect(() => {
     const frame = frameRef.current;
@@ -70,7 +78,7 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
               <span className="text-lg font-medium">Slide {currentIndex + 1} / {slides.length}</span>
             </div>
 
-            <div className="flex-1 flex flex-col items-center justify-start px-6 py-4 gap-4 min-h-0 overflow-y-auto">
+            <div ref={scrollRef} className="flex-1 flex flex-col items-center justify-start px-6 py-4 gap-4 min-h-0 overflow-y-auto">
               {currentSlide.type === "explain" && (
                 <div className="mb-2 inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-1.5 text-sm text-purple-300 shrink-0">
                   <BookOpen className="w-4 h-4" /> Výklad
