@@ -113,14 +113,32 @@ const LessonEditorSheet = ({ lessonId, open, onOpenChange, onSaved }: Props) => 
 
     const primaryTopicId = validAssignments[0].topic_id;
 
+    // Validate scheduled status requires future date
+    let effectiveStatus = lesson.status;
+    let effectiveScheduledAt = lesson.scheduled_publish_at;
+    if (effectiveStatus === "scheduled") {
+      if (!effectiveScheduledAt || new Date(effectiveScheduledAt).getTime() <= Date.now()) {
+        toast({
+          title: "Neplatný čas publikování",
+          description: "Pro naplánování zvolte datum a čas v budoucnosti.",
+          variant: "destructive",
+        });
+        setSaving(false);
+        return;
+      }
+    } else {
+      effectiveScheduledAt = null;
+    }
+
     const payload = {
       topic_id: primaryTopicId,
       title: lesson.title,
       hero_image_url: lesson.hero_image_url,
-      status: lesson.status,
+      status: effectiveStatus,
       blocks: lesson.blocks as any,
       sort_order: lesson.sort_order,
       require_activities: lesson.require_activities,
+      scheduled_publish_at: effectiveScheduledAt,
     };
 
     await supabase.from("textbook_lessons").update(payload).eq("id", lesson.id);
