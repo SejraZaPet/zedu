@@ -494,6 +494,38 @@ const TeacherTextbooks = () => {
                   <Copy className="w-3 h-3" />
                 </Button>
               </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" variant="outline" className="h-9 w-9 p-0">
+                    <MoreVertical className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => {
+                    setRenameTextbookTitle(selectedTextbook.title);
+                    setRenameTextbookOpen(true);
+                  }}>
+                    <Pencil className="w-4 h-4 mr-2" /> Přejmenovat
+                  </DropdownMenuItem>
+                  {selectedTextbook.archived ? (
+                    <DropdownMenuItem onClick={async () => {
+                      const { error } = await supabase.from("teacher_textbooks").update({ archived: false } as any).eq("id", selectedTextbook.id);
+                      if (error) toast({ title: "Chyba", description: error.message, variant: "destructive" });
+                      else { toast({ title: "Učebnice obnovena" }); setSelectedTextbook({ ...selectedTextbook, archived: false }); fetchTextbooks(); }
+                    }}>
+                      <ArchiveRestore className="w-4 h-4 mr-2" /> Obnovit
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem onClick={handleArchiveTextbook}>
+                      <Archive className="w-4 h-4 mr-2" /> Archivovat
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="text-destructive" onClick={() => setDeleteTextbookOpen(true)}>
+                    <Trash2 className="w-4 h-4 mr-2" /> Smazat učebnici
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
 
