@@ -69,6 +69,7 @@ const LessonEditorSheet = ({ lessonId, open, onOpenChange, onSaved }: Props) => 
         ...data,
         blocks: ((data as any).blocks as unknown as Block[]) ?? [],
         require_activities: (data as any).require_activities ?? false,
+        scheduled_publish_at: (data as any).scheduled_publish_at ?? null,
       } as LessonData);
     }
     setLoading(false);
