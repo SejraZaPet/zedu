@@ -170,6 +170,7 @@ const StudentGamePlay = () => {
   }
 
   const qi = session.current_question_index;
+  const whiteboard: WhiteboardData = ((session as any).whiteboard_data as WhiteboardData) ?? { strokes: [], visible: false };
   const currentSlideData = (session?.activity_data as any[])?.[qi];
   const isSlideFormat = currentSlideData && currentSlideData.projector !== undefined && !currentSlideData.question;
 
