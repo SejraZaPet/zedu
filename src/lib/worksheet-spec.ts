@@ -198,6 +198,10 @@ export interface WorksheetItem {
   flashcards?: Flashcard[];
   /** Popisky obrázku (image_label) */
   imageLabels?: ImageLabel[];
+  /** Tolerance umístění v % poloměru (image_label digitální verze). Default 5. */
+  imageTolerance?: number;
+  /** Zamíchat banku slov v digitální verzi (image_label). Default true. */
+  imageShuffleWords?: boolean;
   /** Hotspoty (image_hotspot) */
   imageHotspots?: ImageHotspot[];
   /** Lesson reference — id bloku/ů z lekce, jejichž obsah se zde má vykreslit */

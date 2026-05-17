@@ -1,9 +1,13 @@
+import { useRef } from "react";
 import type { WorksheetItem } from "@/lib/worksheet-spec";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Trash2, Plus } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Slider } from "@/components/ui/slider";
+import { Trash2, Plus, ImageIcon } from "lucide-react";
+import { MediaPickerDialog } from "@/components/media/MediaPickerDialog";
 
 interface Props {
   item: WorksheetItem;
@@ -201,9 +205,10 @@ export default function ActivityBlockEditor({ item, onUpdate, onPickFromLesson, 
     }
 
     case "image_label":
+      return <ImageLabelVisualEditor item={item} onUpdate={onUpdate} />;
+
     case "image_hotspot": {
-      const isLabel = item.type === "image_label";
-      const rows = isLabel ? (item.imageLabels ?? []) : (item.imageHotspots ?? []);
+      const rows = item.imageHotspots ?? [];
       return (
         <div className="space-y-2 rounded-lg border border-dashed border-border bg-muted/30 p-3">
           <Label className="text-xs">URL obrázku</Label>
@@ -212,34 +217,25 @@ export default function ActivityBlockEditor({ item, onUpdate, onPickFromLesson, 
             onChange={(e) => onUpdate({ imageUrl: e.target.value || undefined })}
             placeholder="https://…"
           />
-          <Label className="text-xs">
-            {isLabel
-              ? "Popisky (číslo|x%|y%|správná odpověď)"
-              : "Body (číslo|x%|y%|otázka)"}
-          </Label>
+          <Label className="text-xs">Body (číslo|x%|y%|otázka)</Label>
           <Textarea
-            value={rows
-              .map((r: any) =>
-                `${r.number}|${r.xPercent}|${r.yPercent}|${isLabel ? r.answer : r.question}`,
-              )
-              .join("\n")}
+            value={rows.map((r) => `${r.number}|${r.xPercent}|${r.yPercent}|${r.question}`).join("\n")}
             onChange={(e) => {
               const lines = e.target.value.split("\n").map((l) => l.trim()).filter(Boolean);
               const parsed = lines.map((l) => {
                 const [n = "1", x = "50", y = "50", text = ""] = l.split("|").map((s) => s.trim());
-                const num = parseInt(n) || 1;
-                const xPercent = Math.max(0, Math.min(100, parseFloat(x) || 0));
-                const yPercent = Math.max(0, Math.min(100, parseFloat(y) || 0));
-                return isLabel
-                  ? { number: num, xPercent, yPercent, answer: text }
-                  : { number: num, xPercent, yPercent, question: text };
+                return {
+                  number: parseInt(n) || 1,
+                  xPercent: Math.max(0, Math.min(100, parseFloat(x) || 0)),
+                  yPercent: Math.max(0, Math.min(100, parseFloat(y) || 0)),
+                  question: text,
+                };
               });
-              if (isLabel) onUpdate({ imageLabels: parsed as any });
-              else onUpdate({ imageHotspots: parsed as any });
+              onUpdate({ imageHotspots: parsed });
             }}
             rows={5}
             className="font-mono text-xs"
-            placeholder={isLabel ? "1|25|30|Hlava\n2|70|30|Křídlo" : "1|30|30|Co je v bodě 1?"}
+            placeholder={"1|30|30|Co je v bodě 1?"}
           />
         </div>
       );
@@ -248,4 +244,158 @@ export default function ActivityBlockEditor({ item, onUpdate, onPickFromLesson, 
     default:
       return null;
   }
+}
+
+// ─── Vizuální editor pro image_label ───────────────────────────────────────
+function ImageLabelVisualEditor({
+  item,
+  onUpdate,
+}: {
+  item: WorksheetItem;
+  onUpdate: (patch: Partial<WorksheetItem>) => void;
+}) {
+  const labels = item.imageLabels ?? [];
+  const tolerance = item.imageTolerance ?? 5;
+  const shuffleWords = item.imageShuffleWords !== false;
+  const imgRef = useRef<HTMLDivElement>(null);
+
+  const setImage = (url: string | undefined) => onUpdate({ imageUrl: url });
+
+  const handleImageClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!imgRef.current || !item.imageUrl) return;
+    const rect = imgRef.current.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    const next = [
+      ...labels,
+      {
+        number: (labels[labels.length - 1]?.number ?? 0) + 1 || labels.length + 1,
+        xPercent: Math.round(x * 10) / 10,
+        yPercent: Math.round(y * 10) / 10,
+        answer: "",
+      },
+    ];
+    onUpdate({ imageLabels: next });
+  };
+
+  const updateLabel = (idx: number, patch: Partial<{ answer: string }>) => {
+    const next = labels.map((m, i) => (i === idx ? { ...m, ...patch } : m));
+    onUpdate({ imageLabels: next });
+  };
+
+  const removeLabel = (idx: number) => {
+    const next = labels
+      .filter((_, i) => i !== idx)
+      .map((m, i) => ({ ...m, number: i + 1 }));
+    onUpdate({ imageLabels: next });
+  };
+
+  return (
+    <div className="space-y-3 rounded-lg border border-dashed border-border bg-muted/30 p-3">
+      <div className="flex items-center gap-2">
+        <MediaPickerDialog
+          trigger={
+            <Button type="button" size="sm" variant="outline">
+              <ImageIcon className="w-4 h-4 mr-1" />
+              {item.imageUrl ? "Změnit obrázek" : "Vybrat obrázek"}
+            </Button>
+          }
+          onPick={(url) => setImage(url)}
+        />
+        {item.imageUrl && (
+          <Button type="button" size="sm" variant="ghost" onClick={() => setImage(undefined)}>
+            Odstranit obrázek
+          </Button>
+        )}
+      </div>
+
+      {item.imageUrl ? (
+        <div className="space-y-2">
+          <p className="text-xs text-muted-foreground">Kliknutím do obrázku přidáte bod (1, 2, 3…).</p>
+          <div
+            ref={imgRef}
+            className="relative cursor-crosshair inline-block max-w-full"
+            onClick={handleImageClick}
+          >
+            <img
+              src={item.imageUrl}
+              alt={item.imageAlt ?? ""}
+              className="max-h-[420px] w-auto rounded border border-border block"
+              draggable={false}
+            />
+            {labels.map((m, i) => (
+              <div
+                key={i}
+                className="absolute w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center font-bold transform -translate-x-1/2 -translate-y-1/2 border-2 border-background pointer-events-none"
+                style={{ left: `${m.xPercent}%`, top: `${m.yPercent}%` }}
+              >
+                {m.number}
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="border-2 border-dashed border-border rounded-lg p-6 text-center text-sm text-muted-foreground">
+          Vyberte obrázek z knihovny médií.
+        </div>
+      )}
+
+      {labels.length > 0 && (
+        <div className="space-y-2">
+          <Label className="text-xs">Body a popisky</Label>
+          {labels.map((m, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center font-bold flex-shrink-0">
+                {m.number}
+              </span>
+              <Input
+                className="flex-1"
+                placeholder={`Popisek bodu ${m.number}`}
+                value={m.answer}
+                onChange={(e) => updateLabel(i, { answer: e.target.value })}
+              />
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7 text-destructive"
+                onClick={() => removeLabel(i)}
+              >
+                <Trash2 className="w-3 h-3" />
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="grid sm:grid-cols-2 gap-3 pt-2 border-t border-border">
+        <div>
+          <Label className="text-xs">Tolerance umístění: {tolerance} %</Label>
+          <Slider
+            min={2}
+            max={15}
+            step={1}
+            value={[tolerance]}
+            onValueChange={([v]) => onUpdate({ imageTolerance: v })}
+            className="mt-2"
+          />
+        </div>
+        <div className="flex items-center gap-2 pt-5">
+          <Checkbox
+            id={`shuffle-${item.id}`}
+            checked={shuffleWords}
+            onCheckedChange={(v) => onUpdate({ imageShuffleWords: !!v })}
+          />
+          <Label htmlFor={`shuffle-${item.id}`} className="text-xs cursor-pointer">
+            Zamíchat slova v bance
+          </Label>
+        </div>
+      </div>
+
+      <p className="text-[11px] text-muted-foreground">
+        Online: žák přiřazuje slova ťuknutím. Tisk: pod obrázkem je banka slov a řádky pro
+        zápis.
+      </p>
+    </div>
+  );
 }

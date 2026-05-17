@@ -25,6 +25,7 @@ import OpenAnswerItem from "./OpenAnswerItem";
 import OfflineActivityItem from "./OfflineActivityItem";
 import LayoutBlockItem from "./LayoutBlockItem";
 import ActivityBlockItem from "./ActivityBlockItem";
+import ImageLabelPlayer from "./ImageLabelPlayer";
 
 /** Registry mapping item type → renderer component */
 export const ITEM_RENDERERS: Record<ItemType, FC<WorksheetItemProps>> = {
@@ -46,7 +47,7 @@ export const ITEM_RENDERERS: Record<ItemType, FC<WorksheetItemProps>> = {
   word_search: ActivityBlockItem,
   sorting: ActivityBlockItem,
   flashcards: ActivityBlockItem,
-  image_label: ActivityBlockItem,
+  image_label: ImageLabelPlayer,
   image_hotspot: ActivityBlockItem,
   lesson_reference: ActivityBlockItem,
 };
