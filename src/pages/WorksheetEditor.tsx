@@ -2235,6 +2235,7 @@ export default function WorksheetEditor() {
         </DialogContent>
       </Dialog>
 
+      <LessonContentPickerSheet
         open={pickerForItem !== null}
         onOpenChange={(v) => { if (!v) setPickerForItem(null); }}
         blocks={lessonBlocks}
