@@ -292,25 +292,8 @@ const LiveWhiteboard = ({ sessionId, data, readOnly = false, onClose, overlay = 
       className={overlay ? `absolute inset-0 z-40 ${className ?? ""}`.trim() : `relative w-full h-full ${className ?? ""}`.trim()}
       style={{ pointerEvents: readOnly ? "none" : "auto" }}
     >
-      <div ref={containerRef} className="absolute inset-0">
-        <canvas
-          ref={canvasRef}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={finishStroke}
-          onPointerCancel={finishStroke}
-          onPointerLeave={finishStroke}
-          className="absolute inset-0"
-          style={{
-            background: "transparent",
-            touchAction: "none",
-            cursor: readOnly ? "default" : tool === "eraser" ? "cell" : "crosshair",
-          }}
-        />
-      </div>
-
       {!readOnly && (
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 flex flex-wrap items-center gap-1 rounded-xl border border-border bg-background/95 p-1.5 text-foreground shadow-lg backdrop-blur supports-[backdrop-filter]:bg-background/85">
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-50 flex flex-wrap items-center gap-1 rounded-xl border border-border bg-background/95 p-1.5 text-foreground shadow-lg backdrop-blur supports-[backdrop-filter]:bg-background/85">
           {tools.map((t) => (
             <Button
               key={t.id}
@@ -379,6 +362,23 @@ const LiveWhiteboard = ({ sessionId, data, readOnly = false, onClose, overlay = 
           )}
         </div>
       )}
+
+      <div ref={containerRef} className="absolute inset-0">
+        <canvas
+          ref={canvasRef}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={finishStroke}
+          onPointerCancel={finishStroke}
+          onPointerLeave={finishStroke}
+          className="absolute inset-0"
+          style={{
+            background: "transparent",
+            touchAction: "none",
+            cursor: readOnly ? "default" : tool === "eraser" ? "cell" : "crosshair",
+          }}
+        />
+      </div>
     </div>
   );
 };
