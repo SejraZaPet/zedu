@@ -1587,6 +1587,25 @@ export default function WorksheetEditor() {
             <Button variant="outline" size="sm" onClick={() => setPdfDialogOpen(true)} className="hidden md:inline-flex">
               <Printer className="w-4 h-4 mr-1" /> Tisk/PDF
             </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="hidden md:inline-flex">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowAiGenerateDialog(true)}
+                      disabled={!activeLessonContent || activeLessonContent.trim().length < 20}
+                    >
+                      <Sparkles className="w-4 h-4 mr-1" /> AI vytvoří pracovní list
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                {(!activeLessonContent || activeLessonContent.trim().length < 20) && (
+                  <TooltipContent>Nejdřív přiřaďte lekci</TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
             <Button
               variant="outline"
               size="sm"
