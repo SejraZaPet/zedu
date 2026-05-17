@@ -137,6 +137,7 @@ import {
   AiSuggestFromLessonDialog,
   type AiGeneratedItem,
 } from "@/components/worksheet/LessonContentTools";
+import ActivityBlockEditor from "@/components/worksheet/ActivityBlockEditor";
 import {
   Tooltip,
   TooltipContent,
