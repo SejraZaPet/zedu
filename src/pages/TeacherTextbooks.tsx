@@ -706,6 +706,15 @@ const TeacherTextbooks = () => {
                   }));
                   toast({ title: "Pořadí uloženo" });
                 }}
+                onReorderTopics={async (grade, ordered) => {
+                  // Optimistic update
+                  setGradeGroups((prev) => prev.map((g) => g.grade === grade ? { ...g, topics: ordered.map((t, i) => ({ ...t, sort_order: i })) } : g));
+                  // Persist
+                  await Promise.all(ordered.map((topic, i) => {
+                    return supabase.from("textbook_topics").update({ sort_order: i }).eq("id", topic.id);
+                  }));
+                  toast({ title: "Pořadí témat uloženo" });
+                }}
               />
             )}
           </div>
