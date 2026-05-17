@@ -353,6 +353,7 @@ export default function WorksheetEditor() {
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
   const [allLessons, setAllLessons] = useState<LessonOption[]>([]);
   const [activeLessonContent, setActiveLessonContent] = useState<string>("");
+  const [activeLessonActivities, setActiveLessonActivities] = useState<LessonActivity[]>([]);
   const [linkedLessons, setLinkedLessons] = useState<LinkedLessonRow[]>([]);
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [searchParams] = useSearchParams();
