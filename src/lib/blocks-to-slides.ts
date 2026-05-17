@@ -152,16 +152,31 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
       continue;
     }
 
+    const converted = blockToBodyText(block);
+
+    // Activity blocks always get their own standalone slide so results
+    // can be shared on the projector like other presentation activities.
+    if (type === "activity" || converted.activitySpec) {
+      flush();
+      const activityHeadline =
+        props.title || props.question || props.activityType || "Aktivita";
+      const activitySlide = newSlide(activityHeadline);
+      activitySlide.type = "activity";
+      activitySlide.activitySpec = converted.activitySpec || props;
+      activitySlide.blocks.push(block);
+      if (converted.text) activitySlide.projector.body = converted.text;
+      if (converted.assetRef) activitySlide.projector.assetRefs.push(converted.assetRef);
+      activitySlide.device = { instructions: "Odpovězte na svém zařízení." };
+      current = activitySlide;
+      flush();
+      continue;
+    }
+
     if (!current) current = newSlide("");
     current.blocks.push(block);
 
-    const converted = blockToBodyText(block);
     appendBody(converted.text);
     if (converted.assetRef) current.projector.assetRefs.push(converted.assetRef);
-    if (converted.activitySpec) {
-      current.type = "activity";
-      current.activitySpec = converted.activitySpec;
-    }
     if (converted.tableData) current.tableData = converted.tableData;
     if (converted.cardData) current.cardData = converted.cardData;
   }
