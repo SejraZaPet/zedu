@@ -230,6 +230,123 @@ const LiveTeacherScreen = () => {
         />
       )}
 
+      <Sheet open={resultsPanelOpen} onOpenChange={setResultsPanelOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Výsledky třídy — celá prezentace</SheetTitle>
+          </SheetHeader>
+          <div className="mt-4 space-y-4">
+            {/* Souhrn */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="border border-border rounded-lg p-3 text-center">
+                <p className="text-2xl font-bold">{players.length}</p>
+                <p className="text-xs text-muted-foreground">žáků</p>
+              </div>
+              <div className="border border-border rounded-lg p-3 text-center">
+                <p className="text-2xl font-bold">{slides.filter((s: any) => s.type === "activity").length}</p>
+                <p className="text-xs text-muted-foreground">aktivit</p>
+              </div>
+              <div className="border border-border rounded-lg p-3 text-center">
+                <p className="text-2xl font-bold">{responses.length}</p>
+                <p className="text-xs text-muted-foreground">odpovědí</p>
+              </div>
+            </div>
+
+            {/* Per-aktivita breakdown */}
+            {slides.map((slide: any, idx) => {
+              if (slide.type !== "activity") return null;
+              const slideResponses = responses.filter(r => r.question_index === idx);
+              const avgScore = slideResponses.length > 0
+                ? Math.round(slideResponses.reduce((sum, r) => sum + (r.score ?? 0), 0) / slideResponses.length)
+                : null;
+              const actType = slide.activitySpec?.activityType || slide.activitySpec?.type || "aktivita";
+              return (
+                <div key={idx} className="border border-border rounded-lg p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-sm truncate">Slide {idx + 1}: {slide.projector?.headline || actType}</p>
+                      <Badge variant="outline" className="mt-1 text-xs">{actType}</Badge>
+                    </div>
+                    {avgScore !== null && (
+                      <div className="text-right flex-shrink-0">
+                        <p className={`text-xl font-bold ${avgScore >= 70 ? "text-green-600" : avgScore >= 40 ? "text-yellow-600" : "text-red-600"}`}>
+                          {avgScore}%
+                        </p>
+                        <p className="text-xs text-muted-foreground">průměr</p>
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">{slideResponses.length} / {players.length} odpovědí</p>
+                    {players.length > 0 && (
+                      <div className="w-full bg-muted rounded-full h-1.5">
+                        <div
+                          className="bg-primary h-1.5 rounded-full transition-all"
+                          style={{ width: `${Math.round((slideResponses.length / players.length) * 100)}%` }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    {slideResponses.map(r => {
+                      const player = players.find(p => p.id === r.player_id);
+                      return (
+                        <div key={r.id} className="flex items-center justify-between text-sm">
+                          <span>{player?.nickname || "Žák"}</span>
+                          <span className={r.is_correct ? "text-green-600 font-medium" : "text-muted-foreground"}>
+                            {r.score ?? 0}%
+                          </span>
+                        </div>
+                      );
+                    })}
+                    {slideResponses.length === 0 && (
+                      <p className="text-xs text-muted-foreground italic">Žádné odpovědi</p>
+                    )}
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => { goToIndex(idx); setResultsPanelOpen(false); }}
+                  >
+                    Přejít na slide {idx + 1}
+                  </Button>
+                </div>
+              );
+            })}
+
+            {/* Celkový žebříček žáků */}
+            <div className="border border-border rounded-lg p-4">
+              <p className="font-semibold text-sm mb-3">Žebříček žáků</p>
+              <div className="space-y-1">
+                {players
+                  .map(p => {
+                    const playerResponses = responses.filter(r => r.player_id === p.id);
+                    const totalScore = playerResponses.reduce((sum, r) => sum + (r.score ?? 0), 0);
+                    const avgScore = playerResponses.length > 0 ? Math.round(totalScore / playerResponses.length) : 0;
+                    return { ...p, avgScore, answered: playerResponses.length };
+                  })
+                  .sort((a, b) => b.avgScore - a.avgScore)
+                  .map((p, i) => (
+                    <div key={p.id} className="flex items-center justify-between text-sm py-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground w-6">{i + 1}.</span>
+                        <span>{p.nickname}</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-muted-foreground">{p.answered} odpovědí</span>
+                        <span className="font-medium w-12 text-right">{p.avgScore}%</span>
+                      </div>
+                    </div>
+                  ))
+                }
+              </div>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+
       {/* Slide strip */}
       <div className="flex gap-1 overflow-x-auto pb-1">
         {slides.map((_, i) => (
