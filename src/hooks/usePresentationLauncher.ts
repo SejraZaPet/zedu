@@ -26,8 +26,14 @@ export function usePresentationLauncher() {
 
   const [hasSavedPresentation, setHasSavedPresentation] = useState(false);
 
+  const slideKey = (slide: any, index: number) => {
+    const headline = String(slide?.projector?.headline || "").trim().toLowerCase();
+    return headline || String(slide?.slideId || `index-${index}`);
+  };
+
   const openEditor = async (lesson: LessonItem) => {
-    let slides: any[] = [];
+    const freshSlides = blocksToSlides(lesson.blocks || [], lesson.title);
+    let slides: any[] = freshSlides;
     let saved = false;
 
     const table = lesson.source === "teacher_textbook_lessons"
@@ -42,29 +48,40 @@ export function usePresentationLauncher() {
 
     const savedSlides = (data as any)?.presentation_slides;
     if (savedSlides && Array.isArray(savedSlides) && savedSlides.length > 0) {
-      // Hydrate legacy slides (saved before blocks-based rendering) with blocks from the lesson
-      const needsHydration = savedSlides.some(
-        (s: any) => !Array.isArray(s.blocks) || s.blocks.length === 0,
-      );
-      if (needsHydration) {
-        const fresh = blocksToSlides(lesson.blocks || [], lesson.title);
-        const freshByHeadline = new Map<string, any>();
-        for (const f of fresh) {
-          const key = (f.projector?.headline || "").trim().toLowerCase();
-          if (key && !freshByHeadline.has(key)) freshByHeadline.set(key, f);
-        }
-        slides = savedSlides.map((s: any) => {
-          if (Array.isArray(s.blocks) && s.blocks.length > 0) return s;
-          const key = (s.projector?.headline || "").trim().toLowerCase();
-          const match = freshByHeadline.get(key);
-          return match ? { ...s, blocks: match.blocks || [] } : s;
-        });
-      } else {
-        slides = savedSlides;
-      }
+      const savedByKey = new Map<string, any>();
+      savedSlides.forEach((slide: any, index: number) => {
+        savedByKey.set(slideKey(slide, index), slide);
+      });
+
+      const mergedFresh = freshSlides.map((freshSlide, index) => {
+        const savedSlide = savedByKey.get(slideKey(freshSlide, index));
+        if (!savedSlide) return freshSlide;
+
+        return {
+          ...savedSlide,
+          ...freshSlide,
+          projector: {
+            ...savedSlide.projector,
+            ...freshSlide.projector,
+            fontScale: savedSlide.projector?.fontScale ?? freshSlide.projector?.fontScale,
+          },
+          device: savedSlide.device ?? freshSlide.device,
+          teacherNotes: savedSlide.teacherNotes ?? freshSlide.teacherNotes,
+          layout: savedSlide.layout ?? freshSlide.layout,
+          heroImage: savedSlide.heroImage ?? freshSlide.heroImage,
+          activitySpec: savedSlide.activitySpec ?? freshSlide.activitySpec,
+          blocks: freshSlide.blocks,
+          tableData: freshSlide.tableData,
+          cardData: freshSlide.cardData,
+          type: freshSlide.type,
+        };
+      });
+
+      const freshKeys = new Set(mergedFresh.map((slide, index) => slideKey(slide, index)));
+      const customSlides = savedSlides.filter((slide: any, index: number) => !freshKeys.has(slideKey(slide, index)));
+
+      slides = [...mergedFresh, ...customSlides];
       saved = true;
-    } else {
-      slides = blocksToSlides(lesson.blocks || [], lesson.title);
     }
 
     setHasSavedPresentation(saved);
