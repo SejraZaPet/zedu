@@ -353,23 +353,34 @@ const StudentGamePlay = () => {
 
           {/* Instrukce + progress */}
           {currentSlideData.device?.instructions && currentSlideData.device.instructions !== "Sledujte výklad." && (
-            <div className="mx-4 mt-2 p-3 bg-white/10 border border-white/20 rounded-lg backdrop-blur">
-              <p className="text-sm font-medium text-white">{currentSlideData.device.instructions}</p>
+            <div className="mx-3 sm:mx-4 mt-2 p-2.5 sm:p-3 bg-white/10 border border-white/20 rounded-lg backdrop-blur">
+              <p className="text-xs sm:text-sm font-medium text-white">{currentSlideData.device.instructions}</p>
             </div>
           )}
-          <div className="mt-4 mb-4 text-center">
-            <p className="text-xs text-white/60">
+          <div className="px-3 sm:px-4 pb-3 sm:pb-4 mt-3 sm:mt-4">
+            <div className="h-1 sm:h-1.5 bg-white/10 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-purple-400 to-pink-400 transition-all"
+                style={{
+                  width: `${(((qi + 1) / Math.max(1, (session?.activity_data as any[])?.length ?? 1)) * 100).toFixed(1)}%`,
+                }}
+              />
+            </div>
+            <p className="text-[10px] sm:text-xs text-gray-400 text-center mt-1.5 sm:mt-2">
               Slide {qi + 1} / {(session?.activity_data as any[])?.length ?? 0}
             </p>
           </div>
 
           {whiteboard.visible && whiteboard.strokes.length > 0 && (
-            <LiveWhiteboard
-              sessionId={sessionId || ""}
-              data={whiteboard}
-              readOnly
-              className="pointer-events-none"
-            />
+            <div className="fixed inset-0 z-30 pointer-events-none">
+              <LiveWhiteboard
+                sessionId={sessionId || ""}
+                data={whiteboard}
+                readOnly
+                overlay
+                className="pointer-events-none"
+              />
+            </div>
           )}
         </div>
       </>
