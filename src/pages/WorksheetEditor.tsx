@@ -871,6 +871,19 @@ export default function WorksheetEditor() {
     }));
   }
 
+  function moveItem(itemId: string, direction: -1 | 1) {
+    if (!spec) return;
+    const idx = items.findIndex((it) => it.id === itemId);
+    if (idx < 0) return;
+    const newIdx = idx + direction;
+    if (newIdx < 0 || newIdx >= items.length) return;
+    const reordered = arrayMove(items, idx, newIdx);
+    updateSpec((s) => ({
+      ...s,
+      variants: s.variants.map((v, i) => (i === 0 ? { ...v, items: reordered } : v)),
+    }));
+  }
+
   async function togglePublish() {
     if (!id) return;
     const next = status === "published" ? "draft" : "published";
