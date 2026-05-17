@@ -1994,6 +1994,14 @@ export default function WorksheetEditor() {
                       </SelectItem>
                     ))}
                   </SelectGroup>
+                  <SelectGroup>
+                    <SelectLabel>Aktivity & obsah z lekce</SelectLabel>
+                    {ACTIVITY_BLOCK_TYPES.map((t) => (
+                      <SelectItem key={t} value={t}>
+                        {ITEM_TYPE_LABELS[t].label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
                 </SelectContent>
               </Select>
             </div>
