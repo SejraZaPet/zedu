@@ -203,7 +203,7 @@ const TeacherTextbooks = () => {
     // Load lessons placed via lesson_placements
     const { data: placementData } = await supabase
       .from("lesson_placements")
-      .select("*, teacher_textbook_lessons(id, title, status, blocks, sort_order)")
+      .select("*, teacher_textbook_lessons(id, title, status, blocks, sort_order, hero_image_url, scheduled_publish_at)")
       .eq("subject_slug", tb.subject);
 
     const groups: GradeGroup[] = matchedSubject.grades.map(g => {
