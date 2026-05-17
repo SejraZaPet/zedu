@@ -142,6 +142,32 @@ ${hint ? `Doplňující pokyn učitele: ${hint}\n\n` : ""}Vytvoř pracovní list
                       rightTitle: { type: "string" },
                       rightContent: { type: "string" },
                       flowSteps: { type: "array", items: { type: "string" } },
+                      sortingCategories: {
+                        type: "array",
+                        items: {
+                          type: "object",
+                          properties: { id: { type: "string" }, label: { type: "string" } },
+                          required: ["id", "label"],
+                        },
+                      },
+                      sortingItems: {
+                        type: "array",
+                        items: {
+                          type: "object",
+                          properties: { text: { type: "string" }, categoryId: { type: "string" } },
+                          required: ["text", "categoryId"],
+                        },
+                      },
+                      flashcards: {
+                        type: "array",
+                        items: {
+                          type: "object",
+                          properties: { front: { type: "string" }, back: { type: "string" } },
+                          required: ["front", "back"],
+                        },
+                      },
+                      wordSearchWords: { type: "array", items: { type: "string" } },
+                      wordSearchSize: { type: "number" },
                     },
                     required: ["type", "prompt"],
                   },
