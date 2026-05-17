@@ -2458,11 +2458,15 @@ function TypeSpecificEditor({
   answerKey,
   onUpdateItem,
   onUpdateKey,
+  hasLesson = false,
+  onPickFromLesson,
 }: {
   item: WorksheetItem;
   answerKey: AnswerKeyEntry | null;
   onUpdateItem: (p: Partial<WorksheetItem>) => void;
   onUpdateKey: (p: Partial<AnswerKeyEntry>) => void;
+  hasLesson?: boolean;
+  onPickFromLesson?: () => void;
 }) {
   return (
     <div className="space-y-4 text-sm">
