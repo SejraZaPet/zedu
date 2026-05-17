@@ -82,7 +82,7 @@ const BlockRenderer = ({ block, onChange }: { block: Block; onChange: (props: Re
   }
 };
 
-const SortableBlock = ({
+const SortableBlock = React.memo(({
   block,
   onUpdate,
   onDuplicate,
@@ -127,7 +127,32 @@ const SortableBlock = ({
       </div>
     </div>
   );
-};
+});
+SortableBlock.displayName = "SortableBlock";
+
+const InsertButton = React.memo(({ onInsert }: { onInsert: (type: Block["type"]) => void }) => (
+  <div className="flex justify-center py-0.5 group">
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className="opacity-0 group-hover:opacity-100 transition-opacity h-5 w-5 rounded-full bg-primary/10 hover:bg-primary/20 flex items-center justify-center"
+          title="Vložit blok zde"
+        >
+          <Plus className="w-3 h-3 text-primary" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="center" className="w-48 max-h-[360px] overflow-y-auto overflow-x-hidden">
+        {BLOCK_TYPES.map((bt) => (
+          <DropdownMenuItem key={bt.type} onClick={() => onInsert(bt.type)} className="py-1.5 px-2 text-sm">
+            <span className="w-5 text-center mr-2">{bt.icon}</span>{bt.label}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  </div>
+));
+InsertButton.displayName = "InsertButton";
 
 const BlockEditor = ({ blocks, onChange }: Props) => {
   const sensors = useSensors(
