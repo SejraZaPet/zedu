@@ -335,6 +335,28 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
       onDrop={handleDrop}
       className={`relative space-y-3 rounded-lg transition ${dragOver ? "ring-2 ring-primary ring-offset-2 bg-primary/5" : ""}`}
     >
+      <div className="flex items-center justify-end gap-1 sticky top-0 z-40 bg-background/80 backdrop-blur-sm py-1 -mt-1 rounded-md">
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 gap-1.5"
+          onClick={undo}
+          disabled={!canUndo}
+          title="Zpět (Ctrl/Cmd+Z)"
+        >
+          <Undo2 className="w-3.5 h-3.5" /> Zpět
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 gap-1.5"
+          onClick={redo}
+          disabled={!canRedo}
+          title="Vpřed (Ctrl/Cmd+Shift+Z)"
+        >
+          <Redo2 className="w-3.5 h-3.5" /> Vpřed
+        </Button>
+      </div>
       {dragOver && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-primary/10 rounded-lg pointer-events-none">
           <p className="text-lg font-medium text-primary">📷 Pusťte obrázek sem</p>
