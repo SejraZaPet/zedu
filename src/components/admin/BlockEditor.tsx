@@ -180,6 +180,7 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
   blocksRef.current = blocks;
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
+  const pendingScrollToBlockIdRef = useRef<string | null>(null);
 
   const updateUndoRedoState = useCallback(() => {
     setUndoRedoState({
@@ -187,6 +188,21 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
       canRedo: indexRef.current < historyRef.current.length - 1,
     });
   }, []);
+
+  useEffect(() => {
+    const blockId = pendingScrollToBlockIdRef.current;
+    if (!blockId) return;
+
+    const frame = requestAnimationFrame(() => {
+      const el = document.querySelector(`[data-block-id="${blockId}"]`);
+      if (el instanceof HTMLElement) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      pendingScrollToBlockIdRef.current = null;
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [blocks]);
 
   const commit = useCallback((next: Block[]) => {
     const newHistory = historyRef.current.slice(0, indexRef.current + 1);
@@ -266,11 +282,13 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
 
   const addBlock = useCallback((type: Block["type"], index?: number) => {
     const cur = blocksRef.current;
+    const newBlock = createDefaultBlock(type);
+    pendingScrollToBlockIdRef.current = newBlock.id;
     if (index === undefined || index >= cur.length) {
-      commit([...cur, createDefaultBlock(type)]);
+      commit([...cur, newBlock]);
     } else {
       const next = [...cur];
-      next.splice(index, 0, createDefaultBlock(type));
+      next.splice(index, 0, newBlock);
       commit(next);
     }
   }, [commit]);
@@ -279,7 +297,9 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
     const cur = blocksRef.current;
     const idx = cur.findIndex((b) => b.id === afterId);
     const next = [...cur];
-    next.splice(idx + 1, 0, createDefaultBlock(type));
+    const newBlock = createDefaultBlock(type);
+    pendingScrollToBlockIdRef.current = newBlock.id;
+    next.splice(idx + 1, 0, newBlock);
     commit(next);
   }, [commit]);
 
@@ -361,6 +381,8 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
     return () => document.removeEventListener("paste", handlePaste);
   }, []);
 
+  const blockIds = useMemo(() => blocks.map((b) => b.id), [blocks]);
+
   return (
     <div
       onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
@@ -402,7 +424,7 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
         <div className="text-xs text-muted-foreground">Nahrávám obrázek…</div>
       )}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext items={blocks.map((b) => b.id)} strategy={verticalListSortingStrategy}>
+        <SortableContext items={blockIds} strategy={verticalListSortingStrategy}>
           {blocks.map((block, idx) => (
             <React.Fragment key={block.id}>
               <SortableBlock
