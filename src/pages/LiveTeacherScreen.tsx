@@ -42,6 +42,8 @@ const LiveTeacherScreen = () => {
   const [adaptiveOpen, setAdaptiveOpen] = useState(false);
   const [addSlideOpen, setAddSlideOpen] = useState(false);
   const [resultsPanelOpen, setResultsPanelOpen] = useState(false);
+  const projectorPreviewRef = useRef<HTMLDivElement>(null);
+  const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const slides: SlideData[] = (session?.activity_data as any[]) || [];
   const currentIndex = session?.current_question_index ?? -1;
