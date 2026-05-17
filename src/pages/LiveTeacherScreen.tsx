@@ -396,7 +396,11 @@ const LiveTeacherScreen = () => {
           <Badge>{SLIDE_TYPE_LABELS[currentSlide.type] || currentSlide.type}</Badge>
 
           {/* Projector */}
-          <div className="border border-border rounded-lg p-6 bg-background">
+          <div
+            ref={projectorPreviewRef}
+            onScroll={handleProjectorScroll}
+            className="border border-border rounded-lg p-6 bg-background max-h-[60vh] overflow-y-auto"
+          >
             <div className="flex items-center gap-2 mb-3 text-xs font-medium text-muted-foreground">
               <Monitor className="w-4 h-4" /> PROJEKTOR
             </div>
