@@ -315,33 +315,6 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const [dragOver, setDragOver] = useState(false);
-  const [uploading, setUploading] = useState(false);
-
-  const uploadImageFile = async (file: File): Promise<string | null> => {
-    const ext = (file.name.split(".").pop() || file.type.split("/")[1] || "png").toLowerCase();
-    const path = `${crypto.randomUUID()}.${ext}`;
-    const { error } = await supabase.storage
-      .from("lesson-images")
-      .upload(path, file, { contentType: file.type || `image/${ext}`, upsert: false });
-    if (error) {
-      console.warn("Image upload failed:", error);
-      return null;
-    }
-    const { data } = supabase.storage.from("lesson-images").getPublicUrl(path);
-    return data.publicUrl;
-  };
-
-  const appendImageBlock = (url: string, caption = "") => {
-    const newBlock = {
-      id: crypto.randomUUID(),
-      type: "image",
-      visible: true,
-      props: { url, caption, width: "full", alignment: "center" },
-    } as unknown as Block;
-    commit([...blocks, newBlock]);
-  };
-
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(false);
