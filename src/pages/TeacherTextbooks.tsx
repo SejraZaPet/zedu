@@ -370,10 +370,23 @@ const TeacherTextbooks = () => {
       }
       if (table === "textbook_lessons") {
         const valid = lessonAssignments.filter((a) => a.topic_id);
+        // Validate scheduled rows
+        const badRow = valid.find(a => a.status === "scheduled" && (!a.scheduled_publish_at || new Date(a.scheduled_publish_at).getTime() <= Date.now()));
+        if (badRow) {
+          toast({ title: "Neplatný čas publikování umístění", description: `Umístění „${badRow.topic_title}" má naplánovaný čas v minulosti.`, variant: "destructive" });
+          setSaving(false);
+          return;
+        }
         await supabase.from("lesson_topic_assignments").delete().eq("lesson_id", editingLesson.id);
         if (valid.length > 0) {
           const { error: aErr } = await supabase.from("lesson_topic_assignments").insert(
-            valid.map((a, i) => ({ lesson_id: editingLesson.id, topic_id: a.topic_id, sort_order: i })),
+            valid.map((a, i) => ({
+              lesson_id: editingLesson.id,
+              topic_id: a.topic_id,
+              sort_order: i,
+              status: a.status ?? "published",
+              scheduled_publish_at: a.status === "scheduled" ? a.scheduled_publish_at ?? null : null,
+            })),
           );
           if (aErr) {
             toast({ title: "Chyba při ukládání umístění", description: aErr.message, variant: "destructive" });
