@@ -805,6 +805,143 @@ function renderItem(item: WorksheetItem, showPoints: boolean): string {
         .join("");
       return `<div style="text-align:center;margin:8px 0;">${item.prompt ? `<p style="font-size:10pt;margin:0 0 6px;">${esc(item.prompt)}</p>` : ""}${boxes}</div>`;
     }
+
+    case "lesson_reference": {
+      return `<div style="border-left:3px solid #6EC6D9;background:#f0fbff;border-radius:0 8px 8px 0;padding:10px 12px;margin:8px 0;">
+        ${item.prompt ? `<p style="font-size:9pt;text-transform:uppercase;letter-spacing:0.05em;color:#0e7490;margin:0 0 4px;font-weight:600;">${esc(item.prompt)}</p>` : ""}
+        <div style="font-size:10pt;white-space:pre-wrap;color:#0f172a;">${esc(item.lessonRefContent ?? "")}</div>
+      </div>`;
+    }
+
+    case "crossword": {
+      const cols = item.crosswordCols ?? 12;
+      const rows = item.crosswordRows ?? 10;
+      const entries = item.crosswordEntries ?? [];
+      const occ: Array<Array<{ letter: string; number?: number } | null>> = Array.from(
+        { length: rows },
+        () => Array.from({ length: cols }, () => null),
+      );
+      entries.forEach((e) => {
+        const word = (e.answer || "").toUpperCase();
+        for (let i = 0; i < word.length; i++) {
+          const r = e.direction === "across" ? e.row : e.row + i;
+          const c = e.direction === "across" ? e.col + i : e.col;
+          if (r < rows && c < cols) {
+            if (!occ[r][c]) occ[r][c] = { letter: word[i] };
+            if (i === 0) occ[r][c] = { ...occ[r][c]!, number: e.number };
+          }
+        }
+      });
+      const gridHtml = occ
+        .map(
+          (row) =>
+            `<tr>${row
+              .map(
+                (cell) =>
+                  cell
+                    ? `<td style="width:22px;height:22px;border:1px solid #555;text-align:left;vertical-align:top;font-size:7pt;padding:1px;">${cell.number ?? ""}</td>`
+                    : `<td style="width:22px;height:22px;border:none;background:#fff;"></td>`,
+              )
+              .join("")}</tr>`,
+        )
+        .join("");
+      const across = entries.filter((e) => e.direction === "across")
+        .map((e) => `<li><b>${e.number}.</b> ${esc(e.clue)}</li>`).join("");
+      const down = entries.filter((e) => e.direction === "down")
+        .map((e) => `<li><b>${e.number}.</b> ${esc(e.clue)}</li>`).join("");
+      return `<div style="margin:8px 0;">
+        ${item.prompt ? `<p style="font-size:10pt;margin:0 0 6px;font-weight:500;">${esc(item.prompt)}</p>` : ""}
+        <table style="border-collapse:collapse;">${gridHtml}</table>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:6px;font-size:9pt;">
+          <div><p style="font-weight:600;margin:0 0 4px;">Vodorovně</p><ol style="margin:0;padding-left:18px;list-style:none;">${across}</ol></div>
+          <div><p style="font-weight:600;margin:0 0 4px;">Svisle</p><ol style="margin:0;padding-left:18px;list-style:none;">${down}</ol></div>
+        </div>
+      </div>`;
+    }
+
+    case "word_search": {
+      const size = item.wordSearchSize ?? 12;
+      const words = item.wordSearchWords ?? [];
+      const seed = item.id.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+      const rand = (n: number, off = 0) => {
+        const x = Math.sin(seed + off) * 10000;
+        return Math.floor((x - Math.floor(x)) * n);
+      };
+      const grid: string[][] = Array.from({ length: size }, () => Array.from({ length: size }, () => ""));
+      words.forEach((w, wi) => {
+        const word = w.toUpperCase();
+        const row = (wi * 2) % size;
+        const col = rand(Math.max(1, size - word.length), wi);
+        for (let i = 0; i < word.length && col + i < size; i++) grid[row][col + i] = word[i];
+      });
+      const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      for (let r = 0; r < size; r++) {
+        for (let c = 0; c < size; c++) {
+          if (!grid[r][c]) grid[r][c] = alphabet[rand(26, r * size + c)];
+        }
+      }
+      const gridHtml = grid
+        .map((row) => `<tr>${row.map((ch) => `<td style="width:18px;height:18px;border:1px solid #aaa;text-align:center;font-family:monospace;font-size:9pt;">${ch}</td>`).join("")}</tr>`)
+        .join("");
+      return `<div style="margin:8px 0;">
+        ${item.prompt ? `<p style="font-size:10pt;margin:0 0 6px;font-weight:500;">${esc(item.prompt)}</p>` : ""}
+        <table style="border-collapse:collapse;">${gridHtml}</table>
+        <p style="font-size:9pt;margin:6px 0 0;"><b>Hledej:</b> ${words.map((w) => esc(w)).join(" · ")}</p>
+      </div>`;
+    }
+
+    case "sorting": {
+      const cats = item.sortingCategories ?? [];
+      const its = item.sortingItems ?? [];
+      const pool = its.map((it) => `<span style="display:inline-block;padding:3px 8px;margin:2px;background:#f1f5f9;border-radius:6px;font-size:9pt;">${esc(it.text)}</span>`).join("");
+      const boxes = cats.map((c) =>
+        `<div style="border:1px solid #ccc;border-radius:8px;padding:8px;min-height:90px;">
+          <h4 style="font-size:10pt;font-weight:600;margin:0 0 4px;">${esc(c.label)}</h4>
+          ${Array.from({ length: 5 }).map(() => `<div style="border-bottom:1px dotted #aaa;height:18px;margin-bottom:1px;"></div>`).join("")}
+        </div>`,
+      ).join("");
+      return `<div style="margin:8px 0;">
+        ${item.prompt ? `<p style="font-size:10pt;margin:0 0 6px;font-weight:500;">${esc(item.prompt)}</p>` : ""}
+        <div style="border:1px dashed #aaa;border-radius:6px;padding:6px;margin-bottom:6px;font-size:9pt;"><b>Položky:</b> ${pool}</div>
+        <div style="display:grid;grid-template-columns:repeat(${Math.max(1, cats.length)},1fr);gap:8px;">${boxes}</div>
+      </div>`;
+    }
+
+    case "flashcards": {
+      const cards = item.flashcards ?? [];
+      const cells = cards.map((c) =>
+        `<div style="border:1.5px dashed #888;border-radius:8px;padding:8px;font-size:9pt;">
+          <p style="font-weight:600;margin:0 0 4px;">${esc(c.front)}</p>
+          <p style="color:#475569;margin:0;">${esc(c.back)}</p>
+        </div>`,
+      ).join("");
+      return `<div style="margin:8px 0;">
+        ${item.prompt ? `<p style="font-size:10pt;margin:0 0 6px;font-weight:500;">${esc(item.prompt)}</p>` : ""}
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">${cells}</div>
+      </div>`;
+    }
+
+    case "image_label":
+    case "image_hotspot": {
+      const isLabel = item.type === "image_label";
+      const rows = isLabel ? (item.imageLabels ?? []) : (item.imageHotspots ?? []);
+      const dots = rows.map((r: any) =>
+        `<div style="position:absolute;left:${r.xPercent}%;top:${r.yPercent}%;transform:translate(-50%,-50%);width:22px;height:22px;border-radius:50%;background:${isLabel ? "#6EC6D9" : "#9B6CFF"};color:#fff;font-weight:bold;font-size:10pt;text-align:center;line-height:22px;border:2px solid #fff;box-shadow:0 0 0 1px #333;">${r.number}</div>`,
+      ).join("");
+      const imgHtml = item.imageUrl
+        ? `<div style="position:relative;display:inline-block;max-width:100%;"><img src="${esc(item.imageUrl)}" alt="${esc(item.imageAlt ?? "")}" style="max-height:240px;border:1px solid #ccc;border-radius:6px;display:block;" />${dots}</div>`
+        : `<div style="width:280px;height:170px;background:#eee;display:grid;place-items:center;color:#888;font-size:9pt;border:1px dashed #aaa;border-radius:6px;">Bez obrázku</div>`;
+      const list = rows.map((r: any) =>
+        isLabel
+          ? `<li><b>${r.number}.</b> ____________________________</li>`
+          : `<li><b>${r.number}.</b> ${esc(r.question)}</li>`,
+      ).join("");
+      return `<div style="margin:8px 0;">
+        ${item.prompt ? `<p style="font-size:10pt;margin:0 0 6px;font-weight:500;">${esc(item.prompt)}</p>` : ""}
+        ${imgHtml}
+        <ol style="margin:8px 0 0;padding-left:18px;font-size:10pt;list-style:none;">${list}</ol>
+      </div>`;
+    }
   }
 
   // Pro fill_blank schovej prompt — text už je součástí blank-text

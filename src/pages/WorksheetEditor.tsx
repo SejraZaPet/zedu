@@ -137,6 +137,7 @@ import {
   AiSuggestFromLessonDialog,
   type AiGeneratedItem,
 } from "@/components/worksheet/LessonContentTools";
+import ActivityBlockEditor from "@/components/worksheet/ActivityBlockEditor";
 import {
   Tooltip,
   TooltipContent,
@@ -185,6 +186,16 @@ const LAYOUT_BLOCK_TYPES: ItemType[] = [
   "two_boxes",
   "qr_link",
   "flow_steps",
+];
+
+const ACTIVITY_BLOCK_TYPES: ItemType[] = [
+  "lesson_reference",
+  "crossword",
+  "word_search",
+  "sorting",
+  "flashcards",
+  "image_label",
+  "image_hotspot",
 ];
 
 const OFFLINE_MODES: OfflineMode[] = [
@@ -975,7 +986,12 @@ export default function WorksheetEditor() {
     const text = block.text;
     const patch: Partial<WorksheetItem> = { prompt: text };
 
-    if (it.type === "fill_blank") {
+    if (it.type === "lesson_reference") {
+      const prevIds = it.lessonRefBlockIds ?? [];
+      patch.prompt = block.title || it.prompt || "Obsah z lekce";
+      patch.lessonRefContent = text;
+      patch.lessonRefBlockIds = prevIds.includes(block.id) ? prevIds : [...prevIds, block.id];
+    } else if (it.type === "fill_blank") {
       // Naive helper: blank out first long word per sentence (>= 5 chars).
       let blanked = text;
       const longWord = text.match(/\b[\p{L}]{5,}\b/u);
@@ -1293,6 +1309,26 @@ export default function WorksheetEditor() {
         </h3>
         <div className="space-y-1.5">
           {LAYOUT_BLOCK_TYPES.map((type) => (
+            <button
+              key={type}
+              onClick={() => { addItem(type); setMobilePaletteOpen(false); }}
+              className="w-full text-left px-3 py-2 rounded-lg hover:bg-muted transition-colors border border-transparent hover:border-border"
+            >
+              <div className="text-sm font-medium">{ITEM_TYPE_LABELS[type].label}</div>
+              <div className="text-xs text-muted-foreground line-clamp-1">
+                {ITEM_TYPE_LABELS[type].description}
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-5 pt-4 border-t border-border">
+        <h3 className="font-heading text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
+          Aktivity & obsah z lekce
+        </h3>
+        <div className="space-y-1.5">
+          {ACTIVITY_BLOCK_TYPES.map((type) => (
             <button
               key={type}
               onClick={() => { addItem(type); setMobilePaletteOpen(false); }}
@@ -1964,6 +2000,14 @@ export default function WorksheetEditor() {
                       </SelectItem>
                     ))}
                   </SelectGroup>
+                  <SelectGroup>
+                    <SelectLabel>Aktivity & obsah z lekce</SelectLabel>
+                    {ACTIVITY_BLOCK_TYPES.map((t) => (
+                      <SelectItem key={t} value={t}>
+                        {ITEM_TYPE_LABELS[t].label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
                 </SelectContent>
               </Select>
             </div>
@@ -2419,11 +2463,15 @@ function TypeSpecificEditor({
   answerKey,
   onUpdateItem,
   onUpdateKey,
+  hasLesson = false,
+  onPickFromLesson,
 }: {
   item: WorksheetItem;
   answerKey: AnswerKeyEntry | null;
   onUpdateItem: (p: Partial<WorksheetItem>) => void;
   onUpdateKey: (p: Partial<AnswerKeyEntry>) => void;
+  hasLesson?: boolean;
+  onPickFromLesson?: () => void;
 }) {
   return (
     <div className="space-y-4 text-sm">
@@ -2857,6 +2905,13 @@ function TypeSpecificEditor({
         </div>
       )}
 
+      <ActivityBlockEditor
+        item={item}
+        onUpdate={onUpdateItem}
+        hasLesson={hasLesson}
+        onPickFromLesson={onPickFromLesson}
+      />
+
       <div className="pt-3 border-t border-border">
         <Label className="text-xs">Obrázek (URL, volitelné)</Label>
         <div className="flex gap-2 items-start">
@@ -3127,6 +3182,8 @@ function SortableItemBlock({
         answerKey={answerKey}
         onUpdateItem={onUpdateItem}
         onUpdateKey={onUpdateKey}
+        hasLesson={hasLesson}
+        onPickFromLesson={onPickFromLesson}
       />
 
       <AiBlockChat item={item} onApplyRefined={onApplyRefined} />
@@ -3858,6 +3915,7 @@ function PropertiesPanel({
         </div>
       )}
 
+      <ActivityBlockEditor item={item} onUpdate={onUpdateItem} hasLesson={false} />
 
       <div className="pt-3 border-t border-border">
         <Label className="text-xs">Obrázek (URL, volitelné)</Label>

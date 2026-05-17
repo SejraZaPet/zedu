@@ -28,7 +28,44 @@ export type ItemType =
   | "instruction_box"
   | "two_boxes"
   | "qr_link"
-  | "flow_steps";
+  | "flow_steps"
+  // v1.2 — Activity-style printable bloky
+  | "crossword"
+  | "word_search"
+  | "sorting"
+  | "flashcards"
+  | "image_label"
+  | "image_hotspot"
+  | "lesson_reference";
+
+/** Křížovka — položka */
+export interface CrosswordEntry {
+  /** Slovo (vyplněné) */
+  answer: string;
+  /** Nápověda zobrazená studentovi */
+  clue: string;
+  /** Směr v mřížce */
+  direction: "across" | "down";
+  /** Index řádku (0-based) levého horního políčka */
+  row: number;
+  /** Index sloupce (0-based) levého horního políčka */
+  col: number;
+  /** Číslo zobrazené v mřížce */
+  number: number;
+}
+
+/** Sorting — kategorie a položka */
+export interface SortingCategory { id: string; label: string }
+export interface SortingItem { text: string; categoryId: string }
+
+/** Flashcard pár pro vystřižení */
+export interface Flashcard { front: string; back: string }
+
+/** Popisek obrázku — číslovaný odkaz na část */
+export interface ImageLabel { number: number; xPercent: number; yPercent: number; answer: string }
+
+/** Hotspot bod na obrázku s otázkou */
+export interface ImageHotspot { number: number; xPercent: number; yPercent: number; question: string }
 
 export type InstructionVariant = "blue" | "yellow" | "green" | "purple";
 export type InstructionIcon = "info" | "video" | "write" | "discuss" | "group";
@@ -141,6 +178,32 @@ export interface WorksheetItem {
   instructionVariant?: InstructionVariant;
   /** Ikona instrukce (pro instruction_box) */
   instructionIcon?: InstructionIcon;
+
+  // ─── v1.2 — Activity bloky ───
+  /** Křížovka — slova a souřadnice */
+  crosswordEntries?: CrosswordEntry[];
+  /** Šířka mřížky křížovky (sloupců). Default 12. */
+  crosswordCols?: number;
+  /** Výška mřížky křížovky (řádků). Default 12. */
+  crosswordRows?: number;
+  /** Osmisměrka — slova k vyhledání */
+  wordSearchWords?: string[];
+  /** Osmisměrka — velikost mřížky (čtverec). Default 12. */
+  wordSearchSize?: number;
+  /** Sorting — kategorie */
+  sortingCategories?: SortingCategory[];
+  /** Sorting — položky k zařazení (zamíchané) */
+  sortingItems?: SortingItem[];
+  /** Flashcards páry */
+  flashcards?: Flashcard[];
+  /** Popisky obrázku (image_label) */
+  imageLabels?: ImageLabel[];
+  /** Hotspoty (image_hotspot) */
+  imageHotspots?: ImageHotspot[];
+  /** Lesson reference — id bloku/ů z lekce, jejichž obsah se zde má vykreslit */
+  lessonRefBlockIds?: string[];
+  /** Lesson reference — zachycený text/obsah pro tisk (snapshot) */
+  lessonRefContent?: string;
 }
 
 export interface AnswerKeyEntry {
@@ -260,7 +323,7 @@ export const WORKSHEET_SPEC_JSON_SCHEMA = {
               properties: {
                 id: { type: "string" },
                 itemNumber: { type: "integer", minimum: 1 },
-                type: { type: "string", enum: ["mcq", "fill_blank", "true_false", "matching", "ordering", "short_answer", "open_answer", "offline_activity", "section_header", "write_lines", "instruction_box", "two_boxes", "qr_link", "flow_steps"] },
+                type: { type: "string", enum: ["mcq", "fill_blank", "true_false", "matching", "ordering", "short_answer", "open_answer", "offline_activity", "section_header", "write_lines", "instruction_box", "two_boxes", "qr_link", "flow_steps", "crossword", "word_search", "sorting", "flashcards", "image_label", "image_hotspot", "lesson_reference"] },
                 prompt: { type: "string" },
                 points: { type: "number", minimum: 0 },
                 difficulty: { type: "string", enum: ["easy", "medium", "hard"] },

@@ -148,6 +148,61 @@ export function createDefaultItem(type: ItemType, itemNumber: number): Worksheet
       return { ...base, prompt: "Postup:", points: 0, timeEstimateSec: 60,
         flowSteps: ["Krok 1", "Krok 2", "Krok 3"], flowDirection: "vertical",
         answerSpace: { type: "none", heightMm: 0 } };
+    case "crossword":
+      return { ...base, prompt: "Vylušti křížovku:", points: 5, timeEstimateSec: 600, difficulty: "medium",
+        crosswordCols: 12, crosswordRows: 10,
+        crosswordEntries: [
+          { answer: "PRAHA", clue: "Hlavní město ČR", direction: "across", row: 0, col: 0, number: 1 },
+          { answer: "BRNO", clue: "Moravská metropole", direction: "down", row: 0, col: 0, number: 1 },
+        ],
+        answerSpace: { type: "none", heightMm: 0 } };
+    case "word_search":
+      return { ...base, prompt: "Najdi v osmisměrce všechna slova:", points: 3, timeEstimateSec: 300, difficulty: "easy",
+        wordSearchSize: 12, wordSearchWords: ["PRAHA", "BRNO", "OSTRAVA", "PLZEN"],
+        answerSpace: { type: "none", heightMm: 0 } };
+    case "sorting":
+      return { ...base, prompt: "Zařaď položky do správných kategorií:", points: 4, timeEstimateSec: 180, difficulty: "easy",
+        sortingCategories: [
+          { id: "a", label: "Kategorie A" },
+          { id: "b", label: "Kategorie B" },
+        ],
+        sortingItems: [
+          { text: "Položka 1", categoryId: "a" },
+          { text: "Položka 2", categoryId: "b" },
+          { text: "Položka 3", categoryId: "a" },
+          { text: "Položka 4", categoryId: "b" },
+        ],
+        answerSpace: { type: "none", heightMm: 0 } };
+    case "flashcards":
+      return { ...base, prompt: "Kartičky k vystřižení a procvičování:", points: 0, timeEstimateSec: 60,
+        flashcards: [
+          { front: "Pojem 1", back: "Vysvětlení 1" },
+          { front: "Pojem 2", back: "Vysvětlení 2" },
+          { front: "Pojem 3", back: "Vysvětlení 3" },
+          { front: "Pojem 4", back: "Vysvětlení 4" },
+        ],
+        answerSpace: { type: "none", heightMm: 0 } };
+    case "image_label":
+      return { ...base, prompt: "Popiš očíslované části obrázku:", points: 3, timeEstimateSec: 180, difficulty: "medium",
+        imageUrl: "",
+        imageLabels: [
+          { number: 1, xPercent: 25, yPercent: 30, answer: "Část 1" },
+          { number: 2, xPercent: 70, yPercent: 30, answer: "Část 2" },
+          { number: 3, xPercent: 50, yPercent: 70, answer: "Část 3" },
+        ],
+        answerSpace: { type: "lines", heightMm: 30, lineCount: 3 } };
+    case "image_hotspot":
+      return { ...base, prompt: "Odpověz na otázky k označeným bodům obrázku:", points: 3, timeEstimateSec: 240, difficulty: "medium",
+        imageUrl: "",
+        imageHotspots: [
+          { number: 1, xPercent: 30, yPercent: 30, question: "Co je v bodě 1?" },
+          { number: 2, xPercent: 70, yPercent: 60, question: "Co je v bodě 2?" },
+        ],
+        answerSpace: { type: "lines", heightMm: 30, lineCount: 4 } };
+    case "lesson_reference":
+      return { ...base, prompt: "Obsah z lekce:", points: 0, timeEstimateSec: 0,
+        lessonRefBlockIds: [], lessonRefContent: "",
+        answerSpace: { type: "none", heightMm: 0 } };
   }
 }
 
@@ -223,6 +278,13 @@ export const ITEM_TYPE_LABELS: Record<ItemType, { label: string; description: st
   two_boxes: { label: "Dva boxy", description: "Dva boxy vedle sebe pro porovnání nebo úkoly" },
   qr_link: { label: "QR kód", description: "QR kód s odkazem na video, kvíz nebo web" },
   flow_steps: { label: "Diagram kroků", description: "Kroky propojené šipkami (postup, fáze)" },
+  crossword: { label: "Křížovka", description: "Tisknutelná křížovka s nápovědami" },
+  word_search: { label: "Osmisměrka", description: "Mřížka písmen se slovy k vyhledání" },
+  sorting: { label: "Třídění do kategorií", description: "Žák řadí položky do kategorií" },
+  flashcards: { label: "Kartičky k vystřižení", description: "Páry pojem/vysvětlení pro tisk a stříhání" },
+  image_label: { label: "Popisky obrázku", description: "Očíslované části obrázku k pojmenování" },
+  image_hotspot: { label: "Body na obrázku", description: "Otázky vázané ke konkrétním bodům obrázku" },
+  lesson_reference: { label: "Obsah z lekce", description: "Vloží pasáž z přiřazené lekce jako kontext" },
 };
 
 export const OFFLINE_MODE_LABELS: Record<import("@/lib/worksheet-spec").OfflineMode, string> = {

@@ -10,6 +10,7 @@ const DEFAULT_TYPES = [
   "mcq", "true_false", "fill_blank", "matching", "ordering",
   "short_answer", "open_answer", "section_header", "write_lines",
   "instruction_box", "two_boxes", "flow_steps",
+  "sorting", "flashcards", "word_search",
 ];
 
 serve(async (req) => {
@@ -77,6 +78,9 @@ PRAVIDLA:
 - instruction_box: "instructionVariant" ("blue"|"yellow"|"green"|"purple"), "instructionIcon" ("info"|"video"|"write"|"discuss"|"group").
 - two_boxes: "leftTitle", "leftContent", "rightTitle", "rightContent" (krátké).
 - flow_steps: "flowSteps" (3–6 stručných kroků).
+- sorting: "sortingCategories" (2–4 prvky { id, label }), "sortingItems" (6–12 prvků { text, categoryId }).
+- flashcards: "flashcards" (4–8 prvků { front, back }).
+- word_search: "wordSearchWords" (4–8 slov VELKÝMI PÍSMENY bez diakritiky), volitelně "wordSearchSize" (8–16).
 - Jazyk: čeština (cs-CZ), formálně ale srozumitelně pro studenty.`;
 
     const userPrompt = `Téma lekce: ${lessonTitle || "(bez názvu)"}
@@ -138,6 +142,32 @@ ${hint ? `Doplňující pokyn učitele: ${hint}\n\n` : ""}Vytvoř pracovní list
                       rightTitle: { type: "string" },
                       rightContent: { type: "string" },
                       flowSteps: { type: "array", items: { type: "string" } },
+                      sortingCategories: {
+                        type: "array",
+                        items: {
+                          type: "object",
+                          properties: { id: { type: "string" }, label: { type: "string" } },
+                          required: ["id", "label"],
+                        },
+                      },
+                      sortingItems: {
+                        type: "array",
+                        items: {
+                          type: "object",
+                          properties: { text: { type: "string" }, categoryId: { type: "string" } },
+                          required: ["text", "categoryId"],
+                        },
+                      },
+                      flashcards: {
+                        type: "array",
+                        items: {
+                          type: "object",
+                          properties: { front: { type: "string" }, back: { type: "string" } },
+                          required: ["front", "back"],
+                        },
+                      },
+                      wordSearchWords: { type: "array", items: { type: "string" } },
+                      wordSearchSize: { type: "number" },
                     },
                     required: ["type", "prompt"],
                   },
