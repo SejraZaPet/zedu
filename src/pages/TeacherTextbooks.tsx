@@ -10,7 +10,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useSubjects } from "@/hooks/useSubjects";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
-import LessonPreviewDialog from "@/components/admin/LessonPreviewDialog";
 import PresentationEditorDialog from "@/components/admin/PresentationEditorDialog";
 import TextbookGradeGroups from "@/components/admin/TextbookGradeGroups";
 import TextbookList from "@/components/admin/TextbookList";
@@ -25,12 +24,9 @@ import {
 } from "@/components/ui/dialog";
 
 import {
-  Sheet, SheetContent, SheetHeader, SheetTitle,
-} from "@/components/ui/sheet";
-import {
   BookOpen, Users, ArrowLeft, Copy, Eye, FolderOpen, ChevronRight,
-  Pencil, Trash2, Plus, Save, Loader2, X, FileText, Play, Sparkles, BookmarkPlus,
-  MoreVertical, Archive, ArchiveRestore, Upload,
+  Pencil, Trash2, Plus, FileText, Play, Sparkles, BookmarkPlus,
+  MoreVertical, Archive, ArchiveRestore,
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -73,19 +69,6 @@ interface LessonItem {
   hero_image_url?: string | null;
   scheduled_publish_at?: string | null;
 }
-
-const toLocalInput = (iso: string | null | undefined): string => {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return "";
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-};
-const fromLocalInput = (s: string): string | null => {
-  if (!s) return null;
-  const d = new Date(s);
-  return isNaN(d.getTime()) ? null : d.toISOString();
-};
 
 interface TopicItem {
   id: string;
