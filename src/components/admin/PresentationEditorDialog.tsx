@@ -377,10 +377,22 @@ export const PresentationEditorDialog = ({
                         <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="true_false">Pravda / Nepravda</SelectItem>
-                          <SelectItem value="quiz">Kvíz</SelectItem>
+                          <SelectItem value="quiz">Kvíz (výběr odpovědi)</SelectItem>
+                          <SelectItem value="poll">Hlasování / Mentimetr</SelectItem>
                           <SelectItem value="wall">Zeď odpovědí</SelectItem>
-                          <SelectItem value="flashcards">Kartičky</SelectItem>
-                          <SelectItem value="matching">Párování</SelectItem>
+                          <SelectItem value="flashcards">Kartičky (Flashcards)</SelectItem>
+                          <SelectItem value="matching">Párování / Spojování dvojic</SelectItem>
+                          <SelectItem value="ordering">Seřazení kroků</SelectItem>
+                          <SelectItem value="sorting">Třídění do skupin</SelectItem>
+                          <SelectItem value="fill_blanks">Doplňovačka</SelectItem>
+                          <SelectItem value="fill_choice">Doplňovačka s výběrem</SelectItem>
+                          <SelectItem value="image_label">Obrázek s popisem</SelectItem>
+                          <SelectItem value="image_hotspot">Obrázek – aktivní body</SelectItem>
+                          <SelectItem value="reveal_cards">Odhalovací karty</SelectItem>
+                          <SelectItem value="memory_game">Pexeso</SelectItem>
+                          <SelectItem value="crossword">Křížovka</SelectItem>
+                          <SelectItem value="open">Otevřená odpověď</SelectItem>
+                          <SelectItem value="summary">Shrnutí lekce</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
