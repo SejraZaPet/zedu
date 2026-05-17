@@ -896,6 +896,7 @@ export default function WorksheetEditor() {
     toast({ title: "Aktivita z lekce vložena", description: activity.title });
   }
 
+  function addTemplate(templateId: WorksheetTemplateId) {
     if (!spec) return;
     const variantId = spec.variants[0].variantId;
     const startNumber = items.length + 1;
