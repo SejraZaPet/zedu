@@ -203,6 +203,16 @@ const LiveTeacherScreen = () => {
             <Brain className="w-4 h-4" />
             Adaptivní závěr
           </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1.5"
+            onClick={() => setResultsPanelOpen(true)}
+            title="Výsledky celé prezentace"
+          >
+            <BarChart3 className="w-4 h-4" />
+            Výsledky třídy
+          </Button>
           <Button size="sm" variant="destructive" onClick={endGame}>
             <StopCircle className="w-4 h-4 mr-1" /> Ukončit
           </Button>
