@@ -2023,6 +2023,28 @@ export default function WorksheetEditor() {
         </DialogContent>
       </Dialog>
 
+      <LessonContentPickerSheet
+        open={pickerForItem !== null}
+        onOpenChange={(v) => { if (!v) setPickerForItem(null); }}
+        blocks={lessonBlocks}
+        onPick={(block) => {
+          if (pickerForItem) applyLessonBlockToItem(pickerForItem, block);
+        }}
+      />
+
+      <AiSuggestFromLessonDialog
+        open={aiPickerForItem !== null}
+        onOpenChange={(v) => { if (!v) setAiPickerForItem(null); }}
+        blocks={lessonBlocks}
+        itemType={
+          (items.find((it) => it.id === aiPickerForItem)?.type ?? "mcq") as ItemType
+        }
+        lessonTitle={allLessons.find((l) => l.id === activeLessonId)?.title}
+        lessonSubject={spec?.header.subject}
+        onApply={(g) => {
+          if (aiPickerForItem) applyAiSuggestionToItem(aiPickerForItem, g);
+        }}
+      />
 
       <Dialog
         open={suggestionDialog.open}
