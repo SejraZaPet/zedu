@@ -1699,11 +1699,22 @@ export default function WorksheetEditor() {
                   <SelectValue placeholder="Přidat otázku" />
                 </SelectTrigger>
                 <SelectContent>
-                  {ITEM_TYPES.map((t) => (
-                    <SelectItem key={t} value={t}>
-                      {ITEM_TYPE_LABELS[t].label}
-                    </SelectItem>
-                  ))}
+                  <SelectGroup>
+                    <SelectLabel>Otázky</SelectLabel>
+                    {ITEM_TYPES.map((t) => (
+                      <SelectItem key={t} value={t}>
+                        {ITEM_TYPE_LABELS[t].label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                  <SelectGroup>
+                    <SelectLabel>Layoutové bloky</SelectLabel>
+                    {LAYOUT_BLOCK_TYPES.map((t) => (
+                      <SelectItem key={t} value={t}>
+                        {ITEM_TYPE_LABELS[t].label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
                 </SelectContent>
               </Select>
             </div>
