@@ -78,6 +78,9 @@ PRAVIDLA:
 - instruction_box: "instructionVariant" ("blue"|"yellow"|"green"|"purple"), "instructionIcon" ("info"|"video"|"write"|"discuss"|"group").
 - two_boxes: "leftTitle", "leftContent", "rightTitle", "rightContent" (krátké).
 - flow_steps: "flowSteps" (3–6 stručných kroků).
+- sorting: "sortingCategories" (2–4 prvky { id, label }), "sortingItems" (6–12 prvků { text, categoryId }).
+- flashcards: "flashcards" (4–8 prvků { front, back }).
+- word_search: "wordSearchWords" (4–8 slov VELKÝMI PÍSMENY bez diakritiky), volitelně "wordSearchSize" (8–16).
 - Jazyk: čeština (cs-CZ), formálně ale srozumitelně pro studenty.`;
 
     const userPrompt = `Téma lekce: ${lessonTitle || "(bez názvu)"}
