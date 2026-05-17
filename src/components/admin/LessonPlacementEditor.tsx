@@ -277,6 +277,8 @@ export const savePlacements = async (lessonId: string, placements: Placement[]) 
     grade_number: p.grade_number,
     topic_id: p.topic_id,
     class_id: p.class_id,
+    status: p.status ?? "published",
+    scheduled_publish_at: p.status === "scheduled" ? p.scheduled_publish_at ?? null : null,
   }));
 
   const { error } = await supabase.from("lesson_placements").insert(rows);
