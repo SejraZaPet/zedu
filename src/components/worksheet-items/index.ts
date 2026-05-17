@@ -9,6 +9,7 @@ export { default as ShortAnswerItem } from "./ShortAnswerItem";
 export { default as OpenAnswerItem } from "./OpenAnswerItem";
 export { default as OfflineActivityItem } from "./OfflineActivityItem";
 export { default as LayoutBlockItem } from "./LayoutBlockItem";
+export { default as ActivityBlockItem } from "./ActivityBlockItem";
 
 import type { ItemType } from "@/lib/worksheet-spec";
 import type { FC } from "react";
@@ -23,6 +24,7 @@ import ShortAnswerItem from "./ShortAnswerItem";
 import OpenAnswerItem from "./OpenAnswerItem";
 import OfflineActivityItem from "./OfflineActivityItem";
 import LayoutBlockItem from "./LayoutBlockItem";
+import ActivityBlockItem from "./ActivityBlockItem";
 
 /** Registry mapping item type → renderer component */
 export const ITEM_RENDERERS: Record<ItemType, FC<WorksheetItemProps>> = {
@@ -40,4 +42,11 @@ export const ITEM_RENDERERS: Record<ItemType, FC<WorksheetItemProps>> = {
   two_boxes: LayoutBlockItem,
   qr_link: LayoutBlockItem,
   flow_steps: LayoutBlockItem,
+  crossword: ActivityBlockItem,
+  word_search: ActivityBlockItem,
+  sorting: ActivityBlockItem,
+  flashcards: ActivityBlockItem,
+  image_label: ActivityBlockItem,
+  image_hotspot: ActivityBlockItem,
+  lesson_reference: ActivityBlockItem,
 };
