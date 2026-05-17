@@ -492,6 +492,7 @@ export default function WorksheetEditor() {
       const row = (data as any) ?? {};
       // obě tabulky používají jsonb `blocks`
       setActiveLessonContent(extractTextFromBlocks(row.blocks));
+      setActiveLessonActivities(extractActivitiesFromBlocks(row.blocks));
     })();
   }, [activeLessonId, allLessons]);
 
