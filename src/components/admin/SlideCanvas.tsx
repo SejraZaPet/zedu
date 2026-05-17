@@ -3,6 +3,7 @@ import { ArrowUp, ArrowDown, Trash2, ImageIcon } from "lucide-react";
 import { LessonBlock } from "@/components/LessonBlockRenderer";
 import type { Block } from "@/lib/textbook-config";
 import { MediaPickerDialog } from "@/components/media/MediaPickerDialog";
+import DOMPurify from "dompurify";
 
 export type SlideLayout =
   | "full"
@@ -49,6 +50,7 @@ function EditableText({
   editable,
   placeholder,
   multiline,
+  html,
 }: {
   value: string;
   onCommit: (v: string) => void;
@@ -56,19 +58,30 @@ function EditableText({
   editable?: boolean;
   placeholder?: string;
   multiline?: boolean;
+  html?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const sanitizedValue = html ? DOMPurify.sanitize(value || "") : value || "";
+
   useEffect(() => {
     if (ref.current && document.activeElement !== ref.current) {
-      ref.current.innerText = value || "";
+      if (html) ref.current.innerHTML = sanitizedValue;
+      else ref.current.innerText = value || "";
     }
-  }, [value]);
+  }, [html, sanitizedValue, value]);
 
   if (!editable) {
     return (
-      <div className={className} style={{ whiteSpace: multiline ? "pre-wrap" : undefined }}>
-        {value || (placeholder ? <span className="opacity-40">{placeholder}</span> : null)}
-      </div>
+      html ? (
+        <div
+          className={className}
+          dangerouslySetInnerHTML={{ __html: sanitizedValue || (placeholder ? `<span class="opacity-40">${placeholder}</span>` : "") }}
+        />
+      ) : (
+        <div className={className} style={{ whiteSpace: multiline ? "pre-wrap" : undefined }}>
+          {value || (placeholder ? <span className="opacity-40">{placeholder}</span> : null)}
+        </div>
+      )
     );
   }
 
@@ -78,7 +91,7 @@ function EditableText({
       contentEditable
       suppressContentEditableWarning
       data-placeholder={placeholder || ""}
-      onBlur={(e) => onCommit(e.currentTarget.innerText)}
+      onBlur={(e) => onCommit(html ? e.currentTarget.innerHTML : e.currentTarget.innerText)}
       onKeyDown={(e) => {
         if (!multiline && e.key === "Enter") {
           e.preventDefault();
@@ -86,9 +99,7 @@ function EditableText({
         }
       }}
       className={`${className || ""} cursor-text rounded px-1 -mx-1 outline-none focus:ring-2 focus:ring-primary focus:bg-white/5 hover:bg-white/5 transition-colors empty:before:content-[attr(data-placeholder)] empty:before:opacity-40`}
-    >
-      {value}
-    </div>
+    />
   );
 }
 
@@ -157,14 +168,17 @@ function EditableBlock({
   const update = (patch: Partial<Block> | ((b: Block) => Block)) => onChange?.(patch);
 
   if (block.type === "paragraph") {
+    const value = block.props?.text || "";
+    const isHtml = /<[^>]+>/.test(value);
     return (
       <div className={asCard ? "bg-white/10 rounded-xl p-4 border border-white/15" : ""}>
         <EditableText
           editable={editable}
           multiline
-          value={block.props?.text || ""}
+          html={isHtml}
+          value={value}
           placeholder="Napište text…"
-          className="text-2xl leading-relaxed"
+          className="text-2xl leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-2 [&_strong]:font-semibold"
           onCommit={(v) => update((b) => ({ ...b, props: { ...b.props, text: v } }))}
         />
       </div>
@@ -175,12 +189,15 @@ function EditableBlock({
     const level = block.props?.level || 2;
     const cls =
       level === 1 ? "text-5xl font-bold" : level === 3 ? "text-3xl font-semibold" : "text-4xl font-bold";
+    const value = block.props?.text || "";
+    const isHtml = /<[^>]+>/.test(value);
     return (
       <EditableText
         editable={editable}
-        value={block.props?.text || ""}
+        html={isHtml}
+        value={value}
         placeholder="Nadpis…"
-        className={cls}
+        className={`${cls} [&_strong]:font-semibold`}
         onCommit={(v) => update((b) => ({ ...b, props: { ...b.props, text: v } }))}
       />
     );
@@ -188,6 +205,21 @@ function EditableBlock({
 
   if (block.type === "bullet_list") {
     const items: string[] = block.props?.items || [""];
+    if (block.props?.html) {
+      return (
+        <div className={asCard ? "bg-white/10 rounded-xl p-4 border border-white/15" : ""}>
+          <EditableText
+            editable={editable}
+            multiline
+            html
+            value={block.props.html}
+            placeholder="Zadejte odrážky…"
+            className="text-2xl leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mb-2"
+            onCommit={(v) => update((b) => ({ ...b, props: { ...b.props, html: v } }))}
+          />
+        </div>
+      );
+    }
     return (
       <ul className={`space-y-2 ${asCard ? "bg-white/10 rounded-xl p-4 border border-white/15" : ""}`}>
         {items.map((item, i) => (
