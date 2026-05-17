@@ -95,6 +95,10 @@ const LessonEditorSheet = ({ lessonId, open, onOpenChange, onSaved }: Props) => 
     }
   }, [lessonId]);
 
+  const handleBlocksChange = useCallback((blocks: Block[]) => {
+    setLesson((prev) => (prev ? { ...prev, blocks } : prev));
+  }, []);
+
   useEffect(() => {
     if (open && lessonId) {
       fetchLesson();
