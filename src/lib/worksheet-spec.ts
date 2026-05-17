@@ -21,7 +21,19 @@ export type ItemType =
   | "ordering"
   | "short_answer"
   | "open_answer"
-  | "offline_activity";
+  | "offline_activity"
+  // Layoutové bloky (v1.1)
+  | "section_header"
+  | "write_lines"
+  | "instruction_box"
+  | "two_boxes"
+  | "qr_link"
+  | "flow_steps";
+
+export type InstructionVariant = "blue" | "yellow" | "green" | "purple";
+export type InstructionIcon = "info" | "video" | "write" | "discuss" | "group";
+export type LineStyle = "dotted" | "solid" | "dashed";
+export type FlowDirection = "vertical" | "horizontal";
 
 /** Režim offline (didaktické) aktivity v pracovním listu. */
 export type OfflineMode =
@@ -105,6 +117,30 @@ export interface WorksheetItem {
   durationMin?: number;
   /** Suggested group size (only for type=offline_activity). */
   groupSize?: GroupSize;
+
+  // ─── Layoutové bloky (v1.1) ───
+  /** Počet prázdných řádků (pro write_lines) */
+  lineCount?: number;
+  /** Styl čáry (pro write_lines) */
+  lineStyle?: LineStyle;
+  /** URL pro QR kód (pro qr_link) */
+  qrUrl?: string;
+  /** Kroky diagramu (pro flow_steps) */
+  flowSteps?: string[];
+  /** Směr diagramu (pro flow_steps) */
+  flowDirection?: FlowDirection;
+  /** Levý box: nadpis (pro two_boxes) */
+  leftTitle?: string;
+  /** Levý box: obsah nebo "lines:N" (pro two_boxes) */
+  leftContent?: string;
+  /** Pravý box: nadpis (pro two_boxes) */
+  rightTitle?: string;
+  /** Pravý box: obsah nebo "lines:N" (pro two_boxes) */
+  rightContent?: string;
+  /** Varianta instrukce (pro instruction_box) */
+  instructionVariant?: InstructionVariant;
+  /** Ikona instrukce (pro instruction_box) */
+  instructionIcon?: InstructionIcon;
 }
 
 export interface AnswerKeyEntry {
@@ -224,7 +260,7 @@ export const WORKSHEET_SPEC_JSON_SCHEMA = {
               properties: {
                 id: { type: "string" },
                 itemNumber: { type: "integer", minimum: 1 },
-                type: { type: "string", enum: ["mcq", "fill_blank", "true_false", "matching", "ordering", "short_answer", "open_answer", "offline_activity"] },
+                type: { type: "string", enum: ["mcq", "fill_blank", "true_false", "matching", "ordering", "short_answer", "open_answer", "offline_activity", "section_header", "write_lines", "instruction_box", "two_boxes", "qr_link", "flow_steps"] },
                 prompt: { type: "string" },
                 points: { type: "number", minimum: 0 },
                 difficulty: { type: "string", enum: ["easy", "medium", "hard"] },
@@ -248,6 +284,17 @@ export const WORKSHEET_SPEC_JSON_SCHEMA = {
                 offlineMode: { type: "string", enum: ["discussion", "group_work", "practical", "observation", "reflection"] },
                 durationMin: { type: "integer", minimum: 0 },
                 groupSize: { type: "string", enum: ["individual", "pair", "small_group", "class"] },
+                lineCount: { type: "integer", minimum: 0 },
+                lineStyle: { type: "string", enum: ["dotted", "solid", "dashed"] },
+                qrUrl: { type: "string" },
+                flowSteps: { type: "array", items: { type: "string" } },
+                flowDirection: { type: "string", enum: ["vertical", "horizontal"] },
+                leftTitle: { type: "string" },
+                leftContent: { type: "string" },
+                rightTitle: { type: "string" },
+                rightContent: { type: "string" },
+                instructionVariant: { type: "string", enum: ["blue", "yellow", "green", "purple"] },
+                instructionIcon: { type: "string", enum: ["info", "video", "write", "discuss", "group"] },
               },
             },
           },

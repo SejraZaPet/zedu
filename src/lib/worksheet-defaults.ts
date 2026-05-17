@@ -125,6 +125,29 @@ export function createDefaultItem(type: ItemType, itemNumber: number): Worksheet
         durationMin: 10,
         answerSpace: { type: "lines", heightMm: 40, lineCount: 6 },
       };
+    case "section_header":
+      return { ...base, prompt: "Název sekce", points: 0, timeEstimateSec: 0,
+        answerSpace: { type: "none", heightMm: 0 }, tags: ["section_heading"] };
+    case "write_lines":
+      return { ...base, prompt: "Zapište definici:", points: 0, timeEstimateSec: 120,
+        lineCount: 4, lineStyle: "dotted",
+        answerSpace: { type: "lines", heightMm: 30, lineCount: 4 } };
+    case "instruction_box":
+      return { ...base, prompt: "Pracujte s učebnicí a zapište si hlavní body.", points: 0,
+        timeEstimateSec: 0, instructionVariant: "blue", instructionIcon: "info",
+        answerSpace: { type: "none", heightMm: 0 } };
+    case "two_boxes":
+      return { ...base, prompt: "Porovnejte:", points: 0, timeEstimateSec: 120,
+        leftTitle: "Box 1", leftContent: "lines:4",
+        rightTitle: "Box 2", rightContent: "lines:4",
+        answerSpace: { type: "none", heightMm: 0 } };
+    case "qr_link":
+      return { ...base, prompt: "Naskenuj QR kód:", points: 0, timeEstimateSec: 0,
+        qrUrl: "", answerSpace: { type: "none", heightMm: 0 } };
+    case "flow_steps":
+      return { ...base, prompt: "Postup:", points: 0, timeEstimateSec: 60,
+        flowSteps: ["Krok 1", "Krok 2", "Krok 3"], flowDirection: "vertical",
+        answerSpace: { type: "none", heightMm: 0 } };
   }
 }
 
@@ -194,6 +217,12 @@ export const ITEM_TYPE_LABELS: Record<ItemType, { label: string; description: st
   short_answer: { label: "Krátká odpověď", description: "Pár slov nebo věta" },
   open_answer: { label: "Otevřená odpověď", description: "Delší slovní úvaha" },
   offline_activity: { label: "Offline aktivita", description: "Diskuse, skupinová práce nebo praktické cvičení" },
+  section_header: { label: "Nadpis sekce", description: "Vizuální oddělení sekcí v PL" },
+  write_lines: { label: "Řádky pro zápis", description: "Prázdné tečkované řádky pro ruční zápis" },
+  instruction_box: { label: "Pokyn pro žáka", description: "Zvýrazněný box s instrukcí" },
+  two_boxes: { label: "Dva boxy", description: "Dva boxy vedle sebe pro porovnání nebo úkoly" },
+  qr_link: { label: "QR kód", description: "QR kód s odkazem na video, kvíz nebo web" },
+  flow_steps: { label: "Diagram kroků", description: "Kroky propojené šipkami (postup, fáze)" },
 };
 
 export const OFFLINE_MODE_LABELS: Record<import("@/lib/worksheet-spec").OfflineMode, string> = {

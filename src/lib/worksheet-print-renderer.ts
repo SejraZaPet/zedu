@@ -738,6 +738,73 @@ function renderItem(item: WorksheetItem, showPoints: boolean): string {
       </div>`;
       break;
     }
+
+    case "section_header":
+      return `<div class="ws-section-header" style="font-size:14pt;font-weight:bold;margin:16px 0 8px;border-bottom:2px solid #333;padding-bottom:4px;">${esc(item.prompt)}</div>`;
+
+    case "write_lines": {
+      const n = Math.max(1, Math.min(20, item.lineCount ?? 3));
+      const style = item.lineStyle ?? "dotted";
+      const lines = Array.from({ length: n })
+        .map(() => `<div style="border-bottom:1px ${style} #999;height:24px;margin-bottom:2px;"></div>`)
+        .join("");
+      return `<div style="margin:8px 0;">${item.prompt ? `<p style="font-size:10pt;margin:0 0 6px;">${esc(item.prompt)}</p>` : ""}${lines}</div>`;
+    }
+
+    case "instruction_box": {
+      const palette: Record<string, { bg: string; bd: string }> = {
+        blue: { bg: "#EBF5FF", bd: "#93C5FD" },
+        yellow: { bg: "#FEF9C3", bd: "#FDE047" },
+        green: { bg: "#DCFCE7", bd: "#86EFAC" },
+        purple: { bg: "#F3E8FF", bd: "#D8B4FE" },
+      };
+      const icons: Record<string, string> = { info: "ℹ", video: "▶", write: "✎", discuss: "💬", group: "👥" };
+      const v = palette[item.instructionVariant ?? "blue"];
+      const ic = icons[item.instructionIcon ?? "info"];
+      return `<div style="background:${v.bg};border:1px solid ${v.bd};border-radius:8px;padding:10px;margin:8px 0;display:flex;gap:8px;align-items:flex-start;"><span style="font-size:14pt;">${ic}</span><p style="font-size:10pt;margin:0;">${esc(item.prompt)}</p></div>`;
+    }
+
+    case "two_boxes": {
+      const boxContent = (c?: string) => {
+        const m = c?.match(/^lines:(\d+)$/);
+        if (m) {
+          const n = parseInt(m[1], 10);
+          return Array.from({ length: n })
+            .map(() => `<div style="border-bottom:1px dotted #999;height:20px;margin-bottom:2px;"></div>`)
+            .join("");
+        }
+        return `<p style="font-size:10pt;margin:0;white-space:pre-wrap;">${esc(c ?? "")}</p>`;
+      };
+      return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:8px 0;">
+        <div style="border:1px solid #ccc;border-radius:8px;padding:10px;"><h4 style="font-weight:bold;font-size:11pt;margin:0 0 6px;">${esc(item.leftTitle ?? "")}</h4>${boxContent(item.leftContent)}</div>
+        <div style="border:1px solid #ccc;border-radius:8px;padding:10px;"><h4 style="font-weight:bold;font-size:11pt;margin:0 0 6px;">${esc(item.rightTitle ?? "")}</h4>${boxContent(item.rightContent)}</div>
+      </div>`;
+    }
+
+    case "qr_link": {
+      const url = item.qrUrl ?? "";
+      const qrImg = url
+        ? `<img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(url)}" width="100" height="100" alt="QR" />`
+        : `<div style="width:100px;height:100px;background:#eee;display:flex;align-items:center;justify-content:center;font-size:10pt;color:#999;">QR</div>`;
+      return `<div style="display:flex;gap:12px;align-items:center;border:1px solid #ccc;border-radius:8px;padding:10px;margin:8px 0;">${qrImg}<div><p style="font-size:11pt;margin:0 0 4px;font-weight:500;">${esc(item.prompt)}</p>${url ? `<p style="font-size:9pt;margin:0;color:#666;word-break:break-all;">${esc(url)}</p>` : ""}</div></div>`;
+    }
+
+    case "flow_steps": {
+      const steps = item.flowSteps ?? [];
+      const horizontal = item.flowDirection === "horizontal";
+      const sep = horizontal ? "→" : "↓";
+      const boxes = steps
+        .map(
+          (s, i) =>
+            `<div style="display:${horizontal ? "inline-block" : "block"};border:2px solid #7c3aed;border-radius:8px;padding:6px 12px;font-size:10pt;font-weight:500;margin:2px;">${esc(s)}</div>${
+              i < steps.length - 1
+                ? `<div style="display:${horizontal ? "inline-block" : "block"};font-size:14pt;color:#999;margin:${horizontal ? "0 4px" : "2px 0"};">${sep}</div>`
+                : ""
+            }`,
+        )
+        .join("");
+      return `<div style="text-align:center;margin:8px 0;">${item.prompt ? `<p style="font-size:10pt;margin:0 0 6px;">${esc(item.prompt)}</p>` : ""}${boxes}</div>`;
+    }
   }
 
   // Pro fill_blank schovej prompt — text už je součástí blank-text
