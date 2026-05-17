@@ -167,8 +167,6 @@ function EditableBlock({
 }) {
   const update = (patch: Partial<Block> | ((b: Block) => Block)) => onChange?.(patch);
 
-  const safeHtml = (html: string) => ({ __html: DOMPurify.sanitize(html) });
-
   if (block.type === "paragraph") {
     const value = block.props?.text || "";
     const isHtml = /<[^>]+>/.test(value);
@@ -201,6 +199,7 @@ function EditableBlock({
         placeholder="Nadpis…"
         className={`${cls} [&_strong]:font-semibold`}
         onCommit={(v) => update((b) => ({ ...b, props: { ...b.props, text: v } }))}
+      />
     );
   }
 
