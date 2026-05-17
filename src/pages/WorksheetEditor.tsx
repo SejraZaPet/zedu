@@ -1171,6 +1171,102 @@ export default function WorksheetEditor() {
 
   const lessonBlocks = splitLessonContent(activeLessonContent);
 
+  async function handleAiGenerateAll() {
+    if (!spec) return;
+    if (!activeLessonContent || activeLessonContent.trim().length < 20) {
+      toast({
+        title: "Chybí obsah lekce",
+        description: "Nejdřív přiřaďte lekci s textovým obsahem.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setAiGenerating(true);
+    try {
+      const lessonText =
+        lessonBlocks
+          .map((b) => (b.title && b.title !== b.text ? `## ${b.title}\n${b.text}` : b.text))
+          .filter(Boolean)
+          .join("\n\n") || activeLessonContent;
+
+      const { data, error } = await supabase.functions.invoke("generate-full-worksheet", {
+        body: {
+          lessonContent: lessonText,
+          lessonTitle:
+            allLessons.find((l) => l.id === activeLessonId)?.title ?? spec.header.title,
+          worksheetMode: aiMode,
+          itemCount: parseInt(aiCount, 10),
+          difficulty: aiDifficulty,
+          hint: aiCustomHint,
+          availableTypes: [
+            "mcq", "true_false", "fill_blank", "matching", "ordering",
+            "short_answer", "open_answer", "section_header", "write_lines",
+            "instruction_box", "two_boxes", "flow_steps",
+          ],
+        },
+      });
+      if (error) throw error;
+      if (!data?.items || !Array.isArray(data.items) || data.items.length === 0) {
+        throw new Error("AI nevygenerovala žádné bloky");
+      }
+
+      const baseNumber = aiReplaceMode === "replace" ? 0 : items.length;
+      const newItems: WorksheetItem[] = data.items.map((aiItem: any, i: number) => {
+        const type = (aiItem.type ?? "short_answer") as ItemType;
+        const defaults = createDefaultItem(type, baseNumber + i + 1);
+        const { id: _ignoreId, ...rest } = aiItem;
+        return {
+          ...defaults,
+          ...rest,
+          id: nextItemId(),
+          type,
+          itemNumber: baseNumber + i + 1,
+        } as WorksheetItem;
+      });
+
+      const newKeys = newItems.map((it, i) => {
+        const aiItem: any = data.items[i] ?? {};
+        const base = createDefaultAnswerKey(it);
+        if (aiItem.correctAnswer !== undefined && aiItem.correctAnswer !== "") {
+          return { ...base, correctAnswer: aiItem.correctAnswer };
+        }
+        return base;
+      });
+
+      updateSpec((s) => {
+        const variantId = s.variants[0].variantId;
+        const existingItems = aiReplaceMode === "replace" ? [] : s.variants[0].items;
+        const existingKeys =
+          aiReplaceMode === "replace" ? [] : s.answerKeys[variantId] ?? [];
+        return {
+          ...s,
+          variants: s.variants.map((v, idx) =>
+            idx === 0 ? { ...v, items: [...existingItems, ...newItems] } : v,
+          ),
+          answerKeys: {
+            ...s.answerKeys,
+            [variantId]: [...existingKeys, ...newKeys],
+          },
+        };
+      });
+
+      toast({
+        title: "Pracovní list vygenerován",
+        description: `AI vytvořila ${newItems.length} bloků z obsahu lekce.`,
+      });
+      setShowAiGenerateDialog(false);
+    } catch (err: any) {
+      toast({
+        title: "Chyba generování",
+        description: err?.message ?? String(err),
+        variant: "destructive",
+      });
+    } finally {
+      setAiGenerating(false);
+    }
+  }
+
+
   const paletteContent = (
     <>
       <h3 className="font-heading text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
