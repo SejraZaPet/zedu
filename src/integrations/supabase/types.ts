@@ -2197,9 +2197,11 @@ export type Database = {
       teacher_textbooks: {
         Row: {
           access_code: string
+          archived: boolean
           created_at: string
           description: string
           id: string
+          order_index: number
           subject: string
           teacher_id: string
           title: string
@@ -2208,9 +2210,11 @@ export type Database = {
         }
         Insert: {
           access_code: string
+          archived?: boolean
           created_at?: string
           description?: string
           id?: string
+          order_index?: number
           subject?: string
           teacher_id: string
           title: string
@@ -2219,9 +2223,11 @@ export type Database = {
         }
         Update: {
           access_code?: string
+          archived?: boolean
           created_at?: string
           description?: string
           id?: string
+          order_index?: number
           subject?: string
           teacher_id?: string
           title?: string

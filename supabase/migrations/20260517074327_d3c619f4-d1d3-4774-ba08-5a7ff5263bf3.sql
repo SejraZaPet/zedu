@@ -1,0 +1,2 @@
+ALTER TABLE public.teacher_textbooks ADD COLUMN IF NOT EXISTS archived boolean NOT NULL DEFAULT false;
+ALTER TABLE public.teacher_textbooks ADD COLUMN IF NOT EXISTS order_index integer NOT NULL DEFAULT 0;
