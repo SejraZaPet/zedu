@@ -118,7 +118,7 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
     current = null;
   };
 
-  const newSlide = (headline = "") => ({
+  const newSlide = (headline = ""): any => ({
     slideId: "",
     type: "explain",
     projector: { headline, body: "", assetRefs: [] as string[] },
