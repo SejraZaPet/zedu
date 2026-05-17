@@ -63,6 +63,29 @@ const LiveTeacherScreen = () => {
       .eq("id", sessionId);
   }, [sessionId, whiteboard, whiteboardVisible]);
 
+  const handleProjectorScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
+    const scrollTop = e.currentTarget.scrollTop;
+    scrollTimerRef.current = setTimeout(async () => {
+      if (!sessionId) return;
+      await supabase.from("game_sessions").update({
+        settings: { ...(settings || {}), projectorScrollTop: scrollTop },
+      }).eq("id", sessionId);
+    }, 100);
+  }, [sessionId, settings]);
+
+  // Reset scroll position when slide changes
+  useEffect(() => {
+    if (!sessionId) return;
+    supabase.from("game_sessions").update({
+      settings: { ...(settings || {}), projectorScrollTop: 0 },
+    }).eq("id", sessionId);
+    if (projectorPreviewRef.current) {
+      projectorPreviewRef.current.scrollTop = 0;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentIndex]);
+
   const handleNext = useCallback(() => {
     if (!session) return;
     if (currentIndex >= slides.length - 1) {
