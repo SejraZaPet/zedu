@@ -4,6 +4,7 @@ import { useSubjects } from "@/hooks/useSubjects";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, MapPin } from "lucide-react";
 
@@ -13,7 +14,23 @@ export interface Placement {
   grade_number: number;
   topic_id: string | null;
   class_id: string | null;
+  status?: string;
+  scheduled_publish_at?: string | null;
 }
+
+const toLocalInput = (iso: string | null | undefined): string => {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+const fromLocalInput = (v: string): string | null => {
+  if (!v) return null;
+  const d = new Date(v);
+  if (isNaN(d.getTime())) return null;
+  return d.toISOString();
+};
 
 interface TopicOption {
   id: string;
@@ -65,6 +82,8 @@ const LessonPlacementEditor = ({ lessonId, placements, onChange }: Props) => {
           grade_number: p.grade_number,
           topic_id: p.topic_id,
           class_id: p.class_id,
+          status: p.status ?? "published",
+          scheduled_publish_at: p.scheduled_publish_at ?? null,
         })));
       }
     };
@@ -80,6 +99,8 @@ const LessonPlacementEditor = ({ lessonId, placements, onChange }: Props) => {
       grade_number: firstGrade?.grade_number ?? 1,
       topic_id: null,
       class_id: null,
+      status: "published",
+      scheduled_publish_at: null,
     }]);
   };
 
@@ -200,6 +221,37 @@ const LessonPlacementEditor = ({ lessonId, placements, onChange }: Props) => {
                     </Select>
                   </div>
                 )}
+
+                <div className="grid grid-cols-2 gap-2 pt-1 border-t border-border/50">
+                  <div>
+                    <Label className="text-[10px] text-muted-foreground">Stav publikování</Label>
+                    <Select
+                      value={p.status ?? "published"}
+                      onValueChange={(v) => updatePlacement(i, {
+                        status: v,
+                        scheduled_publish_at: v === "scheduled" ? p.scheduled_publish_at ?? null : null,
+                      })}
+                    >
+                      <SelectTrigger className="h-8 text-xs mt-0.5"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="draft">Koncept</SelectItem>
+                        <SelectItem value="scheduled">Naplánováno</SelectItem>
+                        <SelectItem value="published">Publikováno</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {(p.status ?? "published") === "scheduled" && (
+                    <div>
+                      <Label className="text-[10px] text-muted-foreground">Publikovat v</Label>
+                      <Input
+                        type="datetime-local"
+                        value={toLocalInput(p.scheduled_publish_at)}
+                        onChange={(e) => updatePlacement(i, { scheduled_publish_at: fromLocalInput(e.target.value) })}
+                        className="h-8 text-xs mt-0.5"
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
             );
           })}
@@ -225,6 +277,8 @@ export const savePlacements = async (lessonId: string, placements: Placement[]) 
     grade_number: p.grade_number,
     topic_id: p.topic_id,
     class_id: p.class_id,
+    status: p.status ?? "published",
+    scheduled_publish_at: p.status === "scheduled" ? p.scheduled_publish_at ?? null : null,
   }));
 
   const { error } = await supabase.from("lesson_placements").insert(rows);

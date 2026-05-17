@@ -78,7 +78,7 @@ const LessonEditorSheet = ({ lessonId, open, onOpenChange, onSaved }: Props) => 
   const loadAssignments = useCallback(async () => {
     const { data } = await supabase
       .from("lesson_topic_assignments")
-      .select("id, topic_id, sort_order, textbook_topics(id, title, subject, grade)")
+      .select("id, topic_id, sort_order, status, scheduled_publish_at, textbook_topics(id, title, subject, grade)")
       .eq("lesson_id", lessonId);
 
     if (data) {
@@ -89,6 +89,8 @@ const LessonEditorSheet = ({ lessonId, open, onOpenChange, onSaved }: Props) => 
         grade: row.textbook_topics?.grade ?? 1,
         topic_title: row.textbook_topics?.title ?? "",
         sort_order: row.sort_order,
+        status: row.status ?? "published",
+        scheduled_publish_at: row.scheduled_publish_at ?? null,
       })));
     }
   }, [lessonId]);
@@ -143,6 +145,19 @@ const LessonEditorSheet = ({ lessonId, open, onOpenChange, onSaved }: Props) => 
 
     await supabase.from("textbook_lessons").update(payload).eq("id", lesson.id);
 
+    // Validate per-placement scheduled rows
+    for (const a of validAssignments) {
+      if (a.status === "scheduled" && (!a.scheduled_publish_at || new Date(a.scheduled_publish_at).getTime() <= Date.now())) {
+        toast({
+          title: "Neplatný čas publikování umístění",
+          description: `Umístění „${a.topic_title}" má naplánovaný čas v minulosti.`,
+          variant: "destructive",
+        });
+        setSaving(false);
+        return;
+      }
+    }
+
     // Sync assignments
     await supabase.from("lesson_topic_assignments").delete().eq("lesson_id", lesson.id);
     if (validAssignments.length > 0) {
@@ -151,6 +166,8 @@ const LessonEditorSheet = ({ lessonId, open, onOpenChange, onSaved }: Props) => 
           lesson_id: lesson.id,
           topic_id: a.topic_id,
           sort_order: i,
+          status: a.status ?? "published",
+          scheduled_publish_at: a.status === "scheduled" ? a.scheduled_publish_at ?? null : null,
         }))
       );
     }
