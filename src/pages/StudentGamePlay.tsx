@@ -180,7 +180,7 @@ const StudentGamePlay = () => {
       <>
         <ConnectionStatusBanner status={connectionStatus} onReconnect={reconnect} />
         <div
-          className="min-h-screen flex flex-col text-white"
+          className="min-h-screen min-h-[100dvh] flex flex-col overflow-y-auto text-white"
           style={{ background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)" }}
         >
           {/* Slide preview — stejný vizuál jako projekce, scalovaný do mobilní šířky */}
