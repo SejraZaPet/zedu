@@ -1730,17 +1730,26 @@ export default function WorksheetEditor() {
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                 <SortableContext items={items.map((it) => it.id)} strategy={verticalListSortingStrategy}>
                   <div className="space-y-3">
-                    {items.map((item) => (
-                      <SortableItemBlock
-                        key={item.id}
-                        item={item}
-                        selected={item.id === selectedId}
-                        pointsEnabled={spec.renderConfig?.pointsEnabled ?? true}
-                        onSelect={() => setSelectedId(item.id)}
-                        onDelete={() => deleteItem(item.id)}
-                        onSetPoints={(p) => updateItem(item.id, { points: p })}
-                      />
-                    ))}
+                    {items.map((item) => {
+                      const ak = answerKeys.find((a) => a.itemId === item.id) ?? null;
+                      return (
+                        <SortableItemBlock
+                          key={item.id}
+                          item={item}
+                          answerKey={ak}
+                          expanded={item.id === selectedId}
+                          pointsEnabled={spec.renderConfig?.pointsEnabled ?? true}
+                          onExpand={() => setSelectedId(item.id)}
+                          onCollapse={() => setSelectedId(null)}
+                          onDelete={() => deleteItem(item.id)}
+                          onUpdateItem={(p) => updateItem(item.id, p)}
+                          onUpdateKey={(p) => updateAnswerKey(item.id, p)}
+                          onApplyRefined={(refined) => replaceItem(item.id, refined)}
+                          onMoveUp={() => moveItem(item.id, -1)}
+                          onMoveDown={() => moveItem(item.id, 1)}
+                        />
+                      );
+                    })}
                   </div>
                 </SortableContext>
               </DndContext>
@@ -1774,30 +1783,16 @@ export default function WorksheetEditor() {
               </Select>
             </div>
           </section>
-
-          {/* ── PROPERTIES ── */}
-          <aside className="hidden lg:block bg-card border border-border rounded-xl p-4 min-w-0 lg:sticky lg:top-[140px] lg:max-h-[calc(100vh-160px)] lg:overflow-y-auto lg:overflow-x-hidden">
-            {propertiesContent}
-          </aside>
         </div>
       </main>
 
-      {/* Mobile drawers (palette + properties) */}
+      {/* Mobile drawer (palette) */}
       <Sheet open={mobilePaletteOpen} onOpenChange={setMobilePaletteOpen}>
         <SheetContent side="left" className="w-[88vw] sm:max-w-sm overflow-y-auto p-4">
           <SheetHeader className="mb-3">
             <SheetTitle>Paleta</SheetTitle>
           </SheetHeader>
           {paletteContent}
-        </SheetContent>
-      </Sheet>
-
-      <Sheet open={mobilePropsOpen} onOpenChange={setMobilePropsOpen}>
-        <SheetContent side="right" className="w-[92vw] sm:max-w-md overflow-y-auto p-4">
-          <SheetHeader className="mb-3">
-            <SheetTitle>Vlastnosti bloku</SheetTitle>
-          </SheetHeader>
-          {propertiesContent}
         </SheetContent>
       </Sheet>
 
