@@ -189,6 +189,13 @@ const LAYOUT_BLOCK_TYPES: ItemType[] = [
 ];
 
 const ACTIVITY_BLOCK_TYPES: ItemType[] = [
+  "mcq",
+  "true_false",
+  "fill_blank",
+  "matching",
+  "ordering",
+  "short_answer",
+  "open_answer",
   "lesson_reference",
   "crossword",
   "word_search",
