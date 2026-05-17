@@ -21,7 +21,19 @@ export type ItemType =
   | "ordering"
   | "short_answer"
   | "open_answer"
-  | "offline_activity";
+  | "offline_activity"
+  // Layoutové bloky (v1.1)
+  | "section_header"
+  | "write_lines"
+  | "instruction_box"
+  | "two_boxes"
+  | "qr_link"
+  | "flow_steps";
+
+export type InstructionVariant = "blue" | "yellow" | "green" | "purple";
+export type InstructionIcon = "info" | "video" | "write" | "discuss" | "group";
+export type LineStyle = "dotted" | "solid" | "dashed";
+export type FlowDirection = "vertical" | "horizontal";
 
 /** Režim offline (didaktické) aktivity v pracovním listu. */
 export type OfflineMode =
