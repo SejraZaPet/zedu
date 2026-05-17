@@ -3,8 +3,7 @@ import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import TextAlign from "@tiptap/extension-text-align";
 import Highlight from "@tiptap/extension-highlight";
-import { TextStyle } from "@tiptap/extension-text-style";
-import Color from "@tiptap/extension-color";
+import { TextStyle, Color } from "@tiptap/extension-text-style";
 import Placeholder from "@tiptap/extension-placeholder";
 import {
   Bold, Italic, Underline as UnderlineIcon, List, ListOrdered,
