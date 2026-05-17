@@ -280,33 +280,102 @@ const TeacherTextbooks = () => {
   };
 
   // === Lesson actions ===
-  const openLessonEditor = (lesson: LessonItem) => {
+  const openLessonEditor = async (lesson: LessonItem) => {
     setEditingLesson({ ...lesson });
     setEditorOpen(true);
     setLessonPlacements([]);
+    setLessonAssignments([]);
+
+    // Pre-load existing assignments for global lessons
+    if (lesson.source === "textbook_lessons") {
+      const { data } = await supabase
+        .from("lesson_topic_assignments")
+        .select("id, topic_id, sort_order, textbook_topics(id, title, subject, grade)")
+        .eq("lesson_id", lesson.id);
+      if (data) {
+        setLessonAssignments(
+          data.map((row: any) => ({
+            id: row.id,
+            topic_id: row.topic_id,
+            subject: row.textbook_topics?.subject ?? "",
+            grade: row.textbook_topics?.grade ?? 1,
+            topic_title: row.textbook_topics?.title ?? "",
+            sort_order: row.sort_order,
+          })),
+        );
+      }
+    }
+  };
+
+  const handleHeroUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!editingLesson) return;
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setHeroUploading(true);
+    const ext = file.name.split(".").pop();
+    const path = `hero/${crypto.randomUUID()}.${ext}`;
+    const { error } = await supabase.storage.from("lesson-images").upload(path, file);
+    if (!error) {
+      const { data } = supabase.storage.from("lesson-images").getPublicUrl(path);
+      setEditingLesson({ ...editingLesson, hero_image_url: data.publicUrl });
+    } else {
+      toast({ title: "Nahrání selhalo", description: error.message, variant: "destructive" });
+    }
+    setHeroUploading(false);
   };
 
   const saveLessonEdit = async () => {
     if (!editingLesson) return;
+
+    // Validate scheduled status
+    let status = editingLesson.status;
+    let scheduledAt = editingLesson.scheduled_publish_at ?? null;
+    if (status === "scheduled") {
+      if (!scheduledAt || new Date(scheduledAt).getTime() <= Date.now()) {
+        toast({
+          title: "Neplatný čas publikování",
+          description: "Pro naplánování zvolte datum a čas v budoucnosti.",
+          variant: "destructive",
+        });
+        return;
+      }
+    } else {
+      scheduledAt = null;
+    }
+
     setSaving(true);
 
     const table = editingLesson.source;
     const payload: any = {
       title: editingLesson.title,
-      status: editingLesson.status,
+      status,
       blocks: editingLesson.blocks as any,
+      hero_image_url: editingLesson.hero_image_url ?? null,
+      scheduled_publish_at: scheduledAt,
     };
 
     const { error } = await supabase.from(table).update(payload).eq("id", editingLesson.id);
     if (error) {
       toast({ title: "Chyba", description: error.message, variant: "destructive" });
     } else {
-      // Save placements if teacher lesson
+      // Save multi-placements
       if (table === "teacher_textbook_lessons" && lessonPlacements.length > 0) {
         try {
           await savePlacements(editingLesson.id, lessonPlacements);
         } catch (err: any) {
           toast({ title: "Chyba při ukládání umístění", description: err.message, variant: "destructive" });
+        }
+      }
+      if (table === "textbook_lessons") {
+        const valid = lessonAssignments.filter((a) => a.topic_id);
+        await supabase.from("lesson_topic_assignments").delete().eq("lesson_id", editingLesson.id);
+        if (valid.length > 0) {
+          const { error: aErr } = await supabase.from("lesson_topic_assignments").insert(
+            valid.map((a, i) => ({ lesson_id: editingLesson.id, topic_id: a.topic_id, sort_order: i })),
+          );
+          if (aErr) {
+            toast({ title: "Chyba při ukládání umístění", description: aErr.message, variant: "destructive" });
+          }
         }
       }
       toast({ title: "Lekce uložena" });
