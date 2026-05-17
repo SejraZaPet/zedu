@@ -243,6 +243,28 @@ const SiteHeader = () => {
                 </button>
               );
             })}
+            {(userRole === "teacher" || userRole === "lektor") && (
+              <>
+                <button onClick={() => { setMenuOpen(false); navigate("/ucitel/ucebnice"); }} className={`flex items-center gap-3 pl-6 py-2 rounded-lg text-sm font-medium transition-colors text-left ${location.pathname.startsWith("/ucitel/ucebnice") ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-primary hover:bg-muted/50"}`}>
+                  <BookOpen size={16} /> Moje učebnice
+                </button>
+                <button onClick={() => { setMenuOpen(false); navigate("/ucitel/hry"); }} className={`flex items-center gap-3 pl-6 py-2 rounded-lg text-sm font-medium transition-colors text-left ${location.pathname.startsWith("/ucitel/hry") ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-primary hover:bg-muted/50"}`}>
+                  <Gamepad2 size={16} /> Živé hry
+                </button>
+                <button onClick={() => { setMenuOpen(false); navigate("/ucitel/media"); }} className={`flex items-center gap-3 pl-6 py-2 rounded-lg text-sm font-medium transition-colors text-left ${location.pathname.startsWith("/ucitel/media") ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-primary hover:bg-muted/50"}`}>
+                  <ImageIcon size={16} /> Média
+                </button>
+                <button onClick={() => { setMenuOpen(false); navigate("/ucitel/vysledky"); }} className={`flex items-center gap-3 pl-6 py-2 rounded-lg text-sm font-medium transition-colors text-left ${location.pathname.startsWith("/ucitel/vysledky") ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-primary hover:bg-muted/50"}`}>
+                  <BarChart3 size={16} /> Výsledky
+                </button>
+                <button onClick={() => { setMenuOpen(false); navigate("/marketplace"); }} className={`flex items-center gap-3 pl-6 py-2 rounded-lg text-sm font-medium transition-colors text-left ${location.pathname.startsWith("/marketplace") ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-primary hover:bg-muted/50"}`}>
+                  <ShoppingBag size={16} /> Marketplace
+                </button>
+                <button onClick={() => { setMenuOpen(false); navigate("/ucitel/publikace"); }} className={`flex items-center gap-3 pl-6 py-2 rounded-lg text-sm font-medium transition-colors text-left ${location.pathname.startsWith("/ucitel/publikace") ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-primary hover:bg-muted/50"}`}>
+                  <Layers size={16} /> Moje publikace
+                </button>
+              </>
+            )}
             <div className="border-t border-border mt-2 pt-2">
               {isLoggedIn ? (
                 <>
