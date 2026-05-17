@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSubjects, getGradeNumbers } from "@/hooks/useSubjects";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, AlertTriangle } from "lucide-react";
 
@@ -14,6 +14,8 @@ export interface Assignment {
   grade: number;
   topic_title: string;
   sort_order: number;
+  status?: string;
+  scheduled_publish_at?: string | null;
 }
 
 interface Props {
@@ -26,6 +28,20 @@ interface TopicOption {
   id: string;
   title: string;
 }
+
+const toLocalInput = (iso: string | null | undefined): string => {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+const fromLocalInput = (v: string): string | null => {
+  if (!v) return null;
+  const d = new Date(v);
+  if (isNaN(d.getTime())) return null;
+  return d.toISOString();
+};
 
 const AssignmentRow = ({
   assignment,
@@ -67,60 +83,98 @@ const AssignmentRow = ({
     fetchTopics();
   }, [assignment.subject, assignment.grade]);
 
+  const status = assignment.status ?? "published";
+
   return (
-    <div className={`flex items-center gap-2 p-2 rounded-md border ${isDuplicate ? "border-destructive bg-destructive/5" : "border-border"}`}>
-      <div className="flex-1 grid grid-cols-3 gap-2">
-        <Select
-          value={assignment.subject}
-          onValueChange={(v) => {
-            const s = subjects.find((s) => s.slug === v);
-            const g = s ? getGradeNumbers(s) : [];
-            onChange({ ...assignment, subject: v, grade: g[0] ?? 1, topic_id: "", topic_title: "" });
-          }}
-        >
-          <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Předmět" /></SelectTrigger>
-          <SelectContent>
-            {subjects.map((s) => (
-              <SelectItem key={s.slug} value={s.slug}>{s.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+    <div className={`p-2 rounded-md border space-y-2 ${isDuplicate ? "border-destructive bg-destructive/5" : "border-border"}`}>
+      <div className="flex items-center gap-2">
+        <div className="flex-1 grid grid-cols-3 gap-2">
+          <Select
+            value={assignment.subject}
+            onValueChange={(v) => {
+              const s = subjects.find((s) => s.slug === v);
+              const g = s ? getGradeNumbers(s) : [];
+              onChange({ ...assignment, subject: v, grade: g[0] ?? 1, topic_id: "", topic_title: "" });
+            }}
+          >
+            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Předmět" /></SelectTrigger>
+            <SelectContent>
+              {subjects.map((s) => (
+                <SelectItem key={s.slug} value={s.slug}>{s.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-        <Select
-          value={String(assignment.grade)}
-          onValueChange={(v) => onChange({ ...assignment, grade: Number(v), topic_id: "", topic_title: "" })}
-          disabled={!assignment.subject}
-        >
-          <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Ročník" /></SelectTrigger>
-          <SelectContent>
-            {grades.map((g) => (
-              <SelectItem key={g} value={String(g)}>{g}. ročník</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          <Select
+            value={String(assignment.grade)}
+            onValueChange={(v) => onChange({ ...assignment, grade: Number(v), topic_id: "", topic_title: "" })}
+            disabled={!assignment.subject}
+          >
+            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Ročník" /></SelectTrigger>
+            <SelectContent>
+              {grades.map((g) => (
+                <SelectItem key={g} value={String(g)}>{g}. ročník</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-        <Select
-          value={assignment.topic_id || "none"}
-          onValueChange={(v) => {
-            const t = topics.find((t) => t.id === v);
-            onChange({ ...assignment, topic_id: v, topic_title: t?.title ?? "" });
-          }}
-          disabled={topics.length === 0}
-        >
-          <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Téma" /></SelectTrigger>
-          <SelectContent>
-            {topics.map((t) => (
-              <SelectItem key={t.id} value={t.id}>{t.title}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          <Select
+            value={assignment.topic_id || "none"}
+            onValueChange={(v) => {
+              const t = topics.find((t) => t.id === v);
+              onChange({ ...assignment, topic_id: v, topic_title: t?.title ?? "" });
+            }}
+            disabled={topics.length === 0}
+          >
+            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Téma" /></SelectTrigger>
+            <SelectContent>
+              {topics.map((t) => (
+                <SelectItem key={t.id} value={t.id}>{t.title}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {isDuplicate && <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />}
+
+        <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={onRemove}>
+          <Trash2 className="w-3.5 h-3.5 text-destructive" />
+        </Button>
       </div>
 
-      {isDuplicate && <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />}
-
-      <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={onRemove}>
-        <Trash2 className="w-3.5 h-3.5 text-destructive" />
-      </Button>
+      <div className="grid grid-cols-[140px_1fr] gap-2 items-center pl-1">
+        <Select
+          value={status}
+          onValueChange={(v) =>
+            onChange({
+              ...assignment,
+              status: v,
+              scheduled_publish_at: v === "scheduled" ? assignment.scheduled_publish_at ?? null : null,
+            })
+          }
+        >
+          <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="draft">Koncept</SelectItem>
+            <SelectItem value="scheduled">Naplánováno</SelectItem>
+            <SelectItem value="published">Publikováno</SelectItem>
+          </SelectContent>
+        </Select>
+        {status === "scheduled" ? (
+          <Input
+            type="datetime-local"
+            value={toLocalInput(assignment.scheduled_publish_at)}
+            onChange={(e) =>
+              onChange({ ...assignment, scheduled_publish_at: fromLocalInput(e.target.value) })
+            }
+            className="h-7 text-xs"
+          />
+        ) : (
+          <span className="text-[10px] text-muted-foreground">
+            {status === "published" ? "Viditelné studentům v tomto umístění" : "Skryto v tomto umístění"}
+          </span>
+        )}
+      </div>
     </div>
   );
 };
@@ -139,6 +193,8 @@ const LessonAssignments = ({ lessonId, assignments, onChange }: Props) => {
         grade: firstGrade,
         topic_title: "",
         sort_order: assignments.length,
+        status: "published",
+        scheduled_publish_at: null,
       },
     ]);
   };
@@ -155,7 +211,7 @@ const LessonAssignments = ({ lessonId, assignments, onChange }: Props) => {
     <div>
       <Label className="mb-2 block">Umístění v učebnicích</Label>
       <p className="text-xs text-muted-foreground mb-3">
-        Lekce se zobrazí ve všech přiřazených předmětech/ročnících/tématech.
+        Lekce se zobrazí ve všech přiřazených předmětech/ročnících/tématech. Publikování lze nastavit pro každé umístění zvlášť.
       </p>
       <div className="space-y-2 mb-3">
         {assignments.map((a, i) => (
