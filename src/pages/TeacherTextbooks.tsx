@@ -92,6 +92,7 @@ const fromLocalInput = (s: string): string | null => {
 interface TopicItem {
   id: string;
   title: string;
+  sort_order: number;
   lessons: LessonItem[];
 }
 
