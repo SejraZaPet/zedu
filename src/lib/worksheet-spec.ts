@@ -28,7 +28,44 @@ export type ItemType =
   | "instruction_box"
   | "two_boxes"
   | "qr_link"
-  | "flow_steps";
+  | "flow_steps"
+  // v1.2 — Activity-style printable bloky
+  | "crossword"
+  | "word_search"
+  | "sorting"
+  | "flashcards"
+  | "image_label"
+  | "image_hotspot"
+  | "lesson_reference";
+
+/** Křížovka — položka */
+export interface CrosswordEntry {
+  /** Slovo (vyplněné) */
+  answer: string;
+  /** Nápověda zobrazená studentovi */
+  clue: string;
+  /** Směr v mřížce */
+  direction: "across" | "down";
+  /** Index řádku (0-based) levého horního políčka */
+  row: number;
+  /** Index sloupce (0-based) levého horního políčka */
+  col: number;
+  /** Číslo zobrazené v mřížce */
+  number: number;
+}
+
+/** Sorting — kategorie a položka */
+export interface SortingCategory { id: string; label: string }
+export interface SortingItem { text: string; categoryId: string }
+
+/** Flashcard pár pro vystřižení */
+export interface Flashcard { front: string; back: string }
+
+/** Popisek obrázku — číslovaný odkaz na část */
+export interface ImageLabel { number: number; xPercent: number; yPercent: number; answer: string }
+
+/** Hotspot bod na obrázku s otázkou */
+export interface ImageHotspot { number: number; xPercent: number; yPercent: number; question: string }
 
 export type InstructionVariant = "blue" | "yellow" | "green" | "purple";
 export type InstructionIcon = "info" | "video" | "write" | "discuss" | "group";
