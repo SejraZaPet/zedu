@@ -421,7 +421,7 @@ const StudentGamePlay = () => {
   );
 };
 
-export default StudentGamePlay;
+
 
 const WhiteboardOverlay = ({
   stageW,
