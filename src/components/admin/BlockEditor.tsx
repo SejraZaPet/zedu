@@ -90,10 +90,10 @@ const SortableBlock = React.memo(({
   onDelete,
 }: {
   block: Block;
-  onUpdate: (props: Record<string, any>) => void;
-  onDuplicate: () => void;
-  onToggle: () => void;
-  onDelete: () => void;
+  onUpdate: (id: string, props: Record<string, any>) => void;
+  onDuplicate: (id: string) => void;
+  onToggle: (id: string) => void;
+  onDelete: (id: string) => void;
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: block.id });
 
@@ -104,6 +104,7 @@ const SortableBlock = React.memo(({
   };
 
   const typeLabel = BLOCK_TYPES.find((t) => t.type === block.type)?.label ?? block.type;
+  const handleUpdate = useCallback((props: Record<string, any>) => onUpdate(block.id, props), [onUpdate, block.id]);
 
   return (
     <div ref={setNodeRef} style={style} className={`border rounded-lg bg-card ${!block.visible ? "opacity-50" : ""} ${isDragging ? "border-primary" : "border-border"}`}>
@@ -112,23 +113,47 @@ const SortableBlock = React.memo(({
           <GripVertical className="w-4 h-4" />
         </button>
         <span className="text-xs font-medium text-muted-foreground flex-1">{typeLabel}</span>
-        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onToggle} title={block.visible ? "Skrýt" : "Zobrazit"}>
+        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onToggle(block.id)} title={block.visible ? "Skrýt" : "Zobrazit"}>
           {block.visible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
         </Button>
-        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onDuplicate} title="Duplikovat">
+        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onDuplicate(block.id)} title="Duplikovat">
           <Copy className="w-3.5 h-3.5" />
         </Button>
-        <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={onDelete} title="Smazat">
+        <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => onDelete(block.id)} title="Smazat">
           <Trash2 className="w-3.5 h-3.5" />
         </Button>
       </div>
       <div className="p-3">
-        <BlockRenderer block={block} onChange={onUpdate} />
+        <BlockRenderer block={block} onChange={handleUpdate} />
       </div>
     </div>
   );
 });
 SortableBlock.displayName = "SortableBlock";
+
+const InsertButton = React.memo(({ afterId, onInsert }: { afterId: string; onInsert: (afterId: string, type: Block["type"]) => void }) => (
+  <div className="flex justify-center py-0.5 group">
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className="opacity-0 group-hover:opacity-100 transition-opacity h-5 w-5 rounded-full bg-primary/10 hover:bg-primary/20 flex items-center justify-center"
+          title="Vložit blok zde"
+        >
+          <Plus className="w-3 h-3 text-primary" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="center" className="w-48 max-h-[360px] overflow-y-auto overflow-x-hidden">
+        {BLOCK_TYPES.map((bt) => (
+          <DropdownMenuItem key={bt.type} onClick={() => onInsert(afterId, bt.type)} className="py-1.5 px-2 text-sm">
+            <span className="w-5 text-center mr-2">{bt.icon}</span>{bt.label}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  </div>
+));
+InsertButton.displayName = "InsertButton";
 
 const InsertButton = React.memo(({ onInsert }: { onInsert: (type: Block["type"]) => void }) => (
   <div className="flex justify-center py-0.5 group">
