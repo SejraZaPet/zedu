@@ -82,6 +82,8 @@ const LessonPlacementEditor = ({ lessonId, placements, onChange }: Props) => {
           grade_number: p.grade_number,
           topic_id: p.topic_id,
           class_id: p.class_id,
+          status: p.status ?? "published",
+          scheduled_publish_at: p.scheduled_publish_at ?? null,
         })));
       }
     };
@@ -97,6 +99,8 @@ const LessonPlacementEditor = ({ lessonId, placements, onChange }: Props) => {
       grade_number: firstGrade?.grade_number ?? 1,
       topic_id: null,
       class_id: null,
+      status: "published",
+      scheduled_publish_at: null,
     }]);
   };
 
