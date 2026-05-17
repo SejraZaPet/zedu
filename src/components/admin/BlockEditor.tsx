@@ -361,8 +361,7 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
     };
     document.addEventListener("paste", handlePaste);
     return () => document.removeEventListener("paste", handlePaste);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [blocks]);
+  }, []);
 
   return (
     <div
