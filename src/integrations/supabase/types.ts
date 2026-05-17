@@ -2151,9 +2151,11 @@ export type Database = {
         Row: {
           blocks: Json
           created_at: string
+          hero_image_url: string | null
           id: string
           presentation_slides: Json | null
           require_activities: boolean
+          scheduled_publish_at: string | null
           sort_order: number
           status: string
           textbook_id: string
@@ -2163,9 +2165,11 @@ export type Database = {
         Insert: {
           blocks?: Json
           created_at?: string
+          hero_image_url?: string | null
           id?: string
           presentation_slides?: Json | null
           require_activities?: boolean
+          scheduled_publish_at?: string | null
           sort_order?: number
           status?: string
           textbook_id: string
@@ -2175,9 +2179,11 @@ export type Database = {
         Update: {
           blocks?: Json
           created_at?: string
+          hero_image_url?: string | null
           id?: string
           presentation_slides?: Json | null
           require_activities?: boolean
+          scheduled_publish_at?: string | null
           sort_order?: number
           status?: string
           textbook_id?: string
