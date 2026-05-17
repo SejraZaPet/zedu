@@ -986,7 +986,12 @@ export default function WorksheetEditor() {
     const text = block.text;
     const patch: Partial<WorksheetItem> = { prompt: text };
 
-    if (it.type === "fill_blank") {
+    if (it.type === "lesson_reference") {
+      const prevIds = it.lessonRefBlockIds ?? [];
+      patch.prompt = block.title || it.prompt || "Obsah z lekce";
+      patch.lessonRefContent = text;
+      patch.lessonRefBlockIds = prevIds.includes(block.id) ? prevIds : [...prevIds, block.id];
+    } else if (it.type === "fill_blank") {
       // Naive helper: blank out first long word per sentence (>= 5 chars).
       let blanked = text;
       const longWord = text.match(/\b[\p{L}]{5,}\b/u);
