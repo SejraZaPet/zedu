@@ -3,6 +3,7 @@ import { ArrowUp, ArrowDown, Trash2, ImageIcon } from "lucide-react";
 import { LessonBlock } from "@/components/LessonBlockRenderer";
 import type { Block } from "@/lib/textbook-config";
 import { MediaPickerDialog } from "@/components/media/MediaPickerDialog";
+import DOMPurify from "dompurify";
 
 export type SlideLayout =
   | "full"
@@ -156,17 +157,26 @@ function EditableBlock({
 }) {
   const update = (patch: Partial<Block> | ((b: Block) => Block)) => onChange?.(patch);
 
+  const safeHtml = (html: string) => ({ __html: DOMPurify.sanitize(html) });
+
   if (block.type === "paragraph") {
     return (
       <div className={asCard ? "bg-white/10 rounded-xl p-4 border border-white/15" : ""}>
-        <EditableText
-          editable={editable}
-          multiline
-          value={block.props?.text || ""}
-          placeholder="Napište text…"
-          className="text-2xl leading-relaxed"
-          onCommit={(v) => update((b) => ({ ...b, props: { ...b.props, text: v } }))}
-        />
+        {editable ? (
+          <EditableText
+            editable={editable}
+            multiline
+            value={block.props?.text || ""}
+            placeholder="Napište text…"
+            className="text-2xl leading-relaxed"
+            onCommit={(v) => update((b) => ({ ...b, props: { ...b.props, text: v } }))}
+          />
+        ) : (
+          <div
+            className="text-2xl leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-2 [&_strong]:font-semibold"
+            dangerouslySetInnerHTML={safeHtml(block.props?.text || "")}
+          />
+        )}
       </div>
     );
   }
@@ -175,7 +185,7 @@ function EditableBlock({
     const level = block.props?.level || 2;
     const cls =
       level === 1 ? "text-5xl font-bold" : level === 3 ? "text-3xl font-semibold" : "text-4xl font-bold";
-    return (
+    return editable ? (
       <EditableText
         editable={editable}
         value={block.props?.text || ""}
@@ -183,11 +193,24 @@ function EditableBlock({
         className={cls}
         onCommit={(v) => update((b) => ({ ...b, props: { ...b.props, text: v } }))}
       />
+    ) : (
+      <div
+        className={`${cls} [&_strong]:font-semibold`}
+        dangerouslySetInnerHTML={safeHtml(block.props?.text || "")}
+      />
     );
   }
 
   if (block.type === "bullet_list") {
     const items: string[] = block.props?.items || [""];
+    if (!editable && block.props?.html) {
+      return (
+        <div
+          className={`${asCard ? "bg-white/10 rounded-xl p-4 border border-white/15" : ""} text-2xl leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mb-2`}
+          dangerouslySetInnerHTML={safeHtml(block.props.html)}
+        />
+      );
+    }
     return (
       <ul className={`space-y-2 ${asCard ? "bg-white/10 rounded-xl p-4 border border-white/15" : ""}`}>
         {items.map((item, i) => (
