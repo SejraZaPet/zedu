@@ -272,6 +272,17 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
     onChange([...blocks, newBlock]);
   };
 
+  // Replace the basic appendImageBlock to use commit (preserves undo history)
+  const appendImageBlockCommit = (url: string, caption = "") => {
+    const newBlock = {
+      id: crypto.randomUUID(),
+      type: "image",
+      visible: true,
+      props: { url, caption, width: "full", alignment: "center" },
+    } as unknown as Block;
+    commit([...blocks, newBlock]);
+  };
+
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(false);
