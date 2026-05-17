@@ -168,6 +168,35 @@ const SiteHeader = () => {
                       Administrace
                     </DropdownMenuItem>
                   )}
+                  {(userRole === "teacher" || userRole === "lektor") && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => navigate("/ucitel/ucebnice")} className="gap-2 cursor-pointer">
+                        <BookOpen size={16} />
+                        Moje učebnice
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/ucitel/hry")} className="gap-2 cursor-pointer">
+                        <Gamepad2 size={16} />
+                        Živé hry
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/ucitel/media")} className="gap-2 cursor-pointer">
+                        <ImageIcon size={16} />
+                        Média
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/ucitel/vysledky")} className="gap-2 cursor-pointer">
+                        <BarChart3 size={16} />
+                        Výsledky
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/marketplace")} className="gap-2 cursor-pointer">
+                        <ShoppingBag size={16} />
+                        Marketplace
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/ucitel/publikace")} className="gap-2 cursor-pointer">
+                        <Layers size={16} />
+                        Moje publikace
+                      </DropdownMenuItem>
+                    </>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout} className="gap-2 cursor-pointer">
                     <LogOut size={16} />
