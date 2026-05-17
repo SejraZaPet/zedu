@@ -190,7 +190,7 @@ const StudentGamePlay = () => {
 
           {/* Aktivita */}
           {isActivity && (
-            <div className="px-4 pb-6 mt-4">
+            <div className="px-3 sm:px-4 pb-4 sm:pb-6 mt-3 sm:mt-4">
               {(currentSlideData as any).activitySpec?.activityType === "wall" ? (
                 liveSettings?.wallPublished === true && liveSettings?.wallPublishedQuestion === qi ? (
                   <div
