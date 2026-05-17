@@ -619,129 +619,18 @@ const TeacherTextbooks = () => {
         </main>
         <SiteFooter />
 
-        {/* === Lesson Editor Sheet === */}
-        <Sheet open={editorOpen} onOpenChange={(open) => {
-          if (!open) { setEditorOpen(false); setEditingLesson(null); setLessonPlacements([]); setLessonAssignments([]); }
-        }}>
-          <SheetContent side="right" className="w-full sm:max-w-2xl lg:max-w-4xl overflow-y-auto">
-            <SheetHeader>
-              <SheetTitle>Upravit lekci</SheetTitle>
-            </SheetHeader>
-            {editingLesson && (
-              <div className="space-y-4 mt-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="col-span-2">
-                    <Label>Název lekce</Label>
-                    <Input
-                      value={editingLesson.title}
-                      onChange={(e) => setEditingLesson({ ...editingLesson, title: e.target.value })}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label>Stav</Label>
-                    <Select
-                      value={editingLesson.status}
-                      onValueChange={(v) =>
-                        setEditingLesson({
-                          ...editingLesson,
-                          status: v,
-                          scheduled_publish_at: v === "scheduled" ? editingLesson.scheduled_publish_at : null,
-                        })
-                      }
-                    >
-                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="draft">Koncept</SelectItem>
-                        <SelectItem value="scheduled">Naplánováno</SelectItem>
-                        <SelectItem value="published">Publikováno</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {editingLesson.status === "scheduled" && (
-                      <div className="mt-2">
-                        <Label className="text-xs text-muted-foreground">Publikovat v</Label>
-                        <Input
-                          type="datetime-local"
-                          value={toLocalInput(editingLesson.scheduled_publish_at)}
-                          onChange={(e) =>
-                            setEditingLesson({ ...editingLesson, scheduled_publish_at: fromLocalInput(e.target.value) })
-                          }
-                          className="mt-1"
-                        />
-                      </div>
-                    )}
-                    {editingLesson.status === "published" && (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        className="mt-2 w-full"
-                        onClick={() => setEditingLesson({ ...editingLesson, status: "draft", scheduled_publish_at: null })}
-                      >
-                        Vrátit do konceptu
-                      </Button>
-                    )}
-                  </div>
-                  <div>
-                    <Label>Hero obrázek (banner)</Label>
-                    <div className="flex gap-2 mt-1">
-                      <Input
-                        value={editingLesson.hero_image_url ?? ""}
-                        onChange={(e) => setEditingLesson({ ...editingLesson, hero_image_url: e.target.value })}
-                        placeholder="URL…"
-                        className="flex-1"
-                      />
-                      <Button size="sm" variant="outline" className="relative" disabled={heroUploading}>
-                        <Upload className="w-4 h-4 mr-1" />{heroUploading ? "…" : "Nahrát"}
-                        <input type="file" accept="image/*" onChange={handleHeroUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
-                      </Button>
-                    </div>
-                    {editingLesson.hero_image_url && (
-                      <img src={editingLesson.hero_image_url} alt="" className="mt-2 max-h-24 rounded border border-border" />
-                    )}
-                  </div>
-                </div>
-
-                {editingLesson.source === "teacher_textbook_lessons" && (
-                  <LessonPlacementEditor
-                    lessonId={editingLesson.id}
-                    placements={lessonPlacements}
-                    onChange={setLessonPlacements}
-                  />
-                )}
-
-                {editingLesson.source === "textbook_lessons" && (
-                  <div className="border-t border-border pt-4">
-                    <LessonAssignments
-                      lessonId={editingLesson.id}
-                      assignments={lessonAssignments}
-                      onChange={setLessonAssignments}
-                    />
-                  </div>
-                )}
-
-                <div>
-                  <Label className="mb-2 block">Obsah lekce</Label>
-                  <BlockEditor
-                    blocks={editingLesson.blocks}
-                    onChange={(blocks) => setEditingLesson({ ...editingLesson, blocks })}
-                  />
-                </div>
-
-                <div className="flex gap-2 pt-2 border-t border-border sticky bottom-0 bg-background pb-4">
-                  <Button size="sm" onClick={saveLessonEdit} disabled={saving}>
-                    {saving ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />}
-                    Uložit změny
-                  </Button>
-                  <LessonPreviewDialog title={editingLesson.title} heroImageUrl={editingLesson.hero_image_url ?? null} blocks={editingLesson.blocks} />
-                  <Button size="sm" variant="ghost" onClick={() => { setEditorOpen(false); setEditingLesson(null); }}>
-                    <X className="w-4 h-4 mr-1" /> Zavřít
-                  </Button>
-                </div>
-              </div>
-            )}
-          </SheetContent>
-        </Sheet>
+        <TeacherTextbookLessonEditorSheet
+          lesson={editingLesson}
+          open={editorOpen}
+          onOpenChange={(open) => {
+            setEditorOpen(open);
+            if (!open) setEditingLesson(null);
+          }}
+          onSaved={() => {
+            setEditingLesson(null);
+            refreshDetail();
+          }}
+        />
 
         {/* === Delete Confirmation === */}
         <AlertDialog open={!!deletingLesson} onOpenChange={(open) => { if (!open) setDeletingLesson(null); }}>
