@@ -1472,22 +1472,13 @@ export default function WorksheetEditor() {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* Mobile: open properties drawer */}
-            <Button
-              variant="outline"
-              size="sm"
-              className="lg:hidden shrink-0"
-              onClick={() => setMobilePropsOpen(true)}
-              title="Vlastnosti"
-            >
-              <PanelRight className="w-4 h-4" />
-            </Button>
           </div>
         </div>
       </div>
 
       <main className="flex-1 container mx-auto px-4 pt-8 pb-6 max-w-[1600px] w-full">
-        <div className="grid gap-4 lg:grid-cols-[240px_minmax(0,1fr)_340px]">
+        <div className="grid gap-4 lg:grid-cols-[240px_minmax(0,1fr)]">
+
           {/* ── PALETA ── */}
           <aside className="hidden lg:block bg-card border border-border rounded-xl p-4 lg:sticky lg:top-[140px] lg:max-h-[calc(100vh-160px)] lg:overflow-y-auto">
             {paletteContent}
