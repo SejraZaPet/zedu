@@ -20,7 +20,7 @@ import UserDetailDialog from "./UserDetailDialog";
 import { printLoginCards, type LoginCardData } from "@/lib/generate-login-cards";
 import bcrypt from "bcryptjs";
 import { sendWelcomeEmail } from "@/lib/send-email";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import {
   Select,
   SelectContent,
@@ -332,10 +332,24 @@ const UsersManager = () => {
 
                 if (isExcel) {
                   const buf = await file.arrayBuffer();
-                  const wb = XLSX.read(buf, { type: "array" });
-                  const ws = wb.Sheets[wb.SheetNames[0]];
-                  rawRows = XLSX.utils.sheet_to_json<string[]>(ws, { header: 1, raw: false, defval: "" }) as any;
-                  rawRows = rawRows.map(r => r.map(c => (c == null ? "" : String(c))));
+                  const wb = new ExcelJS.Workbook();
+                  await wb.xlsx.load(buf);
+                  const ws = wb.worksheets[0];
+                  rawRows = [];
+                  ws.eachRow({ includeEmpty: true }, (row) => {
+                    const values = row.values as any[];
+                    // ExcelJS row.values is 1-indexed (index 0 is empty)
+                    const cells = values.slice(1).map((c) => {
+                      if (c == null) return "";
+                      if (typeof c === "object") {
+                        if ("text" in c) return String((c as any).text ?? "");
+                        if ("result" in c) return String((c as any).result ?? "");
+                        if ("richText" in c) return (c as any).richText.map((r: any) => r.text).join("");
+                      }
+                      return String(c);
+                    });
+                    rawRows.push(cells);
+                  });
                 } else {
                   const text = await file.text();
                   const lines = text.split(/\r?\n/).filter(Boolean);
