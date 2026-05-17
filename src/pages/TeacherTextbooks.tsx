@@ -111,6 +111,11 @@ const TeacherTextbooks = () => {
   // Delete confirmation
   const [deletingLesson, setDeletingLesson] = useState<LessonItem | null>(null);
 
+  // Textbook-level actions
+  const [renameTextbookOpen, setRenameTextbookOpen] = useState(false);
+  const [renameTextbookTitle, setRenameTextbookTitle] = useState("");
+  const [deleteTextbookOpen, setDeleteTextbookOpen] = useState(false);
+
   // Import file dialog
   const [importOpen, setImportOpen] = useState(false);
 
