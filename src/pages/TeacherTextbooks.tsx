@@ -769,6 +769,38 @@ const TeacherTextbooks = () => {
           </DialogContent>
         </Dialog>
 
+        {/* === Rename Textbook Dialog === */}
+        <Dialog open={renameTextbookOpen} onOpenChange={setRenameTextbookOpen}>
+          <DialogContent>
+            <DialogHeader><DialogTitle>Přejmenovat učebnici</DialogTitle></DialogHeader>
+            <div className="space-y-4 mt-2">
+              <div>
+                <Label>Název učebnice</Label>
+                <Input value={renameTextbookTitle} onChange={(e) => setRenameTextbookTitle(e.target.value)} className="mt-1" />
+              </div>
+              <Button onClick={handleRenameTextbook} disabled={!renameTextbookTitle.trim()} className="w-full">Uložit</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* === Delete Textbook Confirmation === */}
+        <AlertDialog open={deleteTextbookOpen} onOpenChange={setDeleteTextbookOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Smazat učebnici</AlertDialogTitle>
+              <AlertDialogDescription>
+                Opravdu chcete smazat učebnici „{selectedTextbook?.title}"? Smaže se včetně všech lekcí. Tuto akci nelze vrátit.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Zrušit</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteTextbook} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Smazat
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
         <SaveAsTemplateDialog
           open={saveAsTemplateOpen}
           onOpenChange={setSaveAsTemplateOpen}
