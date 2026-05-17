@@ -8,6 +8,7 @@ export { default as OrderingItem } from "./OrderingItem";
 export { default as ShortAnswerItem } from "./ShortAnswerItem";
 export { default as OpenAnswerItem } from "./OpenAnswerItem";
 export { default as OfflineActivityItem } from "./OfflineActivityItem";
+export { default as LayoutBlockItem } from "./LayoutBlockItem";
 
 import type { ItemType } from "@/lib/worksheet-spec";
 import type { FC } from "react";
@@ -21,6 +22,7 @@ import OrderingItem from "./OrderingItem";
 import ShortAnswerItem from "./ShortAnswerItem";
 import OpenAnswerItem from "./OpenAnswerItem";
 import OfflineActivityItem from "./OfflineActivityItem";
+import LayoutBlockItem from "./LayoutBlockItem";
 
 /** Registry mapping item type → renderer component */
 export const ITEM_RENDERERS: Record<ItemType, FC<WorksheetItemProps>> = {
@@ -32,4 +34,10 @@ export const ITEM_RENDERERS: Record<ItemType, FC<WorksheetItemProps>> = {
   short_answer: ShortAnswerItem,
   open_answer: OpenAnswerItem,
   offline_activity: OfflineActivityItem,
+  section_header: LayoutBlockItem,
+  write_lines: LayoutBlockItem,
+  instruction_box: LayoutBlockItem,
+  two_boxes: LayoutBlockItem,
+  qr_link: LayoutBlockItem,
+  flow_steps: LayoutBlockItem,
 };
