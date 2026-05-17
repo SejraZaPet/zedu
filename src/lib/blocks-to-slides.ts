@@ -118,13 +118,13 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
     current = null;
   };
 
-  const newSlide = (headline = "", headingBlock: any = null) => ({
+  const newSlide = (headline = "") => ({
     slideId: "",
     type: "explain",
     projector: { headline, body: "", assetRefs: [] as string[] },
     device: { instructions: "Sledujte výklad." },
     teacherNotes: "",
-    blocks: headingBlock ? [headingBlock] : [] as any[],
+    blocks: [] as any[],
   });
 
   const appendBody = (text: string) => {
@@ -148,7 +148,7 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
       flush();
       const headline = getText(props);
       if (!headline) continue;
-      current = newSlide(headline, block);
+      current = newSlide(headline);
       continue;
     }
 
