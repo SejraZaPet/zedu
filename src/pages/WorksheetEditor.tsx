@@ -3168,6 +3168,8 @@ function SortableItemBlock({
         answerKey={answerKey}
         onUpdateItem={onUpdateItem}
         onUpdateKey={onUpdateKey}
+        hasLesson={hasLesson}
+        onPickFromLesson={onPickFromLesson}
       />
 
       <AiBlockChat item={item} onApplyRefined={onApplyRefined} />
