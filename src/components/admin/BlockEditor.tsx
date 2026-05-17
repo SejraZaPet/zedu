@@ -181,37 +181,40 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
     forceRender((n) => n + 1);
   }, [blocks]);
 
-  const commit = (next: Block[]) => {
-    // Truncate redo branch and push new state
+  const blocksRef = useRef(blocks);
+  blocksRef.current = blocks;
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+
+  const commit = useCallback((next: Block[]) => {
     const newHistory = historyRef.current.slice(0, indexRef.current + 1);
     newHistory.push(next);
-    // Cap history length
     if (newHistory.length > 100) newHistory.shift();
     historyRef.current = newHistory;
     indexRef.current = newHistory.length - 1;
     skipNextSyncRef.current = true;
-    onChange(next);
+    onChangeRef.current(next);
     forceRender((n) => n + 1);
-  };
+  }, []);
 
   const canUndo = indexRef.current > 0;
   const canRedo = indexRef.current < historyRef.current.length - 1;
 
-  const undo = () => {
-    if (!canUndo) return;
+  const undo = useCallback(() => {
+    if (indexRef.current <= 0) return;
     indexRef.current -= 1;
     skipNextSyncRef.current = true;
-    onChange(historyRef.current[indexRef.current]);
+    onChangeRef.current(historyRef.current[indexRef.current]);
     forceRender((n) => n + 1);
-  };
+  }, []);
 
-  const redo = () => {
-    if (!canRedo) return;
+  const redo = useCallback(() => {
+    if (indexRef.current >= historyRef.current.length - 1) return;
     indexRef.current += 1;
     skipNextSyncRef.current = true;
-    onChange(historyRef.current[indexRef.current]);
+    onChangeRef.current(historyRef.current[indexRef.current]);
     forceRender((n) => n + 1);
-  };
+  }, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -228,62 +231,59 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [undo, redo]);
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
     if (over && active.id !== over.id) {
-      const oldIndex = blocks.findIndex((b) => b.id === active.id);
-      const newIndex = blocks.findIndex((b) => b.id === over.id);
-      commit(arrayMove(blocks, oldIndex, newIndex));
+      const cur = blocksRef.current;
+      const oldIndex = cur.findIndex((b) => b.id === active.id);
+      const newIndex = cur.findIndex((b) => b.id === over.id);
+      commit(arrayMove(cur, oldIndex, newIndex));
     }
-  };
+  }, [commit]);
 
   const updateBlock = useCallback((id: string, props: Record<string, any>) => {
-    commit(blocks.map((b) => (b.id === id ? { ...b, props } : b)));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [blocks]);
+    commit(blocksRef.current.map((b) => (b.id === id ? { ...b, props } : b)));
+  }, [commit]);
 
   const duplicateBlock = useCallback((id: string) => {
-    const idx = blocks.findIndex((b) => b.id === id);
-    const original = blocks[idx];
+    const cur = blocksRef.current;
+    const idx = cur.findIndex((b) => b.id === id);
+    if (idx < 0) return;
+    const original = cur[idx];
     const copy: Block = { ...original, id: crypto.randomUUID(), props: { ...original.props } };
-    const next = [...blocks];
+    const next = [...cur];
     next.splice(idx + 1, 0, copy);
     commit(next);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [blocks]);
+  }, [commit]);
 
   const toggleBlock = useCallback((id: string) => {
-    commit(blocks.map((b) => (b.id === id ? { ...b, visible: !b.visible } : b)));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [blocks]);
+    commit(blocksRef.current.map((b) => (b.id === id ? { ...b, visible: !b.visible } : b)));
+  }, [commit]);
 
   const deleteBlock = useCallback((id: string) => {
-    commit(blocks.filter((b) => b.id !== id));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [blocks]);
+    commit(blocksRef.current.filter((b) => b.id !== id));
+  }, [commit]);
 
   const addBlock = useCallback((type: Block["type"], index?: number) => {
-    if (index === undefined || index >= blocks.length) {
-      commit([...blocks, createDefaultBlock(type)]);
+    const cur = blocksRef.current;
+    if (index === undefined || index >= cur.length) {
+      commit([...cur, createDefaultBlock(type)]);
     } else {
-      const next = [...blocks];
+      const next = [...cur];
       next.splice(index, 0, createDefaultBlock(type));
       commit(next);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [blocks]);
+  }, [commit]);
 
   const insertBlockAfter = useCallback((afterId: string, type: Block["type"]) => {
-    const idx = blocks.findIndex((b) => b.id === afterId);
-    const newBlock = createDefaultBlock(type);
-    const next = [...blocks];
-    next.splice(idx + 1, 0, newBlock);
+    const cur = blocksRef.current;
+    const idx = cur.findIndex((b) => b.id === afterId);
+    const next = [...cur];
+    next.splice(idx + 1, 0, createDefaultBlock(type));
     commit(next);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [blocks]);
+  }, [commit]);
 
   const [dragOver, setDragOver] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -302,9 +302,6 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
     return data.publicUrl;
   };
 
-  const blocksRef = useRef(blocks);
-  blocksRef.current = blocks;
-
   const appendImageBlock = useCallback((url: string, caption = "") => {
     const newBlock = {
       id: crypto.randomUUID(),
@@ -313,9 +310,7 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
       props: { url, caption, width: "full", alignment: "center" },
     } as unknown as Block;
     commit([...blocksRef.current, newBlock]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
+  }, [commit]);
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(false);
