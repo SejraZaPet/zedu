@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -59,7 +59,7 @@ interface Props {
   onChange: (blocks: Block[]) => void;
 }
 
-const BlockRenderer = ({ block, onChange }: { block: Block; onChange: (props: Record<string, any>) => void }) => {
+const BlockRenderer = React.memo(({ block, onChange }: { block: Block; onChange: (props: Record<string, any>) => void }) => {
   switch (block.type) {
     case "heading": return <HeadingBlock block={block} onChange={onChange} />;
     case "paragraph": return <ParagraphBlock block={block} onChange={onChange} />;
@@ -80,7 +80,8 @@ const BlockRenderer = ({ block, onChange }: { block: Block; onChange: (props: Re
     case "activity": return <ActivityBlock block={block} onChange={onChange} />;
     default: return <p className="text-muted-foreground text-sm">Neznámý blok</p>;
   }
-};
+});
+BlockRenderer.displayName = "BlockRenderer";
 
 const SortableBlock = React.memo(({
   block,
@@ -107,7 +108,7 @@ const SortableBlock = React.memo(({
   const handleUpdate = useCallback((props: Record<string, any>) => onUpdate(block.id, props), [onUpdate, block.id]);
 
   return (
-    <div ref={setNodeRef} style={style} className={`border rounded-lg bg-card ${!block.visible ? "opacity-50" : ""} ${isDragging ? "border-primary" : "border-border"}`}>
+    <div ref={setNodeRef} data-block-id={block.id} style={style} className={`border rounded-lg bg-card ${!block.visible ? "opacity-50" : ""} ${isDragging ? "border-primary" : "border-border"}`}>
       <div className="flex items-center gap-1 px-2 py-1.5 border-b border-border bg-muted/30 rounded-t-lg">
         <button {...attributes} {...listeners} className="cursor-grab text-muted-foreground hover:text-foreground p-0.5">
           <GripVertical className="w-4 h-4" />
@@ -179,13 +180,35 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
   blocksRef.current = blocks;
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
+  const pendingScrollToBlockIdRef = useRef<string | null>(null);
 
   const updateUndoRedoState = useCallback(() => {
-    setUndoRedoState({
+    const nextState = {
       canUndo: indexRef.current > 0,
       canRedo: indexRef.current < historyRef.current.length - 1,
-    });
+    };
+
+    setUndoRedoState((prev) => (
+      prev.canUndo === nextState.canUndo && prev.canRedo === nextState.canRedo
+        ? prev
+        : nextState
+    ));
   }, []);
+
+  useEffect(() => {
+    const blockId = pendingScrollToBlockIdRef.current;
+    if (!blockId) return;
+
+    const frame = requestAnimationFrame(() => {
+      const el = document.querySelector(`[data-block-id="${blockId}"]`);
+      if (el instanceof HTMLElement) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      pendingScrollToBlockIdRef.current = null;
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [blocks]);
 
   const commit = useCallback((next: Block[]) => {
     const newHistory = historyRef.current.slice(0, indexRef.current + 1);
@@ -265,11 +288,13 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
 
   const addBlock = useCallback((type: Block["type"], index?: number) => {
     const cur = blocksRef.current;
+    const newBlock = createDefaultBlock(type);
+    pendingScrollToBlockIdRef.current = newBlock.id;
     if (index === undefined || index >= cur.length) {
-      commit([...cur, createDefaultBlock(type)]);
+      commit([...cur, newBlock]);
     } else {
       const next = [...cur];
-      next.splice(index, 0, createDefaultBlock(type));
+      next.splice(index, 0, newBlock);
       commit(next);
     }
   }, [commit]);
@@ -278,7 +303,9 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
     const cur = blocksRef.current;
     const idx = cur.findIndex((b) => b.id === afterId);
     const next = [...cur];
-    next.splice(idx + 1, 0, createDefaultBlock(type));
+    const newBlock = createDefaultBlock(type);
+    pendingScrollToBlockIdRef.current = newBlock.id;
+    next.splice(idx + 1, 0, newBlock);
     commit(next);
   }, [commit]);
 
@@ -360,6 +387,8 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
     return () => document.removeEventListener("paste", handlePaste);
   }, []);
 
+  const blockIds = useMemo(() => blocks.map((b) => b.id), [blocks]);
+
   return (
     <div
       onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
@@ -401,7 +430,7 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
         <div className="text-xs text-muted-foreground">Nahrávám obrázek…</div>
       )}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext items={blocks.map((b) => b.id)} strategy={verticalListSortingStrategy}>
+        <SortableContext items={blockIds} strategy={verticalListSortingStrategy}>
           {blocks.map((block, idx) => (
             <React.Fragment key={block.id}>
               <SortableBlock
