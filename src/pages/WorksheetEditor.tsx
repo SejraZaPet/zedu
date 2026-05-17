@@ -189,6 +189,13 @@ const LAYOUT_BLOCK_TYPES: ItemType[] = [
 ];
 
 const ACTIVITY_BLOCK_TYPES: ItemType[] = [
+  "mcq",
+  "true_false",
+  "fill_blank",
+  "matching",
+  "ordering",
+  "short_answer",
+  "open_answer",
   "lesson_reference",
   "crossword",
   "word_search",
@@ -1307,22 +1314,6 @@ export default function WorksheetEditor() {
   const paletteContent = (
     <>
       <Collapsible defaultOpen>
-        <SectionHeader count={ITEM_TYPES.length}>Otázky</SectionHeader>
-        <CollapsibleContent className="space-y-1.5 pt-1">
-          {ITEM_TYPES.map((type) => (
-            <button
-              key={type}
-              onClick={() => { addItem(type); setMobilePaletteOpen(false); }}
-              className="w-full text-left px-3 py-1.5 rounded-md hover:bg-muted transition-colors border border-transparent hover:border-border text-sm"
-              title={ITEM_TYPE_LABELS[type].description}
-            >
-              {ITEM_TYPE_LABELS[type].label}
-            </button>
-          ))}
-        </CollapsibleContent>
-      </Collapsible>
-
-      <Collapsible className="mt-2 pt-2 border-t border-border">
         <SectionHeader count={LAYOUT_BLOCK_TYPES.length}>Layoutové bloky</SectionHeader>
         <CollapsibleContent className="space-y-1.5 pt-1">
           {LAYOUT_BLOCK_TYPES.map((type) => (
@@ -1338,7 +1329,7 @@ export default function WorksheetEditor() {
         </CollapsibleContent>
       </Collapsible>
 
-      <Collapsible className="mt-2 pt-2 border-t border-border">
+      <Collapsible className="mt-2 pt-2 border-t border-border" defaultOpen>
         <SectionHeader count={ACTIVITY_BLOCK_TYPES.length}>Aktivity</SectionHeader>
         <CollapsibleContent className="space-y-1.5 pt-1">
           {ACTIVITY_BLOCK_TYPES.map((type) => (
