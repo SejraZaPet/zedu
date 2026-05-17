@@ -273,15 +273,40 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
       )}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={blocks.map((b) => b.id)} strategy={verticalListSortingStrategy}>
-          {blocks.map((block) => (
-            <SortableBlock
-              key={block.id}
-              block={block}
-              onUpdate={(props) => updateBlock(block.id, props)}
-              onDuplicate={() => duplicateBlock(block.id)}
-              onToggle={() => toggleBlock(block.id)}
-              onDelete={() => deleteBlock(block.id)}
-            />
+          {blocks.map((block, idx) => (
+            <div key={block.id}>
+              <SortableBlock
+                block={block}
+                onUpdate={(props) => updateBlock(block.id, props)}
+                onDuplicate={() => duplicateBlock(block.id)}
+                onToggle={() => toggleBlock(block.id)}
+                onDelete={() => deleteBlock(block.id)}
+              />
+              {idx < blocks.length - 1 && (
+                <div className="group relative h-2 hover:h-8 transition-all flex items-center justify-center">
+                  <div className="absolute inset-x-0 top-1/2 h-px bg-transparent group-hover:bg-border" />
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        className="relative h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
+                        title="Vložit blok zde"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="center" className="w-48 max-h-[360px] overflow-y-auto overflow-x-hidden">
+                      {BLOCK_TYPES.map((bt) => (
+                        <DropdownMenuItem key={bt.type} onClick={() => addBlock(bt.type, idx + 1)} className="py-1.5 px-2 text-sm">
+                          <span className="w-5 text-center mr-2">{bt.icon}</span>{bt.label}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              )}
+            </div>
           ))}
         </SortableContext>
       </DndContext>
