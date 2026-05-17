@@ -20,6 +20,7 @@ import CreateFromTemplateDialog from "@/components/admin/CreateFromTemplateDialo
 import SaveAsTemplateDialog from "@/components/admin/SaveAsTemplateDialog";
 import ImportTextbookFileDialog from "@/components/admin/ImportTextbookFileDialog";
 import LessonPlacementEditor, { savePlacements, type Placement } from "@/components/admin/LessonPlacementEditor";
+import LessonAssignments, { type Assignment } from "@/components/admin/LessonAssignments";
 import type { Block } from "@/lib/textbook-config";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
