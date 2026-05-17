@@ -474,3 +474,5 @@ const WhiteboardOverlay = ({
     </div>
   );
 };
+
+export default StudentGamePlay;
