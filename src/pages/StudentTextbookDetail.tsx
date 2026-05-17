@@ -87,8 +87,9 @@ const StudentTextbookDetail = () => {
       if (teacherLessonIds.length > 0) {
         const { data: pl } = await supabase
           .from("lesson_placements")
-          .select("lesson_id, subject_slug, grade_number, topic_id")
-          .in("lesson_id", teacherLessonIds);
+          .select("lesson_id, subject_slug, grade_number, topic_id, status")
+          .in("lesson_id", teacherLessonIds)
+          .eq("status", "published");
         placements = pl || [];
       }
 
