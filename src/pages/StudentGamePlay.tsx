@@ -362,6 +362,15 @@ const StudentGamePlay = () => {
               Slide {qi + 1} / {(session?.activity_data as any[])?.length ?? 0}
             </p>
           </div>
+
+          {whiteboard.visible && whiteboard.strokes.length > 0 && (
+            <LiveWhiteboard
+              sessionId={sessionId || ""}
+              data={whiteboard}
+              readOnly
+              className="pointer-events-none"
+            />
+          )}
         </div>
       </>
     );
