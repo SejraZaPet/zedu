@@ -53,14 +53,8 @@ const SiteHeader = () => {
     if (userRole === "teacher" || userRole === "lektor") {
       return [
         { label: "Přehled", href: "/ucitel", icon: LayoutDashboard },
-        { label: "Moje učebnice", href: "/ucitel/ucebnice", icon: BookOpen },
-        { label: "Rozvrh", href: "/ucitel/rozvrh", icon: CalendarDays },
-        { label: "Živé hry", href: "/ucitel/hry", icon: Gamepad2 },
+        { label: "Kalendář", href: "/ucitel/rozvrh", icon: CalendarDays },
         { label: "Třídy", href: "/ucitel/tridy", icon: FolderOpen },
-        { label: "Média", href: "/ucitel/media", icon: ImageIcon },
-        { label: "Výsledky", href: "/ucitel/vysledky", icon: BarChart3 },
-        { label: "Marketplace", href: "/marketplace", icon: ShoppingBag },
-        { label: "Moje publikace", href: "/ucitel/publikace", icon: Layers },
         { label: "Nápověda", href: "/napoveda", icon: HelpCircle },
       ];
     }
@@ -174,6 +168,35 @@ const SiteHeader = () => {
                       Administrace
                     </DropdownMenuItem>
                   )}
+                  {(userRole === "teacher" || userRole === "lektor") && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => navigate("/ucitel/ucebnice")} className="gap-2 cursor-pointer">
+                        <BookOpen size={16} />
+                        Moje učebnice
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/ucitel/hry")} className="gap-2 cursor-pointer">
+                        <Gamepad2 size={16} />
+                        Živé hry
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/ucitel/media")} className="gap-2 cursor-pointer">
+                        <ImageIcon size={16} />
+                        Média
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/ucitel/vysledky")} className="gap-2 cursor-pointer">
+                        <BarChart3 size={16} />
+                        Výsledky
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/marketplace")} className="gap-2 cursor-pointer">
+                        <ShoppingBag size={16} />
+                        Marketplace
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/ucitel/publikace")} className="gap-2 cursor-pointer">
+                        <Layers size={16} />
+                        Moje publikace
+                      </DropdownMenuItem>
+                    </>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout} className="gap-2 cursor-pointer">
                     <LogOut size={16} />
@@ -220,6 +243,28 @@ const SiteHeader = () => {
                 </button>
               );
             })}
+            {(userRole === "teacher" || userRole === "lektor") && (
+              <>
+                <button onClick={() => { setMenuOpen(false); navigate("/ucitel/ucebnice"); }} className={`flex items-center gap-3 pl-6 py-2 rounded-lg text-sm font-medium transition-colors text-left ${location.pathname.startsWith("/ucitel/ucebnice") ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-primary hover:bg-muted/50"}`}>
+                  <BookOpen size={16} /> Moje učebnice
+                </button>
+                <button onClick={() => { setMenuOpen(false); navigate("/ucitel/hry"); }} className={`flex items-center gap-3 pl-6 py-2 rounded-lg text-sm font-medium transition-colors text-left ${location.pathname.startsWith("/ucitel/hry") ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-primary hover:bg-muted/50"}`}>
+                  <Gamepad2 size={16} /> Živé hry
+                </button>
+                <button onClick={() => { setMenuOpen(false); navigate("/ucitel/media"); }} className={`flex items-center gap-3 pl-6 py-2 rounded-lg text-sm font-medium transition-colors text-left ${location.pathname.startsWith("/ucitel/media") ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-primary hover:bg-muted/50"}`}>
+                  <ImageIcon size={16} /> Média
+                </button>
+                <button onClick={() => { setMenuOpen(false); navigate("/ucitel/vysledky"); }} className={`flex items-center gap-3 pl-6 py-2 rounded-lg text-sm font-medium transition-colors text-left ${location.pathname.startsWith("/ucitel/vysledky") ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-primary hover:bg-muted/50"}`}>
+                  <BarChart3 size={16} /> Výsledky
+                </button>
+                <button onClick={() => { setMenuOpen(false); navigate("/marketplace"); }} className={`flex items-center gap-3 pl-6 py-2 rounded-lg text-sm font-medium transition-colors text-left ${location.pathname.startsWith("/marketplace") ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-primary hover:bg-muted/50"}`}>
+                  <ShoppingBag size={16} /> Marketplace
+                </button>
+                <button onClick={() => { setMenuOpen(false); navigate("/ucitel/publikace"); }} className={`flex items-center gap-3 pl-6 py-2 rounded-lg text-sm font-medium transition-colors text-left ${location.pathname.startsWith("/ucitel/publikace") ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-primary hover:bg-muted/50"}`}>
+                  <Layers size={16} /> Moje publikace
+                </button>
+              </>
+            )}
             <div className="border-t border-border mt-2 pt-2">
               {isLoggedIn ? (
                 <>
