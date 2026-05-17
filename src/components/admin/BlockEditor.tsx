@@ -164,27 +164,28 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
   // Undo/redo history
   const historyRef = useRef<Block[][]>([blocks]);
   const indexRef = useRef<number>(0);
-  const skipNextSyncRef = useRef<boolean>(false);
-  const [, forceRender] = useState(0);
+  const isInitRef = useRef(false);
+  const [undoRedoState, setUndoRedoState] = useState({ canUndo: false, canRedo: false });
 
-  // Sync external blocks changes into history (e.g. initial load)
   useEffect(() => {
-    if (skipNextSyncRef.current) {
-      skipNextSyncRef.current = false;
-      return;
+    if (!isInitRef.current) {
+      historyRef.current = [blocks];
+      indexRef.current = 0;
+      isInitRef.current = true;
     }
-    const current = historyRef.current[indexRef.current];
-    if (current === blocks) return;
-    // Replace history with new external state
-    historyRef.current = [blocks];
-    indexRef.current = 0;
-    forceRender((n) => n + 1);
-  }, [blocks]);
+  }, []);
 
   const blocksRef = useRef(blocks);
   blocksRef.current = blocks;
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
+
+  const updateUndoRedoState = useCallback(() => {
+    setUndoRedoState({
+      canUndo: indexRef.current > 0,
+      canRedo: indexRef.current < historyRef.current.length - 1,
+    });
+  }, []);
 
   const commit = useCallback((next: Block[]) => {
     const newHistory = historyRef.current.slice(0, indexRef.current + 1);
@@ -192,29 +193,25 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
     if (newHistory.length > 100) newHistory.shift();
     historyRef.current = newHistory;
     indexRef.current = newHistory.length - 1;
-    skipNextSyncRef.current = true;
     onChangeRef.current(next);
-    forceRender((n) => n + 1);
-  }, []);
+    updateUndoRedoState();
+  }, [updateUndoRedoState]);
 
-  const canUndo = indexRef.current > 0;
-  const canRedo = indexRef.current < historyRef.current.length - 1;
+  const { canUndo, canRedo } = undoRedoState;
 
   const undo = useCallback(() => {
     if (indexRef.current <= 0) return;
     indexRef.current -= 1;
-    skipNextSyncRef.current = true;
     onChangeRef.current(historyRef.current[indexRef.current]);
-    forceRender((n) => n + 1);
-  }, []);
+    updateUndoRedoState();
+  }, [updateUndoRedoState]);
 
   const redo = useCallback(() => {
     if (indexRef.current >= historyRef.current.length - 1) return;
     indexRef.current += 1;
-    skipNextSyncRef.current = true;
     onChangeRef.current(historyRef.current[indexRef.current]);
-    forceRender((n) => n + 1);
-  }, []);
+    updateUndoRedoState();
+  }, [updateUndoRedoState]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
