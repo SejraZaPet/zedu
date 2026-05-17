@@ -10,8 +10,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useSubjects } from "@/hooks/useSubjects";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
-import BlockEditor from "@/components/admin/BlockEditor";
-import LessonPreviewDialog from "@/components/admin/LessonPreviewDialog";
 import PresentationEditorDialog from "@/components/admin/PresentationEditorDialog";
 import TextbookGradeGroups from "@/components/admin/TextbookGradeGroups";
 import TextbookList from "@/components/admin/TextbookList";
@@ -19,20 +17,16 @@ import CreateTextbookDialog from "@/components/admin/CreateTextbookDialog";
 import CreateFromTemplateDialog from "@/components/admin/CreateFromTemplateDialog";
 import SaveAsTemplateDialog from "@/components/admin/SaveAsTemplateDialog";
 import ImportTextbookFileDialog from "@/components/admin/ImportTextbookFileDialog";
-import LessonPlacementEditor, { savePlacements, type Placement } from "@/components/admin/LessonPlacementEditor";
-import LessonAssignments, { type Assignment } from "@/components/admin/LessonAssignments";
+import TeacherTextbookLessonEditorSheet from "@/components/teacher/TeacherTextbookLessonEditorSheet";
 import type { Block } from "@/lib/textbook-config";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 
 import {
-  Sheet, SheetContent, SheetHeader, SheetTitle,
-} from "@/components/ui/sheet";
-import {
   BookOpen, Users, ArrowLeft, Copy, Eye, FolderOpen, ChevronRight,
-  Pencil, Trash2, Plus, Save, Loader2, X, FileText, Play, Sparkles, BookmarkPlus,
-  MoreVertical, Archive, ArchiveRestore, Upload,
+  Pencil, Trash2, Plus, FileText, Play, Sparkles, BookmarkPlus,
+  MoreVertical, Archive, ArchiveRestore,
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -76,19 +70,6 @@ interface LessonItem {
   scheduled_publish_at?: string | null;
 }
 
-const toLocalInput = (iso: string | null | undefined): string => {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return "";
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-};
-const fromLocalInput = (s: string): string | null => {
-  if (!s) return null;
-  const d = new Date(s);
-  return isNaN(d.getTime()) ? null : d.toISOString();
-};
-
 interface TopicItem {
   id: string;
   title: string;
@@ -122,9 +103,6 @@ const TeacherTextbooks = () => {
   // Lesson editor sheet
   const [editingLesson, setEditingLesson] = useState<LessonItem | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
-  const [lessonPlacements, setLessonPlacements] = useState<Placement[]>([]);
-  const [lessonAssignments, setLessonAssignments] = useState<Assignment[]>([]);
-  const [heroUploading, setHeroUploading] = useState(false);
   const [saving, setSaving] = useState(false);
 
   // Delete confirmation
@@ -284,122 +262,6 @@ const TeacherTextbooks = () => {
   const openLessonEditor = async (lesson: LessonItem) => {
     setEditingLesson({ ...lesson });
     setEditorOpen(true);
-    setLessonPlacements([]);
-    setLessonAssignments([]);
-
-    // Pre-load existing assignments for global lessons
-    if (lesson.source === "textbook_lessons") {
-      const { data } = await supabase
-        .from("lesson_topic_assignments")
-        .select("id, topic_id, sort_order, status, scheduled_publish_at, textbook_topics(id, title, subject, grade)")
-        .eq("lesson_id", lesson.id);
-      if (data) {
-        setLessonAssignments(
-          data.map((row: any) => ({
-            id: row.id,
-            topic_id: row.topic_id,
-            subject: row.textbook_topics?.subject ?? "",
-            grade: row.textbook_topics?.grade ?? 1,
-            topic_title: row.textbook_topics?.title ?? "",
-            sort_order: row.sort_order,
-            status: row.status ?? "published",
-            scheduled_publish_at: row.scheduled_publish_at ?? null,
-          })),
-        );
-      }
-    }
-  };
-
-  const handleHeroUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!editingLesson) return;
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setHeroUploading(true);
-    const ext = file.name.split(".").pop();
-    const path = `hero/${crypto.randomUUID()}.${ext}`;
-    const { error } = await supabase.storage.from("lesson-images").upload(path, file);
-    if (!error) {
-      const { data } = supabase.storage.from("lesson-images").getPublicUrl(path);
-      setEditingLesson({ ...editingLesson, hero_image_url: data.publicUrl });
-    } else {
-      toast({ title: "Nahrání selhalo", description: error.message, variant: "destructive" });
-    }
-    setHeroUploading(false);
-  };
-
-  const saveLessonEdit = async () => {
-    if (!editingLesson) return;
-
-    // Validate scheduled status
-    let status = editingLesson.status;
-    let scheduledAt = editingLesson.scheduled_publish_at ?? null;
-    if (status === "scheduled") {
-      if (!scheduledAt || new Date(scheduledAt).getTime() <= Date.now()) {
-        toast({
-          title: "Neplatný čas publikování",
-          description: "Pro naplánování zvolte datum a čas v budoucnosti.",
-          variant: "destructive",
-        });
-        return;
-      }
-    } else {
-      scheduledAt = null;
-    }
-
-    setSaving(true);
-
-    const table = editingLesson.source;
-    const payload: any = {
-      title: editingLesson.title,
-      status,
-      blocks: editingLesson.blocks as any,
-      hero_image_url: editingLesson.hero_image_url ?? null,
-      scheduled_publish_at: scheduledAt,
-    };
-
-    const { error } = await supabase.from(table).update(payload).eq("id", editingLesson.id);
-    if (error) {
-      toast({ title: "Chyba", description: error.message, variant: "destructive" });
-    } else {
-      // Save multi-placements
-      if (table === "teacher_textbook_lessons" && lessonPlacements.length > 0) {
-        try {
-          await savePlacements(editingLesson.id, lessonPlacements);
-        } catch (err: any) {
-          toast({ title: "Chyba při ukládání umístění", description: err.message, variant: "destructive" });
-        }
-      }
-      if (table === "textbook_lessons") {
-        const valid = lessonAssignments.filter((a) => a.topic_id);
-        // Validate scheduled rows
-        const badRow = valid.find(a => a.status === "scheduled" && (!a.scheduled_publish_at || new Date(a.scheduled_publish_at).getTime() <= Date.now()));
-        if (badRow) {
-          toast({ title: "Neplatný čas publikování umístění", description: `Umístění „${badRow.topic_title}" má naplánovaný čas v minulosti.`, variant: "destructive" });
-          setSaving(false);
-          return;
-        }
-        await supabase.from("lesson_topic_assignments").delete().eq("lesson_id", editingLesson.id);
-        if (valid.length > 0) {
-          const { error: aErr } = await supabase.from("lesson_topic_assignments").insert(
-            valid.map((a, i) => ({
-              lesson_id: editingLesson.id,
-              topic_id: a.topic_id,
-              sort_order: i,
-              status: a.status ?? "published",
-              scheduled_publish_at: a.status === "scheduled" ? a.scheduled_publish_at ?? null : null,
-            })),
-          );
-          if (aErr) {
-            toast({ title: "Chyba při ukládání umístění", description: aErr.message, variant: "destructive" });
-          }
-        }
-      }
-      toast({ title: "Lekce uložena" });
-      setEditorOpen(false);
-      setEditingLesson(null);
-      refreshDetail();
-    }
-    setSaving(false);
   };
 
   const confirmDeleteLesson = async () => {
@@ -740,129 +602,18 @@ const TeacherTextbooks = () => {
         </main>
         <SiteFooter />
 
-        {/* === Lesson Editor Sheet === */}
-        <Sheet open={editorOpen} onOpenChange={(open) => {
-          if (!open) { setEditorOpen(false); setEditingLesson(null); setLessonPlacements([]); setLessonAssignments([]); }
-        }}>
-          <SheetContent side="right" className="w-full sm:max-w-2xl lg:max-w-4xl overflow-y-auto">
-            <SheetHeader>
-              <SheetTitle>Upravit lekci</SheetTitle>
-            </SheetHeader>
-            {editingLesson && (
-              <div className="space-y-4 mt-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="col-span-2">
-                    <Label>Název lekce</Label>
-                    <Input
-                      value={editingLesson.title}
-                      onChange={(e) => setEditingLesson({ ...editingLesson, title: e.target.value })}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label>Stav</Label>
-                    <Select
-                      value={editingLesson.status}
-                      onValueChange={(v) =>
-                        setEditingLesson({
-                          ...editingLesson,
-                          status: v,
-                          scheduled_publish_at: v === "scheduled" ? editingLesson.scheduled_publish_at : null,
-                        })
-                      }
-                    >
-                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="draft">Koncept</SelectItem>
-                        <SelectItem value="scheduled">Naplánováno</SelectItem>
-                        <SelectItem value="published">Publikováno</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {editingLesson.status === "scheduled" && (
-                      <div className="mt-2">
-                        <Label className="text-xs text-muted-foreground">Publikovat v</Label>
-                        <Input
-                          type="datetime-local"
-                          value={toLocalInput(editingLesson.scheduled_publish_at)}
-                          onChange={(e) =>
-                            setEditingLesson({ ...editingLesson, scheduled_publish_at: fromLocalInput(e.target.value) })
-                          }
-                          className="mt-1"
-                        />
-                      </div>
-                    )}
-                    {editingLesson.status === "published" && (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        className="mt-2 w-full"
-                        onClick={() => setEditingLesson({ ...editingLesson, status: "draft", scheduled_publish_at: null })}
-                      >
-                        Vrátit do konceptu
-                      </Button>
-                    )}
-                  </div>
-                  <div>
-                    <Label>Hero obrázek (banner)</Label>
-                    <div className="flex gap-2 mt-1">
-                      <Input
-                        value={editingLesson.hero_image_url ?? ""}
-                        onChange={(e) => setEditingLesson({ ...editingLesson, hero_image_url: e.target.value })}
-                        placeholder="URL…"
-                        className="flex-1"
-                      />
-                      <Button size="sm" variant="outline" className="relative" disabled={heroUploading}>
-                        <Upload className="w-4 h-4 mr-1" />{heroUploading ? "…" : "Nahrát"}
-                        <input type="file" accept="image/*" onChange={handleHeroUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
-                      </Button>
-                    </div>
-                    {editingLesson.hero_image_url && (
-                      <img src={editingLesson.hero_image_url} alt="" className="mt-2 max-h-24 rounded border border-border" />
-                    )}
-                  </div>
-                </div>
-
-                {editingLesson.source === "teacher_textbook_lessons" && (
-                  <LessonPlacementEditor
-                    lessonId={editingLesson.id}
-                    placements={lessonPlacements}
-                    onChange={setLessonPlacements}
-                  />
-                )}
-
-                {editingLesson.source === "textbook_lessons" && (
-                  <div className="border-t border-border pt-4">
-                    <LessonAssignments
-                      lessonId={editingLesson.id}
-                      assignments={lessonAssignments}
-                      onChange={setLessonAssignments}
-                    />
-                  </div>
-                )}
-
-                <div>
-                  <Label className="mb-2 block">Obsah lekce</Label>
-                  <BlockEditor
-                    blocks={editingLesson.blocks}
-                    onChange={(blocks) => setEditingLesson({ ...editingLesson, blocks })}
-                  />
-                </div>
-
-                <div className="flex gap-2 pt-2 border-t border-border sticky bottom-0 bg-background pb-4">
-                  <Button size="sm" onClick={saveLessonEdit} disabled={saving}>
-                    {saving ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />}
-                    Uložit změny
-                  </Button>
-                  <LessonPreviewDialog title={editingLesson.title} heroImageUrl={editingLesson.hero_image_url ?? null} blocks={editingLesson.blocks} />
-                  <Button size="sm" variant="ghost" onClick={() => { setEditorOpen(false); setEditingLesson(null); }}>
-                    <X className="w-4 h-4 mr-1" /> Zavřít
-                  </Button>
-                </div>
-              </div>
-            )}
-          </SheetContent>
-        </Sheet>
+        <TeacherTextbookLessonEditorSheet
+          lesson={editingLesson}
+          open={editorOpen}
+          onOpenChange={(open) => {
+            setEditorOpen(open);
+            if (!open) setEditingLesson(null);
+          }}
+          onSaved={() => {
+            setEditingLesson(null);
+            refreshDetail();
+          }}
+        />
 
         {/* === Delete Confirmation === */}
         <AlertDialog open={!!deletingLesson} onOpenChange={(open) => { if (!open) setDeletingLesson(null); }}>
