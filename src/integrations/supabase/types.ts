@@ -2329,6 +2329,7 @@ export type Database = {
           id: string
           presentation_slides: Json | null
           require_activities: boolean
+          scheduled_publish_at: string | null
           sort_order: number
           status: string
           title: string
@@ -2342,6 +2343,7 @@ export type Database = {
           id?: string
           presentation_slides?: Json | null
           require_activities?: boolean
+          scheduled_publish_at?: string | null
           sort_order?: number
           status?: string
           title: string
@@ -2355,6 +2357,7 @@ export type Database = {
           id?: string
           presentation_slides?: Json | null
           require_activities?: boolean
+          scheduled_publish_at?: string | null
           sort_order?: number
           status?: string
           title?: string
@@ -2726,6 +2729,7 @@ export type Database = {
         Args: { _teacher_id: string; _textbook_id: string }
         Returns: boolean
       }
+      publish_due_lessons: { Args: never; Returns: number }
       publish_due_worksheets: { Args: never; Returns: number }
       reap_stale_export_jobs: { Args: never; Returns: number }
       regenerate_school_registration_code: {
