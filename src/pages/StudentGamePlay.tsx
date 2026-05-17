@@ -173,222 +173,192 @@ const StudentGamePlay = () => {
   const isSlideFormat = currentSlideData && currentSlideData.projector !== undefined && !currentSlideData.question;
 
   if (isSlideFormat) {
+    const isActivity = currentSlideData.type === "activity" && currentSlideData.activitySpec;
     return (
       <>
         <ConnectionStatusBanner status={connectionStatus} onReconnect={reconnect} />
-        <div className="min-h-screen bg-background flex flex-col">
-          <div className="flex-1 container mx-auto px-4 py-8 max-w-2xl flex flex-col justify-center">
-            {currentSlideData.projector?.headline && (
-              <h1 className="font-heading text-2xl font-bold mb-4 text-foreground">
-                {currentSlideData.projector.headline}
-              </h1>
-            )}
-            {Array.isArray(currentSlideData.blocks) && currentSlideData.blocks.length > 0 ? (
-              <div className="space-y-4 text-base text-foreground">
-                {currentSlideData.blocks.map((b: any, i: number) => (
-                  <LessonBlockRenderer key={b.id || i} block={b} blockIndex={i} isTeacher={false} />
-                ))}
-              </div>
-            ) : (
-              !currentSlideData.tableData && !currentSlideData.cardData && currentSlideData.projector?.body && (
-                <p className="text-base text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                  {currentSlideData.projector.body}
-                </p>
-              )
-            )}
-            {currentSlideData.tableData && (
-              <div className="overflow-x-auto mt-3">
-                <table className="w-full text-sm border-collapse">
-                  <thead>
-                    <tr>
-                      {currentSlideData.tableData.headers.map((h: string, i: number) => (
-                        <th key={i} className="border border-border bg-muted px-3 py-2 text-left font-medium">{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {currentSlideData.tableData.rows.map((row: string[], ri: number) => (
-                      <tr key={ri}>
-                        {row.map((cell: string, ci: number) => (
-                          <td key={ci} className="border border-border px-3 py-2">{cell}</td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-            {currentSlideData.activitySpec && (
-              <div className="mt-4">
-                {(currentSlideData as any).activitySpec?.activityType === "wall" ? (
-                  liveSettings?.wallPublished === true && liveSettings?.wallPublishedQuestion === qi ? (
-                    <div
-                      className="fixed inset-0 flex flex-col"
-                      style={{
-                        background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)",
-                        color: "white",
-                        zIndex: 50,
-                      }}
-                    >
-                      <div className="flex-1 overflow-y-auto p-4 pb-24">
-                        <WallResponsesList
-                          sessionId={sessionId || ""}
-                          questionIndex={qi}
+        <div
+          className="min-h-screen flex flex-col text-white"
+          style={{ background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)" }}
+        >
+          {/* Slide preview — stejný vizuál jako projekce, scalovaný do mobilní šířky */}
+          <div className="px-3 pt-3">
+            <SlideCanvas slide={currentSlideData} darkMode />
+          </div>
+
+          {/* Aktivita */}
+          {isActivity && (
+            <div className="px-4 pb-6 mt-4">
+              {(currentSlideData as any).activitySpec?.activityType === "wall" ? (
+                liveSettings?.wallPublished === true && liveSettings?.wallPublishedQuestion === qi ? (
+                  <div
+                    className="fixed inset-0 flex flex-col"
+                    style={{
+                      background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)",
+                      color: "white",
+                      zIndex: 50,
+                    }}
+                  >
+                    <div className="flex-1 overflow-y-auto p-4 pb-24">
+                      <WallResponsesList
+                        sessionId={sessionId || ""}
+                        questionIndex={qi}
+                        anonymous={liveSettings?.wallAnonymous ?? (currentSlideData as any).activitySpec?.anonymous ?? false}
+                        darkMode={true}
+                      />
+                    </div>
+                    {(liveSettings?.wallAllowMultiple ?? (currentSlideData as any).activitySpec?.allowMultiple) ? (
+                      <div
+                        className="fixed bottom-0 left-0 right-0 p-3 z-10"
+                        style={{ background: "rgba(0,0,0,0.4)", borderTop: "1px solid rgba(255,255,255,0.15)" }}
+                      >
+                        <WallActivity
+                          question=""
                           anonymous={liveSettings?.wallAnonymous ?? (currentSlideData as any).activitySpec?.anonymous ?? false}
-                          darkMode={true}
+                          allowMultiple={true}
+                          sessionId={sessionId}
+                          questionIndex={qi}
+                          playerId={playerId}
+                          onComplete={() => {}}
                         />
                       </div>
-                      {(liveSettings?.wallAllowMultiple ?? (currentSlideData as any).activitySpec?.allowMultiple) ? (
+                    ) : (
+                      <div
+                        className="fixed bottom-0 left-0 right-0 p-3 z-10"
+                        style={{ background: "rgba(0,0,0,0.4)", borderTop: "1px solid rgba(255,255,255,0.15)" }}
+                      >
                         <div
-                          className="fixed bottom-0 left-0 right-0 p-3 z-10"
-                          style={{ background: "rgba(0,0,0,0.4)", borderTop: "1px solid rgba(255,255,255,0.15)" }}
+                          className="flex items-center gap-2 px-4 py-2 rounded-2xl text-sm"
+                          style={{ background: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.8)" }}
                         >
-                          <WallActivity
-                            question=""
-                            anonymous={liveSettings?.wallAnonymous ?? (currentSlideData as any).activitySpec?.anonymous ?? false}
-                            allowMultiple={true}
-                            sessionId={sessionId}
-                            questionIndex={qi}
-                            playerId={playerId}
-                            onComplete={() => {}}
-                          />
+                          <Lock className="w-4 h-4 flex-shrink-0" />
+                          <span>Lze odeslat pouze jednu odpověď</span>
                         </div>
-                      ) : (
-                        <div
-                          className="fixed bottom-0 left-0 right-0 p-3 z-10"
-                          style={{ background: "rgba(0,0,0,0.4)", borderTop: "1px solid rgba(255,255,255,0.15)" }}
-                        >
-                          <div
-                            className="flex items-center gap-2 px-4 py-2 rounded-2xl text-sm"
-                            style={{ background: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.8)" }}
-                          >
-                            <Lock className="w-4 h-4 flex-shrink-0" />
-                            <span>Lze odeslat pouze jednu odpověď</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <WallActivity
-                      question={(currentSlideData as any).activitySpec?.question || ""}
-                      anonymous={liveSettings?.wallAnonymous ?? (currentSlideData as any).activitySpec?.anonymous ?? false}
-                      allowMultiple={liveSettings?.wallAllowMultiple ?? (currentSlideData as any).activitySpec?.allowMultiple ?? false}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <WallActivity
+                    question={(currentSlideData as any).activitySpec?.question || ""}
+                    anonymous={liveSettings?.wallAnonymous ?? (currentSlideData as any).activitySpec?.anonymous ?? false}
+                    allowMultiple={liveSettings?.wallAllowMultiple ?? (currentSlideData as any).activitySpec?.allowMultiple ?? false}
+                    sessionId={sessionId}
+                    questionIndex={qi}
+                    playerId={playerId}
+                    onComplete={() => {}}
+                  />
+                )
+              ) : (currentSlideData as any).activitySpec?.activityType === "poll" ? (
+                (() => {
+                  const spec = (currentSlideData as any).activitySpec || {};
+                  const options = Array.isArray(spec.options) ? spec.options : [];
+                  const question = spec.question || "";
+                  const allowMultiple = liveSettings?.pollAllowMultiple ?? spec.allowMultiple ?? false;
+                  const published =
+                    liveSettings?.pollPublished === true &&
+                    liveSettings?.pollPublishedQuestion === qi;
+                  if (published) {
+                    return (
+                      <div className="border border-white/15 rounded-xl p-4 bg-white/10 backdrop-blur">
+                        <PollProjectorView
+                          question={question}
+                          options={options}
+                          sessionId={sessionId || ""}
+                          questionIndex={qi}
+                          totalPlayers={players.length}
+                        />
+                      </div>
+                    );
+                  }
+                  return (
+                    <PollActivity
+                      question={question}
+                      options={options}
+                      allowMultiple={allowMultiple}
                       sessionId={sessionId}
                       questionIndex={qi}
                       playerId={playerId}
                       onComplete={() => {}}
                     />
-                  )
-                ) : (currentSlideData as any).activitySpec?.activityType === "poll" ? (
-                  (() => {
-                    const spec = (currentSlideData as any).activitySpec || {};
-                    const options = Array.isArray(spec.options) ? spec.options : [];
-                    const question = spec.question || "";
-                    const allowMultiple = liveSettings?.pollAllowMultiple ?? spec.allowMultiple ?? false;
-                    const published =
-                      liveSettings?.pollPublished === true &&
-                      liveSettings?.pollPublishedQuestion === qi;
-                    if (published) {
-                      return (
-                        <div className="border border-border rounded-xl p-4 bg-card">
-                          <PollProjectorView
-                            question={question}
-                            options={options}
-                            sessionId={sessionId || ""}
-                            questionIndex={qi}
-                            totalPlayers={players.length}
-                          />
-                        </div>
-                      );
+                  );
+                })()
+              ) : (currentSlideData as any).activitySpec?.activityType === "mcq" ? (
+                (() => {
+                  const spec = (currentSlideData as any).activitySpec || {};
+                  const quiz = {
+                    question: spec.question || currentSlideData.projector?.headline || "",
+                    answers: (spec.options || []).map((o: any) => ({
+                      text: o.text ?? String(o),
+                      correct: !!(o.correct ?? o.isCorrect),
+                    })),
+                  };
+                  return (
+                    <QuizActivity
+                      quiz={quiz}
+                      onComplete={async (score, maxScore) => {
+                        if (!sessionId || !playerId) return;
+                        try {
+                          await supabase.from("game_responses").insert({
+                            session_id: sessionId,
+                            player_id: playerId,
+                            question_index: session?.current_question_index ?? 0,
+                            answer: {},
+                            is_correct: score > 0,
+                            score: maxScore > 0 ? Math.round((score / maxScore) * 100) : 0,
+                            response_time_ms: 0,
+                          });
+                        } catch (e) {
+                          console.error("Failed to save mcq result:", e);
+                        }
+                      }}
+                    />
+                  );
+                })()
+              ) : (
+                <LessonBlockRenderer
+                  block={{
+                    id: `live-activity-${currentSlideData.slideId}`,
+                    type: "activity",
+                    props: {
+                      ...currentSlideData.activitySpec,
+                      sessionId,
+                      playerId,
+                      questionIndex: session?.current_question_index ?? 0,
+                    },
+                    visible: true,
+                  } as any}
+                  blockIndex={session?.current_question_index ?? 0}
+                  onActivityComplete={async (_activityIndex: number, _activityType: string, score: number, maxScore: number) => {
+                    if (!sessionId || !playerId) return;
+                    try {
+                      await supabase.from("game_responses").insert({
+                        session_id: sessionId,
+                        player_id: playerId,
+                        question_index: session?.current_question_index ?? 0,
+                        answer: {},
+                        is_correct: maxScore > 0 && score / maxScore >= 0.5,
+                        score: maxScore > 0 ? Math.round((score / maxScore) * 100) : 0,
+                        response_time_ms: 0,
+                      });
+                    } catch (e) {
+                      console.error("Failed to save activity result:", e);
                     }
-                    return (
-                      <PollActivity
-                        question={question}
-                        options={options}
-                        allowMultiple={allowMultiple}
-                        sessionId={sessionId}
-                        questionIndex={qi}
-                        playerId={playerId}
-                        onComplete={() => {}}
-                      />
-                    );
-                  })()
-                ) : (currentSlideData as any).activitySpec?.activityType === "mcq" ? (
-                  (() => {
-                    const spec = (currentSlideData as any).activitySpec || {};
-                    const quiz = {
-                      question: spec.question || currentSlideData.projector?.headline || "",
-                      answers: (spec.options || []).map((o: any) => ({
-                        text: o.text ?? String(o),
-                        correct: !!(o.correct ?? o.isCorrect),
-                      })),
-                    };
-                    return (
-                      <QuizActivity
-                        quiz={quiz}
-                        onComplete={async (score, maxScore) => {
-                          if (!sessionId || !playerId) return;
-                          try {
-                            await supabase.from("game_responses").insert({
-                              session_id: sessionId,
-                              player_id: playerId,
-                              question_index: session?.current_question_index ?? 0,
-                              answer: {},
-                              is_correct: score > 0,
-                              score: maxScore > 0 ? Math.round((score / maxScore) * 100) : 0,
-                              response_time_ms: 0,
-                            });
-                          } catch (e) {
-                            console.error("Failed to save mcq result:", e);
-                          }
-                        }}
-                      />
-                    );
-                  })()
-                ) : (
-                  <LessonBlockRenderer
-                    block={{
-                      id: `live-activity-${currentSlideData.slideId}`,
-                      type: "activity",
-                      props: {
-                        ...currentSlideData.activitySpec,
-                        sessionId,
-                        playerId,
-                        questionIndex: session?.current_question_index ?? 0,
-                      },
-                      visible: true,
-                    } as any}
-                    blockIndex={session?.current_question_index ?? 0}
-                    onActivityComplete={async (_activityIndex: number, _activityType: string, score: number, maxScore: number) => {
-                      if (!sessionId || !playerId) return;
-                      try {
-                        await supabase.from("game_responses").insert({
-                          session_id: sessionId,
-                          player_id: playerId,
-                          question_index: session?.current_question_index ?? 0,
-                          answer: {},
-                          is_correct: maxScore > 0 && score / maxScore >= 0.5,
-                          score: maxScore > 0 ? Math.round((score / maxScore) * 100) : 0,
-                          response_time_ms: 0,
-                        });
-                      } catch (e) {
-                        console.error("Failed to save activity result:", e);
-                      }
-                    }}
-                  />
-                )}
-              </div>
-            )}
-            {currentSlideData.device?.instructions && currentSlideData.device.instructions !== "Sledujte výklad." && (
-              <div className="mt-6 p-4 bg-primary/5 border border-primary/20 rounded-lg">
-                <p className="text-sm font-medium text-primary">{currentSlideData.device.instructions}</p>
-              </div>
-            )}
-            <div className="mt-8 text-center">
-              <p className="text-xs text-muted-foreground">
-                Slide {qi + 1} / {(session?.activity_data as any[])?.length ?? 0}
-              </p>
+                  }}
+                />
+              )}
             </div>
+          )}
+
+          {/* Instrukce + progress */}
+          {currentSlideData.device?.instructions && currentSlideData.device.instructions !== "Sledujte výklad." && (
+            <div className="mx-4 mt-2 p-3 bg-white/10 border border-white/20 rounded-lg backdrop-blur">
+              <p className="text-sm font-medium text-white">{currentSlideData.device.instructions}</p>
+            </div>
+          )}
+          <div className="mt-4 mb-4 text-center">
+            <p className="text-xs text-white/60">
+              Slide {qi + 1} / {(session?.activity_data as any[])?.length ?? 0}
+            </p>
           </div>
         </div>
       </>
