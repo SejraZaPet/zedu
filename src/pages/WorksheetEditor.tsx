@@ -2844,8 +2844,49 @@ function SortableItemBlock({
         onChange={(e) => onUpdateItem({ prompt: e.target.value })}
         placeholder="Otázka / zadání…"
         rows={2}
-        className="mb-3"
+        className="mb-2"
       />
+
+      <TooltipProvider delayDuration={200}>
+        <div className="flex flex-wrap gap-2 mb-3">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className={!hasLesson ? "inline-block" : undefined}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={onPickFromLesson}
+                  disabled={!hasLesson}
+                  className="h-8"
+                >
+                  <BookOpen className="w-4 h-4 mr-1" /> Vybrat z lekce
+                </Button>
+              </span>
+            </TooltipTrigger>
+            {!hasLesson && (
+              <TooltipContent>Nejdřív přiřaďte lekci k pracovnímu listu</TooltipContent>
+            )}
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className={!hasLesson ? "inline-block" : undefined}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={onAiFromLesson}
+                  disabled={!hasLesson}
+                  className="h-8"
+                >
+                  <Sparkles className="w-4 h-4 mr-1" /> AI návrh z lekce
+                </Button>
+              </span>
+            </TooltipTrigger>
+            {!hasLesson && (
+              <TooltipContent>Nejdřív přiřaďte lekci k pracovnímu listu</TooltipContent>
+            )}
+          </Tooltip>
+        </div>
+      </TooltipProvider>
 
       <TypeSpecificEditor
         item={item}
