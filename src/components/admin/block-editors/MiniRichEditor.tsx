@@ -171,7 +171,7 @@ const MiniRichEditor = ({
 
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({ heading: { levels: [1, 2, 3, 4] }, underline: false, link: false }),
+      StarterKit.configure({ heading: { levels: [1, 2, 3, 4] } }),
       Underline,
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       Highlight.configure({ multicolor: false }),
