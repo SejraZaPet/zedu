@@ -2714,6 +2714,9 @@ function SortableItemBlock({
   onApplyRefined,
   onMoveUp,
   onMoveDown,
+  hasLesson,
+  onPickFromLesson,
+  onAiFromLesson,
 }: {
   item: WorksheetItem;
   answerKey: AnswerKeyEntry | null;
@@ -2727,6 +2730,9 @@ function SortableItemBlock({
   onApplyRefined: (refined: WorksheetItem) => void;
   onMoveUp: () => void;
   onMoveDown: () => void;
+  hasLesson: boolean;
+  onPickFromLesson: () => void;
+  onAiFromLesson: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: item.id,
