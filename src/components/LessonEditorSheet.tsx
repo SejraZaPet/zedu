@@ -30,7 +30,23 @@ interface LessonData {
   sort_order: number;
   topic_id: string;
   require_activities: boolean;
+  scheduled_publish_at: string | null;
 }
+
+// Convert ISO/UTC string -> value usable by <input type="datetime-local">
+const toLocalInput = (iso: string | null): string => {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
+const fromLocalInput = (s: string): string | null => {
+  if (!s) return null;
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d.toISOString();
+};
 
 const LessonEditorSheet = ({ lessonId, open, onOpenChange, onSaved }: Props) => {
   const [lesson, setLesson] = useState<LessonData | null>(null);
@@ -53,6 +69,7 @@ const LessonEditorSheet = ({ lessonId, open, onOpenChange, onSaved }: Props) => 
         ...data,
         blocks: ((data as any).blocks as unknown as Block[]) ?? [],
         require_activities: (data as any).require_activities ?? false,
+        scheduled_publish_at: (data as any).scheduled_publish_at ?? null,
       } as LessonData);
     }
     setLoading(false);
@@ -96,14 +113,32 @@ const LessonEditorSheet = ({ lessonId, open, onOpenChange, onSaved }: Props) => 
 
     const primaryTopicId = validAssignments[0].topic_id;
 
+    // Validate scheduled status requires future date
+    let effectiveStatus = lesson.status;
+    let effectiveScheduledAt = lesson.scheduled_publish_at;
+    if (effectiveStatus === "scheduled") {
+      if (!effectiveScheduledAt || new Date(effectiveScheduledAt).getTime() <= Date.now()) {
+        toast({
+          title: "Neplatný čas publikování",
+          description: "Pro naplánování zvolte datum a čas v budoucnosti.",
+          variant: "destructive",
+        });
+        setSaving(false);
+        return;
+      }
+    } else {
+      effectiveScheduledAt = null;
+    }
+
     const payload = {
       topic_id: primaryTopicId,
       title: lesson.title,
       hero_image_url: lesson.hero_image_url,
-      status: lesson.status,
+      status: effectiveStatus,
       blocks: lesson.blocks as any,
       sort_order: lesson.sort_order,
       require_activities: lesson.require_activities,
+      scheduled_publish_at: effectiveScheduledAt,
     };
 
     await supabase.from("textbook_lessons").update(payload).eq("id", lesson.id);
@@ -172,13 +207,50 @@ const LessonEditorSheet = ({ lessonId, open, onOpenChange, onSaved }: Props) => 
                 </div>
                 <div>
                   <Label>Stav</Label>
-                  <Select value={lesson.status} onValueChange={(v) => setLesson({ ...lesson, status: v })}>
+                  <Select
+                    value={lesson.status}
+                    onValueChange={(v) =>
+                      setLesson({
+                        ...lesson,
+                        status: v,
+                        scheduled_publish_at: v === "scheduled" ? lesson.scheduled_publish_at : null,
+                      })
+                    }
+                  >
                     <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="draft">Koncept</SelectItem>
+                      <SelectItem value="scheduled">Naplánováno</SelectItem>
                       <SelectItem value="published">Publikováno</SelectItem>
                     </SelectContent>
                   </Select>
+                  {lesson.status === "scheduled" && (
+                    <div className="mt-2">
+                      <Label className="text-xs text-muted-foreground">Publikovat v</Label>
+                      <Input
+                        type="datetime-local"
+                        value={toLocalInput(lesson.scheduled_publish_at)}
+                        onChange={(e) =>
+                          setLesson({ ...lesson, scheduled_publish_at: fromLocalInput(e.target.value) })
+                        }
+                        className="mt-1"
+                      />
+                      <p className="text-[11px] text-muted-foreground mt-1">
+                        Lekce se automaticky publikuje v tento čas.
+                      </p>
+                    </div>
+                  )}
+                  {lesson.status === "published" && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="mt-2 w-full"
+                      onClick={() => setLesson({ ...lesson, status: "draft", scheduled_publish_at: null })}
+                    >
+                      Vrátit do konceptu
+                    </Button>
+                  )}
                 </div>
                 <div>
                   <Label>Hero obrázek</Label>
