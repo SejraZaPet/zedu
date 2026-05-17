@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,8 @@ import {
   Eye,
   EyeOff,
   Plus,
+  Undo2,
+  Redo2,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -133,17 +135,87 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
+  // Undo/redo history
+  const historyRef = useRef<Block[][]>([blocks]);
+  const indexRef = useRef<number>(0);
+  const skipNextSyncRef = useRef<boolean>(false);
+  const [, forceRender] = useState(0);
+
+  // Sync external blocks changes into history (e.g. initial load)
+  useEffect(() => {
+    if (skipNextSyncRef.current) {
+      skipNextSyncRef.current = false;
+      return;
+    }
+    const current = historyRef.current[indexRef.current];
+    if (current === blocks) return;
+    // Replace history with new external state
+    historyRef.current = [blocks];
+    indexRef.current = 0;
+    forceRender((n) => n + 1);
+  }, [blocks]);
+
+  const commit = (next: Block[]) => {
+    // Truncate redo branch and push new state
+    const newHistory = historyRef.current.slice(0, indexRef.current + 1);
+    newHistory.push(next);
+    // Cap history length
+    if (newHistory.length > 100) newHistory.shift();
+    historyRef.current = newHistory;
+    indexRef.current = newHistory.length - 1;
+    skipNextSyncRef.current = true;
+    onChange(next);
+    forceRender((n) => n + 1);
+  };
+
+  const canUndo = indexRef.current > 0;
+  const canRedo = indexRef.current < historyRef.current.length - 1;
+
+  const undo = () => {
+    if (!canUndo) return;
+    indexRef.current -= 1;
+    skipNextSyncRef.current = true;
+    onChange(historyRef.current[indexRef.current]);
+    forceRender((n) => n + 1);
+  };
+
+  const redo = () => {
+    if (!canRedo) return;
+    indexRef.current += 1;
+    skipNextSyncRef.current = true;
+    onChange(historyRef.current[indexRef.current]);
+    forceRender((n) => n + 1);
+  };
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const mod = e.ctrlKey || e.metaKey;
+      if (!mod) return;
+      const key = e.key.toLowerCase();
+      if (key === "z" && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      } else if ((key === "z" && e.shiftKey) || key === "y") {
+        e.preventDefault();
+        redo();
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (over && active.id !== over.id) {
       const oldIndex = blocks.findIndex((b) => b.id === active.id);
       const newIndex = blocks.findIndex((b) => b.id === over.id);
-      onChange(arrayMove(blocks, oldIndex, newIndex));
+      commit(arrayMove(blocks, oldIndex, newIndex));
     }
   };
 
   const updateBlock = (id: string, props: Record<string, any>) => {
-    onChange(blocks.map((b) => (b.id === id ? { ...b, props } : b)));
+    commit(blocks.map((b) => (b.id === id ? { ...b, props } : b)));
   };
 
   const duplicateBlock = (id: string) => {
@@ -152,24 +224,24 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
     const copy: Block = { ...original, id: crypto.randomUUID(), props: { ...original.props } };
     const next = [...blocks];
     next.splice(idx + 1, 0, copy);
-    onChange(next);
+    commit(next);
   };
 
   const toggleBlock = (id: string) => {
-    onChange(blocks.map((b) => (b.id === id ? { ...b, visible: !b.visible } : b)));
+    commit(blocks.map((b) => (b.id === id ? { ...b, visible: !b.visible } : b)));
   };
 
   const deleteBlock = (id: string) => {
-    onChange(blocks.filter((b) => b.id !== id));
+    commit(blocks.filter((b) => b.id !== id));
   };
 
   const addBlock = (type: Block["type"], index?: number) => {
     if (index === undefined || index >= blocks.length) {
-      onChange([...blocks, createDefaultBlock(type)]);
+      commit([...blocks, createDefaultBlock(type)]);
     } else {
       const next = [...blocks];
       next.splice(index, 0, createDefaultBlock(type));
-      onChange(next);
+      commit(next);
     }
   };
 
@@ -197,7 +269,7 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
       visible: true,
       props: { url, caption, width: "full", alignment: "center" },
     } as unknown as Block;
-    onChange([...blocks, newBlock]);
+    commit([...blocks, newBlock]);
   };
 
   const handleDrop = async (e: React.DragEvent) => {
@@ -263,6 +335,28 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
       onDrop={handleDrop}
       className={`relative space-y-3 rounded-lg transition ${dragOver ? "ring-2 ring-primary ring-offset-2 bg-primary/5" : ""}`}
     >
+      <div className="flex items-center justify-end gap-1 sticky top-0 z-40 bg-background/80 backdrop-blur-sm py-1 -mt-1 rounded-md">
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 gap-1.5"
+          onClick={undo}
+          disabled={!canUndo}
+          title="Zpět (Ctrl/Cmd+Z)"
+        >
+          <Undo2 className="w-3.5 h-3.5" /> Zpět
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 gap-1.5"
+          onClick={redo}
+          disabled={!canRedo}
+          title="Vpřed (Ctrl/Cmd+Shift+Z)"
+        >
+          <Redo2 className="w-3.5 h-3.5" /> Vpřed
+        </Button>
+      </div>
       {dragOver && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-primary/10 rounded-lg pointer-events-none">
           <p className="text-lg font-medium text-primary">📷 Pusťte obrázek sem</p>
