@@ -1613,6 +1613,34 @@ export default function WorksheetEditor() {
                 ))}
               </div>
             )}
+
+            {activeLessonActivities.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-border">
+                <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
+                  Aktivity z lekce ({activeLessonActivities.length})
+                </div>
+                <div className="space-y-1.5">
+                  {activeLessonActivities.map((a) => (
+                    <button
+                      key={a.id}
+                      onClick={() => { addItemFromLessonActivity(a); setMobilePaletteOpen(false); }}
+                      className="w-full text-left px-2.5 py-1.5 rounded-md border border-border bg-background hover:border-primary/50 hover:bg-primary/5 transition text-xs"
+                      title={`Vložit do PL jako ${ITEM_TYPE_LABELS[mapLessonActivityToItemType(a.activityType)]?.label ?? a.activityType}`}
+                    >
+                      <div className="flex items-start gap-1.5">
+                        <Plus className="w-3 h-3 mt-0.5 text-primary shrink-0" />
+                        <span className="flex-1 min-w-0">
+                          <span className="block truncate font-medium">{a.title}</span>
+                          <span className="block text-[10px] text-muted-foreground truncate">
+                            {ITEM_TYPE_LABELS[mapLessonActivityToItemType(a.activityType)]?.label ?? a.activityType}
+                          </span>
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </CollapsibleContent>
       </Collapsible>
