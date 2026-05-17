@@ -220,6 +220,8 @@ const TeacherTextbooks = () => {
               blocks: (l.blocks as Block[]) ?? [],
               source: "textbook_lessons" as const,
               topic_id: t.id,
+              hero_image_url: l.hero_image_url ?? null,
+              scheduled_publish_at: l.scheduled_publish_at ?? null,
             }));
 
           const placedLessons: LessonItem[] = (placementData ?? [])
@@ -232,6 +234,8 @@ const TeacherTextbooks = () => {
               blocks: (p.teacher_textbook_lessons.blocks as Block[]) ?? [],
               source: "teacher_textbook_lessons" as const,
               topic_id: t.id,
+              hero_image_url: p.teacher_textbook_lessons.hero_image_url ?? null,
+              scheduled_publish_at: p.teacher_textbook_lessons.scheduled_publish_at ?? null,
             }));
 
           const allLessons = [...topicLessons];
