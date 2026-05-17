@@ -693,6 +693,18 @@ const TeacherTextbooks = () => {
                   navigate(`/ucitel/pracovni-listy?${params.toString()}`);
                 }}
                 onPreviewLesson={() => {}}
+                onReorderLessons={async (topicId, ordered) => {
+                  // Optimistic update
+                  setGradeGroups((prev) => prev.map((g) => ({
+                    ...g,
+                    topics: g.topics.map((t) => t.id === topicId ? { ...t, lessons: ordered.map((l, i) => ({ ...l, sort_order: i })) } : t),
+                  })));
+                  // Persist
+                  await Promise.all(ordered.map((lesson, i) => {
+                    return supabase.from(lesson.source).update({ sort_order: i }).eq("id", lesson.id);
+                  }));
+                  toast({ title: "Pořadí uloženo" });
+                }}
               />
             )}
           </div>
