@@ -32,7 +32,7 @@ import {
 import {
   BookOpen, Users, ArrowLeft, Copy, Eye, FolderOpen, ChevronRight,
   Pencil, Trash2, Plus, Save, Loader2, X, FileText, Play, Sparkles, BookmarkPlus,
-  MoreVertical, Archive, ArchiveRestore,
+  MoreVertical, Archive, ArchiveRestore, Upload,
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
