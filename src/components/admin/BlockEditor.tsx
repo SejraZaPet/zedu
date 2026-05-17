@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -59,7 +59,7 @@ interface Props {
   onChange: (blocks: Block[]) => void;
 }
 
-const BlockRenderer = ({ block, onChange }: { block: Block; onChange: (props: Record<string, any>) => void }) => {
+const BlockRenderer = React.memo(({ block, onChange }: { block: Block; onChange: (props: Record<string, any>) => void }) => {
   switch (block.type) {
     case "heading": return <HeadingBlock block={block} onChange={onChange} />;
     case "paragraph": return <ParagraphBlock block={block} onChange={onChange} />;
@@ -80,7 +80,8 @@ const BlockRenderer = ({ block, onChange }: { block: Block; onChange: (props: Re
     case "activity": return <ActivityBlock block={block} onChange={onChange} />;
     default: return <p className="text-muted-foreground text-sm">Neznámý blok</p>;
   }
-};
+});
+BlockRenderer.displayName = "BlockRenderer";
 
 const SortableBlock = React.memo(({
   block,
@@ -107,7 +108,7 @@ const SortableBlock = React.memo(({
   const handleUpdate = useCallback((props: Record<string, any>) => onUpdate(block.id, props), [onUpdate, block.id]);
 
   return (
-    <div ref={setNodeRef} style={style} className={`border rounded-lg bg-card ${!block.visible ? "opacity-50" : ""} ${isDragging ? "border-primary" : "border-border"}`}>
+    <div ref={setNodeRef} data-block-id={block.id} style={style} className={`border rounded-lg bg-card ${!block.visible ? "opacity-50" : ""} ${isDragging ? "border-primary" : "border-border"}`}>
       <div className="flex items-center gap-1 px-2 py-1.5 border-b border-border bg-muted/30 rounded-t-lg">
         <button {...attributes} {...listeners} className="cursor-grab text-muted-foreground hover:text-foreground p-0.5">
           <GripVertical className="w-4 h-4" />
