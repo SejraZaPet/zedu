@@ -2900,7 +2900,12 @@ function TypeSpecificEditor({
         </div>
       )}
 
-      <ActivityBlockEditor item={item} onUpdate={onUpdateItem} hasLesson={false} />
+      <ActivityBlockEditor
+        item={item}
+        onUpdate={onUpdateItem}
+        hasLesson={hasLesson}
+        onPickFromLesson={onPickFromLesson}
+      />
 
       <div className="pt-3 border-t border-border">
         <Label className="text-xs">Obrázek (URL, volitelné)</Label>
