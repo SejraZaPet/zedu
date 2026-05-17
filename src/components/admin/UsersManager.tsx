@@ -297,7 +297,7 @@ const UsersManager = () => {
           Hromadný import
           <input
             type="file"
-            accept=".csv"
+            accept=".csv,.xlsx,.xls"
             className="sr-only"
             onChange={async (e) => {
               const file = e.target.files?.[0];
@@ -309,25 +309,58 @@ const UsersManager = () => {
 
               try {
                 console.log("Začínám zpracování souboru...");
-                let rows: any[] = [];
-
-                const text = await file.text();
-                const lines = text.split("\n").filter(Boolean);
-                const rawHeaders = lines[0].split(",").map(h => h.trim().toLowerCase().replace(/"/g, ""));
                 const keyMap: Record<string, string> = {
-                  "jmeno": "jmeno", "prijmeni": "prijmeni",
-                  "e-mail": "email", "email": "email",
+                  "jmeno": "jmeno", "jméno": "jmeno", "krestni jmeno": "jmeno", "křestní jméno": "jmeno",
+                  "prijmeni": "prijmeni", "příjmení": "prijmeni",
+                  "e-mail": "email", "email": "email", "e-mail žáka": "email", "email zaka": "email",
                   "e-mail_rodice": "email_rodice", "email_rodice": "email_rodice",
                   "e-mail rodice": "email_rodice", "email rodice": "email_rodice",
-                  "skola": "skola", "trida": "trida", "rocnik": "rocnik", "role": "role",
+                  "e-mail rodiče": "email_rodice", "email rodiče": "email_rodice",
+                  "skola": "skola", "škola": "skola",
+                  "trida": "trida", "třída": "trida",
+                  "rocnik": "rocnik", "ročník": "rocnik",
+                  "role": "role",
                   "zletily": "zletily", "zletilý": "zletily", "zletila": "zletily", "adult": "zletily",
+                  "poznamka": "poznamka", "poznámka": "poznamka",
                 };
-                rows = lines.slice(1).map(line => {
-                  const values = line.split(",").map(v => v.trim().replace(/"/g, ""));
+                const normHeader = (h: string) => h.trim().toLowerCase().replace(/\*/g, "").replace(/"/g, "").trim();
+
+                let rawRows: string[][] = [];
+                const name = (file.name || "").toLowerCase();
+                const isExcel = name.endsWith(".xlsx") || name.endsWith(".xls") ||
+                  file.type.includes("spreadsheet") || file.type.includes("excel");
+
+                if (isExcel) {
+                  const buf = await file.arrayBuffer();
+                  const wb = XLSX.read(buf, { type: "array" });
+                  const ws = wb.Sheets[wb.SheetNames[0]];
+                  rawRows = XLSX.utils.sheet_to_json<string[]>(ws, { header: 1, raw: false, defval: "" }) as any;
+                  rawRows = rawRows.map(r => r.map(c => (c == null ? "" : String(c))));
+                } else {
+                  const text = await file.text();
+                  const lines = text.split(/\r?\n/).filter(Boolean);
+                  rawRows = lines.map(line => line.split(",").map(v => v.trim().replace(/"/g, "")));
+                }
+
+                // Najdi řádek s hlavičkou (obsahuje jmeno+prijmeni)
+                let headerIdx = -1;
+                for (let i = 0; i < Math.min(rawRows.length, 10); i++) {
+                  const norm = rawRows[i].map(normHeader);
+                  if (norm.some(h => keyMap[h] === "jmeno") && norm.some(h => keyMap[h] === "prijmeni")) {
+                    headerIdx = i;
+                    break;
+                  }
+                }
+                if (headerIdx === -1) {
+                  throw new Error("V souboru nebyla nalezena hlavička se sloupci Jméno a Příjmení.");
+                }
+                const headers = rawRows[headerIdx].map(normHeader);
+
+                let rows = rawRows.slice(headerIdx + 1).map(values => {
                   const obj: any = {};
-                  rawHeaders.forEach((h, i) => {
+                  headers.forEach((h, i) => {
                     const key = keyMap[h] || h;
-                    obj[key] = values[i] || "";
+                    obj[key] = (values[i] ?? "").toString().trim();
                   });
                   return obj;
                 }).filter((r: any) =>
@@ -338,14 +371,7 @@ const UsersManager = () => {
                   !r.jmeno.toLowerCase().includes("vzorovy")
                 );
 
-                console.log("Řádky před filtrem:", rows.length, rows[0]);
-                rows = rows.filter((r: any) => r.jmeno && r.prijmeni &&
-                  !r.jmeno.toLowerCase().includes("křestní") &&
-                  !r.jmeno.toLowerCase().includes("krestni") &&
-                  !r.jmeno.toLowerCase().includes("vzorový") &&
-                  !r.jmeno.toLowerCase().includes("vzorovy")
-                );
-                console.log("Řádky po filtru:", rows.length);
+                console.log("Řádky:", rows.length, rows[0]);
                 setImportPreview(rows);
               } catch (err: any) {
                 console.error("Chyba při zpracování souboru:", err);
