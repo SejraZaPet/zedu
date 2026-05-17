@@ -246,7 +246,7 @@ const TeacherTextbooks = () => {
             if (!allLessons.some(l => l.id === pl.id)) allLessons.push(pl);
           }
 
-          return { id: t.id, title: t.title, lessons: allLessons } as TopicItem;
+          return { id: t.id, title: t.title, sort_order: t.sort_order ?? 0, lessons: allLessons } as TopicItem;
         });
 
       return { grade: g.grade_number, label: g.label, topics: gradeTopics };
