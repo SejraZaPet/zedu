@@ -51,6 +51,7 @@ import {
 import {
   ChevronLeft,
   ChevronDown,
+  ChevronUp,
   GripVertical,
   Trash2,
   Plus,
