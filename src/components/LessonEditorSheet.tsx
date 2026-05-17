@@ -30,7 +30,23 @@ interface LessonData {
   sort_order: number;
   topic_id: string;
   require_activities: boolean;
+  scheduled_publish_at: string | null;
 }
+
+// Convert ISO/UTC string -> value usable by <input type="datetime-local">
+const toLocalInput = (iso: string | null): string => {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
+const fromLocalInput = (s: string): string | null => {
+  if (!s) return null;
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d.toISOString();
+};
 
 const LessonEditorSheet = ({ lessonId, open, onOpenChange, onSaved }: Props) => {
   const [lesson, setLesson] = useState<LessonData | null>(null);
