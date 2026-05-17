@@ -1283,71 +1283,80 @@ export default function WorksheetEditor() {
   }
 
 
+  const SectionHeader = ({
+    icon,
+    children,
+    count,
+  }: {
+    icon?: React.ReactNode;
+    children: React.ReactNode;
+    count?: number;
+  }) => (
+    <CollapsibleTrigger className="w-full flex items-center justify-between gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide font-heading py-2 hover:text-foreground transition-colors group">
+      <span className="flex items-center gap-1.5">
+        {icon}
+        {children}
+        {typeof count === "number" && (
+          <span className="text-[10px] text-muted-foreground/70">({count})</span>
+        )}
+      </span>
+      <ChevronDown className="w-3.5 h-3.5 transition-transform group-data-[state=closed]:-rotate-90" />
+    </CollapsibleTrigger>
+  );
+
   const paletteContent = (
     <>
-      <h3 className="font-heading text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
-        Otázky
-      </h3>
-      <div className="space-y-1.5">
-        {ITEM_TYPES.map((type) => (
-          <button
-            key={type}
-            onClick={() => { addItem(type); setMobilePaletteOpen(false); }}
-            className="w-full text-left px-3 py-2 rounded-lg hover:bg-muted transition-colors border border-transparent hover:border-border"
-          >
-            <div className="text-sm font-medium">{ITEM_TYPE_LABELS[type].label}</div>
-            <div className="text-xs text-muted-foreground line-clamp-1">
-              {ITEM_TYPE_LABELS[type].description}
-            </div>
-          </button>
-        ))}
-      </div>
+      <Collapsible defaultOpen>
+        <SectionHeader count={ITEM_TYPES.length}>Otázky</SectionHeader>
+        <CollapsibleContent className="space-y-1.5 pt-1">
+          {ITEM_TYPES.map((type) => (
+            <button
+              key={type}
+              onClick={() => { addItem(type); setMobilePaletteOpen(false); }}
+              className="w-full text-left px-3 py-1.5 rounded-md hover:bg-muted transition-colors border border-transparent hover:border-border text-sm"
+              title={ITEM_TYPE_LABELS[type].description}
+            >
+              {ITEM_TYPE_LABELS[type].label}
+            </button>
+          ))}
+        </CollapsibleContent>
+      </Collapsible>
 
-      <div className="mt-5 pt-4 border-t border-border">
-        <h3 className="font-heading text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
-          Layoutové bloky
-        </h3>
-        <div className="space-y-1.5">
+      <Collapsible className="mt-2 pt-2 border-t border-border">
+        <SectionHeader count={LAYOUT_BLOCK_TYPES.length}>Layoutové bloky</SectionHeader>
+        <CollapsibleContent className="space-y-1.5 pt-1">
           {LAYOUT_BLOCK_TYPES.map((type) => (
             <button
               key={type}
               onClick={() => { addItem(type); setMobilePaletteOpen(false); }}
-              className="w-full text-left px-3 py-2 rounded-lg hover:bg-muted transition-colors border border-transparent hover:border-border"
+              className="w-full text-left px-3 py-1.5 rounded-md hover:bg-muted transition-colors border border-transparent hover:border-border text-sm"
+              title={ITEM_TYPE_LABELS[type].description}
             >
-              <div className="text-sm font-medium">{ITEM_TYPE_LABELS[type].label}</div>
-              <div className="text-xs text-muted-foreground line-clamp-1">
-                {ITEM_TYPE_LABELS[type].description}
-              </div>
+              {ITEM_TYPE_LABELS[type].label}
             </button>
           ))}
-        </div>
-      </div>
+        </CollapsibleContent>
+      </Collapsible>
 
-      <div className="mt-5 pt-4 border-t border-border">
-        <h3 className="font-heading text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
-          Aktivity & obsah z lekce
-        </h3>
-        <div className="space-y-1.5">
+      <Collapsible className="mt-2 pt-2 border-t border-border">
+        <SectionHeader count={ACTIVITY_BLOCK_TYPES.length}>Aktivity</SectionHeader>
+        <CollapsibleContent className="space-y-1.5 pt-1">
           {ACTIVITY_BLOCK_TYPES.map((type) => (
             <button
               key={type}
               onClick={() => { addItem(type); setMobilePaletteOpen(false); }}
-              className="w-full text-left px-3 py-2 rounded-lg hover:bg-muted transition-colors border border-transparent hover:border-border"
+              className="w-full text-left px-3 py-1.5 rounded-md hover:bg-muted transition-colors border border-transparent hover:border-border text-sm"
+              title={ITEM_TYPE_LABELS[type].description}
             >
-              <div className="text-sm font-medium">{ITEM_TYPE_LABELS[type].label}</div>
-              <div className="text-xs text-muted-foreground line-clamp-1">
-                {ITEM_TYPE_LABELS[type].description}
-              </div>
+              {ITEM_TYPE_LABELS[type].label}
             </button>
           ))}
-        </div>
-      </div>
+        </CollapsibleContent>
+      </Collapsible>
 
-      <div className="mt-5 pt-4 border-t border-border">
-        <h3 className="font-heading text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
-          Offline aktivity
-        </h3>
-        <div className="space-y-1.5">
+      <Collapsible className="mt-2 pt-2 border-t border-border">
+        <SectionHeader count={OFFLINE_MODES.length}>Offline aktivity</SectionHeader>
+        <CollapsibleContent className="space-y-1.5 pt-1">
           {OFFLINE_MODES.map((mode) => {
             const meta = OFFLINE_MODE_META[mode];
             const Icon = meta.icon;
@@ -1355,154 +1364,141 @@ export default function WorksheetEditor() {
               <button
                 key={mode}
                 onClick={() => { addOfflineActivity(mode); setMobilePaletteOpen(false); }}
-                className="w-full text-left px-3 py-2 rounded-lg hover:bg-accent/10 transition-colors border border-transparent hover:border-accent/40 flex items-start gap-2"
+                className="w-full text-left px-3 py-1.5 rounded-md hover:bg-accent/10 transition-colors border border-transparent hover:border-accent/40 flex items-center gap-2 text-sm"
               >
-                <Icon className="w-4 h-4 mt-0.5 text-accent shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium">{meta.label}</div>
-                  <div className="text-[11px] text-muted-foreground">
-                    {meta.defaultDuration} min · {GROUP_SIZE_LABELS[meta.defaultGroup]}
-                  </div>
-                </div>
+                <Icon className="w-4 h-4 text-accent shrink-0" />
+                <span className="flex-1 truncate">{meta.label}</span>
+                <span className="text-[10px] text-muted-foreground">{meta.defaultDuration}′</span>
               </button>
             );
           })}
-        </div>
-      </div>
+        </CollapsibleContent>
+      </Collapsible>
 
-      <div className="mt-5 pt-4 border-t border-border">
-        <h3 className="font-heading text-sm font-semibold mb-2 text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
-          <BookOpen className="w-3.5 h-3.5" /> Aktivní lekce
-        </h3>
-        <p className="text-[11px] text-muted-foreground mb-2">
-          Lekce, ze které právě tahám návrhy.
-        </p>
-        <Select
-          value={activeLessonId ?? "__none__"}
-          onValueChange={(v) => handleSetSourceLesson(v === "__none__" ? null : v)}
-        >
-          <SelectTrigger className="h-8 text-xs">
-            <SelectValue placeholder="Vyber lekci…" />
-          </SelectTrigger>
-          <SelectContent className="max-h-[60vh]">
-            <SelectItem value="__none__">— Žádná —</SelectItem>
-            {allLessons.length === 0 && (
-              <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                Žádné lekce k dispozici
+      <Collapsible className="mt-2 pt-2 border-t border-border" defaultOpen={linkedLessons.length > 0 || !!activeLessonId}>
+        <SectionHeader icon={<BookOpen className="w-3.5 h-3.5" />} count={linkedLessons.length}>
+          Lekce
+        </SectionHeader>
+        <CollapsibleContent className="pt-1 space-y-3">
+          {linkedLessons.length === 0 ? (
+            <p className="text-[11px] text-muted-foreground">
+              Tento pracovní list zatím není napojený na žádnou lekci.
+            </p>
+          ) : (
+            <div className="space-y-1">
+              {linkedLessons.map((l) => (
+                <div
+                  key={l.id}
+                  className="flex items-center gap-1.5 px-2 py-1.5 rounded-md border border-border bg-background text-xs"
+                >
+                  <Badge
+                    variant={l.lesson_type === "global" ? "secondary" : "outline"}
+                    className="text-[10px] px-1.5 py-0 h-4 shrink-0"
+                  >
+                    {l.lesson_type === "global" ? "G" : "V"}
+                  </Badge>
+                  <span className="truncate flex-1" title={l.title}>{l.title}</span>
+                  <button
+                    onClick={() => handleRemoveLinkedLesson(l.id)}
+                    className="text-muted-foreground hover:text-destructive shrink-0"
+                    title="Odebrat propojení"
+                  >
+                    <XCircle className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full h-8 text-xs"
+            onClick={() => setLinkDialogOpen(true)}
+          >
+            <Plus className="w-3.5 h-3.5 mr-1" /> Přidat lekci
+          </Button>
+
+          <div className="pt-2 border-t border-border/60">
+            <Label className="text-[11px] text-muted-foreground mb-1 block">
+              Aktivní lekce (zdroj návrhů)
+            </Label>
+            <Select
+              value={activeLessonId ?? "__none__"}
+              onValueChange={(v) => handleSetSourceLesson(v === "__none__" ? null : v)}
+            >
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue placeholder="Vyber lekci…" />
+              </SelectTrigger>
+              <SelectContent className="max-h-[60vh]">
+                <SelectItem value="__none__">— Žádná —</SelectItem>
+                {allLessons.length === 0 && (
+                  <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                    Žádné lekce k dispozici
+                  </div>
+                )}
+                {allLessons.map((l) => (
+                  <SelectItem key={`${l.type}-${l.id}`} value={l.id}>
+                    <span className="inline-flex items-center gap-1.5">
+                      <Badge
+                        variant={l.type === "global" ? "secondary" : "outline"}
+                        className="text-[10px] px-1.5 py-0 h-4"
+                      >
+                        {l.type === "global" ? "G" : "V"}
+                      </Badge>
+                      <span className="truncate">{l.title}</span>
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {activeLessonId && lessonBlocks.length === 0 && (
+              <p className="text-xs text-muted-foreground mt-2">Lekce nemá obsah.</p>
+            )}
+
+            {lessonBlocks.length > 0 && (
+              <div className="mt-2 space-y-1.5">
+                {lessonBlocks.map((b) => (
+                  <button
+                    key={b.id}
+                    onClick={() => openSuggestionsForBlock(b)}
+                    className="w-full text-left px-2.5 py-1.5 rounded-md border border-border bg-background hover:border-primary/50 hover:bg-primary/5 transition text-xs"
+                    title="Klik → AI navrhne 3 úlohy"
+                  >
+                    <div className="flex items-start gap-1.5">
+                      <Sparkles className="w-3 h-3 mt-0.5 text-primary shrink-0" />
+                      <span className="line-clamp-2">{b.title}</span>
+                    </div>
+                  </button>
+                ))}
               </div>
             )}
-            {allLessons.map((l) => (
-              <SelectItem key={`${l.type}-${l.id}`} value={l.id}>
-                <span className="inline-flex items-center gap-1.5">
-                  <Badge
-                    variant={l.type === "global" ? "secondary" : "outline"}
-                    className="text-[10px] px-1.5 py-0 h-4"
-                  >
-                    {l.type === "global" ? "Globální" : "Vlastní"}
-                  </Badge>
-                  <span className="truncate">{l.title}</span>
-                </span>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        {activeLessonId && lessonBlocks.length === 0 && (
-          <p className="text-xs text-muted-foreground mt-2">Lekce nemá obsah.</p>
-        )}
-
-        {lessonBlocks.length > 0 && (
-          <div className="mt-2 space-y-1.5">
-            {lessonBlocks.map((b) => (
-              <button
-                key={b.id}
-                onClick={() => openSuggestionsForBlock(b)}
-                className="w-full text-left px-2.5 py-2 rounded-md border border-border bg-background hover:border-primary/50 hover:bg-primary/5 transition text-xs"
-                title="Klik → AI navrhne 3 úlohy"
-              >
-                <div className="flex items-start gap-1.5">
-                  <Sparkles className="w-3 h-3 mt-0.5 text-primary shrink-0" />
-                  <span className="line-clamp-2">{b.title}</span>
-                </div>
-              </button>
-            ))}
           </div>
-        )}
-      </div>
+        </CollapsibleContent>
+      </Collapsible>
 
-      <div className="mt-5 pt-4 border-t border-border">
-        <h3 className="font-heading text-sm font-semibold mb-2 text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
-          <Link2 className="w-3.5 h-3.5" /> Připojené lekce ({linkedLessons.length})
-        </h3>
-        {linkedLessons.length === 0 ? (
-          <p className="text-[11px] text-muted-foreground mb-2">
-            Tento pracovní list zatím není napojený na žádnou lekci.
-          </p>
-        ) : (
-          <div className="space-y-1 mb-2">
-            {linkedLessons.map((l) => (
-              <div
-                key={l.id}
-                className="flex items-center gap-1.5 px-2 py-1.5 rounded-md border border-border bg-background text-xs"
-              >
-                <Badge
-                  variant={l.lesson_type === "global" ? "secondary" : "outline"}
-                  className="text-[10px] px-1.5 py-0 h-4 shrink-0"
-                >
-                  {l.lesson_type === "global" ? "G" : "V"}
-                </Badge>
-                <span className="truncate flex-1" title={l.title}>
-                  {l.title}
-                </span>
-                <button
-                  onClick={() => handleRemoveLinkedLesson(l.id)}
-                  className="text-muted-foreground hover:text-destructive shrink-0"
-                  title="Odebrat propojení"
-                >
-                  <XCircle className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full h-8 text-xs"
-          onClick={() => setLinkDialogOpen(true)}
-        >
-          <Plus className="w-3.5 h-3.5 mr-1" /> Přidat další lekci
-        </Button>
-      </div>
-
-      <Collapsible defaultOpen={false} className="mt-5 pt-4 border-t border-border">
-        <CollapsibleTrigger className="w-full flex items-center justify-between gap-2 text-sm font-semibold text-muted-foreground uppercase tracking-wide font-heading mb-2 hover:text-foreground transition-colors">
-          <span className="flex items-center gap-1.5">
-            <LayoutTemplate className="w-3.5 h-3.5" /> Šablony
-          </span>
-          <ChevronDown className="w-3.5 h-3.5" />
-        </CollapsibleTrigger>
-        <CollapsibleContent className="space-y-1.5">
+      <Collapsible className="mt-2 pt-2 border-t border-border">
+        <SectionHeader icon={<LayoutTemplate className="w-3.5 h-3.5" />} count={WORKSHEET_TEMPLATES.length}>
+          Metody
+        </SectionHeader>
+        <CollapsibleContent className="space-y-1.5 pt-1">
           {WORKSHEET_TEMPLATES.map((tpl) => (
             <button
               key={tpl.id}
               onClick={() => { addTemplate(tpl.id); setMobilePaletteOpen(false); }}
-              className="w-full text-left px-2.5 py-2 rounded-md border border-border bg-background hover:border-primary/50 hover:bg-primary/5 transition text-xs"
-              title={`Vloží ${tpl.blockCount} bloků`}
+              className="w-full text-left px-2.5 py-1.5 rounded-md border border-border bg-background hover:border-primary/50 hover:bg-primary/5 transition text-xs"
+              title={`${tpl.description} — vloží ${tpl.blockCount} bloků`}
             >
               <div className="font-medium text-sm flex items-center gap-1.5">
                 <LayoutTemplate className="w-3 h-3 text-primary" />
                 {tpl.label}
-              </div>
-              <div className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2">
-                {tpl.description}
               </div>
             </button>
           ))}
         </CollapsibleContent>
       </Collapsible>
 
-      <div className="mt-6 pt-4 border-t border-border text-xs text-muted-foreground">
+      <div className="mt-4 pt-3 border-t border-border text-xs text-muted-foreground">
         <p className="mb-1">{items.length} otázek</p>
         {(spec.renderConfig?.pointsEnabled ?? true) && (
           <p className="mb-1">{spec.metadata.totalPoints} {pointsLabel(spec.metadata.totalPoints)}</p>
@@ -1976,41 +1972,6 @@ export default function WorksheetEditor() {
               </DndContext>
             )}
 
-            {/* Add button */}
-            <div className="mt-6 pt-4 border-t border-border">
-              <Select onValueChange={(v) => addItem(v as ItemType)}>
-                <SelectTrigger className="w-full">
-                  <Plus className="w-4 h-4 mr-1" />
-                  <SelectValue placeholder="Přidat otázku" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectLabel>Otázky</SelectLabel>
-                    {ITEM_TYPES.map((t) => (
-                      <SelectItem key={t} value={t}>
-                        {ITEM_TYPE_LABELS[t].label}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                  <SelectGroup>
-                    <SelectLabel>Layoutové bloky</SelectLabel>
-                    {LAYOUT_BLOCK_TYPES.map((t) => (
-                      <SelectItem key={t} value={t}>
-                        {ITEM_TYPE_LABELS[t].label}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                  <SelectGroup>
-                    <SelectLabel>Aktivity & obsah z lekce</SelectLabel>
-                    {ACTIVITY_BLOCK_TYPES.map((t) => (
-                      <SelectItem key={t} value={t}>
-                        {ITEM_TYPE_LABELS[t].label}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
           </section>
         </div>
       </main>
