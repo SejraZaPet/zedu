@@ -117,6 +117,30 @@ export interface WorksheetItem {
   durationMin?: number;
   /** Suggested group size (only for type=offline_activity). */
   groupSize?: GroupSize;
+
+  // ─── Layoutové bloky (v1.1) ───
+  /** Počet prázdných řádků (pro write_lines) */
+  lineCount?: number;
+  /** Styl čáry (pro write_lines) */
+  lineStyle?: LineStyle;
+  /** URL pro QR kód (pro qr_link) */
+  qrUrl?: string;
+  /** Kroky diagramu (pro flow_steps) */
+  flowSteps?: string[];
+  /** Směr diagramu (pro flow_steps) */
+  flowDirection?: FlowDirection;
+  /** Levý box: nadpis (pro two_boxes) */
+  leftTitle?: string;
+  /** Levý box: obsah nebo "lines:N" (pro two_boxes) */
+  leftContent?: string;
+  /** Pravý box: nadpis (pro two_boxes) */
+  rightTitle?: string;
+  /** Pravý box: obsah nebo "lines:N" (pro two_boxes) */
+  rightContent?: string;
+  /** Varianta instrukce (pro instruction_box) */
+  instructionVariant?: InstructionVariant;
+  /** Ikona instrukce (pro instruction_box) */
+  instructionIcon?: InstructionIcon;
 }
 
 export interface AnswerKeyEntry {
