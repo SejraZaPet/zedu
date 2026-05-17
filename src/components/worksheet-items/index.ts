@@ -47,7 +47,7 @@ export const ITEM_RENDERERS: Record<ItemType, FC<WorksheetItemProps>> = {
   word_search: ActivityBlockItem,
   sorting: ActivityBlockItem,
   flashcards: ActivityBlockItem,
-  image_label: ActivityBlockItem,
+  image_label: ImageLabelPlayer,
   image_hotspot: ActivityBlockItem,
   lesson_reference: ActivityBlockItem,
 };
