@@ -15,6 +15,7 @@ interface Props {
   players: any[];
   gameCode: string;
   overlayContent?: ReactNode;
+  scrollTop?: number;
 }
 
 /**
@@ -22,7 +23,7 @@ interface Props {
  * Used by both LiveProjectorScreen and LiveTeacherScreen (under whiteboard overlay)
  * so that whiteboard strokes align identically in both views.
  */
-const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, slides, players, gameCode, overlayContent }: Props) => {
+const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, slides, players, gameCode, overlayContent, scrollTop }: Props) => {
   const progressPct = slides.length > 0 ? ((currentIndex + 1) / slides.length) * 100 : 0;
   const frameRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
