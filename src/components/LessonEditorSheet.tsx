@@ -145,6 +145,19 @@ const LessonEditorSheet = ({ lessonId, open, onOpenChange, onSaved }: Props) => 
 
     await supabase.from("textbook_lessons").update(payload).eq("id", lesson.id);
 
+    // Validate per-placement scheduled rows
+    for (const a of validAssignments) {
+      if (a.status === "scheduled" && (!a.scheduled_publish_at || new Date(a.scheduled_publish_at).getTime() <= Date.now())) {
+        toast({
+          title: "Neplatný čas publikování umístění",
+          description: `Umístění „${a.topic_title}" má naplánovaný čas v minulosti.`,
+          variant: "destructive",
+        });
+        setSaving(false);
+        return;
+      }
+    }
+
     // Sync assignments
     await supabase.from("lesson_topic_assignments").delete().eq("lesson_id", lesson.id);
     if (validAssignments.length > 0) {
@@ -153,6 +166,8 @@ const LessonEditorSheet = ({ lessonId, open, onOpenChange, onSaved }: Props) => 
           lesson_id: lesson.id,
           topic_id: a.topic_id,
           sort_order: i,
+          status: a.status ?? "published",
+          scheduled_publish_at: a.status === "scheduled" ? a.scheduled_publish_at ?? null : null,
         }))
       );
     }
