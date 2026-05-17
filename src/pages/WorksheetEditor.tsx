@@ -75,6 +75,7 @@ import {
   Clock,
   ChevronsUpDown,
   Check,
+  AlertTriangle,
 } from "lucide-react";
 import { usePdfExport } from "@/hooks/usePdfExport";
 import {
@@ -119,6 +120,7 @@ import {
   createDefaultItem,
   createDefaultAnswerKey,
   recomputeMetadata,
+  nextItemId,
   ITEM_TYPE_LABELS,
   OFFLINE_MODE_LABELS,
   GROUP_SIZE_LABELS,
@@ -957,6 +959,15 @@ export default function WorksheetEditor() {
   const [pickerForItem, setPickerForItem] = useState<string | null>(null);
   const [aiPickerForItem, setAiPickerForItem] = useState<string | null>(null);
 
+  // ── AI: generate whole worksheet from lesson ──
+  const [showAiGenerateDialog, setShowAiGenerateDialog] = useState(false);
+  const [aiMode, setAiMode] = useState<string>("classwork");
+  const [aiCount, setAiCount] = useState<string>("8");
+  const [aiDifficulty, setAiDifficulty] = useState<string>("mixed");
+  const [aiCustomHint, setAiCustomHint] = useState<string>("");
+  const [aiReplaceMode, setAiReplaceMode] = useState<string>("replace");
+  const [aiGenerating, setAiGenerating] = useState(false);
+
   /** Insert text from a lesson block into the targeted worksheet item. */
   function applyLessonBlockToItem(itemId: string, block: LessonBlock) {
     const it = items.find((x) => x.id === itemId);
@@ -1159,6 +1170,102 @@ export default function WorksheetEditor() {
   }
 
   const lessonBlocks = splitLessonContent(activeLessonContent);
+
+  async function handleAiGenerateAll() {
+    if (!spec) return;
+    if (!activeLessonContent || activeLessonContent.trim().length < 20) {
+      toast({
+        title: "Chybí obsah lekce",
+        description: "Nejdřív přiřaďte lekci s textovým obsahem.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setAiGenerating(true);
+    try {
+      const lessonText =
+        lessonBlocks
+          .map((b) => (b.title && b.title !== b.text ? `## ${b.title}\n${b.text}` : b.text))
+          .filter(Boolean)
+          .join("\n\n") || activeLessonContent;
+
+      const { data, error } = await supabase.functions.invoke("generate-full-worksheet", {
+        body: {
+          lessonContent: lessonText,
+          lessonTitle:
+            allLessons.find((l) => l.id === activeLessonId)?.title ?? spec.header.title,
+          worksheetMode: aiMode,
+          itemCount: parseInt(aiCount, 10),
+          difficulty: aiDifficulty,
+          hint: aiCustomHint,
+          availableTypes: [
+            "mcq", "true_false", "fill_blank", "matching", "ordering",
+            "short_answer", "open_answer", "section_header", "write_lines",
+            "instruction_box", "two_boxes", "flow_steps",
+          ],
+        },
+      });
+      if (error) throw error;
+      if (!data?.items || !Array.isArray(data.items) || data.items.length === 0) {
+        throw new Error("AI nevygenerovala žádné bloky");
+      }
+
+      const baseNumber = aiReplaceMode === "replace" ? 0 : items.length;
+      const newItems: WorksheetItem[] = data.items.map((aiItem: any, i: number) => {
+        const type = (aiItem.type ?? "short_answer") as ItemType;
+        const defaults = createDefaultItem(type, baseNumber + i + 1);
+        const { id: _ignoreId, ...rest } = aiItem;
+        return {
+          ...defaults,
+          ...rest,
+          id: nextItemId(),
+          type,
+          itemNumber: baseNumber + i + 1,
+        } as WorksheetItem;
+      });
+
+      const newKeys = newItems.map((it, i) => {
+        const aiItem: any = data.items[i] ?? {};
+        const base = createDefaultAnswerKey(it);
+        if (aiItem.correctAnswer !== undefined && aiItem.correctAnswer !== "") {
+          return { ...base, correctAnswer: aiItem.correctAnswer };
+        }
+        return base;
+      });
+
+      updateSpec((s) => {
+        const variantId = s.variants[0].variantId;
+        const existingItems = aiReplaceMode === "replace" ? [] : s.variants[0].items;
+        const existingKeys =
+          aiReplaceMode === "replace" ? [] : s.answerKeys[variantId] ?? [];
+        return {
+          ...s,
+          variants: s.variants.map((v, idx) =>
+            idx === 0 ? { ...v, items: [...existingItems, ...newItems] } : v,
+          ),
+          answerKeys: {
+            ...s.answerKeys,
+            [variantId]: [...existingKeys, ...newKeys],
+          },
+        };
+      });
+
+      toast({
+        title: "Pracovní list vygenerován",
+        description: `AI vytvořila ${newItems.length} bloků z obsahu lekce.`,
+      });
+      setShowAiGenerateDialog(false);
+    } catch (err: any) {
+      toast({
+        title: "Chyba generování",
+        description: err?.message ?? String(err),
+        variant: "destructive",
+      });
+    } finally {
+      setAiGenerating(false);
+    }
+  }
+
 
   const paletteContent = (
     <>
@@ -1480,6 +1587,25 @@ export default function WorksheetEditor() {
             <Button variant="outline" size="sm" onClick={() => setPdfDialogOpen(true)} className="hidden md:inline-flex">
               <Printer className="w-4 h-4 mr-1" /> Tisk/PDF
             </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="hidden md:inline-flex">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowAiGenerateDialog(true)}
+                      disabled={!activeLessonContent || activeLessonContent.trim().length < 20}
+                    >
+                      <Sparkles className="w-4 h-4 mr-1" /> AI vytvoří pracovní list
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                {(!activeLessonContent || activeLessonContent.trim().length < 20) && (
+                  <TooltipContent>Nejdřív přiřaďte lekci</TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
             <Button
               variant="outline"
               size="sm"
@@ -2020,6 +2146,92 @@ export default function WorksheetEditor() {
               Pokračovat na tisk
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* AI generate full worksheet */}
+      <Dialog open={showAiGenerateDialog} onOpenChange={setShowAiGenerateDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-primary" />
+              AI vytvoří pracovní list z lekce
+            </DialogTitle>
+            <DialogDescription>
+              AI analyzuje obsah lekce a navrhne kompletní pracovní list.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Zaměření pracovního listu</Label>
+              <Select value={aiMode} onValueChange={setAiMode}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-popover">
+                  <SelectItem value="classwork">Práce v hodině (mix typů)</SelectItem>
+                  <SelectItem value="test">Test (MCQ + krátké odpovědi)</SelectItem>
+                  <SelectItem value="revision">Opakování (matching + ordering + fill_blank)</SelectItem>
+                  <SelectItem value="homework">Domácí úkol (otevřené otázky + reflexe)</SelectItem>
+                  <SelectItem value="worksheet">Pracovní list s aktivitami (write_lines + instruction + two_boxes)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Počet bloků</Label>
+              <Select value={aiCount} onValueChange={setAiCount}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-popover">
+                  <SelectItem value="5">5 (krátký, ~10 min)</SelectItem>
+                  <SelectItem value="8">8 (střední, ~15 min)</SelectItem>
+                  <SelectItem value="12">12 (dlouhý, ~25 min)</SelectItem>
+                  <SelectItem value="15">15 (obsáhlý, ~35 min)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Obtížnost</Label>
+              <Select value={aiDifficulty} onValueChange={setAiDifficulty}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-popover">
+                  <SelectItem value="easy">Lehká (1. ročník, základy)</SelectItem>
+                  <SelectItem value="mixed">Smíšená (doporučeno)</SelectItem>
+                  <SelectItem value="hard">Těžká (maturitní úroveň)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Volitelný pokyn pro AI</Label>
+              <Textarea
+                value={aiCustomHint}
+                onChange={(e) => setAiCustomHint(e.target.value)}
+                placeholder="Např. zaměř se na definice a pojmy, přidej praktické úkoly, vynechej otevřené otázky…"
+                rows={2}
+              />
+            </div>
+            {items.length > 0 && (
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-yellow-50 border border-yellow-200">
+                <AlertTriangle className="w-4 h-4 text-yellow-600 mt-0.5 shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <p className="text-sm text-yellow-800">
+                    Pracovní list už obsahuje {items.length} bloků.
+                  </p>
+                  <Select value={aiReplaceMode} onValueChange={setAiReplaceMode}>
+                    <SelectTrigger className="w-full bg-background"><SelectValue /></SelectTrigger>
+                    <SelectContent className="bg-popover">
+                      <SelectItem value="replace">Nahradit vše</SelectItem>
+                      <SelectItem value="append">Přidat na konec</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+            <Button onClick={handleAiGenerateAll} disabled={aiGenerating} className="w-full">
+              {aiGenerating ? (
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Generuji pracovní list…</>
+              ) : (
+                <><Sparkles className="w-4 h-4 mr-2" /> Vygenerovat pracovní list</>
+              )}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
