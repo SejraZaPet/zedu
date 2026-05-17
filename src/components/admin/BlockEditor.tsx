@@ -188,6 +188,16 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
     }
   }, []);
 
+  useEffect(() => {
+    const current = historyRef.current[indexRef.current];
+    if (current === normalizedBlocks) return;
+
+    if (historyRef.current.length === 1 && indexRef.current === 0) {
+      historyRef.current = [normalizedBlocks];
+      updateUndoRedoState();
+    }
+  }, [normalizedBlocks, updateUndoRedoState]);
+
   const blocksRef = useRef(normalizedBlocks);
   blocksRef.current = normalizedBlocks;
   const onChangeRef = useRef(onChange);
