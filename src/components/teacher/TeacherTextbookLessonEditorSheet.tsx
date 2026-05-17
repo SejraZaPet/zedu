@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { type Block } from "@/lib/textbook-config";
+import { normalizeBlocks, type Block } from "@/lib/textbook-config";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -57,7 +57,7 @@ const TeacherTextbookLessonEditorSheet = ({ lesson, open, onOpenChange, onSaved 
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    setDraft(lesson ? { ...lesson } : null);
+    setDraft(lesson ? { ...lesson, blocks: normalizeBlocks(lesson.blocks) } : null);
     setLessonPlacements([]);
     setLessonAssignments([]);
   }, [lesson]);
