@@ -217,6 +217,12 @@ export const ITEM_TYPE_LABELS: Record<ItemType, { label: string; description: st
   short_answer: { label: "Krátká odpověď", description: "Pár slov nebo věta" },
   open_answer: { label: "Otevřená odpověď", description: "Delší slovní úvaha" },
   offline_activity: { label: "Offline aktivita", description: "Diskuse, skupinová práce nebo praktické cvičení" },
+  section_header: { label: "Nadpis sekce", description: "Vizuální oddělení sekcí v PL" },
+  write_lines: { label: "Řádky pro zápis", description: "Prázdné tečkované řádky pro ruční zápis" },
+  instruction_box: { label: "Pokyn pro žáka", description: "Zvýrazněný box s instrukcí" },
+  two_boxes: { label: "Dva boxy", description: "Dva boxy vedle sebe pro porovnání nebo úkoly" },
+  qr_link: { label: "QR kód", description: "QR kód s odkazem na video, kvíz nebo web" },
+  flow_steps: { label: "Diagram kroků", description: "Kroky propojené šipkami (postup, fáze)" },
 };
 
 export const OFFLINE_MODE_LABELS: Record<import("@/lib/worksheet-spec").OfflineMode, string> = {
