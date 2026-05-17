@@ -269,17 +269,6 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
       visible: true,
       props: { url, caption, width: "full", alignment: "center" },
     } as unknown as Block;
-    onChange([...blocks, newBlock]);
-  };
-
-  // Replace the basic appendImageBlock to use commit (preserves undo history)
-  const appendImageBlockCommit = (url: string, caption = "") => {
-    const newBlock = {
-      id: crypto.randomUUID(),
-      type: "image",
-      visible: true,
-      props: { url, caption, width: "full", alignment: "center" },
-    } as unknown as Block;
     commit([...blocks, newBlock]);
   };
 
