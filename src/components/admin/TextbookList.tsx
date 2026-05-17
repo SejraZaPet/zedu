@@ -69,7 +69,7 @@ const TextbookList = ({ textbooks, loading, subjects, onOpen, onChanged }: Props
   const sortedTextbooks = useMemo(() => {
     let result = [...textbooks];
     if (search) result = result.filter(t => t.title.toLowerCase().includes(search.toLowerCase()));
-    if (!showArchived) result = result.filter(t => !t.archived);
+    result = result.filter(t => showArchived ? !!t.archived : !t.archived);
     switch (sortBy) {
       case "name_asc": result.sort((a, b) => a.title.localeCompare(b.title, "cs")); break;
       case "name_desc": result.sort((a, b) => b.title.localeCompare(a.title, "cs")); break;
