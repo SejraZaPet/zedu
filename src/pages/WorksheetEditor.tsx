@@ -2896,6 +2896,8 @@ function TypeSpecificEditor({
         </div>
       )}
 
+      <ActivityBlockEditor item={item} onUpdate={onUpdateItem} hasLesson={false} />
+
       <div className="pt-3 border-t border-border">
         <Label className="text-xs">Obrázek (URL, volitelné)</Label>
         <div className="flex gap-2 items-start">
