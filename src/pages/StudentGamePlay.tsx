@@ -372,14 +372,8 @@ const StudentGamePlay = () => {
           </div>
 
           {whiteboard.visible && whiteboard.strokes.length > 0 && (
-            <div className="fixed inset-0 z-30 pointer-events-none">
-              <LiveWhiteboard
-                sessionId={sessionId || ""}
-                data={whiteboard}
-                readOnly
-                overlay
-                className="pointer-events-none"
-              />
+            <div className="fixed inset-0 z-30 pointer-events-none overflow-hidden">
+              <WhiteboardOverlay stageW={1600} stageH={900} sessionId={sessionId || ""} data={whiteboard} />
             </div>
           )}
         </div>
