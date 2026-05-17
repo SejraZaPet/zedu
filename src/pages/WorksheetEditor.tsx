@@ -187,6 +187,16 @@ const LAYOUT_BLOCK_TYPES: ItemType[] = [
   "flow_steps",
 ];
 
+const ACTIVITY_BLOCK_TYPES: ItemType[] = [
+  "lesson_reference",
+  "crossword",
+  "word_search",
+  "sorting",
+  "flashcards",
+  "image_label",
+  "image_hotspot",
+];
+
 const OFFLINE_MODES: OfflineMode[] = [
   "discussion",
   "group_work",
