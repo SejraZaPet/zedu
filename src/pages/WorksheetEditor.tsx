@@ -2149,7 +2149,92 @@ export default function WorksheetEditor() {
         </DialogContent>
       </Dialog>
 
-      <LessonContentPickerSheet
+      {/* AI generate full worksheet */}
+      <Dialog open={showAiGenerateDialog} onOpenChange={setShowAiGenerateDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-primary" />
+              AI vytvoří pracovní list z lekce
+            </DialogTitle>
+            <DialogDescription>
+              AI analyzuje obsah lekce a navrhne kompletní pracovní list.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Zaměření pracovního listu</Label>
+              <Select value={aiMode} onValueChange={setAiMode}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-popover">
+                  <SelectItem value="classwork">Práce v hodině (mix typů)</SelectItem>
+                  <SelectItem value="test">Test (MCQ + krátké odpovědi)</SelectItem>
+                  <SelectItem value="revision">Opakování (matching + ordering + fill_blank)</SelectItem>
+                  <SelectItem value="homework">Domácí úkol (otevřené otázky + reflexe)</SelectItem>
+                  <SelectItem value="worksheet">Pracovní list s aktivitami (write_lines + instruction + two_boxes)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Počet bloků</Label>
+              <Select value={aiCount} onValueChange={setAiCount}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-popover">
+                  <SelectItem value="5">5 (krátký, ~10 min)</SelectItem>
+                  <SelectItem value="8">8 (střední, ~15 min)</SelectItem>
+                  <SelectItem value="12">12 (dlouhý, ~25 min)</SelectItem>
+                  <SelectItem value="15">15 (obsáhlý, ~35 min)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Obtížnost</Label>
+              <Select value={aiDifficulty} onValueChange={setAiDifficulty}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-popover">
+                  <SelectItem value="easy">Lehká (1. ročník, základy)</SelectItem>
+                  <SelectItem value="mixed">Smíšená (doporučeno)</SelectItem>
+                  <SelectItem value="hard">Těžká (maturitní úroveň)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Volitelný pokyn pro AI</Label>
+              <Textarea
+                value={aiCustomHint}
+                onChange={(e) => setAiCustomHint(e.target.value)}
+                placeholder="Např. zaměř se na definice a pojmy, přidej praktické úkoly, vynechej otevřené otázky…"
+                rows={2}
+              />
+            </div>
+            {items.length > 0 && (
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-yellow-50 border border-yellow-200">
+                <AlertTriangle className="w-4 h-4 text-yellow-600 mt-0.5 shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <p className="text-sm text-yellow-800">
+                    Pracovní list už obsahuje {items.length} bloků.
+                  </p>
+                  <Select value={aiReplaceMode} onValueChange={setAiReplaceMode}>
+                    <SelectTrigger className="w-full bg-background"><SelectValue /></SelectTrigger>
+                    <SelectContent className="bg-popover">
+                      <SelectItem value="replace">Nahradit vše</SelectItem>
+                      <SelectItem value="append">Přidat na konec</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+            <Button onClick={handleAiGenerateAll} disabled={aiGenerating} className="w-full">
+              {aiGenerating ? (
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Generuji pracovní list…</>
+              ) : (
+                <><Sparkles className="w-4 h-4 mr-2" /> Vygenerovat pracovní list</>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
         open={pickerForItem !== null}
         onOpenChange={(v) => { if (!v) setPickerForItem(null); }}
         blocks={lessonBlocks}
