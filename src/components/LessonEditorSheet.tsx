@@ -147,7 +147,12 @@ const LessonEditorSheet = ({ lessonId, open, onOpenChange, onSaved }: Props) => 
       scheduled_publish_at: effectiveScheduledAt,
     };
 
-    await supabase.from("textbook_lessons").update(payload).eq("id", lesson.id);
+    const { error: updateError } = await supabase.from("textbook_lessons").update(payload).eq("id", lesson.id);
+    if (updateError) {
+      toast({ title: "Chyba při ukládání", description: updateError.message, variant: "destructive" });
+      setSaving(false);
+      return;
+    }
 
     // Validate per-placement scheduled rows
     for (const a of validAssignments) {
