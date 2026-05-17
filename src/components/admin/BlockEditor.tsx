@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Block, BLOCK_TYPES, createDefaultBlock } from "@/lib/textbook-config";
+import { Block, BLOCK_TYPES, createDefaultBlock, normalizeBlocks } from "@/lib/textbook-config";
 import {
   DndContext,
   closestCenter,
@@ -157,6 +157,14 @@ const InsertButton = React.memo(({ afterId, onInsert }: { afterId: string; onIns
 InsertButton.displayName = "InsertButton";
 
 const BlockEditor = ({ blocks, onChange }: Props) => {
+  const normalizedBlocks = useMemo(() => normalizeBlocks(blocks), [blocks]);
+
+  useEffect(() => {
+    if (normalizedBlocks !== blocks) {
+      onChange(normalizedBlocks);
+    }
+  }, [blocks, normalizedBlocks, onChange]);
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -167,21 +175,21 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
   );
 
   // Undo/redo history
-  const historyRef = useRef<Block[][]>([blocks]);
+  const historyRef = useRef<Block[][]>([normalizedBlocks]);
   const indexRef = useRef<number>(0);
   const isInitRef = useRef(false);
   const [undoRedoState, setUndoRedoState] = useState({ canUndo: false, canRedo: false });
 
   useEffect(() => {
     if (!isInitRef.current) {
-      historyRef.current = [blocks];
+      historyRef.current = [normalizedBlocks];
       indexRef.current = 0;
       isInitRef.current = true;
     }
   }, []);
 
-  const blocksRef = useRef(blocks);
-  blocksRef.current = blocks;
+  const blocksRef = useRef(normalizedBlocks);
+  blocksRef.current = normalizedBlocks;
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
   const pendingScrollToBlockIdRef = useRef<string | null>(null);
@@ -200,6 +208,15 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
   }, []);
 
   useEffect(() => {
+    const current = historyRef.current[indexRef.current];
+    if (current === normalizedBlocks) return;
+
+    historyRef.current = [normalizedBlocks];
+    indexRef.current = 0;
+    updateUndoRedoState();
+  }, [normalizedBlocks, updateUndoRedoState]);
+
+  useEffect(() => {
     const blockId = pendingScrollToBlockIdRef.current;
     if (!blockId) return;
 
@@ -212,7 +229,7 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
     });
 
     return () => cancelAnimationFrame(frame);
-  }, [blocks]);
+  }, [normalizedBlocks]);
 
   const commit = useCallback((next: Block[]) => {
     const newHistory = historyRef.current.slice(0, indexRef.current + 1);
@@ -391,9 +408,9 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
     return () => document.removeEventListener("paste", handlePaste);
   }, []);
 
-  const stableBlockIdsRef = useRef<string[]>(blocks.map((b) => b.id));
+  const stableBlockIdsRef = useRef<string[]>(normalizedBlocks.map((b) => b.id));
   const blockIds = useMemo(() => {
-    const nextIds = blocks.map((b) => b.id);
+    const nextIds = normalizedBlocks.map((b) => b.id);
     const prevIds = stableBlockIdsRef.current;
 
     if (
@@ -405,7 +422,7 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
 
     stableBlockIdsRef.current = nextIds;
     return nextIds;
-  }, [blocks]);
+  }, [normalizedBlocks]);
 
   return (
     <div
@@ -449,7 +466,7 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
       )}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={blockIds} strategy={verticalListSortingStrategy}>
-          {blocks.map((block, idx) => (
+          {normalizedBlocks.map((block, idx) => (
             <React.Fragment key={block.id}>
               <SortableBlock
                 block={block}
@@ -458,7 +475,7 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
                 onToggle={toggleBlock}
                 onDelete={deleteBlock}
               />
-              {idx < blocks.length - 1 && (
+              {idx < normalizedBlocks.length - 1 && (
                 <InsertButton afterId={block.id} onInsert={insertBlockAfter} />
               )}
             </React.Fragment>
@@ -466,7 +483,7 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
         </SortableContext>
       </DndContext>
 
-      {blocks.length === 0 && (
+      {normalizedBlocks.length === 0 && (
         <div className="text-center py-8 text-sm text-muted-foreground border border-dashed border-border rounded-lg">
           Zatím žádné bloky. Přidejte první blok níže, nebo přetáhněte obrázek z počítače.
         </div>

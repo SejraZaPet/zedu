@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { type Block } from "@/lib/textbook-config";
+import { normalizeBlocks, type Block } from "@/lib/textbook-config";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -67,7 +67,7 @@ const LessonEditorSheet = ({ lessonId, open, onOpenChange, onSaved }: Props) => 
     if (data) {
       setLesson({
         ...data,
-        blocks: ((data as any).blocks as unknown as Block[]) ?? [],
+        blocks: normalizeBlocks(((data as any).blocks as unknown as Block[]) ?? []),
         require_activities: (data as any).require_activities ?? false,
         scheduled_publish_at: (data as any).scheduled_publish_at ?? null,
       } as LessonData);
