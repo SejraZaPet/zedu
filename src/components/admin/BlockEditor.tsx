@@ -183,10 +183,16 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
   const pendingScrollToBlockIdRef = useRef<string | null>(null);
 
   const updateUndoRedoState = useCallback(() => {
-    setUndoRedoState({
+    const nextState = {
       canUndo: indexRef.current > 0,
       canRedo: indexRef.current < historyRef.current.length - 1,
-    });
+    };
+
+    setUndoRedoState((prev) => (
+      prev.canUndo === nextState.canUndo && prev.canRedo === nextState.canRedo
+        ? prev
+        : nextState
+    ));
   }, []);
 
   useEffect(() => {
