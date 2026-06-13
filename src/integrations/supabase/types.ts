@@ -1653,6 +1653,13 @@ export type Database = {
             referencedRelation: "schools"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "profiles_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       push_subscriptions: {
@@ -2780,6 +2787,36 @@ export type Database = {
           title?: string | null
           updated_at?: string | null
           whiteboard_data?: Json | null
+        }
+        Relationships: []
+      }
+      schools_public: {
+        Row: {
+          custom_logo_url: string | null
+          custom_primary_color: string | null
+          custom_welcome_text: string | null
+          id: string | null
+          name: string | null
+          registration_code: string | null
+          subdomain: string | null
+        }
+        Insert: {
+          custom_logo_url?: string | null
+          custom_primary_color?: string | null
+          custom_welcome_text?: string | null
+          id?: string | null
+          name?: string | null
+          registration_code?: string | null
+          subdomain?: string | null
+        }
+        Update: {
+          custom_logo_url?: string | null
+          custom_primary_color?: string | null
+          custom_welcome_text?: string | null
+          id?: string | null
+          name?: string | null
+          registration_code?: string | null
+          subdomain?: string | null
         }
         Relationships: []
       }
