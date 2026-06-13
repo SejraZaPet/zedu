@@ -280,6 +280,7 @@ const StudentGamePlay = () => {
                       sessionId={sessionId}
                       questionIndex={qi}
                       playerId={playerId}
+                      joinToken={joinToken}
                       onComplete={() => {}}
                     />
                   );
