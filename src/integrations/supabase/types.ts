@@ -637,6 +637,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "game_players_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "game_sessions_player_view"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "game_players_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -699,6 +706,13 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "game_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_responses_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "game_sessions_player_view"
             referencedColumns: ["id"]
           },
         ]
@@ -2706,6 +2720,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "game_players_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "game_sessions_player_view"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "game_players_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -2713,6 +2734,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      game_sessions_player_view: {
+        Row: {
+          activity_data_safe: Json | null
+          created_at: string | null
+          current_question_index: number | null
+          game_code: string | null
+          id: string | null
+          question_started_at: string | null
+          settings: Json | null
+          status: string | null
+          teacher_id: string | null
+          teams: Json | null
+          title: string | null
+          updated_at: string | null
+          whiteboard_data: Json | null
+        }
+        Insert: {
+          activity_data_safe?: never
+          created_at?: string | null
+          current_question_index?: number | null
+          game_code?: string | null
+          id?: string | null
+          question_started_at?: string | null
+          settings?: Json | null
+          status?: string | null
+          teacher_id?: string | null
+          teams?: Json | null
+          title?: string | null
+          updated_at?: string | null
+          whiteboard_data?: Json | null
+        }
+        Update: {
+          activity_data_safe?: never
+          created_at?: string | null
+          current_question_index?: number | null
+          game_code?: string | null
+          id?: string | null
+          question_started_at?: string | null
+          settings?: Json | null
+          status?: string | null
+          teacher_id?: string | null
+          teams?: Json | null
+          title?: string | null
+          updated_at?: string | null
+          whiteboard_data?: Json | null
+        }
+        Relationships: []
       }
     }
     Functions: {
@@ -2860,6 +2929,7 @@ export type Database = {
         Returns: string
       }
       set_user_pin: { Args: { _pin: string }; Returns: Json }
+      strip_correct_flags: { Args: { _data: Json }; Returns: Json }
       verify_pin_login: {
         Args: { _pin: string; _username: string }
         Returns: Json
