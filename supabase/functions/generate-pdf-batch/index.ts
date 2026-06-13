@@ -43,33 +43,62 @@ function slug(s: string | null | undefined): string {
 
 const today = () => new Date().toISOString().slice(0, 10);
 
-async function genWorksheet(svc: any, id: string, teacherName: string): Promise<{ name: string; bytes: Uint8Array } | null> {
+async function genWorksheet(
+  svc: any,
+  id: string,
+  teacherName: string,
+  userId: string,
+  isPrivileged: boolean,
+): Promise<{ name: string; bytes: Uint8Array } | { denied: true } | null> {
   const { data: ws } = await svc.from("worksheets").select("*").eq("id", id).maybeSingle();
   if (!ws) return null;
+  if (!isPrivileged && ws.teacher_id !== userId) return { denied: true };
   const ctx = await createPdf("portrait");
   await buildWorksheetPdf(ctx, ws, { teacherName, date: today() });
   drawFooter(ctx, `${ws.title || "Worksheet"} · ${today()}`);
   return { name: `worksheet-${slug(ws.title)}-${id.slice(0, 8)}.pdf`, bytes: await finalizePdf(ctx) };
 }
 
-async function genLessonPlan(svc: any, id: string, teacherName: string) {
+async function genLessonPlan(
+  svc: any,
+  id: string,
+  teacherName: string,
+  userId: string,
+  isPrivileged: boolean,
+) {
   const [{ data: plan }, { data: phases }] = await Promise.all([
     svc.from("lesson_plans").select("*").eq("id", id).maybeSingle(),
     svc.from("lesson_plan_phases").select("*").eq("lesson_plan_id", id).order("sort_order", { ascending: true }),
   ]);
   if (!plan) return null;
+  if (!isPrivileged && plan.teacher_id !== userId) return { denied: true };
   const ctx = await createPdf("portrait");
   buildLessonPlanPdf(ctx, plan, phases || [], { teacherName, date: today() });
   drawFooter(ctx, `${plan.title || "Plán hodiny"} · ${today()}`);
   return { name: `plan-${slug(plan.title)}-${id.slice(0, 8)}.pdf`, bytes: await finalizePdf(ctx) };
 }
 
-async function genSchedule(svc: any, id: string, teacherName: string) {
+async function genSchedule(
+  svc: any,
+  id: string,
+  teacherName: string,
+  userId: string,
+  isPrivileged: boolean,
+) {
   const [{ data: klass }, { data: slots }] = await Promise.all([
     svc.from("classes").select("id,name,field_of_study,year").eq("id", id).maybeSingle(),
     svc.from("class_schedule_slots").select("*").eq("class_id", id),
   ]);
   if (!klass) return null;
+  if (!isPrivileged) {
+    const { data: membership } = await svc
+      .from("class_teachers")
+      .select("class_id")
+      .eq("class_id", id)
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (!membership) return { denied: true };
+  }
   const ctx = await createPdf("landscape");
   buildSchedulePdf(ctx, klass, slots || [], { teacherName, date: today() });
   drawFooter(ctx, `Rozvrh ${klass.name || ""} · ${today()}`);
@@ -101,19 +130,24 @@ Deno.serve(async (req) => {
     }
 
     const svc = createClient(SUPABASE_URL, SERVICE_ROLE);
-    const { data: prof } = await svc.from("profiles").select("first_name,last_name").eq("id", userId).maybeSingle();
+    const [{ data: prof }, { data: roles }] = await Promise.all([
+      svc.from("profiles").select("first_name,last_name").eq("id", userId).maybeSingle(),
+      svc.from("user_roles").select("role").eq("user_id", userId),
+    ]);
     const teacherName = [prof?.first_name, prof?.last_name].filter(Boolean).join(" ") || "";
+    const isPrivileged = !!roles?.some((r: any) => r.role === "admin" || r.role === "school_admin");
 
     const zip = new JSZip();
     const errors: string[] = [];
 
     for (const id of body.ids) {
       try {
-        let r: { name: string; bytes: Uint8Array } | null = null;
-        if (body.type === "worksheet") r = await genWorksheet(svc, id, teacherName);
-        else if (body.type === "lesson_plan") r = await genLessonPlan(svc, id, teacherName);
-        else if (body.type === "schedule") r = await genSchedule(svc, id, teacherName);
-        if (r) zip.file(r.name, r.bytes);
+        let r: { name: string; bytes: Uint8Array } | { denied: true } | null = null;
+        if (body.type === "worksheet") r = await genWorksheet(svc, id, teacherName, userId, isPrivileged);
+        else if (body.type === "lesson_plan") r = await genLessonPlan(svc, id, teacherName, userId, isPrivileged);
+        else if (body.type === "schedule") r = await genSchedule(svc, id, teacherName, userId, isPrivileged);
+        if (r && "denied" in r) errors.push(`${id}: přístup odepřen`);
+        else if (r) zip.file(r.name, r.bytes);
         else errors.push(`${id}: nenalezeno`);
       } catch (e: any) {
         errors.push(`${id}: ${e?.message ?? e}`);
