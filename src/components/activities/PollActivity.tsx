@@ -26,6 +26,7 @@ const PollActivity = ({
   sessionId,
   questionIndex,
   playerId,
+  joinToken,
   onComplete,
 }: Props) => {
   const [selected, setSelected] = useState<string[]>([]);
