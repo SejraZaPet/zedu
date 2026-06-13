@@ -70,12 +70,12 @@ export function useSchoolBranding() {
     let active = true;
     (async () => {
       const { data } = await supabase
-        .from("schools")
+        .from("schools_public" as any)
         .select("id, name, subdomain, custom_logo_url, custom_primary_color, custom_welcome_text, registration_code")
         .eq("subdomain", sub)
         .maybeSingle();
       if (!active) return;
-      cached = (data as SchoolBranding) ?? null;
+      cached = (data as unknown as SchoolBranding) ?? null;
       setBranding(cached);
       setLoading(false);
       if (cached?.custom_primary_color) {
