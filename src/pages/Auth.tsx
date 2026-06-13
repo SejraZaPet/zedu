@@ -711,7 +711,16 @@ const Auth = () => {
             {/* Password */}
             <div>
               <Label htmlFor="regPassword">Heslo</Label>
-              <Input id="regPassword" type="password" value={regPassword} onChange={(e) => setRegPassword(e.target.value)} required minLength={6} className="mt-1" />
+              <div className="relative">
+                <Input id="regPassword" type={showRegPassword ? "text" : "password"} value={regPassword} onChange={(e) => setRegPassword(e.target.value)} required minLength={6} className="mt-1 pr-10" />
+                <button
+                  type="button"
+                  onClick={() => setShowRegPassword(!showRegPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showRegPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
             <div>
               <Label htmlFor="regPasswordConfirm">Heslo znovu</Label>
