@@ -611,10 +611,12 @@ const UsersManager = () => {
                       }} className="text-yellow-400 hover:bg-yellow-500/10 h-7 w-7 p-0">
                         <KeyRound className="w-4 h-4" />
                       </Button>
-                      <Button size="sm" variant="ghost" onClick={(e) => {
+                      <Button size="sm" variant="ghost" onClick={async (e) => {
                         e.stopPropagation();
                         setPrintDialogUser(user);
-                        setPrintPassword(user.login_password || "");
+                        setPrintPassword("");
+                        const { data: pwd } = await supabase.rpc("get_login_password", { _profile_id: user.id });
+                        setPrintPassword((pwd as string | null) || "");
                       }} className="text-blue-400 hover:bg-blue-500/10 h-7 w-7 p-0">
                         <Printer className="w-4 h-4" />
                       </Button>
