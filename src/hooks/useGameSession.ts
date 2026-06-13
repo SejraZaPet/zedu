@@ -37,7 +37,7 @@ export function useGameSession(sessionId: string | undefined, refetchTrigger?: n
 
     const [sessionRes, playersRes, responsesRes] = await Promise.all([
       supabase.from("game_sessions").select("*").eq("id", sessionId).single(),
-      supabase.from("game_players").select("*").eq("session_id", sessionId).order("total_score", { ascending: false }),
+      supabase.from("game_players_public").select("*").eq("session_id", sessionId).order("total_score", { ascending: false }),
       supabase.from("game_responses").select("*").eq("session_id", sessionId),
     ]);
 
