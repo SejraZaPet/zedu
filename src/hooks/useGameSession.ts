@@ -45,13 +45,37 @@ export function useGameSession(sessionId: string | undefined, refetchTrigger?: n
 
     if (sessionRes.data) {
       const row = sessionRes.data as any;
+      let activityData: any = (row.activity_data_safe as any) ?? [];
+
+      // If current user is the session owner, fetch unsanitized activity_data
+      // (with answers[].correct flags) from the full game_sessions table.
+      // RLS allows SELECT to auth.uid() = teacher_id.
+      try {
+        const { data: userData } = await supabase.auth.getUser();
+        const uid = userData?.user?.id;
+        if (uid && row.teacher_id && uid === row.teacher_id) {
+          const { data: full } = await supabase
+            .from("game_sessions")
+            .select("activity_data")
+            .eq("id", sessionId)
+            .single();
+          if (full && (full as any).activity_data) {
+            activityData = (full as any).activity_data;
+          }
+        }
+      } catch {
+        // ignore — fall back to safe view
+      }
+
+      if (!mountedRef.current) return;
       setSession({
         ...row,
-        activity_data: (row.activity_data_safe as any) ?? [],
+        activity_data: activityData,
         settings: row.settings as any,
         teams: row.teams ?? { teams: [] },
       } as unknown as GameSession);
     }
+
     if (playersRes.data) setPlayers(playersRes.data as GamePlayer[]);
     if (responsesRes.data) setResponses(responsesRes.data as GameResponse[]);
     setLoading(false);
