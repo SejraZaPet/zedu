@@ -2655,6 +2655,10 @@ export type Database = {
         Args: { _amount: number; _student: string }
         Returns: undefined
       }
+      can_access_realtime_topic: {
+        Args: { _topic: string; _uid: string }
+        Returns: boolean
+      }
       can_access_textbooks: { Args: { _user_id: string }; Returns: boolean }
       cancel_notification: { Args: { _broadcast_id: string }; Returns: boolean }
       claim_export_job: {
