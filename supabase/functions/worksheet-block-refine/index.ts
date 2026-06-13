@@ -1,5 +1,6 @@
 // Refine a single worksheet block based on a quick action or custom instruction.
 // Returns the refined block + a human-readable summary of changes.
+import { requireAuth } from "../_shared/auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -53,6 +54,13 @@ const QUICK_ACTION_INSTRUCTIONS: Record<string, string> = {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  const auth = await requireAuth(req);
+  if (!auth.ok) {
+    return new Response(JSON.stringify(auth.body), {
+      status: auth.status, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   try {
