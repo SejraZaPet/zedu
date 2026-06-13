@@ -75,7 +75,7 @@ export function useSchoolBranding() {
         .eq("subdomain", sub)
         .maybeSingle();
       if (!active) return;
-      cached = (data as SchoolBranding) ?? null;
+      cached = (data as unknown as SchoolBranding) ?? null;
       setBranding(cached);
       setLoading(false);
       if (cached?.custom_primary_color) {
