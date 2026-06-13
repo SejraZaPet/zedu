@@ -36,7 +36,7 @@ export function useGameSession(sessionId: string | undefined, refetchTrigger?: n
     }
 
     const [sessionRes, playersRes, responsesRes] = await Promise.all([
-      supabase.from("game_sessions").select("*").eq("id", sessionId).single(),
+      supabase.from("game_sessions_player_view" as any).select("*").eq("id", sessionId).single(),
       supabase.from("game_players_public").select("*").eq("session_id", sessionId).order("total_score", { ascending: false }),
       supabase.from("game_responses").select("*").eq("session_id", sessionId),
     ]);
@@ -44,11 +44,12 @@ export function useGameSession(sessionId: string | undefined, refetchTrigger?: n
     if (!mountedRef.current) return;
 
     if (sessionRes.data) {
+      const row = sessionRes.data as any;
       setSession({
-        ...sessionRes.data,
-        activity_data: (sessionRes.data.activity_data as any) ?? [],
-        settings: sessionRes.data.settings as any,
-        teams: (sessionRes.data as any).teams ?? { teams: [] },
+        ...row,
+        activity_data: (row.activity_data_safe as any) ?? [],
+        settings: row.settings as any,
+        teams: row.teams ?? { teams: [] },
       } as unknown as GameSession);
     }
     if (playersRes.data) setPlayers(playersRes.data as GamePlayer[]);
@@ -70,16 +71,16 @@ export function useGameSession(sessionId: string | undefined, refetchTrigger?: n
       .channel(`game-${sessionId}-${Date.now()}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "game_sessions", filter: `id=eq.${sessionId}` }, (payload) => {
         if (payload.new) {
-          // Merge with previous state to guard against partial payloads (e.g. when only whiteboard_data changes)
+          // Merge with previous state to guard against partial payloads.
+          // IMPORTANT: NEVER copy activity_data from the realtime payload — it contains
+          // the unsanitized quiz data (with correct-answer flags). activity_data is sourced
+          // exclusively from game_sessions_player_view via fetchData() polling.
           setSession((prev) => {
-            const incoming = payload.new as any;
+            const incoming = { ...(payload.new as any) };
+            delete incoming.activity_data;
             const merged = { ...(prev as any), ...incoming };
-            // Preserve heavy fields if incoming has them as null/empty due to replica identity quirks
-            if ((incoming.activity_data == null || (Array.isArray(incoming.activity_data) && incoming.activity_data.length === 0)) && prev?.activity_data) {
-              merged.activity_data = prev.activity_data;
-            }
             if (incoming.settings == null && (prev as any)?.settings) merged.settings = (prev as any).settings;
-            merged.activity_data = merged.activity_data ?? [];
+            merged.activity_data = (prev as any)?.activity_data ?? [];
             merged.teams = merged.teams ?? { teams: [] };
             return merged as unknown as GameSession;
           });
