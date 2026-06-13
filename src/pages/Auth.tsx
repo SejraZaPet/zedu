@@ -336,6 +336,35 @@ const Auth = () => {
     setLoading(false);
   };
 
+  if (registrationSuccess) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+        <div className="w-full max-w-md">
+          <div className="text-center">
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+              <CheckCircle2 className="w-8 h-8 text-primary" />
+            </div>
+            <h1 className="font-heading text-2xl font-bold">Registrace byla úspěšně odeslána!</h1>
+            <p className="text-sm text-muted-foreground mt-3">
+              Na e-mail <strong>{registeredEmail}</strong> jsme odeslali ověřovací odkaz. Klikněte na něj a potvrďte svůj účet.
+            </p>
+            {role !== "rodic" && (
+              <p className="text-sm text-muted-foreground mt-2 mb-6">
+                Po potvrzení e-mailu bude váš účet čekat na schválení administrátorem.
+              </p>
+            )}
+            <Button
+              className="mt-6"
+              onClick={() => { setRegistrationSuccess(false); setMode("login"); }}
+            >
+              Zpět na přihlášení
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (forgotPassword) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
