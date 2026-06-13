@@ -36,7 +36,7 @@ export function useGameSession(sessionId: string | undefined, refetchTrigger?: n
     }
 
     const [sessionRes, playersRes, responsesRes] = await Promise.all([
-      supabase.from("game_sessions").select("*").eq("id", sessionId).single(),
+      supabase.from("game_sessions_player_view" as any).select("*").eq("id", sessionId).single(),
       supabase.from("game_players_public").select("*").eq("session_id", sessionId).order("total_score", { ascending: false }),
       supabase.from("game_responses").select("*").eq("session_id", sessionId),
     ]);
@@ -44,11 +44,12 @@ export function useGameSession(sessionId: string | undefined, refetchTrigger?: n
     if (!mountedRef.current) return;
 
     if (sessionRes.data) {
+      const row = sessionRes.data as any;
       setSession({
-        ...sessionRes.data,
-        activity_data: (sessionRes.data.activity_data as any) ?? [],
-        settings: sessionRes.data.settings as any,
-        teams: (sessionRes.data as any).teams ?? { teams: [] },
+        ...row,
+        activity_data: (row.activity_data_safe as any) ?? [],
+        settings: row.settings as any,
+        teams: row.teams ?? { teams: [] },
       } as unknown as GameSession);
     }
     if (playersRes.data) setPlayers(playersRes.data as GamePlayer[]);
