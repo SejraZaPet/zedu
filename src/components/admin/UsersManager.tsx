@@ -1316,7 +1316,7 @@ const UsersManager = () => {
                 className="mt-1 font-mono"
               />
               <p className="text-xs text-muted-foreground mt-1">
-                {printDialogUser?.login_password ? "✅ Heslo je uloženo v systému" : "⚠️ Heslo není uloženo – zadejte ručně nebo použijte reset hesla"}
+                {printPassword ? "✅ Heslo je uloženo v systému" : "⚠️ Heslo není uloženo – zadejte ručně nebo použijte reset hesla"}
               </p>
             </div>
           </div>
