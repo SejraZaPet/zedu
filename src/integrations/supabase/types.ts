@@ -1547,6 +1547,32 @@ export type Database = {
         }
         Relationships: []
       }
+      profile_credentials: {
+        Row: {
+          encrypted_password: string
+          profile_id: string
+          updated_at: string
+        }
+        Insert: {
+          encrypted_password: string
+          profile_id: string
+          updated_at?: string
+        }
+        Update: {
+          encrypted_password?: string
+          profile_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_credentials_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -2750,7 +2776,9 @@ export type Database = {
       generate_game_code: { Args: never; Returns: string }
       generate_school_registration_code: { Args: never; Returns: string }
       generate_teacher_join_code: { Args: never; Returns: string }
+      get_login_password: { Args: { _profile_id: string }; Returns: string }
       get_user_school_id: { Args: { _user_id: string }; Returns: string }
+      has_login_credential: { Args: { _profile_id: string }; Returns: boolean }
       increment_player_score: {
         Args: { _player_id: string; _score_delta: number }
         Returns: undefined
