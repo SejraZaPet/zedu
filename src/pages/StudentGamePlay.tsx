@@ -300,14 +300,16 @@ const StudentGamePlay = () => {
                       onComplete={async (score, maxScore) => {
                         if (!sessionId || !playerId) return;
                         try {
-                          await supabase.from("game_responses").insert({
-                            session_id: sessionId,
-                            player_id: playerId,
-                            question_index: session?.current_question_index ?? 0,
-                            answer: {},
-                            is_correct: score > 0,
-                            score: maxScore > 0 ? Math.round((score / maxScore) * 100) : 0,
-                            response_time_ms: 0,
+                          await supabase.functions.invoke("submit-activity-response", {
+                            body: {
+                              joinToken,
+                              playerId,
+                              sessionId,
+                              questionIndex: session?.current_question_index ?? 0,
+                              isCorrect: score > 0,
+                              score: maxScore > 0 ? Math.round((score / maxScore) * 100) : 0,
+                              responseTimeMs: 0,
+                            },
                           });
                         } catch (e) {
                           console.error("Failed to save mcq result:", e);
