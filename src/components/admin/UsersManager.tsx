@@ -466,16 +466,19 @@ const UsersManager = () => {
             size="sm"
             variant="outline"
             className="gap-2"
-            onClick={() => {
+            onClick={async () => {
               const selectedUsers = users.filter(u => selectedIds.has(u.id));
-              const cards = selectedUsers.map(u => ({
-                firstName: u.first_name || "",
-                lastName: u.last_name || "",
-                email: u.email || "",
-                password: u.login_password || "–",
-                role: u.role || "user",
-                username: u.username || "",
-                studentCode: u.role === "user" ? (u.student_code || "") : "",
+              const cards = await Promise.all(selectedUsers.map(async (u) => {
+                const { data: pwd } = await supabase.rpc("get_login_password", { _profile_id: u.id });
+                return {
+                  firstName: u.first_name || "",
+                  lastName: u.last_name || "",
+                  email: u.email || "",
+                  password: (pwd as string | null) || "–",
+                  role: u.role || "user",
+                  username: u.username || "",
+                  studentCode: u.role === "user" ? (u.student_code || "") : "",
+                };
               }));
               printLoginCards(cards);
             }}
