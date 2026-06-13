@@ -5,7 +5,7 @@ const GdprPage = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <SiteHeader />
-      <main className="flex-1 max-w-3xl mx-auto px-4 py-12 w-full">
+      <main className="flex-1 max-w-3xl mx-auto px-4 py-12 w-full" style={{ paddingTop: "calc(70px + 3rem)" }}>
         <h1 className="font-heading text-3xl font-bold mb-6">Zásady ochrany osobních údajů</h1>
 
         <div className="rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/20 p-4 mb-8 text-sm text-amber-900 dark:text-amber-200">
