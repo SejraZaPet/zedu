@@ -68,7 +68,7 @@ const Hero = () => {
           </h1>
 
           <p
-            className="text-base md:text-lg text-white/75 max-w-xl mx-auto mb-8 mt-4 animate-fade-in-up leading-relaxed"
+            className="text-base md:text-lg text-white max-w-xl mx-auto mb-8 mt-4 animate-fade-in-up leading-relaxed drop-shadow-md"
             style={{ animationDelay: "0.4s" }}
           >
             Kompletní platforma pro moderní výuku. Učebnice, živé hry, rozvrh a AI — vše na jednom místě.
