@@ -15,6 +15,7 @@ interface Props {
   sessionId?: string;
   questionIndex?: number;
   playerId?: string;
+  joinToken?: string;
   onComplete?: () => void;
 }
 
