@@ -23,6 +23,8 @@ const VAPID_SUBJECT = /^(mailto:|https?:\/\/)/i.test(RAW_SUBJECT)
   ? RAW_SUBJECT
   : `mailto:${RAW_SUBJECT.includes("@") ? RAW_SUBJECT : "noreply@zedu.cz"}`;
 
+const INTERNAL_SECRET = "ad7e66fec60ca9ad27b8e5c355b845585233368663a949ec1c394d525bdcf610";
+
 let _vapidReady = false;
 let _vapidError: string | null = null;
 function ensureVapid() {
@@ -94,6 +96,15 @@ Deno.serve(async (req) => {
       title = "ZEdu — testovací notifikace";
       text = "Push notifikace fungují správně. 🎉";
       link = "/profil";
+    }
+
+    if (!body.test) {
+      if (req.headers.get("X-Internal-Secret") !== INTERNAL_SECRET) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     if (!recipient_id) {
