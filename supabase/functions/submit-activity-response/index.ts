@@ -21,7 +21,9 @@ serve(async (req) => {
       score,
       responseTimeMs,
       answer,
+      answerData,
     } = body ?? {};
+    const answerPayload = answerData ?? answer ?? {};
 
     if (!sessionId || typeof sessionId !== "string") {
       return json({ error: "Missing sessionId" }, 400);
