@@ -10,8 +10,12 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { status: 200, headers: corsHeaders });
   }
+  const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
   try {
     const { username } = await req.json();
+    if (!username || typeof username !== "string") {
+      return new Response(JSON.stringify({ email: null }), { status: 200, headers: jsonHeaders });
+    }
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -21,19 +25,11 @@ Deno.serve(async (req) => {
       .select("email")
       .eq("username", username.toLowerCase().trim())
       .maybeSingle();
-    if (error || !data) {
-      return new Response(JSON.stringify({ error: "Uživatelské jméno nenalezeno" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (error || !data?.email) {
+      return new Response(JSON.stringify({ email: null }), { status: 200, headers: jsonHeaders });
     }
-    return new Response(JSON.stringify({ email: data.email }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  } catch (err: any) {
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(JSON.stringify({ email: data.email }), { status: 200, headers: jsonHeaders });
+  } catch {
+    return new Response(JSON.stringify({ email: null }), { status: 200, headers: jsonHeaders });
   }
 });

@@ -99,7 +99,7 @@ const Auth = () => {
       const { data: lookupData, error: lookupError } = await supabase.functions.invoke("lookup-username", {
         body: { username: loginEmail }
       });
-      if (lookupError || !lookupData?.email) {
+      if (lookupError || !lookupData || !lookupData.email) {
         setError("Uživatelské jméno nenalezeno. Zkuste přihlášení pomocí emailu.");
         setLoading(false);
         return;
