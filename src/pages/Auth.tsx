@@ -724,7 +724,16 @@ const Auth = () => {
             </div>
             <div>
               <Label htmlFor="regPasswordConfirm">Heslo znovu</Label>
-              <Input id="regPasswordConfirm" type="password" value={regPasswordConfirm} onChange={(e) => setRegPasswordConfirm(e.target.value)} required className="mt-1" />
+              <div className="relative">
+                <Input id="regPasswordConfirm" type={showRegPasswordConfirm ? "text" : "password"} value={regPasswordConfirm} onChange={(e) => setRegPasswordConfirm(e.target.value)} required className="mt-1 pr-10" />
+                <button
+                  type="button"
+                  onClick={() => setShowRegPasswordConfirm(!showRegPasswordConfirm)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showRegPasswordConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
             {error && <p className="text-sm text-destructive">{error}</p>}
