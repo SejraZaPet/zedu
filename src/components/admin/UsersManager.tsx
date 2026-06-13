@@ -466,16 +466,19 @@ const UsersManager = () => {
             size="sm"
             variant="outline"
             className="gap-2"
-            onClick={() => {
+            onClick={async () => {
               const selectedUsers = users.filter(u => selectedIds.has(u.id));
-              const cards = selectedUsers.map(u => ({
-                firstName: u.first_name || "",
-                lastName: u.last_name || "",
-                email: u.email || "",
-                password: u.login_password || "–",
-                role: u.role || "user",
-                username: u.username || "",
-                studentCode: u.role === "user" ? (u.student_code || "") : "",
+              const cards = await Promise.all(selectedUsers.map(async (u) => {
+                const { data: pwd } = await supabase.rpc("get_login_password", { _profile_id: u.id });
+                return {
+                  firstName: u.first_name || "",
+                  lastName: u.last_name || "",
+                  email: u.email || "",
+                  password: (pwd as string | null) || "–",
+                  role: u.role || "user",
+                  username: u.username || "",
+                  studentCode: u.role === "user" ? (u.student_code || "") : "",
+                };
               }));
               printLoginCards(cards);
             }}
@@ -608,10 +611,12 @@ const UsersManager = () => {
                       }} className="text-yellow-400 hover:bg-yellow-500/10 h-7 w-7 p-0">
                         <KeyRound className="w-4 h-4" />
                       </Button>
-                      <Button size="sm" variant="ghost" onClick={(e) => {
+                      <Button size="sm" variant="ghost" onClick={async (e) => {
                         e.stopPropagation();
                         setPrintDialogUser(user);
-                        setPrintPassword(user.login_password || "");
+                        setPrintPassword("");
+                        const { data: pwd } = await supabase.rpc("get_login_password", { _profile_id: user.id });
+                        setPrintPassword((pwd as string | null) || "");
                       }} className="text-blue-400 hover:bg-blue-500/10 h-7 w-7 p-0">
                         <Printer className="w-4 h-4" />
                       </Button>
@@ -1311,7 +1316,7 @@ const UsersManager = () => {
                 className="mt-1 font-mono"
               />
               <p className="text-xs text-muted-foreground mt-1">
-                {printDialogUser?.login_password ? "✅ Heslo je uloženo v systému" : "⚠️ Heslo není uloženo – zadejte ručně nebo použijte reset hesla"}
+                {printPassword ? "✅ Heslo je uloženo v systému" : "⚠️ Heslo není uloženo – zadejte ručně nebo použijte reset hesla"}
               </p>
             </div>
           </div>
