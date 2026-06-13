@@ -101,20 +101,21 @@ Deno.serve(async (req) => {
 
     // Adapt difficulty: combine XP level + recent success rate
     let targetDifficulty: "easy" | "medium" | "hard" = "medium";
-    if (student_id) {
+    if (effectiveStudentId) {
       const [{ data: xp }, { data: recent }] = await Promise.all([
         supabase
           .from("student_xp")
           .select("level")
-          .eq("student_id", student_id)
+          .eq("student_id", effectiveStudentId)
           .maybeSingle(),
         supabase
           .from("student_practice_sessions")
           .select("score, answers_json")
-          .eq("student_id", student_id)
+          .eq("student_id", effectiveStudentId)
           .order("created_at", { ascending: false })
           .limit(5),
       ]);
+
 
       const level = xp?.level ?? 1;
       let avgPercent = 50;
@@ -223,14 +224,15 @@ Mix obtížností kolem cílové úrovně. Zhruba 4 multiple_choice + 2 true_fal
     const recommendation: string = parsed.recommendation ?? "";
 
     // Persist recommendation (best-effort)
-    if (student_id) {
+    if (effectiveStudentId) {
       await supabase.from("student_practice_recommendations").insert({
-        student_id,
+        student_id: effectiveStudentId,
         lesson_id,
         weak_topics: [],
         recommendation,
       });
     }
+
 
     return new Response(
       JSON.stringify({
