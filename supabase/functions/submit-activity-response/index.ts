@@ -14,7 +14,6 @@ serve(async (req) => {
     const body = await req.json();
     const {
       joinToken,
-      playerId: rawPlayerId,
       sessionId,
       questionIndex,
       isCorrect,
@@ -31,41 +30,37 @@ serve(async (req) => {
     if (typeof questionIndex !== "number" || questionIndex < 0) {
       return json({ error: "Invalid questionIndex" }, 400);
     }
-    if (!joinToken && !rawPlayerId) {
-      return json({ error: "Missing joinToken or playerId" }, 401);
+    if (!joinToken || typeof joinToken !== "string") {
+      return json({ error: "Invalid token" }, 401);
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRole = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const admin = createClient(supabaseUrl, serviceRole);
 
-    // Resolve player: prefer joinToken (validated), fallback to playerId (must belong to session)
-    let playerId: string | null = null;
-    if (joinToken && typeof joinToken === "string") {
-      const { data: players, error } = await admin
-        .from("game_players")
-        .select("id, session_id, token_expires_at")
-        .eq("join_token", joinToken)
-        .limit(1);
-      if (error) throw error;
-      if (!players?.length) return json({ error: "Invalid token" }, 401);
-      const p = players[0];
-      if (p.session_id !== sessionId) return json({ error: "Session mismatch" }, 403);
-      if (p.token_expires_at && new Date(p.token_expires_at) < new Date()) {
-        return json({ error: "Token expired" }, 401);
-      }
-      playerId = p.id;
-    } else {
-      const { data: players, error } = await admin
-        .from("game_players")
-        .select("id, session_id")
-        .eq("id", rawPlayerId)
-        .limit(1);
-      if (error) throw error;
-      if (!players?.length) return json({ error: "Invalid player" }, 401);
-      if (players[0].session_id !== sessionId) return json({ error: "Session mismatch" }, 403);
-      playerId = players[0].id;
+    // Resolve player strictly via joinToken (no rawPlayerId fallback).
+    const { data: players, error: pErr } = await admin
+      .from("game_players")
+      .select("id, session_id, token_expires_at")
+      .eq("join_token", joinToken)
+      .limit(1);
+    if (pErr) throw pErr;
+    if (!players?.length) return json({ error: "Invalid token" }, 401);
+    const p = players[0];
+    if (p.session_id !== sessionId) return json({ error: "Invalid token" }, 401);
+    if (p.token_expires_at && new Date(p.token_expires_at) < new Date()) {
+      return json({ error: "Invalid token" }, 401);
     }
+    const playerId = p.id;
+
+    // Load session activity_data to inspect question type
+    const { data: sess } = await admin
+      .from("game_sessions")
+      .select("activity_data")
+      .eq("id", sessionId)
+      .maybeSingle();
+    const activityData = (sess?.activity_data as any[]) || [];
+    const question = activityData[questionIndex];
 
     // Idempotency
     const { data: existing } = await admin
@@ -79,7 +74,21 @@ serve(async (req) => {
       return json({ success: true, alreadyAnswered: true }, 200);
     }
 
-    const safeScore = typeof score === "number" ? Math.max(-1000, Math.min(1000, Math.round(score))) : 0;
+    // Determine final isCorrect / score
+    let finalIsCorrect = !!isCorrect;
+    let finalScore = typeof score === "number" ? score : 0;
+
+    const hasMcqOptions = Array.isArray(question?.activitySpec?.options);
+    if (hasMcqOptions) {
+      // TODO: client-trusted score for MCQ activity — requires answerData.selectedIndex
+      // to verify server-side. Currently QuizActivity (StudentGamePlay.tsx) only
+      // submits derived score/maxScore without the selected option index, so we cannot
+      // independently recompute correctness here.
+    }
+    // For Poll/Wall and other types without a definitive "correct" answer,
+    // client-supplied isCorrect/score are preserved as-is.
+
+    const safeScore = Math.max(-1000, Math.min(1000, Math.round(finalScore)));
     const safeRt = typeof responseTimeMs === "number" ? Math.max(0, Math.round(responseTimeMs)) : 0;
 
     const { error: insErr } = await admin.from("game_responses").insert({
@@ -87,16 +96,13 @@ serve(async (req) => {
       player_id: playerId,
       question_index: questionIndex,
       answer: answerPayload,
-      is_correct: !!isCorrect,
+      is_correct: finalIsCorrect,
       score: safeScore,
       response_time_ms: safeRt,
     });
     if (insErr) throw insErr;
 
     // NOTE: Intentionally do NOT call increment_player_score here.
-    // Pre-security-fix client inserts never updated total_score for these activities;
-    // preserving that behavior to avoid an unintended scoring change.
-
     return json({ success: true }, 200);
   } catch (e) {
     console.error("submit-activity-response error:", e);
