@@ -365,6 +365,7 @@ export const LessonBlock = ({ block, blockIndex, onActivityComplete, isTeacher }
               sessionId={p.sessionId}
               questionIndex={p.questionIndex}
               playerId={p.playerId}
+              joinToken={p.joinToken}
               onComplete={() => handleComplete(1, 1)}
               onSubmitResponse={(text) => {
                 console.log("Wall response:", text);
