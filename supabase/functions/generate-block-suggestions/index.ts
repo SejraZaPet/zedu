@@ -97,7 +97,16 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const { requireAuth } = await import("../_shared/auth.ts");
+  const auth = await requireAuth(req);
+  if (!auth.ok) {
+    return new Response(JSON.stringify(auth.body), {
+      status: auth.status, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   try {
+
     if (!LOVABLE_API_KEY) {
       return new Response(
         JSON.stringify({ error: "LOVABLE_API_KEY not configured" }),

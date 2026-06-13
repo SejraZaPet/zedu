@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { requireAuth, hasRole } from "../_shared/auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -44,6 +45,14 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const auth = await requireAuth(req);
+  if (!auth.ok) {
+    return new Response(JSON.stringify(auth.body), {
+      status: auth.status,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   try {
     const { lesson_id, student_id, method } = await req.json();
     if (!lesson_id) {
@@ -53,7 +62,26 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Authorization: caller can only request practice for themselves,
+    // unless they're a teacher/admin.
+    let effectiveStudentId: string | null = student_id ?? null;
+    if (effectiveStudentId && effectiveStudentId !== auth.userId) {
+      const [isTeacher, isAdmin] = await Promise.all([
+        hasRole(auth.userId, "teacher"),
+        hasRole(auth.userId, "admin"),
+      ]);
+      if (!isTeacher && !isAdmin) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+    // If no student_id provided, default to the caller.
+    if (!effectiveStudentId) effectiveStudentId = auth.userId;
+
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
 
     // Fetch lesson content
     const { data: lesson, error: lessonErr } = await supabase
