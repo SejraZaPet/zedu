@@ -93,7 +93,7 @@ const Hero = () => {
           </div>
 
           <p
-            className="text-xs text-white/40 mt-4 animate-fade-in-up"
+            className="text-sm text-white/90 mt-4 animate-fade-in-up drop-shadow-md"
             style={{ animationDelay: "0.6s" }}
           >
             Zdarma pro všechny učitele. Bez platební karty.
