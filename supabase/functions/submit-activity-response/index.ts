@@ -21,7 +21,9 @@ serve(async (req) => {
       score,
       responseTimeMs,
       answer,
+      answerData,
     } = body ?? {};
+    const answerPayload = answerData ?? answer ?? {};
 
     if (!sessionId || typeof sessionId !== "string") {
       return json({ error: "Missing sessionId" }, 400);
@@ -84,19 +86,16 @@ serve(async (req) => {
       session_id: sessionId,
       player_id: playerId,
       question_index: questionIndex,
-      answer: answer ?? {},
+      answer: answerPayload,
       is_correct: !!isCorrect,
       score: safeScore,
       response_time_ms: safeRt,
     });
     if (insErr) throw insErr;
 
-    if (safeScore !== 0) {
-      await admin.rpc("increment_player_score", {
-        _player_id: playerId,
-        _score_delta: safeScore,
-      });
-    }
+    // NOTE: Intentionally do NOT call increment_player_score here.
+    // Pre-security-fix client inserts never updated total_score for these activities;
+    // preserving that behavior to avoid an unintended scoring change.
 
     return json({ success: true }, 200);
   } catch (e) {

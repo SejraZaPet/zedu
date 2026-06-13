@@ -11,6 +11,7 @@ interface Props {
   sessionId?: string;
   questionIndex?: number;
   playerId?: string;
+  joinToken?: string;
 }
 
 const WallActivity = ({
@@ -22,6 +23,7 @@ const WallActivity = ({
   sessionId,
   questionIndex,
   playerId,
+  joinToken,
 }: Props) => {
   const [response, setResponse] = useState("");
   const [submittedCount, setSubmittedCount] = useState(0);
@@ -33,16 +35,17 @@ const WallActivity = ({
     onSubmitResponse?.(text);
 
     if (sessionId && playerId) {
-      supabase
-        .from("game_responses")
-        .insert({
-          session_id: sessionId,
-          player_id: playerId,
-          question_index: questionIndex ?? 0,
-          answer: { text },
-          is_correct: true,
-          score: 100,
-          response_time_ms: 0,
+      supabase.functions
+        .invoke("submit-activity-response", {
+          body: {
+            joinToken,
+            sessionId,
+            questionIndex: questionIndex ?? 0,
+            isCorrect: true,
+            score: 100,
+            responseTimeMs: 0,
+            answerData: { text },
+          },
         })
         .then(({ error }) => {
           if (error) console.error("Failed to save wall response:", error);

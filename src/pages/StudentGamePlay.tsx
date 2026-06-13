@@ -280,6 +280,7 @@ const StudentGamePlay = () => {
                       sessionId={sessionId}
                       questionIndex={qi}
                       playerId={playerId}
+                      joinToken={joinToken}
                       onComplete={() => {}}
                     />
                   );
@@ -327,6 +328,7 @@ const StudentGamePlay = () => {
                       ...currentSlideData.activitySpec,
                       sessionId,
                       playerId,
+                      joinToken,
                       questionIndex: session?.current_question_index ?? 0,
                     },
                     visible: true,
