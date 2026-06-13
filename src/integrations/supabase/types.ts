@@ -688,6 +688,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "game_responses_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "game_players_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "game_responses_session_id_fkey"
             columns: ["session_id"]
             isOneToOne: false
@@ -2639,7 +2646,48 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      game_players_public: {
+        Row: {
+          created_at: string | null
+          id: string | null
+          nickname: string | null
+          session_id: string | null
+          total_score: number | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string | null
+          nickname?: string | null
+          session_id?: string | null
+          total_score?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string | null
+          nickname?: string | null
+          session_id?: string | null
+          total_score?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_players_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "game_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_players_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       _fanout_broadcast: { Args: { _broadcast_id: string }; Returns: number }
