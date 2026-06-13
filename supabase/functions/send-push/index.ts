@@ -98,6 +98,15 @@ Deno.serve(async (req) => {
       link = "/profil";
     }
 
+    if (!body.test) {
+      if (req.headers.get("X-Internal-Secret") !== INTERNAL_SECRET) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     if (!recipient_id) {
       return new Response(JSON.stringify({ error: "recipient_id required" }), {
         status: 400,
