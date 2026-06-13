@@ -31,6 +31,10 @@ const Auth = () => {
   const [resetEmail, setResetEmail] = useState("");
   const [resetSent, setResetSent] = useState(false);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showRegPassword, setShowRegPassword] = useState(false);
+  const [showRegPasswordConfirm, setShowRegPasswordConfirm] = useState(false);
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState("");
 
   // Login fields
   const [email, setEmail] = useState("");
@@ -327,9 +331,39 @@ const Auth = () => {
           : "Potvrďte svůj e-mail a vyčkejte na schválení účtu administrátorem.",
     });
 
-    setMode("login");
+    setRegisteredEmail(regEmail);
+    setRegistrationSuccess(true);
     setLoading(false);
   };
+
+  if (registrationSuccess) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+        <div className="w-full max-w-md">
+          <div className="text-center">
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+              <CheckCircle2 className="w-8 h-8 text-primary" />
+            </div>
+            <h1 className="font-heading text-2xl font-bold">Registrace byla úspěšně odeslána!</h1>
+            <p className="text-sm text-muted-foreground mt-3">
+              Na e-mail <strong>{registeredEmail}</strong> jsme odeslali ověřovací odkaz. Klikněte na něj a potvrďte svůj účet.
+            </p>
+            {role !== "rodic" && (
+              <p className="text-sm text-muted-foreground mt-2 mb-6">
+                Po potvrzení e-mailu bude váš účet čekat na schválení administrátorem.
+              </p>
+            )}
+            <Button
+              className="mt-6"
+              onClick={() => { setRegistrationSuccess(false); setMode("login"); }}
+            >
+              Zpět na přihlášení
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (forgotPassword) {
     return (
@@ -677,11 +711,29 @@ const Auth = () => {
             {/* Password */}
             <div>
               <Label htmlFor="regPassword">Heslo</Label>
-              <Input id="regPassword" type="password" value={regPassword} onChange={(e) => setRegPassword(e.target.value)} required minLength={6} className="mt-1" />
+              <div className="relative">
+                <Input id="regPassword" type={showRegPassword ? "text" : "password"} value={regPassword} onChange={(e) => setRegPassword(e.target.value)} required minLength={6} className="mt-1 pr-10" />
+                <button
+                  type="button"
+                  onClick={() => setShowRegPassword(!showRegPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showRegPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
             <div>
               <Label htmlFor="regPasswordConfirm">Heslo znovu</Label>
-              <Input id="regPasswordConfirm" type="password" value={regPasswordConfirm} onChange={(e) => setRegPasswordConfirm(e.target.value)} required className="mt-1" />
+              <div className="relative">
+                <Input id="regPasswordConfirm" type={showRegPasswordConfirm ? "text" : "password"} value={regPasswordConfirm} onChange={(e) => setRegPasswordConfirm(e.target.value)} required className="mt-1 pr-10" />
+                <button
+                  type="button"
+                  onClick={() => setShowRegPasswordConfirm(!showRegPasswordConfirm)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showRegPasswordConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
             {error && <p className="text-sm text-destructive">{error}</p>}
