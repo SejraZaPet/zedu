@@ -13,6 +13,13 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const CRON_SECRET = "d83c069a2ae6808304307fb139962fc47c02c1f836f9b28d23dee61bf43db3b0";
+  if (req.headers.get("X-Cron-Secret") !== CRON_SECRET) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   try {
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
