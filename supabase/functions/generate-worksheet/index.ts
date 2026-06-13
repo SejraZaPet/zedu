@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { requireAuth, hasRole } from "../_shared/auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,6 +10,13 @@ const corsHeaders = {
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  const auth = await requireAuth(req);
+  if (!auth.ok) {
+    return new Response(JSON.stringify(auth.body), {
+      status: auth.status, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 
   try {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -35,7 +43,7 @@ serve(async (req) => {
 
     const { data: plan, error: planErr } = await sb
       .from("lesson_plans")
-      .select("title, subject, grade_band, slides, input_data")
+      .select("title, subject, grade_band, slides, input_data, teacher_id")
       .eq("id", lessonPlanId)
       .single();
 
@@ -44,6 +52,15 @@ serve(async (req) => {
         status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // Authorization: only the owning teacher or an admin can use this plan.
+    const isAdmin = await hasRole(auth.userId, "admin");
+    if (!isAdmin && plan.teacher_id !== auth.userId) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
 
     const slides = (plan.slides as any[]) || [];
     const slidesSummary = slides.map((s: any, i: number) =>
