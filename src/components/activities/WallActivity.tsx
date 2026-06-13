@@ -23,6 +23,7 @@ const WallActivity = ({
   sessionId,
   questionIndex,
   playerId,
+  joinToken,
 }: Props) => {
   const [response, setResponse] = useState("");
   const [submittedCount, setSubmittedCount] = useState(0);
