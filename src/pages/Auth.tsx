@@ -331,7 +331,8 @@ const Auth = () => {
           : "Potvrďte svůj e-mail a vyčkejte na schválení účtu administrátorem.",
     });
 
-    setMode("login");
+    setRegisteredEmail(regEmail);
+    setRegistrationSuccess(true);
     setLoading(false);
   };
 
