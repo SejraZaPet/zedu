@@ -83,7 +83,14 @@ async function generateForType(
   }
 
   if (body.type === "schedule") {
-    // body.id is class_id
+    // body.id is class_id — verify the caller teaches this class (or is admin).
+    const [{ data: adminRole }, { data: membership }] = await Promise.all([
+      svc.from("user_roles").select("role").eq("user_id", userId).eq("role", "admin").maybeSingle(),
+      svc.from("class_teachers").select("class_id").eq("class_id", body.id).eq("user_id", userId).maybeSingle(),
+    ]);
+    if (!adminRole && !membership) {
+      throw new Error("Nemáte oprávnění k této třídě");
+    }
     const [{ data: klass }, { data: slots }] = await Promise.all([
       svc.from("classes").select("id,name,field_of_study,year").eq("id", body.id).maybeSingle(),
       svc.from("class_schedule_slots").select("*").eq("class_id", body.id),
