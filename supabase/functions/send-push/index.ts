@@ -99,7 +99,7 @@ Deno.serve(async (req) => {
     }
 
     if (!body.test) {
-      if (req.headers.get("X-Internal-Secret") !== INTERNAL_SECRET) {
+      if (!INTERNAL_SECRET || req.headers.get("X-Internal-Secret") !== INTERNAL_SECRET) {
         return new Response(JSON.stringify({ error: "Unauthorized" }), {
           status: 401,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
