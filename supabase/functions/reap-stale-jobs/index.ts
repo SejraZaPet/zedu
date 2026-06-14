@@ -13,7 +13,6 @@ Deno.serve(async (req) => {
 
   const CRON_SECRET = Deno.env.get("CRON_SECRET")?.trim();
   const got = req.headers.get("X-Cron-Secret")?.trim();
-  console.log("[reap] secret_len=", CRON_SECRET?.length ?? -1, "got_len=", got?.length ?? -1, "match=", CRON_SECRET === got);
   if (!CRON_SECRET || got !== CRON_SECRET) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
