@@ -48,7 +48,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    const newPassword = Math.random().toString(36).slice(-8) + "Aa1!";
+    // Use a CSPRNG for the generated password.
+    const _bytes = new Uint8Array(12);
+    crypto.getRandomValues(_bytes);
+    const newPassword = btoa(String.fromCharCode(..._bytes))
+      .replace(/[+/=]/g, "")
+      .slice(0, 10) + "Aa1!";
     const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(childId, {
       password: newPassword,
     });

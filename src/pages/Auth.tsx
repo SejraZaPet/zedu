@@ -96,11 +96,13 @@ const Auth = () => {
 
     let loginEmail = email.trim();
     if (!loginEmail.includes("@")) {
+      // Pass the password too so the server can verify it before
+      // disclosing the email (prevents user enumeration).
       const { data: lookupData, error: lookupError } = await supabase.functions.invoke("lookup-username", {
-        body: { username: loginEmail }
+        body: { username: loginEmail, password }
       });
       if (lookupError || !lookupData || !lookupData.email) {
-        setError("Uživatelské jméno nenalezeno. Zkuste přihlášení pomocí emailu.");
+        setError("Nesprávné přihlašovací údaje.");
         setLoading(false);
         return;
       }
