@@ -8,7 +8,7 @@ import webpush from "npm:web-push@3.6.7";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const VAPID_PUBLIC =
-  "BOc1Q9DsUHuV5dKOcY2v5-aMRj3NyPf-5qStZhtFa6RaMU2BSjtRVIFdWYuC-GbQ5e3gC5vlK3XPib4wVcD9lfs";
+  "BFDA-bVLZsVt9L4cp4R7_9kQRRdOuMwt7D__zf4KCbAghu4IefvFVmVJJFZnrNyUyVnIjrXP9aAAH47SIC9stLg";
 // Normalize private key: trim whitespace/quotes, convert standard b64 -> url-safe, strip '=' padding.
 const VAPID_PRIVATE = (Deno.env.get("VAPID_PRIVATE_KEY") || "")
   .trim()
