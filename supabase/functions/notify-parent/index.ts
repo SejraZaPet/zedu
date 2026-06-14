@@ -13,7 +13,7 @@ const corsHeaders = {
 const APP_URL = "https://www.zedu.cz";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const INTERNAL_SECRET = "4ad50ab4461e6bce477fc5d949144e1e434f7861e6a281389b8dc8e2319fac8e";
+const INTERNAL_SECRET = Deno.env.get("NOTIFY_PARENT_SECRET");
 
 function emailShell(title: string, bodyHtml: string, ctaUrl: string, ctaLabel: string) {
   return `
@@ -54,7 +54,7 @@ async function sendEmail(to: string, subject: string, html: string) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
-  if (req.headers.get("X-Internal-Secret") !== INTERNAL_SECRET) {
+  if (!INTERNAL_SECRET || req.headers.get("X-Internal-Secret") !== INTERNAL_SECRET) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
