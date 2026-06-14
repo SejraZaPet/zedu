@@ -1,7 +1,7 @@
 // Public VAPID key — safe to ship in client bundle.
 // Private key lives in Supabase Edge Function secrets (VAPID_PRIVATE_KEY).
 export const VAPID_PUBLIC_KEY =
-  "BKv-g73e0ou_IoTM9xe2Jlld00MntQD88gmahEQV2H3a_45rXrnWIpa3h2YGB77hnxQniytP9baipmoFH1HRWQs";
+  "BOc1Q9DsUHuV5dKOcY2v5-aMRj3NyPf-5qStZhtFa6RaMU2BSjtRVIFdWYuC-GbQ5e3gC5vlK3XPib4wVcD9lfs";
 
 export function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
