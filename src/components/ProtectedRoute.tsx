@@ -7,11 +7,27 @@ import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { useAuth } from "@/contexts/AuthContext";
 
+type AppRole = "admin" | "school_admin" | "teacher" | "lektor" | "rodic" | "user";
+
 interface Props {
   children: ReactNode;
+  /** Optional whitelist of roles allowed to view this route. If omitted, any authenticated approved user may access. */
+  allowedRoles?: AppRole[];
 }
 
-const ProtectedRoute = ({ children }: Props) => {
+const roleHome = (role: string | null | undefined): string => {
+  switch (role) {
+    case "admin": return "/admin";
+    case "school_admin": return "/skola";
+    case "teacher": return "/ucitel";
+    case "lektor": return "/ucitel";
+    case "rodic": return "/rodic";
+    case "user": return "/student";
+    default: return "/";
+  }
+};
+
+const ProtectedRoute = ({ children, allowedRoles }: Props) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isLoggedIn, user, role, status, loading: authLoading } = useAuth();
@@ -63,7 +79,6 @@ const ProtectedRoute = ({ children }: Props) => {
       if (cancelled) return;
 
       if (!profile) {
-        // Legacy admin without profile row
         if (role === "admin") setState("ok");
         else setState("pending");
         return;
@@ -132,6 +147,14 @@ const ProtectedRoute = ({ children }: Props) => {
         <SiteFooter />
       </div>
     );
+  }
+
+  // Role check (after auth + status pass)
+  if (allowedRoles && allowedRoles.length > 0 && state === "ok") {
+    const effective = (role as AppRole | null) ?? null;
+    if (!effective || !allowedRoles.includes(effective)) {
+      return <Navigate to={roleHome(effective)} replace />;
+    }
   }
 
   return <>{children}</>;
