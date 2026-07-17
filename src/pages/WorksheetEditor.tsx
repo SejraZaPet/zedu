@@ -333,7 +333,7 @@ export default function WorksheetEditor() {
     queryKey: ["teacher-textbook-subjects", user?.id],
     enabled: !!user?.id,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("teacher_textbooks")
         .select("subject")
         .eq("owner_id", user!.id);
