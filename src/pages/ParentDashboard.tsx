@@ -52,6 +52,8 @@ const ParentDashboard = () => {
   const [addOpen, setAddOpen] = useState(false);
   const [emailNotifEnabled, setEmailNotifEnabled] = useState<boolean | null>(null);
 
+  const [pendingChildCode, setPendingChildCode] = useState<string | null>(null);
+
   const loadAll = async () => {
     if (!user) return;
     setLoading(true);
@@ -65,8 +67,24 @@ const ParentDashboard = () => {
       setStudents([]);
       setStats({});
       setLoading(false);
+      // Detect unlinked child_code from registration
+      try {
+        const pending = window.localStorage.getItem("zedu:pending_child_code");
+        if (pending) {
+          setPendingChildCode(pending);
+          toast({
+            title: "Propojení dítěte se nezdařilo",
+            description: `Kód ${pending} se nepodařilo propojit s žádným žákem. Zadejte kód znovu.`,
+            variant: "destructive",
+          });
+        }
+      } catch { /* ignore */ }
       return;
     }
+
+    // Successfully linked — clear any stale flag
+    try { window.localStorage.removeItem("zedu:pending_child_code"); } catch { /* ignore */ }
+    setPendingChildCode(null);
 
     const { data: profiles } = await supabase
       .from("profiles")
