@@ -247,6 +247,8 @@ const Auth = () => {
     }
     if (role === "rodic" && trimmedChildCode) {
       metadata.child_code = trimmedChildCode;
+      // Flag so ParentDashboard can warn if handle_new_user failed to link the child.
+      try { window.localStorage.setItem("zedu:pending_child_code", trimmedChildCode); } catch { /* ignore */ }
     }
 
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
