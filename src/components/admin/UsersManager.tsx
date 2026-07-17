@@ -48,7 +48,7 @@ interface UserProfile {
   status: string;
   created_at: string;
   role?: string;
-  login_password?: string;
+  
   username?: string;
   student_code?: string;
 }
@@ -162,7 +162,7 @@ const UsersManager = () => {
     setLoading(true);
     const { data: profiles, error } = await supabase
       .from("profiles")
-      .select("id, first_name, last_name, email, school, field_of_study, year, status, created_at, login_password, username, student_code, parent_email")
+      .select("id, first_name, last_name, email, school, field_of_study, year, status, created_at, username, student_code, parent_email")
       .order("created_at", { ascending: false });
 
     if (error) {
