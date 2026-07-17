@@ -134,6 +134,7 @@ import {
   type LessonActivity,
 } from "@/lib/lesson-content-splitter";
 import { useSubjects } from "@/hooks/useSubjects";
+import { useQuery } from "@tanstack/react-query";
 import {
   LessonContentPickerSheet,
   AiSuggestFromLessonDialog,
@@ -326,6 +327,26 @@ export default function WorksheetEditor() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { data: subjectsList } = useSubjects(true);
+
+  // Vlastní předměty učitele z teacher_textbooks.subject (DISTINCT)
+  const { data: teacherSubjects } = useQuery<string[]>({
+    queryKey: ["teacher-textbook-subjects", user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("teacher_textbooks")
+        .select("subject")
+        .eq("owner_id", user!.id);
+      if (error) throw error;
+      const set = new Set<string>();
+      for (const row of (data ?? []) as { subject: string | null }[]) {
+        const s = (row.subject ?? "").trim();
+        if (s) set.add(s);
+      }
+      return Array.from(set).sort((a, b) => a.localeCompare(b, "cs"));
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 
   const serverPdf = usePdfExport();
   const [spec, setSpec] = useState<WorksheetSpec | null>(null);
