@@ -3314,10 +3314,10 @@ function SortableItemBlock({
             e.stopPropagation();
             onDelete();
           }}
-          className="text-muted-foreground hover:text-destructive p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+          className="text-muted-foreground hover:text-destructive inline-flex items-center justify-center h-11 w-11 sm:h-8 sm:w-8 sm:p-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0"
           aria-label="Smazat"
         >
-          <Trash2 className="w-3.5 h-3.5" />
+          <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
         </button>
       </div>
     );
@@ -3334,10 +3334,10 @@ function SortableItemBlock({
           <button
             {...attributes}
             {...listeners}
-            className="text-muted-foreground hover:text-foreground touch-none cursor-grab active:cursor-grabbing"
+            className="text-muted-foreground hover:text-foreground touch-none cursor-grab active:cursor-grabbing inline-flex items-center justify-center h-11 w-11 sm:h-auto sm:w-auto"
             aria-label="Přesunout"
           >
-            <GripVertical className="w-4 h-4" />
+            <GripVertical className="w-5 h-5 sm:w-4 sm:h-4" />
           </button>
           <div className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground text-xs font-semibold flex items-center justify-center">
             {item.itemNumber}
@@ -3345,19 +3345,19 @@ function SortableItemBlock({
           <span className="text-xs font-medium text-primary truncate">{typeLabel}</span>
         </div>
         <div className="flex items-center gap-1 shrink-0">
-          <Button size="sm" variant="ghost" onClick={onMoveUp} title="Nahoru" className="h-8 w-8 p-0">
+          <Button size="sm" variant="ghost" onClick={onMoveUp} title="Nahoru" className="h-11 w-11 sm:h-8 sm:w-8 p-0">
             <ChevronUp className="w-4 h-4" />
           </Button>
-          <Button size="sm" variant="ghost" onClick={onMoveDown} title="Dolů" className="h-8 w-8 p-0">
+          <Button size="sm" variant="ghost" onClick={onMoveDown} title="Dolů" className="h-11 w-11 sm:h-8 sm:w-8 p-0">
             <ChevronDown className="w-4 h-4" />
           </Button>
-          <Button size="sm" variant="ghost" onClick={onCollapse} className="h-8">
-            <Check className="w-4 h-4 mr-1" /> Hotovo
+          <Button size="sm" variant="ghost" onClick={onCollapse} className="h-11 sm:h-8 px-2 sm:px-3">
+            <Check className="w-4 h-4 sm:mr-1" /> <span className="hidden sm:inline">Hotovo</span>
           </Button>
           <Button
             size="sm"
             variant="ghost"
-            className="text-destructive hover:text-destructive h-8 w-8 p-0"
+            className="text-destructive hover:text-destructive h-11 w-11 sm:h-8 sm:w-8 p-0"
             onClick={onDelete}
             title="Smazat blok"
           >
