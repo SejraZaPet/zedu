@@ -1844,6 +1844,52 @@ export default function WorksheetEditor() {
               PDF (server)
             </Button>
 
+            {/* Mobilní overflow menu — sdružuje akce skryté na malých obrazovkách */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="md:hidden shrink-0"
+                  aria-label="Další akce"
+                  title="Další akce"
+                >
+                  <MoreHorizontal className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 bg-popover">
+                <DropdownMenuItem
+                  onClick={undo}
+                  disabled={historyRef.current.length === 0}
+                >
+                  <RotateCcw className="w-4 h-4 mr-2" /> Zpět
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setPreviewOpen(true)}>
+                  <Eye className="w-4 h-4 mr-2" /> Náhled
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setPdfDialogOpen(true)}>
+                  <Printer className="w-4 h-4 mr-2" /> Tisk / PDF
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setShowAiGenerateDialog(true)}
+                  disabled={!activeLessonContent || activeLessonContent.trim().length < 20}
+                >
+                  <Sparkles className="w-4 h-4 mr-2" /> AI pracovní list
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => id && serverPdf.exportOne("worksheet", id)}
+                  disabled={!id || serverPdf.loading}
+                >
+                  {serverPdf.loading ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <FileDown className="w-4 h-4 mr-2" />
+                  )}
+                  PDF (server)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             {/* Publish dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
