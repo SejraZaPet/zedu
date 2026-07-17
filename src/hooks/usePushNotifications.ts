@@ -36,11 +36,43 @@ export function usePushNotifications() {
       const reg = await navigator.serviceWorker.getRegistration("/sw.js");
       const sub = await reg?.pushManager.getSubscription();
       if (Notification.permission !== "granted") return setStatus("default");
-      setStatus(sub ? "subscribed" : "granted-not-subscribed");
+      if (!sub) return setStatus("granted-not-subscribed");
+
+      // Reconcile: verify DB row exists for this endpoint; re-upsert if missing.
+      if (user) {
+        try {
+          const { data: existing } = await supabase
+            .from("push_subscriptions")
+            .select("id")
+            .eq("user_id", user.id)
+            .eq("endpoint", sub.endpoint)
+            .maybeSingle();
+
+          if (!existing) {
+            const json = sub.toJSON() as { endpoint?: string; keys?: { p256dh?: string; auth?: string } };
+            const p256dh = json.keys?.p256dh ?? arrayBufferToBase64(sub.getKey("p256dh"));
+            const auth = json.keys?.auth ?? arrayBufferToBase64(sub.getKey("auth"));
+            await supabase.from("push_subscriptions").upsert(
+              {
+                user_id: user.id,
+                endpoint: sub.endpoint,
+                p256dh,
+                auth,
+                user_agent: navigator.userAgent.slice(0, 500),
+                last_used_at: new Date().toISOString(),
+              },
+              { onConflict: "user_id,endpoint" }
+            );
+          }
+        } catch (e) {
+          console.warn("[push] refresh reconcile failed", e);
+        }
+      }
+      setStatus("subscribed");
     } catch {
       setStatus("default");
     }
-  }, [supported]);
+  }, [supported, user]);
 
   useEffect(() => {
     refresh();
