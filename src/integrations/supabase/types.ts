@@ -1201,6 +1201,30 @@ export type Database = {
         }
         Relationships: []
       }
+      login_attempts: {
+        Row: {
+          attempted_at: string
+          id: number
+          identifier: string
+          ip_address: string | null
+          success: boolean
+        }
+        Insert: {
+          attempted_at?: string
+          id?: number
+          identifier: string
+          ip_address?: string | null
+          success?: boolean
+        }
+        Update: {
+          attempted_at?: string
+          id?: number
+          identifier?: string
+          ip_address?: string | null
+          success?: boolean
+        }
+        Relationships: []
+      }
       marketplace_listings: {
         Row: {
           cover_url: string | null
