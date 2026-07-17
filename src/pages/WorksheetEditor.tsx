@@ -134,6 +134,7 @@ import {
   type LessonActivity,
 } from "@/lib/lesson-content-splitter";
 import { useSubjects } from "@/hooks/useSubjects";
+import { useQuery } from "@tanstack/react-query";
 import {
   LessonContentPickerSheet,
   AiSuggestFromLessonDialog,
@@ -326,6 +327,26 @@ export default function WorksheetEditor() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { data: subjectsList } = useSubjects(true);
+
+  // Vlastní předměty učitele z teacher_textbooks.subject (DISTINCT)
+  const { data: teacherSubjects } = useQuery<string[]>({
+    queryKey: ["teacher-textbook-subjects", user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("teacher_textbooks")
+        .select("subject")
+        .eq("owner_id", user!.id);
+      if (error) throw error;
+      const set = new Set<string>();
+      for (const row of (data ?? []) as { subject: string | null }[]) {
+        const s = (row.subject ?? "").trim();
+        if (s) set.add(s);
+      }
+      return Array.from(set).sort((a, b) => a.localeCompare(b, "cs"));
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 
   const serverPdf = usePdfExport();
   const [spec, setSpec] = useState<WorksheetSpec | null>(null);
@@ -1952,7 +1973,7 @@ export default function WorksheetEditor() {
                           )}
                           <CommandList>
                             <CommandEmpty>Žádný předmět nenalezen.</CommandEmpty>
-                            <CommandGroup>
+                            <CommandGroup heading="Katalog předmětů">
                               <CommandItem
                                 value="__none__"
                                 onSelect={() => {
@@ -1993,6 +2014,46 @@ export default function WorksheetEditor() {
                                 </CommandItem>
                               ))}
                             </CommandGroup>
+                            {(() => {
+                              const catalogLabels = new Set(
+                                subjects.map((s) => s.label.toLowerCase()),
+                              );
+                              const catalogSlugs = new Set(
+                                subjects.map((s) => s.slug.toLowerCase()),
+                              );
+                              const ownSubjects = (teacherSubjects ?? []).filter(
+                                (name) =>
+                                  !catalogLabels.has(name.toLowerCase()) &&
+                                  !catalogSlugs.has(name.toLowerCase()),
+                              );
+                              if (ownSubjects.length === 0) return null;
+                              return (
+                                <CommandGroup heading="Vaše učebnice">
+                                  {ownSubjects.map((name) => (
+                                    <CommandItem
+                                      key={`own-${name}`}
+                                      value={name}
+                                      onSelect={() => {
+                                        setSubject(name);
+                                        setSubjectComboOpen(false);
+                                        setSubjectSearch("");
+                                      }}
+                                    >
+                                      <Check
+                                        className={cn(
+                                          "mr-2 h-4 w-4",
+                                          currentValue.toLowerCase() === name.toLowerCase()
+                                            ? "opacity-100"
+                                            : "opacity-0",
+                                        )}
+                                      />
+                                      <FolderOpen className="mr-2 h-4 w-4 opacity-60 shrink-0" />
+                                      {name}
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              );
+                            })()}
                           </CommandList>
                         </Command>
                       </PopoverContent>
