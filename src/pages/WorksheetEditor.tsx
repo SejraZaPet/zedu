@@ -70,6 +70,7 @@ import {
   Link2,
   XCircle,
   Menu,
+  MoreHorizontal,
   PanelRight,
   CalendarClock,
   Clock,
@@ -1742,7 +1743,7 @@ export default function WorksheetEditor() {
           <Button
             variant="outline"
             size="sm"
-            className="lg:hidden shrink-0"
+            className="md:hidden shrink-0"
             onClick={() => setMobilePaletteOpen(true)}
             title="Otevřít paletu"
           >
@@ -1843,6 +1844,52 @@ export default function WorksheetEditor() {
               PDF (server)
             </Button>
 
+            {/* Mobilní overflow menu — sdružuje akce skryté na malých obrazovkách */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="md:hidden shrink-0"
+                  aria-label="Další akce"
+                  title="Další akce"
+                >
+                  <MoreHorizontal className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 bg-popover">
+                <DropdownMenuItem
+                  onClick={undo}
+                  disabled={historyRef.current.length === 0}
+                >
+                  <RotateCcw className="w-4 h-4 mr-2" /> Zpět
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setPreviewOpen(true)}>
+                  <Eye className="w-4 h-4 mr-2" /> Náhled
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setPdfDialogOpen(true)}>
+                  <Printer className="w-4 h-4 mr-2" /> Tisk / PDF
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setShowAiGenerateDialog(true)}
+                  disabled={!activeLessonContent || activeLessonContent.trim().length < 20}
+                >
+                  <Sparkles className="w-4 h-4 mr-2" /> AI pracovní list
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => id && serverPdf.exportOne("worksheet", id)}
+                  disabled={!id || serverPdf.loading}
+                >
+                  {serverPdf.loading ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <FileDown className="w-4 h-4 mr-2" />
+                  )}
+                  PDF (server)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             {/* Publish dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -1889,10 +1936,11 @@ export default function WorksheetEditor() {
       </div>
 
       <main className="flex-1 container mx-auto px-4 pt-8 pb-6 max-w-[1600px] w-full">
-        <div className="grid gap-4 lg:grid-cols-[240px_minmax(0,1fr)]">
+        <div className="grid gap-4 md:grid-cols-[200px_minmax(0,1fr)] lg:grid-cols-[240px_minmax(0,1fr)]">
 
           {/* ── PALETA ── */}
-          <aside className="hidden lg:block bg-card border border-border rounded-xl p-4 lg:sticky lg:top-[140px] lg:max-h-[calc(100vh-160px)] lg:overflow-y-auto">
+          <aside className="hidden md:block bg-card border border-border rounded-xl p-3 lg:p-4 md:sticky md:top-[140px] md:max-h-[calc(100vh-160px)] md:overflow-y-auto">
+
             {paletteContent}
           </aside>
 
@@ -2217,7 +2265,8 @@ export default function WorksheetEditor() {
 
       {/* Schedule publish dialog */}
       <Dialog open={scheduleDialogOpen} onOpenChange={setScheduleDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+
           <DialogHeader>
             <DialogTitle>Naplánovat publikaci</DialogTitle>
             <DialogDescription>
@@ -2248,7 +2297,8 @@ export default function WorksheetEditor() {
 
       {/* PDF Export dialog */}
       <Dialog open={pdfDialogOpen} onOpenChange={setPdfDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+
           <DialogHeader>
             <DialogTitle>Export PDF</DialogTitle>
             <DialogDescription>
@@ -2342,7 +2392,7 @@ export default function WorksheetEditor() {
 
       {/* Print tip dialog */}
       <Dialog open={showPrintTipDialog} onOpenChange={setShowPrintTipDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Před tiskem PDF</DialogTitle>
             <DialogDescription>
@@ -2385,7 +2435,7 @@ export default function WorksheetEditor() {
 
       {/* AI generate full worksheet */}
       <Dialog open={showAiGenerateDialog} onOpenChange={setShowAiGenerateDialog}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-primary" />
@@ -3266,10 +3316,10 @@ function SortableItemBlock({
             e.stopPropagation();
             onDelete();
           }}
-          className="text-muted-foreground hover:text-destructive p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+          className="text-muted-foreground hover:text-destructive inline-flex items-center justify-center h-11 w-11 sm:h-8 sm:w-8 sm:p-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0"
           aria-label="Smazat"
         >
-          <Trash2 className="w-3.5 h-3.5" />
+          <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
         </button>
       </div>
     );
@@ -3286,10 +3336,10 @@ function SortableItemBlock({
           <button
             {...attributes}
             {...listeners}
-            className="text-muted-foreground hover:text-foreground touch-none cursor-grab active:cursor-grabbing"
+            className="text-muted-foreground hover:text-foreground touch-none cursor-grab active:cursor-grabbing inline-flex items-center justify-center h-11 w-11 sm:h-auto sm:w-auto"
             aria-label="Přesunout"
           >
-            <GripVertical className="w-4 h-4" />
+            <GripVertical className="w-5 h-5 sm:w-4 sm:h-4" />
           </button>
           <div className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground text-xs font-semibold flex items-center justify-center">
             {item.itemNumber}
@@ -3297,19 +3347,19 @@ function SortableItemBlock({
           <span className="text-xs font-medium text-primary truncate">{typeLabel}</span>
         </div>
         <div className="flex items-center gap-1 shrink-0">
-          <Button size="sm" variant="ghost" onClick={onMoveUp} title="Nahoru" className="h-8 w-8 p-0">
+          <Button size="sm" variant="ghost" onClick={onMoveUp} title="Nahoru" className="h-11 w-11 sm:h-8 sm:w-8 p-0">
             <ChevronUp className="w-4 h-4" />
           </Button>
-          <Button size="sm" variant="ghost" onClick={onMoveDown} title="Dolů" className="h-8 w-8 p-0">
+          <Button size="sm" variant="ghost" onClick={onMoveDown} title="Dolů" className="h-11 w-11 sm:h-8 sm:w-8 p-0">
             <ChevronDown className="w-4 h-4" />
           </Button>
-          <Button size="sm" variant="ghost" onClick={onCollapse} className="h-8">
-            <Check className="w-4 h-4 mr-1" /> Hotovo
+          <Button size="sm" variant="ghost" onClick={onCollapse} className="h-11 sm:h-8 px-2 sm:px-3">
+            <Check className="w-4 h-4 sm:mr-1" /> <span className="hidden sm:inline">Hotovo</span>
           </Button>
           <Button
             size="sm"
             variant="ghost"
-            className="text-destructive hover:text-destructive h-8 w-8 p-0"
+            className="text-destructive hover:text-destructive h-11 w-11 sm:h-8 sm:w-8 p-0"
             onClick={onDelete}
             title="Smazat blok"
           >
