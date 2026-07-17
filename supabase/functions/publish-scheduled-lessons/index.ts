@@ -1,6 +1,7 @@
 // Edge function: publishes textbook lessons whose scheduled_publish_at has passed.
 // Triggered by pg_cron every minute via net.http_post.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { getInternalSecret } from "../_shared/internal-secret.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,7 +14,7 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const CRON_SECRET = Deno.env.get("CRON_SECRET");
+  const CRON_SECRET = await getInternalSecret("cron_internal_secret");
   if (!CRON_SECRET || req.headers.get("X-Cron-Secret") !== CRON_SECRET) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },

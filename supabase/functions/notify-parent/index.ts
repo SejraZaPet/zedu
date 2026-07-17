@@ -54,6 +54,7 @@ async function sendEmail(to: string, subject: string, html: string) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
+  const INTERNAL_SECRET = await getInternalSecret("notify_parent_internal_secret");
   if (!INTERNAL_SECRET || req.headers.get("X-Internal-Secret") !== INTERNAL_SECRET) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,

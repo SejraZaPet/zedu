@@ -23,7 +23,7 @@ const VAPID_SUBJECT = /^(mailto:|https?:\/\/)/i.test(RAW_SUBJECT)
   ? RAW_SUBJECT
   : `mailto:${RAW_SUBJECT.includes("@") ? RAW_SUBJECT : "noreply@zedu.cz"}`;
 
-const INTERNAL_SECRET = Deno.env.get("SEND_PUSH_SECRET");
+import { getInternalSecret } from "../_shared/internal-secret.ts";
 
 let _vapidReady = false;
 let _vapidError: string | null = null;
@@ -99,6 +99,7 @@ Deno.serve(async (req) => {
     }
 
     if (!body.test) {
+      const INTERNAL_SECRET = await getInternalSecret("send_push_internal_secret");
       if (!INTERNAL_SECRET || req.headers.get("X-Internal-Secret") !== INTERNAL_SECRET) {
         return new Response(JSON.stringify({ error: "Unauthorized" }), {
           status: 401,
