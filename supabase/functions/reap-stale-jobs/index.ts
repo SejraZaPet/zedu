@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getInternalSecret } from "../_shared/internal-secret.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,7 +12,7 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const CRON_SECRET = Deno.env.get("CRON_SECRET")?.trim();
+  const CRON_SECRET = (await getInternalSecret("cron_internal_secret"))?.trim();
   const got = req.headers.get("X-Cron-Secret")?.trim();
   if (!CRON_SECRET || got !== CRON_SECRET) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
