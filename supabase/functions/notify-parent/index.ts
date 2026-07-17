@@ -13,7 +13,7 @@ const corsHeaders = {
 const APP_URL = "https://www.zedu.cz";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const INTERNAL_SECRET = Deno.env.get("NOTIFY_PARENT_SECRET");
+import { getInternalSecret } from "../_shared/internal-secret.ts";
 
 function emailShell(title: string, bodyHtml: string, ctaUrl: string, ctaLabel: string) {
   return `
