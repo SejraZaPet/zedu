@@ -2265,7 +2265,8 @@ export default function WorksheetEditor() {
 
       {/* Schedule publish dialog */}
       <Dialog open={scheduleDialogOpen} onOpenChange={setScheduleDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+
           <DialogHeader>
             <DialogTitle>Naplánovat publikaci</DialogTitle>
             <DialogDescription>
@@ -2296,7 +2297,8 @@ export default function WorksheetEditor() {
 
       {/* PDF Export dialog */}
       <Dialog open={pdfDialogOpen} onOpenChange={setPdfDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+
           <DialogHeader>
             <DialogTitle>Export PDF</DialogTitle>
             <DialogDescription>
@@ -2390,7 +2392,7 @@ export default function WorksheetEditor() {
 
       {/* Print tip dialog */}
       <Dialog open={showPrintTipDialog} onOpenChange={setShowPrintTipDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Před tiskem PDF</DialogTitle>
             <DialogDescription>
@@ -2433,7 +2435,7 @@ export default function WorksheetEditor() {
 
       {/* AI generate full worksheet */}
       <Dialog open={showAiGenerateDialog} onOpenChange={setShowAiGenerateDialog}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-primary" />
