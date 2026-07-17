@@ -145,7 +145,7 @@ Deno.serve(async (req) => {
           sent++;
         } catch (err: unknown) {
           const code = (err as { statusCode?: number })?.statusCode;
-          if (code === 404 || code === 410) stale.push(s.id);
+          if (code === 404 || code === 410 || code === 401 || code === 403) stale.push(s.id);
           else console.error("[send-push] error", code, (err as Error)?.message);
         }
       })
