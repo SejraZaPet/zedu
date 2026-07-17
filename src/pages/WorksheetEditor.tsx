@@ -70,6 +70,7 @@ import {
   Link2,
   XCircle,
   Menu,
+  MoreHorizontal,
   PanelRight,
   CalendarClock,
   Clock,
@@ -1742,7 +1743,7 @@ export default function WorksheetEditor() {
           <Button
             variant="outline"
             size="sm"
-            className="lg:hidden shrink-0"
+            className="md:hidden shrink-0"
             onClick={() => setMobilePaletteOpen(true)}
             title="Otevřít paletu"
           >
@@ -1889,10 +1890,11 @@ export default function WorksheetEditor() {
       </div>
 
       <main className="flex-1 container mx-auto px-4 pt-8 pb-6 max-w-[1600px] w-full">
-        <div className="grid gap-4 lg:grid-cols-[240px_minmax(0,1fr)]">
+        <div className="grid gap-4 md:grid-cols-[200px_minmax(0,1fr)] lg:grid-cols-[240px_minmax(0,1fr)]">
 
           {/* ── PALETA ── */}
-          <aside className="hidden lg:block bg-card border border-border rounded-xl p-4 lg:sticky lg:top-[140px] lg:max-h-[calc(100vh-160px)] lg:overflow-y-auto">
+          <aside className="hidden md:block bg-card border border-border rounded-xl p-3 lg:p-4 md:sticky md:top-[140px] md:max-h-[calc(100vh-160px)] md:overflow-y-auto">
+
             {paletteContent}
           </aside>
 
