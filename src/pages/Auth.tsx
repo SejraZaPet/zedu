@@ -568,7 +568,7 @@ const Auth = () => {
               </div>
               <button
                 type="button"
-                onClick={() => setForgotPassword(true)}
+                onClick={() => navigate("/zapomenute-heslo")}
                 className="text-xs text-primary hover:underline mt-1 text-right w-full"
               >
                 Zapomenuté heslo?

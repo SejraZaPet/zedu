@@ -10,6 +10,8 @@ import HelpDetailPage from "./pages/HelpDetailPage";
 import Auth from "./pages/Auth";
 import OAuthConsent from "./pages/OAuthConsent";
 import ResetPassword from "./pages/ResetPassword";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetHeslo from "./pages/ResetHeslo";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import SubjectPage from "./pages/SubjectPage";
@@ -85,6 +87,8 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/zapomenute-heslo" element={<ForgotPassword />} />
+            <Route path="/reset-heslo" element={<ResetHeslo />} />
             <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
             <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
             <Route path="/skola" element={<ProtectedRoute><SchoolAdmin /></ProtectedRoute>} />

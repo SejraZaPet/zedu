@@ -61,3 +61,10 @@ verify_jwt = false
 
 [functions.ai-practice-rag]
 verify_jwt = false
+
+[functions.request-password-reset]
+verify_jwt = false
+
+[functions.confirm-password-reset]
+verify_jwt = false
+
