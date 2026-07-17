@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "sdk_version": "0.23.0",
+  "path": "/functions/v1/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://rnndtpfmkanxbckdbflm.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "zedu-mcp",
+      "version": "0.1.0",
+      "title": "ZEdu"
+    },
+    "tools": [
+      {
+        "name": "whoami",
+        "title": "Kdo jsem",
+        "description": "Vrátí identitu aktuálně přihlášeného uživatele ZEdu (user_id, email).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_my_classes",
+        "title": "Seznam mých tříd",
+        "description": "Vrátí seznam tříd, které přihlášený učitel vlastní, nebo (u studenta) tříd, ve kterých je členem. Data se čtou pod RLS jako přihlášený uživatel.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_my_assignments",
+        "title": "Seznam mých úloh",
+        "description": "Vrátí úlohy (assignments) viditelné přihlášenému uživateli pod RLS. Volitelně lze omezit počet.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "limit": {
+              "description": "Maximální počet vrácených úloh (výchozí 25).",
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            }
+          }
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
