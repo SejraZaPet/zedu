@@ -250,6 +250,33 @@ const ParentDashboard = () => {
         )}
         </div>
 
+        {pendingChildCode && students.length === 0 && (
+          <div className="mb-6 rounded-xl border border-destructive/40 bg-destructive/5 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="flex-1 text-sm">
+              <p className="font-semibold text-destructive">Propojení dítěte se nezdařilo</p>
+              <p className="text-muted-foreground">
+                Kód <strong>{pendingChildCode}</strong> se při registraci nepodařilo propojit s žádným žákem. Zadejte kód znovu.
+              </p>
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <Button size="sm" onClick={() => { setChildCode(pendingChildCode); setAddOpen(true); }}>
+                Zadat kód znovu
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  try { window.localStorage.removeItem("zedu:pending_child_code"); } catch { /* ignore */ }
+                  setPendingChildCode(null);
+                }}
+              >
+                Zavřít
+              </Button>
+            </div>
+          </div>
+        )}
+
+
         {students.length > 0 && (
           <div className="mb-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
             <ChildScheduleWidget
