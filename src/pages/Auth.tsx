@@ -100,29 +100,52 @@ const Auth = () => {
     setError("");
 
     let loginEmail = email.trim();
+    let usedTokenHash = false;
     if (!loginEmail.includes("@")) {
-      // Pass the password too so the server can verify it before
-      // disclosing the email (prevents user enumeration).
+      // Server verifies password once and returns a magic-link token_hash so we
+      // avoid calling signInWithPassword a second time from the client.
       const { data: lookupData, error: lookupError } = await supabase.functions.invoke("lookup-username", {
         body: { username: loginEmail, password }
       });
+      // Handle 429 rate-limit response explicitly
+      if (lookupData?.error) {
+        setError(lookupData.error);
+        setLoading(false);
+        return;
+      }
       if (lookupError || !lookupData || !lookupData.email) {
         setError("Nesprávné přihlašovací údaje.");
         setLoading(false);
         return;
       }
       loginEmail = lookupData.email;
-    }
-    const { error: authError } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
 
-    if (authError) {
-      if (authError.message?.toLowerCase().includes("email not confirmed")) {
-        setError("Nejprve potvrďte svůj e-mail prostřednictvím odkazu, který jsme vám poslali.");
-      } else {
-        setError("Nesprávné přihlašovací údaje.");
+      if (lookupData.token_hash) {
+        const { error: verifyError } = await supabase.auth.verifyOtp({
+          token_hash: lookupData.token_hash,
+          type: "magiclink",
+        });
+        if (verifyError) {
+          setError("Nesprávné přihlašovací údaje.");
+          setLoading(false);
+          return;
+        }
+        usedTokenHash = true;
       }
-      setLoading(false);
-      return;
+    }
+
+    if (!usedTokenHash) {
+      const { error: authError } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
+
+      if (authError) {
+        if (authError.message?.toLowerCase().includes("email not confirmed")) {
+          setError("Nejprve potvrďte svůj e-mail prostřednictvím odkazu, který jsme vám poslali.");
+        } else {
+          setError("Nesprávné přihlašovací údaje.");
+        }
+        setLoading(false);
+        return;
+      }
     }
 
     // Check profile status after successful auth
@@ -247,6 +270,8 @@ const Auth = () => {
     }
     if (role === "rodic" && trimmedChildCode) {
       metadata.child_code = trimmedChildCode;
+      // Flag so ParentDashboard can warn if handle_new_user failed to link the child.
+      try { window.localStorage.setItem("zedu:pending_child_code", trimmedChildCode); } catch { /* ignore */ }
     }
 
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
