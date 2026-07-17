@@ -159,12 +159,48 @@ const SchoolAdmin = () => {
       return;
     }
     // Připojit ke škole + schválit
-    await supabase.from("profiles").update({ school_id: school.id, status: "approved" }).eq("id", signed.user.id);
+    const { error: profErr } = await supabase
+      .from("profiles")
+      .update({ school_id: school.id, status: "approved" })
+      .eq("id", signed.user.id);
+    if (profErr) {
+      setSubmitting(false);
+      toast({
+        title: "Nepodařilo se přiřadit uživatele ke škole",
+        description: profErr.message,
+        variant: "destructive",
+      });
+      return;
+    }
     // Role se vytvoří triggerem; pokud se vyžaduje 'teacher', přepiš.
     if (invRole === "teacher") {
       // smaž 'user' a přidej 'teacher'
-      await supabase.from("user_roles").delete().eq("user_id", signed.user.id).eq("role", "user");
-      await supabase.from("user_roles").insert({ user_id: signed.user.id, role: "teacher" });
+      const { error: delErr } = await supabase
+        .from("user_roles")
+        .delete()
+        .eq("user_id", signed.user.id)
+        .eq("role", "user");
+      if (delErr) {
+        setSubmitting(false);
+        toast({
+          title: "Nepodařilo se odebrat výchozí roli",
+          description: delErr.message,
+          variant: "destructive",
+        });
+        return;
+      }
+      const { error: insErr } = await supabase
+        .from("user_roles")
+        .insert({ user_id: signed.user.id, role: "teacher" });
+      if (insErr) {
+        setSubmitting(false);
+        toast({
+          title: "Role učitel nebyla přidělena",
+          description: insErr.message,
+          variant: "destructive",
+        });
+        return;
+      }
     }
     setSubmitting(false);
     toast({
