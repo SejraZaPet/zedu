@@ -1973,7 +1973,7 @@ export default function WorksheetEditor() {
                           )}
                           <CommandList>
                             <CommandEmpty>Žádný předmět nenalezen.</CommandEmpty>
-                            <CommandGroup>
+                            <CommandGroup heading="Katalog předmětů">
                               <CommandItem
                                 value="__none__"
                                 onSelect={() => {
@@ -2014,6 +2014,46 @@ export default function WorksheetEditor() {
                                 </CommandItem>
                               ))}
                             </CommandGroup>
+                            {(() => {
+                              const catalogLabels = new Set(
+                                subjects.map((s) => s.label.toLowerCase()),
+                              );
+                              const catalogSlugs = new Set(
+                                subjects.map((s) => s.slug.toLowerCase()),
+                              );
+                              const ownSubjects = (teacherSubjects ?? []).filter(
+                                (name) =>
+                                  !catalogLabels.has(name.toLowerCase()) &&
+                                  !catalogSlugs.has(name.toLowerCase()),
+                              );
+                              if (ownSubjects.length === 0) return null;
+                              return (
+                                <CommandGroup heading="Vaše učebnice">
+                                  {ownSubjects.map((name) => (
+                                    <CommandItem
+                                      key={`own-${name}`}
+                                      value={name}
+                                      onSelect={() => {
+                                        setSubject(name);
+                                        setSubjectComboOpen(false);
+                                        setSubjectSearch("");
+                                      }}
+                                    >
+                                      <Check
+                                        className={cn(
+                                          "mr-2 h-4 w-4",
+                                          currentValue.toLowerCase() === name.toLowerCase()
+                                            ? "opacity-100"
+                                            : "opacity-0",
+                                        )}
+                                      />
+                                      <FolderOpen className="mr-2 h-4 w-4 opacity-60 shrink-0" />
+                                      {name}
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              );
+                            })()}
                           </CommandList>
                         </Command>
                       </PopoverContent>
