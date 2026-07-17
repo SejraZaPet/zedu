@@ -77,15 +77,20 @@ const Auth = () => {
     // Wait for role to be resolved before redirecting
     if (authRole === null) return;
 
+    // Only honor same-origin relative redirects (e.g. OAuth consent).
+    const safeRedirect =
+      redirectTo && redirectTo.startsWith("/") && !redirectTo.startsWith("//")
+        ? redirectTo
+        : null;
+
     if (authRole === "admin") {
-      navigate(redirectTo || "/admin", { replace: true });
+      navigate(safeRedirect || "/admin", { replace: true });
     } else if (authRole === "teacher" || authRole === "lektor") {
-      navigate(redirectTo || "/ucitel", { replace: true });
+      navigate(safeRedirect || "/ucitel", { replace: true });
     } else if (authRole === "rodic") {
-      // Always go to /rodic — parents shouldn't be redirected to student/teacher routes
-      navigate("/rodic", { replace: true });
+      navigate(safeRedirect || "/rodic", { replace: true });
     } else {
-      navigate(redirectTo || "/student", { replace: true });
+      navigate(safeRedirect || "/student", { replace: true });
     }
   }, [authLoading, isLoggedIn, authRole, navigate, redirectTo]);
 
