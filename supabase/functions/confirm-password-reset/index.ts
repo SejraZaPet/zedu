@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
       .eq("user_id", row.user_id)
       .is("used_at", null);
 
-    // Mirror plaintext password to profiles.login_password (existing project pattern)
+    // Write-through mailbox: trg_sync_login_password trigger encrypts this into profile_credentials and nulls this column before commit
     await admin
       .from("profiles")
       .update({ login_password: new_password })
