@@ -2906,6 +2906,7 @@ export type Database = {
       generate_game_code: { Args: never; Returns: string }
       generate_school_registration_code: { Args: never; Returns: string }
       generate_teacher_join_code: { Args: never; Returns: string }
+      get_internal_secret: { Args: { _name: string }; Returns: string }
       get_login_password: { Args: { _profile_id: string }; Returns: string }
       get_user_school_id: { Args: { _user_id: string }; Returns: string }
       has_login_credential: { Args: { _profile_id: string }; Returns: boolean }
