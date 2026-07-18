@@ -188,7 +188,6 @@ const ImportTextbookFileDialog = ({
             for (let i = 0; i < pageImages.length; i++) {
               const pageNumber = i + 1;
               const willInsert = pagesNeedingRender.has(pageNumber);
-              console.log("[import-diag] page", pageNumber, "charCount", textPages.find(p => p.pageNumber === pageNumber)?.charCount, "inserted", willInsert);
               if (!willInsert) {
                 pageImageUrls.push("");
                 continue;
