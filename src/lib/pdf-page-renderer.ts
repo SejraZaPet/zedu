@@ -155,7 +155,7 @@ export async function extractPdfEmbeddedImages(
     : -1;
 
   const seen = new Set<string>();
-  const out: Blob[] = [];
+  const out: { pageNumber: number; blob: Blob }[] = [];
 
   // Reusable throwaway canvas — rendering the page is the only reliable way
   // to force pdfjs to transfer image XObjects onto the main thread so
