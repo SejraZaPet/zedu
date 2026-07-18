@@ -550,18 +550,42 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
         </div>
       )}
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" className="w-full"><Plus className="w-4 h-4 mr-2" />Přidat blok</Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="center" side="top" className="w-48 max-h-[360px] overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20">
-          {BLOCK_TYPES.map((bt) => (
-            <DropdownMenuItem key={bt.type} onClick={() => addBlock(bt.type)} className="py-1.5 px-2 text-sm">
-              <span className="w-5 text-center mr-2">{bt.icon}</span>{bt.label}
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <div className="flex items-center gap-2 flex-wrap justify-center pt-2">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button type="button" className="be-add-primary">
+              <Plus className="w-4 h-4" /> Přidat blok
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="center" side="top" className="w-56 max-h-[360px] overflow-y-auto">
+            {BLOCK_TYPES.map((bt) => (
+              <DropdownMenuItem key={bt.type} onClick={() => addBlock(bt.type)} className="py-1.5 px-2 text-sm">
+                <span className="w-5 text-center mr-2">{bt.icon}</span>{bt.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {([
+          { key: "text", label: "Text", types: ["heading", "paragraph", "bullet_list", "quote", "callout", "summary"] },
+          { key: "table", label: "Tabulka", types: ["table", "accordion", "card_grid", "two_column", "hierarchy", "divider"] },
+          { key: "media", label: "Média", types: ["image", "gallery", "image_text", "youtube", "activity", "lesson_link"] },
+        ] as const).map((cat) => (
+          <DropdownMenu key={cat.key}>
+            <DropdownMenuTrigger asChild>
+              <button type="button" className="be-add-pill">{cat.label}</button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center" side="top" className="w-52 max-h-[360px] overflow-y-auto">
+              {BLOCK_TYPES.filter((bt) => (cat.types as readonly string[]).includes(bt.type)).map((bt) => (
+                <DropdownMenuItem key={bt.type} onClick={() => addBlock(bt.type)} className="py-1.5 px-2 text-sm">
+                  <span className="w-5 text-center mr-2">{bt.icon}</span>{bt.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ))}
+      </div>
+
     </div>
   );
 };
