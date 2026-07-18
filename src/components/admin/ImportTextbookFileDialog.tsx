@@ -74,6 +74,7 @@ const ImportTextbookFileDialog = ({
   const [singleLesson, setSingleLesson] = useState(true);
   const [progress, setProgress] = useState<string>("");
   const [manualText, setManualText] = useState<string>("");
+  const [usedVisionFallback, setUsedVisionFallback] = useState(false);
 
   const reset = () => {
     setFile(null);
