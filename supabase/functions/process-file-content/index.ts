@@ -157,14 +157,14 @@ async function extractDocxText(bytes: Uint8Array) {
 // tables so the AI can preserve the structure.
 function extractSlideText(xml: string): string {
   // Parse each <p:sp> shape with its offset (a:off) and text runs (a:t).
-  const shapes: { x: number; y: number; cy: number; text: string }[] = [];
+  type Shape = { x: number; y: number; cx: number; cy: number; text: string };
+  const shapes: Shape[] = [];
   const spRegex = /<p:sp\b[\s\S]*?<\/p:sp>/g;
   const offRegex = /<a:off\s+x="(-?\d+)"\s+y="(-?\d+)"\s*\/>/;
   const extRegex = /<a:ext\s+cx="(-?\d+)"\s+cy="(-?\d+)"\s*\/>/;
 
   for (const match of xml.matchAll(spRegex)) {
     const spXml = match[0];
-    // Only take the shape's own xfrm (inside p:spPr), not nested ones.
     const spPr = spXml.match(/<p:spPr\b[\s\S]*?<\/p:spPr>/)?.[0] ?? "";
     const off = spPr.match(offRegex);
     const ext = spPr.match(extRegex);
@@ -181,13 +181,13 @@ function extractSlideText(xml: string): string {
     shapes.push({
       x: off ? parseInt(off[1], 10) : 0,
       y: off ? parseInt(off[2], 10) : 0,
+      cx: ext ? parseInt(ext[1], 10) : 0,
       cy: ext ? parseInt(ext[2], 10) : 0,
       text,
     });
   }
 
   if (shapes.length === 0) {
-    // Fallback: plain <a:t> scrape (e.g. shapes without p:sp wrapper).
     const texts = [...xml.matchAll(/<a:t[^>]*>([\s\S]*?)<\/a:t>/g)]
       .map((m) => stripXml(m[1]))
       .filter(Boolean);
@@ -197,10 +197,9 @@ function extractSlideText(xml: string): string {
   // Sort by y then x for reading order.
   shapes.sort((a, b) => a.y - b.y || a.x - b.x);
 
-  // Cluster into rows by y proximity. EMU: 914400 per inch; use ~360000
-  // (~0.4in / ~1cm) tolerance, or half the shape height if smaller.
-  const rows: (typeof shapes)[] = [];
-  const yTolerance = 360000;
+  // Cluster into rows by y proximity.
+  const rows: Shape[][] = [];
+  const yTolerance = 360000; // ~0.4in in EMU
   for (const s of shapes) {
     const tol = Math.max(1, Math.min(yTolerance, s.cy > 0 ? s.cy / 2 : yTolerance));
     const last = rows[rows.length - 1];
@@ -210,33 +209,76 @@ function extractSlideText(xml: string): string {
       rows.push([s]);
     }
   }
+  for (const r of rows) r.sort((a, b) => a.x - b.x);
 
+  // Helpers
+  const mean = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / (arr.length || 1);
+  const stdev = (arr: number[]) => {
+    if (arr.length < 2) return 0;
+    const m = mean(arr);
+    return Math.sqrt(mean(arr.map((v) => (v - m) ** 2)));
+  };
+
+  const MAX_COLS = 5;
+  const X_ALIGN_TOL = 300000; // ~0.33in — allowed drift of a column's x between rows
+  const WIDTH_CV_MAX = 0.35;  // within a row, cx coefficient of variation must be <= 35%
+
+  // Test if a row's shapes have similar widths (column-like, not free labels).
+  const rowWidthsUniform = (r: Shape[]) => {
+    const widths = r.map((s) => s.cx).filter((w) => w > 0);
+    if (widths.length < 2) return false;
+    const m = mean(widths);
+    if (m <= 0) return false;
+    return stdev(widths) / m <= WIDTH_CV_MAX;
+  };
+
+  // Find groups of >=2 consecutive rows that share column count and x-alignment
+  // and pass the width-uniformity test. Everything else emits as paragraphs.
   const lines: string[] = [];
   let tableEmitted = false;
-  for (const row of rows) {
-    row.sort((a, b) => a.x - b.x);
-    // Detect column layout: 2+ shapes side by side, each with meaningful text.
-    // Be conservative: require x-spread and that no single shape dominates
-    // (avoid "title on top of bullets" being flattened as columns — those
-    // would already be in separate rows after y-clustering).
-    const isColumns = row.length >= 2 && row.every((s) => s.text.length > 0);
-    if (isColumns) {
-      // Render as a single-row markdown table (headers = first line of each
-      // column; body = the rest). If a column has multiple lines, join with
-      // <br> so the AI can still see them.
-      const cols = row.map((s) => s.text.split("\n").map((l) => l.trim()).filter(Boolean));
-      const headers = cols.map((c) => c[0] ?? "");
-      const bodyDepth = Math.max(...cols.map((c) => c.length - 1));
-      lines.push(`| ${headers.join(" | ")} |`);
-      lines.push(`| ${headers.map(() => "---").join(" | ")} |`);
-      for (let i = 0; i < bodyDepth; i++) {
-        const cells = cols.map((c) => (c[i + 1] ?? "").trim());
-        lines.push(`| ${cells.join(" | ")} |`);
+  let i = 0;
+  while (i < rows.length) {
+    const base = rows[i];
+    const cols = base.length;
+    const canStart =
+      cols >= 2 &&
+      cols <= MAX_COLS &&
+      base.every((s) => s.text.length > 0) &&
+      rowWidthsUniform(base);
+
+    if (canStart) {
+      const group: Shape[][] = [base];
+      let j = i + 1;
+      while (j < rows.length) {
+        const next = rows[j];
+        if (next.length !== cols) break;
+        if (!next.every((s) => s.text.length > 0)) break;
+        if (!rowWidthsUniform(next)) break;
+        let aligned = true;
+        for (let k = 0; k < cols; k++) {
+          if (Math.abs(next[k].x - base[k].x) > X_ALIGN_TOL) { aligned = false; break; }
+        }
+        if (!aligned) break;
+        group.push(next);
+        j++;
       }
-      tableEmitted = true;
-    } else {
-      for (const s of row) lines.push(s.text);
+
+      if (group.length >= 2) {
+        const headerRow = group[0].map((s) => s.text.split("\n").join(" ").trim());
+        lines.push(`| ${headerRow.join(" | ")} |`);
+        lines.push(`| ${headerRow.map(() => "---").join(" | ")} |`);
+        for (let r = 1; r < group.length; r++) {
+          const cells = group[r].map((s) => s.text.split("\n").join(" ").trim());
+          lines.push(`| ${cells.join(" | ")} |`);
+        }
+        tableEmitted = true;
+        i = j;
+        continue;
+      }
     }
+
+    for (const s of base) lines.push(s.text);
+    i++;
   }
 
   return lines.join("\n") + (tableEmitted ? "" : "");
