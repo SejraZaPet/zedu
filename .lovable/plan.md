@@ -1,58 +1,56 @@
-
 ## Cíl
-Najít PŘESNÝ bod selhání `extractPdfEmbeddedImages()` na PDF exportu z PowerPointu s vloženými rastrovými obrázky. Žádná další hypotéza — musíme mít log/error z reálného běhu.
+Najít přesný bod selhání `extractPdfEmbeddedImages()` při importu PDF s vloženými obrázky a doložit ho reálným logem/error výstupem. Neprovádět produkční opravu, dokud nebude jasný nález.
 
-## Kontext (ověřeno)
-- `pdfjs-dist` verze **5.7.284** (moderní API, `page.render({ canvasContext, viewport })` — `canvas` v argumentech je akceptovaný, ale nepovinný; toto pravděpodobně NENÍ problém).
-- Sandbox Playwright je k dispozici (Chromium, headless).
-- Funkce `extractPdfEmbeddedImages` je v `src/lib/pdf-page-renderer.ts` (řádky 71–232).
+## Ověřený aktuální stav
+- Headless browser je v sandboxu dostupný: Python Playwright import prošel.
+- Nainstalovaná PDF knihovna je `pdfjs-dist` `^5.7.284`.
+- `vite.config.ts` zatím nemá `optimizeDeps.exclude` pro `pdfjs-dist`.
+- `extractPdfEmbeddedImages()` už obsahuje debug logování a používá:
+  - `getDocument()`
+  - `page.render({ canvas, canvasContext, viewport })`
+  - `page.getOperatorList()`
+  - `OPS.paintImageXObject`, `OPS.paintImageXObjectRepeat`, `OPS.paintInlineImageXObject`, `OPS.paintJpegXObject`, `OPS.paintImageMaskXObject`
+  - `page.objs/commonObjs.get()` přes timeout wrapper
+- Existuje diagnostická stránka `/__pdf-diag`, která volá `extractPdfEmbeddedImages(file, { debug: true })`.
 
-## Plán diagnostiky
+## Diagnostický postup
+1. **Přidat pouze dočasnou diagnostickou instrumentaci**
+   - Rozšířit logy v `extractPdfEmbeddedImages()` tak, aby explicitně vypsaly:
+     - verzi `pdfjs-dist`, počet stran, velikost vstupního PDF,
+     - skutečné hodnoty všech používaných `OPS` konstant,
+     - pro každou stránku: viewport rozměry při `scale: 0.5`, canvas rozměry, výsledek `page.render()`, výsledek `getOperatorList()`, počty image paint operací podle typu,
+     - pro každý XObject název: zda byl v `commonObjs`/`objs`, zda `getObj()` vrátil non-null, klíče objektu, rozměry, datový typ, velikost dat,
+     - každý důvod přeskočení kandidáta,
+     - finální počet vytvořených Blobů.
+   - Logy ponechat pouze při `debug: true`, aby se neměnilo běžné produkční chování.
 
-### Krok 1 — Instrumentace (dočasně, za `import.meta.env.DEV` nebo za lokální flag)
-Do `extractPdfEmbeddedImages()` přidat `console.log` (prefix `[pdf-img-extract]`):
-1. Verze pdfjs a hodnoty OPS konstant (`paintImageXObject`, `paintImageXObjectRepeat`, `paintInlineImageXObject`, `paintJpegXObject` pokud existuje).
-2. Na začátku: `pdf.numPages`.
-3. Pro každou stránku: počet `fnArray` operací, počítadlo výskytů podle typu op (xobject / inline / jiné image ops), rozměry viewportu (scale 0.5), výsledek `page.render()` (success/error).
-4. Pro každé `paintImageXObject`: název XObjectu, výsledek `getObj` (null / objekt s poli — vypsat `Object.keys`, `width`, `height`, přítomnost `bitmap`/`data`, `data.length` pokud existuje).
-5. Důvod přeskočení (`no-name`, `dedup`, `getObj-null`, `no-dims`, `too-large`, `too-small`, `no-drawable`, `unsupported-channels`, `render-error`).
-6. Finální souhrn: `{ pagesProcessed, opsSeen, xobjectOpsSeen, inlineOpsSeen, imagesResolved, imagesSkippedByReason, imagesReturned }`.
+2. **Otestovat čistě v browser kontextu přes `/__pdf-diag`**
+   - Vygenerovat syntetické PDF s vloženými rastrovými PNG/JPEG obrázky přes Node skript a uložit ho do `/tmp/browser/...`.
+   - Playwright otevře lokální aplikaci na `http://localhost:8080/__pdf-diag`, nahraje syntetické PDF do `<input type=file>`, zachytí console logy i page errors a počká na výsledek.
+   - Výstupem bude kompletní console log, včetně případného `Map.prototype.getOrInsertComputed` nebo jiného runtime erroru.
 
-### Krok 2 — Syntetické PDF s vloženými obrázky
-Sandbox skript pod `/tmp/pdf-diag/`:
-- `make-pdf.mjs`: přes `pdf-lib` vytvoří 2-stránkové PDF, každá stránka obsahuje `embedPng` a `embedJpg` (jednoduché barevné bitmapy 200×200) → `/tmp/pdf-diag/test.pdf`.
-- `run-diag.mjs`: Playwright script — spustí dev server na `localhost:8080` (už běží), přihlásí se přes injectovanou Supabase session, otevře stránku, která zavolá `extractPdfEmbeddedImages(testFile)` (buď existující dialog, nebo dev-only route). Zachytí `console` eventy s prefixem `[pdf-img-extract]` a vypíše je.
+3. **Otestovat reálný import flow, pokud půjde obnovit přihlášení**
+   - Zkontrolovat stav auth injekce v sandboxu.
+   - Pokud je dostupná managed session, obnovit ji v Playwright podle bezpečného postupu a otevřít stránku, kde je `ImportTextbookFileDialog` dostupný pro admin/teacher účet.
+   - Nahrát stejné syntetické PDF do reálného dialogu a sledovat console logy + upload počet URL.
+   - Pokud auth injekce dostupná nebude, doložit to a pokračovat s `/__pdf-diag`, protože ta testuje stejnou extrakční funkci v reálném Vite/browser prostředí.
 
-Alternativa pokud UI cesta bude křehká: přidat **dev-only** route `/__pdf-diag` (guardovaná `import.meta.env.DEV`), která má file input a zavolá funkci; Playwright do ní nahraje `test.pdf`.
+4. **Zvláštní ověření podezřelých bodů**
+   - Ověřit, zda `page.render()` v aktuálním `pdfjs-dist` padá kvůli parametru `canvas` v render contextu; v diagnostice případně provést A/B test renderu:
+     - `{ canvas, canvasContext, viewport }`
+     - `{ canvasContext, viewport }`
+   - Vypsat skutečné hodnoty `OPS.paintImageXObjectRepeat`, `OPS.paintInlineImageXObject`, `OPS.paintJpegXObject`, `OPS.paintImageMaskXObject`.
+   - Zalogovat viewport/canvas rozměry a zachytit chyby pro případ canvas size limitu.
 
-### Krok 3 — Reálné PDF od uživatelky (pokud dostupné)
-Pokud uživatelka poskytne konkrétní PDF (nebo najdeme sample v Supabase storage), spustit stejný `run-diag.mjs` znovu proti němu a porovnat log se syntetickým případem.
+5. **Report bez produkční opravy**
+   - Vrátit strukturovaný report:
+     - přesný bod selhání,
+     - kompletní relevantní log výstup,
+     - zda selhává render, operator list, `getObj`, width/height filtr, decode, nebo upload,
+     - zda jde o Vite/pdfjs bundling problém, API signaturu, OPS konstanty, canvas limit, nebo jinou příčinu,
+     - doporučení, jestli dočasné logy odstranit nebo nechat pouze za dev/debug flagem.
 
-### Krok 4 — Vyhodnocení
-Podle logu identifikovat root cause. Typické scénáře, které log jasně odliší:
-- **A**: `getObj` vždy vrací `null` → problém s `objs`/`commonObjs` transferem i po `page.render()`.
-- **B**: `imgObj` má neznámou strukturu (např. `{ src: ImageBitmap }` nebo `{ kind, data }` s neobvyklým `kind`) → náš rozbor `bitmap`/`data` je nekompletní.
-- **C**: `channels` vychází nesmyslně (např. 2, 6) → CMYK/indexed color, potřeba jinou dekódovací cestu.
-- **D**: `paintImageXObject` se v tomto PDF vůbec nevyskytuje, obrázky jsou přes jiný op (`paintFormXObjectBegin` + vnořené image ops), nebo přes SMask.
-- **E**: `page.render()` failuje kvůli `willReadFrequently`/OffscreenCanvas rozdílu ve Playwright headless.
-
-### Krok 5 — Prezentace nálezu
-Vrátit uživatelce:
-- Přesná verze pdfjs a hodnoty OPS.
-- Kompletní log z běhu na syntetickém PDF (+ reálném, pokud bude).
-- Konkrétní root cause s citací řádku z logu.
-- Návrh opravy — až po schválení.
-
-### Krok 6 — Úklid
-Instrumentaci ponechat za `import.meta.env.DEV` flagem (tichá v produkci), nebo odstranit — rozhodneme podle nálezu. Případnou dev-only route odstranit.
-
-## Co NEDĚLÁM v tomto plánu
-- Neměním produkční chování extractoru.
-- Neupravuju edge funkci `process-file-content`.
-- Neopravuji nic, dokud neukážu log a nedostanu souhlas.
-
-## Souhlas
-Potvrď prosím, ať můžu:
-1. Přidat instrumentaci (dev-flag) do `pdf-page-renderer.ts`.
-2. Vytvořit dočasnou dev-only diagnostickou stránku + syntetické testovací PDF.
-3. Spustit Playwright běh a vrátit log.
+## Co se zatím nebude dělat
+- Nebude se měnit produkční extrakční algoritmus ani importní flow jako oprava.
+- Nebudou se mazat ani měnit data v databázi/storage.
+- Nebude se deployovat ani publikovat aplikace.
