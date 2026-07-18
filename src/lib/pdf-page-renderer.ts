@@ -29,3 +29,28 @@ export async function renderPdfPagesToImages(file: File): Promise<string[]> {
 
   return images;
 }
+
+/**
+ * Extract the text layer from a PDF using pdfjs. Reliable across compressed
+ * streams and CID fonts, unlike the previous raw-Tj/TJ regex approach.
+ * Returns "" if the PDF has no text layer (scanned/image-only PDFs) — the
+ * caller should fall back to AI vision extraction in that case.
+ */
+export async function extractPdfText(file: File): Promise<string> {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+  const pages: string[] = [];
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    const pageText = content.items
+      .map((item) => ("str" in item ? (item as { str: string }).str : ""))
+      .join(" ")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (pageText) pages.push(`--- Strana ${i} ---\n${pageText}`);
+  }
+
+  return pages.join("\n\n");
+}
