@@ -84,8 +84,10 @@ const App = () => (
         <AuthProvider>
           <ViewAsBanner />
           <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
+           <Route path="/" element={<Index />} />
+           <Route path="/__pdf-diag" element={<PdfDiag />} />
+           <Route path="/auth" element={<Auth />} />
+
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/zapomenute-heslo" element={<ForgotPassword />} />
             <Route path="/reset-heslo" element={<ResetHeslo />} />
