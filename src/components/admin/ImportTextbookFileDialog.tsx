@@ -583,12 +583,17 @@ const ImportTextbookFileDialog = ({
             {usedVisionFallback && (
               <div
                 role="status"
-                className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100"
+                className="flex items-start gap-3 rounded-lg border-2 border-amber-400 bg-amber-100 p-4 text-sm text-amber-950 shadow-sm dark:border-amber-600 dark:bg-amber-950/60 dark:text-amber-50"
               >
-                <Info className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden="true" />
-                <p>
-                  Text z tohoto PDF se nepodařilo extrahovat strojově (nestandardní/komprimované fonty) — obsah byl načten pomocí AI z obrázků stránek. Struktura (např. tabulky) nemusí být zachovaná přesně. Zkontrolujte prosím obsah a případně upravte ručně.
-                </p>
+                <AlertTriangle className="mt-0.5 h-6 w-6 flex-shrink-0 text-amber-700 dark:text-amber-300" aria-hidden="true" />
+                <div className="space-y-1">
+                  <p className="text-base font-bold leading-tight">
+                    Zkontrolujte obsah
+                  </p>
+                  <p>
+                    Text z tohoto PDF se nepodařilo extrahovat strojově (nestandardní/komprimované fonty) — obsah byl načten pomocí AI z obrázků stránek. Struktura (např. tabulky) nemusí být zachovaná přesně. Zkontrolujte prosím obsah a případně upravte ručně.
+                  </p>
+                </div>
               </div>
             )}
             <div className="space-y-2">
