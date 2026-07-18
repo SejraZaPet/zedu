@@ -270,11 +270,11 @@ export async function extractPdfTextRaw(file: File): Promise<PdfTextResult> {
         reject(new Error("raw-extract-timeout"));
       }, RAW_EXTRACT_TIMEOUT_MS);
 
-      worker.onmessage = (e: MessageEvent<{ ok: true; text: string } | { ok: false; error: string }>) => {
+      worker.onmessage = (e: MessageEvent) => {
         clearTimeout(timer);
-        const data = e.data;
-        if (data.ok) resolve(data.text);
-        else reject(new Error(data.error));
+        const data = e.data as { ok: true; text: string } | { ok: false; error: string };
+        if (data.ok === true) resolve(data.text);
+        else resolve(""); // treat worker-reported error as empty result
       };
       worker.onerror = (e: ErrorEvent) => {
         clearTimeout(timer);
