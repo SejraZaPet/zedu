@@ -116,6 +116,7 @@ const ImportTextbookFileDialog = ({
           const result = await extractPdfText(file);
           extractedText = result.text;
           textPages = result.pages.map((p) => ({ pageNumber: p.pageNumber, charCount: p.charCount }));
+          console.log("[import-diag] textPages", textPages.map(p => ({ page: p.pageNumber, charCount: p.charCount, willRender: p.charCount < 30 })));
         } catch (err) {
           console.warn("PDF text extraction failed:", err);
         }
@@ -134,6 +135,7 @@ const ImportTextbookFileDialog = ({
           }
         }
       }
+      console.log("[import-diag] threshold", TEXT_QUALITY_THRESHOLD, "pagesNeedingRender", Array.from(pagesNeedingRender), "isPdf", isPdf, "textPages.length", textPages.length);
       // pageImageUrls is 0-indexed; empty string means "do not insert".
       const pageImageUrls: string[] = [];
       if (isPdf && pagesNeedingRender.size > 0) {
@@ -146,7 +148,9 @@ const ImportTextbookFileDialog = ({
             const folder = `pdf-import/${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
             for (let i = 0; i < pageImages.length; i++) {
               const pageNumber = i + 1;
-              if (!pagesNeedingRender.has(pageNumber)) {
+              const willInsert = pagesNeedingRender.has(pageNumber);
+              console.log("[import-diag] page", pageNumber, "charCount", textPages.find(p => p.pageNumber === pageNumber)?.charCount, "inserted", willInsert);
+              if (!willInsert) {
                 pageImageUrls.push("");
                 continue;
               }
@@ -216,6 +220,14 @@ const ImportTextbookFileDialog = ({
         invokeBody.extractedText = extractedText;
       } else {
         invokeBody.fileBase64 = base64;
+      }
+      {
+        const tableLineCount = (extractedText.match(/^\s*\|.*\|\s*$/gm) || []).length;
+        const bodyText = typeof invokeBody.extractedText === "string" ? invokeBody.extractedText : "";
+        const bodyPipeCount = (bodyText.match(/\|/g) || []).length;
+        const sample = (extractedText.match(/^\s*\|.*\|\s*$/gm) || []).slice(0, 5);
+        console.log("[import-diag] extractedText length", extractedText.length, "table-like lines", tableLineCount, "sending as extractedText?", "extractedText" in invokeBody, "body pipe count", bodyPipeCount);
+        console.log("[import-diag] table sample", sample);
       }
       const { data, error } = await supabase.functions.invoke("process-file-content", {
         body: invokeBody,
