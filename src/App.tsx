@@ -72,7 +72,7 @@ import MarketplacePage from "./pages/MarketplacePage";
 import MarketplaceDetailPage from "./pages/MarketplaceDetailPage";
 import TeacherPublications from "./pages/TeacherPublications";
 import ViewAsBanner from "./components/ViewAsBanner";
-import PdfDiag from "./pages/PdfDiag";
+
 
 
 const queryClient = new QueryClient();
@@ -87,7 +87,7 @@ const App = () => (
           <ViewAsBanner />
           <Routes>
            <Route path="/" element={<Index />} />
-           <Route path="/__pdf-diag" element={<PdfDiag />} />
+           
            <Route path="/auth" element={<Auth />} />
 
             <Route path="/reset-password" element={<ResetPassword />} />

@@ -1,8 +1,36 @@
+// Defensive polyfill for a TC39 Stage-3 Map method that pdfjs-dist v5 relies on
+// but which Vite's dep optimizer (esbuild) can strip / which older browser
+// engines lack. Must run BEFORE pdfjs-dist is imported.
+if (typeof Map !== "undefined" && !(Map.prototype as any).getOrInsertComputed) {
+  Object.defineProperty(Map.prototype, "getOrInsertComputed", {
+    configurable: true,
+    writable: true,
+    value: function <K, V>(this: Map<K, V>, key: K, compute: (k: K) => V): V {
+      if (this.has(key)) return this.get(key) as V;
+      const value = compute(key);
+      this.set(key, value);
+      return value;
+    },
+  });
+}
+if (typeof Map !== "undefined" && !(Map.prototype as any).getOrInsert) {
+  Object.defineProperty(Map.prototype, "getOrInsert", {
+    configurable: true,
+    writable: true,
+    value: function <K, V>(this: Map<K, V>, key: K, defaultValue: V): V {
+      if (this.has(key)) return this.get(key) as V;
+      this.set(key, defaultValue);
+      return defaultValue;
+    },
+  });
+}
+
 import * as pdfjsLib from "pdfjs-dist";
 // Bundle the worker locally so its version always matches the library
 import PdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?worker";
 
 pdfjsLib.GlobalWorkerOptions.workerPort = new PdfWorker();
+
 
 export async function renderPdfPagesToImages(file: File): Promise<string[]> {
   const arrayBuffer = await file.arrayBuffer();
