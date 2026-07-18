@@ -221,6 +221,14 @@ const ImportTextbookFileDialog = ({
       } else {
         invokeBody.fileBase64 = base64;
       }
+      {
+        const tableLineCount = (extractedText.match(/^\s*\|.*\|\s*$/gm) || []).length;
+        const bodyText = typeof invokeBody.extractedText === "string" ? invokeBody.extractedText : "";
+        const bodyPipeCount = (bodyText.match(/\|/g) || []).length;
+        const sample = (extractedText.match(/^\s*\|.*\|\s*$/gm) || []).slice(0, 5);
+        console.log("[import-diag] extractedText length", extractedText.length, "table-like lines", tableLineCount, "sending as extractedText?", "extractedText" in invokeBody, "body pipe count", bodyPipeCount);
+        console.log("[import-diag] table sample", sample);
+      }
       const { data, error } = await supabase.functions.invoke("process-file-content", {
         body: invokeBody,
       });
