@@ -61,26 +61,157 @@ export async function renderPdfPagesToImages(file: File): Promise<string[]> {
 /**
  * Extract the text layer from a PDF using pdfjs. Reliable across compressed
  * streams and CID fonts, unlike the previous raw-Tj/TJ regex approach.
- * Returns "" if the PDF has no text layer (scanned/image-only PDFs) — the
- * caller should fall back to AI vision extraction in that case.
+ *
+ * Uses positional data (x/y from item.transform) to:
+ *   - Cluster items into rows by similar y-coordinate.
+ *   - Detect ≥3 consecutive rows sharing a column layout and emit them as
+ *     markdown tables so the downstream AI is much more likely to encode
+ *     them as `table` blocks instead of a flat paragraph.
+ *
+ * Returns both a joined string and per-page data (charCount) so callers can
+ * decide whether a given page needs a full-page render fallback (scanned
+ * pages have near-zero extractable text).
  */
-export async function extractPdfText(file: File): Promise<string> {
+export interface PdfTextPage {
+  pageNumber: number;
+  text: string;
+  charCount: number;
+}
+
+export interface PdfTextResult {
+  text: string;
+  pages: PdfTextPage[];
+}
+
+interface TextRow {
+  y: number;
+  items: { x: number; str: string; width: number }[];
+}
+
+const ROW_Y_TOLERANCE = 3;
+const COL_X_TOLERANCE = 12;
+const MIN_TABLE_ROWS = 3;
+const MIN_TABLE_COLS = 2;
+const MAX_TABLE_COLS = 8;
+
+function clusterRows(items: { transform: number[]; str: string; width?: number }[]): TextRow[] {
+  const withPos = items
+    .filter((it) => typeof it.str === "string" && it.str.length > 0)
+    .map((it) => ({
+      x: Number(it.transform?.[4] ?? 0),
+      y: Number(it.transform?.[5] ?? 0),
+      str: it.str,
+      width: Number(it.width ?? 0),
+    }));
+  withPos.sort((a, b) => b.y - a.y || a.x - b.x);
+  const rows: TextRow[] = [];
+  for (const it of withPos) {
+    const last = rows[rows.length - 1];
+    if (last && Math.abs(last.y - it.y) <= ROW_Y_TOLERANCE) {
+      last.items.push({ x: it.x, str: it.str, width: it.width });
+    } else {
+      rows.push({ y: it.y, items: [{ x: it.x, str: it.str, width: it.width }] });
+    }
+  }
+  for (const row of rows) row.items.sort((a, b) => a.x - b.x);
+  return rows;
+}
+
+function rowToCells(row: TextRow, gapThreshold: number): { x: number; text: string }[] {
+  const cells: { x: number; text: string }[] = [];
+  let lastEnd = -Infinity;
+  for (const it of row.items) {
+    if (cells.length > 0 && it.x - lastEnd < gapThreshold) {
+      const last = cells[cells.length - 1];
+      last.text = `${last.text} ${it.str}`.replace(/\s+/g, " ").trim();
+    } else {
+      cells.push({ x: it.x, text: it.str });
+    }
+    lastEnd = it.x + (it.width || it.str.length * 5);
+  }
+  return cells;
+}
+
+function detectTableRanges(rows: TextRow[]): { start: number; end: number; gapThreshold: number }[] {
+  const ranges: { start: number; end: number; gapThreshold: number }[] = [];
+  let i = 0;
+  while (i < rows.length) {
+    let bestEnd = -1;
+    let bestGap = 0;
+    for (const gap of [25, 40, 60]) {
+      const firstCells = rowToCells(rows[i], gap);
+      const cols = firstCells.length;
+      if (cols < MIN_TABLE_COLS || cols > MAX_TABLE_COLS) continue;
+      let end = i;
+      for (let j = i + 1; j < rows.length; j++) {
+        const cells = rowToCells(rows[j], gap);
+        if (cells.length !== cols) break;
+        let aligned = true;
+        for (let c = 0; c < cols; c++) {
+          if (Math.abs(cells[c].x - firstCells[c].x) > COL_X_TOLERANCE) { aligned = false; break; }
+        }
+        if (!aligned) break;
+        end = j;
+      }
+      if (end - i + 1 >= MIN_TABLE_ROWS && end > bestEnd) {
+        bestEnd = end;
+        bestGap = gap;
+      }
+    }
+    if (bestEnd >= 0) {
+      ranges.push({ start: i, end: bestEnd, gapThreshold: bestGap });
+      i = bestEnd + 1;
+    } else {
+      i++;
+    }
+  }
+  return ranges;
+}
+
+function rowsToMarkdown(rows: TextRow[]): string {
+  if (rows.length === 0) return "";
+  const ranges = detectTableRanges(rows);
+  const out: string[] = [];
+  let cursor = 0;
+  const flushPlain = (untilExclusive: number) => {
+    const chunk: string[] = [];
+    for (let r = cursor; r < untilExclusive; r++) {
+      const line = rows[r].items.map((it) => it.str).join(" ").replace(/\s+/g, " ").trim();
+      if (line) chunk.push(line);
+    }
+    if (chunk.length) out.push(chunk.join(" "));
+  };
+  for (const range of ranges) {
+    flushPlain(range.start);
+    const header = rowToCells(rows[range.start], range.gapThreshold).map((c) => c.text.trim());
+    out.push(`| ${header.join(" | ")} |`);
+    out.push(`| ${header.map(() => "---").join(" | ")} |`);
+    for (let r = range.start + 1; r <= range.end; r++) {
+      const cells = rowToCells(rows[r], range.gapThreshold).map((c) => c.text.trim());
+      out.push(`| ${cells.join(" | ")} |`);
+    }
+    cursor = range.end + 1;
+  }
+  flushPlain(rows.length);
+  return out.join("\n").trim();
+}
+
+export async function extractPdfText(file: File): Promise<PdfTextResult> {
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
-  const pages: string[] = [];
+  const pages: PdfTextPage[] = [];
+  const joined: string[] = [];
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i);
     const content = await page.getTextContent();
-    const pageText = content.items
-      .map((item) => ("str" in item ? (item as { str: string }).str : ""))
-      .join(" ")
-      .replace(/\s+/g, " ")
-      .trim();
-    if (pageText) pages.push(`--- Strana ${i} ---\n${pageText}`);
+    const items = content.items as unknown as { transform: number[]; str: string; width?: number }[];
+    const rows = clusterRows(items);
+    const rendered = rowsToMarkdown(rows);
+    pages.push({ pageNumber: i, text: rendered, charCount: rendered.length });
+    if (rendered) joined.push(`--- Strana ${i} ---\n${rendered}`);
   }
-
-  return pages.join("\n\n");
+  return { text: joined.join("\n\n"), pages };
 }
 
 /**
