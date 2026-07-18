@@ -27,7 +27,9 @@ export type BlockType =
   | "two_column"
   | "gallery"
   | "summary"
-  | "activity";
+  | "activity"
+  | "hierarchy";
+
 
 export interface Block {
   id: string;
