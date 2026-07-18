@@ -120,47 +120,30 @@ const ImportTextbookFileDialog = ({
           console.warn("PDF text extraction failed:", err);
         }
 
-        // Server-side fallback: if pdfjs returned NOTHING across the whole
+        // Raw-bytes fallback: if pdfjs returned NOTHING across the whole
         // document (typical for PPT-exported PDFs with missing ToUnicode maps),
-        // try `pdftotext` on the server. Poppler has much better font heuristics.
+        // scan the PDF byte stream for Tj/TJ literals. Not layout-aware, but
+        // often recovers usable text where pdfjs refuses.
         const totalChars = textPages.reduce((s, p) => s + p.charCount, 0);
         if (totalChars === 0) {
           try {
-            setProgress("Zkouším serverovou extrakci textu (pdftotext)...");
-            const { data: fbData, error: fbErr } = await supabase.functions.invoke("extract-pdf-text", {
-              body: { fileBase64: base64 },
-            });
-            if (!fbErr && fbData && typeof (fbData as any).text === "string") {
-              const fb = fbData as { text: string; pages?: { pageNumber: number; text: string; charCount: number }[] };
-              const fbTotal = Array.isArray(fb.pages)
-                ? fb.pages.reduce((s, p) => s + (p.charCount || 0), 0)
-                : fb.text.length;
-              if (fbTotal > 0) {
-                extractedText = fb.text;
-                textPages = (fb.pages ?? []).map((p) => ({ pageNumber: p.pageNumber, charCount: p.charCount }));
-              }
-            } else if (fbErr) {
-              console.warn("extract-pdf-text failed:", fbErr);
+            setProgress("Zkouším náhradní extrakci textu...");
+            const { extractPdfTextRaw } = await import("@/lib/pdf-page-renderer");
+            const rawResult = await extractPdfTextRaw(file);
+            if (rawResult.text.length > 0) {
+              extractedText = rawResult.text;
+              textPages = rawResult.pages.map((p) => ({ pageNumber: p.pageNumber, charCount: p.charCount }));
             }
           } catch (err) {
-            console.warn("extract-pdf-text threw:", err);
+            console.warn("Raw PDF text extraction failed:", err);
           }
         }
 
-        // Still nothing after both attempts — bail with an actionable message.
-        const finalTotal = textPages.reduce((s, p) => s + p.charCount, 0);
-        if (finalTotal === 0 && extractedText.length === 0) {
-          toast({
-            title: "Text z PDF se nepodařilo extrahovat",
-            description:
-              "PDF pravděpodobně používá nestandardní fonty. Zkus nahrát DOCX verzi nebo vlož text ručně přes textareu níže.",
-            variant: "destructive",
-          });
-          setProcessing(false);
-          setProgress("");
-          return;
-        }
+        // If BOTH extraction paths produced nothing, fall through — the AI
+        // vision path below will receive `fileBase64` and read the PDF as an
+        // image. No hard stop / toast here.
       }
+
 
       // STEP 2: Render + upload PDF page images — but ONLY for pages where
       // text extraction was insufficient (charCount < 30). For pages where
