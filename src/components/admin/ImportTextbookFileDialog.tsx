@@ -143,7 +143,7 @@ const ImportTextbookFileDialog = ({
         try {
           setProgress("Hledám vložené obrázky v PDF...");
           const { extractPdfEmbeddedImages } = await import("@/lib/pdf-page-renderer");
-          const blobs = await extractPdfEmbeddedImages(file);
+          const blobs = await extractPdfEmbeddedImages(file, { debug: true });
           if (blobs.length > 0) {
             setProgress(`Nahrávám ${blobs.length} vložených obrázků...`);
             const folder = `pdf-embedded/${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
