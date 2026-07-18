@@ -490,7 +490,38 @@ serve(async (req) => {
       throw new Error("AI nedokázala z dokumentu vytvořit žádné bloky.");
     }
 
-    return jsonResponse({ lessons, blocks, blockCount: blocks.length });
+    // Best-effort embedded-image extraction for DOCX/PPTX zip archives.
+    // PDF embedded images are extracted on the frontend (pdfjs).
+    let embeddedImages: string[] = [];
+    let skippedImages = 0;
+    if (fileBase64) {
+      const lower = String(fileName).toLowerCase();
+      const prefix = lower.endsWith(".docx")
+        ? "word/media/"
+        : lower.endsWith(".pptx")
+          ? "ppt/media/"
+          : null;
+      if (prefix) {
+        try {
+          const bytes = decodeBase64(String(fileBase64));
+          const { images, skipped } = await extractZipMedia(bytes, prefix);
+          skippedImages = skipped;
+          if (images.length > 0) {
+            const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+            const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+            if (SUPABASE_URL && SERVICE_ROLE) {
+              const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
+              const folder = `import-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
+              embeddedImages = await uploadMediaToStorage(admin, folder, images);
+            }
+          }
+        } catch (mediaErr) {
+          console.warn("Embedded media extraction failed (non-fatal):", mediaErr);
+        }
+      }
+    }
+
+    return jsonResponse({ lessons, blocks, blockCount: blocks.length, embeddedImages, skippedImages });
   } catch (err) {
     console.error("process-file-content error:", err);
     return jsonResponse({ error: err instanceof Error ? err.message : "Neznámá chyba" }, 500);
