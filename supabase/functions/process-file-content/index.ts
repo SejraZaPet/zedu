@@ -155,14 +155,69 @@ async function extractDocxText(bytes: Uint8Array) {
 // Extract text from a single slide's XML, detecting visual column layouts
 // (multiple shapes positioned side-by-side) and rendering them as markdown
 // tables so the AI can preserve the structure.
-function extractSlideText(xml: string, slideLabel = "unknown"): string {
-  // Parse each <p:sp> shape with its offset (a:off) and text runs (a:t).
+function extractSlideText(xml: string, _slideLabel = "unknown"): string {
   type Shape = { x: number; y: number; cx: number; cy: number; text: string };
 
-  // --- Native <a:tbl> tables first (deterministic, no heuristics). ---
+  // --- Extract and strip <p:grpSp> groups first ---
+  // Grouped shapes use local coordinates relative to the group transform,
+  // so they cannot participate in table detection based on absolute x/y.
+  // Instead, collect all text inside each group and emit as one text block.
+  const groupTexts: string[] = [];
+  let stripped = "";
+  {
+    let i = 0;
+    while (i < xml.length) {
+      const start = xml.indexOf("<p:grpSp", i);
+      if (start === -1) { stripped += xml.slice(i); break; }
+      // Ensure we matched a full tag, not a prefix like <p:grpSpPr>
+      const nextChar = xml[start + "<p:grpSp".length];
+      if (nextChar !== " " && nextChar !== ">" && nextChar !== "\t" && nextChar !== "\n") {
+        stripped += xml.slice(i, start + 1);
+        i = start + 1;
+        continue;
+      }
+      stripped += xml.slice(i, start);
+      // Balanced scan for </p:grpSp>
+      let depth = 1;
+      let j = start + "<p:grpSp".length;
+      while (j < xml.length && depth > 0) {
+        const openIdx = xml.indexOf("<p:grpSp", j);
+        const closeIdx = xml.indexOf("</p:grpSp>", j);
+        if (closeIdx === -1) { j = xml.length; break; }
+        // Only count opens that are real grpSp tags (not grpSpPr)
+        let realOpen = -1;
+        if (openIdx !== -1 && openIdx < closeIdx) {
+          const nc = xml[openIdx + "<p:grpSp".length];
+          if (nc === " " || nc === ">" || nc === "\t" || nc === "\n") {
+            realOpen = openIdx;
+          }
+        }
+        if (realOpen !== -1) {
+          depth++;
+          j = realOpen + "<p:grpSp".length;
+        } else {
+          depth--;
+          j = closeIdx + "</p:grpSp>".length;
+        }
+      }
+      const groupXml = xml.slice(start, j);
+      const paras = [...groupXml.matchAll(/<a:p\b[\s\S]*?<\/a:p>/g)]
+        .map((p) => [...p[0].matchAll(/<a:t[^>]*>([\s\S]*?)<\/a:t>/g)]
+          .map((m) => stripXml(m[1]))
+          .filter(Boolean)
+          .join(" ").trim())
+        .filter((s) => s.length > 0);
+      if (paras.length > 0) groupTexts.push(paras.join("\n"));
+      i = j;
+    }
+  }
+
+  const workXml = stripped;
+
+  // --- Native <a:tbl> tables (deterministic). ---
   const nativeTables: string[] = [];
   const tblRegex = /<a:tbl\b[\s\S]*?<\/a:tbl>/g;
-  for (const tblMatch of xml.matchAll(tblRegex)) {
+  for (const tblMatch of workXml.matchAll(tblRegex)) {
     const tblXml = tblMatch[0];
     const trMatches = [...tblXml.matchAll(/<a:tr\b[\s\S]*?<\/a:tr>/g)];
     const rows: string[][] = [];
@@ -173,7 +228,7 @@ function extractSlideText(xml: string, slideLabel = "unknown"): string {
           .map((p) => [...p[0].matchAll(/<a:t[^>]*>([\s\S]*?)<\/a:t>/g)]
             .map((m) => stripXml(m[1]))
             .filter(Boolean)
-            .join(""))
+            .join(" "))
           .filter(Boolean);
         return paragraphs.join(" ").trim();
       });
@@ -200,7 +255,7 @@ function extractSlideText(xml: string, slideLabel = "unknown"): string {
   const offRegex = /<a:off\s+x="(-?\d+)"\s+y="(-?\d+)"\s*\/>/;
   const extRegex = /<a:ext\s+cx="(-?\d+)"\s+cy="(-?\d+)"\s*\/>/;
 
-  for (const match of xml.matchAll(spRegex)) {
+  for (const match of workXml.matchAll(spRegex)) {
     const spXml = match[0];
     const spPr = spXml.match(/<p:spPr\b[\s\S]*?<\/p:spPr>/)?.[0] ?? "";
     const off = spPr.match(offRegex);
@@ -210,7 +265,7 @@ function extractSlideText(xml: string, slideLabel = "unknown"): string {
         const runs = [...p[0].matchAll(/<a:t[^>]*>([\s\S]*?)<\/a:t>/g)]
           .map((m) => stripXml(m[1]))
           .filter(Boolean);
-        return runs.join("");
+        return runs.join(" ");
       })
       .filter(Boolean);
     const text = paragraphs.join("\n").trim();
@@ -224,26 +279,19 @@ function extractSlideText(xml: string, slideLabel = "unknown"): string {
     });
   }
 
-  console.log("[pptx-shape-map]", JSON.stringify({
-    slide: slideLabel,
-    shapeCount: shapes.length,
-    shapes: shapes.map((s, index) => ({
-      index,
-      x: s.x,
-      y: s.y,
-      cx: s.cx,
-      cy: s.cy,
-      textPreview: s.text.replace(/\s+/g, " ").trim().slice(0, 40),
-      lineCount: s.text.split("\n").filter((line) => line.trim().length > 0).length,
-    })),
-  }));
+  const emitGroups = () => groupTexts.length > 0 ? groupTexts.join("\n\n") : "";
 
   if (shapes.length === 0) {
-    if (nativeTables.length > 0) return nativeTables.join("\n\n");
-    const texts = [...xml.matchAll(/<a:t[^>]*>([\s\S]*?)<\/a:t>/g)]
-      .map((m) => stripXml(m[1]))
-      .filter(Boolean);
-    return texts.join("\n");
+    const parts: string[] = [];
+    if (nativeTables.length > 0) parts.push(nativeTables.join("\n\n"));
+    if (groupTexts.length > 0) parts.push(emitGroups());
+    if (parts.length === 0) {
+      const texts = [...workXml.matchAll(/<a:t[^>]*>([\s\S]*?)<\/a:t>/g)]
+        .map((m) => stripXml(m[1]))
+        .filter(Boolean);
+      return texts.join("\n");
+    }
+    return parts.join("\n\n");
   }
 
   // Sort by y then x for reading order.
@@ -251,7 +299,7 @@ function extractSlideText(xml: string, slideLabel = "unknown"): string {
 
   // Cluster into rows by y proximity.
   const rows: Shape[][] = [];
-  const yTolerance = 360000; // ~0.4in in EMU
+  const yTolerance = 360000;
   for (const s of shapes) {
     const tol = Math.max(1, Math.min(yTolerance, s.cy > 0 ? s.cy / 2 : yTolerance));
     const last = rows[rows.length - 1];
@@ -263,7 +311,6 @@ function extractSlideText(xml: string, slideLabel = "unknown"): string {
   }
   for (const r of rows) r.sort((a, b) => a.x - b.x);
 
-  // Helpers
   const mean = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / (arr.length || 1);
   const stdev = (arr: number[]) => {
     if (arr.length < 2) return 0;
@@ -272,8 +319,8 @@ function extractSlideText(xml: string, slideLabel = "unknown"): string {
   };
 
   const MAX_COLS = 5;
-  const X_ALIGN_TOL = 300000; // ~0.33in — allowed drift of a column's x between rows
-  const WIDTH_CV_MAX = 0.35;  // within a row, cx coefficient of variation must be <= 35%
+  const X_ALIGN_TOL = 300000;
+  const WIDTH_CV_MAX = 0.35;
 
   const widthCV = (r: Shape[]) => {
     const widths = r.map((s) => s.cx).filter((w) => w > 0);
@@ -283,35 +330,62 @@ function extractSlideText(xml: string, slideLabel = "unknown"): string {
     return stdev(widths) / m;
   };
 
-  // --- Side-by-side multi-line textboxes as a column table. ---
-  // Pattern: a row cluster of 2..MAX_COLS shapes, each containing >=3 lines,
-  // with matching line counts and uniform widths. Split each shape's text
-  // by newlines and emit rows.
+  // --- Header-row + body-row multiline table detector ---
+  // Row A: 2..MAX_COLS shapes, each exactly 1 text line (headers), uniform widths.
+  // Row B: same shape count, each >=1 line, x-aligned to row A by nearest x.
+  // Body may have differing line counts per column — output uses max length,
+  // shorter columns pad with empty strings.
   const multilineTables: string[] = [];
   const consumedRowIdx = new Set<number>();
-  for (let idx = 0; idx < rows.length; idx++) {
-    const r = rows[idx];
-    if (r.length < 2 || r.length > MAX_COLS) continue;
-    const lineCounts = r.map((s) => s.text.split("\n").filter((l) => l.trim().length > 0).length);
-    const minLines = Math.min(...lineCounts);
-    const maxLines = Math.max(...lineCounts);
-    if (minLines < 3) continue;
-    if (maxLines - minLines > 1) continue; // allow off-by-one
-    if (widthCV(r) > WIDTH_CV_MAX) continue;
-    const cols = r.map((s) => s.text.split("\n").map((l) => l.trim()).filter(Boolean));
-    const rowCount = minLines;
+  for (let idx = 0; idx < rows.length - 1; idx++) {
+    if (consumedRowIdx.has(idx)) continue;
+    const header = rows[idx];
+    if (header.length < 2 || header.length > MAX_COLS) continue;
+    const hLines = header.map((s) => s.text.split("\n").map((l) => l.trim()).filter(Boolean));
+    if (!hLines.every((l) => l.length === 1)) continue;
+    if (widthCV(header) > WIDTH_CV_MAX) continue;
+
+    const body = rows[idx + 1];
+    if (consumedRowIdx.has(idx + 1)) continue;
+    if (body.length !== header.length) continue;
+    const bLines = body.map((s) => s.text.split("\n").map((l) => l.trim()).filter(Boolean));
+    if (bLines.some((c) => c.length < 1)) continue;
+
+    // Pair body shapes to header shapes by nearest x within tolerance.
+    const usedB = new Set<number>();
+    const paired: number[] = [];
+    let aligned = true;
+    for (let h = 0; h < header.length; h++) {
+      let best = -1;
+      let bestDist = Infinity;
+      for (let b = 0; b < body.length; b++) {
+        if (usedB.has(b)) continue;
+        const d = Math.abs(body[b].x - header[h].x);
+        if (d < bestDist) { bestDist = d; best = b; }
+      }
+      if (best === -1 || bestDist > X_ALIGN_TOL) { aligned = false; break; }
+      paired.push(best);
+      usedB.add(best);
+    }
+    if (!aligned) continue;
+
+    const cols = paired.map((bIdx, hIdx) => ({
+      header: header[hIdx].text.trim(),
+      body: bLines[bIdx],
+    }));
+    const maxRows = Math.max(...cols.map((c) => c.body.length));
     const out: string[] = [];
-    out.push(`| ${cols.map((c) => c[0]).join(" | ")} |`);
+    out.push(`| ${cols.map((c) => c.header).join(" | ")} |`);
     out.push(`| ${cols.map(() => "---").join(" | ")} |`);
-    for (let li = 1; li < rowCount; li++) {
-      out.push(`| ${cols.map((c) => c[li] ?? "").join(" | ")} |`);
+    for (let li = 0; li < maxRows; li++) {
+      out.push(`| ${cols.map((c) => c.body[li] ?? "").join(" | ")} |`);
     }
     multilineTables.push(out.join("\n"));
     consumedRowIdx.add(idx);
+    consumedRowIdx.add(idx + 1);
   }
 
-  // Find groups of >=2 consecutive rows that share column count and x-alignment
-  // and pass the width-uniformity test. Everything else emits as paragraphs.
+  // Multi-row same-column-count table detection (fallback for grid layouts).
   const lines: string[] = [];
   let i = 0;
   while (i < rows.length) {
@@ -366,6 +440,7 @@ function extractSlideText(xml: string, slideLabel = "unknown"): string {
   if (nativeTables.length > 0) parts.push(nativeTables.join("\n\n"));
   if (multilineTables.length > 0) parts.push(multilineTables.join("\n\n"));
   if (lines.length > 0) parts.push(lines.join("\n"));
+  if (groupTexts.length > 0) parts.push(emitGroups());
   return parts.join("\n\n");
 }
 
