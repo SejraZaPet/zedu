@@ -365,7 +365,7 @@ export async function extractPdfEmbeddedImages(
         const blob = await new Promise<Blob | null>((resolve) =>
           canvas.toBlob(resolve, "image/jpeg", 0.85),
         );
-        if (blob && blob.size > 0) { out.push(blob); dlog("emitted", source, blob.size); }
+        if (blob && blob.size > 0) { out.push({ pageNumber: i, blob }); dlog("emitted", source, blob.size, "page", i); }
         else bump("empty-blob", { page: i, index: k, source });
       } catch (err) {
         bump("decode-error", { page: i, index: k, source });
