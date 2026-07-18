@@ -317,10 +317,11 @@ const ImportTextbookFileDialog = ({
       }
 
       const totalBlocks = normalizedLessons.reduce((sum, lesson) => sum + lesson.blocks.length, 0);
-      const embeddedCount = allEmbedded.length;
+      const pdfEmbeddedCount = Array.from(pdfEmbeddedImagesByPage.values()).reduce((s, arr) => s + arr.length, 0);
+      const embeddedCount = pdfEmbeddedCount + serverEmbedded.length;
       setDrafts(normalizedLessons);
       const parts = [`Vytvořeno ${totalBlocks} bloků.`];
-      if (embeddedCount > 0) parts.push(`Přidáno ${embeddedCount} obrázků do galerie na konci lekce.`);
+      if (embeddedCount > 0) parts.push(`Přidáno ${embeddedCount} obrázků rozprostřených po lekci.`);
       if (skippedImages > 0) parts.push(`Přeskočeno ${skippedImages} obrázků v nepodporovaném formátu (EMF/WMF).`);
       toast({
         title: "Import dokončen",
