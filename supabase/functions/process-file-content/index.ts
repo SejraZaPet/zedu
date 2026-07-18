@@ -152,6 +152,96 @@ async function extractDocxText(bytes: Uint8Array) {
   return paragraphs.join("\n");
 }
 
+// Extract text from a single slide's XML, detecting visual column layouts
+// (multiple shapes positioned side-by-side) and rendering them as markdown
+// tables so the AI can preserve the structure.
+function extractSlideText(xml: string): string {
+  // Parse each <p:sp> shape with its offset (a:off) and text runs (a:t).
+  const shapes: { x: number; y: number; cy: number; text: string }[] = [];
+  const spRegex = /<p:sp\b[\s\S]*?<\/p:sp>/g;
+  const offRegex = /<a:off\s+x="(-?\d+)"\s+y="(-?\d+)"\s*\/>/;
+  const extRegex = /<a:ext\s+cx="(-?\d+)"\s+cy="(-?\d+)"\s*\/>/;
+
+  for (const match of xml.matchAll(spRegex)) {
+    const spXml = match[0];
+    // Only take the shape's own xfrm (inside p:spPr), not nested ones.
+    const spPr = spXml.match(/<p:spPr\b[\s\S]*?<\/p:spPr>/)?.[0] ?? "";
+    const off = spPr.match(offRegex);
+    const ext = spPr.match(extRegex);
+    const paragraphs = [...spXml.matchAll(/<a:p\b[\s\S]*?<\/a:p>/g)]
+      .map((p) => {
+        const runs = [...p[0].matchAll(/<a:t[^>]*>([\s\S]*?)<\/a:t>/g)]
+          .map((m) => stripXml(m[1]))
+          .filter(Boolean);
+        return runs.join("");
+      })
+      .filter(Boolean);
+    const text = paragraphs.join("\n").trim();
+    if (!text) continue;
+    shapes.push({
+      x: off ? parseInt(off[1], 10) : 0,
+      y: off ? parseInt(off[2], 10) : 0,
+      cy: ext ? parseInt(ext[2], 10) : 0,
+      text,
+    });
+  }
+
+  if (shapes.length === 0) {
+    // Fallback: plain <a:t> scrape (e.g. shapes without p:sp wrapper).
+    const texts = [...xml.matchAll(/<a:t[^>]*>([\s\S]*?)<\/a:t>/g)]
+      .map((m) => stripXml(m[1]))
+      .filter(Boolean);
+    return texts.join("\n");
+  }
+
+  // Sort by y then x for reading order.
+  shapes.sort((a, b) => a.y - b.y || a.x - b.x);
+
+  // Cluster into rows by y proximity. EMU: 914400 per inch; use ~360000
+  // (~0.4in / ~1cm) tolerance, or half the shape height if smaller.
+  const rows: (typeof shapes)[] = [];
+  const yTolerance = 360000;
+  for (const s of shapes) {
+    const tol = Math.max(1, Math.min(yTolerance, s.cy > 0 ? s.cy / 2 : yTolerance));
+    const last = rows[rows.length - 1];
+    if (last && Math.abs(last[0].y - s.y) <= tol) {
+      last.push(s);
+    } else {
+      rows.push([s]);
+    }
+  }
+
+  const lines: string[] = [];
+  let tableEmitted = false;
+  for (const row of rows) {
+    row.sort((a, b) => a.x - b.x);
+    // Detect column layout: 2+ shapes side by side, each with meaningful text.
+    // Be conservative: require x-spread and that no single shape dominates
+    // (avoid "title on top of bullets" being flattened as columns — those
+    // would already be in separate rows after y-clustering).
+    const isColumns = row.length >= 2 && row.every((s) => s.text.length > 0);
+    if (isColumns) {
+      // Render as a single-row markdown table (headers = first line of each
+      // column; body = the rest). If a column has multiple lines, join with
+      // <br> so the AI can still see them.
+      const cols = row.map((s) => s.text.split("\n").map((l) => l.trim()).filter(Boolean));
+      const headers = cols.map((c) => c[0] ?? "");
+      const bodyDepth = Math.max(...cols.map((c) => c.length - 1));
+      lines.push(`| ${headers.join(" | ")} |`);
+      lines.push(`| ${headers.map(() => "---").join(" | ")} |`);
+      for (let i = 0; i < bodyDepth; i++) {
+        const cells = cols.map((c) => (c[i + 1] ?? "").trim());
+        lines.push(`| ${cells.join(" | ")} |`);
+      }
+      tableEmitted = true;
+    } else {
+      for (const s of row) lines.push(s.text);
+    }
+  }
+
+  return lines.join("\n") + (tableEmitted ? "" : "");
+}
+
 async function extractPptxText(bytes: Uint8Array) {
   const { unzipSync } = await import("https://esm.sh/fflate@0.8.2");
   const unzipped = unzipSync(bytes);
@@ -166,12 +256,9 @@ async function extractPptxText(bytes: Uint8Array) {
   const slides: string[] = [];
   for (const slidePath of slideFiles) {
     const xml = textDecoder.decode(unzipped[slidePath]);
-    const texts = [...xml.matchAll(/<a:t[^>]*>([\s\S]*?)<\/a:t>/g)]
-      .map((m) => stripXml(m[1]))
-      .filter(Boolean);
-
-    if (texts.length > 0) {
-      slides.push(`--- Slide ---\n${texts.join("\n")}`);
+    const slideText = extractSlideText(xml).trim();
+    if (slideText.length > 0) {
+      slides.push(`--- Slide ---\n${slideText}`);
     }
   }
 

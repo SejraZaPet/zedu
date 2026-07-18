@@ -317,24 +317,23 @@ const ImportTextbookFileDialog = ({
         },
       } as unknown as Block);
 
-      // Build a gallery block from a set of image URLs. Returns null if empty.
-      const makeGalleryBlock = (urls: string[]): Block | null => {
-        if (urls.length === 0) return null;
-        return {
-          id: crypto.randomUUID(),
-          type: "gallery",
-          visible: true,
-          props: {
-            columns: Math.min(3, Math.max(2, Math.ceil(Math.sqrt(urls.length)))),
-            images: urls.map((url) => ({ url, caption: "" })),
-          },
-        } as unknown as Block;
-      };
+      // Build individual image blocks (one per URL) so each is independently
+      // draggable in the lesson editor.
+      const makeImageBlocks = (urls: string[]): Block[] =>
+        urls.map(
+          (url) =>
+            ({
+              id: crypto.randomUUID(),
+              type: "image",
+              visible: true,
+              props: { url, caption: "", width: "full", alignment: "center" },
+            }) as unknown as Block,
+        );
 
-      // Insert per-page full-page renders AND per-page embedded-image galleries.
-      // Page boundaries in the AI output are marked with `divider` blocks.
-      // `usedPages` tracks which PDF pages were successfully placed inline so
-      // the rest can be flushed at the end.
+      // Insert per-page full-page renders AND per-page embedded images as
+      // individual image blocks. Page boundaries in the AI output are marked
+      // with `divider` blocks. `usedPages` tracks which PDF pages were
+      // successfully placed inline so the rest can be flushed at the end.
       const enrichBlocksWithPages = (blocks: Block[]): { blocks: Block[]; usedPages: Set<number> } => {
         const usedPages = new Set<number>();
         const placePageAssets = (out: Block[], pageIdx: number) => {
@@ -342,8 +341,7 @@ const ImportTextbookFileDialog = ({
           if (pageImageUrls[pageIdx]) out.push(makeImageBlock(pageImageUrls[pageIdx], pageIdx));
           const embedded = pdfEmbeddedImagesByPage.get(pageIdx + 1);
           if (embedded && embedded.length > 0) {
-            const gallery = makeGalleryBlock(embedded);
-            if (gallery) out.push(gallery);
+            out.push(...makeImageBlocks(embedded));
             usedPages.add(pageIdx + 1);
           }
         };
@@ -388,8 +386,8 @@ const ImportTextbookFileDialog = ({
           }
         }
         const fallbackUrls = idx === 0 ? [...leftoverPdf, ...serverEmbedded] : [];
-        const fallbackGallery = makeGalleryBlock(fallbackUrls);
-        const withGallery = fallbackGallery ? [...placed, fallbackGallery] : placed;
+        const fallbackImages = makeImageBlocks(fallbackUrls);
+        const withGallery = fallbackImages.length > 0 ? [...placed, ...fallbackImages] : placed;
         return { ...lesson, blocks: withGallery };
       });
 
