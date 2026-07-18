@@ -77,13 +77,28 @@ export async function extractPdfEmbeddedImages(
   const objsTimeoutMs = opts.objsTimeoutMs ?? 5000;
   const debug = opts.debug ?? false;
   const dlog = (...args: unknown[]) => { if (debug) console.log("[pdf-img-extract]", ...args); };
+  const summarizeError = (err: unknown) => {
+    if (err instanceof Error) return { name: err.name, message: err.message, stack: err.stack };
+    return err;
+  };
   const skipReasons: Record<string, number> = {};
-  const bump = (k: string) => { skipReasons[k] = (skipReasons[k] ?? 0) + 1; };
+  const bump = (k: string, detail?: unknown) => {
+    skipReasons[k] = (skipReasons[k] ?? 0) + 1;
+    if (debug) dlog("skip", k, detail ?? "");
+  };
 
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
   const OPS = (pdfjsLib as unknown as { OPS: Record<string, number> }).OPS;
 
+  dlog("START", { fileName: file.name, fileType: file.type, fileSize: file.size, arrayBufferBytes: arrayBuffer.byteLength });
+  dlog("runtime", {
+    userAgent: typeof navigator !== "undefined" ? navigator.userAgent : "n/a",
+    devicePixelRatio: typeof window !== "undefined" ? window.devicePixelRatio : "n/a",
+    hasDocument: typeof document !== "undefined",
+    mapGetOrInsertComputed: typeof (Map.prototype as any).getOrInsertComputed,
+    mapGetOrInsert: typeof (Map.prototype as any).getOrInsert,
+  });
   dlog("pdfjs version", (pdfjsLib as any).version, "numPages", pdf.numPages);
   dlog("OPS", {
     paintImageXObject: OPS.paintImageXObject,
@@ -91,6 +106,8 @@ export async function extractPdfEmbeddedImages(
     paintInlineImageXObject: OPS.paintInlineImageXObject,
     paintJpegXObject: OPS.paintJpegXObject,
     paintImageMaskXObject: OPS.paintImageMaskXObject,
+    paintImageMaskXObjectGroup: OPS.paintImageMaskXObjectGroup,
+    paintSolidColorImageMask: OPS.paintSolidColorImageMask,
   });
 
   // XObject paint ops — image XObject data lives in page.objs / commonObjs
@@ -125,13 +142,20 @@ export async function extractPdfEmbeddedImages(
         done = true;
         resolve(val);
       };
-      const timer = setTimeout(() => { dlog("getObj TIMEOUT", name); finish(null); }, objsTimeoutMs);
+      const timer = setTimeout(() => { dlog("getObj TIMEOUT", { name, objsTimeoutMs }); finish(null); }, objsTimeoutMs);
       const wrap = (val: any) => {
         clearTimeout(timer);
         finish(val);
       };
       try {
         const commonObjs = page.commonObjs;
+        dlog("getObj lookup", {
+          name,
+          commonHas: commonObjs?.has?.(name),
+          objsHas: page.objs?.has?.(name),
+          commonKeys: commonObjs ? Object.keys(commonObjs) : [],
+          objsKeys: page.objs ? Object.keys(page.objs) : [],
+        });
         if (commonObjs?.has?.(name)) {
           dlog("getObj commonObjs.has", name);
           commonObjs.get(name, wrap);
@@ -145,7 +169,7 @@ export async function extractPdfEmbeddedImages(
         dlog("getObj neither has, registering callback", name);
         page.objs.get(name, wrap);
       } catch (e) {
-        dlog("getObj threw", name, e);
+        dlog("getObj threw", name, summarizeError(e));
         wrap(null);
       }
     });
@@ -158,22 +182,49 @@ export async function extractPdfEmbeddedImages(
         const viewport = page.getViewport({ scale: 0.5 });
         renderCanvas.width = Math.max(1, Math.floor(viewport.width));
         renderCanvas.height = Math.max(1, Math.floor(viewport.height));
+        dlog("page", i, "render attempt", {
+          renderContextShape: "canvas+canvasContext+viewport",
+          viewport: { width: viewport.width, height: viewport.height, scale: viewport.scale },
+          canvas: { width: renderCanvas.width, height: renderCanvas.height },
+        });
         await page.render({ canvas: renderCanvas, canvasContext: renderCtx, viewport } as any).promise;
-        dlog("page", i, "rendered", { w: renderCanvas.width, h: renderCanvas.height });
+        dlog("page", i, "render OK", { renderContextShape: "canvas+canvasContext+viewport", w: renderCanvas.width, h: renderCanvas.height });
       }
     } catch (err) {
-      dlog("page", i, "render FAILED", err);
-      bump("render-error");
+      dlog("page", i, "render FAILED", { renderContextShape: "canvas+canvasContext+viewport", error: summarizeError(err) });
+      bump("render-error", { page: i, shape: "canvas+canvasContext+viewport" });
+
+      if (debug && renderCtx) {
+        try {
+          const viewport = page.getViewport({ scale: 0.5 });
+          dlog("page", i, "render fallback attempt", { renderContextShape: "canvasContext+viewport" });
+          await page.render({ canvasContext: renderCtx, viewport } as any).promise;
+          dlog("page", i, "render fallback OK", { renderContextShape: "canvasContext+viewport" });
+        } catch (fallbackErr) {
+          dlog("page", i, "render fallback FAILED", { renderContextShape: "canvasContext+viewport", error: summarizeError(fallbackErr) });
+          bump("render-fallback-error", { page: i, shape: "canvasContext+viewport" });
+        }
+      }
     }
 
-    const ops = await page.getOperatorList();
+    let ops: Awaited<ReturnType<typeof page.getOperatorList>>;
+    try {
+      dlog("page", i, "getOperatorList attempt");
+      ops = await page.getOperatorList();
+      dlog("page", i, "getOperatorList OK", { fnArrayLength: ops.fnArray.length, argsArrayLength: ops.argsArray.length });
+    } catch (err) {
+      dlog("page", i, "getOperatorList FAILED", summarizeError(err));
+      throw err;
+    }
     let xoCount = 0, inlineCount = 0, otherImgCount = 0;
+    const opHistogram: Record<string, number> = {};
     for (const fn of ops.fnArray) {
+      if (debug) opHistogram[String(fn)] = (opHistogram[String(fn)] ?? 0) + 1;
       if (xobjectOps.has(fn)) xoCount++;
       else if (fn === inlineOp) inlineCount++;
       else if (fn === OPS.paintJpegXObject || fn === OPS.paintImageMaskXObject) otherImgCount++;
     }
-    dlog("page", i, "ops", ops.fnArray.length, "xobject", xoCount, "inline", inlineCount, "other-image", otherImgCount);
+    dlog("page", i, "ops", ops.fnArray.length, "xobject", xoCount, "inline", inlineCount, "other-image", otherImgCount, "histogram", opHistogram);
 
     for (let k = 0; k < ops.fnArray.length && out.length < maxImages; k++) {
       const op = ops.fnArray[k];
@@ -183,37 +234,54 @@ export async function extractPdfEmbeddedImages(
       if (xobjectOps.has(op)) {
         source = "xobject";
         const name = ops.argsArray[k]?.[0];
-        if (typeof name !== "string") { bump("no-name"); continue; }
-        if (seen.has(name)) { bump("dedup"); continue; }
+        dlog("candidate", { page: i, index: k, op, source, name, rawArgs: ops.argsArray[k] });
+        if (typeof name !== "string") { bump("no-name", { page: i, index: k, op, rawArgs: ops.argsArray[k] }); continue; }
+        if (seen.has(name)) { bump("dedup", { page: i, index: k, name }); continue; }
         seen.add(name);
         imgObj = await getObj(page, name);
-        dlog("xobj", name, imgObj ? { keys: Object.keys(imgObj), w: imgObj.width, h: imgObj.height, hasBitmap: !!imgObj.bitmap, hasData: !!imgObj.data, dataLen: imgObj.data?.length, kind: imgObj.kind } : "NULL");
+        dlog("xobj", name, imgObj ? {
+          nonNull: true,
+          type: Object.prototype.toString.call(imgObj),
+          keys: Object.keys(imgObj),
+          w: imgObj.width,
+          h: imgObj.height,
+          bitmapW: imgObj.bitmap?.width,
+          bitmapH: imgObj.bitmap?.height,
+          hasBitmap: !!imgObj.bitmap,
+          hasData: !!imgObj.data,
+          dataCtor: imgObj.data?.constructor?.name,
+          dataLen: imgObj.data?.length,
+          kind: imgObj.kind,
+        } : { nonNull: false });
       } else if (op === inlineOp) {
         source = "inline";
         const dict = ops.argsArray[k]?.[0];
-        if (!dict) { bump("inline-no-dict"); continue; }
+        dlog("candidate", { page: i, index: k, op, source, rawArgs: ops.argsArray[k] });
+        if (!dict) { bump("inline-no-dict", { page: i, index: k, op }); continue; }
         imgObj = dict;
-        dlog("inline", { keys: Object.keys(imgObj), w: imgObj.width, h: imgObj.height, hasBitmap: !!imgObj.bitmap, hasData: !!imgObj.data });
+        dlog("inline", { type: Object.prototype.toString.call(imgObj), keys: Object.keys(imgObj), w: imgObj.width, h: imgObj.height, hasBitmap: !!imgObj.bitmap, hasData: !!imgObj.data, dataCtor: imgObj.data?.constructor?.name, dataLen: imgObj.data?.length });
       } else {
         continue;
       }
 
-      if (!imgObj) { bump("getObj-null"); continue; }
+      if (!imgObj) { bump("getObj-null", { page: i, index: k, source }); continue; }
 
       const width = imgObj.width ?? imgObj.bitmap?.width;
       const height = imgObj.height ?? imgObj.bitmap?.height;
-      if (!width || !height) { bump("no-dims"); dlog("skip no-dims", source); continue; }
-      if (width > maxPixelDim || height > maxPixelDim) { bump("too-large"); continue; }
-      if (width < 16 || height < 16) { bump("too-small"); continue; }
+      dlog("dimension check", { page: i, index: k, source, width, height, maxPixelDim });
+      if (!width || !height) { bump("no-dims", { page: i, index: k, source, width, height }); continue; }
+      if (width > maxPixelDim || height > maxPixelDim) { bump("too-large", { page: i, index: k, source, width, height, maxPixelDim }); continue; }
+      if (width < 16 || height < 16) { bump("too-small", { page: i, index: k, source, width, height }); continue; }
 
       try {
         const canvas = document.createElement("canvas");
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext("2d");
-        if (!ctx) { bump("no-ctx"); continue; }
+        if (!ctx) { bump("no-ctx", { page: i, index: k, source }); continue; }
 
         if (imgObj.bitmap) {
+          dlog("draw bitmap", { page: i, index: k, source, width, height });
           ctx.drawImage(imgObj.bitmap, 0, 0);
         } else if (imgObj.data) {
           const src: Uint8Array | Uint8ClampedArray = imgObj.data;
@@ -233,21 +301,21 @@ export async function extractPdfEmbeddedImages(
               dst[d] = dst[d + 1] = dst[d + 2] = src[j]; dst[d + 3] = 255;
             }
           } else {
-            bump("unsupported-channels"); continue;
+            bump("unsupported-channels", { page: i, index: k, source, width, height, dataLen: src.length, channels }); continue;
           }
           ctx.putImageData(imageData, 0, 0);
         } else {
-          bump("no-drawable"); dlog("skip no-drawable", Object.keys(imgObj)); continue;
+          bump("no-drawable", { page: i, index: k, source, keys: Object.keys(imgObj) }); continue;
         }
 
         const blob = await new Promise<Blob | null>((resolve) =>
           canvas.toBlob(resolve, "image/jpeg", 0.85),
         );
         if (blob && blob.size > 0) { out.push(blob); dlog("emitted", source, blob.size); }
-        else bump("empty-blob");
+        else bump("empty-blob", { page: i, index: k, source });
       } catch (err) {
-        bump("decode-error");
-        dlog("decode threw", err);
+        bump("decode-error", { page: i, index: k, source });
+        dlog("decode threw", summarizeError(err));
       }
     }
   }
