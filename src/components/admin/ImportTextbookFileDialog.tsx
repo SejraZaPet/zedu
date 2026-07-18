@@ -415,6 +415,7 @@ const ImportTextbookFileDialog = ({
       if (decorativeCount > 0) parts.push(`Odfiltrováno ${decorativeCount} dekorativních obrázků s textem.`);
       if (pagesNeedingRender.size > 0) parts.push(`${pagesNeedingRender.size} stránek vloženo jako obrázek (chybějící text).`);
       if (skippedImages > 0) parts.push(`Přeskočeno ${skippedImages} obrázků v nepodporovaném formátu (EMF/WMF).`);
+      if (visionFallback) parts.push("Obsah načten AI z obrázků stránek — zkontrolujte strukturu.");
       toast({
         title: "Import dokončen",
         description: parts.join(" "),
