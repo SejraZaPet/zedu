@@ -138,26 +138,31 @@ const ImportTextbookFileDialog = ({
       // Extract EMBEDDED raster images from PDF (not full-page renders).
       // Uploaded to storage; appended as a gallery block at the end of the
       // first lesson so the teacher can move/curate them in the editor.
-      let pdfEmbeddedImageUrls: string[] = [];
+      const pdfEmbeddedImagesByPage = new Map<number, string[]>();
       if (isPdf) {
         try {
           setProgress("Hledám vložené obrázky v PDF...");
           const { extractPdfEmbeddedImages } = await import("@/lib/pdf-page-renderer");
-          const blobs = await extractPdfEmbeddedImages(file);
-          if (blobs.length > 0) {
-            setProgress(`Nahrávám ${blobs.length} vložených obrázků...`);
+          const items = await extractPdfEmbeddedImages(file);
+          if (items.length > 0) {
+            setProgress(`Nahrávám ${items.length} vložených obrázků...`);
             const folder = `pdf-embedded/${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-            for (let i = 0; i < blobs.length; i++) {
-              const path = `${folder}/image-${i + 1}.jpg`;
+            for (let i = 0; i < items.length; i++) {
+              const { pageNumber, blob } = items[i];
+              const path = `${folder}/page-${pageNumber}-image-${i + 1}.jpg`;
               const { error: upErr } = await supabase.storage
                 .from("lesson-images")
-                .upload(path, blobs[i], { contentType: "image/jpeg", upsert: true });
+                .upload(path, blob, { contentType: "image/jpeg", upsert: true });
               if (upErr) {
                 console.warn("Upload vloženého obrázku selhal:", upErr);
                 continue;
               }
               const { data: urlData } = supabase.storage.from("lesson-images").getPublicUrl(path);
-              if (urlData?.publicUrl) pdfEmbeddedImageUrls.push(urlData.publicUrl);
+              if (urlData?.publicUrl) {
+                const list = pdfEmbeddedImagesByPage.get(pageNumber) ?? [];
+                list.push(urlData.publicUrl);
+                pdfEmbeddedImagesByPage.set(pageNumber, list);
+              }
             }
           }
         } catch (err) {
