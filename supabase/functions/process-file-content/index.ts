@@ -1121,14 +1121,47 @@ serve(async (req) => {
           // and map every embedded image to its slide.
           let pptxLinks: { youtube: { url: string; mediaFileName?: string }[]; other: { url: string; mediaFileName?: string }[] } | null = null;
           let pptxImagesBySlide: Map<number, string[]> | null = null;
+          let pptxPicsBySlide: Map<number, (AbsPic & { fileName: string })[]> | null = null;
           if (lower.endsWith(".pptx")) {
             try {
               const { unzipSync } = await import("https://esm.sh/fflate@0.8.2");
               const unzipped = unzipSync(bytes);
               pptxLinks = extractPptxLinkedShapes(bytes, unzipped);
               pptxImagesBySlide = extractPptxImagesBySlide(unzipped);
+              pptxPicsBySlide = extractPptxPicsBySlide(unzipped);
             } catch (linkErr) {
               console.warn("PPTX slide/hyperlink extraction failed (non-fatal):", linkErr);
+            }
+          }
+
+          // Server-side merge of overlapping images (base + overlay label layer).
+          // Runs BEFORE upload so we ship only the merged PNG, not the two originals.
+          if (pptxPicsBySlide && pptxPicsBySlide.size > 0 && images.length > 0) {
+            try {
+              const mediaBytes = new Map<string, { ext: string; data: Uint8Array }>();
+              for (const im of images) mediaBytes.set(im.fileName, { ext: im.ext, data: im.data });
+              const { merges, consumed: mergeConsumed } = await planPicMerges(pptxPicsBySlide, mediaBytes);
+              if (merges.length > 0) {
+                // Replace consumed originals with merged synthetic files.
+                const filtered = images.filter((im) => !mergeConsumed.has(im.fileName));
+                for (const m of merges) {
+                  filtered.push({ fileName: m.mergedFileName, ext: "png", data: m.mergedBytes });
+                }
+                images.length = 0;
+                images.push(...filtered);
+                // Update per-slide filename lists so downstream mapping points at merged image.
+                if (pptxImagesBySlide) {
+                  for (const m of merges) {
+                    const arr = pptxImagesBySlide.get(m.slide);
+                    if (!arr) continue;
+                    const kept = arr.filter((f) => f !== m.baseFile && f !== m.overlayFile);
+                    if (!kept.includes(m.mergedFileName)) kept.push(m.mergedFileName);
+                    pptxImagesBySlide.set(m.slide, kept);
+                  }
+                }
+              }
+            } catch (mergeErr) {
+              console.warn("[pptx-merge] planning failed, keeping originals:", mergeErr instanceof Error ? mergeErr.message : mergeErr);
             }
           }
 
