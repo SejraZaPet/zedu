@@ -152,295 +152,345 @@ async function extractDocxText(bytes: Uint8Array) {
   return paragraphs.join("\n");
 }
 
-// Extract text from a single slide's XML, detecting visual column layouts
-// (multiple shapes positioned side-by-side) and rendering them as markdown
-// tables so the AI can preserve the structure.
-function extractSlideText(xml: string, _slideLabel = "unknown"): string {
-  type Shape = { x: number; y: number; cx: number; cy: number; text: string };
+// ---------------------------------------------------------------------------
+// PPTX slide → text
+//
+// Strategy (matches PDF path in src/lib/pdf-page-renderer.ts):
+//   1. Parse the slide XML tree (fast-xml-parser, preserveOrder).
+//   2. Walk <p:spTree>, composing group transforms so every <p:sp> ends up
+//      with ABSOLUTE (x, y, cx, cy) in slide-space EMU — including shapes
+//      nested inside arbitrarily deep <p:grpSp> groups.
+//   3. Expand each shape's paragraphs into positioned items (one item per
+//      paragraph, y offset within the shape's cy).
+//   4. Apply the SAME row-clustering + column-alignment table detection
+//      used for PDF text items. No group-based exclusions, no ad-hoc
+//      multiline heuristics — with correct absolute geometry the generic
+//      algorithm handles both table-like and free-form layouts.
+//   5. Native <a:tbl> tables are still rendered deterministically.
+// ---------------------------------------------------------------------------
 
-  // --- Extract and strip <p:grpSp> groups first ---
-  // Grouped shapes use local coordinates relative to the group transform,
-  // so they cannot participate in table detection based on absolute x/y.
-  // Instead, collect all text inside each group and emit as one text block.
-  const groupTexts: string[] = [];
-  let stripped = "";
-  {
-    let i = 0;
-    while (i < xml.length) {
-      const start = xml.indexOf("<p:grpSp", i);
-      if (start === -1) { stripped += xml.slice(i); break; }
-      // Ensure we matched a full tag, not a prefix like <p:grpSpPr>
-      const nextChar = xml[start + "<p:grpSp".length];
-      if (nextChar !== " " && nextChar !== ">" && nextChar !== "\t" && nextChar !== "\n") {
-        stripped += xml.slice(i, start + 1);
-        i = start + 1;
-        continue;
-      }
-      stripped += xml.slice(i, start);
-      // Balanced scan for </p:grpSp>
-      let depth = 1;
-      let j = start + "<p:grpSp".length;
-      while (j < xml.length && depth > 0) {
-        const openIdx = xml.indexOf("<p:grpSp", j);
-        const closeIdx = xml.indexOf("</p:grpSp>", j);
-        if (closeIdx === -1) { j = xml.length; break; }
-        // Only count opens that are real grpSp tags (not grpSpPr)
-        let realOpen = -1;
-        if (openIdx !== -1 && openIdx < closeIdx) {
-          const nc = xml[openIdx + "<p:grpSp".length];
-          if (nc === " " || nc === ">" || nc === "\t" || nc === "\n") {
-            realOpen = openIdx;
+import { XMLParser as _XMLParser } from "https://esm.sh/fast-xml-parser@4.5.0";
+
+const xmlParser = new _XMLParser({
+  preserveOrder: true,
+  ignoreAttributes: false,
+  attributeNamePrefix: "",
+  attributesGroupName: ":@",
+  parseTagValue: false,
+  trimValues: false,
+  processEntities: true,
+});
+
+type XNode = Record<string, unknown>;
+type XChildren = XNode[];
+
+const tagOf = (n: XNode): string => {
+  for (const k of Object.keys(n)) if (k !== ":@") return k;
+  return "";
+};
+const childrenOf = (n: XNode): XChildren => {
+  const t = tagOf(n);
+  const v = n[t];
+  return Array.isArray(v) ? (v as XChildren) : [];
+};
+const attrsOf = (n: XNode): Record<string, string> =>
+  (n[":@"] as Record<string, string> | undefined) ?? {};
+const firstChild = (n: XNode, name: string): XNode | undefined =>
+  childrenOf(n).find((c) => tagOf(c) === name);
+const findChildren = (n: XNode, name: string): XNode[] =>
+  childrenOf(n).filter((c) => tagOf(c) === name);
+
+// --- Text extraction from an <a:txBody> / <a:tc> node ---
+function extractParagraphs(node: XNode): string[] {
+  const out: string[] = [];
+  for (const p of findChildren(node, "a:p")) {
+    const pieces: string[] = [];
+    const walkRuns = (parent: XNode) => {
+      for (const c of childrenOf(parent)) {
+        const t = tagOf(c);
+        if (t === "a:r" || t === "a:fld") {
+          const at = firstChild(c, "a:t");
+          if (at) {
+            for (const tc of childrenOf(at)) {
+              if ("#text" in tc) pieces.push(String(tc["#text"] ?? ""));
+            }
           }
-        }
-        if (realOpen !== -1) {
-          depth++;
-          j = realOpen + "<p:grpSp".length;
-        } else {
-          depth--;
-          j = closeIdx + "</p:grpSp>".length;
+        } else if (t === "a:br") {
+          pieces.push("\n");
         }
       }
-      const groupXml = xml.slice(start, j);
-      const paras = [...groupXml.matchAll(/<a:p\b[\s\S]*?<\/a:p>/g)]
-        .map((p) => [...p[0].matchAll(/<a:t[^>]*>([\s\S]*?)<\/a:t>/g)]
-          .map((m) => stripXml(m[1]))
-          .filter(Boolean)
-          .join(" ").trim())
-        .filter((s) => s.length > 0);
-      if (paras.length > 0) groupTexts.push(paras.join("\n"));
-      i = j;
+    };
+    walkRuns(p);
+    // Join runs with a space (preserves inter-run word separation),
+    // then split on explicit line breaks.
+    const joined = pieces.join(" ").replace(/[ \t]+/g, " ");
+    for (const seg of joined.split("\n")) {
+      const s = seg.trim();
+      if (s) out.push(s);
     }
   }
+  return out;
+}
 
-  const workXml = stripped;
+// --- Transform math ---
+type XForm = { tx: number; ty: number; sx: number; sy: number };
+const IDENTITY: XForm = { tx: 0, ty: 0, sx: 1, sy: 1 };
 
-  // --- Native <a:tbl> tables (deterministic). ---
-  const nativeTables: string[] = [];
-  const tblRegex = /<a:tbl\b[\s\S]*?<\/a:tbl>/g;
-  for (const tblMatch of workXml.matchAll(tblRegex)) {
-    const tblXml = tblMatch[0];
-    const trMatches = [...tblXml.matchAll(/<a:tr\b[\s\S]*?<\/a:tr>/g)];
-    const rows: string[][] = [];
-    for (const trMatch of trMatches) {
-      const tcMatches = [...trMatch[0].matchAll(/<a:tc\b[\s\S]*?<\/a:tc>/g)];
-      const cells = tcMatches.map((tc) => {
-        const paragraphs = [...tc[0].matchAll(/<a:p\b[\s\S]*?<\/a:p>/g)]
-          .map((p) => [...p[0].matchAll(/<a:t[^>]*>([\s\S]*?)<\/a:t>/g)]
-            .map((m) => stripXml(m[1]))
-            .filter(Boolean)
-            .join(" "))
-          .filter(Boolean);
-        return paragraphs.join(" ").trim();
-      });
-      if (cells.length > 0) rows.push(cells);
+type Pair = { x: number; y: number };
+type Xfrm = { off?: Pair; ext?: Pair; chOff?: Pair; chExt?: Pair };
+
+function readXfrm(container: XNode | undefined): Xfrm | null {
+  if (!container) return null;
+  const xfrm = firstChild(container, "a:xfrm");
+  if (!xfrm) return null;
+  const pair = (name: string): Pair | undefined => {
+    const c = firstChild(xfrm, name);
+    if (!c) return undefined;
+    const a = attrsOf(c);
+    return { x: parseInt(a.x ?? "0", 10) || 0, y: parseInt(a.y ?? "0", 10) || 0 };
+  };
+  return { off: pair("a:off"), ext: pair("a:ext"), chOff: pair("a:chOff"), chExt: pair("a:chExt") };
+}
+
+// Compose child transform for a <p:grpSp> given parent transform.
+// Maps a child's LOCAL (lx, ly) inside the group to slide-absolute coords:
+//   absX = parent.tx + off.x*parent.sx - chOff.x*sx' + lx*sx'
+//   sx'  = parent.sx * (ext.x / chExt.x)
+// Degenerate groups (missing xfrm parts, chExt = 0) fall back to a
+// translate-only transform anchored at the group's own off.
+function groupChildTransform(parent: XForm, xf: Xfrm | null, fallbackOff?: Pair): XForm {
+  const off = xf?.off ?? fallbackOff;
+  const ext = xf?.ext;
+  const chOff = xf?.chOff;
+  const chExt = xf?.chExt;
+  if (!off || !ext || !chOff || !chExt || chExt.x === 0 || chExt.y === 0) {
+    const X = off?.x ?? 0;
+    const Y = off?.y ?? 0;
+    return {
+      tx: parent.tx + X * parent.sx,
+      ty: parent.ty + Y * parent.sy,
+      sx: parent.sx,
+      sy: parent.sy,
+    };
+  }
+  const sx = parent.sx * (ext.x / chExt.x);
+  const sy = parent.sy * (ext.y / chExt.y);
+  const tx = parent.tx + off.x * parent.sx - chOff.x * sx;
+  const ty = parent.ty + off.y * parent.sy - chOff.y * sy;
+  return { tx, ty, sx, sy };
+}
+
+const applyT = (t: XForm, x: number, y: number) => ({
+  x: t.tx + x * t.sx,
+  y: t.ty + y * t.sy,
+});
+
+// --- Tree walk: collect absolute-positioned shapes + native tables ---
+type AbsShape = {
+  x: number; y: number; cx: number; cy: number;
+  paragraphs: string[];
+};
+
+function renderNativeTable(tbl: XNode): string {
+  const rows: string[][] = [];
+  for (const tr of findChildren(tbl, "a:tr")) {
+    const cells: string[] = [];
+    for (const tc of findChildren(tr, "a:tc")) {
+      const txBody = firstChild(tc, "a:txBody");
+      const paras = txBody ? extractParagraphs(txBody) : [];
+      cells.push(paras.join(" ").trim());
     }
-    if (rows.length >= 2 && rows[0].length >= 2) {
-      const cols = Math.max(...rows.map((r) => r.length));
-      const norm = rows.map((r) => {
-        const padded = [...r];
-        while (padded.length < cols) padded.push("");
-        return padded;
-      });
-      const lines = [
-        `| ${norm[0].join(" | ")} |`,
-        `| ${norm[0].map(() => "---").join(" | ")} |`,
-        ...norm.slice(1).map((r) => `| ${r.join(" | ")} |`),
-      ];
-      nativeTables.push(lines.join("\n"));
+    if (cells.length > 0) rows.push(cells);
+  }
+  if (rows.length < 2 || rows[0].length < 2) return "";
+  const cols = Math.max(...rows.map((r) => r.length));
+  const norm = rows.map((r) => {
+    const p = [...r];
+    while (p.length < cols) p.push("");
+    return p;
+  });
+  return [
+    `| ${norm[0].join(" | ")} |`,
+    `| ${norm[0].map(() => "---").join(" | ")} |`,
+    ...norm.slice(1).map((r) => `| ${r.join(" | ")} |`),
+  ].join("\n");
+}
+
+function walkTree(node: XNode, transform: XForm, shapes: AbsShape[], nativeTables: string[]) {
+  for (const child of childrenOf(node)) {
+    const tag = tagOf(child);
+    if (tag === "p:sp") {
+      const spPr = firstChild(child, "p:spPr");
+      const xf = readXfrm(spPr);
+      if (!xf?.off || !xf?.ext) continue;
+      const abs = applyT(transform, xf.off.x, xf.off.y);
+      const cx = xf.ext.x * transform.sx;
+      const cy = xf.ext.y * transform.sy;
+      const txBody = firstChild(child, "p:txBody");
+      const paras = txBody ? extractParagraphs(txBody) : [];
+      if (paras.length === 0) continue;
+      shapes.push({ x: abs.x, y: abs.y, cx, cy, paragraphs: paras });
+    } else if (tag === "p:grpSp") {
+      const grpSpPr = firstChild(child, "p:grpSpPr");
+      const xf = readXfrm(grpSpPr);
+      const childT = groupChildTransform(transform, xf);
+      walkTree(child, childT, shapes, nativeTables);
+    } else if (tag === "p:graphicFrame") {
+      const graphic = firstChild(child, "a:graphic");
+      const gdata = graphic ? firstChild(graphic, "a:graphicData") : undefined;
+      const tbl = gdata ? firstChild(gdata, "a:tbl") : undefined;
+      if (tbl) {
+        const md = renderNativeTable(tbl);
+        if (md) nativeTables.push(md);
+      }
     }
   }
+}
 
-  const shapes: Shape[] = [];
-  const spRegex = /<p:sp\b[\s\S]*?<\/p:sp>/g;
-  const offRegex = /<a:off\s+x="(-?\d+)"\s+y="(-?\d+)"\s*\/>/;
-  const extRegex = /<a:ext\s+cx="(-?\d+)"\s+cy="(-?\d+)"\s*\/>/;
+// --- Unified row/table detection (mirrors PDF pdf-page-renderer.ts) ---
+type ParaItem = { x: number; y: number; width: number; text: string };
+type Row = { y: number; items: ParaItem[] };
 
-  for (const match of workXml.matchAll(spRegex)) {
-    const spXml = match[0];
-    const spPr = spXml.match(/<p:spPr\b[\s\S]*?<\/p:spPr>/)?.[0] ?? "";
-    const off = spPr.match(offRegex);
-    const ext = spPr.match(extRegex);
-    const paragraphs = [...spXml.matchAll(/<a:p\b[\s\S]*?<\/a:p>/g)]
-      .map((p) => {
-        const runs = [...p[0].matchAll(/<a:t[^>]*>([\s\S]*?)<\/a:t>/g)]
-          .map((m) => stripXml(m[1]))
-          .filter(Boolean);
-        return runs.join(" ");
-      })
-      .filter(Boolean);
-    const text = paragraphs.join("\n").trim();
-    if (!text) continue;
-    shapes.push({
-      x: off ? parseInt(off[1], 10) : 0,
-      y: off ? parseInt(off[2], 10) : 0,
-      cx: ext ? parseInt(ext[1], 10) : 0,
-      cy: ext ? parseInt(ext[2], 10) : 0,
-      text,
-    });
-  }
+// EMU tolerances. 1 inch = 914400 EMU.
+// 0.10" ≈ 91440, 0.25" ≈ 228600.
+const ROW_Y_TOLERANCE = 91440;
+const COL_X_TOLERANCE = 228600;
+const MIN_TABLE_ROWS = 2;
+const MIN_TABLE_COLS = 2;
+const MAX_TABLE_COLS = 8;
 
-  const emitGroups = () => groupTexts.length > 0 ? groupTexts.join("\n\n") : "";
-
-  if (shapes.length === 0) {
-    const parts: string[] = [];
-    if (nativeTables.length > 0) parts.push(nativeTables.join("\n\n"));
-    if (groupTexts.length > 0) parts.push(emitGroups());
-    if (parts.length === 0) {
-      const texts = [...workXml.matchAll(/<a:t[^>]*>([\s\S]*?)<\/a:t>/g)]
-        .map((m) => stripXml(m[1]))
-        .filter(Boolean);
-      return texts.join("\n");
-    }
-    return parts.join("\n\n");
-  }
-
-  // Sort by y then x for reading order.
-  shapes.sort((a, b) => a.y - b.y || a.x - b.x);
-
-  // Cluster into rows by y proximity.
-  const rows: Shape[][] = [];
-  const yTolerance = 360000;
+function shapesToParaItems(shapes: AbsShape[]): ParaItem[] {
+  const items: ParaItem[] = [];
   for (const s of shapes) {
-    const tol = Math.max(1, Math.min(yTolerance, s.cy > 0 ? s.cy / 2 : yTolerance));
+    const n = s.paragraphs.length;
+    if (n === 0) continue;
+    const lineH = n > 0 && s.cy > 0 ? s.cy / n : 0;
+    for (let i = 0; i < n; i++) {
+      items.push({
+        x: s.x,
+        y: s.y + (i + 0.5) * lineH,
+        width: s.cx,
+        text: s.paragraphs[i],
+      });
+    }
+  }
+  return items;
+}
+
+function clusterRows(items: ParaItem[]): Row[] {
+  const sorted = [...items].sort((a, b) => a.y - b.y || a.x - b.x);
+  const rows: Row[] = [];
+  for (const it of sorted) {
     const last = rows[rows.length - 1];
-    if (last && Math.abs(last[0].y - s.y) <= tol) {
-      last.push(s);
+    if (last && Math.abs(last.y - it.y) <= ROW_Y_TOLERANCE) {
+      last.items.push(it);
     } else {
-      rows.push([s]);
+      rows.push({ y: it.y, items: [it] });
     }
   }
-  for (const r of rows) r.sort((a, b) => a.x - b.x);
+  for (const r of rows) r.items.sort((a, b) => a.x - b.x);
+  return rows;
+}
 
-  const mean = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / (arr.length || 1);
-  const stdev = (arr: number[]) => {
-    if (arr.length < 2) return 0;
-    const m = mean(arr);
-    return Math.sqrt(mean(arr.map((v) => (v - m) ** 2)));
-  };
-
-  const MAX_COLS = 5;
-  const X_ALIGN_TOL = 300000;
-  const WIDTH_CV_MAX = 0.35;
-
-  const widthCV = (r: Shape[]) => {
-    const widths = r.map((s) => s.cx).filter((w) => w > 0);
-    if (widths.length < 2) return Infinity;
-    const m = mean(widths);
-    if (m <= 0) return Infinity;
-    return stdev(widths) / m;
-  };
-
-  // --- Header-row + body-row multiline table detector ---
-  // Row A: 2..MAX_COLS shapes, each exactly 1 text line (headers), uniform widths.
-  // Row B: same shape count, each >=1 line, x-aligned to row A by nearest x.
-  // Body may have differing line counts per column — output uses max length,
-  // shorter columns pad with empty strings.
-  const multilineTables: string[] = [];
-  const consumedRowIdx = new Set<number>();
-  for (let idx = 0; idx < rows.length - 1; idx++) {
-    if (consumedRowIdx.has(idx)) continue;
-    const header = rows[idx];
-    if (header.length < 2 || header.length > MAX_COLS) continue;
-    const hLines = header.map((s) => s.text.split("\n").map((l) => l.trim()).filter(Boolean));
-    if (!hLines.every((l) => l.length === 1)) continue;
-    if (widthCV(header) > WIDTH_CV_MAX) continue;
-
-    const body = rows[idx + 1];
-    if (consumedRowIdx.has(idx + 1)) continue;
-    if (body.length !== header.length) continue;
-    const bLines = body.map((s) => s.text.split("\n").map((l) => l.trim()).filter(Boolean));
-    if (bLines.some((c) => c.length < 1)) continue;
-
-    // Pair body shapes to header shapes by nearest x within tolerance.
-    const usedB = new Set<number>();
-    const paired: number[] = [];
-    let aligned = true;
-    for (let h = 0; h < header.length; h++) {
-      let best = -1;
-      let bestDist = Infinity;
-      for (let b = 0; b < body.length; b++) {
-        if (usedB.has(b)) continue;
-        const d = Math.abs(body[b].x - header[h].x);
-        if (d < bestDist) { bestDist = d; best = b; }
-      }
-      if (best === -1 || bestDist > X_ALIGN_TOL) { aligned = false; break; }
-      paired.push(best);
-      usedB.add(best);
-    }
-    if (!aligned) continue;
-
-    const cols = paired.map((bIdx, hIdx) => ({
-      header: header[hIdx].text.trim(),
-      body: bLines[bIdx],
-    }));
-    const maxRows = Math.max(...cols.map((c) => c.body.length));
-    const out: string[] = [];
-    out.push(`| ${cols.map((c) => c.header).join(" | ")} |`);
-    out.push(`| ${cols.map(() => "---").join(" | ")} |`);
-    for (let li = 0; li < maxRows; li++) {
-      out.push(`| ${cols.map((c) => c.body[li] ?? "").join(" | ")} |`);
-    }
-    multilineTables.push(out.join("\n"));
-    consumedRowIdx.add(idx);
-    consumedRowIdx.add(idx + 1);
-  }
-
-  // Multi-row same-column-count table detection (fallback for grid layouts).
-  const lines: string[] = [];
+function detectTableRanges(rows: Row[]): { start: number; end: number }[] {
+  const out: { start: number; end: number }[] = [];
   let i = 0;
   while (i < rows.length) {
-    if (consumedRowIdx.has(i)) { i++; continue; }
-    const base = rows[i];
-    const cols = base.length;
-
-    let canStart = true;
-    if (cols < 2 || cols > MAX_COLS) {
-      canStart = false;
-    } else if (!base.every((s) => s.text.length > 0)) {
-      canStart = false;
-    } else if (widthCV(base) > WIDTH_CV_MAX) {
-      canStart = false;
-    }
-
-    if (canStart) {
-      const group: Shape[][] = [base];
-      let j = i + 1;
-      while (j < rows.length && !consumedRowIdx.has(j)) {
-        const next = rows[j];
-        if (next.length !== cols) break;
-        if (!next.every((s) => s.text.length > 0)) break;
-        if (widthCV(next) > WIDTH_CV_MAX) break;
-        let aligned = true;
-        for (let k = 0; k < cols; k++) {
-          if (Math.abs(next[k].x - base[k].x) > X_ALIGN_TOL) { aligned = false; break; }
-        }
-        if (!aligned) break;
-        group.push(next);
-        j++;
+    const first = rows[i].items;
+    const cols = first.length;
+    if (cols < MIN_TABLE_COLS || cols > MAX_TABLE_COLS) { i++; continue; }
+    let end = i;
+    for (let j = i + 1; j < rows.length; j++) {
+      const cells = rows[j].items;
+      if (cells.length !== cols) break;
+      let aligned = true;
+      for (let c = 0; c < cols; c++) {
+        if (Math.abs(cells[c].x - first[c].x) > COL_X_TOLERANCE) { aligned = false; break; }
       }
-
-      if (group.length >= 2) {
-        const headerRow = group[0].map((s) => s.text.split("\n").join(" ").trim());
-        lines.push(`| ${headerRow.join(" | ")} |`);
-        lines.push(`| ${headerRow.map(() => "---").join(" | ")} |`);
-        for (let r = 1; r < group.length; r++) {
-          const cells = group[r].map((s) => s.text.split("\n").join(" ").trim());
-          lines.push(`| ${cells.join(" | ")} |`);
-        }
-        i = j;
-        continue;
-      }
+      if (!aligned) break;
+      end = j;
     }
-
-    for (const s of base) lines.push(s.text);
-    i++;
+    if (end - i + 1 >= MIN_TABLE_ROWS) {
+      out.push({ start: i, end });
+      i = end + 1;
+    } else {
+      i++;
+    }
   }
+  return out;
+}
+
+function rowsToMarkdown(rows: Row[]): string {
+  if (rows.length === 0) return "";
+  const ranges = detectTableRanges(rows);
+  const out: string[] = [];
+  let cursor = 0;
+  const flushPlain = (untilExclusive: number) => {
+    for (let r = cursor; r < untilExclusive; r++) {
+      // Free-form rows: emit each item as its own line to preserve
+      // visual separation between unrelated labels/callouts.
+      for (const it of rows[r].items) {
+        const t = it.text.trim();
+        if (t) out.push(t);
+      }
+    }
+  };
+  for (const range of ranges) {
+    flushPlain(range.start);
+    const header = rows[range.start].items.map((c) => c.text.trim());
+    out.push(`| ${header.join(" | ")} |`);
+    out.push(`| ${header.map(() => "---").join(" | ")} |`);
+    for (let r = range.start + 1; r <= range.end; r++) {
+      const cells = rows[r].items.map((c) => c.text.trim());
+      out.push(`| ${cells.join(" | ")} |`);
+    }
+    cursor = range.end + 1;
+  }
+  flushPlain(rows.length);
+  return out.join("\n").trim();
+}
+
+function extractSlideText(xml: string, _slideLabel = "unknown"): string {
+  let parsed: unknown;
+  try {
+    parsed = xmlParser.parse(xml);
+  } catch (err) {
+    console.warn("[pptx] XML parse failed, falling back to raw text", err);
+    const texts = [...xml.matchAll(/<a:t[^>]*>([\s\S]*?)<\/a:t>/g)]
+      .map((m) => stripXml(m[1]))
+      .filter(Boolean);
+    return texts.join("\n");
+  }
+
+  // Locate <p:spTree>: root -> p:sld -> p:cSld -> p:spTree
+  const root = Array.isArray(parsed) ? (parsed as XNode[]) : [];
+  const findDeep = (nodes: XNode[], name: string): XNode | undefined => {
+    for (const n of nodes) {
+      if (tagOf(n) === name) return n;
+      const c = findDeep(childrenOf(n), name);
+      if (c) return c;
+    }
+    return undefined;
+  };
+  const spTree = findDeep(root, "p:spTree");
+  if (!spTree) {
+    const texts = [...xml.matchAll(/<a:t[^>]*>([\s\S]*?)<\/a:t>/g)]
+      .map((m) => stripXml(m[1]))
+      .filter(Boolean);
+    return texts.join("\n");
+  }
+
+  const shapes: AbsShape[] = [];
+  const nativeTables: string[] = [];
+  walkTree(spTree, IDENTITY, shapes, nativeTables);
+
+  const items = shapesToParaItems(shapes);
+  const rows = clusterRows(items);
+  const body = rowsToMarkdown(rows);
 
   const parts: string[] = [];
   if (nativeTables.length > 0) parts.push(nativeTables.join("\n\n"));
-  if (multilineTables.length > 0) parts.push(multilineTables.join("\n\n"));
-  if (lines.length > 0) parts.push(lines.join("\n"));
-  if (groupTexts.length > 0) parts.push(emitGroups());
+  if (body) parts.push(body);
   return parts.join("\n\n");
 }
 
