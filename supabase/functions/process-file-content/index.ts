@@ -37,7 +37,7 @@ const BLOCK_TOOL = {
                     id: { type: "string" },
                     type: {
                       type: "string",
-                      enum: ["heading", "paragraph", "bullet_list", "table", "callout", "quote", "divider"],
+                      enum: ["heading", "paragraph", "bullet_list", "table", "callout", "quote", "divider", "hierarchy"],
                     },
                     visible: { type: "boolean" },
                     props: {
@@ -52,6 +52,20 @@ const BLOCK_TOOL = {
                         calloutType: { type: "string" },
                         author: { type: "string" },
                         style: { type: "string" },
+                        shape: { type: "string", enum: ["pyramid", "layers", "steps"] },
+                        direction: { type: "string", enum: ["top-to-bottom", "bottom-to-top"] },
+                        levels: {
+                          type: "array",
+                          items: {
+                            type: "object",
+                            additionalProperties: false,
+                            required: ["label"],
+                            properties: {
+                              label: { type: "string" },
+                              description: { type: "string" },
+                            },
+                          },
+                        },
                       },
                     },
                   },
