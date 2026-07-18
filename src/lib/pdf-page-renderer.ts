@@ -255,8 +255,21 @@ export async function extractPdfEmbeddedImages(
     }
     dlog("page", i, "ops", ops.fnArray.length, "xobject", xoCount, "inline", inlineCount, "other-image", otherImgCount, "histogram", opHistogram);
 
+    const pageViewport = page.getViewport({ scale: 1 });
+    const transformOp = typeof OPS.transform === "number" ? OPS.transform : -1;
+    let lastTransformA = 0;
+    let lastTransformD = 0;
+
     for (let k = 0; k < ops.fnArray.length && out.length < maxImages; k++) {
       const op = ops.fnArray[k];
+      if (op === transformOp) {
+        const args = ops.argsArray[k];
+        if (args && typeof args[0] === "number" && typeof args[3] === "number") {
+          lastTransformA = Math.abs(args[0]);
+          lastTransformD = Math.abs(args[3]);
+        }
+        continue;
+      }
       let imgObj: any = null;
       let source = "";
 
