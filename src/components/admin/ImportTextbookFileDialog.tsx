@@ -116,6 +116,7 @@ const ImportTextbookFileDialog = ({
           const result = await extractPdfText(file);
           extractedText = result.text;
           textPages = result.pages.map((p) => ({ pageNumber: p.pageNumber, charCount: p.charCount }));
+          console.log("[import-diag] textPages", textPages.map(p => ({ page: p.pageNumber, charCount: p.charCount, willRender: p.charCount < 30 })));
         } catch (err) {
           console.warn("PDF text extraction failed:", err);
         }
@@ -134,6 +135,7 @@ const ImportTextbookFileDialog = ({
           }
         }
       }
+      console.log("[import-diag] threshold", TEXT_QUALITY_THRESHOLD, "pagesNeedingRender", Array.from(pagesNeedingRender), "isPdf", isPdf, "textPages.length", textPages.length);
       // pageImageUrls is 0-indexed; empty string means "do not insert".
       const pageImageUrls: string[] = [];
       if (isPdf && pagesNeedingRender.size > 0) {
