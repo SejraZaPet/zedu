@@ -72,6 +72,8 @@ import MarketplacePage from "./pages/MarketplacePage";
 import MarketplaceDetailPage from "./pages/MarketplaceDetailPage";
 import TeacherPublications from "./pages/TeacherPublications";
 import ViewAsBanner from "./components/ViewAsBanner";
+import PdfDiag from "./pages/PdfDiag";
+
 
 const queryClient = new QueryClient();
 
