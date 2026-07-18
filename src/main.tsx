@@ -5,7 +5,7 @@ import "./index.css";
 createRoot(document.getElementById("root")!).render(<App />);
 
 // Register the service worker for Web Push.
-// Skip inside the Lovable editor preview (iframe) — SWs cause stale-content issues there.
+// Skip inside development and Lovable editor previews — SWs cause stale-content issues there.
 if ("serviceWorker" in navigator) {
   const inIframe = (() => {
     try {
@@ -15,17 +15,31 @@ if ("serviceWorker" in navigator) {
     }
   })();
   const host = window.location.hostname;
+  const isDev = import.meta.env.DEV;
   const isPreview =
-    host.includes("id-preview--") ||
-    host.includes("lovableproject.com") ||
+    host.startsWith("id-preview--") ||
+    host.startsWith("preview--") ||
+    host === "lovableproject.com" ||
+    host.endsWith(".lovableproject.com") ||
+    host === "lovableproject-dev.com" ||
+    host.endsWith(".lovableproject-dev.com") ||
+    host === "beta.lovable.dev" ||
+    host.endsWith(".beta.lovable.dev") ||
     host.includes("lovable.dev");
 
-  if (inIframe || isPreview) {
+  if (isDev || inIframe || isPreview) {
     // Clean up any leftover SW from earlier experiments to avoid stale builds in preview.
-    navigator.serviceWorker.getRegistrations().then((regs) => regs.forEach((r) => r.unregister()));
+    navigator.serviceWorker.getRegistrations().then((regs) => {
+      regs
+        .filter((r) => r.active?.scriptURL.endsWith("/sw.js") || r.installing?.scriptURL.endsWith("/sw.js") || r.waiting?.scriptURL.endsWith("/sw.js"))
+        .forEach((r) => r.unregister());
+    });
   } else {
     window.addEventListener("load", () => {
-      navigator.serviceWorker.register("/sw.js").catch((e) => console.warn("[sw] register failed", e));
+      navigator.serviceWorker
+        .register("/sw.js")
+        .then((registration) => registration.update())
+        .catch((e) => console.warn("[sw] register failed", e));
     });
   }
 }
