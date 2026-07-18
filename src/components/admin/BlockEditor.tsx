@@ -53,6 +53,7 @@ import TwoColumnBlock from "./block-editors/TwoColumnBlock";
 import GalleryBlock from "./block-editors/GalleryBlock";
 import SummaryBlock from "./block-editors/SummaryBlock";
 import ActivityBlock from "./block-editors/ActivityBlock";
+import HierarchyBlock from "./block-editors/HierarchyBlock";
 
 interface Props {
   blocks: Block[];
@@ -78,6 +79,7 @@ const BlockRenderer = React.memo(({ block, onChange }: { block: Block; onChange:
     case "gallery": return <GalleryBlock block={block} onChange={onChange} />;
     case "summary": return <SummaryBlock block={block} onChange={onChange} />;
     case "activity": return <ActivityBlock block={block} onChange={onChange} />;
+    case "hierarchy": return <HierarchyBlock block={block} onChange={onChange} />;
     default: return <p className="text-muted-foreground text-sm">Neznámý blok</p>;
   }
 });

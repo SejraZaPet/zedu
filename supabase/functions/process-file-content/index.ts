@@ -37,7 +37,7 @@ const BLOCK_TOOL = {
                     id: { type: "string" },
                     type: {
                       type: "string",
-                      enum: ["heading", "paragraph", "bullet_list", "table", "callout", "quote", "divider"],
+                      enum: ["heading", "paragraph", "bullet_list", "table", "callout", "quote", "divider", "hierarchy"],
                     },
                     visible: { type: "boolean" },
                     props: {
@@ -52,6 +52,20 @@ const BLOCK_TOOL = {
                         calloutType: { type: "string" },
                         author: { type: "string" },
                         style: { type: "string" },
+                        shape: { type: "string", enum: ["pyramid", "layers", "steps"] },
+                        direction: { type: "string", enum: ["top-to-bottom", "bottom-to-top"] },
+                        levels: {
+                          type: "array",
+                          items: {
+                            type: "object",
+                            additionalProperties: false,
+                            required: ["label"],
+                            properties: {
+                              label: { type: "string" },
+                              description: { type: "string" },
+                            },
+                          },
+                        },
                       },
                     },
                   },
@@ -81,6 +95,7 @@ PRAVIDLA:
 - Tabulky převáděj na table s props.headers a props.rows.
 - Důležitá upozornění můžeš převést na callout s props.calloutType = "note".
 - Citace převáděj na quote.
+- HIERARCHIE (blok "hierarchy"): Použij POUZE tehdy, když text popisuje skutečně uspořádané úrovně/stupně/vrstvy s jasným pořadím a vztahem nadřazenosti — např. Maslowova pyramida potřeb, potravinová pyramida, organizační struktura firmy, geologické vrstvy, fáze procesu se závaznou posloupností. NEPOUŽÍVEJ pro běžné odrážkové seznamy, výčty vlastností nebo neuspořádané položky — ty jsou vždy bullet_list. Když je hierarchy vhodná, vytvoř props: { shape: "pyramid" (pro pyramidy potřeb, potravinové pyramidy) | "layers" (pro vrstvy stejné důležitosti) | "steps" (pro sekvenční fáze), direction: "top-to-bottom" (vrchol nahoře) | "bottom-to-top" (základna nahoře, typické pro Maslowa), levels: [{ label: "název úrovně", description: "krátký popis (volitelně)" }] }. Pořadí levels: první = vrchol / horní vrstva, poslední = základna / spodní vrstva. Min 2, max 8 úrovní.
 - Každý blok musí mít: id (6 náhodných alfanumerických znaků), type, visible=true, props.
 - Text nesmí obsahovat markdown ani HTML.
 - Pokud je režim split, vrať více lekcí podle přirozených sekcí/slidů; pokud je režim single, vrať právě jednu lekci.
@@ -305,6 +320,20 @@ function normalizeBlock(block: any) {
       };
     case "divider":
       return { id, type, visible: true, props: { style: "line" } };
+    case "hierarchy": {
+      const shape = ["pyramid", "layers", "steps"].includes(props.shape) ? props.shape : "pyramid";
+      const direction = props.direction === "bottom-to-top" ? "bottom-to-top" : "top-to-bottom";
+      const rawLevels = Array.isArray(props.levels) ? props.levels : [];
+      const levels = rawLevels
+        .map((lvl: any) => ({
+          id: (globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2)),
+          label: String(lvl?.label ?? "").trim(),
+          description: String(lvl?.description ?? "").trim(),
+        }))
+        .filter((lvl: any) => lvl.label || lvl.description)
+        .slice(0, 8);
+      return { id, type, visible: true, props: { shape, direction, levels } };
+    }
     default:
       return {
         id,
@@ -332,6 +361,7 @@ function normalizeLessons(payload: any, fallbackTitle: string, mode: "single" | 
               }
               if (block.type === "bullet_list") return block.props.items.length > 0;
               if (block.type === "table") return block.props.headers.length > 0 || block.props.rows.length > 0;
+              if (block.type === "hierarchy") return Array.isArray(block.props.levels) && block.props.levels.length >= 2;
               return true;
             })
         : [],
