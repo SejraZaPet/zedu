@@ -90,7 +90,9 @@ export const BLOCK_TYPES: { type: BlockType; label: string; icon: string }[] = [
   { type: "gallery", label: "Galerie", icon: "🖼️" },
   { type: "summary", label: "Shrnutí lekce", icon: "📋" },
   { type: "activity", label: "Aktivita", icon: "🎯" },
+  { type: "hierarchy", label: "Hierarchie/Pyramida", icon: "🔺" },
 ];
+
 
 export const createDefaultBlock = (type: BlockType): Block => {
   const id = crypto.randomUUID();
