@@ -116,9 +116,49 @@ const ImportTextbookFileDialog = ({
           const result = await extractPdfText(file);
           extractedText = result.text;
           textPages = result.pages.map((p) => ({ pageNumber: p.pageNumber, charCount: p.charCount }));
-          console.log("[import-diag] textPages", textPages.map(p => ({ page: p.pageNumber, charCount: p.charCount, willRender: p.charCount < 30 })));
         } catch (err) {
           console.warn("PDF text extraction failed:", err);
+        }
+
+        // Server-side fallback: if pdfjs returned NOTHING across the whole
+        // document (typical for PPT-exported PDFs with missing ToUnicode maps),
+        // try `pdftotext` on the server. Poppler has much better font heuristics.
+        const totalChars = textPages.reduce((s, p) => s + p.charCount, 0);
+        if (totalChars === 0) {
+          try {
+            setProgress("Zkouším serverovou extrakci textu (pdftotext)...");
+            const { data: fbData, error: fbErr } = await supabase.functions.invoke("extract-pdf-text", {
+              body: { fileBase64: base64 },
+            });
+            if (!fbErr && fbData && typeof (fbData as any).text === "string") {
+              const fb = fbData as { text: string; pages?: { pageNumber: number; text: string; charCount: number }[] };
+              const fbTotal = Array.isArray(fb.pages)
+                ? fb.pages.reduce((s, p) => s + (p.charCount || 0), 0)
+                : fb.text.length;
+              if (fbTotal > 0) {
+                extractedText = fb.text;
+                textPages = (fb.pages ?? []).map((p) => ({ pageNumber: p.pageNumber, charCount: p.charCount }));
+              }
+            } else if (fbErr) {
+              console.warn("extract-pdf-text failed:", fbErr);
+            }
+          } catch (err) {
+            console.warn("extract-pdf-text threw:", err);
+          }
+        }
+
+        // Still nothing after both attempts — bail with an actionable message.
+        const finalTotal = textPages.reduce((s, p) => s + p.charCount, 0);
+        if (finalTotal === 0 && extractedText.length === 0) {
+          toast({
+            title: "Text z PDF se nepodařilo extrahovat",
+            description:
+              "PDF pravděpodobně používá nestandardní fonty. Zkus nahrát DOCX verzi nebo vlož text ručně přes textareu níže.",
+            variant: "destructive",
+          });
+          setProcessing(false);
+          setProgress("");
+          return;
         }
       }
 
@@ -135,7 +175,6 @@ const ImportTextbookFileDialog = ({
           }
         }
       }
-      console.log("[import-diag] threshold", TEXT_QUALITY_THRESHOLD, "pagesNeedingRender", Array.from(pagesNeedingRender), "isPdf", isPdf, "textPages.length", textPages.length);
       // pageImageUrls is 0-indexed; empty string means "do not insert".
       const pageImageUrls: string[] = [];
       if (isPdf && pagesNeedingRender.size > 0) {
@@ -149,7 +188,6 @@ const ImportTextbookFileDialog = ({
             for (let i = 0; i < pageImages.length; i++) {
               const pageNumber = i + 1;
               const willInsert = pagesNeedingRender.has(pageNumber);
-              console.log("[import-diag] page", pageNumber, "charCount", textPages.find(p => p.pageNumber === pageNumber)?.charCount, "inserted", willInsert);
               if (!willInsert) {
                 pageImageUrls.push("");
                 continue;
@@ -220,14 +258,6 @@ const ImportTextbookFileDialog = ({
         invokeBody.extractedText = extractedText;
       } else {
         invokeBody.fileBase64 = base64;
-      }
-      {
-        const tableLineCount = (extractedText.match(/^\s*\|.*\|\s*$/gm) || []).length;
-        const bodyText = typeof invokeBody.extractedText === "string" ? invokeBody.extractedText : "";
-        const bodyPipeCount = (bodyText.match(/\|/g) || []).length;
-        const sample = (extractedText.match(/^\s*\|.*\|\s*$/gm) || []).slice(0, 5);
-        console.log("[import-diag] extractedText length", extractedText.length, "table-like lines", tableLineCount, "sending as extractedText?", "extractedText" in invokeBody, "body pipe count", bodyPipeCount);
-        console.log("[import-diag] table sample", sample);
       }
       const { data, error } = await supabase.functions.invoke("process-file-content", {
         body: invokeBody,
