@@ -109,24 +109,53 @@ const SortableBlock = React.memo(({
   const typeLabel = BLOCK_TYPES.find((t) => t.type === block.type)?.label ?? block.type;
   const handleUpdate = useCallback((props: Record<string, any>) => onUpdate(block.id, props), [onUpdate, block.id]);
 
+  const wrapperStyle: React.CSSProperties = {
+    ...style,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: isDragging ? "#0F9A8B" : "#E5E5E5",
+    background: "#FFFFFF",
+    boxShadow: "0 1px 3px hsl(228 24% 92% / 0.6), 0 4px 16px -4px hsl(228 24% 92% / 0.4)",
+    transition: (style.transition ?? "") + ", border-color 120ms ease, background-color 120ms ease",
+  };
+
   return (
-    <div ref={setNodeRef} data-block-id={block.id} style={style} className={`border rounded-lg bg-card ${!block.visible ? "opacity-50" : ""} ${isDragging ? "border-primary" : "border-border"}`}>
-      <div className="flex items-center gap-1 px-2 py-1.5 border-b border-border bg-muted/30 rounded-t-lg">
-        <button {...attributes} {...listeners} className="cursor-grab text-muted-foreground hover:text-foreground p-0.5">
+    <div
+      ref={setNodeRef}
+      data-block-id={block.id}
+      style={wrapperStyle}
+      className={`be-block group/beblock overflow-hidden ${!block.visible ? "opacity-50" : ""}`}
+    >
+      <div
+        className="be-block__header flex items-center gap-1 px-3 py-2"
+        style={{ borderBottom: "1px solid #F0F0F0" }}
+      >
+        <button
+          {...attributes}
+          {...listeners}
+          className="be-block__grip cursor-grab p-0.5"
+          style={{ color: "#737373" }}
+        >
           <GripVertical className="w-4 h-4" />
         </button>
-        <span className="text-xs font-medium text-muted-foreground flex-1">{typeLabel}</span>
-        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onToggle(block.id)} title={block.visible ? "Skrýt" : "Zobrazit"}>
+        <span
+          className="be-block__label flex-1"
+          style={{ color: "#525252", fontWeight: 700, fontSize: 12, letterSpacing: 0.2 }}
+        >
+          {typeLabel}
+        </span>
+        <Button size="icon" variant="ghost" className="be-block__action h-7 w-7" onClick={() => onToggle(block.id)} title={block.visible ? "Skrýt" : "Zobrazit"}>
           {block.visible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
         </Button>
-        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onDuplicate(block.id)} title="Duplikovat">
+        <Button size="icon" variant="ghost" className="be-block__action h-7 w-7" onClick={() => onDuplicate(block.id)} title="Duplikovat">
           <Copy className="w-3.5 h-3.5" />
         </Button>
-        <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => onDelete(block.id)} title="Smazat">
+        <Button size="icon" variant="ghost" className="be-block__action h-7 w-7" onClick={() => onDelete(block.id)} title="Smazat">
           <Trash2 className="w-3.5 h-3.5" />
         </Button>
       </div>
-      <div className="p-3">
+      <div className="p-3" style={{ color: "#171717" }}>
         <BlockRenderer block={block} onChange={handleUpdate} />
       </div>
     </div>
@@ -434,8 +463,38 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
         if (e.currentTarget === e.target) setDragOver(false);
       }}
       onDrop={handleDrop}
-      className={`relative space-y-3 rounded-lg transition ${dragOver ? "ring-2 ring-primary ring-offset-2 bg-primary/5" : ""}`}
+      className={`block-editor-scope relative space-y-3 p-4 rounded-[14px] transition ${dragOver ? "ring-2 ring-offset-2 bg-primary/5" : ""}`}
+      style={{ background: "#FAFAFA" }}
     >
+      <style>{`
+        .block-editor-scope .be-block:focus-within {
+          border-color: #0F9A8B !important;
+          border-width: 1.5px !important;
+          box-shadow: 0 0 0 3px rgba(15,154,139,0.08), 0 1px 3px hsl(228 24% 92% / 0.6), 0 4px 16px -4px hsl(228 24% 92% / 0.4) !important;
+        }
+        .block-editor-scope .be-block:focus-within .be-block__header {
+          background: #F0FAF8;
+        }
+        .block-editor-scope .be-block:focus-within .be-block__label { color: #0B6E5D !important; }
+        .block-editor-scope .be-block:focus-within .be-block__grip { color: #0F9A8B !important; }
+        .block-editor-scope .be-block__action { color: #A3A3A3; }
+        .block-editor-scope .be-block__action:hover { color: #525252; background: #F5F5F5; }
+        .block-editor-scope .be-add-primary {
+          background: #0F9A8B; color: #FFFFFF; border-radius: 24px;
+          padding: 0 20px; height: 40px; font-weight: 700;
+          display: inline-flex; align-items: center; gap: 8px;
+          border: none; transition: background 120ms ease, transform 120ms ease;
+        }
+        .block-editor-scope .be-add-primary:hover { background: #0B7E71; }
+        .block-editor-scope .be-add-pill {
+          background: #FFFFFF; color: #525252; border: 1px solid #E5E5E5;
+          border-radius: 24px; padding: 0 16px; height: 40px; font-weight: 500;
+          display: inline-flex; align-items: center; gap: 6px; font-size: 13px;
+          transition: border-color 120ms ease, color 120ms ease;
+        }
+        .block-editor-scope .be-add-pill:hover { border-color: #0F9A8B; color: #0F9A8B; }
+      `}</style>
+
       <div className="flex items-center justify-end gap-1 sticky top-0 z-40 bg-background/80 backdrop-blur-sm py-1 -mt-1 rounded-md">
         <Button
           size="sm"
@@ -491,18 +550,42 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
         </div>
       )}
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" className="w-full"><Plus className="w-4 h-4 mr-2" />Přidat blok</Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="center" side="top" className="w-48 max-h-[360px] overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20">
-          {BLOCK_TYPES.map((bt) => (
-            <DropdownMenuItem key={bt.type} onClick={() => addBlock(bt.type)} className="py-1.5 px-2 text-sm">
-              <span className="w-5 text-center mr-2">{bt.icon}</span>{bt.label}
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <div className="flex items-center gap-2 flex-wrap justify-center pt-2">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button type="button" className="be-add-primary">
+              <Plus className="w-4 h-4" /> Přidat blok
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="center" side="top" className="w-56 max-h-[360px] overflow-y-auto">
+            {BLOCK_TYPES.map((bt) => (
+              <DropdownMenuItem key={bt.type} onClick={() => addBlock(bt.type)} className="py-1.5 px-2 text-sm">
+                <span className="w-5 text-center mr-2">{bt.icon}</span>{bt.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {([
+          { key: "text", label: "Text", types: ["heading", "paragraph", "bullet_list", "quote", "callout", "summary"] },
+          { key: "table", label: "Tabulka", types: ["table", "accordion", "card_grid", "two_column", "hierarchy", "divider"] },
+          { key: "media", label: "Média", types: ["image", "gallery", "image_text", "youtube", "activity", "lesson_link"] },
+        ] as const).map((cat) => (
+          <DropdownMenu key={cat.key}>
+            <DropdownMenuTrigger asChild>
+              <button type="button" className="be-add-pill">{cat.label}</button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center" side="top" className="w-52 max-h-[360px] overflow-y-auto">
+              {BLOCK_TYPES.filter((bt) => (cat.types as readonly string[]).includes(bt.type)).map((bt) => (
+                <DropdownMenuItem key={bt.type} onClick={() => addBlock(bt.type)} className="py-1.5 px-2 text-sm">
+                  <span className="w-5 text-center mr-2">{bt.icon}</span>{bt.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ))}
+      </div>
+
     </div>
   );
 };
