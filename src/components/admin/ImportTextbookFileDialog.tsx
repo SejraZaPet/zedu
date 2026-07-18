@@ -260,6 +260,7 @@ const ImportTextbookFileDialog = ({
         blocks?: Block[];
         blockCount?: number;
         embeddedImages?: string[];
+        embeddedImagesBySlide?: { slideNumber: number; urls: string[] }[];
         skippedImages?: number;
         linkedBlocks?: Block[];
       };
@@ -267,6 +268,21 @@ const ImportTextbookFileDialog = ({
       let serverEmbedded = Array.isArray(response.embeddedImages) ? response.embeddedImages : [];
       const skippedImages = typeof response.skippedImages === "number" ? response.skippedImages : 0;
       const linkedBlocks: Block[] = Array.isArray(response.linkedBlocks) ? response.linkedBlocks : [];
+
+      // For PPTX: merge slideNumber -> urls into the same per-unit map used by
+      // enrichBlocksWithPages (PDF path doesn't populate this for PPTX imports).
+      // A "slide" plays the same role as a PDF page for divider-based placement.
+      if (Array.isArray(response.embeddedImagesBySlide)) {
+        const bySlideUrls = new Set<string>();
+        for (const entry of response.embeddedImagesBySlide) {
+          if (!entry || typeof entry.slideNumber !== "number" || !Array.isArray(entry.urls)) continue;
+          const existing = pdfEmbeddedImagesByPage.get(entry.slideNumber) ?? [];
+          pdfEmbeddedImagesByPage.set(entry.slideNumber, [...existing, ...entry.urls]);
+          for (const u of entry.urls) bySlideUrls.add(u);
+        }
+        // Don't duplicate these into the fallback gallery.
+        serverEmbedded = serverEmbedded.filter((u) => !bySlideUrls.has(u));
+      }
 
       // STEP 5: Classify all uploaded embedded images to filter out purely
       // decorative text banners (their info is already in the text stream).
