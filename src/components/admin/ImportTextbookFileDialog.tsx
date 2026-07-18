@@ -389,7 +389,8 @@ const ImportTextbookFileDialog = ({
         }
         const fallbackUrls = idx === 0 ? [...leftoverPdf, ...serverEmbedded] : [];
         const fallbackImages = makeImageBlocks(fallbackUrls);
-        const withGallery = fallbackImages.length > 0 ? [...placed, ...fallbackImages] : placed;
+        const extraLinked = idx === 0 ? linkedBlocks : [];
+        const withGallery = [...placed, ...fallbackImages, ...extraLinked];
         return { ...lesson, blocks: withGallery };
       });
 
