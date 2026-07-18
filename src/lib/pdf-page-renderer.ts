@@ -252,12 +252,16 @@ export async function extractPdfText(file: File): Promise<PdfTextResult> {
         renderedLen: rendered.length,
       });
 
-
-    pages.push({ pageNumber: i, text: rendered, charCount: rendered.length });
-    if (rendered) joined.push(`--- Strana ${i} ---\n${rendered}`);
+      pages.push({ pageNumber: i, text: rendered, charCount: rendered.length });
+      if (rendered) joined.push(`--- Strana ${i} ---\n${rendered}`);
+    }
+    return { text: joined.join("\n\n"), pages };
+  } catch (err) {
+    console.error("[pdf-text-diag] extractPdfText FAILED", err);
+    throw err;
   }
-  return { text: joined.join("\n\n"), pages };
 }
+
 
 /**
  * Extract embedded raster images from a PDF using pdfjs operator lists.
