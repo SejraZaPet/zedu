@@ -315,6 +315,18 @@ export async function extractPdfEmbeddedImages(
       if (width > maxPixelDim || height > maxPixelDim) { bump("too-large", { page: i, index: k, source, width, height, maxPixelDim }); continue; }
       if (width < 16 || height < 16) { bump("too-small", { page: i, index: k, source, width, height }); continue; }
 
+      // Full-page background filter: if painted size (from last transform op)
+      // covers ≥ threshold of both viewport dimensions, treat as background.
+      if (lastTransformA > 0 && lastTransformD > 0 && pageViewport.width > 0 && pageViewport.height > 0) {
+        const coverW = lastTransformA / pageViewport.width;
+        const coverH = lastTransformD / pageViewport.height;
+        dlog("coverage check", { page: i, index: k, source, paintedW: lastTransformA, paintedH: lastTransformD, viewportW: pageViewport.width, viewportH: pageViewport.height, coverW, coverH, threshold: pageCoverageThreshold });
+        if (coverW >= pageCoverageThreshold && coverH >= pageCoverageThreshold) {
+          bump("full-page-background", { page: i, index: k, source, paintedW: lastTransformA, paintedH: lastTransformD, viewportW: pageViewport.width, viewportH: pageViewport.height, coverW, coverH });
+          continue;
+        }
+      }
+
       try {
         const canvas = document.createElement("canvas");
         canvas.width = width;
