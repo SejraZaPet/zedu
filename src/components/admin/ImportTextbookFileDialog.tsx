@@ -138,26 +138,31 @@ const ImportTextbookFileDialog = ({
       // Extract EMBEDDED raster images from PDF (not full-page renders).
       // Uploaded to storage; appended as a gallery block at the end of the
       // first lesson so the teacher can move/curate them in the editor.
-      let pdfEmbeddedImageUrls: string[] = [];
+      const pdfEmbeddedImagesByPage = new Map<number, string[]>();
       if (isPdf) {
         try {
           setProgress("Hledám vložené obrázky v PDF...");
           const { extractPdfEmbeddedImages } = await import("@/lib/pdf-page-renderer");
-          const blobs = await extractPdfEmbeddedImages(file);
-          if (blobs.length > 0) {
-            setProgress(`Nahrávám ${blobs.length} vložených obrázků...`);
+          const items = await extractPdfEmbeddedImages(file);
+          if (items.length > 0) {
+            setProgress(`Nahrávám ${items.length} vložených obrázků...`);
             const folder = `pdf-embedded/${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-            for (let i = 0; i < blobs.length; i++) {
-              const path = `${folder}/image-${i + 1}.jpg`;
+            for (let i = 0; i < items.length; i++) {
+              const { pageNumber, blob } = items[i];
+              const path = `${folder}/page-${pageNumber}-image-${i + 1}.jpg`;
               const { error: upErr } = await supabase.storage
                 .from("lesson-images")
-                .upload(path, blobs[i], { contentType: "image/jpeg", upsert: true });
+                .upload(path, blob, { contentType: "image/jpeg", upsert: true });
               if (upErr) {
                 console.warn("Upload vloženého obrázku selhal:", upErr);
                 continue;
               }
               const { data: urlData } = supabase.storage.from("lesson-images").getPublicUrl(path);
-              if (urlData?.publicUrl) pdfEmbeddedImageUrls.push(urlData.publicUrl);
+              if (urlData?.publicUrl) {
+                const list = pdfEmbeddedImagesByPage.get(pageNumber) ?? [];
+                list.push(urlData.publicUrl);
+                pdfEmbeddedImagesByPage.set(pageNumber, list);
+              }
             }
           }
         } catch (err) {
@@ -209,8 +214,6 @@ const ImportTextbookFileDialog = ({
 
       const serverEmbedded = Array.isArray(response.embeddedImages) ? response.embeddedImages : [];
       const skippedImages = typeof response.skippedImages === "number" ? response.skippedImages : 0;
-      const allEmbedded = [...pdfEmbeddedImageUrls, ...serverEmbedded];
-
 
       const makeImageBlock = (url: string, pageIdx: number): Block => ({
         id: crypto.randomUUID(),
@@ -224,29 +227,7 @@ const ImportTextbookFileDialog = ({
         },
       } as unknown as Block);
 
-      const enrichBlocksWithPages = (blocks: Block[]): Block[] => {
-        const valid = pageImageUrls.filter(Boolean);
-        if (valid.length === 0) return blocks;
-        const out: Block[] = [];
-        let pageIdx = 0;
-        if (pageImageUrls[0]) out.push(makeImageBlock(pageImageUrls[0], 0));
-        for (const block of blocks) {
-          out.push(block);
-          if ((block as any)?.type === "divider") {
-            pageIdx++;
-            if (pageImageUrls[pageIdx]) out.push(makeImageBlock(pageImageUrls[pageIdx], pageIdx));
-          }
-        }
-        // Append any leftover pages so nothing is lost
-        for (let i = pageIdx + 1; i < pageImageUrls.length; i++) {
-          if (pageImageUrls[i]) out.push(makeImageBlock(pageImageUrls[i], i));
-        }
-        return out;
-      };
-
-      // Build a gallery block from all extracted embedded images.
-      // Appended at the END of each draft lesson; teacher moves them manually
-      // in the editor (positioning near matching text is out of scope).
+      // Build a gallery block from a set of image URLs. Returns null if empty.
       const makeGalleryBlock = (urls: string[]): Block | null => {
         if (urls.length === 0) return null;
         return {
@@ -259,7 +240,40 @@ const ImportTextbookFileDialog = ({
           },
         } as unknown as Block;
       };
-      const embeddedGalleryBlock = makeGalleryBlock(allEmbedded);
+
+      // Insert per-page full-page renders AND per-page embedded-image galleries.
+      // Page boundaries in the AI output are marked with `divider` blocks.
+      // `usedPages` tracks which PDF pages were successfully placed inline so
+      // the rest can be flushed at the end.
+      const enrichBlocksWithPages = (blocks: Block[]): { blocks: Block[]; usedPages: Set<number> } => {
+        const usedPages = new Set<number>();
+        const placePageAssets = (out: Block[], pageIdx: number) => {
+          // pageIdx is 0-based; PDF pageNumber is 1-based
+          if (pageImageUrls[pageIdx]) out.push(makeImageBlock(pageImageUrls[pageIdx], pageIdx));
+          const embedded = pdfEmbeddedImagesByPage.get(pageIdx + 1);
+          if (embedded && embedded.length > 0) {
+            const gallery = makeGalleryBlock(embedded);
+            if (gallery) out.push(gallery);
+            usedPages.add(pageIdx + 1);
+          }
+        };
+
+        const out: Block[] = [];
+        let pageIdx = 0;
+        placePageAssets(out, 0);
+        for (const block of blocks) {
+          out.push(block);
+          if ((block as any)?.type === "divider") {
+            pageIdx++;
+            placePageAssets(out, pageIdx);
+          }
+        }
+        // Leftover full-page renders (AI produced fewer dividers than pages)
+        for (let i = pageIdx + 1; i < pageImageUrls.length; i++) {
+          if (pageImageUrls[i]) out.push(makeImageBlock(pageImageUrls[i], i));
+        }
+        return { blocks: out, usedPages };
+      };
 
       const rawLessons = Array.isArray(response.lessons)
         ? response.lessons
@@ -269,8 +283,23 @@ const ImportTextbookFileDialog = ({
 
       const lessons = rawLessons.map((lesson, idx) => {
         const base = Array.isArray(lesson.blocks) ? lesson.blocks : [];
-        const withPages = idx === 0 ? enrichBlocksWithPages(base) : base;
-        const withGallery = embeddedGalleryBlock ? [...withPages, embeddedGalleryBlock] : withPages;
+        let placed = base;
+        let usedPages = new Set<number>();
+        if (idx === 0) {
+          const enriched = enrichBlocksWithPages(base);
+          placed = enriched.blocks;
+          usedPages = enriched.usedPages;
+        }
+        // Fallback gallery on lesson 0: unmapped PDF pages + all DOCX/PPTX embedded
+        const leftoverPdf: string[] = [];
+        if (idx === 0) {
+          for (const [pageNumber, urls] of pdfEmbeddedImagesByPage.entries()) {
+            if (!usedPages.has(pageNumber)) leftoverPdf.push(...urls);
+          }
+        }
+        const fallbackUrls = idx === 0 ? [...leftoverPdf, ...serverEmbedded] : [];
+        const fallbackGallery = makeGalleryBlock(fallbackUrls);
+        const withGallery = fallbackGallery ? [...placed, fallbackGallery] : placed;
         return { ...lesson, blocks: withGallery };
       });
 
@@ -288,10 +317,11 @@ const ImportTextbookFileDialog = ({
       }
 
       const totalBlocks = normalizedLessons.reduce((sum, lesson) => sum + lesson.blocks.length, 0);
-      const embeddedCount = allEmbedded.length;
+      const pdfEmbeddedCount = Array.from(pdfEmbeddedImagesByPage.values()).reduce((s, arr) => s + arr.length, 0);
+      const embeddedCount = pdfEmbeddedCount + serverEmbedded.length;
       setDrafts(normalizedLessons);
       const parts = [`Vytvořeno ${totalBlocks} bloků.`];
-      if (embeddedCount > 0) parts.push(`Přidáno ${embeddedCount} obrázků do galerie na konci lekce.`);
+      if (embeddedCount > 0) parts.push(`Přidáno ${embeddedCount} obrázků rozprostřených po lekci.`);
       if (skippedImages > 0) parts.push(`Přeskočeno ${skippedImages} obrázků v nepodporovaném formátu (EMF/WMF).`);
       toast({
         title: "Import dokončen",

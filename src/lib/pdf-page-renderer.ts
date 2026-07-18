@@ -99,7 +99,7 @@ export async function extractPdfText(file: File): Promise<string> {
 export async function extractPdfEmbeddedImages(
   file: File,
   opts: { maxPixelDim?: number; maxImages?: number; objsTimeoutMs?: number; pageCoverageThreshold?: number; debug?: boolean } = {},
-): Promise<Blob[]> {
+): Promise<{ pageNumber: number; blob: Blob }[]> {
   const maxPixelDim = opts.maxPixelDim ?? 4000;
   const maxImages = opts.maxImages ?? 200;
   const objsTimeoutMs = opts.objsTimeoutMs ?? 5000;
@@ -155,7 +155,7 @@ export async function extractPdfEmbeddedImages(
     : -1;
 
   const seen = new Set<string>();
-  const out: Blob[] = [];
+  const out: { pageNumber: number; blob: Blob }[] = [];
 
   // Reusable throwaway canvas — rendering the page is the only reliable way
   // to force pdfjs to transfer image XObjects onto the main thread so
@@ -365,7 +365,7 @@ export async function extractPdfEmbeddedImages(
         const blob = await new Promise<Blob | null>((resolve) =>
           canvas.toBlob(resolve, "image/jpeg", 0.85),
         );
-        if (blob && blob.size > 0) { out.push(blob); dlog("emitted", source, blob.size); }
+        if (blob && blob.size > 0) { out.push({ pageNumber: i, blob }); dlog("emitted", source, blob.size, "page", i); }
         else bump("empty-blob", { page: i, index: k, source });
       } catch (err) {
         bump("decode-error", { page: i, index: k, source });
