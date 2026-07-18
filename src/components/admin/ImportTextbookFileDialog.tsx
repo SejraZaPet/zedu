@@ -101,23 +101,58 @@ const ImportTextbookFileDialog = ({
 
     try {
       const base64 = await readFileAsBase64(file);
-
-      // Render PDF pages to images (frontend) for visual fidelity
-      let pageImageUrls: string[] = [];
       const isPdf = /\.pdf$/i.test(file.name) || file.type === "application/pdf";
-      if (isPdf) {
+
+      // STEP 1: Extract text FIRST so we know per-page quality and can decide
+      // which pages need a full-page render fallback (scanned/image-only pages).
+      let extractedText = "";
+      let textPages: { pageNumber: number; charCount: number }[] = [];
+      if (manualText.trim().length >= 20) {
+        extractedText = manualText.trim();
+      } else if (isPdf) {
         try {
-          setProgress("Renderuji stránky PDF...");
+          setProgress("Extrahuji text z PDF...");
+          const { extractPdfText } = await import("@/lib/pdf-page-renderer");
+          const result = await extractPdfText(file);
+          extractedText = result.text;
+          textPages = result.pages.map((p) => ({ pageNumber: p.pageNumber, charCount: p.charCount }));
+        } catch (err) {
+          console.warn("PDF text extraction failed:", err);
+        }
+      }
+
+      // STEP 2: Render + upload PDF page images — but ONLY for pages where
+      // text extraction was insufficient (charCount < 30). For pages where
+      // text extraction succeeded, the text is authoritative and a duplicate
+      // full-page render would only clutter the lesson.
+      const TEXT_QUALITY_THRESHOLD = 30;
+      const pagesNeedingRender = new Set<number>();
+      if (isPdf) {
+        if (textPages.length > 0) {
+          for (const p of textPages) {
+            if (p.charCount < TEXT_QUALITY_THRESHOLD) pagesNeedingRender.add(p.pageNumber);
+          }
+        }
+      }
+      // pageImageUrls is 0-indexed; empty string means "do not insert".
+      const pageImageUrls: string[] = [];
+      if (isPdf && pagesNeedingRender.size > 0) {
+        try {
+          setProgress("Renderuji stránky PDF (fallback pro naskenované stránky)...");
           const { renderPdfPagesToImages } = await import("@/lib/pdf-page-renderer");
           const pageImages = await renderPdfPagesToImages(file);
-
           if (pageImages.length > 0) {
-            setProgress(`Nahrávám ${pageImages.length} stránek do úložiště...`);
+            setProgress(`Nahrávám ${pagesNeedingRender.size} fallback stránek...`);
             const folder = `pdf-import/${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
             for (let i = 0; i < pageImages.length; i++) {
+              const pageNumber = i + 1;
+              if (!pagesNeedingRender.has(pageNumber)) {
+                pageImageUrls.push("");
+                continue;
+              }
               const dataUrl = pageImages[i];
               const blob = await (await fetch(dataUrl)).blob();
-              const path = `${folder}/page-${i + 1}.jpg`;
+              const path = `${folder}/page-${pageNumber}.jpg`;
               const { error: upErr } = await supabase.storage
                 .from("lesson-images")
                 .upload(path, blob, { contentType: "image/jpeg", upsert: true });
@@ -135,9 +170,7 @@ const ImportTextbookFileDialog = ({
         }
       }
 
-      // Extract EMBEDDED raster images from PDF (not full-page renders).
-      // Uploaded to storage; appended as a gallery block at the end of the
-      // first lesson so the teacher can move/curate them in the editor.
+      // STEP 3: Extract + upload EMBEDDED raster images from PDF.
       const pdfEmbeddedImagesByPage = new Map<number, string[]>();
       if (isPdf) {
         try {
@@ -170,20 +203,9 @@ const ImportTextbookFileDialog = ({
         }
       }
 
-      // Try to extract clean text from PDF on the frontend so AI gets real content, not hallucinations.
-      let extractedText = "";
-      if (manualText.trim().length >= 20) {
-        extractedText = manualText.trim();
-      } else if (isPdf) {
-        try {
-          setProgress("Extrahuji text z PDF...");
-          const { extractPdfText } = await import("@/lib/pdf-page-renderer");
-          extractedText = await extractPdfText(file);
-        } catch (err) {
-          console.warn("PDF text extraction failed:", err);
-        }
-      }
-
+      // STEP 4: Send document to AI. Text-first: if we have enough extracted
+      // text we do NOT resend the raw PDF bytes (which would let the model
+      // "see" and re-describe decorative banners and duplicate the content).
       setProgress("AI analyzuje dokument...");
       const invokeBody: Record<string, unknown> = {
         fileName: file.name,
@@ -212,8 +234,47 @@ const ImportTextbookFileDialog = ({
         skippedImages?: number;
       };
 
-      const serverEmbedded = Array.isArray(response.embeddedImages) ? response.embeddedImages : [];
+      let serverEmbedded = Array.isArray(response.embeddedImages) ? response.embeddedImages : [];
       const skippedImages = typeof response.skippedImages === "number" ? response.skippedImages : 0;
+
+      // STEP 5: Classify all uploaded embedded images to filter out purely
+      // decorative text banners (their info is already in the text stream).
+      // One batched vision call for the whole document.
+      const allEmbeddedUrls: string[] = [];
+      for (const list of pdfEmbeddedImagesByPage.values()) allEmbeddedUrls.push(...list);
+      allEmbeddedUrls.push(...serverEmbedded);
+
+      let decorativeCount = 0;
+      if (allEmbeddedUrls.length > 0) {
+        try {
+          setProgress(`AI třídí ${allEmbeddedUrls.length} obrázků (dekorativní text vs. obsah)...`);
+          const { data: clsData, error: clsErr } = await supabase.functions.invoke("classify-images", {
+            body: { urls: allEmbeddedUrls },
+          });
+          if (!clsErr) {
+            const cls = (clsData ?? {}) as { classifications?: string[] };
+            const list = Array.isArray(cls.classifications) ? cls.classifications : [];
+            const keep = new Set<string>();
+            for (let idx = 0; idx < allEmbeddedUrls.length; idx++) {
+              const cat = list[idx];
+              if (cat === "decorative_text") decorativeCount++;
+              else keep.add(allEmbeddedUrls[idx]);
+            }
+            // Rewrite per-page map keeping only "content" images.
+            for (const [pageNumber, urls] of pdfEmbeddedImagesByPage) {
+              const filtered = urls.filter((u) => keep.has(u));
+              if (filtered.length > 0) pdfEmbeddedImagesByPage.set(pageNumber, filtered);
+              else pdfEmbeddedImagesByPage.delete(pageNumber);
+            }
+            serverEmbedded = serverEmbedded.filter((u) => keep.has(u));
+          } else {
+            console.warn("classify-images failed, keeping all images:", clsErr);
+          }
+        } catch (err) {
+          console.warn("classify-images threw, keeping all images:", err);
+        }
+      }
+
 
       const makeImageBlock = (url: string, pageIdx: number): Block => ({
         id: crypto.randomUUID(),
