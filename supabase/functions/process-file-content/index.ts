@@ -211,6 +211,11 @@ function extractSlideText(xml: string): string {
   }
   for (const r of rows) r.sort((a, b) => a.x - b.x);
 
+  console.log("[pptx-table-diag]", {
+    slideShapes: shapes.length,
+    rowSizes: rows.map((r) => r.length),
+  });
+
   // Helpers
   const mean = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / (arr.length || 1);
   const stdev = (arr: number[]) => {
@@ -223,14 +228,14 @@ function extractSlideText(xml: string): string {
   const X_ALIGN_TOL = 300000; // ~0.33in — allowed drift of a column's x between rows
   const WIDTH_CV_MAX = 0.35;  // within a row, cx coefficient of variation must be <= 35%
 
-  // Test if a row's shapes have similar widths (column-like, not free labels).
-  const rowWidthsUniform = (r: Shape[]) => {
+  const widthCV = (r: Shape[]) => {
     const widths = r.map((s) => s.cx).filter((w) => w > 0);
-    if (widths.length < 2) return false;
+    if (widths.length < 2) return Infinity;
     const m = mean(widths);
-    if (m <= 0) return false;
-    return stdev(widths) / m <= WIDTH_CV_MAX;
+    if (m <= 0) return Infinity;
+    return stdev(widths) / m;
   };
+  const rowWidthsUniform = (r: Shape[]) => widthCV(r) <= WIDTH_CV_MAX;
 
   // Find groups of >=2 consecutive rows that share column count and x-alignment
   // and pass the width-uniformity test. Everything else emits as paragraphs.
@@ -240,23 +245,50 @@ function extractSlideText(xml: string): string {
   while (i < rows.length) {
     const base = rows[i];
     const cols = base.length;
-    const canStart =
-      cols >= 2 &&
-      cols <= MAX_COLS &&
-      base.every((s) => s.text.length > 0) &&
-      rowWidthsUniform(base);
+    const preview = base.map((s) => s.text.slice(0, 20)).join(" | ");
+
+    let canStart = true;
+    if (cols < 2 || cols > MAX_COLS) {
+      console.log("[pptx-table-diag] canStart=false", { row: i, cols, reason: "cols_out_of_range", preview });
+      canStart = false;
+    } else if (!base.every((s) => s.text.length > 0)) {
+      console.log("[pptx-table-diag] canStart=false", { row: i, cols, reason: "empty_cell", preview });
+      canStart = false;
+    } else {
+      const cv = widthCV(base);
+      if (cv > WIDTH_CV_MAX) {
+        console.log("[pptx-table-diag] canStart=false", { row: i, cols, reason: "width_cv", widthCV: cv.toFixed(3), preview });
+        canStart = false;
+      }
+    }
 
     if (canStart) {
       const group: Shape[][] = [base];
       let j = i + 1;
       while (j < rows.length) {
         const next = rows[j];
-        if (next.length !== cols) break;
-        if (!next.every((s) => s.text.length > 0)) break;
-        if (!rowWidthsUniform(next)) break;
+        const nextPreview = next.map((s) => s.text.slice(0, 20)).join(" | ");
+        if (next.length !== cols) {
+          console.log("[pptx-table-diag] group_break", { at: j, reason: "length_mismatch", have: next.length, want: cols, preview: nextPreview });
+          break;
+        }
+        if (!next.every((s) => s.text.length > 0)) {
+          console.log("[pptx-table-diag] group_break", { at: j, reason: "empty_cell", preview: nextPreview });
+          break;
+        }
+        const cv = widthCV(next);
+        if (cv > WIDTH_CV_MAX) {
+          console.log("[pptx-table-diag] group_break", { at: j, reason: "width_cv", widthCV: cv.toFixed(3), preview: nextPreview });
+          break;
+        }
         let aligned = true;
         for (let k = 0; k < cols; k++) {
-          if (Math.abs(next[k].x - base[k].x) > X_ALIGN_TOL) { aligned = false; break; }
+          const drift = Math.abs(next[k].x - base[k].x);
+          if (drift > X_ALIGN_TOL) {
+            console.log("[pptx-table-diag] group_break", { at: j, reason: "x_align_drift", col: k, drift, tol: X_ALIGN_TOL, preview: nextPreview });
+            aligned = false;
+            break;
+          }
         }
         if (!aligned) break;
         group.push(next);
@@ -264,6 +296,7 @@ function extractSlideText(xml: string): string {
       }
 
       if (group.length >= 2) {
+        console.log("[pptx-table-diag] table_emitted", { startRow: i, rows: group.length, cols });
         const headerRow = group[0].map((s) => s.text.split("\n").join(" ").trim());
         lines.push(`| ${headerRow.join(" | ")} |`);
         lines.push(`| ${headerRow.map(() => "---").join(" | ")} |`);
@@ -274,6 +307,8 @@ function extractSlideText(xml: string): string {
         tableEmitted = true;
         i = j;
         continue;
+      } else {
+        console.log("[pptx-table-diag] group_too_short", { startRow: i, groupLen: group.length });
       }
     }
 
@@ -283,6 +318,7 @@ function extractSlideText(xml: string): string {
 
   return lines.join("\n") + (tableEmitted ? "" : "");
 }
+
 
 async function extractPptxText(bytes: Uint8Array) {
   const { unzipSync } = await import("https://esm.sh/fflate@0.8.2");
