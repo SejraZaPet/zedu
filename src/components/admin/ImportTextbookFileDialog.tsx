@@ -83,6 +83,7 @@ const ImportTextbookFileDialog = ({
     setSaving(false);
     setProgress("");
     setManualText("");
+    setUsedVisionFallback(false);
   };
 
   const handleClose = (v: boolean) => {
