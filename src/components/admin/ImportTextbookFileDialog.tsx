@@ -214,8 +214,6 @@ const ImportTextbookFileDialog = ({
 
       const serverEmbedded = Array.isArray(response.embeddedImages) ? response.embeddedImages : [];
       const skippedImages = typeof response.skippedImages === "number" ? response.skippedImages : 0;
-      const allEmbedded = [...pdfEmbeddedImageUrls, ...serverEmbedded];
-
 
       const makeImageBlock = (url: string, pageIdx: number): Block => ({
         id: crypto.randomUUID(),
@@ -229,29 +227,7 @@ const ImportTextbookFileDialog = ({
         },
       } as unknown as Block);
 
-      const enrichBlocksWithPages = (blocks: Block[]): Block[] => {
-        const valid = pageImageUrls.filter(Boolean);
-        if (valid.length === 0) return blocks;
-        const out: Block[] = [];
-        let pageIdx = 0;
-        if (pageImageUrls[0]) out.push(makeImageBlock(pageImageUrls[0], 0));
-        for (const block of blocks) {
-          out.push(block);
-          if ((block as any)?.type === "divider") {
-            pageIdx++;
-            if (pageImageUrls[pageIdx]) out.push(makeImageBlock(pageImageUrls[pageIdx], pageIdx));
-          }
-        }
-        // Append any leftover pages so nothing is lost
-        for (let i = pageIdx + 1; i < pageImageUrls.length; i++) {
-          if (pageImageUrls[i]) out.push(makeImageBlock(pageImageUrls[i], i));
-        }
-        return out;
-      };
-
-      // Build a gallery block from all extracted embedded images.
-      // Appended at the END of each draft lesson; teacher moves them manually
-      // in the editor (positioning near matching text is out of scope).
+      // Build a gallery block from a set of image URLs. Returns null if empty.
       const makeGalleryBlock = (urls: string[]): Block | null => {
         if (urls.length === 0) return null;
         return {
@@ -264,7 +240,40 @@ const ImportTextbookFileDialog = ({
           },
         } as unknown as Block;
       };
-      const embeddedGalleryBlock = makeGalleryBlock(allEmbedded);
+
+      // Insert per-page full-page renders AND per-page embedded-image galleries.
+      // Page boundaries in the AI output are marked with `divider` blocks.
+      // `usedPages` tracks which PDF pages were successfully placed inline so
+      // the rest can be flushed at the end.
+      const enrichBlocksWithPages = (blocks: Block[]): { blocks: Block[]; usedPages: Set<number> } => {
+        const usedPages = new Set<number>();
+        const placePageAssets = (out: Block[], pageIdx: number) => {
+          // pageIdx is 0-based; PDF pageNumber is 1-based
+          if (pageImageUrls[pageIdx]) out.push(makeImageBlock(pageImageUrls[pageIdx], pageIdx));
+          const embedded = pdfEmbeddedImagesByPage.get(pageIdx + 1);
+          if (embedded && embedded.length > 0) {
+            const gallery = makeGalleryBlock(embedded);
+            if (gallery) out.push(gallery);
+            usedPages.add(pageIdx + 1);
+          }
+        };
+
+        const out: Block[] = [];
+        let pageIdx = 0;
+        placePageAssets(out, 0);
+        for (const block of blocks) {
+          out.push(block);
+          if ((block as any)?.type === "divider") {
+            pageIdx++;
+            placePageAssets(out, pageIdx);
+          }
+        }
+        // Leftover full-page renders (AI produced fewer dividers than pages)
+        for (let i = pageIdx + 1; i < pageImageUrls.length; i++) {
+          if (pageImageUrls[i]) out.push(makeImageBlock(pageImageUrls[i], i));
+        }
+        return { blocks: out, usedPages };
+      };
 
       const rawLessons = Array.isArray(response.lessons)
         ? response.lessons
@@ -274,8 +283,23 @@ const ImportTextbookFileDialog = ({
 
       const lessons = rawLessons.map((lesson, idx) => {
         const base = Array.isArray(lesson.blocks) ? lesson.blocks : [];
-        const withPages = idx === 0 ? enrichBlocksWithPages(base) : base;
-        const withGallery = embeddedGalleryBlock ? [...withPages, embeddedGalleryBlock] : withPages;
+        let placed = base;
+        let usedPages = new Set<number>();
+        if (idx === 0) {
+          const enriched = enrichBlocksWithPages(base);
+          placed = enriched.blocks;
+          usedPages = enriched.usedPages;
+        }
+        // Fallback gallery on lesson 0: unmapped PDF pages + all DOCX/PPTX embedded
+        const leftoverPdf: string[] = [];
+        if (idx === 0) {
+          for (const [pageNumber, urls] of pdfEmbeddedImagesByPage.entries()) {
+            if (!usedPages.has(pageNumber)) leftoverPdf.push(...urls);
+          }
+        }
+        const fallbackUrls = idx === 0 ? [...leftoverPdf, ...serverEmbedded] : [];
+        const fallbackGallery = makeGalleryBlock(fallbackUrls);
+        const withGallery = fallbackGallery ? [...placed, fallbackGallery] : placed;
         return { ...lesson, blocks: withGallery };
       });
 
