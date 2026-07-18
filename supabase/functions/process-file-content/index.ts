@@ -566,6 +566,36 @@ function extractPptxLinkedShapes(bytes: Uint8Array, unzipped: Record<string, Uin
   return { youtube, other };
 }
 
+// Map slideNumber -> media file names for ALL <a:blip r:embed="..."> images on that slide.
+function extractPptxImagesBySlide(unzipped: Record<string, Uint8Array>): Map<number, string[]> {
+  const bySlide = new Map<number, string[]>();
+  const slideFiles = Object.keys(unzipped).filter((n) => /ppt\/slides\/slide\d+\.xml$/.test(n));
+  for (const slidePath of slideFiles) {
+    const num = Number(slidePath.match(/slide(\d+)\.xml$/)?.[1]);
+    if (!num) continue;
+    const relsData = unzipped[`ppt/slides/_rels/slide${num}.xml.rels`];
+    if (!relsData) continue;
+    const relsXml = textDecoder.decode(relsData);
+    const relMap = new Map<string, string>();
+    for (const m of relsXml.matchAll(/<Relationship\b[^>]*\/>/g)) {
+      const tag = m[0];
+      const id = tag.match(/Id="([^"]+)"/)?.[1];
+      const target = tag.match(/Target="([^"]+)"/)?.[1];
+      if (id && target) relMap.set(id, target);
+    }
+    const slideXml = textDecoder.decode(unzipped[slidePath]);
+    const seen: string[] = [];
+    for (const bm of slideXml.matchAll(/<a:blip\b[^>]*\sr:embed="([^"]+)"/g)) {
+      const target = relMap.get(bm[1]);
+      if (!target) continue;
+      const fileName = target.split("/").pop();
+      if (fileName && !seen.includes(fileName)) seen.push(fileName);
+    }
+    if (seen.length > 0) bySlide.set(num, seen);
+  }
+  return bySlide;
+}
+
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
