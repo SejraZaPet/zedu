@@ -1,56 +1,68 @@
-## Nález
+# Diagnostika extractPdfText() — regrese po optimizeDeps.exclude
 
-1. **Strategie pro JS / JS moduly**
-   - `public/sw.js` obsluhuje `/assets/`, `/icons/`, `/manifest.json`, favicons přes **NetworkFirst**.
-   - Není to `CacheFirst` ani `StaleWhileRevalidate`: SW nejdřív zkouší síť, při selhání vrací cache.
-   - To znamená: pokud je síť dostupná a server vrací nový bundle, SW by neměl úmyslně držet starý JS. Pokud ale vrací starý HTML/shell nebo je SW/registrace zaseknutá, cache se může projevit jako stale kód.
+Cíl: zjistit, proč `extractPdfText()` vrací prázdno pro všech 8/8 stránek v čerstvém buildu (i s raw fallbackem), a ověřit, jestli to souvisí s `optimizeDeps.exclude: ["pdfjs-dist"]` ve `vite.config.ts`. **Žádné funkční změny** — pouze instrumentace + headless test.
 
-2. **Verze cache**
-   - Cache verze je natvrdo `CACHE_VERSION = "zedu-v2"`.
-   - V aktuálním kódu není žádný build/deploy hash ani automatické navýšení verze při změně aplikace.
-   - `activate` maže jen cache, které nezačínají aktuálním `zedu-v2`, takže při dalších deployích se stejnou verzí nedojde k invalidaci existujících `zedu-v2-runtime` / `zedu-v2-precache` cache.
+## Krok 1 — Instrumentace `src/lib/pdf-page-renderer.ts`
 
-3. **Force-update mechanismus**
-   - SW volá `self.skipWaiting()` při instalaci a `self.clients.claim()` při aktivaci.
-   - V aplikaci ale není vidět UI typu „nová verze dostupná“, žádné volání `registration.update()`, žádná řízená update flow přes `controllerchange`.
-   - Registrace v `src/main.tsx` pouze registruje `/sw.js`; v preview/iframe se snaží registrace odregistrovat.
+V `extractPdfText()`:
 
-## Závěr
+1. **Vnější `try/catch` kolem celého těla funkce** s `console.error("[pdf-text-diag] extractPdfText FAILED", err)` a re-throw, aby žádná tichá chyba (v `getDocument`, `getPage`, `getTextContent`) neprošla nezalogovaná.
 
-Service worker je **pravděpodobný systémový rizikový faktor**, protože cache verze se nemění po deployi a aplikace nemá explicitní update flow. Samotná strategie pro JS je sice NetworkFirst, ale současný ruční SW je křehký: pokud prohlížeč stále běží pod starým SW / starým runtime cache stavem, uživatel může opakovaně vidět starý kód i po refreshi.
+2. **Na začátku funkce** (před `getDocument`):
+   ```
+   console.log("[pdf-text-diag] START", {
+     fileName, fileSize, fileType,
+     pdfjsVersion: (pdfjsLib as any).version,
+     workerPort: !!pdfjsLib.GlobalWorkerOptions.workerPort,
+     workerSrc: pdfjsLib.GlobalWorkerOptions.workerSrc,
+   });
+   ```
 
-Pro urgentní diagnostiku konkrétní uživatelky je nejrychlejší ověření:
+3. **Hned po `await getDocument(...).promise`**:
+   `console.log("[pdf-text-diag] PDF loaded", { numPages: pdf.numPages });`
+   Pokud throw → vnější catch to zaloguje.
 
-- DevTools → Application → Service Workers → **Unregister**
-- DevTools → Application → Storage → **Clear site data** pro `zedu.cz`
-- zavřít všechny taby ZEdu
-- otevřít znovu a spustit import
+4. **Uvnitř per-page smyčky**, hned po `page.getTextContent()`:
+   ```
+   console.log("[pdf-text-diag] page", i, {
+     itemsLength: items.length,
+     firstFive: items.slice(0, 5).map(it => ({
+       str: it.str, hasEOL: it.hasEOL,
+       transform: it.transform, width: it.width,
+     })),
+   });
+   ```
+   A po výpočtu `raw` + `rendered`:
+   ```
+   console.log("[pdf-text-diag] page", i, "extracted", {
+     rawLen: raw.length, renderedLen: rendered.length,
+   });
+   ```
 
-Pokud po tom začne `extractPdfText()` vracet nenulový `length`, SW/cache byl potvrzen jako viník.
+Prefix `[pdf-text-diag]` pro snadné filtrování. Instrumentace je čistě additive, nemění výstup.
 
-## Doporučená trvalá oprava
+## Krok 2 — Headless test na syntetickém PDF
 
-Navrhuji nechat push notifikace zachované, ale odstranit aplikační app-shell caching ze současného ručně psaného SW, protože nyní míchá dvě role:
+Skript pod `/tmp/pdf-diag/`:
 
-- push notification worker,
-- PWA/offline/cache worker.
+1. Vygenerovat malé testovací PDF přes `pdf-lib` (2 stránky, jednoduché texty + jedna tabulka řádků se zarovnanými x-souřadnicemi), uložit do `/tmp/pdf-diag/test.pdf`.
+2. Spustit Playwright (`headless=True`, viewport 1280×1800) proti `http://localhost:8080` na dočasnou stránku nebo přes existující diagnostiku, případně injektovat modul přes `page.evaluate` a naimportovat `/src/lib/pdf-page-renderer.ts` dynamicky.
+   - Jednodušší varianta: dočasně přidat mini test route `/__pdf-text-diag`, která přijme `File` z `<input type=file>` nebo z `fetch("/tmp/pdf-diag/test.pdf")` a zavolá `extractPdfText`. (Cleanup route odstraníme po diagnostice — jako minule s `/__pdf-diag`.)
+3. Zachytit `console` eventy (`page.on("console", ...)`), uložit do `/tmp/pdf-diag/log.txt`, `tail`/`grep` pro `[pdf-text-diag]`.
 
-### Implementační plán po schválení
+## Krok 3 — Interpretace
 
-1. **Dočasná bezpečná oprava pro produkci**
-   - Upravit `public/sw.js` tak, aby dál obsahoval `push` a `notificationclick` handlery.
-   - Odstranit nebo vypnout `fetch` handler pro HTML a JS/CSS assety, aby SW už nikdy neservíroval starý app shell ani starý bundle.
-   - V `activate` opatrně smazat jen vlastní staré cache `zedu-*`, ne cache jiných workerů.
-   - Ponechat `skipWaiting()` + `clients.claim()`.
+- **Vnější catch se trigne** → přesná chyba (worker, getDocument, getTextContent).
+- **`items.length === 0`** na všech stránkách → problém v pdfjs načítání textového obsahu (worker/exclude side-effect).
+- **`items.length > 0` ale `rawLen === 0`** → regrese v raw fallback logice.
+- **Syntetický test projde OK, produkční PDF ne** → problém specifický pro konkrétní PDF (font/enkódování), potřeba získat reálný soubor.
 
-2. **Registrační wrapper v aplikaci**
-   - Upravit `src/main.tsx` tak, aby při načtení aplikace volal `registration.update()` pro `/sw.js`.
-   - V preview/iframe/dev prostředí nadále unregister matching `/sw.js`, aby editor nebyl ovlivněn stale SW.
+## Krok 4 — Cleanup
 
-3. **Volitelný budoucí krok, pokud chcete skutečný offline režim**
-   - Přestavět offline caching na řízenou PWA implementaci přes `vite-plugin-pwa` podle bezpečných pravidel.
-   - Offline režim nepřidávat v této opravě, protože aktuální problém je stale produkční JS a push notifikace.
+Po odsouhlasené opravě: odstranit `[pdf-text-diag]` logy, případnou dočasnou route `/__pdf-text-diag` a `/tmp/pdf-diag/` obsah.
 
-## Pro uživatelku teď
+## Technické poznámky
 
-Doporučuji nejdřív ruční unregister/clear-site-data jako diagnostický test. Pokud se tím problém potvrdí, nasadíme trvalou opravu výše, aby se stale bundle neopakoval u produkčních uživatelů po dalších deployích.
+- `pdfjsLib.GlobalWorkerOptions.workerSrc` může být `undefined`, když je nastaven jen `workerPort` (což je náš případ přes `?worker` import) — v logu je to očekávané, hlavní check je `workerPort: true`.
+- `optimizeDeps.exclude` by neměl mít vliv na runtime chování `getTextContent()`, ale ovlivňuje bundlování/HMR — diagnostika to potvrdí nebo vyvrátí.
+- Instrumentace nezvyšuje bundle produkčně měřitelně; přesto ji po diagnostice odstraníme.
