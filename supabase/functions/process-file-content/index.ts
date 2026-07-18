@@ -859,6 +859,155 @@ function extractPptxImagesBySlide(unzipped: Record<string, Uint8Array>): Map<num
   return bySlide;
 }
 
+// --- Absolute-positioned <p:pic> extraction (mirrors walkTree for <p:sp>) ---
+type AbsPic = { x: number; y: number; cx: number; cy: number; embedId: string };
+
+function walkPics(node: XNode, transform: XForm, pics: AbsPic[]) {
+  for (const child of childrenOf(node)) {
+    const tag = tagOf(child);
+    if (tag === "p:pic") {
+      const spPr = firstChild(child, "p:spPr");
+      const xf = readXfrm(spPr);
+      if (!xf?.off || !xf?.ext) continue;
+      const abs = applyT(transform, xf.off.x, xf.off.y);
+      const cx = xf.ext.x * transform.sx;
+      const cy = xf.ext.y * transform.sy;
+      const blipFill = firstChild(child, "p:blipFill");
+      const blip = blipFill ? firstChild(blipFill, "a:blip") : undefined;
+      const embedId = blip ? (attrsOf(blip)["r:embed"] ?? "") : "";
+      if (!embedId) continue;
+      pics.push({ x: abs.x, y: abs.y, cx, cy, embedId });
+    } else if (tag === "p:grpSp") {
+      const grpSpPr = firstChild(child, "p:grpSpPr");
+      const xf = readXfrm(grpSpPr);
+      const childT = groupChildTransform(transform, xf);
+      walkPics(child, childT, pics);
+    }
+  }
+}
+
+function extractPptxPicsBySlide(
+  unzipped: Record<string, Uint8Array>,
+): Map<number, (AbsPic & { fileName: string })[]> {
+  const out = new Map<number, (AbsPic & { fileName: string })[]>();
+  const slideFiles = Object.keys(unzipped).filter((n) => /ppt\/slides\/slide\d+\.xml$/.test(n));
+  const findDeep = (nodes: XNode[], name: string): XNode | undefined => {
+    for (const n of nodes) {
+      if (tagOf(n) === name) return n;
+      const c = findDeep(childrenOf(n), name);
+      if (c) return c;
+    }
+    return undefined;
+  };
+  for (const slidePath of slideFiles) {
+    const num = Number(slidePath.match(/slide(\d+)\.xml$/)?.[1]);
+    if (!num) continue;
+    const relsData = unzipped[`ppt/slides/_rels/slide${num}.xml.rels`];
+    if (!relsData) continue;
+    const relsXml = textDecoder.decode(relsData);
+    const relMap = new Map<string, string>();
+    for (const m of relsXml.matchAll(/<Relationship\b[^>]*\/>/g)) {
+      const tag = m[0];
+      const id = tag.match(/Id="([^"]+)"/)?.[1];
+      const target = tag.match(/Target="([^"]+)"/)?.[1];
+      if (id && target) relMap.set(id, target);
+    }
+    let parsed: unknown;
+    try { parsed = xmlParser.parse(textDecoder.decode(unzipped[slidePath])); } catch { continue; }
+    const root = Array.isArray(parsed) ? (parsed as XNode[]) : [];
+    const spTree = findDeep(root, "p:spTree");
+    if (!spTree) continue;
+    const raw: AbsPic[] = [];
+    walkPics(spTree, IDENTITY, raw);
+    const resolved = raw
+      .map((p) => {
+        const target = relMap.get(p.embedId);
+        const fileName = target?.split("/").pop();
+        return fileName ? { ...p, fileName } : null;
+      })
+      .filter((v): v is AbsPic & { fileName: string } => !!v);
+    if (resolved.length > 0) out.set(num, resolved);
+  }
+  return out;
+}
+
+// Detect overlapping pic pairs per slide (overlap >= 85% of smaller box)
+// and produce merged PNG bytes via imagescript (pure-JS, no subprocess).
+// Falls back to keeping originals separate on any error.
+type MergePlan = {
+  slide: number;
+  baseFile: string;
+  overlayFile: string;
+  mergedFileName: string;
+  mergedBytes: Uint8Array;
+};
+
+async function planPicMerges(
+  picsBySlide: Map<number, (AbsPic & { fileName: string })[]>,
+  mediaBytes: Map<string, { ext: string; data: Uint8Array }>,
+): Promise<{ merges: MergePlan[]; consumed: Set<string> }> {
+  const merges: MergePlan[] = [];
+  const consumed = new Set<string>();
+  if (picsBySlide.size === 0) return { merges, consumed };
+
+  let Image: any;
+  try {
+    ({ Image } = await import("https://deno.land/x/imagescript@1.2.17/mod.ts"));
+  } catch (err) {
+    console.warn("[pptx-merge] imagescript import failed, skipping merge:", err instanceof Error ? err.message : err);
+    return { merges, consumed };
+  }
+
+  for (const [slide, pics] of picsBySlide) {
+    for (let i = 0; i < pics.length; i++) {
+      for (let j = i + 1; j < pics.length; j++) {
+        const a = pics[i], b = pics[j];
+        if (consumed.has(a.fileName) || consumed.has(b.fileName)) continue;
+        if (!mediaBytes.has(a.fileName) || !mediaBytes.has(b.fileName)) continue;
+        if (a.fileName === b.fileName) continue;
+        const areaA = a.cx * a.cy;
+        const areaB = b.cx * b.cy;
+        if (areaA <= 0 || areaB <= 0) continue;
+        const ix1 = Math.max(a.x, b.x);
+        const iy1 = Math.max(a.y, b.y);
+        const ix2 = Math.min(a.x + a.cx, b.x + b.cx);
+        const iy2 = Math.min(a.y + a.cy, b.y + b.cy);
+        const iw = Math.max(0, ix2 - ix1);
+        const ih = Math.max(0, iy2 - iy1);
+        const overlap = (iw * ih) / Math.min(areaA, areaB);
+        if (overlap < 0.85) {
+          if (overlap >= 0.5) {
+            console.log(`[pptx-merge] slide ${slide}: ambiguous overlap ${overlap.toFixed(2)} between ${a.fileName}+${b.fileName}, keeping separate`);
+          }
+          continue;
+        }
+
+        const base = areaA >= areaB ? a : b;
+        const overlay = areaA >= areaB ? b : a;
+        try {
+          const baseImg = await Image.decode(mediaBytes.get(base.fileName)!.data);
+          const overlayImg = await Image.decode(mediaBytes.get(overlay.fileName)!.data);
+          const bw = baseImg.width, bh = baseImg.height;
+          let ov = overlayImg;
+          if (ov.width !== bw || ov.height !== bh) {
+            ov = ov.resize(bw, bh);
+          }
+          baseImg.composite(ov, 0, 0);
+          const mergedBytes = await baseImg.encode();
+          const mergedFileName = `merged-${crypto.randomUUID().slice(0, 8)}.png`;
+          merges.push({ slide, baseFile: base.fileName, overlayFile: overlay.fileName, mergedFileName, mergedBytes });
+          consumed.add(base.fileName);
+          consumed.add(overlay.fileName);
+          console.log(`[pptx-merge] slide ${slide}: merged ${base.fileName} + ${overlay.fileName} (overlap ${overlap.toFixed(2)})`);
+        } catch (err) {
+          console.warn(`[pptx-merge] compose failed on slide ${slide}, keeping originals:`, err instanceof Error ? err.message : err);
+        }
+      }
+    }
+  }
+  return { merges, consumed };
+}
+
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
