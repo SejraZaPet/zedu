@@ -261,10 +261,12 @@ const ImportTextbookFileDialog = ({
         blockCount?: number;
         embeddedImages?: string[];
         skippedImages?: number;
+        linkedBlocks?: Block[];
       };
 
       let serverEmbedded = Array.isArray(response.embeddedImages) ? response.embeddedImages : [];
       const skippedImages = typeof response.skippedImages === "number" ? response.skippedImages : 0;
+      const linkedBlocks: Block[] = Array.isArray(response.linkedBlocks) ? response.linkedBlocks : [];
 
       // STEP 5: Classify all uploaded embedded images to filter out purely
       // decorative text banners (their info is already in the text stream).
