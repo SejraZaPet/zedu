@@ -320,6 +320,20 @@ function normalizeBlock(block: any) {
       };
     case "divider":
       return { id, type, visible: true, props: { style: "line" } };
+    case "hierarchy": {
+      const shape = ["pyramid", "layers", "steps"].includes(props.shape) ? props.shape : "pyramid";
+      const direction = props.direction === "bottom-to-top" ? "bottom-to-top" : "top-to-bottom";
+      const rawLevels = Array.isArray(props.levels) ? props.levels : [];
+      const levels = rawLevels
+        .map((lvl: any) => ({
+          id: (globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2)),
+          label: String(lvl?.label ?? "").trim(),
+          description: String(lvl?.description ?? "").trim(),
+        }))
+        .filter((lvl: any) => lvl.label || lvl.description)
+        .slice(0, 8);
+      return { id, type, visible: true, props: { shape, direction, levels } };
+    }
     default:
       return {
         id,
