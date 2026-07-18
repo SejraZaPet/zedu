@@ -155,7 +155,7 @@ async function extractDocxText(bytes: Uint8Array) {
 // Extract text from a single slide's XML, detecting visual column layouts
 // (multiple shapes positioned side-by-side) and rendering them as markdown
 // tables so the AI can preserve the structure.
-function extractSlideText(xml: string): string {
+function extractSlideText(xml: string, slideLabel = "unknown"): string {
   // Parse each <p:sp> shape with its offset (a:off) and text runs (a:t).
   type Shape = { x: number; y: number; cx: number; cy: number; text: string };
 
@@ -223,6 +223,20 @@ function extractSlideText(xml: string): string {
       text,
     });
   }
+
+  console.log("[pptx-shape-map]", JSON.stringify({
+    slide: slideLabel,
+    shapeCount: shapes.length,
+    shapes: shapes.map((s, index) => ({
+      index,
+      x: s.x,
+      y: s.y,
+      cx: s.cx,
+      cy: s.cy,
+      textPreview: s.text.replace(/\s+/g, " ").trim().slice(0, 40),
+      lineCount: s.text.split("\n").filter((line) => line.trim().length > 0).length,
+    })),
+  }));
 
   if (shapes.length === 0) {
     if (nativeTables.length > 0) return nativeTables.join("\n\n");
@@ -371,7 +385,8 @@ async function extractPptxText(bytes: Uint8Array) {
   const slides: string[] = [];
   for (const slidePath of slideFiles) {
     const xml = textDecoder.decode(unzipped[slidePath]);
-    const slideText = extractSlideText(xml).trim();
+    const slideNumber = slidePath.match(/slide(\d+)\.xml$/)?.[1] ?? slidePath;
+    const slideText = extractSlideText(xml, slideNumber).trim();
     if (slideText.length > 0) {
       slides.push(`--- Slide ---\n${slideText}`);
     }
