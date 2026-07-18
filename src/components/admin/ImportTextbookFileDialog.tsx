@@ -536,7 +536,7 @@ const ImportTextbookFileDialog = ({
             <div className="bg-muted/50 rounded-lg p-3 text-sm text-muted-foreground space-y-1">
               <p className="font-medium text-foreground">ℹ️ Co import zvládne:</p>
               <p>✅ Nadpisy, odstavce, seznamy, tabulky, citáty</p>
-              <p>🖼️ Vložené obrázky (PDF/DOCX/PPTX) se přenesou jako galerie na konci lekce — v editoru je můžete přesunout ke správnému textu</p>
+              <p>🖼️ Vložené obrázky (PDF/DOCX/PPTX) se vloží automaticky u odpovídajícího textu / snímku jako samostatné bloky, které můžete v editoru libovolně přesouvat.</p>
               <p className="text-xs">Poznámka: vektorové obrázky ve formátu EMF/WMF (staré PPTX) se přeskočí.</p>
               <p>📎 Podporované formáty: PDF, DOCX, PPTX (max 25 MB)</p>
             </div>
