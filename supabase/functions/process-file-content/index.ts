@@ -220,9 +220,10 @@ function extractParagraphs(node: XNode): string[] {
       }
     };
     walkRuns(p);
-    // Join runs with a space (preserves inter-run word separation),
-    // then split on explicit line breaks.
-    const joined = pieces.join(" ").replace(/[ \t]+/g, " ");
+    // Join runs WITHOUT a separator — PowerPoint frequently splits a single
+    // word across multiple <a:r> elements (spell-check, language attrs).
+    // Actual spaces between words are already present inside run text.
+    const joined = pieces.join("").replace(/[ \t]+/g, " ");
     for (const seg of joined.split("\n")) {
       const s = seg.trim();
       if (s) out.push(s);
