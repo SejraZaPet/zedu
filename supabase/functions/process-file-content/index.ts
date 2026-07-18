@@ -242,13 +242,21 @@ function readXfrm(container: XNode | undefined): Xfrm | null {
   if (!container) return null;
   const xfrm = firstChild(container, "a:xfrm");
   if (!xfrm) return null;
-  const pair = (name: string): Pair | undefined => {
+  // <a:off x="" y=""/> and <a:chOff x="" y=""/> use x/y attributes.
+  // <a:ext cx="" cy=""/> and <a:chExt cx="" cy=""/> use cx/cy attributes.
+  const readXY = (name: string): Pair | undefined => {
     const c = firstChild(xfrm, name);
     if (!c) return undefined;
     const a = attrsOf(c);
     return { x: parseInt(a.x ?? "0", 10) || 0, y: parseInt(a.y ?? "0", 10) || 0 };
   };
-  return { off: pair("a:off"), ext: pair("a:ext"), chOff: pair("a:chOff"), chExt: pair("a:chExt") };
+  const readCxCy = (name: string): Pair | undefined => {
+    const c = firstChild(xfrm, name);
+    if (!c) return undefined;
+    const a = attrsOf(c);
+    return { x: parseInt(a.cx ?? "0", 10) || 0, y: parseInt(a.cy ?? "0", 10) || 0 };
+  };
+  return { off: readXY("a:off"), ext: readCxCy("a:ext"), chOff: readXY("a:chOff"), chExt: readCxCy("a:chExt") };
 }
 
 // Compose child transform for a <p:grpSp> given parent transform.
