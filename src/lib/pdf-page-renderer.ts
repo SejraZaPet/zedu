@@ -98,11 +98,12 @@ export async function extractPdfText(file: File): Promise<string> {
  */
 export async function extractPdfEmbeddedImages(
   file: File,
-  opts: { maxPixelDim?: number; maxImages?: number; objsTimeoutMs?: number; debug?: boolean } = {},
+  opts: { maxPixelDim?: number; maxImages?: number; objsTimeoutMs?: number; pageCoverageThreshold?: number; debug?: boolean } = {},
 ): Promise<Blob[]> {
   const maxPixelDim = opts.maxPixelDim ?? 4000;
   const maxImages = opts.maxImages ?? 200;
   const objsTimeoutMs = opts.objsTimeoutMs ?? 5000;
+  const pageCoverageThreshold = opts.pageCoverageThreshold ?? 0.85;
   const debug = opts.debug ?? false;
   const dlog = (...args: unknown[]) => { if (debug) console.log("[pdf-img-extract]", ...args); };
   const summarizeError = (err: unknown) => {
@@ -254,8 +255,21 @@ export async function extractPdfEmbeddedImages(
     }
     dlog("page", i, "ops", ops.fnArray.length, "xobject", xoCount, "inline", inlineCount, "other-image", otherImgCount, "histogram", opHistogram);
 
+    const pageViewport = page.getViewport({ scale: 1 });
+    const transformOp = typeof OPS.transform === "number" ? OPS.transform : -1;
+    let lastTransformA = 0;
+    let lastTransformD = 0;
+
     for (let k = 0; k < ops.fnArray.length && out.length < maxImages; k++) {
       const op = ops.fnArray[k];
+      if (op === transformOp) {
+        const args = ops.argsArray[k];
+        if (args && typeof args[0] === "number" && typeof args[3] === "number") {
+          lastTransformA = Math.abs(args[0]);
+          lastTransformD = Math.abs(args[3]);
+        }
+        continue;
+      }
       let imgObj: any = null;
       let source = "";
 
@@ -300,6 +314,18 @@ export async function extractPdfEmbeddedImages(
       if (!width || !height) { bump("no-dims", { page: i, index: k, source, width, height }); continue; }
       if (width > maxPixelDim || height > maxPixelDim) { bump("too-large", { page: i, index: k, source, width, height, maxPixelDim }); continue; }
       if (width < 16 || height < 16) { bump("too-small", { page: i, index: k, source, width, height }); continue; }
+
+      // Full-page background filter: if painted size (from last transform op)
+      // covers ≥ threshold of both viewport dimensions, treat as background.
+      if (lastTransformA > 0 && lastTransformD > 0 && pageViewport.width > 0 && pageViewport.height > 0) {
+        const coverW = lastTransformA / pageViewport.width;
+        const coverH = lastTransformD / pageViewport.height;
+        dlog("coverage check", { page: i, index: k, source, paintedW: lastTransformA, paintedH: lastTransformD, viewportW: pageViewport.width, viewportH: pageViewport.height, coverW, coverH, threshold: pageCoverageThreshold });
+        if (coverW >= pageCoverageThreshold && coverH >= pageCoverageThreshold) {
+          bump("full-page-background", { page: i, index: k, source, paintedW: lastTransformA, paintedH: lastTransformD, viewportW: pageViewport.width, viewportH: pageViewport.height, coverW, coverH });
+          continue;
+        }
+      }
 
       try {
         const canvas = document.createElement("canvas");

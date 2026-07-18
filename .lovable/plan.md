@@ -1,51 +1,48 @@
-## Diagnóza
+## Bod 1 — Filtr na page-coverage ratio v `extractPdfEmbeddedImages()`
 
-**Bucket `lesson-images` má na `storage.objects` pouze 4 policies:**
+**Soubor:** `src/lib/pdf-page-renderer.ts`
 
-| CMD | Kdo | Podmínka |
-|---|---|---|
-| SELECT | public | `bucket_id='lesson-images'` (kdokoliv) |
-| INSERT | public | `bucket_id='lesson-images' AND is_admin()` |
-| UPDATE | public | `bucket_id='lesson-images' AND is_admin()` |
-| DELETE | public | `bucket_id='lesson-images' AND is_admin()` |
+**Princip:**
+Pro každou stránku sledovat CTM (current transformation matrix) skrz operátorový seznam a při každém `paintImageXObject` / `paintImageXObjectRepeat` / `paintInlineImageXObject` zjistit **painted size v PDF user units** = `|a|` × `|d|` z aktuální matice. Porovnat s `page.getViewport({ scale: 1 })`.
 
-**Žádný path pattern se nekontroluje** — policy zajímá jen `is_admin()`. Naše cesta `pdf-embedded/{timestamp}-{random}/image-N.jpg` tedy není problém tvarem, ale rolí.
+Pokud platí obojí:
+- `paintedWidth / viewportWidth ≥ 0.85`
+- `paintedHeight / viewportHeight ≥ 0.85`
 
-**Root cause:** `ImportTextbookFileDialog` je používán i z `TeacherTextbooks.tsx` (řádek 637). Když ho spustí **učitel** (ne admin), `is_admin()` vrátí `false` → INSERT policy zamítne upload. Stejný problém by měl už dřív i upload page-renderů do `pdf-import/...` — pravděpodobně to učitelka narazila poprvé teď, když embedded extrakce začala fungovat a hodila víc uploadů.
+→ obrázek považovat za celoslidové pozadí a přeskočit s reason `"full-page-background"`.
 
-**DOCX/PPTX cesta (edge function `process-file-content`):** běží pod service_role, ta RLS obchází. Bez rizika.
+Práh **0.85** (nikoli 0.80) je zvolený tak, aby velké, ale legitimní ilustrace (typicky max ~70–75 % šířky sazby v učebnici) prošly, zatímco skutečná pozadí (≥ 90 % obou rozměrů) se odfiltrují.
 
-## Návrh opravy
+**Implementační detail — sledování CTM:**
+V pdfjs operator listu se objevují operace:
+- `OPS.save` — push aktuální matice na stack
+- `OPS.restore` — pop
+- `OPS.transform` s args `[a,b,c,d,e,f]` — násobí current CTM zprava
 
-Rozšířit INSERT/UPDATE/DELETE policies pro `lesson-images` tak, aby povolily i **učitele** (nejen adminy). Obrázky jsou stejně veřejné (SELECT je otevřený všem) a učitelé legitimně vytváří obsah lekcí — je nekonzistentní, že admin může nahrávat obrázky do lekcí, ale učitel ne, přestože oba lekce editují.
+Pro filtr **nepotřebujeme plnou násobící logiku matic** — stačí zaznamenat scale `(a, d)` z posledního `OPS.transform` uvnitř aktuálního `save`/`restore` bloku bezprostředně před paint op. To odpovídá běžnému pdfjs vzoru:
 
-Migrace:
-
-```sql
-DROP POLICY "Admin can upload lesson images" ON storage.objects;
-DROP POLICY "Admin can update lesson images" ON storage.objects;
-DROP POLICY "Admin can delete lesson images" ON storage.objects;
-
-CREATE POLICY "Admins and teachers can upload lesson images"
-  ON storage.objects FOR INSERT TO authenticated
-  WITH CHECK (bucket_id = 'lesson-images' AND public.is_admin_or_teacher());
-
-CREATE POLICY "Admins and teachers can update lesson images"
-  ON storage.objects FOR UPDATE TO authenticated
-  USING (bucket_id = 'lesson-images' AND public.is_admin_or_teacher());
-
-CREATE POLICY "Admins and teachers can delete lesson images"
-  ON storage.objects FOR DELETE TO authenticated
-  USING (bucket_id = 'lesson-images' AND public.is_admin_or_teacher());
+```text
+save → transform([sw, 0, 0, sh, tx, ty]) → paintImageXObject(name) → restore
 ```
 
-`public.is_admin_or_teacher()` už existuje (v seznamu DB funkcí) — vrací true pro role `admin` i `teacher`.
+kde `sw` = painted width v points, `sh` = painted height v points. Pokud vzor nesedí (např. složená transformace), fallback: neaplikovat filtr, obrázek propustit (bezpečná varianta — raději trochu šumu než zahodit legitimní ilustraci).
 
-**Cesty (`pdf-embedded/...`, `pdf-import/...`) v `ImportTextbookFileDialog.tsx` neupravuju** — policy path pattern neřeší, takže není důvod je měnit.
+**Změny v kódu (přesně):**
+1. Přidat parametr `pageCoverageThreshold?: number` (default `0.85`) do `opts`.
+2. Uvnitř smyčky `for (let k = 0; ...)`:
+   - Před testem rozměrů vypočíst `paintedW`, `paintedH` z posledního `OPS.transform` před tímto paint op v rámci aktuálního save/restore bloku.
+   - Získat viewport `page.getViewport({ scale: 1 })` jednou před smyčkou.
+   - Pokud `paintedW / viewport.width ≥ threshold && paintedH / viewport.height ≥ threshold` → `bump("full-page-background", { page: i, index: k, paintedW, paintedH, viewportW, viewportH })` a `continue`.
+3. Nechat existující dimension filtry (`< 16`, `> 4000`) beze změny — jsou ortogonální.
 
-## Ověření po aplikaci
+**Debug:** logovat coverage ratio i pro obrázky, které projdou, jen když `debug: true` (což aktuálně `ImportTextbookFileDialog.tsx` nevolá — správně).
 
-1. Učitelka znovu spustí import PDF s obrázky → upload projde, galerie se objeví v draftované lekci.
-2. Debug flag `{ debug: true }` v `ImportTextbookFileDialog.tsx` může zůstat pro tento test, pak ho odstraníme.
+## Bod 2 — Chybějící tabulka
 
-Souhlasíš s touto migrací?
+**Nález:** `extractPdfText()` je byte-identická napříč všemi commity od svého zavedení. Žádné vedlejší úpravy. Do AI se posílá stejný raw text jako dříve.
+
+**Akce:** žádná změna kódu v této fázi. V shrnutí uživatelce navrhnu diagnostický krok: nechat ji poslat konkrétní PDF, spustíme jednorázově `extractPdfText()` a ověříme, jestli je slovo z tabulky vůbec v raw textovém streamu. Podle výsledku pak buď (a) vylepšit strukturu prompt pro AI (explicitní „zachovej tabulky jako Markdown"), nebo (b) přidat vision fallback pro stránky s nízkým textovým výtěžkem.
+
+## Rozsah
+
+Jediná změna: `src/lib/pdf-page-renderer.ts`, funkce `extractPdfEmbeddedImages()`. Žádné jiné soubory, žádné migrace, žádné edge funkce.
