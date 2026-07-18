@@ -135,6 +135,36 @@ const ImportTextbookFileDialog = ({
         }
       }
 
+      // Extract EMBEDDED raster images from PDF (not full-page renders).
+      // Uploaded to storage; appended as a gallery block at the end of the
+      // first lesson so the teacher can move/curate them in the editor.
+      let pdfEmbeddedImageUrls: string[] = [];
+      if (isPdf) {
+        try {
+          setProgress("Hledám vložené obrázky v PDF...");
+          const { extractPdfEmbeddedImages } = await import("@/lib/pdf-page-renderer");
+          const blobs = await extractPdfEmbeddedImages(file);
+          if (blobs.length > 0) {
+            setProgress(`Nahrávám ${blobs.length} vložených obrázků...`);
+            const folder = `pdf-embedded/${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+            for (let i = 0; i < blobs.length; i++) {
+              const path = `${folder}/image-${i + 1}.jpg`;
+              const { error: upErr } = await supabase.storage
+                .from("lesson-images")
+                .upload(path, blobs[i], { contentType: "image/jpeg", upsert: true });
+              if (upErr) {
+                console.warn("Upload vloženého obrázku selhal:", upErr);
+                continue;
+              }
+              const { data: urlData } = supabase.storage.from("lesson-images").getPublicUrl(path);
+              if (urlData?.publicUrl) pdfEmbeddedImageUrls.push(urlData.publicUrl);
+            }
+          }
+        } catch (err) {
+          console.warn("PDF embedded image extraction failed:", err);
+        }
+      }
+
       // Try to extract clean text from PDF on the frontend so AI gets real content, not hallucinations.
       let extractedText = "";
       if (manualText.trim().length >= 20) {
@@ -173,7 +203,14 @@ const ImportTextbookFileDialog = ({
         lessons?: { title?: string; blocks?: Block[] }[];
         blocks?: Block[];
         blockCount?: number;
+        embeddedImages?: string[];
+        skippedImages?: number;
       };
+
+      const serverEmbedded = Array.isArray(response.embeddedImages) ? response.embeddedImages : [];
+      const skippedImages = typeof response.skippedImages === "number" ? response.skippedImages : 0;
+      const allEmbedded = [...pdfEmbeddedImageUrls, ...serverEmbedded];
+
 
       const makeImageBlock = (url: string, pageIdx: number): Block => ({
         id: crypto.randomUUID(),
@@ -207,19 +244,35 @@ const ImportTextbookFileDialog = ({
         return out;
       };
 
+      // Build a gallery block from all extracted embedded images.
+      // Appended at the END of each draft lesson; teacher moves them manually
+      // in the editor (positioning near matching text is out of scope).
+      const makeGalleryBlock = (urls: string[]): Block | null => {
+        if (urls.length === 0) return null;
+        return {
+          id: crypto.randomUUID(),
+          type: "gallery",
+          visible: true,
+          props: {
+            columns: Math.min(3, Math.max(2, Math.ceil(Math.sqrt(urls.length)))),
+            images: urls.map((url) => ({ url, caption: "" })),
+          },
+        } as unknown as Block;
+      };
+      const embeddedGalleryBlock = makeGalleryBlock(allEmbedded);
+
       const rawLessons = Array.isArray(response.lessons)
         ? response.lessons
         : response.blocks
           ? [{ title: file.name.replace(/\.(pdf|pptx|docx)$/i, ""), blocks: response.blocks }]
           : [];
 
-      const lessons = rawLessons.map((lesson, idx) => ({
-        ...lesson,
-        blocks:
-          idx === 0
-            ? enrichBlocksWithPages(Array.isArray(lesson.blocks) ? lesson.blocks : [])
-            : (Array.isArray(lesson.blocks) ? lesson.blocks : []),
-      }));
+      const lessons = rawLessons.map((lesson, idx) => {
+        const base = Array.isArray(lesson.blocks) ? lesson.blocks : [];
+        const withPages = idx === 0 ? enrichBlocksWithPages(base) : base;
+        const withGallery = embeddedGalleryBlock ? [...withPages, embeddedGalleryBlock] : withPages;
+        return { ...lesson, blocks: withGallery };
+      });
 
       const normalizedLessons = lessons
         .map((lesson, index) => ({
@@ -235,10 +288,14 @@ const ImportTextbookFileDialog = ({
       }
 
       const totalBlocks = normalizedLessons.reduce((sum, lesson) => sum + lesson.blocks.length, 0);
+      const embeddedCount = allEmbedded.length;
       setDrafts(normalizedLessons);
+      const parts = [`Vytvořeno ${totalBlocks} bloků.`];
+      if (embeddedCount > 0) parts.push(`Přidáno ${embeddedCount} obrázků do galerie na konci lekce.`);
+      if (skippedImages > 0) parts.push(`Přeskočeno ${skippedImages} obrázků v nepodporovaném formátu (EMF/WMF).`);
       toast({
         title: "Import dokončen",
-        description: `Vytvořeno ${totalBlocks} bloků. Obrázky z dokumentu doplňte ručně v editoru.`,
+        description: parts.join(" "),
       });
     } catch (err: any) {
       console.error("Import error:", err);
@@ -337,7 +394,8 @@ const ImportTextbookFileDialog = ({
             <div className="bg-muted/50 rounded-lg p-3 text-sm text-muted-foreground space-y-1">
               <p className="font-medium text-foreground">ℹ️ Co import zvládne:</p>
               <p>✅ Nadpisy, odstavce, seznamy, tabulky, citáty</p>
-              <p>⚠️ Obrázky z dokumentu se nepřenesou — doplňte je ručně v editoru lekce</p>
+              <p>🖼️ Vložené obrázky (PDF/DOCX/PPTX) se přenesou jako galerie na konci lekce — v editoru je můžete přesunout ke správnému textu</p>
+              <p className="text-xs">Poznámka: vektorové obrázky ve formátu EMF/WMF (staré PPTX) se přeskočí.</p>
               <p>📎 Podporované formáty: PDF, DOCX, PPTX (max 25 MB)</p>
             </div>
 

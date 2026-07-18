@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 import { requireAuth } from "../_shared/auth.ts";
 
 const corsHeaders = {
@@ -344,6 +345,62 @@ function normalizeLessons(payload: any, fallbackTitle: string, mode: "single" | 
   return normalized;
 }
 
+const RASTER_EXT = new Set(["png", "jpg", "jpeg", "gif", "webp"]);
+const VECTOR_SKIP_EXT = new Set(["emf", "wmf"]);
+const PER_IMAGE_MAX_BYTES = 10 * 1024 * 1024;
+
+function mimeForExt(ext: string): string {
+  switch (ext) {
+    case "png": return "image/png";
+    case "gif": return "image/gif";
+    case "webp": return "image/webp";
+    default: return "image/jpeg";
+  }
+}
+
+async function extractZipMedia(bytes: Uint8Array, prefix: "word/media/" | "ppt/media/") {
+  const { unzipSync } = await import("https://esm.sh/fflate@0.8.2");
+  const unzipped = unzipSync(bytes);
+  const images: { fileName: string; ext: string; data: Uint8Array }[] = [];
+  let skipped = 0;
+
+  for (const name of Object.keys(unzipped)) {
+    if (!name.startsWith(prefix)) continue;
+    const base = name.split("/").pop() || name;
+    const ext = (base.split(".").pop() || "").toLowerCase();
+    if (VECTOR_SKIP_EXT.has(ext)) { skipped++; continue; }
+    if (!RASTER_EXT.has(ext)) continue;
+    const data = unzipped[name];
+    if (!data || data.byteLength === 0) continue;
+    if (data.byteLength > PER_IMAGE_MAX_BYTES) { skipped++; continue; }
+    images.push({ fileName: base, ext, data });
+  }
+  return { images, skipped };
+}
+
+async function uploadMediaToStorage(
+  serviceRoleClient: ReturnType<typeof createClient>,
+  folder: string,
+  files: { fileName: string; ext: string; data: Uint8Array }[],
+): Promise<string[]> {
+  const urls: string[] = [];
+  for (let i = 0; i < files.length; i++) {
+    const f = files[i];
+    const path = `${folder}/${i + 1}-${f.fileName}`.replace(/\s+/g, "-");
+    const { error } = await serviceRoleClient.storage
+      .from("lesson-images")
+      .upload(path, f.data, { contentType: mimeForExt(f.ext), upsert: true });
+    if (error) {
+      console.warn("Media upload failed:", path, error.message);
+      continue;
+    }
+    const { data } = serviceRoleClient.storage.from("lesson-images").getPublicUrl(path);
+    if (data?.publicUrl) urls.push(data.publicUrl);
+  }
+  return urls;
+}
+
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -433,7 +490,38 @@ serve(async (req) => {
       throw new Error("AI nedokázala z dokumentu vytvořit žádné bloky.");
     }
 
-    return jsonResponse({ lessons, blocks, blockCount: blocks.length });
+    // Best-effort embedded-image extraction for DOCX/PPTX zip archives.
+    // PDF embedded images are extracted on the frontend (pdfjs).
+    let embeddedImages: string[] = [];
+    let skippedImages = 0;
+    if (fileBase64) {
+      const lower = String(fileName).toLowerCase();
+      const prefix = lower.endsWith(".docx")
+        ? "word/media/"
+        : lower.endsWith(".pptx")
+          ? "ppt/media/"
+          : null;
+      if (prefix) {
+        try {
+          const bytes = decodeBase64(String(fileBase64));
+          const { images, skipped } = await extractZipMedia(bytes, prefix);
+          skippedImages = skipped;
+          if (images.length > 0) {
+            const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+            const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+            if (SUPABASE_URL && SERVICE_ROLE) {
+              const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
+              const folder = `import-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
+              embeddedImages = await uploadMediaToStorage(admin, folder, images);
+            }
+          }
+        } catch (mediaErr) {
+          console.warn("Embedded media extraction failed (non-fatal):", mediaErr);
+        }
+      }
+    }
+
+    return jsonResponse({ lessons, blocks, blockCount: blocks.length, embeddedImages, skippedImages });
   } catch (err) {
     console.error("process-file-content error:", err);
     return jsonResponse({ error: err instanceof Error ? err.message : "Neznámá chyba" }, 500);
