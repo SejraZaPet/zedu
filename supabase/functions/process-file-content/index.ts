@@ -175,7 +175,6 @@ const xmlParser = new _XMLParser({
   preserveOrder: true,
   ignoreAttributes: false,
   attributeNamePrefix: "",
-  attributesGroupName: ":@",
   parseTagValue: false,
   trimValues: false,
   processEntities: true,
