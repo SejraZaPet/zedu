@@ -99,7 +99,7 @@ export async function extractPdfText(file: File): Promise<string> {
 export async function extractPdfEmbeddedImages(
   file: File,
   opts: { maxPixelDim?: number; maxImages?: number; objsTimeoutMs?: number; pageCoverageThreshold?: number; debug?: boolean } = {},
-): Promise<Blob[]> {
+): Promise<{ pageNumber: number; blob: Blob }[]> {
   const maxPixelDim = opts.maxPixelDim ?? 4000;
   const maxImages = opts.maxImages ?? 200;
   const objsTimeoutMs = opts.objsTimeoutMs ?? 5000;
