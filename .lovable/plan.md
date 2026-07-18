@@ -1,76 +1,32 @@
-## Cíl
-Přidat dočasnou diagnostiku bez změny funkčního chování, abychom s reálnými daty ověřili body 2 (tabulka) a 3 (page rendery) z hlášené regrese.
+## Diagnostický nález (bez úprav)
 
-## Aktuální stav (ověřeno čtením `src/components/admin/ImportTextbookFileDialog.tsx`)
+### 1. Soubor `src/lib/worksheet-pdf-export.ts`
+Existuje (3854 B, mtime 2026-07-18 10:26). Dnes nebyl přejmenován, přesunut ani smazán.
 
-Rozhodovací logika pro vkládání page renderů je správně napojená na `extractPdfText().pages`:
+### 2. Kdo modul importuje
+Jediný odkaz v celém projektu:
+- `src/pages/WorksheetEditor.tsx:163` — **statický** `import { downloadWorksheetPdf, buildWorksheetPdfBlobUrl } from "@/lib/worksheet-pdf-export"`.
 
-```ts
-// řádky 128–136
-const TEXT_QUALITY_THRESHOLD = 30;
-const pagesNeedingRender = new Set<number>();
-if (isPdf && textPages.length > 0) {
-  for (const p of textPages) {
-    if (p.charCount < TEXT_QUALITY_THRESHOLD) pagesNeedingRender.add(p.pageNumber);
-  }
-}
-// řádky 147–152 — page se skipne pokud NENÍ v pagesNeedingRender
-for (let i = 0; i < pageImages.length; i++) {
-  const pageNumber = i + 1;
-  if (!pagesNeedingRender.has(pageNumber)) { pageImageUrls.push(""); continue; }
-  ...
-}
-// řádek 313 — vloží jen pokud non-empty
-if (pageImageUrls[pageIdx]) out.push(makeImageBlock(...));
-```
+Žádný `import(...)` dynamický import na tento modul v `src/` neexistuje. `WorksheetEditor` je v `src/App.tsx:58` také naimportovaný staticky (žádné `React.lazy`).
 
-Žádná stará „vždycky vkládej" větev v kódu nezůstala. To znamená: buď `charCount` je pro každou stránku pod 30 (a proto se page image vloží pro každou stránku), nebo se propouští jinou cestou. Diagnostika to potvrdí.
+### 3. Souvislost s dnešními PDF úpravami
+**Žádná přímá.** Dnes upravené soubory (`pdf-page-renderer.ts`, `ImportTextbookFileDialog.tsx`, `process-file-content`, `LessonBlockRenderer.tsx`, `textbook-config.ts`, `BlockEditor.tsx`, `HierarchyBlock.tsx`, `vite.config.ts`) na `worksheet-pdf-export` neodkazují a soubor sám nebyl dotčen.
 
-Pro tabulku: `extractPdfText()` v `pdf-page-renderer.ts` skládá výstup s markdown `|`. Text jde do `invokeBody.extractedText` (řádek 216). Otázka je, jestli řádky `|` reálně vznikají, a jestli se posílají celé.
+### Interpretace chybové hlášky
+URL v chybě: `https://lovable.dev/src/lib/worksheet-pdf-export.ts`.
+- Origin `lovable.dev` není produkce (`zedu.lovable.app` / `zedu.cz`) ani preview subdoména (`id-preview--…lovable.app`) — je to hostname editorového sandboxu.
+- Cesta `/src/lib/…​.ts` je Vite **dev-mode** URL (produkce servíruje hashované `.js` z `/assets/`).
+- "Failed to fetch **dynamically** imported module" pochází z Vite dev serveru — v dev módu Vite načítá i staticky importované moduly jako samostatné ESM requesty a při selhání je hlásí jako dynamické.
 
-## Diagnostické změny (jen `console.log`, žádné funkční změny)
+### Nejpravděpodobnější příčiny (seřazeno)
+a) **Stará karta / iframe editoru na `lovable.dev`** ze zaniklé sandbox session. Bundler pryč → 404 → HMR/retry cyklus vysvětluje desítky/stovky opakování. Řešení: zavřít/refreshnout kartu.
+b) **Wedged Vite dev-server** v aktivním sandboxu po dnešní změně `vite.config.ts` (`optimizeDeps.exclude: ["pdfjs-dist"]`). Řešení: restart dev serveru.
+c) Stale Service Worker (`zedu-v2`) — nepravděpodobné, protože sw.js přes `/src/**/*.ts` nechodí a origin je stejně jiný než produkce.
 
-Všechny logy prefixovat `[import-diag]`, aby se daly snadno filtrovat a poté smazat.
+### Doporučený další krok (bez editace)
+Zjistit od uživatelky přesný origin karty, kde chybu vidí:
+- `lovable.dev/...` → zavřít starou editorovou kartu.
+- `id-preview--…lovable.app` → restart Vite dev serveru v sandboxu.
+- `zedu.cz` / `zedu.lovable.app` → nutno prošetřit dále (odregistrovat SW, hard reload, ověřit produkční bundle).
 
-**A) `src/components/admin/ImportTextbookFileDialog.tsx`**
-
-1. Po `extractPdfText` (za řádkem 118): vypsat kompletní per-page tabulku:
-   ```ts
-   console.log("[import-diag] textPages", textPages.map(p => ({ page: p.pageNumber, charCount: p.charCount, willRender: p.charCount < 30 })));
-   console.log("[import-diag] threshold", 30, "pagesNeedingRender", Array.from(pagesNeedingRender));
-   ```
-   (druhý log posunout až za konstrukci setu, řádek ~136)
-
-2. Uvnitř smyčky renderu stránek (kolem řádku 148): pro každou stránku vypsat rozhodnutí:
-   ```ts
-   console.log("[import-diag] page", pageNumber, "charCount", textPages.find(p => p.pageNumber === pageNumber)?.charCount, "inserted", pagesNeedingRender.has(pageNumber));
-   ```
-
-3. Před `supabase.functions.invoke("process-file-content", ...)` (kolem řádku 220): spočítat markdown tabulkové řádky a ověřit, že skutečně tečou do payloadu:
-   ```ts
-   const tableLineCount = (extractedText.match(/^\s*\|.*\|\s*$/gm) || []).length;
-   const bodyText = typeof invokeBody.extractedText === "string" ? invokeBody.extractedText : "";
-   const bodyPipeCount = (bodyText.match(/\|/g) || []).length;
-   console.log("[import-diag] extractedText length", extractedText.length, "table-like lines", tableLineCount, "sending as extractedText?", "extractedText" in invokeBody, "body pipe count", bodyPipeCount);
-   // vzorek prvních 3 tabulkových řádků, ať vidíme jak vypadají
-   const sample = (extractedText.match(/^\s*\|.*\|\s*$/gm) || []).slice(0, 5);
-   console.log("[import-diag] table sample", sample);
-   ```
-
-**B) Bez editace `pdf-page-renderer.ts`** — vše potřebné se dá odvodit z výstupu `extractPdfText()`, který volající už má. Vyhneme se úpravě knihovny, o kterou uživatelka nežádala.
-
-## Co uživatelka udělá
-1. Spustí import stejného PDF, který dřív dělal problémy.
-2. Otevře DevTools → Console, vyfiltruje `[import-diag]`.
-3. Pošle celý výpis (nebo screenshot).
-
-## Očekávané výstupy diagnostiky
-- **Bod 3 (page renders):** `textPages` řekne, jaké `charCount` má která stránka. Pokud jsou všechny < 30 → text extrakce reálně nedodala text (jiný root cause, ne regrese threshold logiky). Pokud jsou vysoké a přesto se rendery vkládají → někde jinde bug.
-- **Bod 2 (tabulka):** `table-like lines` a `table sample` ukáže, jestli tabulka vůbec vzniká v extrakci. `body pipe count` potvrdí, že se dostává do AI promptu beze změny.
-
-## Další krok (po výsledku diagnostiky)
-Podle čísel navrhnu cílenou opravu (např. snížit/zrušit threshold nebo opravit clusterRows/detectTableRanges) a odstraním diagnostické logy.
-
-## Rozsah
-- 1 soubor: `src/components/admin/ImportTextbookFileDialog.tsx`
-- Přidáno ~5 řádků logů, žádná funkční změna.
+Až uživatelka potvrdí, který origin to je, navrhnu konkrétní opravu.
