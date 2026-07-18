@@ -87,7 +87,7 @@ const App = () => (
           <ViewAsBanner />
           <Routes>
            <Route path="/" element={<Index />} />
-           <Route path="/__pdf-diag" element={<PdfDiag />} />
+           
            <Route path="/auth" element={<Auth />} />
 
             <Route path="/reset-password" element={<ResetPassword />} />
