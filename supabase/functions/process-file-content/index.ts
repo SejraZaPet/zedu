@@ -345,6 +345,62 @@ function normalizeLessons(payload: any, fallbackTitle: string, mode: "single" | 
   return normalized;
 }
 
+const RASTER_EXT = new Set(["png", "jpg", "jpeg", "gif", "webp"]);
+const VECTOR_SKIP_EXT = new Set(["emf", "wmf"]);
+const PER_IMAGE_MAX_BYTES = 10 * 1024 * 1024;
+
+function mimeForExt(ext: string): string {
+  switch (ext) {
+    case "png": return "image/png";
+    case "gif": return "image/gif";
+    case "webp": return "image/webp";
+    default: return "image/jpeg";
+  }
+}
+
+async function extractZipMedia(bytes: Uint8Array, prefix: "word/media/" | "ppt/media/") {
+  const { unzipSync } = await import("https://esm.sh/fflate@0.8.2");
+  const unzipped = unzipSync(bytes);
+  const images: { fileName: string; ext: string; data: Uint8Array }[] = [];
+  let skipped = 0;
+
+  for (const name of Object.keys(unzipped)) {
+    if (!name.startsWith(prefix)) continue;
+    const base = name.split("/").pop() || name;
+    const ext = (base.split(".").pop() || "").toLowerCase();
+    if (VECTOR_SKIP_EXT.has(ext)) { skipped++; continue; }
+    if (!RASTER_EXT.has(ext)) continue;
+    const data = unzipped[name];
+    if (!data || data.byteLength === 0) continue;
+    if (data.byteLength > PER_IMAGE_MAX_BYTES) { skipped++; continue; }
+    images.push({ fileName: base, ext, data });
+  }
+  return { images, skipped };
+}
+
+async function uploadMediaToStorage(
+  serviceRoleClient: ReturnType<typeof createClient>,
+  folder: string,
+  files: { fileName: string; ext: string; data: Uint8Array }[],
+): Promise<string[]> {
+  const urls: string[] = [];
+  for (let i = 0; i < files.length; i++) {
+    const f = files[i];
+    const path = `${folder}/${i + 1}-${f.fileName}`.replace(/\s+/g, "-");
+    const { error } = await serviceRoleClient.storage
+      .from("lesson-images")
+      .upload(path, f.data, { contentType: mimeForExt(f.ext), upsert: true });
+    if (error) {
+      console.warn("Media upload failed:", path, error.message);
+      continue;
+    }
+    const { data } = serviceRoleClient.storage.from("lesson-images").getPublicUrl(path);
+    if (data?.publicUrl) urls.push(data.publicUrl);
+  }
+  return urls;
+}
+
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
