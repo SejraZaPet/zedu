@@ -133,6 +133,19 @@ export const createDefaultBlock = (type: BlockType): Block => {
       return { ...base, props: { title: "Shrnutí lekce", text: "" } };
     case "activity":
       return { ...base, props: { activityType: "flashcards", title: "Aktivita", flashcards: [{ front: "", back: "" }], quiz: { question: "", answers: [{ text: "", correct: false }], explanation: "" }, matching: { left: [""], right: [""] }, sorting: { groups: ["Skupina 1", "Skupina 2"], items: [{ text: "", group: 0 }] }, ordering: { items: [""] }, imageLabel: { imageUrl: "", markers: [], tolerance: 5, shuffleWords: true }, imageHotspot: { imageUrl: "", hotspots: [] }, fillBlanks: { text: "", caseSensitive: false, diacriticSensitive: true }, fillChoice: { tokens: [], options: [] }, trueFalse: { statements: [{ text: "", isTrue: true }] }, revealCards: { cards: [{ title: "", content: "" }] }, memoryGame: { pairs: [{ left: "", right: "" }] }, crossword: { entries: [{ answer: "", clue: "" }] } } };
+    case "hierarchy":
+      return {
+        ...base,
+        props: {
+          shape: "pyramid",
+          direction: "top-to-bottom",
+          levels: [
+            { id: crypto.randomUUID(), label: "Nejvyšší úroveň", description: "" },
+            { id: crypto.randomUUID(), label: "Střední úroveň", description: "" },
+            { id: crypto.randomUUID(), label: "Základní úroveň", description: "" },
+          ],
+        },
+      };
     default:
       return { ...base, props: {} };
   }
