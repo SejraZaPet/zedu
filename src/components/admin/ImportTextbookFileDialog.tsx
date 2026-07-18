@@ -135,6 +135,36 @@ const ImportTextbookFileDialog = ({
         }
       }
 
+      // Extract EMBEDDED raster images from PDF (not full-page renders).
+      // Uploaded to storage; appended as a gallery block at the end of the
+      // first lesson so the teacher can move/curate them in the editor.
+      let pdfEmbeddedImageUrls: string[] = [];
+      if (isPdf) {
+        try {
+          setProgress("Hledám vložené obrázky v PDF...");
+          const { extractPdfEmbeddedImages } = await import("@/lib/pdf-page-renderer");
+          const blobs = await extractPdfEmbeddedImages(file);
+          if (blobs.length > 0) {
+            setProgress(`Nahrávám ${blobs.length} vložených obrázků...`);
+            const folder = `pdf-embedded/${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+            for (let i = 0; i < blobs.length; i++) {
+              const path = `${folder}/image-${i + 1}.jpg`;
+              const { error: upErr } = await supabase.storage
+                .from("lesson-images")
+                .upload(path, blobs[i], { contentType: "image/jpeg", upsert: true });
+              if (upErr) {
+                console.warn("Upload vloženého obrázku selhal:", upErr);
+                continue;
+              }
+              const { data: urlData } = supabase.storage.from("lesson-images").getPublicUrl(path);
+              if (urlData?.publicUrl) pdfEmbeddedImageUrls.push(urlData.publicUrl);
+            }
+          }
+        } catch (err) {
+          console.warn("PDF embedded image extraction failed:", err);
+        }
+      }
+
       // Try to extract clean text from PDF on the frontend so AI gets real content, not hallucinations.
       let extractedText = "";
       if (manualText.trim().length >= 20) {
@@ -173,7 +203,14 @@ const ImportTextbookFileDialog = ({
         lessons?: { title?: string; blocks?: Block[] }[];
         blocks?: Block[];
         blockCount?: number;
+        embeddedImages?: string[];
+        skippedImages?: number;
       };
+
+      const serverEmbedded = Array.isArray(response.embeddedImages) ? response.embeddedImages : [];
+      const skippedImages = typeof response.skippedImages === "number" ? response.skippedImages : 0;
+      const allEmbedded = [...pdfEmbeddedImageUrls, ...serverEmbedded];
+
 
       const makeImageBlock = (url: string, pageIdx: number): Block => ({
         id: crypto.randomUUID(),
