@@ -53,6 +53,7 @@ import TwoColumnBlock from "./block-editors/TwoColumnBlock";
 import GalleryBlock from "./block-editors/GalleryBlock";
 import SummaryBlock from "./block-editors/SummaryBlock";
 import ActivityBlock from "./block-editors/ActivityBlock";
+import HierarchyBlock from "./block-editors/HierarchyBlock";
 
 interface Props {
   blocks: Block[];
