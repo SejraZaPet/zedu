@@ -660,6 +660,7 @@ serve(async (req) => {
     // PDF embedded images are extracted on the frontend (pdfjs).
     let embeddedImages: string[] = [];
     let skippedImages = 0;
+    const linkedBlocks: any[] = [];
     if (fileBase64) {
       const lower = String(fileName).toLowerCase();
       const prefix = lower.endsWith(".docx")
@@ -672,13 +673,74 @@ serve(async (req) => {
           const bytes = decodeBase64(String(fileBase64));
           const { images, skipped } = await extractZipMedia(bytes, prefix);
           skippedImages = skipped;
+
+          // For PPTX: detect shapes with external hyperlinks (esp. YouTube).
+          let pptxLinks: { youtube: { url: string; mediaFileName?: string }[]; other: { url: string; mediaFileName?: string }[] } | null = null;
+          if (lower.endsWith(".pptx")) {
+            try {
+              const { unzipSync } = await import("https://esm.sh/fflate@0.8.2");
+              const unzipped = unzipSync(bytes);
+              pptxLinks = extractPptxLinkedShapes(bytes, unzipped);
+            } catch (linkErr) {
+              console.warn("PPTX hyperlink extraction failed (non-fatal):", linkErr);
+            }
+          }
+
+          let byFileName = new Map<string, string>();
           if (images.length > 0) {
             const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
             const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
             if (SUPABASE_URL && SERVICE_ROLE) {
               const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
               const folder = `import-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
-              embeddedImages = await uploadMediaToStorage(admin, folder, images);
+              const uploaded = await uploadMediaToStorage(admin, folder, images);
+              embeddedImages = uploaded.urls;
+              byFileName = uploaded.byFileName;
+            }
+          }
+
+          // Build hyperlink blocks and remove their thumbnails from the
+          // generic embedded-image pool so we don't render them twice.
+          if (pptxLinks) {
+            const consumed = new Set<string>();
+            for (const yt of pptxLinks.youtube) {
+              linkedBlocks.push({
+                id: crypto.randomUUID(),
+                type: "youtube",
+                visible: true,
+                props: { url: yt.url, caption: "", width: "full" },
+              });
+              if (yt.mediaFileName) {
+                const url = byFileName.get(yt.mediaFileName);
+                if (url) consumed.add(url);
+              }
+            }
+            for (const link of pptxLinks.other) {
+              const imageUrl = link.mediaFileName ? byFileName.get(link.mediaFileName) : undefined;
+              if (imageUrl) {
+                linkedBlocks.push({
+                  id: crypto.randomUUID(),
+                  type: "image",
+                  visible: true,
+                  props: {
+                    url: imageUrl,
+                    caption: link.url,
+                    width: "full",
+                    alignment: "center",
+                  },
+                });
+                consumed.add(imageUrl);
+              } else {
+                linkedBlocks.push({
+                  id: crypto.randomUUID(),
+                  type: "paragraph",
+                  visible: true,
+                  props: { text: `Odkaz: ${link.url}` },
+                });
+              }
+            }
+            if (consumed.size > 0) {
+              embeddedImages = embeddedImages.filter((u) => !consumed.has(u));
             }
           }
         } catch (mediaErr) {
@@ -687,7 +749,7 @@ serve(async (req) => {
       }
     }
 
-    return jsonResponse({ lessons, blocks, blockCount: blocks.length, embeddedImages, skippedImages });
+    return jsonResponse({ lessons, blocks, blockCount: blocks.length, embeddedImages, skippedImages, linkedBlocks });
   } catch (err) {
     console.error("process-file-content error:", err);
     return jsonResponse({ error: err instanceof Error ? err.message : "Neznámá chyba" }, 500);
