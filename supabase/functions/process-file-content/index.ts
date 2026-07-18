@@ -361,6 +361,7 @@ function normalizeLessons(payload: any, fallbackTitle: string, mode: "single" | 
               }
               if (block.type === "bullet_list") return block.props.items.length > 0;
               if (block.type === "table") return block.props.headers.length > 0 || block.props.rows.length > 0;
+              if (block.type === "hierarchy") return Array.isArray(block.props.levels) && block.props.levels.length >= 2;
               return true;
             })
         : [],
