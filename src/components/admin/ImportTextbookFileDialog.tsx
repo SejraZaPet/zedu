@@ -239,11 +239,13 @@ const ImportTextbookFileDialog = ({
         mimeType: file.type || "application/pdf",
         mode: singleLesson ? "single" : "split",
       };
-      if (extractedText.length >= 100) {
+      const visionFallback = extractedText.length < 100;
+      if (!visionFallback) {
         invokeBody.extractedText = extractedText;
       } else {
         invokeBody.fileBase64 = base64;
       }
+      setUsedVisionFallback(visionFallback);
       const { data, error } = await supabase.functions.invoke("process-file-content", {
         body: invokeBody,
       });
