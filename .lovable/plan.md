@@ -1,48 +1,43 @@
-## Bod 1 — Filtr na page-coverage ratio v `extractPdfEmbeddedImages()`
+## Cíl
 
-**Soubor:** `src/lib/pdf-page-renderer.ts`
+Nahradit jednu gallery na konci lekce sadou menších gallery bloků vložených **za odpovídající divider** (= konec dané stránky PDF). Fallback pro obrázky, jejichž stránku nelze namapovat, zůstane připojený na konec.
 
-**Princip:**
-Pro každou stránku sledovat CTM (current transformation matrix) skrz operátorový seznam a při každém `paintImageXObject` / `paintImageXObjectRepeat` / `paintInlineImageXObject` zjistit **painted size v PDF user units** = `|a|` × `|d|` z aktuální matice. Porovnat s `page.getViewport({ scale: 1 })`.
+## Změny
 
-Pokud platí obojí:
-- `paintedWidth / viewportWidth ≥ 0.85`
-- `paintedHeight / viewportHeight ≥ 0.85`
+### 1. `src/lib/pdf-page-renderer.ts`
+Změnit návratový typ `extractPdfEmbeddedImages()` z `Blob[]` na `{ pageNumber: number; blob: Blob }[]`. Uvnitř smyčky `for (let i = 1; ...; i++)` má funkce už `i` (1-based page number) — místo `out.push(blob)` push `{ pageNumber: i, blob }`. JSDoc aktualizovat.
 
-→ obrázek považovat za celoslidové pozadí a přeskočit s reason `"full-page-background"`.
+Bez další změny logiky (filtry, coverage check, dedup zůstávají).
 
-Práh **0.85** (nikoli 0.80) je zvolený tak, aby velké, ale legitimní ilustrace (typicky max ~70–75 % šířky sazby v učebnici) prošly, zatímco skutečná pozadí (≥ 90 % obou rozměrů) se odfiltrují.
+### 2. `src/components/admin/ImportTextbookFileDialog.tsx`
 
-**Implementační detail — sledování CTM:**
-V pdfjs operator listu se objevují operace:
-- `OPS.save` — push aktuální matice na stack
-- `OPS.restore` — pop
-- `OPS.transform` s args `[a,b,c,d,e,f]` — násobí current CTM zprava
+**Upload smyčka (ř. 146–161):** iterovat nad novou strukturou; místo `pdfEmbeddedImageUrls: string[]` používat `pdfEmbeddedImagesByPage: Map<number, string[]>` (page number → seznam URL). Cestu ve storage nechat stejnou, přidat page do názvu pro čitelnost: `pdf-embedded/{folder}/page-{N}-image-{i}.jpg`.
 
-Pro filtr **nepotřebujeme plnou násobící logiku matic** — stačí zaznamenat scale `(a, d)` z posledního `OPS.transform` uvnitř aktuálního `save`/`restore` bloku bezprostředně před paint op. To odpovídá běžnému pdfjs vzoru:
+**Server embedded (DOCX/PPTX, ř. 210):** `serverEmbedded` nemá page info → zůstávají ve fallback koši (bez stránky).
 
-```text
-save → transform([sw, 0, 0, sh, tx, ty]) → paintImageXObject(name) → restore
-```
+**enrichBlocksWithPages:** rozšířit tak, aby vedle full-page renderu vkládal i **gallery blok s embedded obrázky z dané stránky**. Konkrétně:
+- Před vstupem do smyčky: pokud stránka 1 (`pdfEmbeddedImagesByPage.get(1)`) obsahuje URL, vložit po případném full-page image i gallery blok pro stránku 1.
+- Ve smyčce, po detekci `divider` a inkrementu `pageIdx`: pokud `pdfEmbeddedImagesByPage.get(pageIdx + 1)` má URL, vložit gallery blok pro tuto stranu (za full-page image, pokud existuje).
+- Po smyčce: mezi leftover full-page renders připojit i všechny gallery bloky pro stránky, které do dividerů nespadly (`pageNumber > pageIdx + 1` nebo mapa má klíče, které jsme nepoužili).
 
-kde `sw` = painted width v points, `sh` = painted height v points. Pokud vzor nesedí (např. složená transformace), fallback: neaplikovat filtr, obrázek propustit (bezpečná varianta — raději trochu šumu než zahodit legitimní ilustraci).
+Sledovat `usedPages: Set<number>` pro zabránění duplicitám a k detekci leftoverů.
 
-**Změny v kódu (přesně):**
-1. Přidat parametr `pageCoverageThreshold?: number` (default `0.85`) do `opts`.
-2. Uvnitř smyčky `for (let k = 0; ...)`:
-   - Před testem rozměrů vypočíst `paintedW`, `paintedH` z posledního `OPS.transform` před tímto paint op v rámci aktuálního save/restore bloku.
-   - Získat viewport `page.getViewport({ scale: 1 })` jednou před smyčkou.
-   - Pokud `paintedW / viewport.width ≥ threshold && paintedH / viewport.height ≥ threshold` → `bump("full-page-background", { page: i, index: k, paintedW, paintedH, viewportW, viewportH })` a `continue`.
-3. Nechat existující dimension filtry (`< 16`, `> 4000`) beze změny — jsou ortogonální.
+**Sloučené odstranění staré gallery:** `makeGalleryBlock`/`embeddedGalleryBlock` zůstává, ale volá se teď dvakrát způsobem:
+- Per-page (s URL z jedné stránky) uvnitř `enrichBlocksWithPages`.
+- Fallback: **jedna gallery na konec** obsahující pouze `serverEmbedded` (DOCX/PPTX) + nemapované PDF obrázky (leftover), pokud nějaké jsou.
 
-**Debug:** logovat coverage ratio i pro obrázky, které projdou, jen když `debug: true` (což aktuálně `ImportTextbookFileDialog.tsx` nevolá — správně).
+Efekt: pro PDF s dobrým dividerováním se obrázky rozprostřou po lekci; pro DOCX/PPTX zůstává současné chování (jedna galerie na konci); mixed a edge cases dostanou fallback galerii navíc na konci.
 
-## Bod 2 — Chybějící tabulka
+## Nejde v tomto kroku řešit
 
-**Nález:** `extractPdfText()` je byte-identická napříč všemi commity od svého zavedení. Žádné vedlejší úpravy. Do AI se posílá stejný raw text jako dříve.
-
-**Akce:** žádná změna kódu v této fázi. V shrnutí uživatelce navrhnu diagnostický krok: nechat ji poslat konkrétní PDF, spustíme jednorázově `extractPdfText()` a ověříme, jestli je slovo z tabulky vůbec v raw textovém streamu. Podle výsledku pak buď (a) vylepšit strukturu prompt pro AI (explicitní „zachovej tabulky jako Markdown"), nebo (b) přidat vision fallback pro stránky s nízkým textovým výtěžkem.
+- Přesné umístění u konkrétního odstavce — vyžadovalo by layout analýzu.
+- Případy, kdy AI negeneruje dividery (single-page prompt, nebo AI je vynechá) — obrázky pak spadnou do leftover fallback galerie na konci lekce.
+- `serverEmbedded` z DOCX/PPTX nemá page info — zůstává v koncové galerii.
 
 ## Rozsah
 
-Jediná změna: `src/lib/pdf-page-renderer.ts`, funkce `extractPdfEmbeddedImages()`. Žádné jiné soubory, žádné migrace, žádné edge funkce.
+Dva soubory:
+- `src/lib/pdf-page-renderer.ts` — jen signatura návratu.
+- `src/components/admin/ImportTextbookFileDialog.tsx` — upload smyčka, `enrichBlocksWithPages`, sestavení lessons.
+
+Žádné DB migrace, žádné edge funkce, žádné změny na straně `process-file-content` ani AI promptu.
