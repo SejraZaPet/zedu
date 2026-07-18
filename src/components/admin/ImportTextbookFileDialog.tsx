@@ -580,6 +580,17 @@ const ImportTextbookFileDialog = ({
           </div>
         ) : (
           <div className="space-y-4">
+            {usedVisionFallback && (
+              <div
+                role="status"
+                className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100"
+              >
+                <Info className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden="true" />
+                <p>
+                  Text z tohoto PDF se nepodařilo extrahovat strojově (nestandardní/komprimované fonty) — obsah byl načten pomocí AI z obrázků stránek. Struktura (např. tabulky) nemusí být zachovaná přesně. Zkontrolujte prosím obsah a případně upravte ručně.
+                </p>
+              </div>
+            )}
             <div className="space-y-2">
               <Label>Téma, do kterého importovat</Label>
               <Select value={topicId} onValueChange={setTopicId}>
