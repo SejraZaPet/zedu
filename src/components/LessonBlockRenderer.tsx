@@ -226,7 +226,7 @@ export const LessonBlock = ({ block, blockIndex, onActivityComplete, isTeacher }
         <div className={`grid gap-3 ${colClass}`}>
           {(p.images as { url: string; caption: string }[])?.filter(img => img.url).map((img, i) => (
             <figure key={i} className="text-center">
-              <img src={img.url} alt={img.caption || ""} className="rounded-lg w-full object-cover aspect-square" />
+              <img src={img.url} alt={img.caption || ""} className="rounded-lg w-full h-auto object-contain bg-muted/30" />
               {img.caption && <figcaption className="text-xs text-muted-foreground mt-1">{img.caption}</figcaption>}
             </figure>
           ))}
