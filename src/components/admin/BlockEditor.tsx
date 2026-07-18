@@ -493,6 +493,14 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
           transition: border-color 120ms ease, color 120ms ease;
         }
         .block-editor-scope .be-add-pill:hover { border-color: #0F9A8B; color: #0F9A8B; }
+        .block-editor-scope { font-family: 'Lato', system-ui, sans-serif; font-size: 16px; line-height: 1.5; }
+        .block-editor-scope .be-block__label { font-size: 14px; font-weight: 700; letter-spacing: 0.01em; }
+        .block-editor-scope .be-block h1, .block-editor-scope .be-block [data-heading="1"] { font-size: 32px; font-weight: 700; line-height: 1.2; }
+        .block-editor-scope .be-block h2, .block-editor-scope .be-block [data-heading="2"] { font-size: 24px; font-weight: 700; line-height: 1.25; }
+        .block-editor-scope .be-block h3, .block-editor-scope .be-block [data-heading="3"] { font-size: 20px; font-weight: 700; line-height: 1.3; }
+        .block-editor-scope .be-block h4, .block-editor-scope .be-block [data-heading="4"] { font-size: 18px; font-weight: 700; line-height: 1.35; }
+        .block-editor-scope .be-block p, .block-editor-scope .be-block li { font-size: 16px; font-weight: 400; line-height: 1.5; }
+        .block-editor-scope .be-block figcaption, .block-editor-scope .be-block .caption { font-size: 14px; color: #737373; }
       `}</style>
 
       <div className="flex items-center justify-end gap-1 sticky top-0 z-40 bg-background/80 backdrop-blur-sm py-1 -mt-1 rounded-md">

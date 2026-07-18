@@ -56,8 +56,8 @@
     --surface: 0 0% 100%;
     --surface-hover: 225 33% 96%;
 
-    --font-heading: 'Inter', system-ui, sans-serif;
-    --font-body: 'Inter', system-ui, sans-serif;
+    --font-heading: 'Lato', system-ui, sans-serif;
+    --font-body: 'Lato', system-ui, sans-serif;
   }
 }
 

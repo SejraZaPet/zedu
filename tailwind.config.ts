@@ -14,8 +14,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        heading: ["Inter", "system-ui", "sans-serif"],
-        body: ["Inter", "system-ui", "sans-serif"],
+        sans: ["Lato", "system-ui", "sans-serif"],
+        heading: ["Lato", "system-ui", "sans-serif"],
+        body: ["Lato", "system-ui", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
