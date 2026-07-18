@@ -566,6 +566,36 @@ function extractPptxLinkedShapes(bytes: Uint8Array, unzipped: Record<string, Uin
   return { youtube, other };
 }
 
+// Map slideNumber -> media file names for ALL <a:blip r:embed="..."> images on that slide.
+function extractPptxImagesBySlide(unzipped: Record<string, Uint8Array>): Map<number, string[]> {
+  const bySlide = new Map<number, string[]>();
+  const slideFiles = Object.keys(unzipped).filter((n) => /ppt\/slides\/slide\d+\.xml$/.test(n));
+  for (const slidePath of slideFiles) {
+    const num = Number(slidePath.match(/slide(\d+)\.xml$/)?.[1]);
+    if (!num) continue;
+    const relsData = unzipped[`ppt/slides/_rels/slide${num}.xml.rels`];
+    if (!relsData) continue;
+    const relsXml = textDecoder.decode(relsData);
+    const relMap = new Map<string, string>();
+    for (const m of relsXml.matchAll(/<Relationship\b[^>]*\/>/g)) {
+      const tag = m[0];
+      const id = tag.match(/Id="([^"]+)"/)?.[1];
+      const target = tag.match(/Target="([^"]+)"/)?.[1];
+      if (id && target) relMap.set(id, target);
+    }
+    const slideXml = textDecoder.decode(unzipped[slidePath]);
+    const seen: string[] = [];
+    for (const bm of slideXml.matchAll(/<a:blip\b[^>]*\sr:embed="([^"]+)"/g)) {
+      const target = relMap.get(bm[1]);
+      if (!target) continue;
+      const fileName = target.split("/").pop();
+      if (fileName && !seen.includes(fileName)) seen.push(fileName);
+    }
+    if (seen.length > 0) bySlide.set(num, seen);
+  }
+  return bySlide;
+}
+
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -661,6 +691,7 @@ serve(async (req) => {
     let embeddedImages: string[] = [];
     let skippedImages = 0;
     const linkedBlocks: any[] = [];
+    let embeddedImagesBySlide: { slideNumber: number; urls: string[] }[] = [];
     if (fileBase64) {
       const lower = String(fileName).toLowerCase();
       const prefix = lower.endsWith(".docx")
@@ -674,15 +705,18 @@ serve(async (req) => {
           const { images, skipped } = await extractZipMedia(bytes, prefix);
           skippedImages = skipped;
 
-          // For PPTX: detect shapes with external hyperlinks (esp. YouTube).
+          // For PPTX: detect shapes with external hyperlinks (esp. YouTube)
+          // and map every embedded image to its slide.
           let pptxLinks: { youtube: { url: string; mediaFileName?: string }[]; other: { url: string; mediaFileName?: string }[] } | null = null;
+          let pptxImagesBySlide: Map<number, string[]> | null = null;
           if (lower.endsWith(".pptx")) {
             try {
               const { unzipSync } = await import("https://esm.sh/fflate@0.8.2");
               const unzipped = unzipSync(bytes);
               pptxLinks = extractPptxLinkedShapes(bytes, unzipped);
+              pptxImagesBySlide = extractPptxImagesBySlide(unzipped);
             } catch (linkErr) {
-              console.warn("PPTX hyperlink extraction failed (non-fatal):", linkErr);
+              console.warn("PPTX slide/hyperlink extraction failed (non-fatal):", linkErr);
             }
           }
 
@@ -701,8 +735,8 @@ serve(async (req) => {
 
           // Build hyperlink blocks and remove their thumbnails from the
           // generic embedded-image pool so we don't render them twice.
+          const consumed = new Set<string>();
           if (pptxLinks) {
-            const consumed = new Set<string>();
             for (const yt of pptxLinks.youtube) {
               linkedBlocks.push({
                 id: crypto.randomUUID(),
@@ -722,12 +756,7 @@ serve(async (req) => {
                   id: crypto.randomUUID(),
                   type: "image",
                   visible: true,
-                  props: {
-                    url: imageUrl,
-                    caption: link.url,
-                    width: "full",
-                    alignment: "center",
-                  },
+                  props: { url: imageUrl, caption: link.url, width: "full", alignment: "center" },
                 });
                 consumed.add(imageUrl);
               } else {
@@ -743,13 +772,28 @@ serve(async (req) => {
               embeddedImages = embeddedImages.filter((u) => !consumed.has(u));
             }
           }
+
+          // Resolve slide->URL map, excluding thumbnails consumed by linkedBlocks.
+          if (pptxImagesBySlide) {
+            const out: { slideNumber: number; urls: string[] }[] = [];
+            const sorted = [...pptxImagesBySlide.entries()].sort((a, b) => a[0] - b[0]);
+            for (const [slideNumber, fileNames] of sorted) {
+              const urls: string[] = [];
+              for (const fn of fileNames) {
+                const url = byFileName.get(fn);
+                if (url && !consumed.has(url)) urls.push(url);
+              }
+              if (urls.length > 0) out.push({ slideNumber, urls });
+            }
+            embeddedImagesBySlide = out;
+          }
         } catch (mediaErr) {
           console.warn("Embedded media extraction failed (non-fatal):", mediaErr);
         }
       }
     }
 
-    return jsonResponse({ lessons, blocks, blockCount: blocks.length, embeddedImages, skippedImages, linkedBlocks });
+    return jsonResponse({ lessons, blocks, blockCount: blocks.length, embeddedImages, embeddedImagesBySlide, skippedImages, linkedBlocks });
   } catch (err) {
     console.error("process-file-content error:", err);
     return jsonResponse({ error: err instanceof Error ? err.message : "Neznámá chyba" }, 500);
