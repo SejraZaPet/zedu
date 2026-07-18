@@ -68,6 +68,5 @@ verify_jwt = false
 [functions.confirm-password-reset]
 verify_jwt = false
 
-[functions.extract-pdf-text]
-verify_jwt = false
+
 
