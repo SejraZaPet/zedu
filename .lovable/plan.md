@@ -1,56 +1,51 @@
-## Cíl
-Najít přesný bod selhání `extractPdfEmbeddedImages()` při importu PDF s vloženými obrázky a doložit ho reálným logem/error výstupem. Neprovádět produkční opravu, dokud nebude jasný nález.
+## Diagnóza
 
-## Ověřený aktuální stav
-- Headless browser je v sandboxu dostupný: Python Playwright import prošel.
-- Nainstalovaná PDF knihovna je `pdfjs-dist` `^5.7.284`.
-- `vite.config.ts` zatím nemá `optimizeDeps.exclude` pro `pdfjs-dist`.
-- `extractPdfEmbeddedImages()` už obsahuje debug logování a používá:
-  - `getDocument()`
-  - `page.render({ canvas, canvasContext, viewport })`
-  - `page.getOperatorList()`
-  - `OPS.paintImageXObject`, `OPS.paintImageXObjectRepeat`, `OPS.paintInlineImageXObject`, `OPS.paintJpegXObject`, `OPS.paintImageMaskXObject`
-  - `page.objs/commonObjs.get()` přes timeout wrapper
-- Existuje diagnostická stránka `/__pdf-diag`, která volá `extractPdfEmbeddedImages(file, { debug: true })`.
+**Bucket `lesson-images` má na `storage.objects` pouze 4 policies:**
 
-## Diagnostický postup
-1. **Přidat pouze dočasnou diagnostickou instrumentaci**
-   - Rozšířit logy v `extractPdfEmbeddedImages()` tak, aby explicitně vypsaly:
-     - verzi `pdfjs-dist`, počet stran, velikost vstupního PDF,
-     - skutečné hodnoty všech používaných `OPS` konstant,
-     - pro každou stránku: viewport rozměry při `scale: 0.5`, canvas rozměry, výsledek `page.render()`, výsledek `getOperatorList()`, počty image paint operací podle typu,
-     - pro každý XObject název: zda byl v `commonObjs`/`objs`, zda `getObj()` vrátil non-null, klíče objektu, rozměry, datový typ, velikost dat,
-     - každý důvod přeskočení kandidáta,
-     - finální počet vytvořených Blobů.
-   - Logy ponechat pouze při `debug: true`, aby se neměnilo běžné produkční chování.
+| CMD | Kdo | Podmínka |
+|---|---|---|
+| SELECT | public | `bucket_id='lesson-images'` (kdokoliv) |
+| INSERT | public | `bucket_id='lesson-images' AND is_admin()` |
+| UPDATE | public | `bucket_id='lesson-images' AND is_admin()` |
+| DELETE | public | `bucket_id='lesson-images' AND is_admin()` |
 
-2. **Otestovat čistě v browser kontextu přes `/__pdf-diag`**
-   - Vygenerovat syntetické PDF s vloženými rastrovými PNG/JPEG obrázky přes Node skript a uložit ho do `/tmp/browser/...`.
-   - Playwright otevře lokální aplikaci na `http://localhost:8080/__pdf-diag`, nahraje syntetické PDF do `<input type=file>`, zachytí console logy i page errors a počká na výsledek.
-   - Výstupem bude kompletní console log, včetně případného `Map.prototype.getOrInsertComputed` nebo jiného runtime erroru.
+**Žádný path pattern se nekontroluje** — policy zajímá jen `is_admin()`. Naše cesta `pdf-embedded/{timestamp}-{random}/image-N.jpg` tedy není problém tvarem, ale rolí.
 
-3. **Otestovat reálný import flow, pokud půjde obnovit přihlášení**
-   - Zkontrolovat stav auth injekce v sandboxu.
-   - Pokud je dostupná managed session, obnovit ji v Playwright podle bezpečného postupu a otevřít stránku, kde je `ImportTextbookFileDialog` dostupný pro admin/teacher účet.
-   - Nahrát stejné syntetické PDF do reálného dialogu a sledovat console logy + upload počet URL.
-   - Pokud auth injekce dostupná nebude, doložit to a pokračovat s `/__pdf-diag`, protože ta testuje stejnou extrakční funkci v reálném Vite/browser prostředí.
+**Root cause:** `ImportTextbookFileDialog` je používán i z `TeacherTextbooks.tsx` (řádek 637). Když ho spustí **učitel** (ne admin), `is_admin()` vrátí `false` → INSERT policy zamítne upload. Stejný problém by měl už dřív i upload page-renderů do `pdf-import/...` — pravděpodobně to učitelka narazila poprvé teď, když embedded extrakce začala fungovat a hodila víc uploadů.
 
-4. **Zvláštní ověření podezřelých bodů**
-   - Ověřit, zda `page.render()` v aktuálním `pdfjs-dist` padá kvůli parametru `canvas` v render contextu; v diagnostice případně provést A/B test renderu:
-     - `{ canvas, canvasContext, viewport }`
-     - `{ canvasContext, viewport }`
-   - Vypsat skutečné hodnoty `OPS.paintImageXObjectRepeat`, `OPS.paintInlineImageXObject`, `OPS.paintJpegXObject`, `OPS.paintImageMaskXObject`.
-   - Zalogovat viewport/canvas rozměry a zachytit chyby pro případ canvas size limitu.
+**DOCX/PPTX cesta (edge function `process-file-content`):** běží pod service_role, ta RLS obchází. Bez rizika.
 
-5. **Report bez produkční opravy**
-   - Vrátit strukturovaný report:
-     - přesný bod selhání,
-     - kompletní relevantní log výstup,
-     - zda selhává render, operator list, `getObj`, width/height filtr, decode, nebo upload,
-     - zda jde o Vite/pdfjs bundling problém, API signaturu, OPS konstanty, canvas limit, nebo jinou příčinu,
-     - doporučení, jestli dočasné logy odstranit nebo nechat pouze za dev/debug flagem.
+## Návrh opravy
 
-## Co se zatím nebude dělat
-- Nebude se měnit produkční extrakční algoritmus ani importní flow jako oprava.
-- Nebudou se mazat ani měnit data v databázi/storage.
-- Nebude se deployovat ani publikovat aplikace.
+Rozšířit INSERT/UPDATE/DELETE policies pro `lesson-images` tak, aby povolily i **učitele** (nejen adminy). Obrázky jsou stejně veřejné (SELECT je otevřený všem) a učitelé legitimně vytváří obsah lekcí — je nekonzistentní, že admin může nahrávat obrázky do lekcí, ale učitel ne, přestože oba lekce editují.
+
+Migrace:
+
+```sql
+DROP POLICY "Admin can upload lesson images" ON storage.objects;
+DROP POLICY "Admin can update lesson images" ON storage.objects;
+DROP POLICY "Admin can delete lesson images" ON storage.objects;
+
+CREATE POLICY "Admins and teachers can upload lesson images"
+  ON storage.objects FOR INSERT TO authenticated
+  WITH CHECK (bucket_id = 'lesson-images' AND public.is_admin_or_teacher());
+
+CREATE POLICY "Admins and teachers can update lesson images"
+  ON storage.objects FOR UPDATE TO authenticated
+  USING (bucket_id = 'lesson-images' AND public.is_admin_or_teacher());
+
+CREATE POLICY "Admins and teachers can delete lesson images"
+  ON storage.objects FOR DELETE TO authenticated
+  USING (bucket_id = 'lesson-images' AND public.is_admin_or_teacher());
+```
+
+`public.is_admin_or_teacher()` už existuje (v seznamu DB funkcí) — vrací true pro role `admin` i `teacher`.
+
+**Cesty (`pdf-embedded/...`, `pdf-import/...`) v `ImportTextbookFileDialog.tsx` neupravuju** — policy path pattern neřeší, takže není důvod je měnit.
+
+## Ověření po aplikaci
+
+1. Učitelka znovu spustí import PDF s obrázky → upload projde, galerie se objeví v draftované lekci.
+2. Debug flag `{ debug: true }` v `ImportTextbookFileDialog.tsx` může zůstat pro tento test, pak ho odstraníme.
+
+Souhlasíš s touto migrací?
