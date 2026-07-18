@@ -244,19 +244,35 @@ const ImportTextbookFileDialog = ({
         return out;
       };
 
+      // Build a gallery block from all extracted embedded images.
+      // Appended at the END of each draft lesson; teacher moves them manually
+      // in the editor (positioning near matching text is out of scope).
+      const makeGalleryBlock = (urls: string[]): Block | null => {
+        if (urls.length === 0) return null;
+        return {
+          id: crypto.randomUUID(),
+          type: "gallery",
+          visible: true,
+          props: {
+            columns: Math.min(3, Math.max(2, Math.ceil(Math.sqrt(urls.length)))),
+            images: urls.map((url) => ({ url, caption: "" })),
+          },
+        } as unknown as Block;
+      };
+      const embeddedGalleryBlock = makeGalleryBlock(allEmbedded);
+
       const rawLessons = Array.isArray(response.lessons)
         ? response.lessons
         : response.blocks
           ? [{ title: file.name.replace(/\.(pdf|pptx|docx)$/i, ""), blocks: response.blocks }]
           : [];
 
-      const lessons = rawLessons.map((lesson, idx) => ({
-        ...lesson,
-        blocks:
-          idx === 0
-            ? enrichBlocksWithPages(Array.isArray(lesson.blocks) ? lesson.blocks : [])
-            : (Array.isArray(lesson.blocks) ? lesson.blocks : []),
-      }));
+      const lessons = rawLessons.map((lesson, idx) => {
+        const base = Array.isArray(lesson.blocks) ? lesson.blocks : [];
+        const withPages = idx === 0 ? enrichBlocksWithPages(base) : base;
+        const withGallery = embeddedGalleryBlock ? [...withPages, embeddedGalleryBlock] : withPages;
+        return { ...lesson, blocks: withGallery };
+      });
 
       const normalizedLessons = lessons
         .map((lesson, index) => ({
@@ -272,10 +288,14 @@ const ImportTextbookFileDialog = ({
       }
 
       const totalBlocks = normalizedLessons.reduce((sum, lesson) => sum + lesson.blocks.length, 0);
+      const embeddedCount = allEmbedded.length;
       setDrafts(normalizedLessons);
+      const parts = [`Vytvořeno ${totalBlocks} bloků.`];
+      if (embeddedCount > 0) parts.push(`Přidáno ${embeddedCount} obrázků do galerie na konci lekce.`);
+      if (skippedImages > 0) parts.push(`Přeskočeno ${skippedImages} obrázků v nepodporovaném formátu (EMF/WMF).`);
       toast({
         title: "Import dokončen",
-        description: `Vytvořeno ${totalBlocks} bloků. Obrázky z dokumentu doplňte ručně v editoru.`,
+        description: parts.join(" "),
       });
     } catch (err: any) {
       console.error("Import error:", err);
