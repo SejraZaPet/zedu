@@ -1,68 +1,44 @@
-# Diagnostika extractPdfText() — regrese po optimizeDeps.exclude
+# Plán: diagnostika a oprava regrese tabulky "Přední čtvrť / Zadní čtvrť"
 
-Cíl: zjistit, proč `extractPdfText()` vrací prázdno pro všech 8/8 stránek v čerstvém buildu (i s raw fallbackem), a ověřit, jestli to souvisí s `optimizeDeps.exclude: ["pdfjs-dist"]` ve `vite.config.ts`. **Žádné funkční změny** — pouze instrumentace + headless test.
+## Cíl
+Vrátit detekci legitimní 2×7 tabulky, aniž bychom znovu propustili false-positive z minulého kola (rozsypaná 10-sloupcová "tabulka" u vnitřností).
 
-## Krok 1 — Instrumentace `src/lib/pdf-page-renderer.ts`
+## Fáze 1 — Naměřit reálná data (bez změny thresholdů)
 
-V `extractPdfText()`:
+V `supabase/functions/process-file-content/index.ts` v `extractSlideText()`:
 
-1. **Vnější `try/catch` kolem celého těla funkce** s `console.error("[pdf-text-diag] extractPdfText FAILED", err)` a re-throw, aby žádná tichá chyba (v `getDocument`, `getPage`, `getTextContent`) neprošla nezalogovaná.
+1. Přidat `console.log("[pptx-table-diag]", { slideShapes: shapes.length, rowSizes: rows.map(r => r.length) })` po zclusterování řádků.
+2. Uvnitř `while (i < rows.length)` logovat pro každý `canStart=false` důvod:
+   - `cols` mimo 2–5,
+   - prázdné buňky,
+   - `widthCV = stdev/mean` když spadne test uniformity.
+3. Když group.length < 2, logovat, který test u `next` selhal (`length mismatch`, `empty cell`, `widthCV`, `x-align drift@col=k=Δ`).
 
-2. **Na začátku funkce** (před `getDocument`):
-   ```
-   console.log("[pdf-text-diag] START", {
-     fileName, fileSize, fileType,
-     pdfjsVersion: (pdfjsLib as any).version,
-     workerPort: !!pdfjsLib.GlobalWorkerOptions.workerPort,
-     workerSrc: pdfjsLib.GlobalWorkerOptions.workerSrc,
-   });
-   ```
+Uživatelka reimportuje PPTX. V `edge_function_logs` uvidíme přesně, který test u řádku s "PŘEDNÍ ČTVRŤ / ZADNÍ ČTVRŤ" padl a s jakou konkrétní hodnotou.
 
-3. **Hned po `await getDocument(...).promise`**:
-   `console.log("[pdf-text-diag] PDF loaded", { numPages: pdf.numPages });`
-   Pokud throw → vnější catch to zaloguje.
+## Fáze 2 — Cílená oprava (podle toho, co ukáže Fáze 1)
 
-4. **Uvnitř per-page smyčky**, hned po `page.getTextContent()`:
-   ```
-   console.log("[pdf-text-diag] page", i, {
-     itemsLength: items.length,
-     firstFive: items.slice(0, 5).map(it => ({
-       str: it.str, hasEOL: it.hasEOL,
-       transform: it.transform, width: it.width,
-     })),
-   });
-   ```
-   A po výpočtu `raw` + `rendered`:
-   ```
-   console.log("[pdf-text-diag] page", i, "extracted", {
-     rawLen: raw.length, renderedLen: rendered.length,
-   });
-   ```
+Aplikovat jen relevantní úpravu, ne všechny najednou:
 
-Prefix `[pdf-text-diag]` pro snadné filtrování. Instrumentace je čistě additive, nemění výstup.
+**A. yTolerance mis-clustering** → přejít z absolutní tolerance od `last[0].y` na test vertikálního překryvu boxů: `overlap(a, b) = min(cy_a, cy_b) * 0.6`. Robustní vůči heterogenním výškám (velká hlavička + úzké tělo).
 
-## Krok 2 — Headless test na syntetickém PDF
+**B. `rowWidthsUniform` falešný negativ na hlavičce** → pro `cols === 2` uvolnit `WIDTH_CV_MAX` na 0.55, nebo úplně přeskočit test šířky na **prvním** řádku group a vyžadovat ho jen u těla.
 
-Skript pod `/tmp/pdf-diag/`:
+**C. Native `<a:tbl>` mimo scope** → přidat samostatnou větev před shape-scan: najít `<p:graphicFrame>` s `<a:tbl>`, iterovat `<a:tr>`/`<a:tc>`, emitovat markdown tabulku deterministicky bez heuristiky. Toto je nejčistší cesta, pokud autor slidu použil skutečnou PowerPoint tabulku.
 
-1. Vygenerovat malé testovací PDF přes `pdf-lib` (2 stránky, jednoduché texty + jedna tabulka řádků se zarovnanými x-souřadnicemi), uložit do `/tmp/pdf-diag/test.pdf`.
-2. Spustit Playwright (`headless=True`, viewport 1280×1800) proti `http://localhost:8080` na dočasnou stránku nebo přes existující diagnostiku, případně injektovat modul přes `page.evaluate` a naimportovat `/src/lib/pdf-page-renderer.ts` dynamicky.
-   - Jednodušší varianta: dočasně přidat mini test route `/__pdf-text-diag`, která přijme `File` z `<input type=file>` nebo z `fetch("/tmp/pdf-diag/test.pdf")` a zavolá `extractPdfText`. (Cleanup route odstraníme po diagnostice — jako minule s `/__pdf-diag`.)
-3. Zachytit `console` eventy (`page.on("console", ...)`), uložit do `/tmp/pdf-diag/log.txt`, `tail`/`grep` pro `[pdf-text-diag]`.
+**D. `X_ALIGN_TOL` moc přísný** → tolerance relativní k šířce sloupce: `tol = max(200000, base[k].cx * 0.15)`.
 
-## Krok 3 — Interpretace
+## Fáze 3 — Ověření
 
-- **Vnější catch se trigne** → přesná chyba (worker, getDocument, getTextContent).
-- **`items.length === 0`** na všech stránkách → problém v pdfjs načítání textového obsahu (worker/exclude side-effect).
-- **`items.length > 0` ale `rawLen === 0`** → regrese v raw fallback logice.
-- **Syntetický test projde OK, produkční PDF ne** → problém specifický pro konkrétní PDF (font/enkódování), potřeba získat reálný soubor.
+1. Uživatelka reimportuje PPTX "Hovězí maso".
+2. Ověřit v DB (`textbook_lessons`), že:
+   - vznikla korektní tabulka **Přední čtvrť / Zadní čtvrť** (2×7),
+   - slide s vnitřnostmi (líčka/játra/srdce...) je odstavcový text, **ne** 10-sloupcová tabulka.
+3. Odstranit diagnostické `console.log` z Fáze 1.
 
-## Krok 4 — Cleanup
+## Co v tomto plánu **není**
+- Slepá úprava thresholdů bez naměřených dat — v předchozím kole nás to dostalo do oscilace mezi false-positive a false-negative.
+- Změny mimo `extractSlideText()`.
 
-Po odsouhlasené opravě: odstranit `[pdf-text-diag]` logy, případnou dočasnou route `/__pdf-text-diag` a `/tmp/pdf-diag/` obsah.
-
-## Technické poznámky
-
-- `pdfjsLib.GlobalWorkerOptions.workerSrc` může být `undefined`, když je nastaven jen `workerPort` (což je náš případ přes `?worker` import) — v logu je to očekávané, hlavní check je `workerPort: true`.
-- `optimizeDeps.exclude` by neměl mít vliv na runtime chování `getTextContent()`, ale ovlivňuje bundlování/HMR — diagnostika to potvrdí nebo vyvrátí.
-- Instrumentace nezvyšuje bundle produkčně měřitelně; přesto ji po diagnostice odstraníme.
+## Technická poznámka
+Fáze 1 je čistě aditivní logování (žádná změna chování). Rollback = odstranit tři `console.log` řádky.
