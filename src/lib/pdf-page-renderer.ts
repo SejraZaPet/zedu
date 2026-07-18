@@ -70,52 +70,109 @@ export async function extractPdfText(file: File): Promise<string> {
  */
 export async function extractPdfEmbeddedImages(
   file: File,
-  opts: { maxPixelDim?: number; maxImages?: number } = {},
+  opts: { maxPixelDim?: number; maxImages?: number; objsTimeoutMs?: number } = {},
 ): Promise<Blob[]> {
   const maxPixelDim = opts.maxPixelDim ?? 4000;
   const maxImages = opts.maxImages ?? 200;
+  const objsTimeoutMs = opts.objsTimeoutMs ?? 5000;
 
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
   const OPS = (pdfjsLib as unknown as { OPS: Record<string, number> }).OPS;
 
-  const paintOps = new Set(
-    [OPS.paintImageXObject, OPS.paintJpegXObject, OPS.paintImageXObjectRepeat].filter(
+  // XObject paint ops — image XObject data lives in page.objs / commonObjs
+  // and requires the page to have been rendered before it is populated on
+  // the main thread (pdfjs v4+ behavior). Names come from argsArray[k][0].
+  const xobjectOps = new Set(
+    [OPS.paintImageXObject, OPS.paintImageXObjectRepeat].filter(
       (v) => typeof v === "number",
     ),
   );
 
+  // Inline image op — image dict is embedded directly in argsArray[k][0]
+  // with { width, height, data|bitmap } already present. No objs lookup.
+  const inlineOp = typeof OPS.paintInlineImageXObject === "number"
+    ? OPS.paintInlineImageXObject
+    : -1;
+
   const seen = new Set<string>();
   const out: Blob[] = [];
 
+  // Reusable throwaway canvas — rendering the page is the only reliable way
+  // to force pdfjs to transfer image XObjects onto the main thread so
+  // page.objs.get() resolves. We don't care about the pixels; we discard.
+  const renderCanvas = document.createElement("canvas");
+  const renderCtx = renderCanvas.getContext("2d");
+
+  const getObj = (page: any, name: string): Promise<any> =>
+    new Promise((resolve) => {
+      let done = false;
+      const finish = (val: any) => {
+        if (done) return;
+        done = true;
+        resolve(val);
+      };
+      const timer = setTimeout(() => finish(null), objsTimeoutMs);
+      const wrap = (val: any) => {
+        clearTimeout(timer);
+        finish(val);
+      };
+      try {
+        const commonObjs = page.commonObjs;
+        if (commonObjs?.has?.(name)) {
+          commonObjs.get(name, wrap);
+          return;
+        }
+        if (page.objs?.has?.(name)) {
+          page.objs.get(name, wrap);
+          return;
+        }
+        // Not resolved yet — register the callback and rely on the timeout
+        page.objs.get(name, wrap);
+      } catch {
+        wrap(null);
+      }
+    });
+
   for (let i = 1; i <= pdf.numPages && out.length < maxImages; i++) {
     const page = await pdf.getPage(i);
+
+    // Render page to a throwaway canvas at low scale — this pushes all image
+    // XObjects onto the main thread. Low scale keeps CPU/memory reasonable;
+    // image data itself is transferred regardless of scale.
+    try {
+      if (renderCtx) {
+        const viewport = page.getViewport({ scale: 0.5 });
+        renderCanvas.width = Math.max(1, Math.floor(viewport.width));
+        renderCanvas.height = Math.max(1, Math.floor(viewport.height));
+        await page.render({ canvas: renderCanvas, canvasContext: renderCtx, viewport }).promise;
+      }
+    } catch (err) {
+      // If render fails we still try operator-list extraction — inline images
+      // and any already-resolved XObjects can still work.
+      console.warn(`PDF embedded image render prep failed on page ${i}:`, err);
+    }
+
     const ops = await page.getOperatorList();
 
     for (let k = 0; k < ops.fnArray.length && out.length < maxImages; k++) {
-      if (!paintOps.has(ops.fnArray[k])) continue;
-      const name = ops.argsArray[k]?.[0];
-      if (typeof name !== "string" || seen.has(name)) continue;
-      seen.add(name);
+      const op = ops.fnArray[k];
+      let imgObj: any = null;
 
-      let imgObj: any;
-      try {
-        imgObj = await new Promise((resolve, reject) => {
-          try {
-            // Common objs first, then page objs — some pdfjs versions store here
-            const commonObjs = (page as any).commonObjs;
-            if (commonObjs?.has?.(name)) {
-              commonObjs.get(name, resolve);
-              return;
-            }
-            page.objs.get(name, resolve);
-          } catch (e) {
-            reject(e);
-          }
-        });
-      } catch {
+      if (xobjectOps.has(op)) {
+        const name = ops.argsArray[k]?.[0];
+        if (typeof name !== "string" || seen.has(name)) continue;
+        seen.add(name);
+        imgObj = await getObj(page, name);
+      } else if (op === inlineOp) {
+        // Inline images: image dict is the first arg. Dedup by data reference.
+        const dict = ops.argsArray[k]?.[0];
+        if (!dict) continue;
+        imgObj = dict;
+      } else {
         continue;
       }
+
       if (!imgObj) continue;
 
       const width = imgObj.width ?? imgObj.bitmap?.width;

@@ -1,59 +1,54 @@
-## Výsledek ověření SchoolAdmin.tsx po obnovení RLS policies
+## Diagnóza importu vložených obrázků z PDF
 
-### 1. Kontrola zpracování chyb při grant/revoke rolí
+### Body 1 a 2: Renderer a editor podporují `gallery` — v pořádku
 
-**`toggleRole()` (řádky 179–201) — OK ✅**
-Insert i delete na `user_roles` mají zachycený `error` a při selhání zobrazí toast `"Chyba"` s `error.message`. Po obnovení RLS policies bude tato funkce fungovat správně a případné budoucí RLS selhání se uživateli zobrazí.
+- **Náhled lekce** (`LessonPreviewDialog.tsx`) používá `LessonBlock` z `src/components/LessonBlockRenderer.tsx`, který na řádcích 222–235 renderuje `case "gallery"` jako grid `<img>` figur.
+- **BlockEditor** (`src/components/admin/BlockEditor.tsx:78`) mapuje `"gallery"` na `GalleryBlock`, který umí přidávat/mazat obrázky a upload.
+- `createDefaultBlock("gallery")` v `textbook-config.ts` má správný default (`{ columns: 3, images: [...] }`).
 
-**`removeFromSchool()` (řádky 203–214) — OK ✅**
-Update `profiles.school_id = null` má správně ošetřený error state s toastem.
+Takže kdyby `gallery` blok vznikl s neprázdným `images[].url`, náhled by ho zobrazil. To znamená, že v datech lekce žádný `gallery` blok reálně nevznikl — `makeGalleryBlock(allEmbedded)` v `ImportTextbookFileDialog.tsx:262` vrátil `null`, protože `allEmbedded.length === 0`.
 
-**Invite flow (řádky 161–168) — BUG 🟠 (tiché polykání chyb)**
+### Body 3 a 4: Root cause je v `extractPdfEmbeddedImages()`
 
-```ts
-await supabase.from("profiles").update({ school_id: school.id, status: "approved" }).eq("id", signed.user.id);
-if (invRole === "teacher") {
-  await supabase.from("user_roles").delete().eq("user_id", signed.user.id).eq("role", "user");
-  await supabase.from("user_roles").insert({ user_id: signed.user.id, role: "teacher" });
-}
+Pro PDF vstup serverový `process-file-content` **záměrně žádné embedded obrázky nevrací** (ZIP media extraktor běží jen na `.docx`/`.pptx`), takže `serverEmbedded` je vždy `[]` a `allEmbedded` odpovídá čistě frontendovému výstupu z `extractPdfEmbeddedImages()`. Ten pro reálné PDF s ilustracemi vrací prázdné pole ze dvou spolupůsobících důvodů:
+
+**1) `page.objs.get(name, cb)` v pdfjs 5 vyžaduje předchozí render stránky.**
+V pdfjs v5 se image XObject data z workeru na main thread posílají teprve během `page.render(...)`. Samotný `page.getOperatorList()` operátory vrátí (jména XObjectů v `argsArray`), ale image objekty do `page.objs` (ani do `commonObjs`) nepropíše. Náš kód pak volá:
+
+```
+await new Promise((resolve) => {
+  ...
+  page.objs.get(name, resolve)   // callback se nikdy nezavolá
+})
 ```
 
-Tři po sobě jdoucí Supabase volání **nemají žádný `error` handling**:
-- `profiles.update({ school_id, status: 'approved' })` — pokud selže na RLS, uživatel zůstane bez školy a `pending`, ale UI zobrazí „Uživatel pozván" jako úspěch.
-- `user_roles.delete(... role='user')` — pokud selže, zůstane duplicitní role `user` vedle `teacher`.
-- `user_roles.insert({ role: 'teacher' })` — pokud selže na RLS (např. mimo vlastní školu, nebo pokud by policy měla `WITH CHECK` na `profiles.school_id` které ještě nebylo commitnuto), učitel se **nevytvoří vůbec**, ale toast řekne že byl pozván.
+Callback `PDFObjects.get(id, callback)` se v pdfjs zavolá jen tehdy, když je objekt s daným `id` už resolvován, nebo když ho worker později resolvne. Bez render fáze to nikdy nenastane, takže Promise buď (a) tiše čeká donekonečna — což by ale zablokovalo celý import na kroku „Hledám vložené obrázky v PDF…" (a to se u uživatelky evidentně nestalo, protože import doběhl), nebo (b) — a to je pravděpodobnější — `commonObjs.has(name)` vrátí `false`, `page.objs.get(name, resolve)` uvnitř interně vyhodí synchronní výjimku (např. „Requesting object that isn't resolved yet"), kterou zachytí vnější `try/catch` z řádku ~122 (`catch { continue; }`), takže smyčka projde přes všechny paint opy a vrátí prázdné pole. Výsledek: 0 obrázků, žádný `gallery` blok, žádný toast o skipped images.
 
-Toto je přesně ten typ „tichého selhání", na který se ptáte. Původní S3 finding z auditu tedy stále platí pro invite flow, i když `toggleRole` byl OK.
+Že jde právě o tuto cestu potvrzuje i to, že v `pdf-page-renderer.ts` je uvnitř promisu použit vzor `try { … page.objs.get(name, resolve); } catch (e) { reject(e); }` a vnější await je obalen `try { … } catch { continue; }` — jakákoli synchronní chyba z pdfjs při čtení objektu se tedy proglkne jako „přeskočit obrázek".
 
-### 2. Ověření RLS chování z pohledu school_admin role
+**2) `OPS.paintJpegXObject` v pdfjs 5 neexistuje.**
+Kontrola `node_modules/pdfjs-dist/types/src/shared/util.d.ts` ukazuje, že v pdfjs 5 zůstaly `paintImageXObject`, `paintImageXObjectRepeat`, `paintInlineImageXObject`, `paintImageMaskXObject{,Group,Repeat}`, ale `paintJpegXObject` byl odstraněn. Náš filter na řádku 82–86 to má ošetřeno `.filter((v) => typeof v === "number")`, takže se tím jen ztrácí jedna cesta, ne všechny — hlavní `paintImageXObject` stále chytáme. Vedlejší, ale zaznamenávám.
 
-Nemohu spustit `SET LOCAL role authenticated` + `SET request.jwt.claim.sub` bez service_role přístupu ze sandboxu (read-only query tool nedovoluje session-level GUC změny). Pro reálné ověření doporučuji jednu z variant:
-- pgTAP test spuštěný v Supabase SQL editoru s `set_config('request.jwt.claims', ...)` a `SET ROLE authenticated`,
-- ruční test přes UI na dvou testovacích školách.
+**Bonus:** `paintInlineImageXObject` (inline JPEG přímo v obsahovém streamu, běžné u fotografií exportovaných z LibreOffice/Word do PDF) nechytáme vůbec. Data inline obrázku jsou navíc přímo v `argsArray[k][0]` jako image dict, ne přes `objs.get`. Tohle vysvětluje, proč konkrétně **fotografie** krávy nemusela vzniknout ani teoreticky, i kdyby cesta přes `objs.get` fungovala.
 
-Nový policy set (INSERT/DELETE scoped přes `is_school_admin(auth.uid())` + shodné `profiles.school_id`) je strukturálně správný a odpovídá vzoru z ostatních tabulek — po commitu by měl fungovat pro vlastní školu a zamítnout cizí školu.
+### Že to není hardcoded UI bug
 
-### 3. Shrnutí
+- Znovu ověřeno: `visibleBlocks` v `LessonPreviewDialog` filtruje jen `b.visible !== false`, `gallery` blok by měl `visible: true` a prošel by.
+- V náhledu je `refreshKey` jen re-mount, takže „Obnovit" nic nezmění, pokud v datech blok chybí — což je zde.
 
-- **`toggleRole` (přepínání teacher/user na existujícím členovi)** — po SQL migraci funguje a chyby se korektně propisují do UI.
-- **Invite flow (pozvat nového uživatele)** — funkčně poběží, ale **3 database volání tiše polykají chyby**. Pokud kterékoliv z nich selže (RLS, síť, race condition mezi trigger-created rolí `user` a delete), uživatel se dozví „Uživatel pozván" a školní admin nezjistí, že učitel nedostal správnou roli.
+### Console/network
 
-### Navrhovaná oprava (čekám na souhlas)
+Console logs pro tuto session prázdné (žádný záznam pro „image"), takže nemám runtime důkaz o konkrétní chybové hlášce z `page.objs.get`. Serverový `process-file-content` pro PDF vrací `embeddedImages: []` už jen tím, že jde o PDF (ZIP extraktor běží jen na docx/pptx), takže network tab by nic užitečného neukázal.
 
-Do `invite()` doplnit error handling pro všechna tři volání, po první chybě přerušit s destructive toastem popisujícím krok, který selhal:
+### Root cause souhrn
 
-```ts
-const { error: profErr } = await supabase.from("profiles").update({...}).eq(...);
-if (profErr) { toast({ title: "Nepodařilo se přiřadit ke škole", description: profErr.message, variant: "destructive" }); setSubmitting(false); return; }
+Frontend `extractPdfEmbeddedImages()` v `src/lib/pdf-page-renderer.ts` čte image data přes `page.objs.get(name, cb)` po `getOperatorList()`, ale v pdfjs 5 nejsou image XObjects po pouhém `getOperatorList()` na main threadu dostupné — musí předcházet `page.render()`. Bez toho `objs.get` buď zavěsí, nebo (pravděpodobněji, s ohledem na to že import doběhne) shodí synchronní výjimku, kterou spolkne vnější `try/catch`. Navíc inline JPEG obrázky (běžný způsob vkládání fotek do PDF) nezpracováváme vůbec, protože nechytáme `paintInlineImageXObject`.
 
-if (invRole === "teacher") {
-  const { error: delErr } = await supabase.from("user_roles").delete()...;
-  if (delErr) { toast({ ... }); setSubmitting(false); return; }
-  const { error: insErr } = await supabase.from("user_roles").insert(...);
-  if (insErr) { toast({ title: "Role učitel nebyla přidělena", description: insErr.message, variant: "destructive" }); setSubmitting(false); return; }
-}
-```
+### Návrh opravy (čekám na souhlas, zatím neimplementuji)
 
-Pouze presentation/error-handling změna, žádná byznys logika.
+1. V `extractPdfEmbeddedImages()` **před** čtením obrázků z každé stránky provést render stránky do off-screen canvasu (throwaway), aby pdfjs propíchl image XObjects do `page.objs`. Kanvas můžeme rovnou zahodit — cíl je jen resolvovat objs.
+2. Přidat větev pro `OPS.paintInlineImageXObject`, kde image dict je přímo `argsArray[k][0]` (má `.width`, `.height`, `.data`/`.bitmap` už teď na main threadu) a nejde přes `objs.get`.
+3. Přidat timeout kolem `objs.get` (např. 5 s per obrázek) jako pojistku proti hangu.
+4. Volitelně sdílet už vyrenderované stránky z `renderPdfPagesToImages()` (obě funkce dnes otevírají PDF nezávisle) — dá se sloučit do jednoho průchodu a ušetřit CPU/paměť.
 
-**Nic jsem needitoval — čekám na potvrzení, zda mám opravit invite flow.**
+Žádné jiné soubory měnit není potřeba; `LessonBlockRenderer`, `GalleryBlock`, `ImportTextbookFileDialog` gallery-block cesta i `textbook-config` jsou v pořádku.
