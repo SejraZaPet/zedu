@@ -205,9 +205,34 @@ export async function extractPdfText(file: File): Promise<PdfTextResult> {
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i);
     const content = await page.getTextContent();
-    const items = content.items as unknown as { transform: number[]; str: string; width?: number }[];
-    const rows = clusterRows(items);
-    const rendered = rowsToMarkdown(rows);
+    const items = content.items as unknown as { transform: number[]; str: string; width?: number; hasEOL?: boolean }[];
+
+    // Raw fallback: naive concatenation of every text run in reading order
+    // as pdfjs emits them. Used both as safety net when the clustering
+    // pipeline yields "" (e.g. items missing transform in pdfjs v5 marked
+    // content, or only whitespace surviving the row filter) and as the
+    // baseline "did this page have any text at all" signal.
+    let raw = "";
+    for (const it of items) {
+      if (typeof it?.str !== "string") continue;
+      raw += it.str;
+      if (it.hasEOL) raw += "\n";
+    }
+    raw = raw.replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
+
+    let rendered = "";
+    try {
+      const rows = clusterRows(items);
+      rendered = rowsToMarkdown(rows);
+    } catch (err) {
+      console.warn("[pdf-text] table clustering failed, using raw text", err);
+      rendered = "";
+    }
+
+    // Regression guard: if clustering produced nothing but raw text exists,
+    // fall back to raw. Preserves table markdown when clustering succeeds.
+    if (!rendered && raw) rendered = raw;
+
     pages.push({ pageNumber: i, text: rendered, charCount: rendered.length });
     if (rendered) joined.push(`--- Strana ${i} ---\n${rendered}`);
   }
