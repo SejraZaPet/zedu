@@ -463,8 +463,38 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
         if (e.currentTarget === e.target) setDragOver(false);
       }}
       onDrop={handleDrop}
-      className={`relative space-y-3 rounded-lg transition ${dragOver ? "ring-2 ring-primary ring-offset-2 bg-primary/5" : ""}`}
+      className={`block-editor-scope relative space-y-3 p-4 rounded-[14px] transition ${dragOver ? "ring-2 ring-offset-2 bg-primary/5" : ""}`}
+      style={{ background: "#FAFAFA" }}
     >
+      <style>{`
+        .block-editor-scope .be-block:focus-within {
+          border-color: #0F9A8B !important;
+          border-width: 1.5px !important;
+          box-shadow: 0 0 0 3px rgba(15,154,139,0.08), 0 1px 3px hsl(228 24% 92% / 0.6), 0 4px 16px -4px hsl(228 24% 92% / 0.4) !important;
+        }
+        .block-editor-scope .be-block:focus-within .be-block__header {
+          background: #F0FAF8;
+        }
+        .block-editor-scope .be-block:focus-within .be-block__label { color: #0B6E5D !important; }
+        .block-editor-scope .be-block:focus-within .be-block__grip { color: #0F9A8B !important; }
+        .block-editor-scope .be-block__action { color: #A3A3A3; }
+        .block-editor-scope .be-block__action:hover { color: #525252; background: #F5F5F5; }
+        .block-editor-scope .be-add-primary {
+          background: #0F9A8B; color: #FFFFFF; border-radius: 24px;
+          padding: 0 20px; height: 40px; font-weight: 700;
+          display: inline-flex; align-items: center; gap: 8px;
+          border: none; transition: background 120ms ease, transform 120ms ease;
+        }
+        .block-editor-scope .be-add-primary:hover { background: #0B7E71; }
+        .block-editor-scope .be-add-pill {
+          background: #FFFFFF; color: #525252; border: 1px solid #E5E5E5;
+          border-radius: 24px; padding: 0 16px; height: 40px; font-weight: 500;
+          display: inline-flex; align-items: center; gap: 6px; font-size: 13px;
+          transition: border-color 120ms ease, color 120ms ease;
+        }
+        .block-editor-scope .be-add-pill:hover { border-color: #0F9A8B; color: #0F9A8B; }
+      `}</style>
+
       <div className="flex items-center justify-end gap-1 sticky top-0 z-40 bg-background/80 backdrop-blur-sm py-1 -mt-1 rounded-md">
         <Button
           size="sm"
