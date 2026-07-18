@@ -499,8 +499,9 @@ async function uploadMediaToStorage(
   serviceRoleClient: ReturnType<typeof createClient>,
   folder: string,
   files: { fileName: string; ext: string; data: Uint8Array }[],
-): Promise<string[]> {
+): Promise<{ urls: string[]; byFileName: Map<string, string> }> {
   const urls: string[] = [];
+  const byFileName = new Map<string, string>();
   for (let i = 0; i < files.length; i++) {
     const f = files[i];
     const path = `${folder}/${i + 1}-${f.fileName}`.replace(/\s+/g, "-");
@@ -512,9 +513,57 @@ async function uploadMediaToStorage(
       continue;
     }
     const { data } = serviceRoleClient.storage.from("lesson-images").getPublicUrl(path);
-    if (data?.publicUrl) urls.push(data.publicUrl);
+    if (data?.publicUrl) {
+      urls.push(data.publicUrl);
+      byFileName.set(f.fileName, data.publicUrl);
+    }
   }
-  return urls;
+  return { urls, byFileName };
+}
+
+const YOUTUBE_RE = /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/;
+
+function extractPptxLinkedShapes(bytes: Uint8Array, unzipped: Record<string, Uint8Array>): {
+  youtube: { url: string; mediaFileName?: string }[];
+  other: { url: string; mediaFileName?: string }[];
+} {
+  const youtube: { url: string; mediaFileName?: string }[] = [];
+  const other: { url: string; mediaFileName?: string }[] = [];
+  const slideFiles = Object.keys(unzipped).filter((n) => /ppt\/slides\/slide\d+\.xml$/.test(n));
+  for (const slidePath of slideFiles) {
+    const num = slidePath.match(/slide(\d+)\.xml$/)?.[1];
+    if (!num) continue;
+    const relsData = unzipped[`ppt/slides/_rels/slide${num}.xml.rels`];
+    if (!relsData) continue;
+    const relsXml = textDecoder.decode(relsData);
+    const relMap = new Map<string, { target: string; mode?: string }>();
+    for (const m of relsXml.matchAll(/<Relationship\b[^>]*\/>/g)) {
+      const tag = m[0];
+      const id = tag.match(/Id="([^"]+)"/)?.[1];
+      const target = tag.match(/Target="([^"]+)"/)?.[1];
+      const mode = tag.match(/TargetMode="([^"]+)"/)?.[1];
+      if (id && target) relMap.set(id, { target, mode });
+    }
+    const slideXml = textDecoder.decode(unzipped[slidePath]);
+    const shapeRegex = /<p:(?:pic|sp)\b[\s\S]*?<\/p:(?:pic|sp)>/g;
+    for (const sm of slideXml.matchAll(shapeRegex)) {
+      const shapeXml = sm[0];
+      const hlinkId = shapeXml.match(/<a:hlinkClick\b[^>]*\sr:id="([^"]+)"/)?.[1];
+      if (!hlinkId) continue;
+      const rel = relMap.get(hlinkId);
+      if (!rel?.target || rel.mode !== "External") continue;
+      const url = rel.target;
+      const embedId = shapeXml.match(/<a:blip\b[^>]*\sr:embed="([^"]+)"/)?.[1];
+      let mediaFileName: string | undefined;
+      if (embedId) {
+        const mediaRel = relMap.get(embedId);
+        if (mediaRel?.target) mediaFileName = mediaRel.target.split("/").pop();
+      }
+      if (YOUTUBE_RE.test(url)) youtube.push({ url, mediaFileName });
+      else other.push({ url, mediaFileName });
+    }
+  }
+  return { youtube, other };
 }
 
 
