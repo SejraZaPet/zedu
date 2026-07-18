@@ -109,24 +109,53 @@ const SortableBlock = React.memo(({
   const typeLabel = BLOCK_TYPES.find((t) => t.type === block.type)?.label ?? block.type;
   const handleUpdate = useCallback((props: Record<string, any>) => onUpdate(block.id, props), [onUpdate, block.id]);
 
+  const wrapperStyle: React.CSSProperties = {
+    ...style,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: isDragging ? "#0F9A8B" : "#E5E5E5",
+    background: "#FFFFFF",
+    boxShadow: "0 1px 3px hsl(228 24% 92% / 0.6), 0 4px 16px -4px hsl(228 24% 92% / 0.4)",
+    transition: (style.transition ?? "") + ", border-color 120ms ease, background-color 120ms ease",
+  };
+
   return (
-    <div ref={setNodeRef} data-block-id={block.id} style={style} className={`border rounded-lg bg-card ${!block.visible ? "opacity-50" : ""} ${isDragging ? "border-primary" : "border-border"}`}>
-      <div className="flex items-center gap-1 px-2 py-1.5 border-b border-border bg-muted/30 rounded-t-lg">
-        <button {...attributes} {...listeners} className="cursor-grab text-muted-foreground hover:text-foreground p-0.5">
+    <div
+      ref={setNodeRef}
+      data-block-id={block.id}
+      style={wrapperStyle}
+      className={`be-block group/beblock overflow-hidden ${!block.visible ? "opacity-50" : ""}`}
+    >
+      <div
+        className="be-block__header flex items-center gap-1 px-3 py-2"
+        style={{ borderBottom: "1px solid #F0F0F0" }}
+      >
+        <button
+          {...attributes}
+          {...listeners}
+          className="be-block__grip cursor-grab p-0.5"
+          style={{ color: "#737373" }}
+        >
           <GripVertical className="w-4 h-4" />
         </button>
-        <span className="text-xs font-medium text-muted-foreground flex-1">{typeLabel}</span>
-        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onToggle(block.id)} title={block.visible ? "Skrýt" : "Zobrazit"}>
+        <span
+          className="be-block__label flex-1"
+          style={{ color: "#525252", fontWeight: 700, fontSize: 12, letterSpacing: 0.2 }}
+        >
+          {typeLabel}
+        </span>
+        <Button size="icon" variant="ghost" className="be-block__action h-7 w-7" onClick={() => onToggle(block.id)} title={block.visible ? "Skrýt" : "Zobrazit"}>
           {block.visible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
         </Button>
-        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onDuplicate(block.id)} title="Duplikovat">
+        <Button size="icon" variant="ghost" className="be-block__action h-7 w-7" onClick={() => onDuplicate(block.id)} title="Duplikovat">
           <Copy className="w-3.5 h-3.5" />
         </Button>
-        <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => onDelete(block.id)} title="Smazat">
+        <Button size="icon" variant="ghost" className="be-block__action h-7 w-7" onClick={() => onDelete(block.id)} title="Smazat">
           <Trash2 className="w-3.5 h-3.5" />
         </Button>
       </div>
-      <div className="p-3">
+      <div className="p-3" style={{ color: "#171717" }}>
         <BlockRenderer block={block} onChange={handleUpdate} />
       </div>
     </div>
