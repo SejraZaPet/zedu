@@ -142,6 +142,7 @@ const ImportTextbookFileDialog = ({
       } else if (isPdf) {
         try {
           setProgress("Extrahuji text z PDF...");
+          const { extractPdfText } = await import("@/lib/pdf-page-renderer");
           extractedText = await extractPdfText(file);
         } catch (err) {
           console.warn("PDF text extraction failed:", err);
