@@ -499,8 +499,9 @@ async function uploadMediaToStorage(
   serviceRoleClient: ReturnType<typeof createClient>,
   folder: string,
   files: { fileName: string; ext: string; data: Uint8Array }[],
-): Promise<string[]> {
+): Promise<{ urls: string[]; byFileName: Map<string, string> }> {
   const urls: string[] = [];
+  const byFileName = new Map<string, string>();
   for (let i = 0; i < files.length; i++) {
     const f = files[i];
     const path = `${folder}/${i + 1}-${f.fileName}`.replace(/\s+/g, "-");
@@ -512,9 +513,57 @@ async function uploadMediaToStorage(
       continue;
     }
     const { data } = serviceRoleClient.storage.from("lesson-images").getPublicUrl(path);
-    if (data?.publicUrl) urls.push(data.publicUrl);
+    if (data?.publicUrl) {
+      urls.push(data.publicUrl);
+      byFileName.set(f.fileName, data.publicUrl);
+    }
   }
-  return urls;
+  return { urls, byFileName };
+}
+
+const YOUTUBE_RE = /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/;
+
+function extractPptxLinkedShapes(bytes: Uint8Array, unzipped: Record<string, Uint8Array>): {
+  youtube: { url: string; mediaFileName?: string }[];
+  other: { url: string; mediaFileName?: string }[];
+} {
+  const youtube: { url: string; mediaFileName?: string }[] = [];
+  const other: { url: string; mediaFileName?: string }[] = [];
+  const slideFiles = Object.keys(unzipped).filter((n) => /ppt\/slides\/slide\d+\.xml$/.test(n));
+  for (const slidePath of slideFiles) {
+    const num = slidePath.match(/slide(\d+)\.xml$/)?.[1];
+    if (!num) continue;
+    const relsData = unzipped[`ppt/slides/_rels/slide${num}.xml.rels`];
+    if (!relsData) continue;
+    const relsXml = textDecoder.decode(relsData);
+    const relMap = new Map<string, { target: string; mode?: string }>();
+    for (const m of relsXml.matchAll(/<Relationship\b[^>]*\/>/g)) {
+      const tag = m[0];
+      const id = tag.match(/Id="([^"]+)"/)?.[1];
+      const target = tag.match(/Target="([^"]+)"/)?.[1];
+      const mode = tag.match(/TargetMode="([^"]+)"/)?.[1];
+      if (id && target) relMap.set(id, { target, mode });
+    }
+    const slideXml = textDecoder.decode(unzipped[slidePath]);
+    const shapeRegex = /<p:(?:pic|sp)\b[\s\S]*?<\/p:(?:pic|sp)>/g;
+    for (const sm of slideXml.matchAll(shapeRegex)) {
+      const shapeXml = sm[0];
+      const hlinkId = shapeXml.match(/<a:hlinkClick\b[^>]*\sr:id="([^"]+)"/)?.[1];
+      if (!hlinkId) continue;
+      const rel = relMap.get(hlinkId);
+      if (!rel?.target || rel.mode !== "External") continue;
+      const url = rel.target;
+      const embedId = shapeXml.match(/<a:blip\b[^>]*\sr:embed="([^"]+)"/)?.[1];
+      let mediaFileName: string | undefined;
+      if (embedId) {
+        const mediaRel = relMap.get(embedId);
+        if (mediaRel?.target) mediaFileName = mediaRel.target.split("/").pop();
+      }
+      if (YOUTUBE_RE.test(url)) youtube.push({ url, mediaFileName });
+      else other.push({ url, mediaFileName });
+    }
+  }
+  return { youtube, other };
 }
 
 
@@ -611,6 +660,7 @@ serve(async (req) => {
     // PDF embedded images are extracted on the frontend (pdfjs).
     let embeddedImages: string[] = [];
     let skippedImages = 0;
+    const linkedBlocks: any[] = [];
     if (fileBase64) {
       const lower = String(fileName).toLowerCase();
       const prefix = lower.endsWith(".docx")
@@ -623,13 +673,74 @@ serve(async (req) => {
           const bytes = decodeBase64(String(fileBase64));
           const { images, skipped } = await extractZipMedia(bytes, prefix);
           skippedImages = skipped;
+
+          // For PPTX: detect shapes with external hyperlinks (esp. YouTube).
+          let pptxLinks: { youtube: { url: string; mediaFileName?: string }[]; other: { url: string; mediaFileName?: string }[] } | null = null;
+          if (lower.endsWith(".pptx")) {
+            try {
+              const { unzipSync } = await import("https://esm.sh/fflate@0.8.2");
+              const unzipped = unzipSync(bytes);
+              pptxLinks = extractPptxLinkedShapes(bytes, unzipped);
+            } catch (linkErr) {
+              console.warn("PPTX hyperlink extraction failed (non-fatal):", linkErr);
+            }
+          }
+
+          let byFileName = new Map<string, string>();
           if (images.length > 0) {
             const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
             const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
             if (SUPABASE_URL && SERVICE_ROLE) {
               const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
               const folder = `import-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
-              embeddedImages = await uploadMediaToStorage(admin, folder, images);
+              const uploaded = await uploadMediaToStorage(admin, folder, images);
+              embeddedImages = uploaded.urls;
+              byFileName = uploaded.byFileName;
+            }
+          }
+
+          // Build hyperlink blocks and remove their thumbnails from the
+          // generic embedded-image pool so we don't render them twice.
+          if (pptxLinks) {
+            const consumed = new Set<string>();
+            for (const yt of pptxLinks.youtube) {
+              linkedBlocks.push({
+                id: crypto.randomUUID(),
+                type: "youtube",
+                visible: true,
+                props: { url: yt.url, caption: "", width: "full" },
+              });
+              if (yt.mediaFileName) {
+                const url = byFileName.get(yt.mediaFileName);
+                if (url) consumed.add(url);
+              }
+            }
+            for (const link of pptxLinks.other) {
+              const imageUrl = link.mediaFileName ? byFileName.get(link.mediaFileName) : undefined;
+              if (imageUrl) {
+                linkedBlocks.push({
+                  id: crypto.randomUUID(),
+                  type: "image",
+                  visible: true,
+                  props: {
+                    url: imageUrl,
+                    caption: link.url,
+                    width: "full",
+                    alignment: "center",
+                  },
+                });
+                consumed.add(imageUrl);
+              } else {
+                linkedBlocks.push({
+                  id: crypto.randomUUID(),
+                  type: "paragraph",
+                  visible: true,
+                  props: { text: `Odkaz: ${link.url}` },
+                });
+              }
+            }
+            if (consumed.size > 0) {
+              embeddedImages = embeddedImages.filter((u) => !consumed.has(u));
             }
           }
         } catch (mediaErr) {
@@ -638,7 +749,7 @@ serve(async (req) => {
       }
     }
 
-    return jsonResponse({ lessons, blocks, blockCount: blocks.length, embeddedImages, skippedImages });
+    return jsonResponse({ lessons, blocks, blockCount: blocks.length, embeddedImages, skippedImages, linkedBlocks });
   } catch (err) {
     console.error("process-file-content error:", err);
     return jsonResponse({ error: err instanceof Error ? err.message : "Neznámá chyba" }, 500);
