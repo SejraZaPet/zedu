@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import BlockEditor from "@/components/admin/BlockEditor";
 import type { Block } from "@/lib/textbook-config";
-import { Loader2, Upload, FileText, Trash2, Sparkles, Info } from "lucide-react";
+import { Loader2, Upload, FileText, Trash2, Sparkles, AlertTriangle } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 
