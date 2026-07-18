@@ -197,69 +197,39 @@ function rowsToMarkdown(rows: TextRow[]): string {
 }
 
 export async function extractPdfText(file: File): Promise<PdfTextResult> {
-  try {
-    console.log("[pdf-text-diag] START", {
-      fileName: file.name,
-      fileSize: file.size,
-      fileType: file.type,
-      pdfjsVersion: (pdfjsLib as any).version,
-      workerPort: !!pdfjsLib.GlobalWorkerOptions.workerPort,
-      workerSrc: pdfjsLib.GlobalWorkerOptions.workerSrc,
-    });
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    console.log("[pdf-text-diag] PDF loaded", { numPages: pdf.numPages });
+  const pages: PdfTextPage[] = [];
+  const joined: string[] = [];
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    const items = content.items as unknown as { transform: number[]; str: string; width?: number; hasEOL?: boolean }[];
 
-    const pages: PdfTextPage[] = [];
-    const joined: string[] = [];
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const content = await page.getTextContent();
-      const items = content.items as unknown as { transform: number[]; str: string; width?: number; hasEOL?: boolean }[];
-
-      console.log("[pdf-text-diag] page", i, {
-        itemsLength: items.length,
-        firstFive: items.slice(0, 5).map((it) => ({
-          str: it?.str,
-          hasEOL: (it as any)?.hasEOL,
-          transform: it?.transform,
-          width: it?.width,
-        })),
-      });
-
-      let raw = "";
-      for (const it of items) {
-        if (typeof it?.str !== "string") continue;
-        raw += it.str;
-        if (it.hasEOL) raw += "\n";
-      }
-      raw = raw.replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
-
-      let rendered = "";
-      try {
-        const rows = clusterRows(items);
-        rendered = rowsToMarkdown(rows);
-      } catch (err) {
-        console.warn("[pdf-text] table clustering failed, using raw text", err);
-        rendered = "";
-      }
-
-      if (!rendered && raw) rendered = raw;
-
-      console.log("[pdf-text-diag] page", i, "extracted", {
-        rawLen: raw.length,
-        renderedLen: rendered.length,
-      });
-
-      pages.push({ pageNumber: i, text: rendered, charCount: rendered.length });
-      if (rendered) joined.push(`--- Strana ${i} ---\n${rendered}`);
+    let raw = "";
+    for (const it of items) {
+      if (typeof it?.str !== "string") continue;
+      raw += it.str;
+      if (it.hasEOL) raw += "\n";
     }
-    return { text: joined.join("\n\n"), pages };
-  } catch (err) {
-    console.error("[pdf-text-diag] extractPdfText FAILED", err);
-    throw err;
+    raw = raw.replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
+
+    let rendered = "";
+    try {
+      const rows = clusterRows(items);
+      rendered = rowsToMarkdown(rows);
+    } catch (err) {
+      console.warn("[pdf-text] table clustering failed, using raw text", err);
+      rendered = "";
+    }
+
+    if (!rendered && raw) rendered = raw;
+
+    pages.push({ pageNumber: i, text: rendered, charCount: rendered.length });
+    if (rendered) joined.push(`--- Strana ${i} ---\n${rendered}`);
   }
+  return { text: joined.join("\n\n"), pages };
 }
 
 
