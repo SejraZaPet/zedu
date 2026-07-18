@@ -413,6 +413,8 @@ const ImportTextbookFileDialog = ({
       setDrafts(normalizedLessons);
       const parts = [`Vytvořeno ${totalBlocks} bloků.`];
       if (embeddedCount > 0) parts.push(`Přidáno ${embeddedCount} obrázků rozprostřených po lekci.`);
+      const ytCount = linkedBlocks.filter((b) => (b as any)?.type === "youtube").length;
+      if (ytCount > 0) parts.push(`Nalezeno ${ytCount} YouTube odkazů — vloženo jako video bloky.`);
       if (decorativeCount > 0) parts.push(`Odfiltrováno ${decorativeCount} dekorativních obrázků s textem.`);
       if (pagesNeedingRender.size > 0) parts.push(`${pagesNeedingRender.size} stránek vloženo jako obrázek (chybějící text).`);
       if (skippedImages > 0) parts.push(`Přeskočeno ${skippedImages} obrázků v nepodporovaném formátu (EMF/WMF).`);
