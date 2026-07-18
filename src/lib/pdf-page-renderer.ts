@@ -197,41 +197,61 @@ function rowsToMarkdown(rows: TextRow[]): string {
 }
 
 export async function extractPdfText(file: File): Promise<PdfTextResult> {
-  const arrayBuffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  try {
+    console.log("[pdf-text-diag] START", {
+      fileName: file.name,
+      fileSize: file.size,
+      fileType: file.type,
+      pdfjsVersion: (pdfjsLib as any).version,
+      workerPort: !!pdfjsLib.GlobalWorkerOptions.workerPort,
+      workerSrc: pdfjsLib.GlobalWorkerOptions.workerSrc,
+    });
 
-  const pages: PdfTextPage[] = [];
-  const joined: string[] = [];
-  for (let i = 1; i <= pdf.numPages; i++) {
-    const page = await pdf.getPage(i);
-    const content = await page.getTextContent();
-    const items = content.items as unknown as { transform: number[]; str: string; width?: number; hasEOL?: boolean }[];
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    console.log("[pdf-text-diag] PDF loaded", { numPages: pdf.numPages });
 
-    // Raw fallback: naive concatenation of every text run in reading order
-    // as pdfjs emits them. Used both as safety net when the clustering
-    // pipeline yields "" (e.g. items missing transform in pdfjs v5 marked
-    // content, or only whitespace surviving the row filter) and as the
-    // baseline "did this page have any text at all" signal.
-    let raw = "";
-    for (const it of items) {
-      if (typeof it?.str !== "string") continue;
-      raw += it.str;
-      if (it.hasEOL) raw += "\n";
-    }
-    raw = raw.replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
+    const pages: PdfTextPage[] = [];
+    const joined: string[] = [];
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      const items = content.items as unknown as { transform: number[]; str: string; width?: number; hasEOL?: boolean }[];
 
-    let rendered = "";
-    try {
-      const rows = clusterRows(items);
-      rendered = rowsToMarkdown(rows);
-    } catch (err) {
-      console.warn("[pdf-text] table clustering failed, using raw text", err);
-      rendered = "";
-    }
+      console.log("[pdf-text-diag] page", i, {
+        itemsLength: items.length,
+        firstFive: items.slice(0, 5).map((it) => ({
+          str: it?.str,
+          hasEOL: (it as any)?.hasEOL,
+          transform: it?.transform,
+          width: it?.width,
+        })),
+      });
 
-    // Regression guard: if clustering produced nothing but raw text exists,
-    // fall back to raw. Preserves table markdown when clustering succeeds.
-    if (!rendered && raw) rendered = raw;
+      let raw = "";
+      for (const it of items) {
+        if (typeof it?.str !== "string") continue;
+        raw += it.str;
+        if (it.hasEOL) raw += "\n";
+      }
+      raw = raw.replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
+
+      let rendered = "";
+      try {
+        const rows = clusterRows(items);
+        rendered = rowsToMarkdown(rows);
+      } catch (err) {
+        console.warn("[pdf-text] table clustering failed, using raw text", err);
+        rendered = "";
+      }
+
+      if (!rendered && raw) rendered = raw;
+
+      console.log("[pdf-text-diag] page", i, "extracted", {
+        rawLen: raw.length,
+        renderedLen: rendered.length,
+      });
+
 
     pages.push({ pageNumber: i, text: rendered, charCount: rendered.length });
     if (rendered) joined.push(`--- Strana ${i} ---\n${rendered}`);
