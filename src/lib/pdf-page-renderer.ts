@@ -272,8 +272,9 @@ export async function extractPdfTextRaw(file: File): Promise<PdfTextResult> {
 
       worker.onmessage = (e: MessageEvent<{ ok: true; text: string } | { ok: false; error: string }>) => {
         clearTimeout(timer);
-        if (e.data.ok) resolve(e.data.text);
-        else reject(new Error(e.data.error));
+        const data = e.data;
+        if (data.ok) resolve(data.text);
+        else reject(new Error(data.error));
       };
       worker.onerror = (e: ErrorEvent) => {
         clearTimeout(timer);
