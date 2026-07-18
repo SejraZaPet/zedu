@@ -407,9 +407,106 @@ export const LessonBlock = ({ block, blockIndex, onActivityComplete, isTeacher }
 
       return activityInner;
     }
+    case "hierarchy": {
+      const shape: "pyramid" | "layers" | "steps" = p.shape || "pyramid";
+      const direction: "top-to-bottom" | "bottom-to-top" = p.direction || "top-to-bottom";
+      const rawLevels: { id?: string; label?: string; description?: string; color?: string }[] =
+        Array.isArray(p.levels) ? p.levels : [];
+      const levels = rawLevels.filter((l) => (l?.label ?? "").toString().trim() || (l?.description ?? "").toString().trim());
+      if (levels.length === 0) return null;
+
+      // Auto palette from brand gradient (#6EC6D9 → #9B6CFF)
+      const palette = ["#6EC6D9", "#7BB8DE", "#89A9E3", "#979AE8", "#A48CEC", "#9B6CFF", "#8A5CE8", "#7A4CD1"];
+      const colorFor = (i: number, custom?: string) => custom && custom.trim() ? custom : palette[i % palette.length];
+
+      // Layout constants
+      const W = 800;
+      const rowH = 68;
+      const gap = 8;
+      const totalH = levels.length * (rowH + gap) - gap + 24;
+      const displayLevels = direction === "bottom-to-top" ? [...levels].reverse() : levels;
+
+      const rectFor = (idx: number): { x: number; width: number } => {
+        if (shape === "layers") {
+          return { x: 40, width: W - 80 };
+        }
+        if (shape === "steps") {
+          // Each step indented from left by idx * offset
+          const offset = 40;
+          const maxIndent = Math.min(offset * (displayLevels.length - 1), W * 0.5);
+          const indent = (idx * maxIndent) / Math.max(displayLevels.length - 1, 1);
+          return { x: 40 + indent, width: W - 80 - indent };
+        }
+        // pyramid: narrowest at top, widest at bottom (index 0 in visual order is topmost)
+        const minW = W * 0.22;
+        const maxW = W - 80;
+        const t = displayLevels.length === 1 ? 1 : idx / (displayLevels.length - 1);
+        const w = minW + (maxW - minW) * t;
+        return { x: (W - w) / 2, width: w };
+      };
+
+      return (
+        <figure className="w-full">
+          <svg
+            viewBox={`0 0 ${W} ${totalH}`}
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-full h-auto"
+            role="img"
+            aria-label="Hierarchické schéma"
+          >
+            {displayLevels.map((lvl, idx) => {
+              const originalIdx = direction === "bottom-to-top" ? levels.length - 1 - idx : idx;
+              const { x, width } = rectFor(idx);
+              const y = 12 + idx * (rowH + gap);
+              const fill = colorFor(originalIdx, lvl.color);
+              const label = (lvl.label ?? "").toString();
+              const desc = (lvl.description ?? "").toString();
+              return (
+                <g key={lvl.id ?? idx}>
+                  <rect
+                    x={x}
+                    y={y}
+                    width={width}
+                    height={rowH}
+                    rx={8}
+                    ry={8}
+                    fill={fill}
+                    opacity={0.92}
+                  />
+                  <text
+                    x={x + width / 2}
+                    y={y + (desc ? rowH / 2 - 4 : rowH / 2 + 5)}
+                    textAnchor="middle"
+                    fontSize={18}
+                    fontWeight={600}
+                    fill="#ffffff"
+                    style={{ paintOrder: "stroke", stroke: "rgba(0,0,0,0.15)", strokeWidth: 0.5 }}
+                  >
+                    {label}
+                  </text>
+                  {desc && (
+                    <text
+                      x={x + width / 2}
+                      y={y + rowH / 2 + 16}
+                      textAnchor="middle"
+                      fontSize={13}
+                      fill="#ffffff"
+                      opacity={0.9}
+                    >
+                      {desc.length > 80 ? desc.slice(0, 77) + "…" : desc}
+                    </text>
+                  )}
+                </g>
+              );
+            })}
+          </svg>
+        </figure>
+      );
+    }
     default:
       return null;
   }
+
 };
 
 export default LessonBlock;
