@@ -244,70 +244,56 @@ export async function extractPdfText(file: File): Promise<PdfTextResult> {
  * PDFs whose glyph codes don't map to latin1; callers should still treat a
  * near-empty result as failure and fall through to AI vision.
  */
+const RAW_EXTRACT_MAX_BYTES = 10 * 1024 * 1024; // 10 MB
+const RAW_EXTRACT_TIMEOUT_MS = 8000;
+
 export async function extractPdfTextRaw(file: File): Promise<PdfTextResult> {
-  const buf = new Uint8Array(await file.arrayBuffer());
-  // Decode as latin1 so byte values 0..255 round-trip to code points 0..255.
-  const decoder = new TextDecoder("latin1");
-  const raw = decoder.decode(buf);
-
-  const decodePdfString = (s: string): string => {
-    // Unescape common PDF string escapes: \n \r \t \b \f \( \) \\ and \ddd octal.
-    let out = "";
-    for (let i = 0; i < s.length; i++) {
-      const ch = s[i];
-      if (ch !== "\\") { out += ch; continue; }
-      const next = s[i + 1];
-      if (next === undefined) break;
-      if (next === "n") { out += "\n"; i++; }
-      else if (next === "r") { out += "\r"; i++; }
-      else if (next === "t") { out += "\t"; i++; }
-      else if (next === "b") { out += "\b"; i++; }
-      else if (next === "f") { out += "\f"; i++; }
-      else if (next === "(" || next === ")" || next === "\\") { out += next; i++; }
-      else if (next >= "0" && next <= "7") {
-        let oct = next;
-        if (s[i + 2] && s[i + 2] >= "0" && s[i + 2] <= "7") { oct += s[i + 2]; i++; }
-        if (s[i + 2] && s[i + 2] >= "0" && s[i + 2] <= "7") { oct += s[i + 2]; i++; }
-        out += String.fromCharCode(parseInt(oct, 8));
-        i++;
-      } else {
-        // Unknown escape — drop the backslash, keep the next char.
-        out += next; i++;
-      }
-    }
-    return out;
-  };
-
-  // Match a balanced (...) allowing escaped parens.
-  const literalRe = /\(((?:\\[\s\S]|[^\\()])*)\)/g;
-  // Match a Tj / TJ / ' / " showing operator preceded by a literal or array.
-  // Simpler: pull every (...) followed within a short window by Tj|TJ|'|".
-  const tokenRe = /\(((?:\\[\s\S]|[^\\()])*)\)\s*(?:Tj|TJ|'|")|\[((?:\\[\s\S]|[^\][])*)\]\s*TJ/g;
-
-  let extracted = "";
-  let m: RegExpExecArray | null;
-  while ((m = tokenRe.exec(raw)) !== null) {
-    if (m[1] !== undefined) {
-      extracted += decodePdfString(m[1]);
-    } else if (m[2] !== undefined) {
-      // TJ array: pull nested (...) literals, ignore numeric spacing.
-      let am: RegExpExecArray | null;
-      literalRe.lastIndex = 0;
-      while ((am = literalRe.exec(m[2])) !== null) {
-        extracted += decodePdfString(am[1]);
-      }
-    }
-    extracted += " ";
+  // Size guard — regex over a huge binary blob is never worth it, and even
+  // in a worker it burns CPU + memory. Bail out early to AI vision.
+  if (file.size > RAW_EXTRACT_MAX_BYTES) {
+    console.warn(
+      `[pdf-text-raw] skipping raw extraction: file ${file.size} bytes exceeds ${RAW_EXTRACT_MAX_BYTES}`,
+    );
+    return { text: "", pages: [] };
   }
 
-  // Collapse whitespace but keep line breaks for readability.
-  extracted = extracted.replace(/[ \t]+/g, " ").replace(/ *\n */g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+  const buffer = await file.arrayBuffer();
 
-  // We don't have per-page boundaries here — emit as a single synthetic page.
-  const pages: PdfTextPage[] = extracted.length > 0
-    ? [{ pageNumber: 1, text: extracted, charCount: extracted.length }]
-    : [];
-  return { text: extracted, pages };
+  // Run the regex scan in a Web Worker so a slow pass can't freeze the UI,
+  // and enforce a hard timeout so we always fall through to AI vision.
+  const RawWorker = (await import("./pdf-text-raw.worker.ts?worker")).default;
+  const worker = new RawWorker();
+
+  try {
+    const text = await new Promise<string>((resolve, reject) => {
+      const timer = setTimeout(() => {
+        reject(new Error("raw-extract-timeout"));
+      }, RAW_EXTRACT_TIMEOUT_MS);
+
+      worker.onmessage = (e: MessageEvent<{ ok: true; text: string } | { ok: false; error: string }>) => {
+        clearTimeout(timer);
+        if (e.data.ok) resolve(e.data.text);
+        else reject(new Error(e.data.error));
+      };
+      worker.onerror = (e: ErrorEvent) => {
+        clearTimeout(timer);
+        reject(new Error(e.message || "raw-extract-worker-error"));
+      };
+
+      // Transfer the ArrayBuffer so we don't pay a structured-clone copy.
+      worker.postMessage({ buffer }, [buffer]);
+    });
+
+    const pages: PdfTextPage[] = text.length > 0
+      ? [{ pageNumber: 1, text, charCount: text.length }]
+      : [];
+    return { text, pages };
+  } catch (err) {
+    console.warn("[pdf-text-raw] extraction failed:", err);
+    return { text: "", pages: [] };
+  } finally {
+    worker.terminate();
+  }
 }
 
 
