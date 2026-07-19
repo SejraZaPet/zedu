@@ -65,7 +65,7 @@ const ForWhom = () => {
               key={c.title}
               className="bg-card rounded-2xl p-8 text-center shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col"
             >
-              <div className="w-14 h-14 rounded-xl bg-primary-light flex items-center justify-center mx-auto mb-5">
+              <div className="w-14 h-14 rounded-xl bg-gradient-brand-sm flex items-center justify-center mx-auto mb-5">
                 <c.icon size={28} className="text-primary-foreground" />
               </div>
               <h3 className="font-heading text-lg font-semibold mb-4">{c.title}</h3>
@@ -79,7 +79,7 @@ const ForWhom = () => {
               </ul>
               <button
                 onClick={() => navigate(c.to)}
-                className="bg-primary text-primary-foreground rounded-xl px-6 py-3 font-semibold mt-auto w-full text-sm hover:opacity-90 transition-opacity"
+                className="bg-gradient-brand-sm text-primary-foreground rounded-xl px-6 py-3 font-semibold mt-auto w-full text-sm hover:opacity-90 transition-opacity"
               >
                 {c.cta}
               </button>
