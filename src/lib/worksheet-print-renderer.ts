@@ -18,6 +18,20 @@ import type {
   AnswerSpace,
 } from "./worksheet-spec";
 
+/**
+ * Brand palette for print/PDF rendering.
+ * Print engines (`html2pdf`, native print) don't reliably honour CSS
+ * custom properties, so brand hex values live here as named constants —
+ * update these to rebrand printed worksheets. Keep in sync with
+ * `--primary` / `--secondary` in `src/index.css`.
+ */
+const BRAND_PRIMARY = "#0E8F9A";      // teal — headings, dividers, hotspot markers
+const BRAND_SECONDARY = "#AD87C9";    // lavender — callout accents
+const BRAND_TERTIARY = "#9B6CFF";     // vivid purple — secondary hotspot markers
+const BRAND_INFO_ACCENT = "#6EC6D9";  // light teal — info callout border
+const BRAND_INFO_SURFACE = "#f0fbff"; // pale teal — info callout background
+
+
 // ────────────────── Pagination Rules ──────────────────
 
 export const WORKSHEET_PAGINATION_RULES = [
