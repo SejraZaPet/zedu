@@ -183,42 +183,73 @@ const SortableBlock = React.memo(({
   const typeLabel = BLOCK_TYPES.find((t) => t.type === block.type)?.label ?? block.type;
   const handleUpdate = useCallback((props: Record<string, any>) => onUpdate(block.id, props), [onUpdate, block.id]);
 
+  const category: CategoryKey = CARD_CATEGORY[block.type] ?? "text";
+  const cat = CATEGORY_STYLES[category];
+  const Icon = BLOCK_ICON[block.type];
+  const showAiBadge = CARD_AI_BADGE.has(block.type);
+
   const wrapperStyle: React.CSSProperties = {
     ...style,
     borderRadius: 14,
-    borderWidth: 1,
+    borderWidth: cat.borderWidth,
     borderStyle: "solid",
-    borderColor: isDragging ? "#0F9A8B" : "#E5E5E5",
+    borderColor: cat.border,
     background: "#FFFFFF",
     boxShadow: "0 1px 3px hsl(228 24% 92% / 0.6), 0 4px 16px -4px hsl(228 24% 92% / 0.4)",
     transition: (style.transition ?? "") + ", border-color 120ms ease, background-color 120ms ease",
+    ["--cat-border" as any]: cat.border,
+    ["--cat-header-bg" as any]: cat.headerBg,
+    ["--cat-icon" as any]: cat.iconColor,
+    ["--cat-label" as any]: cat.labelColor,
   };
+
+  const headerBorderBottom = cat.solid ? "1px solid rgba(255,255,255,0.15)" : "1px solid #F0F0F0";
 
   return (
     <div
       ref={setNodeRef}
       data-block-id={block.id}
+      data-category={category}
       style={wrapperStyle}
       className={`be-block group/beblock overflow-hidden ${!block.visible ? "opacity-50" : ""}`}
     >
       <div
-        className="be-block__header flex items-center gap-1 px-3 py-2"
-        style={{ borderBottom: "1px solid #F0F0F0" }}
+        className="be-block__header flex items-center gap-2 px-3 py-2"
+        style={{ background: cat.headerBg, borderBottom: headerBorderBottom }}
       >
         <button
           {...attributes}
           {...listeners}
           className="be-block__grip cursor-grab p-0.5"
-          style={{ color: "#737373" }}
+          style={{ color: cat.solid ? "#FFFFFF" : "#737373" }}
         >
           <GripVertical className="w-4 h-4" />
         </button>
+        {Icon && (
+          <Icon className="w-4 h-4" style={{ color: cat.iconColor }} />
+        )}
         <span
           className="be-block__label flex-1"
-          style={{ color: "#525252", fontWeight: 700, fontSize: 12, letterSpacing: 0.2 }}
+          style={{ color: cat.labelColor, fontWeight: 700, fontSize: 12, letterSpacing: 0.2 }}
         >
           {typeLabel}
         </span>
+        {showAiBadge && (
+          <span
+            style={{
+              background: "#FFFFFF",
+              color: "#0B6E5D",
+              fontWeight: 700,
+              fontSize: 10,
+              letterSpacing: 0.6,
+              padding: "2px 6px",
+              borderRadius: 999,
+              marginRight: 2,
+            }}
+          >
+            AI
+          </span>
+        )}
         <Button size="icon" variant="ghost" className="be-block__action h-7 w-7" onClick={() => onToggle(block.id)} title={block.visible ? "Skrýt" : "Zobrazit"}>
           {block.visible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
         </Button>
@@ -237,29 +268,120 @@ const SortableBlock = React.memo(({
 });
 SortableBlock.displayName = "SortableBlock";
 
-const InsertButton = React.memo(({ afterId, onInsert }: { afterId: string; onInsert: (afterId: string, type: Block["type"]) => void }) => (
-  <div className="flex justify-center py-0.5 group">
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button
-          type="button"
-          className="opacity-0 group-hover:opacity-100 transition-opacity h-5 w-5 rounded-full bg-primary/10 hover:bg-primary/20 flex items-center justify-center"
-          title="Vložit blok zde"
-        >
-          <Plus className="w-3 h-3 text-primary" />
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="center" className="w-48 max-h-[360px] overflow-y-auto overflow-x-hidden">
-        {BLOCK_TYPES.map((bt) => (
-          <DropdownMenuItem key={bt.type} onClick={() => onInsert(afterId, bt.type)} className="py-1.5 px-2 text-sm">
-            <span className="w-5 text-center mr-2">{bt.icon}</span>{bt.label}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  </div>
-));
+// Shared grouped/searchable block picker used by both inline "+" and the main "Add block" menu.
+const BlockPicker = ({ onPick }: { onPick: (type: Block["type"]) => void }) => {
+  const [query, setQuery] = useState("");
+  const q = query.trim().toLowerCase();
+
+  return (
+    <div className="w-[320px] max-h-[440px] flex flex-col">
+      <div className="p-2 border-b border-[#EFEFEF]">
+        <div className="relative">
+          <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-[#A3A3A3]" />
+          <input
+            autoFocus
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Hledat blok…"
+            className="w-full pl-8 pr-2 h-9 text-sm rounded-[10px] border outline-none"
+            style={{ background: "#FAFAFA", borderColor: "#E5E5E5", color: "#171717" }}
+          />
+        </div>
+      </div>
+      <div className="overflow-y-auto py-1">
+        {MENU_GROUPS.map((group) => {
+          const items = group.types
+            .map((t) => BLOCK_TYPES.find((bt) => bt.type === t))
+            .filter((bt): bt is (typeof BLOCK_TYPES)[number] => !!bt)
+            .filter((bt) => !q || bt.label.toLowerCase().includes(q));
+          if (items.length === 0) return null;
+          const headingColor = group.accent ? "#0B6E5D" : "#A3A3A3";
+          return (
+            <div key={group.key} className="px-1 pb-1">
+              <div
+                className="px-2 pt-2 pb-1"
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: 0.8,
+                  color: headingColor,
+                }}
+              >
+                {group.label}
+              </div>
+              {items.map((bt) => {
+                const Icon = BLOCK_ICON[bt.type];
+                const isAi = MENU_AI_BADGE.has(bt.type);
+                const iconColor = group.accent ? "#0B6E5D" : "#525252";
+                return (
+                  <button
+                    key={bt.type}
+                    type="button"
+                    onClick={() => onPick(bt.type as Block["type"])}
+                    className="w-full flex items-center gap-2.5 px-2.5 py-1.5 text-sm rounded-md hover:bg-[#F5F5F5] transition-colors"
+                    style={{
+                      color: "#171717",
+                      background: isAi ? "#F0FAF8" : "transparent",
+                    }}
+                  >
+                    {Icon && <Icon className="w-4 h-4" style={{ color: iconColor }} />}
+                    <span className="flex-1 text-left">{bt.label}</span>
+                    {isAi && (
+                      <span
+                        style={{
+                          background: "#0F9A8B",
+                          color: "#FFFFFF",
+                          fontWeight: 700,
+                          fontSize: 9,
+                          letterSpacing: 0.6,
+                          padding: "2px 6px",
+                          borderRadius: 999,
+                        }}
+                      >
+                        AI
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+const InsertButton = React.memo(({ afterId, onInsert }: { afterId: string; onInsert: (afterId: string, type: Block["type"]) => void }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="flex justify-center py-0.5 group">
+      <DropdownMenu open={open} onOpenChange={setOpen}>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            className="opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100 transition-opacity h-5 w-5 rounded-full bg-primary/10 hover:bg-primary/20 flex items-center justify-center"
+            title="Vložit blok zde"
+          >
+            <Plus className="w-3 h-3 text-primary" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="center" className="p-0 overflow-hidden">
+          <BlockPicker
+            onPick={(type) => {
+              onInsert(afterId, type);
+              setOpen(false);
+            }}
+          />
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+});
 InsertButton.displayName = "InsertButton";
+
 
 const BlockEditor = ({ blocks, onChange }: Props) => {
   const normalizedBlocks = useMemo(() => normalizeBlocks(blocks), [blocks]);
