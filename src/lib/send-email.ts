@@ -17,7 +17,7 @@ export const sendWelcomeEmail = async (params: {
 
   const html = `
     <div style="font-family: Lato, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #1A1F2C; background: #F8FAFC;">
-      <div style="background: linear-gradient(135deg, #3FB8AF 0%, #AD87C9 100%); padding: 32px 24px; border-radius: 14px 14px 0 0; text-align: center;">
+      <div style="background: linear-gradient(135deg, #0E8F9A 0%, #AD87C9 100%); padding: 32px 24px; border-radius: 14px 14px 0 0; text-align: center;">
         <img src="https://www.zedu.cz/zedu-logo-new.png" alt="ZEdu" style="height: 48px; width: auto; margin-bottom: 12px;" onerror="this.style.display='none'" />
         <h1 style="margin: 0; font-size: 28px; font-weight: 800; color: #ffffff; letter-spacing: -0.02em; font-family: Lato, Arial, sans-serif;">ZEdu<span style="color: #a5f3fc;">.cz</span></h1>
         <p style="margin: 8px 0 0; opacity: 0.95; color: #ffffff; font-size: 14px; font-family: Lato, Arial, sans-serif;">Moderní nástroje pro vzdělávání</p>
