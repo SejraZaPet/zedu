@@ -308,10 +308,7 @@ const ActivitiesPage = () => {
                   {/* Icon + title */}
                   <div className="flex items-center gap-3 mb-3">
                     <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                      style={{
-                        background: "linear-gradient(135deg, #6EC6D9, #9B6CFF)",
-                      }}
+                      className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-gradient-brand-sm"
                     >
                       <Icon size={20} className="text-white" />
                     </div>
