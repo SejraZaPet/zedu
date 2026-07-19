@@ -98,9 +98,9 @@ const CATEGORY_STYLES: Record<CategoryKey, {
   borderWidth: number; solid?: boolean;
 }> = {
   text:        { border: "#E5E5E5", headerBg: "#FFFFFF", iconColor: "#525252", labelColor: "#525252", borderWidth: 1 },
-  media:       { border: "#C3EAE6", headerBg: "#E0F5F3", iconColor: "#0E8F9A", labelColor: "#0B6E5D", borderWidth: 1 },
-  structure:   { border: "#D9CFEC", headerBg: "#F4F0FA", iconColor: "#6B5BA6", labelColor: "#6B5BA6", borderWidth: 1 },
-  interactive: { border: "#0E8F9A", headerBg: "#0E8F9A", iconColor: "#FFFFFF", labelColor: "#FFFFFF", borderWidth: 1.5, solid: true },
+  media:       { border: "#C3EAE6", headerBg: "#E0F5F3", iconColor: "hsl(var(--primary))", labelColor: "hsl(var(--primary-dark))", borderWidth: 1 },
+  structure:   { border: "#D9CFEC", headerBg: "#F4F0FA", iconColor: "hsl(var(--secondary-dark))", labelColor: "hsl(var(--secondary-dark))", borderWidth: 1 },
+  interactive: { border: "hsl(var(--primary))", headerBg: "hsl(var(--primary))", iconColor: "#FFFFFF", labelColor: "#FFFFFF", borderWidth: 1.5, solid: true },
 };
 
 // --- Icons per block type (used in card headers + add menu) ---
@@ -261,7 +261,7 @@ const ReplaceMenu = ({
                   fontWeight: 700,
                   textTransform: "uppercase",
                   letterSpacing: 0.8,
-                  color: "#0B6E5D",
+                  color: "hsl(var(--primary-dark))",
                 }}
               >
                 Vytvořit z obsahu
@@ -273,14 +273,14 @@ const ReplaceMenu = ({
                     setOpen(false);
                     onAiReplace("activity");
                   }}
-                  className="w-full flex items-center gap-2.5 px-3 py-1.5 text-sm hover:bg-[#F0FAF8] transition-colors text-left"
+                  className="w-full flex items-center gap-2.5 px-3 py-1.5 text-sm hover:bg-primary-subtle transition-colors text-left"
                   style={{ color: "#171717" }}
                 >
-                  <IconSparkles className="w-4 h-4" style={{ color: "#0B6E5D" }} />
+                  <IconSparkles className="w-4 h-4" style={{ color: "hsl(var(--primary-dark))" }} />
                   <span className="flex-1">Aktivita</span>
                   <span
                     style={{
-                      background: "#0E8F9A",
+                      background: "hsl(var(--primary))",
                       color: "#FFFFFF",
                       fontWeight: 700,
                       fontSize: 9,
@@ -300,14 +300,14 @@ const ReplaceMenu = ({
                     setOpen(false);
                     onAiReplace("hierarchy");
                   }}
-                  className="w-full flex items-center gap-2.5 px-3 py-1.5 text-sm hover:bg-[#F0FAF8] transition-colors text-left"
+                  className="w-full flex items-center gap-2.5 px-3 py-1.5 text-sm hover:bg-primary-subtle transition-colors text-left"
                   style={{ color: "#171717" }}
                 >
-                  <IconTriangle className="w-4 h-4" style={{ color: "#0B6E5D" }} />
+                  <IconTriangle className="w-4 h-4" style={{ color: "hsl(var(--primary-dark))" }} />
                   <span className="flex-1">Hierarchie</span>
                   <span
                     style={{
-                      background: "#0E8F9A",
+                      background: "hsl(var(--primary))",
                       color: "#FFFFFF",
                       fontWeight: 700,
                       fontSize: 9,
@@ -413,7 +413,7 @@ const SortableBlock = React.memo(({
           <span
             style={{
               background: "#FFFFFF",
-              color: "#0B6E5D",
+              color: "hsl(var(--primary-dark))",
               fontWeight: 700,
               fontSize: 10,
               letterSpacing: 0.6,
@@ -477,7 +477,7 @@ const BlockPicker = ({ onPick }: { onPick: (type: Block["type"]) => void }) => {
             .filter((bt): bt is (typeof BLOCK_TYPES)[number] => !!bt)
             .filter((bt) => !q || bt.label.toLowerCase().includes(q));
           if (items.length === 0) return null;
-          const headingColor = group.accent ? "#0B6E5D" : "#A3A3A3";
+          const headingColor = group.accent ? "hsl(var(--primary-dark))" : "#A3A3A3";
           return (
             <div key={group.key} className="px-1 pb-1">
               <div
@@ -495,7 +495,7 @@ const BlockPicker = ({ onPick }: { onPick: (type: Block["type"]) => void }) => {
               {items.map((bt) => {
                 const Icon = BLOCK_ICON[bt.type];
                 const isAi = MENU_AI_BADGE.has(bt.type);
-                const iconColor = group.accent ? "#0B6E5D" : "#525252";
+                const iconColor = group.accent ? "hsl(var(--primary-dark))" : "#525252";
                 return (
                   <button
                     key={bt.type}
@@ -504,7 +504,7 @@ const BlockPicker = ({ onPick }: { onPick: (type: Block["type"]) => void }) => {
                     className="w-full flex items-center gap-2.5 px-2.5 py-1.5 text-sm rounded-md hover:bg-[#F5F5F5] transition-colors"
                     style={{
                       color: "#171717",
-                      background: isAi ? "#F0FAF8" : "transparent",
+                      background: isAi ? "hsl(var(--primary-subtle))" : "transparent",
                     }}
                   >
                     {Icon && <Icon className="w-4 h-4" style={{ color: iconColor }} />}
@@ -512,7 +512,7 @@ const BlockPicker = ({ onPick }: { onPick: (type: Block["type"]) => void }) => {
                     {isAi && (
                       <span
                         style={{
-                          background: "#0E8F9A",
+                          background: "hsl(var(--primary))",
                           color: "#FFFFFF",
                           fontWeight: 700,
                           fontSize: 9,
@@ -981,7 +981,7 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
           display: inline-flex; align-items: center; gap: 8px;
           border: none; transition: background 120ms ease, transform 120ms ease;
         }
-        .block-editor-scope .be-add-primary:hover { background: #0B7E71; }
+        .block-editor-scope .be-add-primary:hover { background: hsl(var(--primary-dark)); }
         .block-editor-scope { font-family: 'Lato', system-ui, sans-serif; font-size: 16px; line-height: 1.5; }
         .block-editor-scope .be-block__label { font-size: 14px; font-weight: 700; letter-spacing: 0.01em; }
         .block-editor-scope .be-block h1, .block-editor-scope .be-block [data-heading="1"] { font-size: 32px; font-weight: 700; line-height: 1.2; }
