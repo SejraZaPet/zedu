@@ -168,6 +168,13 @@ const SystemStats = () => {
           <div className="h-64 w-full">
             <ResponsiveContainer>
               <BarChart data={registrations} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="brandBarGradient" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stopColor="hsl(var(--brand-gradient-from))" />
+                    <stop offset="var(--brand-gradient-stop-lg, 35%)" stopColor="hsl(var(--brand-gradient-to))" />
+                    <stop offset="100%" stopColor="hsl(var(--brand-gradient-to))" />
+                  </linearGradient>
+                </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                 <XAxis
                   dataKey="label"
@@ -180,7 +187,7 @@ const SystemStats = () => {
                   labelStyle={{ color: "hsl(var(--foreground))" }}
                   formatter={(v: any) => [`${v} registrací`, "Počet"]}
                 />
-                <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="count" fill="url(#brandBarGradient)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
