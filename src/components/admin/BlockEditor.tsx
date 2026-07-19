@@ -48,7 +48,15 @@ import {
   Sparkles as IconSparkles,
   ClipboardList as IconClipboard,
   Link2 as IconLink,
+  ArrowRightLeft,
+  Loader2,
 } from "lucide-react";
+import {
+  FORMAT_TARGETS,
+  convertBlock,
+  blockToPlainText,
+  blockHasAiText,
+} from "@/lib/block-conversions";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -159,18 +167,185 @@ const BlockRenderer = React.memo(({ block, onChange }: { block: Block; onChange:
 });
 BlockRenderer.displayName = "BlockRenderer";
 
+type ReplaceHandler = (
+  id: string,
+  target: Block["type"],
+  extras?: Record<string, any>,
+) => void;
+
+const ReplaceMenu = ({
+  block,
+  loading,
+  onReplace,
+  onAiReplace,
+}: {
+  block: Block;
+  loading: boolean;
+  onReplace: (target: Block["type"]) => void;
+  onAiReplace: (target: "activity" | "hierarchy") => void;
+}) => {
+  const [open, setOpen] = useState(false);
+  const formatTargets = (FORMAT_TARGETS[block.type] ?? []).filter(
+    (t) => t !== block.type,
+  );
+  const hasAiText = blockHasAiText(block);
+  const hasAny = formatTargets.length > 0 || hasAiText;
+  if (!hasAny) return null;
+
+  const cat = CATEGORY_STYLES[CARD_CATEGORY[block.type] ?? "text"];
+  const btnColor = cat.solid ? "rgba(255,255,255,0.85)" : "#737373";
+  const btnHoverColor = cat.solid ? "#FFFFFF" : "#525252";
+
+  return (
+    <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          disabled={loading}
+          className="be-block__action be-block__replace inline-flex items-center justify-center h-7 w-7 rounded-md transition-colors disabled:opacity-60"
+          title="Změnit na…"
+          style={{ color: btnColor }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = btnHoverColor)}
+          onMouseLeave={(e) => (e.currentTarget.style.color = btnColor)}
+        >
+          {loading ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <ArrowRightLeft className="w-3.5 h-3.5" />
+          )}
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="p-0 overflow-hidden">
+        <div className="w-[240px] py-1">
+          {formatTargets.length > 0 && (
+            <>
+              <div
+                className="px-3 pt-2 pb-1"
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: 0.8,
+                  color: "#A3A3A3",
+                }}
+              >
+                Formát
+              </div>
+              {formatTargets.map((t) => {
+                const meta = BLOCK_TYPES.find((bt) => bt.type === t);
+                const Icon = BLOCK_ICON[t];
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => {
+                      setOpen(false);
+                      onReplace(t);
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-1.5 text-sm hover:bg-[#F5F5F5] transition-colors text-left"
+                    style={{ color: "#171717" }}
+                  >
+                    {Icon && <Icon className="w-4 h-4 text-[#525252]" />}
+                    <span className="flex-1">{meta?.label ?? t}</span>
+                  </button>
+                );
+              })}
+            </>
+          )}
+          {hasAiText && (
+            <>
+              <div
+                className="px-3 pt-2 pb-1"
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: 0.8,
+                  color: "#0B6E5D",
+                }}
+              >
+                Vytvořit z obsahu
+              </div>
+              {block.type !== "activity" && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpen(false);
+                    onAiReplace("activity");
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-1.5 text-sm hover:bg-[#F0FAF8] transition-colors text-left"
+                  style={{ color: "#171717" }}
+                >
+                  <IconSparkles className="w-4 h-4" style={{ color: "#0B6E5D" }} />
+                  <span className="flex-1">Aktivita</span>
+                  <span
+                    style={{
+                      background: "#0F9A8B",
+                      color: "#FFFFFF",
+                      fontWeight: 700,
+                      fontSize: 9,
+                      letterSpacing: 0.6,
+                      padding: "2px 6px",
+                      borderRadius: 999,
+                    }}
+                  >
+                    AI
+                  </span>
+                </button>
+              )}
+              {block.type !== "hierarchy" && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpen(false);
+                    onAiReplace("hierarchy");
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-1.5 text-sm hover:bg-[#F0FAF8] transition-colors text-left"
+                  style={{ color: "#171717" }}
+                >
+                  <IconTriangle className="w-4 h-4" style={{ color: "#0B6E5D" }} />
+                  <span className="flex-1">Hierarchie</span>
+                  <span
+                    style={{
+                      background: "#0F9A8B",
+                      color: "#FFFFFF",
+                      fontWeight: 700,
+                      fontSize: 9,
+                      letterSpacing: 0.6,
+                      padding: "2px 6px",
+                      borderRadius: 999,
+                    }}
+                  >
+                    AI
+                  </span>
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
+
 const SortableBlock = React.memo(({
   block,
   onUpdate,
   onDuplicate,
   onToggle,
   onDelete,
+  onReplace,
+  onAiReplace,
+  replaceLoading,
 }: {
   block: Block;
   onUpdate: (id: string, props: Record<string, any>) => void;
   onDuplicate: (id: string) => void;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
+  onReplace: (id: string, target: Block["type"]) => void;
+  onAiReplace: (id: string, target: "activity" | "hierarchy") => void;
+  replaceLoading: boolean;
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: block.id });
 
@@ -250,6 +425,12 @@ const SortableBlock = React.memo(({
             AI
           </span>
         )}
+        <ReplaceMenu
+          block={block}
+          loading={replaceLoading}
+          onReplace={(target) => onReplace(block.id, target)}
+          onAiReplace={(target) => onAiReplace(block.id, target)}
+        />
         <Button size="icon" variant="ghost" className="be-block__action h-7 w-7" onClick={() => onToggle(block.id)} title={block.visible ? "Skrýt" : "Zobrazit"}>
           {block.visible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
         </Button>
@@ -578,6 +759,114 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
     commit(next);
   }, [commit]);
 
+  const [replacingId, setReplacingId] = useState<string | null>(null);
+
+  const replaceBlock = useCallback((id: string, target: Block["type"]) => {
+    const cur = blocksRef.current;
+    const idx = cur.findIndex((b) => b.id === id);
+    if (idx < 0) return;
+    const src = cur[idx];
+    if (src.type === target) return;
+    const converted = convertBlock(src, target);
+    if (!converted) {
+      toast.error("Tento typ bloku nelze převést na zvolený formát.");
+      return;
+    }
+    const fresh = createDefaultBlock(target);
+    const nextBlock: Block = {
+      ...fresh,
+      id: src.id,
+      visible: src.visible,
+      props: { ...fresh.props, ...converted },
+    };
+    const next = [...cur];
+    next[idx] = nextBlock;
+    commit(next);
+  }, [commit]);
+
+  const aiReplaceBlock = useCallback(async (id: string, target: "activity" | "hierarchy") => {
+    const cur = blocksRef.current;
+    const idx = cur.findIndex((b) => b.id === id);
+    if (idx < 0) return;
+    const src = cur[idx];
+    const text = blockToPlainText(src).trim();
+    if (text.length < 8) {
+      toast.error("Blok neobsahuje dost textu pro AI transformaci.");
+      return;
+    }
+
+    setReplacingId(id);
+    try {
+      if (target === "hierarchy") {
+        const { data, error } = await supabase.functions.invoke("generate-hierarchy", {
+          body: { text },
+        });
+        if (error) throw error;
+        const hierarchy = (data as any)?.hierarchy;
+        if (!hierarchy?.levels?.length) throw new Error("AI nevrátila platnou hierarchii");
+        const fresh = createDefaultBlock("hierarchy");
+        const nextBlock: Block = {
+          ...fresh,
+          id: src.id,
+          visible: src.visible,
+          props: { ...fresh.props, ...hierarchy },
+        };
+        const cur2 = blocksRef.current;
+        const idx2 = cur2.findIndex((b) => b.id === id);
+        if (idx2 < 0) return;
+        const next = [...cur2];
+        next[idx2] = nextBlock;
+        commit(next);
+        toast.success("Blok převeden na hierarchii.");
+      } else {
+        const { data, error } = await supabase.functions.invoke("generate-activity-spec", {
+          body: { topic: text.slice(0, 500), context: text },
+        });
+        if (error) throw error;
+        const spec = (data as any)?.spec ?? data;
+        const questionText =
+          typeof spec?.prompt === "string" ? spec.prompt : text.slice(0, 200);
+        const fresh = createDefaultBlock("activity");
+        const nextBlock: Block = {
+          ...fresh,
+          id: src.id,
+          visible: src.visible,
+          props: {
+            ...fresh.props,
+            activityType: "quiz",
+            title: "Aktivita",
+            quiz: {
+              question: questionText,
+              answers:
+                Array.isArray(spec?.answers) && spec.answers.length > 0
+                  ? spec.answers
+                  : (fresh.props as any).quiz.answers,
+              explanation:
+                typeof spec?.feedback === "string" ? spec.feedback : "",
+            },
+          },
+        };
+        const cur2 = blocksRef.current;
+        const idx2 = cur2.findIndex((b) => b.id === id);
+        if (idx2 < 0) return;
+        const next = [...cur2];
+        next[idx2] = nextBlock;
+        commit(next);
+        toast.success("Blok převeden na aktivitu. Zkontrolujte prosím obsah.");
+      }
+    } catch (e: any) {
+      console.error("aiReplaceBlock failed:", e);
+      const msg = e?.message?.includes("402")
+        ? "Nedostatek AI kreditů."
+        : e?.message?.includes("429")
+          ? "Příliš mnoho AI požadavků, zkuste to za chvíli."
+          : "AI transformace se nezdařila. Zkuste to znovu.";
+      toast.error(msg);
+    } finally {
+      setReplacingId(null);
+    }
+  }, [commit]);
+
   const [dragOver, setDragOver] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -751,6 +1040,9 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
                 onDuplicate={duplicateBlock}
                 onToggle={toggleBlock}
                 onDelete={deleteBlock}
+                onReplace={replaceBlock}
+                onAiReplace={aiReplaceBlock}
+                replaceLoading={replacingId === block.id}
               />
               {idx < normalizedBlocks.length - 1 && (
                 <InsertButton afterId={block.id} onInsert={insertBlockAfter} />
