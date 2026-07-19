@@ -1,3 +1,4 @@
+import { DEFAULT_SUBJECT_COLOR } from "@/lib/subject-defaults";
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
