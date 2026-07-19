@@ -29,6 +29,8 @@ export default {
           foreground: "hsl(var(--primary-foreground))",
           light: "hsl(var(--primary-light))",
           pastel: "hsl(var(--primary-pastel))",
+          subtle: "hsl(var(--primary-subtle))",
+          dark: "hsl(var(--primary-dark))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -36,6 +38,7 @@ export default {
           light: "hsl(var(--secondary-light))",
           alt: "hsl(var(--secondary-alt))",
           pastel: "hsl(var(--secondary-pastel))",
+          dark: "hsl(var(--secondary-dark))",
         },
         destructive: {
           DEFAULT: "hsl(var(--destructive))",

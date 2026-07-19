@@ -56,12 +56,22 @@
     /* Light brand tokens (safe on light bg w/ dark text ~ #1A1F2C) */
     --primary-light: 185 51% 60%;      /* #63C7CF */
     --primary-pastel: 176 55% 88%;     /* ~#CFF0EE */
+    --primary-subtle: 176 55% 96%;     /* ~#F0FAF8 – hover bg on light surfaces */
+    --primary-dark: 172 82% 24%;       /* ~#0B7E71 – dark text/hover */
     --secondary-light: 270 60% 62%;    /* #A065D7 */
     --secondary-alt: 264 56% 64%;      /* #9A6FD6 */
     --secondary-pastel: 266 55% 92%;   /* ~#E9E0F5 */
+    --secondary-dark: 252 30% 51%;     /* ~#6B5BA6 – dark text/hover */
+
+    /* Brand gradient — themable stops & endpoints */
+    --brand-gradient-from: 274 62% 62%;  /* #A065D7 purple */
+    --brand-gradient-to: 194 43% 51%;    /* #4A9DBB teal */
+    --brand-gradient-stop-lg: 35%;
+    --brand-gradient-stop-sm: 43%;
 
     --surface: 0 0% 100%;
     --surface-hover: 225 33% 96%;
+
 
     --font-heading: 'Lato', system-ui, sans-serif;
     --font-body: 'Lato', system-ui, sans-serif;
@@ -96,16 +106,26 @@
 @layer utilities {
   .text-gradient-brand {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, #A065D7 0%, #4A9DBB 35%, #4A9DBB 100%);
+    background-image: linear-gradient(135deg,
+      hsl(var(--brand-gradient-from)) 0%,
+      hsl(var(--brand-gradient-to)) var(--brand-gradient-stop-lg),
+      hsl(var(--brand-gradient-to)) 100%);
   }
 
   .bg-gradient-brand {
-    background-image: linear-gradient(135deg, #A065D7 0%, #4A9DBB 35%, #4A9DBB 100%);
+    background-image: linear-gradient(135deg,
+      hsl(var(--brand-gradient-from)) 0%,
+      hsl(var(--brand-gradient-to)) var(--brand-gradient-stop-lg),
+      hsl(var(--brand-gradient-to)) 100%);
   }
 
   .bg-gradient-brand-sm {
-    background-image: linear-gradient(135deg, #A065D7 0%, #4A9DBB 43%, #4A9DBB 100%);
+    background-image: linear-gradient(135deg,
+      hsl(var(--brand-gradient-from)) 0%,
+      hsl(var(--brand-gradient-to)) var(--brand-gradient-stop-sm),
+      hsl(var(--brand-gradient-to)) 100%);
   }
+
 
   /* Keep old class names as aliases for compatibility */
   .text-gradient-gold {
