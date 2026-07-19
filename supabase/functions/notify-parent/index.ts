@@ -18,7 +18,7 @@ import { getInternalSecret } from "../_shared/internal-secret.ts";
 function emailShell(title: string, bodyHtml: string, ctaUrl: string, ctaLabel: string) {
   return `
   <div style="font-family: Lato, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #1A1F2C; background: #F8FAFC;">
-    <div style="background: linear-gradient(135deg, #3FB8AF 0%, #AD87C9 100%); padding: 28px 24px; border-radius: 14px 14px 0 0; text-align: center;">
+    <div style="background: linear-gradient(135deg, #0E8F9A 0%, #AD87C9 100%); padding: 28px 24px; border-radius: 14px 14px 0 0; text-align: center;">
       <h1 style="margin: 0; font-size: 24px; font-weight: 800; color: #ffffff;">ZEdu<span style="color:#a5f3fc;">.cz</span></h1>
     </div>
     <div style="background:#ffffff; padding: 24px; border-radius: 0 0 14px 14px;">
