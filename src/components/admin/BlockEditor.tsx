@@ -425,6 +425,12 @@ const SortableBlock = React.memo(({
             AI
           </span>
         )}
+        <ReplaceMenu
+          block={block}
+          loading={replaceLoading}
+          onReplace={(target) => onReplace(block.id, target)}
+          onAiReplace={(target) => onAiReplace(block.id, target)}
+        />
         <Button size="icon" variant="ghost" className="be-block__action h-7 w-7" onClick={() => onToggle(block.id)} title={block.visible ? "Skrýt" : "Zobrazit"}>
           {block.visible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
         </Button>
