@@ -73,10 +73,66 @@ import SummaryBlock from "./block-editors/SummaryBlock";
 import ActivityBlock from "./block-editors/ActivityBlock";
 import HierarchyBlock from "./block-editors/HierarchyBlock";
 
+// --- Categorization: card visuals (Step 1) ---
+type CategoryKey = "text" | "media" | "structure" | "interactive";
+
+const CARD_CATEGORY: Record<string, CategoryKey> = {
+  heading: "text", paragraph: "text", bullet_list: "text",
+  quote: "text", callout: "text", summary: "text",
+  image: "media", image_text: "media", gallery: "media", youtube: "media",
+  card_grid: "structure", table: "structure", two_column: "structure",
+  hierarchy: "structure", accordion: "structure", divider: "structure",
+  activity: "interactive", lesson_link: "interactive",
+};
+
+const CATEGORY_STYLES: Record<CategoryKey, {
+  border: string; headerBg: string; iconColor: string; labelColor: string;
+  borderWidth: number; solid?: boolean;
+}> = {
+  text:        { border: "#E5E5E5", headerBg: "#FFFFFF", iconColor: "#525252", labelColor: "#525252", borderWidth: 1 },
+  media:       { border: "#C3EAE6", headerBg: "#E0F5F3", iconColor: "#0F9A8B", labelColor: "#0B6E5D", borderWidth: 1 },
+  structure:   { border: "#D9CFEC", headerBg: "#F4F0FA", iconColor: "#6B5BA6", labelColor: "#6B5BA6", borderWidth: 1 },
+  interactive: { border: "#0F9A8B", headerBg: "#0F9A8B", iconColor: "#FFFFFF", labelColor: "#FFFFFF", borderWidth: 1.5, solid: true },
+};
+
+// --- Icons per block type (used in card headers + add menu) ---
+const BLOCK_ICON: Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
+  heading: IconHeading,
+  paragraph: IconType,
+  bullet_list: IconList,
+  quote: IconQuote,
+  callout: IconInfo,
+  summary: IconClipboard,
+  image: IconImage,
+  image_text: IconLayoutTemplate,
+  gallery: IconImages,
+  youtube: IconYoutube,
+  card_grid: IconLayoutGrid,
+  table: IconTable,
+  two_column: IconColumns2,
+  hierarchy: IconTriangle,
+  accordion: IconChevronDown,
+  divider: IconMinus,
+  activity: IconSparkles,
+  lesson_link: IconLink,
+};
+
+// --- Add-menu grouping (Step 2) ---
+const MENU_GROUPS: { key: CategoryKey; label: string; types: string[]; accent?: boolean }[] = [
+  { key: "text", label: "Text", types: ["heading", "paragraph", "bullet_list", "quote", "callout"] },
+  { key: "media", label: "Média", types: ["image", "image_text", "gallery", "youtube"] },
+  { key: "structure", label: "Struktura a rozložení", types: ["card_grid", "table", "two_column", "hierarchy", "accordion", "divider"] },
+  { key: "interactive", label: "Interaktivní a AI", types: ["activity", "summary", "lesson_link"], accent: true },
+];
+
+const MENU_AI_BADGE = new Set(["activity", "summary"]);
+const CARD_AI_BADGE = new Set(["activity"]);
+
 interface Props {
   blocks: Block[];
   onChange: (blocks: Block[]) => void;
 }
+
 
 const BlockRenderer = React.memo(({ block, onChange }: { block: Block; onChange: (props: Record<string, any>) => void }) => {
   switch (block.type) {
