@@ -53,7 +53,7 @@ const cards: Card[] = [
 const ForWhom = () => {
   const navigate = useNavigate();
   return (
-    <section className="w-full py-20 md:py-28 bg-gradient-to-br from-[hsl(185,55%,42%)] to-[hsl(260,55%,55%)]">
+    <section className="w-full py-20 md:py-28 bg-primary">
       <div className="container mx-auto max-w-5xl px-4">
         <h2 className="text-white font-heading text-2xl md:text-3xl font-bold text-center mb-4">
           Pro koho je ZEdu?
@@ -65,7 +65,7 @@ const ForWhom = () => {
               key={c.title}
               className="bg-card rounded-2xl p-8 text-center shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col"
             >
-              <div className="w-14 h-14 rounded-xl bg-gradient-brand flex items-center justify-center mx-auto mb-5">
+              <div className="w-14 h-14 rounded-xl bg-primary flex items-center justify-center mx-auto mb-5">
                 <c.icon size={28} className="text-primary-foreground" />
               </div>
               <h3 className="font-heading text-lg font-semibold mb-4">{c.title}</h3>

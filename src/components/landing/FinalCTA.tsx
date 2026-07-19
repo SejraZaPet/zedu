@@ -10,7 +10,7 @@ const FinalCTA = () => {
         <p className="text-muted-foreground mb-8">Zaregistrujte se zdarma a začněte tvořit.</p>
         <button
           onClick={() => navigate("/auth")}
-          className="bg-gradient-brand text-primary-foreground rounded-2xl px-8 py-4 text-lg font-semibold shadow-lg hover:shadow-xl transition-all inline-flex items-center gap-2"
+          className="bg-primary text-primary-foreground rounded-2xl px-8 py-4 text-lg font-semibold shadow-lg hover:shadow-xl hover:opacity-90 transition-all inline-flex items-center gap-2"
         >
           <Rocket className="w-5 h-5" /> Vytvořit účet zdarma
         </button>
