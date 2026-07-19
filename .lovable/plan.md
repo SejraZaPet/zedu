@@ -1,103 +1,79 @@
-## Krok 3 — návrh: "Změnit na…" pro existující blok
+# "Změnit na…" – návrh mapování a AI reuse
 
-### UI umístění
-Nová ikonka `ArrowRightLeft` (lucide) v hlavičce karty, mezi Eye/Duplikovat/Smazat, tooltip "Změnit na…". Klik otevře `DropdownMenu` (nebo `Popover`) se šířkou ~280 px, dvě sekce s uppercase nadpisy stejného stylu jako v Add-menu.
+Než začnu implementovat, tady je konkrétní návrh na dvě věci, které ses ptal ověřit: (1) přesné mapování mezi typy bloků v sekci "Formát" a (2) jestli lze znovupoužít existující AI edge funkce pro sekci "Vytvořit z obsahu".
 
----
+## 1) Sekce "Formát" — přesné mapování (bez AI)
 
-### Sekce 1 — "Formát" (okamžitá konverze, bez AI)
+Kategorie odpovídají tomu, jak jsou bloky rozdělené v redesignu editoru (Text / Média / Struktura / Interaktivní).
 
-Zobrazí se jen typy ze **stejné kategorie** jako aktuální blok. Kategorie ale nesouhlasí s tím, které převody dávají obsahový smysl — proto mapování zúžíme na skutečně bezpečné dvojice:
+### Text ↔ Text (plně obousměrné, bezpečné)
+Zúčastněné typy: `heading`, `paragraph`, `bullet_list`, `quote`, `callout`.
 
-**Text kategorie** (`heading | paragraph | bullet_list | quote | callout`)
-Vnitřní "kanonický text" = `title` + `body`. Konverze:
+| Zdroj → cíl | Chování |
+|---|---|
+| `heading` → `paragraph` / `quote` / `callout` | zkopíruje se `text` (HTML se zploští na plaintext); u `quote` `author=""`, u `callout` `calloutType="note"` |
+| `heading` → `bullet_list` | 1 položka = celý nadpis |
+| `paragraph` → `heading` | `level=2`, text z odstavce (bez HTML) |
+| `paragraph` → `bullet_list` | rozdělí obsah podle řádků / odrážek (`\n`, `•`, `-`, `–`); prázdné se zahodí |
+| `paragraph` → `quote` / `callout` | text 1:1, u `quote` `author=""`, u `callout` `type="note"` |
+| `bullet_list` → `paragraph` | položky spojeny prázdným řádkem |
+| `bullet_list` → `heading` | položky spojené `" · "` (max 2. úroveň) |
+| `bullet_list` → `quote` / `callout` | položky spojené `" — "` resp. `\n` |
+| `quote` → `paragraph` / `heading` / `bullet_list` / `callout` | přenese `text`; autor se u `paragraph` zapíše v závorce, u `bullet_list` jako druhá položka, jinak se zahodí |
+| `callout` → `paragraph` / `heading` / `quote` / `bullet_list` | přenese `text` (typ callout se ignoruje); u `bullet_list` rozděl podle řádků |
 
-| Z / do | heading | paragraph | bullet_list | quote | callout |
-|---|---|---|---|---|---|
-| heading | — | text = old.text | items = [old.text] | text = old.text | text = old.text, calloutType="note" |
-| paragraph | text = strip(html), level=2 | — | items = split by `\n` nebo `<br>`/`<p>` | text = strip(html) | text = old.text |
-| bullet_list | text = items.join(" · "), level=2 | text = items joined jako odstavce | — | text = items.join(" — ") | text = items joined |
-| quote | text = old.text | text = old.text (+ autor v závorce) | items = [old.text, old.author?] | — | text = old.text |
-| callout | text = old.text | text = old.text | items = split(old.text) | text = old.text | — |
+Poznámka: nezachovávají se odkazy uvnitř RichTextu (u vsupu HTML se strippuje na plaintext, aby cíle nedostávaly `<h2>` uvnitř `<li>` apod.). U `paragraph`/`heading` cíl přijímá HTML — ok, protože prostý text je validní HTML.
 
-Poznámka: `summary` má vlastní tvar (`title` + rich `text`) a v Kroku 2 patří do "Interaktivní a AI" menu; do konverzí ho nezařazovat, aby chování bylo předvídatelné.
+### Média ↔ Média — VYNECHÁVÁM
+`image`, `image_text`, `gallery`, `youtube` mají zásadně různé povinné vstupy (single URL vs. gallery pole vs. `youtube.url`), takže "reformátování stejného obsahu" reálně neexistuje — buď duplikuje informaci, nebo mažeme text. Nechal bych sekci "Formát" u mediálních bloků prázdnou (tzn. tlačítko "Změnit na…" se u nich nezobrazí, pokud AI sekce taky nebude aplikovatelná).
 
-**Structure kategorie** — zúžit na trojici, kde konverze dává smysl:
-- **table → card_grid**: každý řádek = karta (`title` = 1. buňka, `text` = zbytek buněk spojený `" — "`), `columns` = min(headers.length, 3).
-- **card_grid → table**: `headers = ["Název", "Popis"]`, každá karta = řádek `[title, text]`.
-- **table → two_column**: jen když tabulka má právě 2 sloupce — `left` = 1. sloupec joined, `right` = 2. sloupec joined; jinak položku nezobrazovat.
-- **two_column → table**: `headers = ["Sloupec 1", "Sloupec 2"]`, jeden řádek `[left, right]` (raw text bez HTML).
-- **card_grid ↔ two_column**: neposkytovat (ztrátové a bez jasné intuice).
-- `accordion`, `hierarchy`, `divider` z Formát-sekce vynechat (příliš specifické struktury).
+### Struktura ↔ Struktura (omezená, s pojistkou)
+Zúčastněné typy: `table`, `card_grid`, `two_column`. (`accordion`, `hierarchy`, `divider` mají příliš specifický obsah — vynechávám.)
 
-**Media kategorie** — konverze mezi `image` / `image_text` / `gallery` / `youtube` nedává čistý smysl (URL vs. text vs. pole obrázků). Doporučuju **sekci "Formát" u media bloků skrýt** (menu ukáže jen "Vytvořit z obsahu" nebo bude prázdné → nezobrazovat trigger tlačítko, když není co nabídnout).
+| Zdroj → cíl | Chování |
+|---|---|
+| `table` → `card_grid` | každý řádek = 1 karta: `title = row[0]`, `text = row[1..].join(" — ")`; `columns = min(max(headers.length, 2), 3)` |
+| `table` → `two_column` | POVOLENO **pouze** když má tabulka přesně 2 sloupce; `left = řádky[0].join("\n\n")`, `right = řádky[1].join("\n\n")`. Jinak volba není v menu. |
+| `card_grid` → `table` | `headers = ["Název","Popis"]`; `rows = cards.map(c => [c.title, c.text])` |
+| `two_column` → `table` | `headers = ["Sloupec 1","Sloupec 2"]`; 1 řádek s `[left, right]` |
 
-**Interactive kategorie** (`activity`, `lesson_link`) — Formát-sekci nezobrazovat.
+`accordion`/`hierarchy` nejsou v mapování — vestavěná struktura (položka+obsah, resp. úrovně) se ztratí jakkoli by se namapovaly.
 
-Chování: klik = jedna `commit()` s přepsaným `type` a nově namapovanými `props`. Žádný loading, žádný toast (jen tichá záměna, undo/redo zůstává funkční přes existující history stack).
+### Chování UI
+- Tlačítko "Změnit na…" (ikona `ArrowRightLeft`) se u bloku **skryje**, pokud pro daný typ neexistuje žádná položka ve Formátu ani není splněná podmínka pro AI sekci (viz níže).
+- Formát přepíše `block.type` a `block.props` na místě (stejné `id`, stejný `visible`), commit jde přes stávající undo/redo historii → dá se snadno vrátit `Ctrl+Z`.
+- Bez potvrzovacího dialogu (nechceme zdržovat) — je to okamžitá, undoable operace.
 
----
+## 2) Sekce "Vytvořit z obsahu" — AI reuse
 
-### Sekce 2 — "Vytvořit z obsahu" (AI, s indikátorem)
+Existující edge funkce jsem prošel; relevantní kandidáti:
 
-Zobrazí se **vždy** (nezávisle na kategorii), pokud z bloku dokážeme vytáhnout aspoň nějaký text (heading/paragraph/bullet_list/quote/callout/summary/table/card_grid/two_column/accordion). U čistě media / divider / lesson_link se sekce skryje.
+- `generate-activity-spec` — vrací **ActivitySpec** (pole `type: mcq/matching/hotspot/interactive_video`, plus `worksheetMapping`, `accessibility`, `projectorPolicy`, atd.). **Není 1:1 kompatibilní** s tvarem, který renderuje `ActivityBlock` v editoru (ten čeká `activityType + quiz/flashcards/matching/…` s odlišnými poli, např. `quiz.answers[].correct` místo `choices/correctIndex`). Vyžadovala by adaptér, ale ztratí se většina metadat ActivitySpec.
+- `generate-mcq` — jednoduchá funkce generující MCQ otázky. Bližší k tomu, co `ActivityBlock.quiz` používá (`question`, `answers[{text, correct}]`, `explanation`).
+- `generate-block-suggestions` — generuje návrhy dalších bloků do lekce, ne převod stávajícího obsahu.
+- `generate-hierarchy` **neexistuje** — pro AI variantu "Hierarchie/Pyramida" ji potřebujeme vytvořit novou.
 
-Položky:
-1. **"Aktivita / procvičování"** — ikona `Sparkles`, badge "AI".
-2. **"Hierarchie / Pyramida"** — ikona `Sparkles`, badge "AI".
+**Doporučení pro implementaci** (budu čekat na tvoje potvrzení):
 
-#### 2a) Aktivita → **znovu použít `generate-activity-spec`**
-Edge funkce existuje a je přesně pro tenhle případ:
-- `supabase/functions/generate-activity-spec/index.ts`
-- Volání: `supabase.functions.invoke("generate-activity-spec", { body: { activityType, prompt, feedbackMode, deliveryMode } })`
-- Vrací spec, který si už umí ActivityBlock renderovat.
-- Používá se v `src/components/admin/ActivitySpecGenerator.tsx` — stejný smluvní tvar převezmeme.
+1. **"Aktivita/procvičování"** → znovupoužít `generate-mcq` (odpovídá přesně tvaru `activity` bloku s `activityType="quiz"`). Vstup = plaintext extrahovaný z bloku (`text`, `items`, popisky karet, …). Výstup napojíme na `props.quiz`. Pokud později budeme chtít další typy (flashcards, matching), přidá se druhá položka v menu; `generate-activity-spec` bych **nezapojoval**, ledaže chceš, aby výsledek nesl kompletní ActivitySpec metadata — pak bude potřeba psát mapper i změnu `ActivityBlock`.
+   - Alternativa: pokud `generate-mcq` nevyhovuje (např. neumí česky nebo očekává jiné vstupy), přidám novou lightweight edge funkci `generate-activity-from-text` cílenou přesně na tvar `ActivityBlock`.
+2. **"Hierarchie/Pyramida"** → nová edge funkce `generate-hierarchy` (Gemini 3 Flash, structured tool call: `direction`, `levels: [{label, description?}]`, 3–6 úrovní). Vstup = plaintext bloku. Výstup napojíme na tvar `hierarchy` bloku (`shape: "pyramid"`, `direction`, `levels[{id,label,description}]`).
 
-Návrh chování:
-- `activityType`: default `"mcq"` (rychlý kvíz z textu). Volitelně malá inline volba (mcq / fill_blank / matching) — v prvním kole ale doporučuju **jen `mcq`** a případný typ nechat na budoucí iteraci.
-- `prompt` = extrahovaný plaintext bloku (viz "Extrakce textu" níže) + krátká instrukce "Vytvoř procvičení k tomuto textu".
-- `feedbackMode: "immediate"`, `deliveryMode: "student_paced"`.
-- Po úspěchu: nahradit blok novým `activity` blokem s `props.activityType = "mcq"` a odpovídajícími poli (`quiz: {...}`) — mapa výstup → props stejná jako v ActivitySpecGenerator.
+**UI během AI volání:**
+- V hlavičce bloku se vedle ikony "Změnit na…" objeví spinner + `Loader2`; tlačítko se disabluje. Zbytek editoru dál použitelný.
+- Chyba (429/402/500) → `toast.error` s konkrétní hláškou ("Nedostatek kreditů", "Příliš mnoho požadavků, zkuste to za chvíli", jinak generická). Blok se nemění.
+- Úspěch → commit do historie (undoable), toast.success s krátkou zprávou ("Blok převeden na aktivitu. Zkontrolujte prosím obsah.").
 
-#### 2b) Hierarchie/Pyramida — **nová edge funkce `generate-hierarchy`**
-Žádná stávající funkce nevrací tvar `{ shape, direction, levels: [{ label, description }] }`, který `hierarchy` blok očekává. Nejčistší je nová malá edge funkce (~50 řádek) volající Lovable AI Gateway přes `ai-sdk-lovable-gateway` pattern:
-- Vstup: `{ text: string }`.
-- System prompt: rozděl text do 3–6 hierarchických úrovní (od nejobecnější po nejkonkrétnější / od základu po vrchol).
-- Structured output přes `Output.object` (Zod schema **bez** `.min/.max`, limity v promptu + clamp v kódu).
-- Výstup: `{ shape: "pyramid", direction: "top-to-bottom", levels: [{ label, description }] }`.
-- Model: default `google/gemini-3-flash-preview`.
+**Kdy je AI sekce dostupná:** pouze pokud extrahovaný plaintext bloku má > 8 znaků (jinak by AI dostávala prázdný vstup). Bloky typu `image`, `divider`, `lesson_link`, `youtube` bez popisku tak AI sekci nezobrazí.
 
-Alternativa: rozšířit stávající `generate-block-suggestions` o typ `hierarchy` — ale ta funkce vrací 3 varianty worksheet-bloků, ne textbook-block, takže bych šel novou funkcí.
+## Otevřené otázky — potvrď, jak dál
 
-#### Extrakce textu z bloku (client-side helper)
-Jedna čistá funkce `blockToPlainText(block): string`:
-- `heading`, `paragraph`, `quote`, `callout` → strip HTML z `text`.
-- `bullet_list` → `items.map(strip).join("\n- ")`.
-- `summary` → `title` + strip(`text`).
-- `table` → řádky joined tabem, hlavičky jako první řádek.
-- `card_grid` → karty jako `"title — text"` po řádcích.
-- `two_column` → `left\n\nright` (strip).
-- `accordion` → `"Q: title\nA: content"` per item.
+1. **Media kategorie**: OK ji ve "Formátu" **vynechat** (button "Změnit na…" bude u mediálních bloků skrytý, ledaže má AI sekce co nabídnout)? Nebo chceš minimální mapování (např. `image` → `gallery` = 1 obrázek, `image_text` → `image` = zahodit text)?
+2. **Aktivita – kterou AI cestu**:
+   - (a) **`generate-mcq`** (rychlé, ale jen kvíz), NEBO
+   - (b) nová **`generate-activity-from-text`** (jen kvíz, ale explicitně cílená na `ActivityBlock`), NEBO
+   - (c) **`generate-activity-spec` + adaptér** (víc typů, ale ztratí ActivitySpec metadata a je to víc kódu)?
+3. **Hierarchie**: OK vytvořit novou edge funkci `generate-hierarchy` (Gemini 3 Flash, structured tool call, 3–6 úrovní)?
+4. **Undo pro AI výsledek**: má být převod přes AI zapsán do historie (Ctrl+Z vrátí zpět na původní blok)? Doporučuju ano — je to konzistentní s Formátem a chrání před špatnými AI výstupy.
 
-#### Loading + error handling
-- Loading stav **v samotné kartě**: přes header překryjeme obsah bloku (nebo `p-3` sekci) překryvem se `Loader2` spinnerem + textem "AI vytváří aktivitu…" / "AI vytváří hierarchii…".
-- Stav držet v `SortableBlock` jako lokální `useState<'idle' | 'ai-activity' | 'ai-hierarchy'>`.
-- Během běhu vypnout ostatní akce v hlavičce (disabled).
-- Úspěch: `onUpdate` nezmění `type`, potřebujeme cestu i pro **změnu typu**. Rozšířit props `SortableBlock` o nové callbacky:
-  - `onReplace(id, newType, newProps)` — bezpečně přepíše `type` + `props` v jedné `commit()`.
-- Chyba (network / 429 / 402 / parse fail): `toast.error(...)` s konkrétní zprávou (rate limit vs. credits vs. generic), blok zůstane beze změny.
-
----
-
-### Dotčené soubory (jen pro orientaci, v implementační fázi)
-- `src/components/admin/BlockEditor.tsx` — nová ikona v hlavičce, popover s dvěma sekcemi, `onReplace` callback do `commit()`, lokální loading state per-blok.
-- `src/lib/textbook-config.ts` **nebo** nový `src/lib/block-conversions.ts` — mapy `FORMAT_TARGETS` a čisté funkce `convertBlock(block, targetType)` + `blockToPlainText(block)`.
-- `supabase/functions/generate-hierarchy/index.ts` — nová edge funkce (Lovable AI, structured output přes AI SDK).
-- Znovupoužít: `supabase/functions/generate-activity-spec/index.ts` (beze změn) a mapování výstupu podle `ActivitySpecGenerator.tsx`.
-
----
-
-### Otevřené otázky před implementací
-1. **Formát-sekce u media / interactive** — potvrzuješ, že se u nich celé "Formát" schová (a případně i celý trigger, když ani AI sekce nemá co nabídnout)? Nebo chceš ikonu vždy viditelnou a v menu jen "Nic k dispozici"?
-2. **Activity default typ** — jet natvrdo `mcq` v prvním kole, nebo hned v menu rozbalit tři podpoložky ("Kvíz", "Doplňovačka", "Přiřazování")?
-3. **`summary` a `hierarchy`** ve Formát-sekci — potvrzuju, že je z konverzí vypouštím (viz výše), OK?
+Po potvrzení implementuji: `src/lib/block-conversions.ts` (mappery), `ReplaceMenu` v `BlockEditor.tsx`, `aiReplaceBlock` handler, případně novou `supabase/functions/generate-hierarchy/`.
