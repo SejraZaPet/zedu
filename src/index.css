@@ -53,6 +53,13 @@
     --brand-blue: 199 52% 66%;
     --brand-turquoise: 184 52% 60%;
 
+    /* Light brand tokens (safe on light bg w/ dark text ~ #1A1F2C) */
+    --primary-light: 185 51% 60%;      /* #63C7CF */
+    --primary-pastel: 176 55% 88%;     /* ~#CFF0EE */
+    --secondary-light: 270 60% 62%;    /* #A065D7 */
+    --secondary-alt: 264 56% 64%;      /* #9A6FD6 */
+    --secondary-pastel: 266 55% 92%;   /* ~#E9E0F5 */
+
     --surface: 0 0% 100%;
     --surface-hover: 225 33% 96%;
 
@@ -107,6 +114,10 @@
 
   .bg-gradient-surface {
     background-image: linear-gradient(180deg, hsl(225 33% 97%), hsl(225 33% 95%));
+  }
+
+  .bg-gradient-brand-pastel {
+    background-image: linear-gradient(135deg, hsl(var(--primary-pastel)), hsl(var(--secondary-pastel)));
   }
 
   .section-padding {
