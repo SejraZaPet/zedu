@@ -95,7 +95,7 @@ const HierarchyBlock = ({ block, onChange }: Props) => {
               />
               <input
                 type="color"
-                value={lvl.color || "#9B6CFF"}
+                value={lvl.color || "#A065D7"}
                 onChange={(e) => updateLevel(i, { color: e.target.value })}
                 className="h-8 w-8 rounded border border-border cursor-pointer"
                 title="Barva úrovně (volitelné)"
