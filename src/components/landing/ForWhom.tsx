@@ -66,7 +66,7 @@ const ForWhom = () => {
               className="bg-card rounded-2xl p-8 text-center shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col"
             >
               <div className="w-14 h-14 rounded-xl bg-primary-light flex items-center justify-center mx-auto mb-5">
-                <c.icon size={28} className="text-foreground" />
+                <c.icon size={28} className="text-primary-foreground" />
               </div>
               <h3 className="font-heading text-lg font-semibold mb-4">{c.title}</h3>
               <ul className="text-left text-sm text-muted-foreground space-y-2 mb-6 flex-1">
