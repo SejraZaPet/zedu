@@ -2,6 +2,23 @@ import { supabase } from "@/integrations/supabase/client";
 
 const APP_URL = "https://www.zedu.cz";
 
+/**
+ * Brand palette for e-mail HTML.
+ * E-mail clients don't reliably support CSS custom properties, so brand hex
+ * values live here as named constants — update these to rebrand e-mails.
+ * Keep in sync with `--primary`, `--secondary`, and gradient tokens in
+ * `src/index.css`.
+ */
+const BRAND_PRIMARY = "#0E8F9A";          // teal — CTA background, links
+const BRAND_SECONDARY = "#AD87C9";        // lavender — accents
+const BRAND_GRADIENT_FROM = "#0E8F9A";    // header gradient start
+const BRAND_GRADIENT_TO = "#AD87C9";      // header gradient end
+const BRAND_ACCENT_LIGHT = "#a5f3fc";     // ".cz" highlight in header
+const NEUTRAL_TEXT = "#1A1F2C";
+const NEUTRAL_MUTED = "#64748B";
+const NEUTRAL_SURFACE = "#F8FAFC";
+
+
 export const sendWelcomeEmail = async (params: {
   to: string;
   firstName: string;
