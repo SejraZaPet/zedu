@@ -410,8 +410,17 @@ export const LessonBlock = ({ block, blockIndex, onActivityComplete, isTeacher }
       const levels = rawLevels.filter((l) => (l?.label ?? "").toString().trim() || (l?.description ?? "").toString().trim());
       if (levels.length === 0) return null;
 
-      // Auto palette from brand gradient (#6EC6D9 → #9B6CFF)
-      const palette = ["#6EC6D9", "#7BB8DE", "#89A9E3", "#979AE8", "#A48CEC", "#9B6CFF", "#8A5CE8", "#7A4CD1"];
+      // Auto palette from brand gradient tokens (primary-light → secondary-light)
+      const palette = [
+        "hsl(var(--primary-light))",
+        "hsl(var(--primary))",
+        "hsl(var(--primary-dark))",
+        "hsl(var(--secondary-dark))",
+        "hsl(var(--secondary-alt))",
+        "hsl(var(--secondary-light))",
+        "hsl(var(--secondary))",
+        "hsl(var(--secondary-dark))",
+      ];
       const colorFor = (i: number, custom?: string) => custom && custom.trim() ? custom : palette[i % palette.length];
 
       // Layout constants
