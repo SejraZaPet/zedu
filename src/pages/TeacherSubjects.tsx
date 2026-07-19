@@ -89,7 +89,7 @@ const TeacherSubjects = () => {
         </div>
 
         <div className="flex items-center gap-3 mb-8">
-          <div className="w-12 h-12 rounded-xl bg-gradient-brand flex items-center justify-center">
+          <div className="w-12 h-12 rounded-xl bg-gradient-brand-sm flex items-center justify-center">
             <Library className="w-6 h-6 text-white" />
           </div>
           <div>

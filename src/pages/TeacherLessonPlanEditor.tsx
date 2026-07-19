@@ -1503,7 +1503,7 @@ export default function TeacherLessonPlanEditor() {
               >
                 <div className="flex items-start justify-between gap-3 mb-3 flex-wrap">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-brand text-primary-foreground flex items-center justify-center text-sm font-semibold shrink-0">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-brand-sm text-primary-foreground flex items-center justify-center text-sm font-semibold shrink-0">
                       {idx + 1}
                     </div>
                     <div className="min-w-0">

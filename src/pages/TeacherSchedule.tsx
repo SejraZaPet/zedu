@@ -637,7 +637,7 @@ export default function TeacherSchedule() {
       <main className="flex-1 container mx-auto px-4 pt-8 pb-12 max-w-[1400px]">
         <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-brand flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-gradient-brand-sm flex items-center justify-center">
               <CalendarDays className="w-5 h-5 text-primary-foreground" />
             </div>
             <div>

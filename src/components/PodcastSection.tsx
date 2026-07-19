@@ -49,7 +49,7 @@ const PodcastSection = () => {
               to={`/podcast/${ep.id}`}
               className="group flex items-center gap-4 rounded-2xl border border-border bg-card p-4 md:p-5 transition-all duration-300 hover:border-primary/20 hover:-translate-y-0.5 cursor-pointer card-shadow hover:card-shadow-hover"
             >
-              <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-brand flex items-center justify-center">
+              <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-brand-sm flex items-center justify-center">
                 <Play className="w-4 h-4 text-primary-foreground ml-0.5" />
               </div>
               <div className="flex-1 min-w-0">

@@ -17,7 +17,7 @@ const HowItWorks = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {steps.map((s) => (
             <div key={s.n}>
-              <div className="w-14 h-14 rounded-full bg-gradient-brand text-primary-foreground text-xl font-bold flex items-center justify-center mx-auto mb-4">
+              <div className="w-14 h-14 rounded-full bg-gradient-brand-sm text-primary-foreground text-xl font-bold flex items-center justify-center mx-auto mb-4">
                 {s.n}
               </div>
               <h3 className="font-heading text-lg font-semibold mb-2">{s.title}</h3>

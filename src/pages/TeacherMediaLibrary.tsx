@@ -76,7 +76,7 @@ const TeacherMediaLibrary = () => {
         style={{ paddingTop: "calc(70px + 3rem)" }}
       >
         <div className="mb-6 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-brand flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-gradient-brand-sm flex items-center justify-center">
             <ImageIcon className="w-5 h-5 text-primary-foreground" />
           </div>
           <div>

@@ -124,7 +124,7 @@ const ChildScheduleWidget = ({ studentIds, studentNames }: Props) => {
     <div className="bg-card border border-border rounded-xl p-4 shadow-sm">
       <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-brand flex items-center justify-center">
+          <div className="w-8 h-8 rounded-lg bg-gradient-brand-sm flex items-center justify-center">
             <CalendarDays className="w-4 h-4 text-white" />
           </div>
           <div>

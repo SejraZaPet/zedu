@@ -272,7 +272,7 @@ const TeacherDashboard = () => {
       return (
         <div className="bg-card border border-border rounded-xl p-6 flex flex-col h-full">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-gradient-brand flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-gradient-brand-sm flex items-center justify-center">
               <Library className="w-5 h-5 text-white" />
             </div>
             <h2 className="font-heading text-lg font-semibold">Moje předměty</h2>
@@ -291,7 +291,7 @@ const TeacherDashboard = () => {
       return (
         <div className="bg-card border border-border rounded-xl p-6">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-gradient-brand flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-gradient-brand-sm flex items-center justify-center">
               <User className="w-5 h-5 text-white" />
             </div>
             <h2 className="font-heading text-lg font-semibold">Můj profil</h2>
@@ -326,7 +326,7 @@ const TeacherDashboard = () => {
     return (
       <div className="bg-card border border-border rounded-xl p-6 flex flex-col h-full">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-gradient-brand flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-gradient-brand-sm flex items-center justify-center">
             <card.icon className="w-5 h-5 text-white" />
           </div>
           <h2 className="font-heading text-lg font-semibold">{card.title}</h2>
