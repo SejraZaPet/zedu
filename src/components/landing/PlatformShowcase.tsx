@@ -18,7 +18,7 @@ const PlatformShowcase = () => {
               onClick={() => setActive(i)}
               className={
                 active === i
-                  ? "bg-gradient-brand text-primary-foreground px-4 py-2 rounded-xl text-sm"
+                  ? "bg-gradient-brand-sm text-primary-foreground px-4 py-2 rounded-xl text-sm"
                   : "bg-muted/50 px-4 py-2 rounded-xl text-sm text-muted-foreground cursor-pointer hover:bg-muted"
               }
             >
