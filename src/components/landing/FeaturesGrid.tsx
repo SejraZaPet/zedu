@@ -29,7 +29,7 @@ const FeaturesGrid = () => {
               key={f.title}
               className="bg-card rounded-2xl p-6 border border-border hover:border-primary/20 hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
             >
-              <div className="w-12 h-12 rounded-xl bg-gradient-brand flex items-center justify-center mb-4">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-light to-secondary-light flex items-center justify-center mb-4">
                 <f.icon size={24} className="text-primary-foreground" />
               </div>
               <h3 className="font-heading text-lg font-semibold mb-2">{f.title}</h3>
