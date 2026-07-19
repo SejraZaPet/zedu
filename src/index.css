@@ -106,16 +106,26 @@
 @layer utilities {
   .text-gradient-brand {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, #A065D7 0%, #4A9DBB 35%, #4A9DBB 100%);
+    background-image: linear-gradient(135deg,
+      hsl(var(--brand-gradient-from)) 0%,
+      hsl(var(--brand-gradient-to)) var(--brand-gradient-stop-lg),
+      hsl(var(--brand-gradient-to)) 100%);
   }
 
   .bg-gradient-brand {
-    background-image: linear-gradient(135deg, #A065D7 0%, #4A9DBB 35%, #4A9DBB 100%);
+    background-image: linear-gradient(135deg,
+      hsl(var(--brand-gradient-from)) 0%,
+      hsl(var(--brand-gradient-to)) var(--brand-gradient-stop-lg),
+      hsl(var(--brand-gradient-to)) 100%);
   }
 
   .bg-gradient-brand-sm {
-    background-image: linear-gradient(135deg, #A065D7 0%, #4A9DBB 43%, #4A9DBB 100%);
+    background-image: linear-gradient(135deg,
+      hsl(var(--brand-gradient-from)) 0%,
+      hsl(var(--brand-gradient-to)) var(--brand-gradient-stop-sm),
+      hsl(var(--brand-gradient-to)) 100%);
   }
+
 
   /* Keep old class names as aliases for compatibility */
   .text-gradient-gold {
