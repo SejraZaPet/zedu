@@ -268,7 +268,14 @@ const StudentProgressWidgets = ({ userId }: { userId: string }) => {
                   }}
                   formatter={(v: any, _n, p: any) => [`${v}% (${p?.payload?.count} úkolů)`, "Průměr"]}
                 />
-                <Bar dataKey="avg" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                <defs>
+                  <linearGradient id="brandBarGradient" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stopColor="hsl(var(--brand-gradient-from))" />
+                    <stop offset="var(--brand-gradient-stop-lg, 35%)" stopColor="hsl(var(--brand-gradient-to))" />
+                    <stop offset="100%" stopColor="hsl(var(--brand-gradient-to))" />
+                  </linearGradient>
+                </defs>
+                <Bar dataKey="avg" fill="url(#brandBarGradient)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
