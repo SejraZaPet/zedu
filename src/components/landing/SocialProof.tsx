@@ -20,10 +20,10 @@ const SocialProof = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
           {metrics.map((m) => (
             <div key={m.label} className="flex flex-col items-center">
-              <div className="w-10 h-10 rounded-xl bg-muted/50 flex items-center justify-center mb-3">
-                <m.icon className="w-5 h-5 text-primary" />
+              <div className="w-10 h-10 rounded-xl bg-gradient-brand-sm flex items-center justify-center mb-3">
+                <m.icon className="w-5 h-5 text-primary-foreground" />
               </div>
-              <div className="font-heading text-3xl md:text-4xl font-bold text-primary">{m.value}</div>
+              <div className="font-heading text-3xl md:text-4xl font-bold bg-gradient-brand bg-clip-text text-transparent">{m.value}</div>
               <div className="text-sm text-muted-foreground mt-1">{m.label}</div>
             </div>
           ))}
