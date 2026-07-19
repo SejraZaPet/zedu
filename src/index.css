@@ -16,10 +16,10 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222 26% 16%;
 
-    --primary: 274 62% 60%;
+    --primary: 185 83% 33%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 261 51% 67%;
+    --secondary: 274 62% 60%;
     --secondary-foreground: 0 0% 100%;
 
     --muted: 225 33% 94%;
@@ -33,18 +33,18 @@
 
     --border: 228 24% 92%;
     --input: 228 24% 88%;
-    --ring: 274 62% 60%;
+    --ring: 185 83% 33%;
 
     --radius: 0.875rem;
 
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 222 26% 16%;
-    --sidebar-primary: 274 62% 60%;
+    --sidebar-primary: 185 83% 33%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 225 33% 94%;
     --sidebar-accent-foreground: 222 26% 16%;
     --sidebar-border: 228 24% 92%;
-    --sidebar-ring: 274 62% 60%;
+    --sidebar-ring: 185 83% 33%;
 
     /* Brand tokens */
     --brand-purple: 274 62% 60%;
