@@ -384,12 +384,7 @@ export const LessonBlock = ({ block, blockIndex, onActivityComplete, isTeacher }
       if (p.required === true) {
         return (
           <div
-            style={{
-              background: "linear-gradient(135deg, hsl(184 52% 95%), hsl(222 51% 93%), hsl(274 62% 93%))",
-              borderRadius: "12px",
-              border: "2px solid hsl(274 62% 70%)",
-              padding: "16px",
-            }}
+            className="bg-gradient-brand-pastel border-2 border-secondary/40 rounded-xl p-4"
           >
             <div className="inline-flex items-center gap-2 mb-3 pb-3 border-b border-primary/30 w-full">
               <span className="inline-flex items-center gap-1.5 text-xs font-semibold bg-primary text-white rounded-full px-3 py-1">
