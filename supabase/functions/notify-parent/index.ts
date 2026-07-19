@@ -18,14 +18,14 @@ import { getInternalSecret } from "../_shared/internal-secret.ts";
 function emailShell(title: string, bodyHtml: string, ctaUrl: string, ctaLabel: string) {
   return `
   <div style="font-family: Lato, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #1A1F2C; background: #F8FAFC;">
-    <div style="background: linear-gradient(135deg, #3FB8AF 0%, #9B87C9 100%); padding: 28px 24px; border-radius: 14px 14px 0 0; text-align: center;">
+    <div style="background: linear-gradient(135deg, #3FB8AF 0%, #AD87C9 100%); padding: 28px 24px; border-radius: 14px 14px 0 0; text-align: center;">
       <h1 style="margin: 0; font-size: 24px; font-weight: 800; color: #ffffff;">ZEdu<span style="color:#a5f3fc;">.cz</span></h1>
     </div>
     <div style="background:#ffffff; padding: 24px; border-radius: 0 0 14px 14px;">
       <h2 style="margin: 0 0 12px; color:#1A1F2C; font-size: 20px;">${title}</h2>
       ${bodyHtml}
       <div style="text-align:center; margin: 24px 0 8px;">
-        <a href="${ctaUrl}" style="background:#0F9A8B; color:#ffffff; padding:12px 22px; border-radius:14px; text-decoration:none; font-weight:600; display:inline-block;">${ctaLabel}</a>
+        <a href="${ctaUrl}" style="background:#0E8F9A; color:#ffffff; padding:12px 22px; border-radius:14px; text-decoration:none; font-weight:600; display:inline-block;">${ctaLabel}</a>
       </div>
       <p style="font-size:12px; color:#64748B; text-align:center; margin-top:18px;">
         Tyto notifikace můžete vypnout v profilu rodiče na ZEdu.
@@ -135,7 +135,7 @@ Deno.serve(async (req) => {
         "Vaše dítě má nový výsledek",
         `<p style="font-size:14px; color:#1A1F2C;">Úkol <strong>${a?.title ?? ""}</strong> byl vyhodnocen.</p>
          <div style="background:#F8FAFC; padding:14px 16px; border-radius:14px; margin:12px 0;">
-           <p style="margin:0; color:#64748B; font-size:13px;">Skóre: <strong style="color:#0F9A8B; font-size:16px;">${scoreLine}</strong></p>
+           <p style="margin:0; color:#64748B; font-size:13px;">Skóre: <strong style="color:#0E8F9A; font-size:16px;">${scoreLine}</strong></p>
          </div>`,
         `${APP_URL}/rodic`,
         "Zobrazit detail",
