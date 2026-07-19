@@ -1040,6 +1040,9 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
                 onDuplicate={duplicateBlock}
                 onToggle={toggleBlock}
                 onDelete={deleteBlock}
+                onReplace={replaceBlock}
+                onAiReplace={aiReplaceBlock}
+                replaceLoading={replacingId === block.id}
               />
               {idx < normalizedBlocks.length - 1 && (
                 <InsertButton afterId={block.id} onInsert={insertBlockAfter} />
