@@ -25,11 +25,24 @@ const buttonVariants = cva(
         icon: "h-10 w-10 rounded-[12px]",
       },
     },
+    compoundVariants: [
+      {
+        variant: "hero",
+        size: "sm",
+        class: "bg-gradient-brand-sm font-bold [&_svg]:size-[19px]",
+      },
+      {
+        variant: "hero",
+        size: "icon",
+        class: "bg-gradient-brand-sm [&_svg]:size-[19px]",
+      },
+    ],
     defaultVariants: {
       variant: "default",
       size: "default",
     },
   },
+
 );
 
 export interface ButtonProps
