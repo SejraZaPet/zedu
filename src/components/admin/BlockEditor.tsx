@@ -382,6 +382,27 @@ const InsertButton = React.memo(({ afterId, onInsert }: { afterId: string; onIns
 });
 InsertButton.displayName = "InsertButton";
 
+const AddBlockMenu = ({ onPick }: { onPick: (type: Block["type"]) => void }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownMenuTrigger asChild>
+        <button type="button" className="be-add-primary">
+          <Plus className="w-4 h-4" /> Přidat blok
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="center" side="top" className="p-0 overflow-hidden">
+        <BlockPicker
+          onPick={(type) => {
+            onPick(type);
+            setOpen(false);
+          }}
+        />
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
+
 
 const BlockEditor = ({ blocks, onChange }: Props) => {
   const normalizedBlocks = useMemo(() => normalizeBlocks(blocks), [blocks]);
