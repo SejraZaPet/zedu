@@ -819,13 +819,14 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
         commit(next);
         toast.success("Blok převeden na hierarchii.");
       } else {
-        const { data, error } = await supabase.functions.invoke("generate-activity-spec", {
-          body: { topic: text.slice(0, 500), context: text },
+        const { data, error } = await supabase.functions.invoke("generate-activity-from-text", {
+          body: { text },
         });
         if (error) throw error;
-        const spec = (data as any)?.spec ?? data;
-        const questionText =
-          typeof spec?.prompt === "string" ? spec.prompt : text.slice(0, 200);
+        const activity = (data as any)?.activity;
+        if (!activity?.quiz?.question || !Array.isArray(activity?.quiz?.answers)) {
+          throw new Error("AI nevrátila platnou aktivitu");
+        }
         const fresh = createDefaultBlock("activity");
         const nextBlock: Block = {
           ...fresh,
@@ -834,16 +835,8 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
           props: {
             ...fresh.props,
             activityType: "quiz",
-            title: "Aktivita",
-            quiz: {
-              question: questionText,
-              answers:
-                Array.isArray(spec?.answers) && spec.answers.length > 0
-                  ? spec.answers
-                  : (fresh.props as any).quiz.answers,
-              explanation:
-                typeof spec?.feedback === "string" ? spec.feedback : "",
-            },
+            title: activity.title || "Aktivita",
+            quiz: activity.quiz,
           },
         };
         const cur2 = blocksRef.current;
