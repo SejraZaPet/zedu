@@ -98,9 +98,9 @@ const CATEGORY_STYLES: Record<CategoryKey, {
   borderWidth: number; solid?: boolean;
 }> = {
   text:        { border: "#E5E5E5", headerBg: "#FFFFFF", iconColor: "#525252", labelColor: "#525252", borderWidth: 1 },
-  media:       { border: "#C3EAE6", headerBg: "#E0F5F3", iconColor: "#0F9A8B", labelColor: "#0B6E5D", borderWidth: 1 },
+  media:       { border: "#C3EAE6", headerBg: "#E0F5F3", iconColor: "#0E8F9A", labelColor: "#0B6E5D", borderWidth: 1 },
   structure:   { border: "#D9CFEC", headerBg: "#F4F0FA", iconColor: "#6B5BA6", labelColor: "#6B5BA6", borderWidth: 1 },
-  interactive: { border: "#0F9A8B", headerBg: "#0F9A8B", iconColor: "#FFFFFF", labelColor: "#FFFFFF", borderWidth: 1.5, solid: true },
+  interactive: { border: "#0E8F9A", headerBg: "#0E8F9A", iconColor: "#FFFFFF", labelColor: "#FFFFFF", borderWidth: 1.5, solid: true },
 };
 
 // --- Icons per block type (used in card headers + add menu) ---
@@ -280,7 +280,7 @@ const ReplaceMenu = ({
                   <span className="flex-1">Aktivita</span>
                   <span
                     style={{
-                      background: "#0F9A8B",
+                      background: "#0E8F9A",
                       color: "#FFFFFF",
                       fontWeight: 700,
                       fontSize: 9,
@@ -307,7 +307,7 @@ const ReplaceMenu = ({
                   <span className="flex-1">Hierarchie</span>
                   <span
                     style={{
-                      background: "#0F9A8B",
+                      background: "#0E8F9A",
                       color: "#FFFFFF",
                       fontWeight: 700,
                       fontSize: 9,
@@ -512,7 +512,7 @@ const BlockPicker = ({ onPick }: { onPick: (type: Block["type"]) => void }) => {
                     {isAi && (
                       <span
                         style={{
-                          background: "#0F9A8B",
+                          background: "#0E8F9A",
                           color: "#FFFFFF",
                           fontWeight: 700,
                           fontSize: 9,
@@ -976,7 +976,7 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
         .block-editor-scope .be-block__action { color: #A3A3A3; }
         .block-editor-scope .be-block__action:hover { color: #525252; background: #F5F5F5; }
         .block-editor-scope .be-add-primary {
-          background: #0F9A8B; color: #FFFFFF; border-radius: 24px;
+          background: #0E8F9A; color: #FFFFFF; border-radius: 24px;
           padding: 0 20px; height: 40px; font-weight: 700;
           display: inline-flex; align-items: center; gap: 8px;
           border: none; transition: background 120ms ease, transform 120ms ease;

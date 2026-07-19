@@ -188,7 +188,7 @@ html, body {
   display: block;
   margin: 8mm 0 6mm 0;
   padding: 6pt 0 6pt 12pt;
-  border-left: 2pt solid #9B87C9;
+  border-left: 2pt solid #AD87C9;
   font-size: 10pt;
   color: #475569 !important;
   font-style: italic;
@@ -296,7 +296,7 @@ html, body {
 .ws-blank-slot {
   display: inline-block;
   min-width: 90pt;
-  border-bottom: 1.5pt solid #0F9A8B;
+  border-bottom: 1.5pt solid #0E8F9A;
   margin: 0 4pt;
   height: 16pt;
   vertical-align: bottom;
@@ -360,7 +360,7 @@ html, body {
 }
 .ws-matching-table td.ws-match-answer {
   background: #FFFFFF !important;
-  border-bottom: 1pt solid #0F9A8B;
+  border-bottom: 1pt solid #0E8F9A;
   min-width: 100pt;
 }
 
@@ -455,7 +455,7 @@ html, body {
   display: inline-block;
   width: 24pt;
   font-weight: 700;
-  color: #0F9A8B !important;
+  color: #0E8F9A !important;
   font-size: 11pt;
   vertical-align: top;
 }
@@ -552,13 +552,13 @@ p, li { orphans: 2; widows: 2; }
 
   /* Zachovat brand barvy */
   .ws-item-num, .ws-choice-marker, .ws-key-num {
-    color: #0F9A8B !important;
+    color: #0E8F9A !important;
   }
   .ws-blank-slot {
-    border-bottom: 1.5pt solid #0F9A8B !important;
+    border-bottom: 1.5pt solid #0E8F9A !important;
   }
   .ws-instructions {
-    border-left: 2pt solid #9B87C9 !important;
+    border-left: 2pt solid #AD87C9 !important;
   }
 
   /* Page breaks */
