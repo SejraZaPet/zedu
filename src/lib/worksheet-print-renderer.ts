@@ -18,6 +18,20 @@ import type {
   AnswerSpace,
 } from "./worksheet-spec";
 
+/**
+ * Brand palette for print/PDF rendering.
+ * Print engines (`html2pdf`, native print) don't reliably honour CSS
+ * custom properties, so brand hex values live here as named constants —
+ * update these to rebrand printed worksheets. Keep in sync with
+ * `--primary` / `--secondary` in `src/index.css`.
+ */
+const BRAND_PRIMARY = "#0E8F9A";      // teal — headings, dividers, hotspot markers
+const BRAND_SECONDARY = "#AD87C9";    // lavender — callout accents
+const BRAND_TERTIARY = "#9B6CFF";     // vivid purple — secondary hotspot markers
+const BRAND_INFO_ACCENT = "#6EC6D9";  // light teal — info callout border
+const BRAND_INFO_SURFACE = "${BRAND_INFO_SURFACE}"; // pale teal — info callout background
+
+
 // ────────────────── Pagination Rules ──────────────────
 
 export const WORKSHEET_PAGINATION_RULES = [
@@ -188,7 +202,7 @@ html, body {
   display: block;
   margin: 8mm 0 6mm 0;
   padding: 6pt 0 6pt 12pt;
-  border-left: 2pt solid #AD87C9;
+  border-left: 2pt solid ${BRAND_SECONDARY};
   font-size: 10pt;
   color: #475569 !important;
   font-style: italic;
@@ -296,7 +310,7 @@ html, body {
 .ws-blank-slot {
   display: inline-block;
   min-width: 90pt;
-  border-bottom: 1.5pt solid #0E8F9A;
+  border-bottom: 1.5pt solid ${BRAND_PRIMARY};
   margin: 0 4pt;
   height: 16pt;
   vertical-align: bottom;
@@ -360,7 +374,7 @@ html, body {
 }
 .ws-matching-table td.ws-match-answer {
   background: #FFFFFF !important;
-  border-bottom: 1pt solid #0E8F9A;
+  border-bottom: 1pt solid ${BRAND_PRIMARY};
   min-width: 100pt;
 }
 
@@ -455,7 +469,7 @@ html, body {
   display: inline-block;
   width: 24pt;
   font-weight: 700;
-  color: #0E8F9A !important;
+  color: ${BRAND_PRIMARY} !important;
   font-size: 11pt;
   vertical-align: top;
 }
@@ -552,13 +566,13 @@ p, li { orphans: 2; widows: 2; }
 
   /* Zachovat brand barvy */
   .ws-item-num, .ws-choice-marker, .ws-key-num {
-    color: #0E8F9A !important;
+    color: ${BRAND_PRIMARY} !important;
   }
   .ws-blank-slot {
-    border-bottom: 1.5pt solid #0E8F9A !important;
+    border-bottom: 1.5pt solid ${BRAND_PRIMARY} !important;
   }
   .ws-instructions {
-    border-left: 2pt solid #AD87C9 !important;
+    border-left: 2pt solid ${BRAND_SECONDARY} !important;
   }
 
   /* Page breaks */
@@ -807,7 +821,7 @@ function renderItem(item: WorksheetItem, showPoints: boolean): string {
     }
 
     case "lesson_reference": {
-      return `<div style="border-left:3px solid #6EC6D9;background:#f0fbff;border-radius:0 8px 8px 0;padding:10px 12px;margin:8px 0;">
+      return `<div style="border-left:3px solid ${BRAND_INFO_ACCENT};background:${BRAND_INFO_SURFACE};border-radius:0 8px 8px 0;padding:10px 12px;margin:8px 0;">
         ${item.prompt ? `<p style="font-size:9pt;text-transform:uppercase;letter-spacing:0.05em;color:#0e7490;margin:0 0 4px;font-weight:600;">${esc(item.prompt)}</p>` : ""}
         <div style="font-size:10pt;white-space:pre-wrap;color:#0f172a;">${esc(item.lessonRefContent ?? "")}</div>
       </div>`;
@@ -924,7 +938,7 @@ function renderItem(item: WorksheetItem, showPoints: boolean): string {
     case "image_label": {
       const rows = item.imageLabels ?? [];
       const dots = rows.map((r) =>
-        `<div style="position:absolute;left:${r.xPercent}%;top:${r.yPercent}%;transform:translate(-50%,-50%);width:22px;height:22px;border-radius:50%;background:#6EC6D9;color:#fff;font-weight:bold;font-size:10pt;text-align:center;line-height:22px;border:2px solid #fff;box-shadow:0 0 0 1px #333;">${r.number}</div>`,
+        `<div style="position:absolute;left:${r.xPercent}%;top:${r.yPercent}%;transform:translate(-50%,-50%);width:22px;height:22px;border-radius:50%;background:${BRAND_INFO_ACCENT};color:#fff;font-weight:bold;font-size:10pt;text-align:center;line-height:22px;border:2px solid #fff;box-shadow:0 0 0 1px #333;">${r.number}</div>`,
       ).join("");
       const imgHtml = item.imageUrl
         ? `<div style="position:relative;display:inline-block;max-width:100%;"><img src="${esc(item.imageUrl)}" alt="${esc(item.imageAlt ?? "")}" style="max-height:260px;border:1px solid #ccc;border-radius:6px;display:block;" />${dots}</div>`
@@ -957,7 +971,7 @@ function renderItem(item: WorksheetItem, showPoints: boolean): string {
     case "image_hotspot": {
       const rows = item.imageHotspots ?? [];
       const dots = rows.map((r) =>
-        `<div style="position:absolute;left:${r.xPercent}%;top:${r.yPercent}%;transform:translate(-50%,-50%);width:22px;height:22px;border-radius:50%;background:#9B6CFF;color:#fff;font-weight:bold;font-size:10pt;text-align:center;line-height:22px;border:2px solid #fff;box-shadow:0 0 0 1px #333;">${r.number}</div>`,
+        `<div style="position:absolute;left:${r.xPercent}%;top:${r.yPercent}%;transform:translate(-50%,-50%);width:22px;height:22px;border-radius:50%;background:${BRAND_TERTIARY};color:#fff;font-weight:bold;font-size:10pt;text-align:center;line-height:22px;border:2px solid #fff;box-shadow:0 0 0 1px #333;">${r.number}</div>`,
       ).join("");
       const imgHtml = item.imageUrl
         ? `<div style="position:relative;display:inline-block;max-width:100%;"><img src="${esc(item.imageUrl)}" alt="${esc(item.imageAlt ?? "")}" style="max-height:240px;border:1px solid #ccc;border-radius:6px;display:block;" />${dots}</div>`
