@@ -116,6 +116,10 @@
     background-image: linear-gradient(180deg, hsl(225 33% 97%), hsl(225 33% 95%));
   }
 
+  .bg-gradient-brand-pastel {
+    background-image: linear-gradient(135deg, hsl(var(--primary-pastel)), hsl(var(--secondary-pastel)));
+  }
+
   .section-padding {
     @apply px-4 py-16 md:px-8 md:py-24 lg:px-16 lg:py-32;
   }
