@@ -116,7 +116,7 @@ const Hero = () => {
                 onClick={() => feature.href && navigate(feature.href)}
                 role={feature.href ? "link" : undefined}
               >
-                <div className="w-12 h-12 shrink-0 rounded-xl bg-gradient-brand flex items-center justify-center group-hover:bg-gradient-brand transition-colors">
+                <div className="w-12 h-12 shrink-0 rounded-xl bg-primary flex items-center justify-center transition-colors">
                   <feature.icon size={24} className="text-primary-foreground" />
                 </div>
                 <div>
