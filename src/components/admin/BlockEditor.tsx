@@ -48,7 +48,15 @@ import {
   Sparkles as IconSparkles,
   ClipboardList as IconClipboard,
   Link2 as IconLink,
+  ArrowRightLeft,
+  Loader2,
 } from "lucide-react";
+import {
+  FORMAT_TARGETS,
+  convertBlock,
+  blockToPlainText,
+  blockHasAiText,
+} from "@/lib/block-conversions";
 import {
   DropdownMenu,
   DropdownMenuContent,
