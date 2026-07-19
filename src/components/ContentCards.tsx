@@ -64,7 +64,7 @@ const ContentCards = () => {
               onClick={card.isRoute ? handleTextbookAccess : undefined}
               className="group block rounded-2xl border border-border bg-card p-6 md:p-8 transition-all duration-300 hover:border-primary/20 hover:bg-card hover:-translate-y-1 cursor-pointer card-shadow hover:card-shadow-hover"
             >
-              <div className="w-12 h-12 rounded-xl bg-gradient-brand flex items-center justify-center mb-5">
+              <div className="w-12 h-12 rounded-xl bg-gradient-brand-sm flex items-center justify-center mb-5">
                 <card.icon className="w-6 h-6 text-primary-foreground" />
               </div>
               <h3 className="font-heading text-lg font-semibold mb-2 text-card-foreground">{card.title}</h3>

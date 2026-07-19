@@ -117,7 +117,7 @@ const TodayWidget = ({ role }: Props) => {
       <div>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-brand flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-gradient-brand-sm flex items-center justify-center">
               <CalendarDays className="w-5 h-5 text-white" />
             </div>
             <h2 className="font-heading text-lg font-semibold">Dnes</h2>
@@ -192,7 +192,7 @@ const TodayWidget = ({ role }: Props) => {
       <div className="border-t border-border my-4 pt-4">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-brand flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-gradient-brand-sm flex items-center justify-center">
               <ClipboardList className="w-5 h-5 text-white" />
             </div>
             <h2 className="font-heading text-lg font-semibold">Nejbližší úkoly</h2>
