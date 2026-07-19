@@ -79,7 +79,7 @@ const ForWhom = () => {
               </ul>
               <button
                 onClick={() => navigate(c.to)}
-                className="bg-primary text-primary-foreground rounded-xl px-6 py-3 font-semibold mt-auto w-full text-sm hover:opacity-90 transition-opacity"
+                className="bg-gradient-brand-sm text-primary-foreground rounded-xl px-6 py-3 font-semibold mt-auto w-full text-sm hover:opacity-90 transition-opacity"
               >
                 {c.cta}
               </button>
