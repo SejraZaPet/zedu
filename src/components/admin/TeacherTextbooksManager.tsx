@@ -1,3 +1,4 @@
+import { DEFAULT_SUBJECT_COLOR } from "@/lib/subject-defaults";
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -224,7 +225,7 @@ const TeacherTextbooksManager = () => {
             label: subjectLabel,
             abbreviation: "",
             description: "",
-            color: "#6EC6D9",
+            color: DEFAULT_SUBJECT_COLOR,
             active: true,
             sort_order: subjects?.length ?? 0,
           })
