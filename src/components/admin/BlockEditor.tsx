@@ -759,6 +759,114 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
     commit(next);
   }, [commit]);
 
+  const [replacingId, setReplacingId] = useState<string | null>(null);
+
+  const replaceBlock = useCallback((id: string, target: Block["type"]) => {
+    const cur = blocksRef.current;
+    const idx = cur.findIndex((b) => b.id === id);
+    if (idx < 0) return;
+    const src = cur[idx];
+    if (src.type === target) return;
+    const converted = convertBlock(src, target);
+    if (!converted) {
+      toast.error("Tento typ bloku nelze převést na zvolený formát.");
+      return;
+    }
+    const fresh = createDefaultBlock(target);
+    const nextBlock: Block = {
+      ...fresh,
+      id: src.id,
+      visible: src.visible,
+      props: { ...fresh.props, ...converted },
+    };
+    const next = [...cur];
+    next[idx] = nextBlock;
+    commit(next);
+  }, [commit]);
+
+  const aiReplaceBlock = useCallback(async (id: string, target: "activity" | "hierarchy") => {
+    const cur = blocksRef.current;
+    const idx = cur.findIndex((b) => b.id === id);
+    if (idx < 0) return;
+    const src = cur[idx];
+    const text = blockToPlainText(src).trim();
+    if (text.length < 8) {
+      toast.error("Blok neobsahuje dost textu pro AI transformaci.");
+      return;
+    }
+
+    setReplacingId(id);
+    try {
+      if (target === "hierarchy") {
+        const { data, error } = await supabase.functions.invoke("generate-hierarchy", {
+          body: { text },
+        });
+        if (error) throw error;
+        const hierarchy = (data as any)?.hierarchy;
+        if (!hierarchy?.levels?.length) throw new Error("AI nevrátila platnou hierarchii");
+        const fresh = createDefaultBlock("hierarchy");
+        const nextBlock: Block = {
+          ...fresh,
+          id: src.id,
+          visible: src.visible,
+          props: { ...fresh.props, ...hierarchy },
+        };
+        const cur2 = blocksRef.current;
+        const idx2 = cur2.findIndex((b) => b.id === id);
+        if (idx2 < 0) return;
+        const next = [...cur2];
+        next[idx2] = nextBlock;
+        commit(next);
+        toast.success("Blok převeden na hierarchii.");
+      } else {
+        const { data, error } = await supabase.functions.invoke("generate-activity-spec", {
+          body: { topic: text.slice(0, 500), context: text },
+        });
+        if (error) throw error;
+        const spec = (data as any)?.spec ?? data;
+        const questionText =
+          typeof spec?.prompt === "string" ? spec.prompt : text.slice(0, 200);
+        const fresh = createDefaultBlock("activity");
+        const nextBlock: Block = {
+          ...fresh,
+          id: src.id,
+          visible: src.visible,
+          props: {
+            ...fresh.props,
+            activityType: "quiz",
+            title: "Aktivita",
+            quiz: {
+              question: questionText,
+              answers:
+                Array.isArray(spec?.answers) && spec.answers.length > 0
+                  ? spec.answers
+                  : (fresh.props as any).quiz.answers,
+              explanation:
+                typeof spec?.feedback === "string" ? spec.feedback : "",
+            },
+          },
+        };
+        const cur2 = blocksRef.current;
+        const idx2 = cur2.findIndex((b) => b.id === id);
+        if (idx2 < 0) return;
+        const next = [...cur2];
+        next[idx2] = nextBlock;
+        commit(next);
+        toast.success("Blok převeden na aktivitu. Zkontrolujte prosím obsah.");
+      }
+    } catch (e: any) {
+      console.error("aiReplaceBlock failed:", e);
+      const msg = e?.message?.includes("402")
+        ? "Nedostatek AI kreditů."
+        : e?.message?.includes("429")
+          ? "Příliš mnoho AI požadavků, zkuste to za chvíli."
+          : "AI transformace se nezdařila. Zkuste to znovu.";
+      toast.error(msg);
+    } finally {
+      setReplacingId(null);
+    }
+  }, [commit]);
+
   const [dragOver, setDragOver] = useState(false);
   const [uploading, setUploading] = useState(false);
 
