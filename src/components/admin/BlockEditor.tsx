@@ -976,7 +976,7 @@ const BlockEditor = ({ blocks, onChange }: Props) => {
         .block-editor-scope .be-block__action { color: #A3A3A3; }
         .block-editor-scope .be-block__action:hover { color: #525252; background: #F5F5F5; }
         .block-editor-scope .be-add-primary {
-          background: #0E8F9A; color: #FFFFFF; border-radius: 24px;
+          background: hsl(var(--primary)); color: #FFFFFF; border-radius: 24px;
           padding: 0 20px; height: 40px; font-weight: 700;
           display: inline-flex; align-items: center; gap: 8px;
           border: none; transition: background 120ms ease, transform 120ms ease;
