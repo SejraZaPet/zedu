@@ -53,20 +53,20 @@ const cards: Card[] = [
 const ForWhom = () => {
   const navigate = useNavigate();
   return (
-    <section className="w-full py-20 md:py-28 bg-primary">
+    <section className="w-full py-20 md:py-28 bg-gradient-brand-pastel">
       <div className="container mx-auto max-w-5xl px-4">
-        <h2 className="text-white font-heading text-2xl md:text-3xl font-bold text-center mb-4">
+        <h2 className="text-foreground font-heading text-2xl md:text-3xl font-bold text-center mb-4">
           Pro koho je ZEdu?
         </h2>
-        <p className="text-white/80 text-center mb-12">Platforma pro celou školu.</p>
+        <p className="text-muted-foreground text-center mb-12">Platforma pro celou školu.</p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
           {cards.map((c) => (
             <div
               key={c.title}
               className="bg-card rounded-2xl p-8 text-center shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col"
             >
-              <div className="w-14 h-14 rounded-xl bg-primary flex items-center justify-center mx-auto mb-5">
-                <c.icon size={28} className="text-primary-foreground" />
+              <div className="w-14 h-14 rounded-xl bg-primary-light flex items-center justify-center mx-auto mb-5">
+                <c.icon size={28} className="text-foreground" />
               </div>
               <h3 className="font-heading text-lg font-semibold mb-4">{c.title}</h3>
               <ul className="text-left text-sm text-muted-foreground space-y-2 mb-6 flex-1">
