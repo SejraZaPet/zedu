@@ -9,10 +9,10 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90 rounded-[14px]",
+        default: "bg-gradient-brand text-primary-foreground font-semibold hover:brightness-110 shadow-lg shadow-primary/15 rounded-[14px]",
         destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-[14px]",
         outline: "border border-input bg-background hover:bg-muted hover:text-foreground rounded-[14px]",
-        secondary: "border border-secondary bg-card text-primary hover:bg-muted rounded-[14px]",
+        secondary: "border border-secondary bg-card text-secondary hover:bg-secondary/5 hover:border-secondary rounded-[14px]",
         ghost: "hover:bg-muted hover:text-foreground rounded-[14px]",
         link: "text-primary underline-offset-4 hover:underline",
         hero: "bg-gradient-brand text-primary-foreground font-semibold hover:brightness-110 shadow-lg shadow-primary/15 rounded-[14px]",
@@ -27,12 +27,12 @@ const buttonVariants = cva(
     },
     compoundVariants: [
       {
-        variant: "hero",
+        variant: ["default", "hero"],
         size: "sm",
         class: "bg-gradient-brand-sm font-bold [&_svg]:size-[19px]",
       },
       {
-        variant: "hero",
+        variant: ["default", "hero"],
         size: "icon",
         class: "bg-gradient-brand-sm [&_svg]:size-[19px]",
       },
