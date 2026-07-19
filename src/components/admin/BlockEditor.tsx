@@ -97,9 +97,9 @@ const CATEGORY_STYLES: Record<CategoryKey, {
   border: string; headerBg: string; iconColor: string; labelColor: string;
   borderWidth: number; solid?: boolean;
 }> = {
-  text:        { border: "#E5E5E5", headerBg: "#FFFFFF", iconColor: "#525252", labelColor: "#525252", borderWidth: 1 },
-  media:       { border: "#C3EAE6", headerBg: "#E0F5F3", iconColor: "hsl(var(--primary))", labelColor: "hsl(var(--primary-dark))", borderWidth: 1 },
-  structure:   { border: "#D9CFEC", headerBg: "#F4F0FA", iconColor: "hsl(var(--secondary-dark))", labelColor: "hsl(var(--secondary-dark))", borderWidth: 1 },
+  text:        { border: "hsl(var(--border))", headerBg: "hsl(var(--card))", iconColor: "hsl(var(--muted-foreground))", labelColor: "hsl(var(--muted-foreground))", borderWidth: 1 },
+  media:       { border: "hsl(var(--primary-pastel))", headerBg: "hsl(var(--primary-subtle))", iconColor: "hsl(var(--primary))", labelColor: "hsl(var(--primary-dark))", borderWidth: 1 },
+  structure:   { border: "hsl(var(--secondary-pastel))", headerBg: "hsl(var(--secondary-pastel))", iconColor: "hsl(var(--secondary-dark))", labelColor: "hsl(var(--secondary-dark))", borderWidth: 1 },
   interactive: { border: "hsl(var(--primary))", headerBg: "hsl(var(--primary))", iconColor: "#FFFFFF", labelColor: "#FFFFFF", borderWidth: 1.5, solid: true },
 };
 
