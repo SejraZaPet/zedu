@@ -149,7 +149,7 @@ const CreateTextbookDialog = ({ open, onOpenChange, onCreated }: Props) => {
             label: subjectLabel,
             abbreviation: "",
             description: "",
-            color: "#6EC6D9",
+            color: DEFAULT_SUBJECT_COLOR,
             active: true,
             sort_order: subjects?.length ?? 0,
           })
