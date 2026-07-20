@@ -141,6 +141,7 @@ const Admin = () => {
         {activeTab === "audit" && !isTeacher && <AuditLogViewer />}
         {activeTab === "templates" && !isTeacher && <TextbookTemplatesManager />}
         {activeTab === "landing" && !isTeacher && <LandingPageManager />}
+        {activeTab === "avatars" && !isTeacher && <AvatarItemsManager />}
         {activeTab === "help" && <HelpGuidesManager />}
       </div>
     </div>
