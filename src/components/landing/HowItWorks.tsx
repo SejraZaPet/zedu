@@ -38,12 +38,12 @@ const HowItWorks = ({ props }: HowItWorksProps) => {
             </div>
           ))}
         </div>
-        {p.cta?.label && (
+        {showCta && (
           <button
             onClick={() => p.cta?.href && navigate(p.cta.href)}
             className="bg-gradient-brand text-primary-foreground rounded-2xl px-8 py-4 text-lg font-semibold shadow-lg hover:shadow-xl transition-all mt-12 inline-flex items-center gap-2"
           >
-            {p.cta.label} <ArrowRight className="w-5 h-5" />
+            <Editable path="cta.label" value={p.cta?.label} placeholder="Text tlačítka" /> <ArrowRight className="w-5 h-5" />
           </button>
         )}
       </div>
