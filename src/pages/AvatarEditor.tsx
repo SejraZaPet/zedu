@@ -155,6 +155,13 @@ function unlockLabel(item: AvatarItem): string {
 function LayerVisual({
   item, subLayer,
 }: { item: AvatarItem; subLayer?: "back" | "front" }) {
+  // Decorative SVG overlays for frame/effect — no image_url needed
+  if (item.category === "frame") {
+    return <FrameOverlay slug={item.slug} />;
+  }
+  if (item.category === "effect") {
+    return <EffectOverlay slug={item.slug} />;
+  }
   const src = subLayer === "back" ? item.image_url_back : item.image_url;
   const style: React.CSSProperties = {
     position: "absolute",
