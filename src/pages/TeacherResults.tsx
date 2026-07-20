@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { downloadCSV } from "@/lib/csv-export";
+import { BrandGradientBar } from "@/components/charts/BrandGradientBar";
 
 type ClassOpt = { id: string; name: string };
 type Attempt = {
@@ -431,14 +432,7 @@ const TeacherResults = () => {
                         labelStyle={{ color: "hsl(var(--foreground))" }}
                         formatter={(v: any) => [`${v} odevzdání`, "Počet"]}
                       />
-                      <defs>
-                        <linearGradient id="brandBarGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="hsl(var(--brand-gradient-from))" />
-                          <stop offset="var(--brand-gradient-stop-lg, 35%)" stopColor="hsl(var(--brand-gradient-to))" />
-                          <stop offset="100%" stopColor="hsl(var(--brand-gradient-to))" />
-                        </linearGradient>
-                      </defs>
-                      <Bar dataKey="count" fill="url(#brandBarGradient)" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="count" shape={<BrandGradientBar radius={[4, 4, 0, 0]} />} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
