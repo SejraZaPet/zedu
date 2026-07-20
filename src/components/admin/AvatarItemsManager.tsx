@@ -130,6 +130,17 @@ const emptyForm = (): Partial<AvatarItem> => ({
   layer_scale: 1,
 });
 
+type HairVariant = {
+  id: string;
+  avatar_item_id: string;
+  base_id: string;
+  image_url: string | null;
+  image_url_back: string | null;
+  layer_offset_x: number;
+  layer_offset_y: number;
+  layer_scale: number;
+};
+
 export default function AvatarItemsManager() {
   const [items, setItems] = useState<AvatarItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -140,6 +151,17 @@ export default function AvatarItemsManager() {
   const [calibrating, setCalibrating] = useState(false);
   const [previewBaseSlug, setPreviewBaseSlug] = useState<string>("base_01");
   const calibrationDraftRef = useRef<CalibrationValues>(readCalibrationValues(null));
+  const [variants, setVariants] = useState<Record<string, HairVariant>>({});
+  const [variantValues, setVariantValues] = useState<CalibrationValues>({
+    layer_offset_x: 0,
+    layer_offset_y: 0,
+    layer_scale: 1,
+  });
+  const variantDraftRef = useRef<CalibrationValues>({
+    layer_offset_x: 0,
+    layer_offset_y: 0,
+    layer_scale: 1,
+  });
 
   const bases = useMemo(() => items.filter((i) => i.category === "base" && i.image_url), [items]);
   const previewBase = useMemo(
@@ -169,6 +191,34 @@ export default function AvatarItemsManager() {
   useEffect(() => {
     calibrationDraftRef.current = readCalibrationValues(editing);
   }, [editing?.id, editing?.slug, editing?.layer_offset_x, editing?.layer_offset_y, editing?.layer_scale]);
+
+  // Load per-base variants for hairstyle items
+  useEffect(() => {
+    let cancelled = false;
+    if (editing?.id && editing.category === "hairstyle") {
+      supabase
+        .from("avatar_item_base_variants")
+        .select("*")
+        .eq("avatar_item_id", editing.id)
+        .then(({ data, error }: any) => {
+          if (cancelled) return;
+          if (error) {
+            setVariants({});
+            return;
+          }
+          const map: Record<string, HairVariant> = {};
+          (data ?? []).forEach((v: any) => {
+            map[v.base_id] = v as HairVariant;
+          });
+          setVariants(map);
+        });
+    } else {
+      setVariants({});
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [editing?.id, editing?.category]);
 
   const openEditor = (item: Partial<AvatarItem>) => {
     calibrationDraftRef.current = readCalibrationValues(item);
