@@ -814,7 +814,7 @@ export default function AvatarEditor() {
 
         {/* Middle: preview */}
         <section aria-label="Náhled avatara" className="space-y-3">
-          {draft && <AvatarPreview profile={draft} itemsById={itemsById} reduceMotion={draft.reduce_motion} />}
+          {draft && <AvatarPreview profile={draft} itemsById={itemsById} reduceMotion={draft.reduce_motion} variants={hairVariants} />}
           <Button variant="outline" className="w-full" onClick={randomize}>
             <Shuffle className="w-4 h-4 mr-2" /> Náhodný vzhled
           </Button>
