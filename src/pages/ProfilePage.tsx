@@ -98,6 +98,17 @@ const ProfilePage = () => {
   const [savingPreferred, setSavingPreferred] = useState(false);
   const MAX_PREFERRED = 3;
 
+  // Game profile (students only)
+  const [gameProfile, setGameProfile] = useState<{
+    level: number;
+    total_xp: number;
+    streak_days: number;
+    badge_count: number;
+    active_title: string | null;
+  } | null>(null);
+
+
+
   useEffect(() => {
     if (authLoading) return;
 
