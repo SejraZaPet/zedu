@@ -804,6 +804,39 @@ export type Database = {
         }
         Relationships: []
       }
+      landing_sections: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          id: string
+          order_index: number
+          props: Json
+          section_type: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          order_index: number
+          props?: Json
+          section_type: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          order_index?: number
+          props?: Json
+          section_type?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       learning_methods: {
         Row: {
           category: string | null
