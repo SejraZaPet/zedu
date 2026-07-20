@@ -610,68 +610,75 @@ export default function AvatarItemsManager() {
 
 
 
-                  {[
-                    { key: "layer_offset_x" as const, label: "Posun X (%)", min: -20, max: 20, step: 0.5, def: 0 },
-                    { key: "layer_offset_y" as const, label: "Posun Y (%)", min: -20, max: 20, step: 0.5, def: 0 },
-                    { key: "layer_scale" as const, label: "Velikost", min: 0.5, max: 1.5, step: 0.01, def: 1 },
-                  ].map((s) => {
-                    const raw = (editing as any)[s.key];
-                    const parsed = Number(raw ?? s.def);
-                    const val = Number.isFinite(parsed) ? parsed : s.def;
-                    return (
-                      <div key={s.key} className="space-y-1">
-                        <div className="flex items-center justify-between">
-                          <Label className="text-xs">{s.label}</Label>
-                          <Input
-                            type="number"
-                            step={s.step}
-                            className="h-7 w-24 text-right"
-                            value={val}
-                            onChange={(e) => {
-                              const n = parseFloat(e.target.value);
-                              // Ignore transient invalid input (empty, "-", "5.")
-                              // instead of writing NaN into state, which would
-                              // silently invalidate the CSS transform.
-                              if (!Number.isFinite(n)) return;
-                              setEditing({ ...editing, [s.key]: n });
-                            }}
-                          />
-                        </div>
-                        <Slider
-                          min={s.min}
-                          max={s.max}
-                          step={s.step}
-                          value={[val]}
-                          onValueChange={([v]) => setEditing({ ...editing, [s.key]: v })}
-                        />
-                      </div>
-                    );
-                  })}
-
-                  <div className="flex gap-2 justify-end pt-1">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() =>
-                        setEditing({
-                          ...editing,
-                          layer_offset_x: 0,
-                          layer_offset_y: 0,
-                          layer_scale: 1,
-                        })
-                      }
-                    >
-                      Reset
-                    </Button>
-                    <Button size="sm" onClick={saveCalibration} disabled={calibrating || !editing.id}>
-                      {calibrating && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                      Uložit kalibraci
-                    </Button>
-                  </div>
-                  {!editing.id && (
-                    <p className="text-xs text-muted-foreground">
-                      Kalibraci lze uložit až po prvním vytvoření položky.
+                  {editing.slug === "base_01" ? (
+                    <p className="text-xs rounded-md border border-dashed p-3 bg-background text-muted-foreground">
+                      Toto je referenční základ — jeho pozice je pevně 0 / 0 / 1
+                      a nelze ji měnit, protože na ni jsou zarovnané všechny
+                      ostatní základy i vlasy/oblečení.
                     </p>
+                  ) : (
+                    <>
+                      {[
+                        { key: "layer_offset_x" as const, label: "Posun X (%)", min: -20, max: 20, step: 0.5, def: 0 },
+                        { key: "layer_offset_y" as const, label: "Posun Y (%)", min: -20, max: 20, step: 0.5, def: 0 },
+                        { key: "layer_scale" as const, label: "Velikost", min: 0.5, max: 1.5, step: 0.01, def: 1 },
+                      ].map((s) => {
+                        const raw = (editing as any)[s.key];
+                        const parsed = Number(raw ?? s.def);
+                        const val = Number.isFinite(parsed) ? parsed : s.def;
+                        return (
+                          <div key={s.key} className="space-y-1">
+                            <div className="flex items-center justify-between">
+                              <Label className="text-xs">{s.label}</Label>
+                              <Input
+                                type="number"
+                                step={s.step}
+                                className="h-7 w-24 text-right"
+                                value={val}
+                                onChange={(e) => {
+                                  const n = parseFloat(e.target.value);
+                                  if (!Number.isFinite(n)) return;
+                                  setEditing({ ...editing, [s.key]: n });
+                                }}
+                              />
+                            </div>
+                            <Slider
+                              min={s.min}
+                              max={s.max}
+                              step={s.step}
+                              value={[val]}
+                              onValueChange={([v]) => setEditing({ ...editing, [s.key]: v })}
+                            />
+                          </div>
+                        );
+                      })}
+
+                      <div className="flex gap-2 justify-end pt-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() =>
+                            setEditing({
+                              ...editing,
+                              layer_offset_x: 0,
+                              layer_offset_y: 0,
+                              layer_scale: 1,
+                            })
+                          }
+                        >
+                          Reset
+                        </Button>
+                        <Button size="sm" onClick={saveCalibration} disabled={calibrating || !editing.id}>
+                          {calibrating && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                          Uložit kalibraci
+                        </Button>
+                      </div>
+                      {!editing.id && (
+                        <p className="text-xs text-muted-foreground">
+                          Kalibraci lze uložit až po prvním vytvoření položky.
+                        </p>
+                      )}
+                    </>
                   )}
                 </div>
               ) : (
