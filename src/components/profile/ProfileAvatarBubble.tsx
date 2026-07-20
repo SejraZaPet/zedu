@@ -17,10 +17,12 @@ interface AvatarItem {
   icon_name: string | null;
   color_value: string | null;
   rarity: "common" | "uncommon" | "rare" | "epic" | "legendary" | "mythic";
+  is_neutral_color: boolean | null;
   layer_offset_x: number;
   layer_offset_y: number;
   layer_scale: number;
 }
+
 
 interface AvatarProfile {
   base_id: string | null;
