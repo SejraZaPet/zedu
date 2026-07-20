@@ -116,7 +116,7 @@ export const GameLeaderboardFinal = ({ session, players, responses, highlightPla
                 className={`flex items-center gap-3 py-2 px-3 rounded-lg ${player.id === highlightPlayerId ? "bg-primary/10" : "hover:bg-muted/30"}`}
               >
                 <span className="text-sm font-bold text-muted-foreground w-6">{i + 4}.</span>
-                <AvatarSvg slug={player.user_id ? avatars[player.user_id] : undefined} size={32} />
+                <ProfileAvatarBubble userId={player.user_id ?? null} size={32} editable={false} />
                 <span className="flex-1 font-medium text-foreground">{player.nickname}</span>
                 <span className="font-mono font-bold text-primary text-sm">{player.total_score} b.</span>
               </div>
