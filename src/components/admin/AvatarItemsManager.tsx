@@ -130,6 +130,17 @@ const emptyForm = (): Partial<AvatarItem> => ({
   layer_scale: 1,
 });
 
+type HairVariant = {
+  id: string;
+  avatar_item_id: string;
+  base_id: string;
+  image_url: string | null;
+  image_url_back: string | null;
+  layer_offset_x: number;
+  layer_offset_y: number;
+  layer_scale: number;
+};
+
 export default function AvatarItemsManager() {
   const [items, setItems] = useState<AvatarItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -140,6 +151,17 @@ export default function AvatarItemsManager() {
   const [calibrating, setCalibrating] = useState(false);
   const [previewBaseSlug, setPreviewBaseSlug] = useState<string>("base_01");
   const calibrationDraftRef = useRef<CalibrationValues>(readCalibrationValues(null));
+  const [variants, setVariants] = useState<Record<string, HairVariant>>({});
+  const [variantValues, setVariantValues] = useState<CalibrationValues>({
+    layer_offset_x: 0,
+    layer_offset_y: 0,
+    layer_scale: 1,
+  });
+  const variantDraftRef = useRef<CalibrationValues>({
+    layer_offset_x: 0,
+    layer_offset_y: 0,
+    layer_scale: 1,
+  });
 
   const bases = useMemo(() => items.filter((i) => i.category === "base" && i.image_url), [items]);
   const previewBase = useMemo(
@@ -169,6 +191,34 @@ export default function AvatarItemsManager() {
   useEffect(() => {
     calibrationDraftRef.current = readCalibrationValues(editing);
   }, [editing?.id, editing?.slug, editing?.layer_offset_x, editing?.layer_offset_y, editing?.layer_scale]);
+
+  // Load per-base variants for hairstyle items
+  useEffect(() => {
+    let cancelled = false;
+    if (editing?.id && editing.category === "hairstyle") {
+      supabase
+        .from("avatar_item_base_variants")
+        .select("*")
+        .eq("avatar_item_id", editing.id)
+        .then(({ data, error }: any) => {
+          if (cancelled) return;
+          if (error) {
+            setVariants({});
+            return;
+          }
+          const map: Record<string, HairVariant> = {};
+          (data ?? []).forEach((v: any) => {
+            map[v.base_id] = v as HairVariant;
+          });
+          setVariants(map);
+        });
+    } else {
+      setVariants({});
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [editing?.id, editing?.category]);
 
   const openEditor = (item: Partial<AvatarItem>) => {
     calibrationDraftRef.current = readCalibrationValues(item);
@@ -287,6 +337,23 @@ export default function AvatarItemsManager() {
   const showCalibration =
     !!cat && CALIB_CATEGORIES.includes(cat) && !!(editing?.image_url ?? "").trim();
 
+  // Per-base variant handling (hairstyle only)
+  const activeVariant: HairVariant | null =
+    cat === "hairstyle" && previewBase ? variants[previewBase.id] ?? null : null;
+  const isVariantMode = !!activeVariant;
+
+  useEffect(() => {
+    if (activeVariant) {
+      const v = readCalibrationValues(activeVariant);
+      variantDraftRef.current = v;
+      setVariantValues(v);
+    } else {
+      const zero = { layer_offset_x: 0, layer_offset_y: 0, layer_scale: 1 };
+      variantDraftRef.current = zero;
+      setVariantValues(zero);
+    }
+  }, [activeVariant?.id]);
+
   const saveCalibration = async () => {
     const expected = calibrationDraftRef.current;
     if (!editing?.id || !editing.slug) {
@@ -377,6 +444,75 @@ export default function AvatarItemsManager() {
     };
     setEditing((current) => (current ? { ...current, [key]: value } : current));
   };
+
+  const updateVariantValue = (key: keyof CalibrationValues, value: number) => {
+    if (!Number.isFinite(value)) return;
+    variantDraftRef.current = { ...variantDraftRef.current, [key]: value };
+    setVariantValues((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const updateCurrentValue = (key: keyof CalibrationValues, value: number) => {
+    if (isVariantMode) updateVariantValue(key, value);
+    else updateCalibrationValue(key, value);
+  };
+
+  const saveVariantCalibration = async () => {
+    if (!activeVariant) return;
+    const expected = variantDraftRef.current;
+    if (!calibrationMatches(expected, expected)) {
+      toast({ title: "Neplatné hodnoty kalibrace", variant: "destructive" });
+      return;
+    }
+    const variantId = activeVariant.id;
+    setCalibrating(true);
+    const { data, error } = await supabase
+      .from("avatar_item_base_variants")
+      .update({ ...expected, updated_at: new Date().toISOString() })
+      .eq("id", variantId)
+      .select("id, base_id, avatar_item_id, image_url, image_url_back, layer_offset_x, layer_offset_y, layer_scale")
+      .maybeSingle();
+    if (error) {
+      setCalibrating(false);
+      toast({ title: "Uložení varianty selhalo", description: error.message, variant: "destructive" });
+      return;
+    }
+    if (!data) {
+      setCalibrating(false);
+      toast({
+        title: "Varianta nebyla uložena",
+        description: "Databáze neaktualizovala žádný řádek (RLS?). Obnovte stránku a zkuste znovu.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!calibrationMatches(data, expected)) {
+      setCalibrating(false);
+      toast({
+        title: "Kalibrace varianty nebyla potvrzena",
+        description: `Odesláno ${expected.layer_offset_x} / ${expected.layer_offset_y} / ${expected.layer_scale}, server vrátil ${data.layer_offset_x} / ${data.layer_offset_y} / ${data.layer_scale}.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    const { data: verifyData, error: verifyError } = await supabase
+      .from("avatar_item_base_variants")
+      .select("id, base_id, avatar_item_id, image_url, image_url_back, layer_offset_x, layer_offset_y, layer_scale")
+      .eq("id", variantId)
+      .maybeSingle();
+    setCalibrating(false);
+    if (verifyError || !verifyData || !calibrationMatches(verifyData, expected)) {
+      toast({
+        title: "Varianta nebyla potvrzena v databázi",
+        description: verifyError?.message ?? "Kontrolní SELECT nevrátil shodné hodnoty.",
+        variant: "destructive",
+      });
+      return;
+    }
+    const persisted = verifyData as HairVariant;
+    setVariants((prev) => ({ ...prev, [persisted.base_id]: persisted }));
+    toast({ title: "Kalibrace varianty uložena" });
+  };
+
 
   return (
     <div className="space-y-4">
@@ -686,15 +822,22 @@ export default function AvatarItemsManager() {
                           },
                         });
                       }
-                      if (editing.image_url) {
-                        const draft = calibrationDraftRef.current;
+                      if (editing.image_url || (isVariantMode && activeVariant?.image_url)) {
+                        const useVariant = isVariantMode && !!activeVariant;
+                        const imgUrl = useVariant
+                          ? activeVariant!.image_url ?? editing.image_url ?? null
+                          : editing.image_url ?? null;
+                        const imgBack = useVariant
+                          ? activeVariant!.image_url_back ?? editing.image_url_back ?? null
+                          : editing.image_url_back ?? null;
+                        const draft = useVariant ? variantDraftRef.current : calibrationDraftRef.current;
                         layers.push({
                           item: {
                             id: editing.id ?? "editing",
                             slug: editing.slug ?? "editing",
                             category: (editing.category as string) ?? "outfit",
-                            image_url: editing.image_url ?? null,
-                            image_url_back: editing.image_url_back ?? null,
+                            image_url: imgUrl,
+                            image_url_back: imgBack,
                             color_value: editing.color_value ?? null,
                             layer_offset_x: draft.layer_offset_x,
                             layer_offset_y: draft.layer_offset_y,
@@ -706,7 +849,17 @@ export default function AvatarItemsManager() {
                     })()}
                   </div>
 
-
+                  {cat === "hairstyle" && previewBase && (
+                    isVariantMode ? (
+                      <div className="rounded-md border border-amber-400 bg-amber-50 dark:bg-amber-950/30 px-3 py-2 text-xs text-amber-900 dark:text-amber-200 font-medium">
+                        Kalibruješ variantu pro {previewBase.slug} (specifický obrázek této kombinace).
+                      </div>
+                    ) : (
+                      <div className="rounded-md border border-dashed bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                        Kalibruješ OBECNÝ obrázek (žádná varianta pro {previewBase.slug}).
+                      </div>
+                    )
+                  )}
 
                   {editing.slug === "base_01" ? (
                     <p className="text-xs rounded-md border border-dashed p-3 bg-background text-muted-foreground">
@@ -721,7 +874,7 @@ export default function AvatarItemsManager() {
                         { key: "layer_offset_y" as const, label: "Posun Y (%)", min: -20, max: 20, step: 0.5, def: 0 },
                         { key: "layer_scale" as const, label: "Velikost", min: 0.5, max: 1.5, step: 0.01, def: 1 },
                       ].map((s) => {
-                        const raw = (editing as any)[s.key];
+                        const raw = isVariantMode ? variantValues[s.key] : (editing as any)[s.key];
                         const parsed = Number(raw ?? s.def);
                         const val = Number.isFinite(parsed) ? parsed : s.def;
                         return (
@@ -734,7 +887,7 @@ export default function AvatarItemsManager() {
                                 className="h-7 w-24 text-right"
                                 value={val}
                                 onChange={(e) => {
-                                  updateCalibrationValue(s.key, parseFloat(e.target.value));
+                                  updateCurrentValue(s.key, parseFloat(e.target.value));
                                 }}
                               />
                             </div>
@@ -743,7 +896,7 @@ export default function AvatarItemsManager() {
                               max={s.max}
                               step={s.step}
                               value={[val]}
-                              onValueChange={([v]) => updateCalibrationValue(s.key, v)}
+                              onValueChange={([v]) => updateCurrentValue(s.key, v)}
                             />
                           </div>
                         );
@@ -754,27 +907,28 @@ export default function AvatarItemsManager() {
                           size="sm"
                           variant="outline"
                           onClick={() => {
-                            calibrationDraftRef.current = {
-                              layer_offset_x: 0,
-                              layer_offset_y: 0,
-                              layer_scale: 1,
-                            };
-                            setEditing({
-                              ...editing,
-                              layer_offset_x: 0,
-                              layer_offset_y: 0,
-                              layer_scale: 1,
-                            });
+                            const zero = { layer_offset_x: 0, layer_offset_y: 0, layer_scale: 1 };
+                            if (isVariantMode) {
+                              variantDraftRef.current = zero;
+                              setVariantValues(zero);
+                            } else {
+                              calibrationDraftRef.current = zero;
+                              setEditing({ ...editing, ...zero });
+                            }
                           }}
                         >
                           Reset
                         </Button>
-                        <Button size="sm" onClick={saveCalibration} disabled={calibrating || !editing.id}>
+                        <Button
+                          size="sm"
+                          onClick={isVariantMode ? saveVariantCalibration : saveCalibration}
+                          disabled={calibrating || (!isVariantMode && !editing.id)}
+                        >
                           {calibrating && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                          Uložit kalibraci
+                          {isVariantMode ? "Uložit variantu" : "Uložit kalibraci"}
                         </Button>
                       </div>
-                      {!editing.id && (
+                      {!editing.id && !isVariantMode && (
                         <p className="text-xs text-muted-foreground">
                           Kalibraci lze uložit až po prvním vytvoření položky.
                         </p>

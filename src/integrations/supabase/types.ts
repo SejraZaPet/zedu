@@ -280,8 +280,11 @@ export type Database = {
           base_id: string
           created_at: string
           id: string
-          image_url: string
+          image_url: string | null
           image_url_back: string | null
+          layer_offset_x: number
+          layer_offset_y: number
+          layer_scale: number
           updated_at: string
         }
         Insert: {
@@ -289,8 +292,11 @@ export type Database = {
           base_id: string
           created_at?: string
           id?: string
-          image_url: string
+          image_url?: string | null
           image_url_back?: string | null
+          layer_offset_x?: number
+          layer_offset_y?: number
+          layer_scale?: number
           updated_at?: string
         }
         Update: {
@@ -298,8 +304,11 @@ export type Database = {
           base_id?: string
           created_at?: string
           id?: string
-          image_url?: string
+          image_url?: string | null
           image_url_back?: string | null
+          layer_offset_x?: number
+          layer_offset_y?: number
+          layer_scale?: number
           updated_at?: string
         }
         Relationships: [
