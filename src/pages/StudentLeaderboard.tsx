@@ -102,8 +102,8 @@ const StudentLeaderboard = () => {
           level: xp?.level ?? 1,
           xp: Math.max(0, total),
           badges: badgeCount.get(id) ?? 0,
-          avatarSlug: avMap.get(id),
         };
+
       }).sort((a, b) => b.xp - a.xp);
 
       setRows(built);
