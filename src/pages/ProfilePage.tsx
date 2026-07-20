@@ -9,10 +9,11 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Save, KeyRound, User, Mail, Sparkles, Check, Smile, Bell } from "lucide-react";
+import { ArrowLeft, Save, KeyRound, User, Mail, Sparkles, Check, Smile, Bell, Flame, Trophy, Star, Gamepad2 } from "lucide-react";
 import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
 import AvatarPicker from "@/components/student/AvatarPicker";
 import { Switch } from "@/components/ui/switch";
+import { Progress } from "@/components/ui/progress";
 import PushNotificationsCard from "@/components/profile/PushNotificationsCard";
 
 const statusLabels: Record<string, string> = {
@@ -97,6 +98,17 @@ const ProfilePage = () => {
   const [savingPreferred, setSavingPreferred] = useState(false);
   const MAX_PREFERRED = 3;
 
+  // Game profile (students only)
+  const [gameProfile, setGameProfile] = useState<{
+    level: number;
+    total_xp: number;
+    streak_days: number;
+    badge_count: number;
+    active_title: string | null;
+  } | null>(null);
+
+
+
   useEffect(() => {
     if (authLoading) return;
 
@@ -158,6 +170,26 @@ const ProfilePage = () => {
       ]);
       setMethods((ms ?? []) as any);
       setPreferredIds(((prefs ?? []) as any[]).map((p) => p.method_id));
+    })();
+  }, [user, role]);
+
+  // Load game profile for students
+  useEffect(() => {
+    if (!user || role !== "user") return;
+    (async () => {
+      const [xpRes, badgesRes, avatarRes] = await Promise.all([
+        supabase.from("student_xp").select("level, total_xp, streak_days").eq("student_id", user.id).maybeSingle(),
+        supabase.from("student_badges").select("id", { count: "exact", head: true }).eq("student_id", user.id),
+        supabase.from("avatar_profiles").select("active_title").eq("user_id", user.id).maybeSingle(),
+      ]);
+      const xp = (xpRes.data as any) ?? { level: 1, total_xp: 0, streak_days: 0 };
+      setGameProfile({
+        level: xp.level ?? 1,
+        total_xp: xp.total_xp ?? 0,
+        streak_days: xp.streak_days ?? 0,
+        badge_count: badgesRes.count ?? 0,
+        active_title: (avatarRes.data as any)?.active_title ?? null,
+      });
     })();
   }, [user, role]);
 
@@ -367,6 +399,71 @@ const ProfilePage = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Game profile (students) */}
+        {role === "user" && gameProfile && (() => {
+          const level = Math.max(1, gameProfile.level);
+          const curLevelXp = 50 * Math.pow(level - 1, 2);
+          const nextLevelXp = 50 * Math.pow(level, 2);
+          const span = Math.max(1, nextLevelXp - curLevelXp);
+          const intoLevel = Math.max(0, gameProfile.total_xp - curLevelXp);
+          const pct = Math.min(100, Math.round((intoLevel / span) * 100));
+          const joined = new Date(profile.created_at).toLocaleDateString("cs-CZ", { month: "long", year: "numeric" });
+          return (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Gamepad2 className="w-4 h-4 text-primary" />
+                  Herní profil
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Star className="w-4 h-4 text-primary" />
+                    <span className="font-medium">Level {level}</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {intoLevel} / {span} XP do dalšího levelu
+                  </span>
+                </div>
+                <Progress value={pct} aria-label={`Postup do dalšího levelu: ${pct}%`} />
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-lg border p-3">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Flame className="w-4 h-4 text-orange-500" />
+                      Studijní série
+                    </div>
+                    <p className="mt-1 font-semibold">
+                      {gameProfile.streak_days} {gameProfile.streak_days === 1 ? "den" : gameProfile.streak_days >= 2 && gameProfile.streak_days <= 4 ? "dny" : "dní"}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border p-3">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Trophy className="w-4 h-4 text-yellow-500" />
+                      Získané odznaky
+                    </div>
+                    <p className="mt-1 font-semibold">{gameProfile.badge_count}</p>
+                  </div>
+                </div>
+
+                {gameProfile.active_title && (
+                  <div>
+                    <Label className="text-muted-foreground text-xs">Aktivní titul</Label>
+                    <div className="mt-1">
+                      <Badge variant="outline" className="text-xs">{gameProfile.active_title}</Badge>
+                    </div>
+                  </div>
+                )}
+
+                <p className="text-xs text-muted-foreground">Na ZEDU od {joined}</p>
+              </CardContent>
+            </Card>
+          );
+        })()}
+
+
 
         {/* Editable fields */}
         <Card>
