@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { downloadCSV } from "@/lib/csv-export";
+import { BrandGradientBar } from "@/components/charts/BrandGradientBar";
 
 type ClassOpt = { id: string; name: string };
 type Attempt = {
