@@ -983,7 +983,7 @@ export default function AvatarEditor() {
               </DialogHeader>
               <div className="flex flex-col items-center gap-3 py-2">
                 <div className="relative w-32 h-32 rounded-xl border-2 bg-muted/40 overflow-hidden">
-                  <LayerVisual item={item} />
+                  <LayerVisual item={applyHairVariant(item, hairVariants)} />
                   {item.category === "badge" && (
                     <BadgeOverlay
                       iconName={item.icon_name}
