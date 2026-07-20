@@ -13,12 +13,20 @@ const PlatformShowcase = ({ props }: PlatformShowcaseProps) => {
   const tabs = Array.isArray(p.tabs) && p.tabs.length > 0 ? p.tabs : DEFAULT_PLATFORM_SHOWCASE_PROPS.tabs;
   const [active, setActive] = useState(0);
   const current = tabs[Math.min(active, tabs.length - 1)];
+  const editCtx = useLandingEditModeOptional();
+  const showSubtitle = !!p.subtitle || !!editCtx?.isEditMode;
 
   return (
     <section className="w-full py-20 md:py-28 bg-muted/20">
       <div className="container mx-auto max-w-5xl px-4 text-center">
-        <h2 className="font-heading text-2xl md:text-3xl font-bold mb-4">{p.title}</h2>
-        {p.subtitle && <p className="text-muted-foreground mb-12">{p.subtitle}</p>}
+        <h2 className="font-heading text-2xl md:text-3xl font-bold mb-4">
+          <Editable path="title" value={p.title} placeholder="Nadpis sekce" />
+        </h2>
+        {showSubtitle && (
+          <p className="text-muted-foreground mb-12">
+            <Editable path="subtitle" value={p.subtitle} placeholder="Podnadpis (volitelný)" multiline />
+          </p>
+        )}
 
         <div className="flex gap-2 justify-center mb-8 flex-wrap">
           {tabs.map((t, i) => (
