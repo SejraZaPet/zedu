@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Mic, Play } from "lucide-react";
 import { DEFAULT_PODCAST_PROPS, mergeSectionProps } from "@/lib/landing-defaults";
+import Editable from "@/components/landing-edit/Editable";
+import { useLandingEditModeOptional } from "@/contexts/LandingEditModeContext";
 
 interface Episode {
   id: string;
