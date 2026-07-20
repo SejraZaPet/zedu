@@ -12,12 +12,21 @@ const HowItWorks = ({ props }: HowItWorksProps) => {
   const navigate = useNavigate();
   const p = mergeSectionProps(DEFAULT_HOW_IT_WORKS_PROPS, props);
   const steps = Array.isArray(p.steps) ? p.steps : DEFAULT_HOW_IT_WORKS_PROPS.steps;
+  const editCtx = useLandingEditModeOptional();
+  const showSubtitle = !!p.subtitle || !!editCtx?.isEditMode;
+  const showCta = !!p.cta?.label || !!editCtx?.isEditMode;
 
   return (
     <section id={p.anchor_id || "jak-to-funguje"} className="w-full py-20 md:py-28 bg-background">
       <div className="container mx-auto max-w-5xl px-4 text-center">
-        <h2 className="font-heading text-2xl md:text-3xl font-bold mb-4">{p.title}</h2>
-        {p.subtitle && <p className="text-muted-foreground mb-12">{p.subtitle}</p>}
+        <h2 className="font-heading text-2xl md:text-3xl font-bold mb-4">
+          <Editable path="title" value={p.title} placeholder="Nadpis sekce" />
+        </h2>
+        {showSubtitle && (
+          <p className="text-muted-foreground mb-12">
+            <Editable path="subtitle" value={p.subtitle} placeholder="Podnadpis (volitelný)" multiline />
+          </p>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {steps.map((s, i) => (
             <div key={`${s.title}-${i}`}>
