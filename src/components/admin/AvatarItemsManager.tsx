@@ -170,6 +170,11 @@ export default function AvatarItemsManager() {
     calibrationDraftRef.current = readCalibrationValues(editing);
   }, [editing?.id, editing?.slug, editing?.layer_offset_x, editing?.layer_offset_y, editing?.layer_scale]);
 
+  const openEditor = (item: Partial<AvatarItem>) => {
+    calibrationDraftRef.current = readCalibrationValues(item);
+    setEditing(item);
+  };
+
   const filtered =
     filterCategory === "all" ? items : items.filter((i) => i.category === filterCategory);
 
@@ -284,7 +289,7 @@ export default function AvatarItemsManager() {
     !!cat && CALIB_CATEGORIES.includes(cat) && !!(editing?.image_url ?? "").trim();
 
   const saveCalibration = async () => {
-    if (!editing?.id) {
+    if (!editing?.id || !editing.slug) {
       toast({ title: "Nejprve položku uložte", variant: "destructive" });
       return;
     }
@@ -393,7 +398,7 @@ export default function AvatarItemsManager() {
           </Select>
           <span className="text-sm text-muted-foreground ml-2">{filtered.length} položek</span>
         </div>
-        <Button onClick={() => setEditing(emptyForm())} size="sm">
+        <Button onClick={() => openEditor(emptyForm())} size="sm">
           <Plus className="w-4 h-4 mr-1" /> Nová položka
         </Button>
       </div>
@@ -455,7 +460,7 @@ export default function AvatarItemsManager() {
                   </td>
                   <td className="p-2 text-right">
                     <div className="flex gap-1 justify-end">
-                      <Button size="sm" variant="ghost" onClick={() => setEditing(item)}>
+                      <Button size="sm" variant="ghost" onClick={() => openEditor(item)}>
                         <Pencil className="w-4 h-4" />
                       </Button>
                       <Button
