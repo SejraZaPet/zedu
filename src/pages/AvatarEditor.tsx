@@ -272,12 +272,26 @@ function LayerVisual({
 }
 
 // ---------- Preview ----------
+type HairVariantMap = Map<string, { image_url: string | null; image_url_back: string | null }>;
+
+function applyHairVariant(item: AvatarItem, variants: HairVariantMap): AvatarItem {
+  if (item.category !== "hairstyle") return item;
+  const v = variants.get(item.id);
+  if (!v) return item;
+  return {
+    ...item,
+    image_url: v.image_url ?? item.image_url,
+    image_url_back: v.image_url_back ?? item.image_url_back,
+  };
+}
+
 function AvatarPreview({
-  profile, itemsById, reduceMotion,
+  profile, itemsById, reduceMotion, variants,
 }: {
   profile: Profile;
   itemsById: Map<string, AvatarItem>;
   reduceMotion: boolean;
+  variants: HairVariantMap;
 }) {
   const layers: { item: AvatarItem; sub?: "back" | "front" }[] = [];
   for (const l of LAYER_ORDER) {
@@ -291,8 +305,9 @@ function AvatarPreview({
     else if (l.category === "effect") id = profile.effect_id;
     else if (l.category === "frame") id = profile.frame_id;
     if (!id) continue;
-    const item = itemsById.get(id);
-    if (!item) continue;
+    const raw = itemsById.get(id);
+    if (!raw) continue;
+    const item = applyHairVariant(raw, variants);
     if (l.sub === "back" && !item.image_url_back) continue;
     if (l.sub === "front" && !item.image_url) continue;
     layers.push({ item, sub: l.sub });
@@ -424,6 +439,7 @@ export default function AvatarEditor() {
   const [pendingNavigate, setPendingNavigate] = useState<string | null>(null);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const [newQueue, setNewQueue] = useState<string[]>([]);
+  const [hairVariants, setHairVariants] = useState<HairVariantMap>(new Map());
 
   const userId = user?.id;
 
@@ -448,6 +464,29 @@ export default function AvatarEditor() {
   }, [userId, toast]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Fetch hairstyle variants specific to the currently selected base
+  useEffect(() => {
+    const baseId = draft?.base_id;
+    if (!baseId) {
+      setHairVariants(new Map());
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("avatar_item_base_variants")
+        .select("avatar_item_id, image_url, image_url_back")
+        .eq("base_id", baseId);
+      if (cancelled) return;
+      const m: HairVariantMap = new Map();
+      (data ?? []).forEach((r: any) => {
+        m.set(r.avatar_item_id, { image_url: r.image_url, image_url_back: r.image_url_back });
+      });
+      setHairVariants(m);
+    })();
+    return () => { cancelled = true; };
+  }, [draft?.base_id]);
 
   const itemsById = useMemo(() => {
     const m = new Map<string, AvatarItem>();
@@ -775,7 +814,7 @@ export default function AvatarEditor() {
 
         {/* Middle: preview */}
         <section aria-label="Náhled avatara" className="space-y-3">
-          {draft && <AvatarPreview profile={draft} itemsById={itemsById} reduceMotion={draft.reduce_motion} />}
+          {draft && <AvatarPreview profile={draft} itemsById={itemsById} reduceMotion={draft.reduce_motion} variants={hairVariants} />}
           <Button variant="outline" className="w-full" onClick={randomize}>
             <Shuffle className="w-4 h-4 mr-2" /> Náhodný vzhled
           </Button>
@@ -840,7 +879,7 @@ export default function AvatarEditor() {
                         )}
                       >
                         <div className="relative w-full aspect-square rounded-lg bg-muted/40 overflow-hidden mb-2">
-                          <LayerVisual item={it} />
+                          <LayerVisual item={applyHairVariant(it, hairVariants)} />
                           {selected && (
                             <span className="absolute top-1 left-1 rounded-full bg-primary text-primary-foreground w-6 h-6 flex items-center justify-center">
                               <Check className="w-3.5 h-3.5" />
@@ -944,7 +983,7 @@ export default function AvatarEditor() {
               </DialogHeader>
               <div className="flex flex-col items-center gap-3 py-2">
                 <div className="relative w-32 h-32 rounded-xl border-2 bg-muted/40 overflow-hidden">
-                  <LayerVisual item={item} />
+                  <LayerVisual item={applyHairVariant(item, hairVariants)} />
                   {item.category === "badge" && (
                     <BadgeOverlay
                       iconName={item.icon_name}

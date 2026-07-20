@@ -146,6 +146,7 @@ interface Props {
 export default function ProfileAvatarBubble({ userId, size = 56, className, editable = true }: Props) {
   const [profile, setProfile] = useState<AvatarProfile | null>(null);
   const [items, setItems] = useState<Map<string, AvatarItem>>(new Map());
+  const [hairVariants, setHairVariants] = useState<Map<string, { image_url: string | null; image_url_back: string | null }>>(new Map());
   const [loading, setLoading] = useState(true);
   const [hasNew, setHasNew] = useState(false);
 
@@ -170,6 +171,7 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
     if (!userId) {
       setProfile(null);
       setItems(new Map());
+      setHairVariants(new Map());
       setLoading(false);
       return;
     }
@@ -196,14 +198,27 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
         setLoading(false);
         return;
       }
-      const { data: rows } = await supabase
-        .from("avatar_items")
-        .select("id, slug, category, name, image_url, image_url_back, icon_name, color_value, is_neutral_color, rarity, layer_offset_x, layer_offset_y, layer_scale")
-        .in("id", ids);
+      const [{ data: rows }, variantsRes] = await Promise.all([
+        supabase
+          .from("avatar_items")
+          .select("id, slug, category, name, image_url, image_url_back, icon_name, color_value, is_neutral_color, rarity, layer_offset_x, layer_offset_y, layer_scale")
+          .in("id", ids),
+        prof.base_id
+          ? supabase
+              .from("avatar_item_base_variants")
+              .select("avatar_item_id, image_url, image_url_back")
+              .eq("base_id", prof.base_id)
+          : Promise.resolve({ data: [] as any[] }),
+      ]);
       if (!mounted) return;
       const m = new Map<string, AvatarItem>();
       (rows ?? []).forEach((r: any) => m.set(r.id, r));
       setItems(m);
+      const vm = new Map<string, { image_url: string | null; image_url_back: string | null }>();
+      ((variantsRes as any).data ?? []).forEach((r: any) => {
+        vm.set(r.avatar_item_id, { image_url: r.image_url, image_url_back: r.image_url_back });
+      });
+      setHairVariants(vm);
       setLoading(false);
     })();
     return () => { mounted = false; };
@@ -214,8 +229,15 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
     for (const l of LAYER_ORDER) {
       const id = profile[l.field];
       if (!id) continue;
-      const item = items.get(id);
-      if (!item) continue;
+      const raw = items.get(id);
+      if (!raw) continue;
+      let item = raw;
+      if (raw.category === "hairstyle") {
+        const v = hairVariants.get(raw.id);
+        if (v) {
+          item = { ...raw, image_url: v.image_url ?? raw.image_url, image_url_back: v.image_url_back ?? raw.image_url_back };
+        }
+      }
       if (l.sub === "back" && !item.image_url_back) continue;
       if (l.sub === "front" && !item.image_url) continue;
       layers.push({ item, sub: l.sub });
