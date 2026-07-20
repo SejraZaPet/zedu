@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
 import { Loader2, Pencil, Plus, Trash2, ImageOff } from "lucide-react";
+import AvatarLayerStack, { type StackLayer } from "@/components/avatar/AvatarLayerStack";
 
 type Category =
   | "base"
