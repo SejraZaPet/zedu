@@ -1,79 +1,71 @@
-# "Změnit na…" – návrh mapování a AI reuse
+Toto je pouze **informační odpověď** (žádné změny v kódu). Shrnutí toho, co jsem v projektu ověřila.
 
-Než začnu implementovat, tady je konkrétní návrh na dvě věci, které ses ptal ověřit: (1) přesné mapování mezi typy bloků v sekci "Formát" a (2) jestli lze znovupoužít existující AI edge funkce pro sekci "Vytvořit z obsahu".
+---
 
-## 1) Sekce "Formát" — přesné mapování (bez AI)
+## 1) Sekce landing page (pořadí a obsah)
 
-Kategorie odpovídají tomu, jak jsou bloky rozdělené v redesignu editoru (Text / Média / Struktura / Interaktivní).
+Vstupní bod: `src/pages/Index.tsx`. Pořadí uvnitř `<main>`:
 
-### Text ↔ Text (plně obousměrné, bezpečné)
-Zúčastněné typy: `heading`, `paragraph`, `bullet_list`, `quote`, `callout`.
+| # | Soubor | Typ obsahu (props/data) | Obrázky |
+|---|--------|--------------------------|---------|
+| 1 | `src/components/Hero.tsx` | Nadpis „• Tvoř • Uč • Objevuj", podtitulek, 2× CTA tlačítko (`Vyzkoušet zdarma` → `/auth`, `Jak to funguje ↓` scroll), disclaimer text. Pod hero panel se 3 feature kartami (ikona lucide + title + description + volitelný `href`). Data: 3× hardcoded `features[]`. | `@/assets/hero-students.png` (background), `@/assets/zedu-hero-logo-text.png` (nápis v H1) |
+| 2 | `src/components/landing/SocialProof.tsx` | 4 metriky (`icon`, `value`, `label`) + 3 badge stringy | žádné |
+| 3 | `src/components/landing/FeaturesGrid.tsx` | H2 „Co ZEdu umí" + podtitulek + 6 karet (`icon`, `title`, `description`) | žádné |
+| 4 | `src/components/landing/HowItWorks.tsx` (id=`jak-to-funguje`) | H2 „Jak začít?" + podtitulek + 3 kroky (`n`, `title`, `desc`) + CTA tlačítko → `/auth` | žádné |
+| 5 | `src/components/landing/ForWhom.tsx` | H2 „Pro koho je ZEdu?" + podtitulek + 3 karty (`icon`, `title`, bullets `string[]`, `cta`, `to`) | žádné (jen ikony) |
+| 6 | `src/components/landing/PlatformShowcase.tsx` | H2 „Podívejte se dovnitř" + 4 taby (`Editor učebnice`, `Živá hra`, `Rozvrh`, `Dashboard žáka`); právě teď jen placeholder `ImageIcon` | **placeholder – tady se počítá s obrázky/screenshoty** (1 per tab) |
+| 7 | `src/components/PodcastSection.tsx` | H2 „Rozhovory & epizody" + seznam **z DB** (`podcast_episodes`, top 5, status=published). Skryje se, pokud 0 epizod. | žádné |
+| 8 | `src/components/landing/FinalCTA.tsx` | H2 „Připraveni učit moderně?" + CTA → `/auth`, sekundární odkaz → `/cenik`, kontaktní e-mail | žádné |
 
-| Zdroj → cíl | Chování |
-|---|---|
-| `heading` → `paragraph` / `quote` / `callout` | zkopíruje se `text` (HTML se zploští na plaintext); u `quote` `author=""`, u `callout` `calloutType="note"` |
-| `heading` → `bullet_list` | 1 položka = celý nadpis |
-| `paragraph` → `heading` | `level=2`, text z odstavce (bez HTML) |
-| `paragraph` → `bullet_list` | rozdělí obsah podle řádků / odrážek (`\n`, `•`, `-`, `–`); prázdné se zahodí |
-| `paragraph` → `quote` / `callout` | text 1:1, u `quote` `author=""`, u `callout` `type="note"` |
-| `bullet_list` → `paragraph` | položky spojeny prázdným řádkem |
-| `bullet_list` → `heading` | položky spojené `" · "` (max 2. úroveň) |
-| `bullet_list` → `quote` / `callout` | položky spojené `" — "` resp. `\n` |
-| `quote` → `paragraph` / `heading` / `bullet_list` / `callout` | přenese `text`; autor se u `paragraph` zapíše v závorce, u `bullet_list` jako druhá položka, jinak se zahodí |
-| `callout` → `paragraph` / `heading` / `quote` / `bullet_list` | přenese `text` (typ callout se ignoruje); u `bullet_list` rozděl podle řádků |
+Wrapper `SiteHeader`, `SiteFooter` a plovoucí `AdminButton` nejsou součástí obsahu, které bys chtěla editovat.
 
-Poznámka: nezachovávají se odkazy uvnitř RichTextu (u vsupu HTML se strippuje na plaintext, aby cíle nedostávaly `<h2>` uvnitř `<li>` apod.). U `paragraph`/`heading` cíl přijímá HTML — ok, protože prostý text je validní HTML.
+---
 
-### Média ↔ Média — VYNECHÁVÁM
-`image`, `image_text`, `gallery`, `youtube` mají zásadně různé povinné vstupy (single URL vs. gallery pole vs. `youtube.url`), takže "reformátování stejného obsahu" reálně neexistuje — buď duplikuje informaci, nebo mažeme text. Nechal bych sekci "Formát" u mediálních bloků prázdnou (tzn. tlačítko "Změnit na…" se u nich nezobrazí, pokud AI sekce taky nebude aplikovatelná).
+## 2) Existující vzory pro dynamický/JSONB obsah
 
-### Struktura ↔ Struktura (omezená, s pojistkou)
-Zúčastněné typy: `table`, `card_grid`, `two_column`. (`accordion`, `hierarchy`, `divider` mají příliš specifický obsah — vynechávám.)
+**Ne, landing page je aktuálně 100 % statická** – všechna copy jsou hardcoded pole v komponentách (`features`, `steps`, `cards`, `metrics`, `tabs`, `badges`). Jediná dynamická sekce je `PodcastSection`, která se plní z tabulky `podcast_episodes`.
 
-| Zdroj → cíl | Chování |
-|---|---|
-| `table` → `card_grid` | každý řádek = 1 karta: `title = row[0]`, `text = row[1..].join(" — ")`; `columns = min(max(headers.length, 2), 3)` |
-| `table` → `two_column` | POVOLENO **pouze** když má tabulka přesně 2 sloupce; `left = řádky[0].join("\n\n")`, `right = řádky[1].join("\n\n")`. Jinak volba není v menu. |
-| `card_grid` → `table` | `headers = ["Název","Popis"]`; `rows = cards.map(c => [c.title, c.text])` |
-| `two_column` → `table` | `headers = ["Sloupec 1","Sloupec 2"]`; 1 řádek s `[left, right]` |
+Ale máme **hodně silné vzory JSONB + block editoru** k inspiraci:
 
-`accordion`/`hierarchy` nejsou v mapování — vestavěná struktura (položka+obsah, resp. úrovně) se ztratí jakkoli by se namapovaly.
+- `articles.blocks jsonb` (`ArticlesManager.tsx`), `help_guides` (`content_json jsonb`), `podcast_episodes`, `lesson_plans`, `worksheets`, `teacher_textbook_lessons`, `textbook_lessons` – všechny drží obsah jako pole bloků v `jsonb`.
+- **Block editor UI**: `src/components/admin/BlockEditor.tsx` + `src/components/admin/block-editors/*` (`ImageBlock`, `ImageTextBlock`, `GalleryBlock`, `HierarchyBlock`, `ActivityBlock`, …). Podporuje drag&drop řazení, přidávání/mazání bloků, kategorizované menu (Text / Média / Struktura / Interaktivní), inline náhledy.
+- Doprovodná typová definice: `src/lib/textbook-config.ts` (`Block` type).
+- Podobný „manager" pattern pro CRUD nad JSONB obsahem: `ArticlesManager.tsx`, `HelpGuidesManager.tsx`, `PodcastManager.tsx`.
 
-### Chování UI
-- Tlačítko "Změnit na…" (ikona `ArrowRightLeft`) se u bloku **skryje**, pokud pro daný typ neexistuje žádná položka ve Formátu ani není splněná podmínka pro AI sekci (viz níže).
-- Formát přepíše `block.type` a `block.props` na místě (stejné `id`, stejný `visible`), commit jde přes stávající undo/redo historii → dá se snadno vrátit `Ctrl+Z`.
-- Bez potvrzovacího dialogu (nechceme zdržovat) — je to okamžitá, undoable operace.
+Pro CMS landing page je nejpřímější vzor **`ArticlesManager` + `BlockEditor`**: jedna admin stránka, která načte řádek, edituje pole `blocks` (drag&drop), a uloží zpět jednou UPDATE-em na JSONB. Přesně tenhle pattern lze recyklovat pro landing – buď jednu řadu v nové tabulce `landing_pages` s `sections jsonb`, nebo tabulku `landing_sections` (řádek = sekce, `order_index`, `type`, `props jsonb`).
 
-## 2) Sekce "Vytvořit z obsahu" — AI reuse
+---
 
-Existující edge funkce jsem prošel; relevantní kandidáti:
+## 3) Upload obrázků – existující mechanismus
 
-- `generate-activity-spec` — vrací **ActivitySpec** (pole `type: mcq/matching/hotspot/interactive_video`, plus `worksheetMapping`, `accessibility`, `projectorPolicy`, atd.). **Není 1:1 kompatibilní** s tvarem, který renderuje `ActivityBlock` v editoru (ten čeká `activityType + quiz/flashcards/matching/…` s odlišnými poli, např. `quiz.answers[].correct` místo `choices/correctIndex`). Vyžadovala by adaptér, ale ztratí se většina metadat ActivitySpec.
-- `generate-mcq` — jednoduchá funkce generující MCQ otázky. Bližší k tomu, co `ActivityBlock.quiz` používá (`question`, `answers[{text, correct}]`, `explanation`).
-- `generate-block-suggestions` — generuje návrhy dalších bloků do lekce, ne převod stávajícího obsahu.
-- `generate-hierarchy` **neexistuje** — pro AI variantu "Hierarchie/Pyramida" ji potřebujeme vytvořit novou.
+Používáme **Supabase Storage veřejný bucket `lesson-images`** jako obecný veřejně čitelný bucket:
 
-**Doporučení pro implementaci** (budu čekat na tvoje potvrzení):
+- **RLS** (migrace `20260222164519…`): SELECT pro všechny, INSERT/UPDATE/DELETE jen pro `public.is_admin()`.
+- **Upload flow** (nejjednodušší reference `src/components/admin/block-editors/ImageBlock.tsx`, řádky 20-30):
+  ```ts
+  const path = `${crypto.randomUUID()}.${ext}`;
+  await supabase.storage.from("lesson-images").upload(path, file);
+  const { data } = supabase.storage.from("lesson-images").getPublicUrl(path);
+  onChange({ ...block.props, url: data.publicUrl });
+  ```
+- **Bohatší varianta s validací** (max 1 MB, kontrola rozměrů, cache-control, upsert): `src/components/school/SchoolBrandingSection.tsx` (bucket `school-logos`, per-school prefix v path).
+- **Media Library UI** (přepínání mezi novým uploadem a výběrem již nahraného obrázku): `MediaPickerDialog` z `src/components/media/`. Řeší i tag/hledání. Dá se přímo použít.
 
-1. **"Aktivita/procvičování"** → znovupoužít `generate-mcq` (odpovídá přesně tvaru `activity` bloku s `activityType="quiz"`). Vstup = plaintext extrahovaný z bloku (`text`, `items`, popisky karet, …). Výstup napojíme na `props.quiz`. Pokud později budeme chtít další typy (flashcards, matching), přidá se druhá položka v menu; `generate-activity-spec` bych **nezapojoval**, ledaže chceš, aby výsledek nesl kompletní ActivitySpec metadata — pak bude potřeba psát mapper i změnu `ActivityBlock`.
-   - Alternativa: pokud `generate-mcq` nevyhovuje (např. neumí česky nebo očekává jiné vstupy), přidám novou lightweight edge funkci `generate-activity-from-text` cílenou přesně na tvar `ActivityBlock`.
-2. **"Hierarchie/Pyramida"** → nová edge funkce `generate-hierarchy` (Gemini 3 Flash, structured tool call: `direction`, `levels: [{label, description?}]`, 3–6 úrovní). Vstup = plaintext bloku. Výstup napojíme na tvar `hierarchy` bloku (`shape: "pyramid"`, `direction`, `levels[{id,label,description}]`).
+Další existující veřejné buckety a jejich účel (pro orientaci, ne pro landing):
+- `school-logos` – loga škol
+- `student-attachments` – přílohy k odevzdaným úkolům (privátní)
+- `student-portfolio` – portfolio žáků
 
-**UI během AI volání:**
-- V hlavičce bloku se vedle ikony "Změnit na…" objeví spinner + `Loader2`; tlačítko se disabluje. Zbytek editoru dál použitelný.
-- Chyba (429/402/500) → `toast.error` s konkrétní hláškou ("Nedostatek kreditů", "Příliš mnoho požadavků, zkuste to za chvíli", jinak generická). Blok se nemění.
-- Úspěch → commit do historie (undoable), toast.success s krátkou zprávou ("Blok převeden na aktivitu. Zkontrolujte prosím obsah.").
+**Doporučení pro landing CMS**: buď recyklovat `lesson-images` (rychlé, RLS už restriktivní na admina), nebo vytvořit nový bucket `landing-media` se stejnou strukturou politik (SELECT public, mutace jen `is_admin()`). Druhá varianta je čistší – budeš mít oddělenou životnost obrázků landing page od učebnic a snadnější správu.
 
-**Kdy je AI sekce dostupná:** pouze pokud extrahovaný plaintext bloku má > 8 znaků (jinak by AI dostávala prázdný vstup). Bloky typu `image`, `divider`, `lesson_link`, `youtube` bez popisku tak AI sekci nezobrazí.
+---
 
-## Otevřené otázky — potvrď, jak dál
+## Krátký návrh, jak by CMS mohl vypadat (jen náčrt – bez implementace)
 
-1. **Media kategorie**: OK ji ve "Formátu" **vynechat** (button "Změnit na…" bude u mediálních bloků skrytý, ledaže má AI sekce co nabídnout)? Nebo chceš minimální mapování (např. `image` → `gallery` = 1 obrázek, `image_text` → `image` = zahodit text)?
-2. **Aktivita – kterou AI cestu**:
-   - (a) **`generate-mcq`** (rychlé, ale jen kvíz), NEBO
-   - (b) nová **`generate-activity-from-text`** (jen kvíz, ale explicitně cílená na `ActivityBlock`), NEBO
-   - (c) **`generate-activity-spec` + adaptér** (víc typů, ale ztratí ActivitySpec metadata a je to víc kódu)?
-3. **Hierarchie**: OK vytvořit novou edge funkci `generate-hierarchy` (Gemini 3 Flash, structured tool call, 3–6 úrovní)?
-4. **Undo pro AI výsledek**: má být převod přes AI zapsán do historie (Ctrl+Z vrátí zpět na původní blok)? Doporučuju ano — je to konzistentní s Formátem a chrání před špatnými AI výstupy.
+- Tabulka `landing_sections` (`id`, `order_index`, `section_type` enum: hero / features_grid / how_it_works / for_whom / platform_showcase / social_proof / final_cta / podcast, `enabled bool`, `props jsonb`, `updated_at`, `updated_by`).
+- Admin stránka `/admin/landing`: seznam sekcí s drag handle, per-sekce editor formulář odvozený od `section_type` (podobný `BlockEditor` menu), toggle „zobrazit/skrýt", tlačítka přidat/duplikovat/smazat.
+- Runtime: `Index.tsx` načte řádky, řadí podle `order_index`, mapuje `section_type` na existující komponentu, do které pošle `props` (aktuální hardcoded pole se přesunou do defaultních `props` v DB seed migraci).
+- Obrázky: `MediaPickerDialog` + bucket `landing-media`.
+- Ikony: seznam allowlist z `lucide-react` v `<Select>` (protože ikony teď nejsou stringy, ale komponenty – v CMS je budeme identifikovat jménem a mapovat na komponentu při renderu).
 
-Po potvrzení implementuji: `src/lib/block-conversions.ts` (mappery), `ReplaceMenu` v `BlockEditor.tsx`, `aiReplaceBlock` handler, případně novou `supabase/functions/generate-hierarchy/`.
+Až budeš chtít, můžu z toho udělat plný implementační plán.
