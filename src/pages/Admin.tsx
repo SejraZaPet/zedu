@@ -35,6 +35,7 @@ const adminTabs = [
   { id: "users", label: "Uživatelé", icon: Users },
   { id: "templates", label: "Šablony", icon: Sparkles },
   { id: "landing", label: "Landing page", icon: Globe },
+  { id: "avatars", label: "Avatary", icon: Smile },
   { id: "notifications", label: "Notifikace", icon: Bell },
   { id: "audit", label: "Audit log", icon: FileText },
   { id: "help", label: "Nápověda", icon: HelpCircle },
