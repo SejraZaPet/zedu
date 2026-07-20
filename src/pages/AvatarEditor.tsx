@@ -387,6 +387,7 @@ export default function AvatarEditor() {
   const [saving, setSaving] = useState(false);
   const [pendingNavigate, setPendingNavigate] = useState<string | null>(null);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const [newQueue, setNewQueue] = useState<string[]>([]);
 
   const userId = user?.id;
 
