@@ -146,7 +146,7 @@ interface Props {
 export default function ProfileAvatarBubble({ userId, size = 56, className, editable = true }: Props) {
   const [profile, setProfile] = useState<AvatarProfile | null>(null);
   const [items, setItems] = useState<Map<string, AvatarItem>>(new Map());
-  const [hairVariants, setHairVariants] = useState<Map<string, { image_url: string | null; image_url_back: string | null }>>(new Map());
+  const [hairVariants, setHairVariants] = useState<Map<string, { image_url: string | null; image_url_back: string | null; layer_offset_x: number | null; layer_offset_y: number | null; layer_scale: number | null }>>(new Map());
   const [loading, setLoading] = useState(true);
   const [hasNew, setHasNew] = useState(false);
 
