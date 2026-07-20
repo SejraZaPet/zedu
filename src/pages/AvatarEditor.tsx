@@ -272,7 +272,13 @@ function LayerVisual({
 }
 
 // ---------- Preview ----------
-type HairVariantMap = Map<string, { image_url: string | null; image_url_back: string | null }>;
+type HairVariantMap = Map<string, {
+  image_url: string | null;
+  image_url_back: string | null;
+  layer_offset_x: number | null;
+  layer_offset_y: number | null;
+  layer_scale: number | null;
+}>;
 
 function applyHairVariant(item: AvatarItem, variants: HairVariantMap): AvatarItem {
   if (item.category !== "hairstyle") return item;
@@ -282,6 +288,9 @@ function applyHairVariant(item: AvatarItem, variants: HairVariantMap): AvatarIte
     ...item,
     image_url: v.image_url ?? item.image_url,
     image_url_back: v.image_url_back ?? item.image_url_back,
+    layer_offset_x: v.layer_offset_x ?? item.layer_offset_x,
+    layer_offset_y: v.layer_offset_y ?? item.layer_offset_y,
+    layer_scale: v.layer_scale ?? item.layer_scale,
   };
 }
 
