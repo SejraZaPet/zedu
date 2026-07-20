@@ -73,7 +73,7 @@ export default function EditableSectionWrapper({ section, children, onDelete, dr
         )}
       </div>
 
-      {children}
+      <SectionProvider section={section}>{children}</SectionProvider>
     </div>
   );
 }
