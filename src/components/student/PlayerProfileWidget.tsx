@@ -27,7 +27,7 @@ const formatDate = (iso: string) =>
   new Date(iso).toLocaleDateString("cs-CZ", { day: "numeric", month: "numeric", year: "numeric" });
 
 const PlayerProfileWidget = ({ userId, firstName, lastName }: Props) => {
-  const avatarSlug = useStudentAvatar(userId);
+
   const [xp, setXp] = useState(0);
   const [level, setLevel] = useState(1);
   const [streak, setStreak] = useState(0);
