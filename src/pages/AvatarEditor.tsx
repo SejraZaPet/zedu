@@ -22,6 +22,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   User, Scissors, Shirt, Glasses, Crown, Image as ImageIcon,
   Frame, Sparkles, Award, Type, Lock, Heart, Shuffle, ArrowLeft, Check, Droplet,
 } from "lucide-react";
@@ -379,6 +387,7 @@ export default function AvatarEditor() {
   const [saving, setSaving] = useState(false);
   const [pendingNavigate, setPendingNavigate] = useState<string | null>(null);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const [newQueue, setNewQueue] = useState<string[]>([]);
 
   const userId = user?.id;
 
@@ -395,6 +404,7 @@ export default function AvatarEditor() {
     const ownedMap = new Map<string, OwnedItem>();
     (ownedRes.data ?? []).forEach((r: any) => ownedMap.set(r.avatar_item_id, r));
     setOwned(ownedMap);
+    setNewQueue((ownedRes.data ?? []).filter((r: any) => r.is_new).map((r: any) => r.avatar_item_id as string));
     const prof = (profileRes.data as Profile | null) ?? null;
     setDbProfile(prof);
     setDraft(prof ? { ...prof } : null);
@@ -542,6 +552,46 @@ export default function AvatarEditor() {
   const handleBack = () => {
     if (isDirty) setConfirmDiscard(true);
     else navigate(-1);
+  };
+
+  // ---------- "New item unlocked" queue handlers ----------
+  const clearIsNew = async (itemId: string, extraPatch: Record<string, unknown> = {}) => {
+    if (!userId) return;
+    setOwned((prev) => {
+      const m = new Map(prev);
+      const cur = m.get(itemId);
+      if (cur) m.set(itemId, { ...cur, is_new: false, ...(extraPatch.is_favorite !== undefined ? { is_favorite: extraPatch.is_favorite as boolean } : {}) });
+      return m;
+    });
+    setNewQueue((q) => q.filter((id) => id !== itemId));
+    const { error } = await supabase
+      .from("user_avatar_items")
+      .update({ is_new: false, ...extraPatch })
+      .eq("user_id", userId)
+      .eq("avatar_item_id", itemId);
+    if (error) {
+      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const tryOnNewItem = (item: AvatarItem) => {
+    if (draft) {
+      const meta = CATEGORY_META.find((c) => c.key === item.category);
+      if (meta) {
+        const val = meta.storesValue === "id" ? item.id : item.name;
+        setDraft({ ...draft, [meta.profileField]: val } as Profile);
+        setActiveCategory(item.category);
+      }
+    }
+    void clearIsNew(item.id);
+  };
+
+  const favoriteNewItem = (item: AvatarItem) => {
+    void clearIsNew(item.id, { is_favorite: true });
+  };
+
+  const continueNewItem = (item: AvatarItem) => {
+    void clearIsNew(item.id);
   };
 
   // Onboarding: need to create profile first
@@ -839,6 +889,60 @@ export default function AvatarEditor() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {(() => {
+        const currentId = newQueue[0];
+        const item = currentId ? itemsById.get(currentId) : null;
+        if (!item) return null;
+        return (
+          <Dialog
+            open={true}
+            onOpenChange={(open) => { if (!open) continueNewItem(item); }}
+          >
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Nová položka odemčena!</DialogTitle>
+                <DialogDescription>
+                  Do své sbírky získáváš nový kosmetický předmět.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex flex-col items-center gap-3 py-2">
+                <div className="relative w-32 h-32 rounded-xl border-2 bg-muted/40 overflow-hidden">
+                  <LayerVisual item={item} />
+                  {item.category === "badge" && (
+                    <BadgeOverlay
+                      iconName={item.icon_name}
+                      rarity={item.rarity}
+                      className="top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+                      size={56}
+                    />
+                  )}
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-base font-semibold">{item.name}</span>
+                  <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0", RARITY_TONE[item.rarity])}>
+                    {RARITY_LABEL[item.rarity]}
+                  </Badge>
+                </div>
+                <p className="text-sm text-muted-foreground text-center">
+                  Právě jsi odemkl(a) položku <strong>{item.name}</strong>.
+                </p>
+              </div>
+              <DialogFooter className="flex-col sm:flex-row gap-2">
+                <Button variant="outline" onClick={() => continueNewItem(item)}>
+                  Pokračovat
+                </Button>
+                <Button variant="outline" onClick={() => favoriteNewItem(item)}>
+                  <Heart className="w-4 h-4 mr-1" /> Přidat do oblíbených
+                </Button>
+                <Button onClick={() => tryOnNewItem(item)}>
+                  Vyzkoušet na avatarovi
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        );
+      })()}
     </div>
   );
 }
