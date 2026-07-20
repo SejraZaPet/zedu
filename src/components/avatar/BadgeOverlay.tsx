@@ -45,9 +45,9 @@ export default function BadgeOverlay({
       aria-hidden="true"
       title={title}
       className={cn(
-        "absolute bottom-1 left-1 rounded-full flex items-center justify-center shadow ring-2 ring-background border border-border/60",
+        "absolute rounded-full flex items-center justify-center shadow ring-2 ring-background border border-border/60",
         RARITY_TONE[rarity],
-        className,
+        className ?? "bottom-1 left-1",
       )}
       style={{ width: size, height: size }}
     >
