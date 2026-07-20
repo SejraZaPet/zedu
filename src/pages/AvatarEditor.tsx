@@ -433,6 +433,11 @@ export default function AvatarEditor() {
     return owned.has(item.id);
   };
 
+  const selectCategory = (category: Category) => {
+    setActiveCategory(category);
+    setFilter("all");
+  };
+
   const toggleFavorite = async (item: AvatarItem) => {
     if (!userId) return;
     const current = owned.get(item.id);
@@ -590,7 +595,7 @@ export default function AvatarEditor() {
               <button
                 key={c.key}
                 type="button"
-                onClick={() => setActiveCategory(c.key)}
+                onClick={() => selectCategory(c.key)}
                 className={cn(
                   "min-h-[44px] px-3 py-2 rounded-lg flex items-center gap-2 whitespace-nowrap text-sm font-medium border transition-colors",
                   active ? "border-primary bg-primary/10 text-primary" : "border-transparent text-muted-foreground hover:text-foreground",
@@ -618,7 +623,7 @@ export default function AvatarEditor() {
                     role="tab"
                     aria-selected={active}
                     type="button"
-                    onClick={() => setActiveCategory(c.key)}
+                    onClick={() => selectCategory(c.key)}
                     className={cn(
                       "w-full min-h-[44px] px-3 py-2 rounded-lg flex items-center gap-3 text-sm font-medium transition-colors",
                       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
