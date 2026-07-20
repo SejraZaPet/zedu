@@ -400,6 +400,71 @@ const ProfilePage = () => {
           </CardContent>
         </Card>
 
+        {/* Game profile (students) */}
+        {role === "user" && gameProfile && (() => {
+          const level = Math.max(1, gameProfile.level);
+          const curLevelXp = 50 * Math.pow(level - 1, 2);
+          const nextLevelXp = 50 * Math.pow(level, 2);
+          const span = Math.max(1, nextLevelXp - curLevelXp);
+          const intoLevel = Math.max(0, gameProfile.total_xp - curLevelXp);
+          const pct = Math.min(100, Math.round((intoLevel / span) * 100));
+          const joined = new Date(profile.created_at).toLocaleDateString("cs-CZ", { month: "long", year: "numeric" });
+          return (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Gamepad2 className="w-4 h-4 text-primary" />
+                  Herní profil
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Star className="w-4 h-4 text-primary" />
+                    <span className="font-medium">Level {level}</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {intoLevel} / {span} XP do dalšího levelu
+                  </span>
+                </div>
+                <Progress value={pct} aria-label={`Postup do dalšího levelu: ${pct}%`} />
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-lg border p-3">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Flame className="w-4 h-4 text-orange-500" />
+                      Studijní série
+                    </div>
+                    <p className="mt-1 font-semibold">
+                      {gameProfile.streak_days} {gameProfile.streak_days === 1 ? "den" : gameProfile.streak_days >= 2 && gameProfile.streak_days <= 4 ? "dny" : "dní"}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border p-3">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Trophy className="w-4 h-4 text-yellow-500" />
+                      Získané odznaky
+                    </div>
+                    <p className="mt-1 font-semibold">{gameProfile.badge_count}</p>
+                  </div>
+                </div>
+
+                {gameProfile.active_title && (
+                  <div>
+                    <Label className="text-muted-foreground text-xs">Aktivní titul</Label>
+                    <div className="mt-1">
+                      <Badge variant="outline" className="text-xs">{gameProfile.active_title}</Badge>
+                    </div>
+                  </div>
+                )}
+
+                <p className="text-xs text-muted-foreground">Na ZEDU od {joined}</p>
+              </CardContent>
+            </Card>
+          );
+        })()}
+
+
+
         {/* Editable fields */}
         <Card>
           <CardHeader>
