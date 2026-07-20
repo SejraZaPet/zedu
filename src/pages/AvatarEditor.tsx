@@ -435,7 +435,9 @@ export default function AvatarEditor() {
 
   const selectCategory = (category: Category) => {
     setActiveCategory(category);
-    setFilter("all");
+    if (category === "frame" || category === "effect") {
+      setFilter("all");
+    }
   };
 
   const toggleFavorite = async (item: AvatarItem) => {
