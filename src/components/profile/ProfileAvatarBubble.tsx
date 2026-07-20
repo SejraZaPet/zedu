@@ -50,19 +50,23 @@ const LAYER_ORDER: { field: keyof AvatarProfile; sub?: "back" | "front" }[] = [
   { field: "frame_id" },
 ];
 
-function hexToBrightness(hex: string): number {
+function hairTintFromHex(hex: string): { filter: string; useOverlay: boolean } {
   const m = hex.trim().match(/^#?([0-9a-f]{6})$/i);
-  if (!m) return 1;
+  if (!m) return { filter: "none", useOverlay: false };
   const n = parseInt(m[1], 16);
   const r = ((n >> 16) & 255) / 255;
   const g = ((n >> 8) & 255) / 255;
   const b = (n & 255) / 255;
   const max = Math.max(r, g, b), min = Math.min(r, g, b);
-  const L = ((max + min) / 2) * 100;
-  return Math.max(0.35, Math.min(2.2, 0.4 + (L / 100) * 1.7));
+  const L = (max + min) / 2;
+  const d = max - min;
+  const S = d === 0 ? 0 : d / (1 - Math.abs(2 * L - 1));
+  const F = Math.max(0.35, Math.min(2.6, 0.4 + L * 2.0));
+  const C = Math.max(0.45, Math.min(1, 1 - Math.max(0, F - 1) * 0.4));
+  return { filter: `brightness(${F}) contrast(${C})`, useOverlay: S > 0.08 };
 }
 
-function Layer({ item, sub, hairColor, hairIsNeutral }: { item: AvatarItem; sub?: "back" | "front"; hairColor?: string | null; hairIsNeutral?: boolean }) {
+function Layer({ item, sub, hairColor }: { item: AvatarItem; sub?: "back" | "front"; hairColor?: string | null }) {
   if (item.category === "frame") {
     return <FrameOverlay slug={item.slug} />;
   }
@@ -78,19 +82,7 @@ function Layer({ item, sub, hairColor, hairIsNeutral }: { item: AvatarItem; sub?
   };
   if (src) {
     if (item.category === "hairstyle" && hairColor) {
-      if (hairIsNeutral) {
-        const f = hexToBrightness(hairColor);
-        return (
-          <img
-            src={src}
-            alt=""
-            aria-hidden
-            draggable={false}
-            style={{ ...style, filter: `brightness(${f})` }}
-            className="w-full h-full object-contain pointer-events-none select-none"
-          />
-        );
-      }
+      const { filter, useOverlay } = hairTintFromHex(hairColor);
       return (
         <div aria-hidden style={style} className="w-full h-full pointer-events-none select-none">
           <img
@@ -98,25 +90,28 @@ function Layer({ item, sub, hairColor, hairIsNeutral }: { item: AvatarItem; sub?
             alt=""
             aria-hidden
             draggable={false}
+            style={{ filter }}
             className="absolute inset-0 w-full h-full object-contain pointer-events-none select-none"
           />
-          <div
-            aria-hidden
-            style={{
-              position: "absolute",
-              inset: 0,
-              background: hairColor,
-              mixBlendMode: "color",
-              WebkitMaskImage: `url(${src})`,
-              maskImage: `url(${src})`,
-              WebkitMaskRepeat: "no-repeat",
-              maskRepeat: "no-repeat",
-              WebkitMaskPosition: "center",
-              maskPosition: "center",
-              WebkitMaskSize: "contain",
-              maskSize: "contain",
-            }}
-          />
+          {useOverlay && (
+            <div
+              aria-hidden
+              style={{
+                position: "absolute",
+                inset: 0,
+                background: hairColor,
+                mixBlendMode: "color",
+                WebkitMaskImage: `url(${src})`,
+                maskImage: `url(${src})`,
+                WebkitMaskRepeat: "no-repeat",
+                maskRepeat: "no-repeat",
+                WebkitMaskPosition: "center",
+                maskPosition: "center",
+                WebkitMaskSize: "contain",
+                maskSize: "contain",
+              }}
+            />
+          )}
         </div>
       );
     }
@@ -136,6 +131,7 @@ function Layer({ item, sub, hairColor, hairIsNeutral }: { item: AvatarItem; sub?
   }
   return null;
 }
+
 
 
 interface Props {
