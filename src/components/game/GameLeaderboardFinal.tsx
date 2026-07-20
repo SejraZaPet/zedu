@@ -3,8 +3,8 @@ import { useMemo } from "react";
 import { Trophy, Home, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { AvatarSvg } from "@/components/student/AvatarSvg";
-import { useStudentAvatars } from "@/hooks/useStudentAvatars";
+import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
+
 
 interface Props {
   session: GameSession;
