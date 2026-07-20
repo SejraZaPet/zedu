@@ -2,6 +2,8 @@ import { useNavigate } from "react-router-dom";
 import { Check } from "lucide-react";
 import { getLandingIcon } from "@/lib/landing-icons";
 import { DEFAULT_FOR_WHOM_PROPS, mergeSectionProps } from "@/lib/landing-defaults";
+import Editable from "@/components/landing-edit/Editable";
+import { useLandingEditModeOptional } from "@/contexts/LandingEditModeContext";
 
 interface ForWhomProps {
   props?: Partial<typeof DEFAULT_FOR_WHOM_PROPS>;
