@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 interface Props {
   slug: string;
   size?: number;
+  reduceMotion?: boolean;
 }
 
 function usePrefersReducedMotion() {
