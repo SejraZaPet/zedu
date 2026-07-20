@@ -554,6 +554,46 @@ export default function AvatarEditor() {
     else navigate(-1);
   };
 
+  // ---------- "New item unlocked" queue handlers ----------
+  const clearIsNew = async (itemId: string, extraPatch: Record<string, unknown> = {}) => {
+    if (!userId) return;
+    setOwned((prev) => {
+      const m = new Map(prev);
+      const cur = m.get(itemId);
+      if (cur) m.set(itemId, { ...cur, is_new: false, ...(extraPatch.is_favorite !== undefined ? { is_favorite: extraPatch.is_favorite as boolean } : {}) });
+      return m;
+    });
+    setNewQueue((q) => q.filter((id) => id !== itemId));
+    const { error } = await supabase
+      .from("user_avatar_items")
+      .update({ is_new: false, ...extraPatch })
+      .eq("user_id", userId)
+      .eq("avatar_item_id", itemId);
+    if (error) {
+      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const tryOnNewItem = (item: AvatarItem) => {
+    if (draft) {
+      const meta = CATEGORY_META.find((c) => c.key === item.category);
+      if (meta) {
+        const val = meta.storesValue === "id" ? item.id : item.name;
+        setDraft({ ...draft, [meta.profileField]: val } as Profile);
+        setActiveCategory(item.category);
+      }
+    }
+    void clearIsNew(item.id);
+  };
+
+  const favoriteNewItem = (item: AvatarItem) => {
+    void clearIsNew(item.id, { is_favorite: true });
+  };
+
+  const continueNewItem = (item: AvatarItem) => {
+    void clearIsNew(item.id);
+  };
+
   // Onboarding: need to create profile first
   const onboardPickBase = async (baseId: string) => {
     if (!userId) return;
