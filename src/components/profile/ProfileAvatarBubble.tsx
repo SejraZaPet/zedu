@@ -188,7 +188,7 @@ export default function ProfileAvatarBubble({ userId, size = 56, className }: Pr
       }
       const { data: rows } = await supabase
         .from("avatar_items")
-        .select("id, slug, category, name, image_url, image_url_back, icon_name, color_value, rarity, layer_offset_x, layer_offset_y, layer_scale")
+        .select("id, slug, category, name, image_url, image_url_back, icon_name, color_value, is_neutral_color, rarity, layer_offset_x, layer_offset_y, layer_scale")
         .in("id", ids);
       if (!mounted) return;
       const m = new Map<string, AvatarItem>();
