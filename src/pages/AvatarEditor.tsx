@@ -404,6 +404,7 @@ export default function AvatarEditor() {
     const ownedMap = new Map<string, OwnedItem>();
     (ownedRes.data ?? []).forEach((r: any) => ownedMap.set(r.avatar_item_id, r));
     setOwned(ownedMap);
+    setNewQueue((ownedRes.data ?? []).filter((r: any) => r.is_new).map((r: any) => r.avatar_item_id as string));
     const prof = (profileRes.data as Profile | null) ?? null;
     setDbProfile(prof);
     setDraft(prof ? { ...prof } : null);
