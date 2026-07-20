@@ -68,7 +68,7 @@ const Hero = ({ props }: HeroProps) => {
           </h1>
 
           <p
-            className="text-base md:text-lg text-white max-w-xl mx-auto mb-8 mt-4 animate-fade-in-up leading-relaxed drop-shadow-md"
+            className="text-base md:text-lg text-white max-w-xl mx-auto mb-8 mt-4 animate-fade-in-up leading-relaxed drop-shadow-md whitespace-pre-line"
             style={{ animationDelay: "0.4s" }}
           >
             {p.subtitle}
