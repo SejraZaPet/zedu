@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import type { GamePlayer, GameSession } from "@/lib/game-types";
-import { AvatarSvg } from "@/components/student/AvatarSvg";
-import { useStudentAvatars } from "@/hooks/useStudentAvatars";
+import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
+
 import { getModeDef, getThemeDef, type GameMode } from "@/lib/game-modes";
 import { Trophy, Flag, Skull } from "lucide-react";
 
@@ -38,7 +38,7 @@ export const GameModeOverlay = ({ session, players }: Props) => {
     () => [...players].sort((a, b) => b.total_score - a.total_score),
     [players],
   );
-  const avatars = useStudentAvatars(sorted.map((p) => p.user_id));
+
 
   if (mode === "standard" || players.length === 0) return null;
 
@@ -79,7 +79,7 @@ export const GameModeOverlay = ({ session, players }: Props) => {
                     className="absolute top-1/2 -translate-y-1/2 transition-all duration-700 ease-out"
                     style={{ left: `calc(${pct}% - 16px)` }}
                   >
-                    <AvatarSvg slug={p.user_id ? avatars[p.user_id] : undefined} size={32} />
+                    <ProfileAvatarBubble userId={p.user_id ?? null} size={32} editable={false} />
                   </div>
                 </div>
                 <div className="flex items-center justify-between text-xs mt-1 px-1">
@@ -126,7 +126,7 @@ export const GameModeOverlay = ({ session, players }: Props) => {
                     />
                   ))}
                 </div>
-                <AvatarSvg slug={p.user_id ? avatars[p.user_id] : undefined} size={28} />
+                <ProfileAvatarBubble userId={p.user_id ?? null} size={28} editable={false} />
                 <span className="text-[11px] text-foreground truncate max-w-[64px]">{p.nickname}</span>
                 <span className="text-xs font-mono font-bold text-primary">{blocks}</span>
               </div>
@@ -160,7 +160,7 @@ export const GameModeOverlay = ({ session, players }: Props) => {
                 <Trophy className="absolute top-1 right-1 w-4 h-4 text-yellow-300" />
               )}
               <div className="relative">
-                <AvatarSvg slug={p.user_id ? avatars[p.user_id] : undefined} size={36} />
+                <ProfileAvatarBubble userId={p.user_id ?? null} size={36} editable={false} />
                 {themeId === "pirate" && (
                   <Skull className="absolute -bottom-1 -right-1 w-4 h-4 text-amber-300 bg-black/60 rounded-full p-0.5" />
                 )}

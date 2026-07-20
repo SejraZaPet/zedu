@@ -3,8 +3,8 @@ import { useMemo } from "react";
 import { Trophy, Home, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { AvatarSvg } from "@/components/student/AvatarSvg";
-import { useStudentAvatars } from "@/hooks/useStudentAvatars";
+import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
+
 
 interface Props {
   session: GameSession;
@@ -27,7 +27,7 @@ export const GameLeaderboardFinal = ({ session, players, responses, highlightPla
     [players]
   );
 
-  const avatars = useStudentAvatars(sortedPlayers.map((p) => p.user_id));
+
 
   const totalQuestions = session.activity_data.length;
   const totalCorrect = responses.filter((r) => r.is_correct).length;
@@ -95,7 +95,7 @@ export const GameLeaderboardFinal = ({ session, players, responses, highlightPla
                 <span className={style.size}>{style.emoji}</span>
                 <div className={`rounded-2xl border-2 p-4 ${style.bg} ${isHighlighted ? "ring-2 ring-primary" : ""}`}>
                   <div className="flex justify-center mb-2">
-                    <AvatarSvg slug={player.user_id ? avatars[player.user_id] : undefined} size={56} />
+                    <ProfileAvatarBubble userId={player.user_id ?? null} size={56} editable={false} />
                   </div>
                   <p className={`font-heading font-bold text-foreground ${style.nameSize} truncate`}>
                     {player.nickname}
@@ -116,7 +116,7 @@ export const GameLeaderboardFinal = ({ session, players, responses, highlightPla
                 className={`flex items-center gap-3 py-2 px-3 rounded-lg ${player.id === highlightPlayerId ? "bg-primary/10" : "hover:bg-muted/30"}`}
               >
                 <span className="text-sm font-bold text-muted-foreground w-6">{i + 4}.</span>
-                <AvatarSvg slug={player.user_id ? avatars[player.user_id] : undefined} size={32} />
+                <ProfileAvatarBubble userId={player.user_id ?? null} size={32} editable={false} />
                 <span className="flex-1 font-medium text-foreground">{player.nickname}</span>
                 <span className="font-mono font-bold text-primary text-sm">{player.total_score} b.</span>
               </div>

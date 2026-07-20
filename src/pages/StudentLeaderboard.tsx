@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { AvatarSvg } from "@/components/student/AvatarSvg";
+import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
 import { Trophy, Lock, Award } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
@@ -28,8 +28,8 @@ interface Row {
   level: number;
   xp: number;
   badges: number;
-  avatarSlug?: string;
 }
+
 
 const StudentLeaderboard = () => {
   const { user } = useAuth();
@@ -72,10 +72,9 @@ const StudentLeaderboard = () => {
       const ids = (members ?? []).map((m: any) => m.user_id);
       if (ids.length === 0) { setRows([]); setLoading(false); return; }
 
-      const [{ data: profiles }, { data: xps }, { data: avatars }, { data: badges }, { data: baselines }] = await Promise.all([
+      const [{ data: profiles }, { data: xps }, { data: badges }, { data: baselines }] = await Promise.all([
         supabase.from("profiles").select("id, first_name, last_name").in("id", ids),
         supabase.from("student_xp").select("student_id, total_xp, level").in("student_id", ids),
-        supabase.from("student_avatars").select("student_id, avatar_slug").in("student_id", ids),
         supabase.from("student_badges").select("student_id").in("student_id", ids),
         supabase.from("class_leaderboard_baselines").select("student_id, baseline_xp").eq("class_id", classId),
       ]);
@@ -84,10 +83,9 @@ const StudentLeaderboard = () => {
       (baselines ?? []).forEach((b: any) => baseMap.set(b.student_id, b.baseline_xp ?? 0));
       const xpMap = new Map<string, { total: number; level: number }>();
       (xps ?? []).forEach((x: any) => xpMap.set(x.student_id, { total: x.total_xp ?? 0, level: x.level ?? 1 }));
-      const avMap = new Map<string, string>();
-      (avatars ?? []).forEach((a: any) => avMap.set(a.student_id, a.avatar_slug));
       const badgeCount = new Map<string, number>();
       (badges ?? []).forEach((b: any) => badgeCount.set(b.student_id, (badgeCount.get(b.student_id) ?? 0) + 1));
+
 
       const anon = !!currentClass?.leaderboard_anonymous;
 
@@ -104,8 +102,8 @@ const StudentLeaderboard = () => {
           level: xp?.level ?? 1,
           xp: Math.max(0, total),
           badges: badgeCount.get(id) ?? 0,
-          avatarSlug: avMap.get(id),
         };
+
       }).sort((a, b) => b.xp - a.xp);
 
       setRows(built);
@@ -178,7 +176,7 @@ const StudentLeaderboard = () => {
                             className={`flex items-center gap-3 px-3 py-2 rounded-lg border ${r.isMe ? "border-primary bg-primary/5" : "border-border bg-muted/30"}`}
                           >
                             <span className={`w-7 text-right font-bold ${medal}`}>{i + 1}.</span>
-                            <AvatarSvg slug={r.avatarSlug} size={36} />
+                            <ProfileAvatarBubble userId={r.isMe || r.display !== "Anonymní žák" ? r.user_id : null} size={36} editable={false} />
                             <div className="flex-1 min-w-0">
                               <p className="font-medium truncate">
                                 {r.display}{r.isMe && <span className="ml-1 text-xs text-primary">(ty)</span>}

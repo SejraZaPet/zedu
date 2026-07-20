@@ -4,8 +4,8 @@ import { Progress } from "@/components/ui/progress";
 import { ArrowRight, Trophy, SkipForward, Users } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
 import { t } from "@/lib/t";
-import { AvatarSvg } from "@/components/student/AvatarSvg";
-import { useStudentAvatars } from "@/hooks/useStudentAvatars";
+import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
+
 import { GameModeOverlay } from "@/components/game/GameModeOverlay";
 import { getVisualTheme, playRecipe } from "@/lib/game-themes";
 import { cn } from "@/lib/utils";
@@ -59,7 +59,7 @@ export const GameProjector = ({ session, players, responses, countdown, onShowRe
     [session.teams, players]
   );
 
-  const avatars = useStudentAvatars(leaderboard.map((p) => p.user_id));
+
 
   // Play themed sounds for new responses on current question
   const lastPlayedRef = useRef(0);
@@ -216,7 +216,7 @@ export const GameProjector = ({ session, players, responses, countdown, onShowRe
                         <span className={`text-xl font-bold ${i === 0 ? "text-yellow-500" : i === 1 ? "text-gray-400" : i === 2 ? "text-amber-600" : "text-muted-foreground"}`}>
                           {i + 1}.
                         </span>
-                        <AvatarSvg slug={player.user_id ? avatars[player.user_id] : undefined} size={32} />
+                        <ProfileAvatarBubble userId={player.user_id ?? null} size={32} editable={false} />
                         <span className="flex-1 font-medium text-foreground">{player.nickname}</span>
                         <span className="font-mono font-bold text-primary">{player.total_score}</span>
                       </div>

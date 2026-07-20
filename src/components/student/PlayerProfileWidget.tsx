@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger,
 } from "@/components/ui/dialog";
-import { AvatarSvg } from "@/components/student/AvatarSvg";
-import { useStudentAvatar } from "@/hooks/useStudentAvatars";
+import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
+
 import { BADGES, getBadge, xpForLevel } from "@/lib/badges";
 import { Flame, Trophy, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -27,7 +27,7 @@ const formatDate = (iso: string) =>
   new Date(iso).toLocaleDateString("cs-CZ", { day: "numeric", month: "numeric", year: "numeric" });
 
 const PlayerProfileWidget = ({ userId, firstName, lastName }: Props) => {
-  const avatarSlug = useStudentAvatar(userId);
+
   const [xp, setXp] = useState(0);
   const [level, setLevel] = useState(1);
   const [streak, setStreak] = useState(0);
@@ -89,7 +89,7 @@ const PlayerProfileWidget = ({ userId, firstName, lastName }: Props) => {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-center gap-4">
-          <AvatarSvg slug={avatarSlug} size={88} />
+          <ProfileAvatarBubble userId={userId} size={88} editable={false} />
           <div className="flex-1 min-w-0">
             <div className="font-heading text-xl font-semibold truncate">{fullName}</div>
             <div className="flex items-center gap-3 mt-1 flex-wrap">

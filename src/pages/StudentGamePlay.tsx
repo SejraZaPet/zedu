@@ -16,8 +16,8 @@ import PollProjectorView from "@/components/activities/PollProjectorView";
 import QuizActivity from "@/components/activities/QuizActivity";
 import LiveWhiteboard, { WhiteboardData } from "@/components/game/LiveWhiteboard";
 import { Lock } from "lucide-react";
-import { AvatarSvg } from "@/components/student/AvatarSvg";
-import { useStudentAvatar } from "@/hooks/useStudentAvatars";
+import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
+
 import { useAuth } from "@/contexts/AuthContext";
 import { findPlayerTeam } from "@/lib/game-types";
 
@@ -36,7 +36,7 @@ const StudentGamePlay = () => {
   const [fetchAttempts, setFetchAttempts] = useState(0);
   const { session, players, responses, loading, connectionStatus, reconnect } = useGameSession(sessionId, fetchAttempts);
   const { user } = useAuth();
-  const myAvatar = useStudentAvatar(user?.id);
+
   const myPlayer = players.find((p) => p.id === playerId);
   const [answered, setAnswered] = useState<Set<number>>(new Set());
   const [lastResult, setLastResult] = useState<{ correct: boolean; score: number } | null>(null);
@@ -144,7 +144,7 @@ const StudentGamePlay = () => {
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
         <div className="text-center space-y-4">
           <div className="flex justify-center">
-            <AvatarSvg slug={myAvatar} size={96} />
+            <ProfileAvatarBubble userId={user?.id ?? null} size={96} editable={false} />
           </div>
           {myPlayer?.nickname && (
             <p className="font-heading text-xl font-bold">{myPlayer.nickname}</p>

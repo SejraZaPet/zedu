@@ -9,9 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Save, KeyRound, User, Mail, Sparkles, Check, Smile, Bell, Flame, Trophy, Star, Gamepad2, GraduationCap, Users, ClipboardList } from "lucide-react";
+import { ArrowLeft, Save, KeyRound, User, Mail, Sparkles, Check, Bell, Flame, Trophy, Star, Gamepad2, GraduationCap, Users, ClipboardList } from "lucide-react";
 import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
-import AvatarPicker from "@/components/student/AvatarPicker";
+
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
 import PushNotificationsCard from "@/components/profile/PushNotificationsCard";
@@ -562,20 +562,8 @@ const ProfilePage = () => {
           </CardContent>
         </Card>
 
-        {/* Avatar (students) */}
-        {role === "user" && user && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <Smile className="w-4 h-4 text-primary" />
-                Můj avatar
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <AvatarPicker userId={user.id} />
-            </CardContent>
-          </Card>
-        )}
+
+
 
         {/* Preferred study methods (students) */}
         {role === "user" && (
