@@ -263,6 +263,9 @@ function AvatarPreview({
     }
   }
 
+  const hairColorItem = profile.hair_color_id ? itemsById.get(profile.hair_color_id) : null;
+  const hairColor = hairColorItem?.color_value ?? null;
+
   return (
     <div
       className={cn(
@@ -278,7 +281,13 @@ function AvatarPreview({
         </div>
       )}
       {layers.map((l, idx) => (
-        <LayerVisual key={`${l.item.id}-${l.sub ?? "main"}-${idx}`} item={l.item} subLayer={l.sub} reduceMotion={reduceMotion} />
+        <LayerVisual
+          key={`${l.item.id}-${l.sub ?? "main"}-${idx}`}
+          item={l.item}
+          subLayer={l.sub}
+          reduceMotion={reduceMotion}
+          hairColor={l.item.category === "hairstyle" ? hairColor : null}
+        />
       ))}
       {profile.active_title && (
         <div className="absolute bottom-2 inset-x-2 text-center">
