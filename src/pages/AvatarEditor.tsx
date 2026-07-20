@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import SiteHeader from "@/components/SiteHeader";
+import FrameOverlay from "@/components/avatar/FrameOverlay";
+import EffectOverlay from "@/components/avatar/EffectOverlay";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -153,8 +155,15 @@ function unlockLabel(item: AvatarItem): string {
 
 // ---------- Layer renderer ----------
 function LayerVisual({
-  item, subLayer,
-}: { item: AvatarItem; subLayer?: "back" | "front" }) {
+  item, subLayer, reduceMotion,
+}: { item: AvatarItem; subLayer?: "back" | "front"; reduceMotion?: boolean }) {
+  // Decorative SVG overlays for frame/effect — no image_url needed
+  if (item.category === "frame") {
+    return <FrameOverlay slug={item.slug} reduceMotion={reduceMotion} />;
+  }
+  if (item.category === "effect") {
+    return <EffectOverlay slug={item.slug} reduceMotion={reduceMotion} />;
+  }
   const src = subLayer === "back" ? item.image_url_back : item.image_url;
   const style: React.CSSProperties = {
     position: "absolute",
@@ -247,7 +256,7 @@ function AvatarPreview({
         </div>
       )}
       {layers.map((l, idx) => (
-        <LayerVisual key={`${l.item.id}-${l.sub ?? "main"}-${idx}`} item={l.item} subLayer={l.sub} />
+        <LayerVisual key={`${l.item.id}-${l.sub ?? "main"}-${idx}`} item={l.item} subLayer={l.sub} reduceMotion={reduceMotion} />
       ))}
       {profile.active_title && (
         <div className="absolute bottom-2 inset-x-2 text-center">

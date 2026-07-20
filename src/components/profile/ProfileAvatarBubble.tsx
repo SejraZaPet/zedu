@@ -3,9 +3,12 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
+import FrameOverlay from "@/components/avatar/FrameOverlay";
+import EffectOverlay from "@/components/avatar/EffectOverlay";
 
 interface AvatarItem {
   id: string;
+  slug: string;
   category: string;
   name: string;
   image_url: string | null;
@@ -41,6 +44,12 @@ const LAYER_ORDER: { field: keyof AvatarProfile; sub?: "back" | "front" }[] = [
 ];
 
 function Layer({ item, sub }: { item: AvatarItem; sub?: "back" | "front" }) {
+  if (item.category === "frame") {
+    return <FrameOverlay slug={item.slug} />;
+  }
+  if (item.category === "effect") {
+    return <EffectOverlay slug={item.slug} />;
+  }
   const src = sub === "back" ? item.image_url_back : item.image_url;
   const style: React.CSSProperties = {
     position: "absolute",
@@ -102,7 +111,7 @@ export default function ProfileAvatarBubble({ userId, size = 56, className }: Pr
       }
       const { data: rows } = await supabase
         .from("avatar_items")
-        .select("id, category, name, image_url, image_url_back, color_value, layer_offset_x, layer_offset_y, layer_scale")
+        .select("id, slug, category, name, image_url, image_url_back, color_value, layer_offset_x, layer_offset_y, layer_scale")
         .in("id", ids);
       if (!mounted) return;
       const m = new Map<string, AvatarItem>();
