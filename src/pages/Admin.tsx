@@ -23,8 +23,9 @@ import SchoolsManager from "@/components/admin/SchoolsManager";
 import SystemStats from "@/components/admin/SystemStats";
 import AuditLogViewer from "@/components/admin/AuditLogViewer";
 import TextbookTemplatesManager from "@/components/admin/TextbookTemplatesManager";
+import LandingPageManager from "@/components/admin/LandingPageManager";
 import { Button } from "@/components/ui/button";
-import { BookOpen, LogOut, Home, GraduationCap, Settings, Users, School, BarChart3, LayoutDashboard, HelpCircle, ListTree, CircleHelp, Link2, Pencil, Video, Bell, Activity, FileText, Sparkles } from "lucide-react";
+import { BookOpen, LogOut, Home, GraduationCap, Settings, Users, School, BarChart3, LayoutDashboard, HelpCircle, ListTree, CircleHelp, Link2, Pencil, Video, Bell, Activity, FileText, Sparkles, Globe } from "lucide-react";
 
 const adminTabs = [
   { id: "dashboard", label: "Přehled", icon: LayoutDashboard },
@@ -32,6 +33,7 @@ const adminTabs = [
   { id: "schools", label: "Školy", icon: School },
   { id: "users", label: "Uživatelé", icon: Users },
   { id: "templates", label: "Šablony", icon: Sparkles },
+  { id: "landing", label: "Landing page", icon: Globe },
   { id: "notifications", label: "Notifikace", icon: Bell },
   { id: "audit", label: "Audit log", icon: FileText },
   { id: "help", label: "Nápověda", icon: HelpCircle },
@@ -52,7 +54,7 @@ const teacherTabs = [
   { id: "help", label: "Nápověda", icon: HelpCircle },
 ] as const;
 
-type Tab = "dashboard" | "stats" | "textbooks" | "lessons" | "outline" | "mcq" | "matching" | "slide-edit" | "video-ai" | "subjects" | "users" | "classes" | "results" | "help" | "notifications" | "schools" | "audit" | "templates";
+type Tab = "dashboard" | "stats" | "textbooks" | "lessons" | "outline" | "mcq" | "matching" | "slide-edit" | "video-ai" | "subjects" | "users" | "classes" | "results" | "help" | "notifications" | "schools" | "audit" | "templates" | "landing";
 
 const Admin = () => {
   const { isAdmin, isTeacher, loading, logout } = useAdmin();
@@ -136,6 +138,7 @@ const Admin = () => {
         {activeTab === "schools" && !isTeacher && <SchoolsManager />}
         {activeTab === "audit" && !isTeacher && <AuditLogViewer />}
         {activeTab === "templates" && !isTeacher && <TextbookTemplatesManager />}
+        {activeTab === "landing" && !isTeacher && <LandingPageManager />}
         {activeTab === "help" && <HelpGuidesManager />}
       </div>
     </div>
