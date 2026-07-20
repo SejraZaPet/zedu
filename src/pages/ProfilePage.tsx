@@ -107,6 +107,14 @@ const ProfilePage = () => {
     active_title: string | null;
   } | null>(null);
 
+  // Teaching overview (teachers only)
+  const [teacherOverview, setTeacherOverview] = useState<{
+    class_count: number;
+    assignment_count: number;
+    active_title: string | null;
+  } | null>(null);
+
+
 
 
   useEffect(() => {
