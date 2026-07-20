@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Save, KeyRound, User, Mail, Sparkles, Check, Smile, Bell, Flame, Trophy, Star, Gamepad2 } from "lucide-react";
+import { ArrowLeft, Save, KeyRound, User, Mail, Sparkles, Check, Smile, Bell, Flame, Trophy, Star, Gamepad2, GraduationCap, Users, ClipboardList } from "lucide-react";
 import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
 import AvatarPicker from "@/components/student/AvatarPicker";
 import { Switch } from "@/components/ui/switch";
@@ -107,6 +107,14 @@ const ProfilePage = () => {
     active_title: string | null;
   } | null>(null);
 
+  // Teaching overview (teachers only)
+  const [teacherOverview, setTeacherOverview] = useState<{
+    class_count: number;
+    assignment_count: number;
+    active_title: string | null;
+  } | null>(null);
+
+
 
 
   useEffect(() => {
@@ -188,6 +196,24 @@ const ProfilePage = () => {
         total_xp: xp.total_xp ?? 0,
         streak_days: xp.streak_days ?? 0,
         badge_count: badgesRes.count ?? 0,
+        active_title: (avatarRes.data as any)?.active_title ?? null,
+      });
+    })();
+  }, [user, role]);
+
+  // Load teaching overview for teachers
+  useEffect(() => {
+    if (!user || role !== "teacher") return;
+    (async () => {
+      const [classesRes, assignmentsRes, avatarRes] = await Promise.all([
+        supabase.from("class_teachers").select("class_id").eq("user_id", user.id),
+        supabase.from("assignments").select("id", { count: "exact", head: true }).eq("teacher_id", user.id),
+        supabase.from("avatar_profiles").select("active_title").eq("user_id", user.id).maybeSingle(),
+      ]);
+      const uniqueClasses = new Set(((classesRes.data ?? []) as any[]).map((r) => r.class_id));
+      setTeacherOverview({
+        class_count: uniqueClasses.size,
+        assignment_count: assignmentsRes.count ?? 0,
         active_title: (avatarRes.data as any)?.active_title ?? null,
       });
     })();
@@ -462,6 +488,52 @@ const ProfilePage = () => {
             </Card>
           );
         })()}
+
+        {/* Teaching overview (teachers) */}
+        {role === "teacher" && teacherOverview && (() => {
+          const joined = new Date(profile.created_at).toLocaleDateString("cs-CZ", { month: "long", year: "numeric" });
+          return (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <GraduationCap className="w-4 h-4 text-primary" />
+                  Přehled výuky
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-lg border p-3">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Users className="w-4 h-4 text-primary" />
+                      Vyučované třídy
+                    </div>
+                    <p className="mt-1 font-semibold">{teacherOverview.class_count}</p>
+                  </div>
+                  <div className="rounded-lg border p-3">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <ClipboardList className="w-4 h-4 text-secondary" />
+                      Vytvořené úkoly
+                    </div>
+                    <p className="mt-1 font-semibold">{teacherOverview.assignment_count}</p>
+                  </div>
+                </div>
+
+                {teacherOverview.active_title && (
+                  <div>
+                    <Label className="text-muted-foreground text-xs">Aktivní titul</Label>
+                    <div className="mt-1">
+                      <Badge variant="outline" className="text-xs">{teacherOverview.active_title}</Badge>
+                    </div>
+                  </div>
+                )}
+
+                <p className="text-xs text-muted-foreground">Na ZEDU od {joined}</p>
+              </CardContent>
+            </Card>
+          );
+        })()}
+
+
 
 
 
