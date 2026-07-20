@@ -139,6 +139,7 @@ type HairVariant = {
   layer_offset_x: number;
   layer_offset_y: number;
   layer_scale: number;
+  updated_at?: string | null;
 };
 
 export default function AvatarItemsManager() {
@@ -211,6 +212,19 @@ export default function AvatarItemsManager() {
             map[v.base_id] = v as HairVariant;
           });
           setVariants(map);
+          // Auto-select the base of the most-recently-updated existing variant
+          const list = (data ?? []) as HairVariant[];
+          if (list.length > 0) {
+            const newest = [...list].sort((a, b) => {
+              const ta = a.updated_at ? Date.parse(a.updated_at) : 0;
+              const tb = b.updated_at ? Date.parse(b.updated_at) : 0;
+              return tb - ta;
+            })[0];
+            const baseItem = items.find((i) => i.id === newest.base_id);
+            if (baseItem?.slug) setPreviewBaseSlug(baseItem.slug);
+          } else {
+            setPreviewBaseSlug("base_01");
+          }
         });
     } else {
       setVariants({});
@@ -765,9 +779,29 @@ export default function AvatarItemsManager() {
                         <Select value={previewBaseSlug} onValueChange={setPreviewBaseSlug}>
                           <SelectTrigger className="h-8 w-[140px]"><SelectValue /></SelectTrigger>
                           <SelectContent>
-                            {bases.map((b) => (
-                              <SelectItem key={b.id} value={b.slug}>{b.slug}</SelectItem>
-                            ))}
+                            {(() => {
+                              const isHair = editing?.category === "hairstyle";
+                              const variantBases = isHair
+                                ? bases.filter((b) => variants[b.id])
+                                : [];
+                              const hasAnyVariant = variantBases.length > 0;
+                              let list: typeof bases;
+                              if (!isHair) {
+                                list = bases;
+                              } else if (hasAnyVariant) {
+                                list = [
+                                  ...variantBases,
+                                  ...(variantBases.some((b) => b.slug === "base_01")
+                                    ? []
+                                    : bases.filter((b) => b.slug === "base_01")),
+                                ];
+                              } else {
+                                list = bases.filter((b) => b.slug === "base_01");
+                              }
+                              return list.map((b) => (
+                                <SelectItem key={b.id} value={b.slug}>{b.slug}</SelectItem>
+                              ));
+                            })()}
                           </SelectContent>
                         </Select>
                       </div>
