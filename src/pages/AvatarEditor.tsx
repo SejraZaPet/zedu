@@ -510,17 +510,31 @@ export default function AvatarEditor() {
   };
 
   if (authLoading || loading) {
-    return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Načítání…</div>;
+    return (
+      <div className="min-h-screen bg-background">
+        <SiteHeader />
+        <div className="flex items-center justify-center py-24 text-muted-foreground">Načítání…</div>
+      </div>
+    );
   }
   if (!userId) {
-    return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Musíš být přihlášen(a).</div>;
+    return (
+      <div className="min-h-screen bg-background">
+        <SiteHeader />
+        <div className="flex items-center justify-center py-24 text-muted-foreground">Musíš být přihlášen(a).</div>
+      </div>
+    );
   }
 
   if (!dbProfile) {
     const ownedIds = new Set(owned.keys());
-    // include default bases as pickable
     bases.forEach((b) => { if (b.unlock_type === "default" || b.is_default) ownedIds.add(b.id); });
-    return <BaseOnboarding bases={bases} ownedIds={ownedIds} onPick={onboardPickBase} />;
+    return (
+      <div className="min-h-screen bg-background">
+        <SiteHeader />
+        <BaseOnboarding bases={bases} ownedIds={ownedIds} onPick={onboardPickBase} />
+      </div>
+    );
   }
 
   const currentList = (itemsByCategory.get(activeCategory) ?? []).slice().sort((a, b) => a.sort_order - b.sort_order);
