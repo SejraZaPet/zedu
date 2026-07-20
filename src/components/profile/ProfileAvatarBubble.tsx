@@ -240,6 +240,8 @@ export default function ProfileAvatarBubble({ userId, size = 56, className }: Pr
               item={l.item}
               sub={l.sub}
               hairColor={l.item.category === "hairstyle" ? hairColor : null}
+              hairIsNeutral={l.item.category === "hairstyle" ? hairIsNeutral : false}
+
             />
           ))
         ) : (
