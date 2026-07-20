@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Lightbulb, Search, Sparkles, BarChart3, BookOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { BrandGradientBar } from "@/components/charts/BrandGradientBar";
 
 type LearningMethod = {
   id: string;
