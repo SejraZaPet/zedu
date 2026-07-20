@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Image as ImageIcon } from "lucide-react";
 import { DEFAULT_PLATFORM_SHOWCASE_PROPS, mergeSectionProps } from "@/lib/landing-defaults";
+import Editable from "@/components/landing-edit/Editable";
+import { useLandingEditModeOptional } from "@/contexts/LandingEditModeContext";
 
 interface PlatformShowcaseProps {
   props?: Partial<typeof DEFAULT_PLATFORM_SHOWCASE_PROPS>;
