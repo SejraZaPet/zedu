@@ -445,6 +445,75 @@ export default function AvatarItemsManager() {
     setEditing((current) => (current ? { ...current, [key]: value } : current));
   };
 
+  const updateVariantValue = (key: keyof CalibrationValues, value: number) => {
+    if (!Number.isFinite(value)) return;
+    variantDraftRef.current = { ...variantDraftRef.current, [key]: value };
+    setVariantValues((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const updateCurrentValue = (key: keyof CalibrationValues, value: number) => {
+    if (isVariantMode) updateVariantValue(key, value);
+    else updateCalibrationValue(key, value);
+  };
+
+  const saveVariantCalibration = async () => {
+    if (!activeVariant) return;
+    const expected = variantDraftRef.current;
+    if (!calibrationMatches(expected, expected)) {
+      toast({ title: "Neplatné hodnoty kalibrace", variant: "destructive" });
+      return;
+    }
+    const variantId = activeVariant.id;
+    setCalibrating(true);
+    const { data, error } = await supabase
+      .from("avatar_item_base_variants")
+      .update({ ...expected, updated_at: new Date().toISOString() })
+      .eq("id", variantId)
+      .select("id, base_id, avatar_item_id, image_url, image_url_back, layer_offset_x, layer_offset_y, layer_scale")
+      .maybeSingle();
+    if (error) {
+      setCalibrating(false);
+      toast({ title: "Uložení varianty selhalo", description: error.message, variant: "destructive" });
+      return;
+    }
+    if (!data) {
+      setCalibrating(false);
+      toast({
+        title: "Varianta nebyla uložena",
+        description: "Databáze neaktualizovala žádný řádek (RLS?). Obnovte stránku a zkuste znovu.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!calibrationMatches(data, expected)) {
+      setCalibrating(false);
+      toast({
+        title: "Kalibrace varianty nebyla potvrzena",
+        description: `Odesláno ${expected.layer_offset_x} / ${expected.layer_offset_y} / ${expected.layer_scale}, server vrátil ${data.layer_offset_x} / ${data.layer_offset_y} / ${data.layer_scale}.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    const { data: verifyData, error: verifyError } = await supabase
+      .from("avatar_item_base_variants")
+      .select("id, base_id, avatar_item_id, image_url, image_url_back, layer_offset_x, layer_offset_y, layer_scale")
+      .eq("id", variantId)
+      .maybeSingle();
+    setCalibrating(false);
+    if (verifyError || !verifyData || !calibrationMatches(verifyData, expected)) {
+      toast({
+        title: "Varianta nebyla potvrzena v databázi",
+        description: verifyError?.message ?? "Kontrolní SELECT nevrátil shodné hodnoty.",
+        variant: "destructive",
+      });
+      return;
+    }
+    const persisted = verifyData as HairVariant;
+    setVariants((prev) => ({ ...prev, [persisted.base_id]: persisted }));
+    toast({ title: "Kalibrace varianty uložena" });
+  };
+
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
