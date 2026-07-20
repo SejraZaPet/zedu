@@ -99,17 +99,18 @@ const CATEGORY_ICON: Record<Category, React.ComponentType<{ className?: string }
   CATEGORY_META.map((c) => [c.key, c.icon]),
 ) as Record<Category, React.ComponentType<{ className?: string }>>;
 
-// Bottom-up render order for the preview stack
-const LAYER_ORDER: Category[] = [
-  "background",
-  "hairstyle",     // hair_back via image_url_back
-  "base",
-  "outfit",
-  "hairstyle",     // hair_front via image_url
-  "face_accessory",
-  "head_accessory",
-  "effect",
-  "frame",
+// Bottom-up render order for the preview stack.
+// Explicit sub: "back" | "front" for hairstyle so we don't rely on positional counting.
+const LAYER_ORDER: { category: Category; sub?: "back" | "front" }[] = [
+  { category: "background" },
+  { category: "hairstyle", sub: "back" },
+  { category: "base" },
+  { category: "outfit" },
+  { category: "hairstyle", sub: "front" },
+  { category: "face_accessory" },
+  { category: "head_accessory" },
+  { category: "effect" },
+  { category: "frame" },
 ];
 
 const RARITY_LABEL: Record<AvatarItem["rarity"], string> = {
