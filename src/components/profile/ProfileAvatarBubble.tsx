@@ -136,18 +136,24 @@ function Layer({ item, sub, hairColor }: { item: AvatarItem; sub?: "back" | "fro
 
 
 interface Props {
-  userId: string;
+  userId: string | null | undefined;
   size?: number;
   className?: string;
+  /** When false, renders a plain (non-linked) avatar without pencil badge. Default true. */
+  editable?: boolean;
 }
 
-export default function ProfileAvatarBubble({ userId, size = 56, className }: Props) {
+export default function ProfileAvatarBubble({ userId, size = 56, className, editable = true }: Props) {
   const [profile, setProfile] = useState<AvatarProfile | null>(null);
   const [items, setItems] = useState<Map<string, AvatarItem>>(new Map());
   const [loading, setLoading] = useState(true);
   const [hasNew, setHasNew] = useState(false);
 
   useEffect(() => {
+    if (!userId || !editable) {
+      setHasNew(false);
+      return;
+    }
     let mounted = true;
     (async () => {
       const { count } = await supabase
@@ -158,10 +164,17 @@ export default function ProfileAvatarBubble({ userId, size = 56, className }: Pr
       if (mounted) setHasNew((count ?? 0) > 0);
     })();
     return () => { mounted = false; };
-  }, [userId]);
+  }, [userId, editable]);
 
   useEffect(() => {
+    if (!userId) {
+      setProfile(null);
+      setItems(new Map());
+      setLoading(false);
+      return;
+    }
     let mounted = true;
+    setLoading(true);
     (async () => {
       const { data: prof } = await supabase
         .from("avatar_profiles")
@@ -215,18 +228,13 @@ export default function ProfileAvatarBubble({ userId, size = 56, className }: Pr
 
   const hasContent = !loading && layers.length > 0;
 
-  return (
-    <Link
-      to="/avatar"
-      aria-label="Upravit avatara"
-      className={cn(
-        "relative inline-block rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background group",
-        className,
-      )}
-      style={{ width: size, height: size }}
-    >
+  const inner = (
+    <>
       <span
-        className="absolute inset-0 rounded-full overflow-hidden border-2 border-border bg-muted flex items-center justify-center transition-colors group-hover:border-primary/50"
+        className={cn(
+          "absolute inset-0 rounded-full overflow-hidden border-2 border-border bg-muted flex items-center justify-center",
+          editable && "transition-colors group-hover:border-primary/50",
+        )}
         aria-hidden
       >
         {hasContent ? (
@@ -236,8 +244,6 @@ export default function ProfileAvatarBubble({ userId, size = 56, className }: Pr
               item={l.item}
               sub={l.sub}
               hairColor={l.item.category === "hairstyle" ? hairColor : null}
-
-
             />
           ))
         ) : (
@@ -253,20 +259,49 @@ export default function ProfileAvatarBubble({ userId, size = 56, className }: Pr
           className="-bottom-0.5 -left-0.5"
         />
       )}
-      <span
-        aria-hidden
-        className="absolute -bottom-0.5 -right-0.5 rounded-full bg-primary text-primary-foreground shadow ring-2 ring-background flex items-center justify-center"
-        style={{ width: Math.max(20, size * 0.32), height: Math.max(20, size * 0.32) }}
-      >
-        <Pencil style={{ width: Math.max(10, size * 0.16), height: Math.max(10, size * 0.16) }} />
-      </span>
-      {hasNew && (
+      {editable && (
+        <span
+          aria-hidden
+          className="absolute -bottom-0.5 -right-0.5 rounded-full bg-primary text-primary-foreground shadow ring-2 ring-background flex items-center justify-center"
+          style={{ width: Math.max(20, size * 0.32), height: Math.max(20, size * 0.32) }}
+        >
+          <Pencil style={{ width: Math.max(10, size * 0.16), height: Math.max(10, size * 0.16) }} />
+        </span>
+      )}
+      {editable && hasNew && (
         <span
           aria-label="Nové položky odemčeny"
           className="absolute -top-0.5 -right-0.5 rounded-full bg-destructive ring-2 ring-background"
           style={{ width: Math.max(10, size * 0.2), height: Math.max(10, size * 0.2) }}
         />
       )}
+    </>
+  );
+
+  if (!editable) {
+    return (
+      <span
+        className={cn("relative inline-block rounded-full", className)}
+        style={{ width: size, height: size }}
+        aria-hidden
+      >
+        {inner}
+      </span>
+    );
+  }
+
+  return (
+    <Link
+      to="/avatar"
+      aria-label="Upravit avatara"
+      className={cn(
+        "relative inline-block rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background group",
+        className,
+      )}
+      style={{ width: size, height: size }}
+    >
+      {inner}
     </Link>
   );
 }
+
