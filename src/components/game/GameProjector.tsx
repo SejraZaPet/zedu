@@ -4,8 +4,8 @@ import { Progress } from "@/components/ui/progress";
 import { ArrowRight, Trophy, SkipForward, Users } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
 import { t } from "@/lib/t";
-import { AvatarSvg } from "@/components/student/AvatarSvg";
-import { useStudentAvatars } from "@/hooks/useStudentAvatars";
+import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
+
 import { GameModeOverlay } from "@/components/game/GameModeOverlay";
 import { getVisualTheme, playRecipe } from "@/lib/game-themes";
 import { cn } from "@/lib/utils";
