@@ -210,7 +210,6 @@ export default function ProfileAvatarBubble({ userId, size = 56, className }: Pr
 
   const hairColorItem = profile?.hair_color_id ? items.get(profile.hair_color_id) : null;
   const hairColor = hairColorItem?.color_value ?? null;
-  const hairIsNeutral = !!hairColorItem?.is_neutral_color;
 
 
   const hasContent = !loading && layers.length > 0;
@@ -236,7 +235,7 @@ export default function ProfileAvatarBubble({ userId, size = 56, className }: Pr
               item={l.item}
               sub={l.sub}
               hairColor={l.item.category === "hairstyle" ? hairColor : null}
-              hairIsNeutral={l.item.category === "hairstyle" ? hairIsNeutral : false}
+
 
             />
           ))
