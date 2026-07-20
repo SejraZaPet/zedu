@@ -156,6 +156,9 @@ export default function ProfileAvatarBubble({ userId, size = 56, className }: Pr
     }
   }
 
+  const hairColorItem = profile?.hair_color_id ? items.get(profile.hair_color_id) : null;
+  const hairColor = hairColorItem?.color_value ?? null;
+
   const hasContent = !loading && layers.length > 0;
 
   return (
@@ -174,7 +177,12 @@ export default function ProfileAvatarBubble({ userId, size = 56, className }: Pr
       >
         {hasContent ? (
           layers.map((l, i) => (
-            <Layer key={`${l.item.id}-${l.sub ?? "m"}-${i}`} item={l.item} sub={l.sub} />
+            <Layer
+              key={`${l.item.id}-${l.sub ?? "m"}-${i}`}
+              item={l.item}
+              sub={l.sub}
+              hairColor={l.item.category === "hairstyle" ? hairColor : null}
+            />
           ))
         ) : (
           <User className="w-1/2 h-1/2 text-muted-foreground" />
