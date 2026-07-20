@@ -8,6 +8,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from "recharts";
 import { Users, GraduationCap, BookOpen, ClipboardList, TrendingUp, Trophy } from "lucide-react";
+import { BrandGradientBar } from "@/components/charts/BrandGradientBar";
 
 type TeacherRow = {
   id: string;
