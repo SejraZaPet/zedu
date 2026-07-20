@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import type { GamePlayer, GameSession } from "@/lib/game-types";
-import { AvatarSvg } from "@/components/student/AvatarSvg";
-import { useStudentAvatars } from "@/hooks/useStudentAvatars";
+import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
+
 import { getModeDef, getThemeDef, type GameMode } from "@/lib/game-modes";
 import { Trophy, Flag, Skull } from "lucide-react";
 
