@@ -9,10 +9,11 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Save, KeyRound, User, Mail, Sparkles, Check, Smile, Bell } from "lucide-react";
+import { ArrowLeft, Save, KeyRound, User, Mail, Sparkles, Check, Smile, Bell, Flame, Trophy, Star, Gamepad2 } from "lucide-react";
 import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
 import AvatarPicker from "@/components/student/AvatarPicker";
 import { Switch } from "@/components/ui/switch";
+import { Progress } from "@/components/ui/progress";
 import PushNotificationsCard from "@/components/profile/PushNotificationsCard";
 
 const statusLabels: Record<string, string> = {
