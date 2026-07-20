@@ -201,6 +201,24 @@ const ProfilePage = () => {
     })();
   }, [user, role]);
 
+  // Load teaching overview for teachers
+  useEffect(() => {
+    if (!user || role !== "teacher") return;
+    (async () => {
+      const [classesRes, assignmentsRes, avatarRes] = await Promise.all([
+        supabase.from("class_teachers").select("class_id").eq("user_id", user.id),
+        supabase.from("assignments").select("id", { count: "exact", head: true }).eq("teacher_id", user.id),
+        supabase.from("avatar_profiles").select("active_title").eq("user_id", user.id).maybeSingle(),
+      ]);
+      const uniqueClasses = new Set(((classesRes.data ?? []) as any[]).map((r) => r.class_id));
+      setTeacherOverview({
+        class_count: uniqueClasses.size,
+        assignment_count: assignmentsRes.count ?? 0,
+        active_title: (avatarRes.data as any)?.active_title ?? null,
+      });
+    })();
+  }, [user, role]);
+
   const togglePreferred = (id: string) => {
     setPreferredIds((prev) => {
       if (prev.includes(id)) return prev.filter((x) => x !== id);
