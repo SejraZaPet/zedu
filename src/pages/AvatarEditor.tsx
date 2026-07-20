@@ -485,12 +485,18 @@ export default function AvatarEditor() {
     (async () => {
       const { data } = await supabase
         .from("avatar_item_base_variants")
-        .select("avatar_item_id, image_url, image_url_back")
+        .select("avatar_item_id, image_url, image_url_back, layer_offset_x, layer_offset_y, layer_scale")
         .eq("base_id", baseId);
       if (cancelled) return;
       const m: HairVariantMap = new Map();
       (data ?? []).forEach((r: any) => {
-        m.set(r.avatar_item_id, { image_url: r.image_url, image_url_back: r.image_url_back });
+        m.set(r.avatar_item_id, {
+          image_url: r.image_url,
+          image_url_back: r.image_url_back,
+          layer_offset_x: r.layer_offset_x,
+          layer_offset_y: r.layer_offset_y,
+          layer_scale: r.layer_scale,
+        });
       });
       setHairVariants(m);
     })();
