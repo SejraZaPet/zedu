@@ -117,7 +117,7 @@ export default function ProfileAvatarBubble({ userId, size = 56, className }: Pr
     (async () => {
       const { count } = await supabase
         .from("user_avatar_items")
-        .select("item_id", { count: "exact", head: true })
+        .select("avatar_item_id", { count: "exact", head: true })
         .eq("user_id", userId)
         .eq("is_new", true);
       if (mounted) setHasNew((count ?? 0) > 0);
