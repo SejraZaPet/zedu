@@ -71,6 +71,7 @@ import SchoolAdmin from "./pages/SchoolAdmin";
 import MarketplacePage from "./pages/MarketplacePage";
 import MarketplaceDetailPage from "./pages/MarketplaceDetailPage";
 import TeacherPublications from "./pages/TeacherPublications";
+import AvatarEditor from "./pages/AvatarEditor";
 import ViewAsBanner from "./components/ViewAsBanner";
 
 
