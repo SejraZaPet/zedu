@@ -240,6 +240,7 @@ export default function AvatarItemsManager() {
   const showBack = cat === "hairstyle";
   const showColor = cat === "hair_color";
   const CALIB_CATEGORIES: Category[] = [
+    "base",
     "hairstyle",
     "outfit",
     "face_accessory",
@@ -247,6 +248,10 @@ export default function AvatarItemsManager() {
     "frame",
     "effect",
   ];
+  const base01 = useMemo(() => bases.find((b) => b.slug === "base_01"), [bases]);
+  const isCalibratingBase = cat === "base";
+  const showBase01Ghost =
+    isCalibratingBase && !!base01?.image_url && editing?.slug !== "base_01";
   const showCalibration =
     !!cat && CALIB_CATEGORIES.includes(cat) && !!(editing?.image_url ?? "").trim();
 
