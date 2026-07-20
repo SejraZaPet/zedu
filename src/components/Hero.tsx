@@ -4,6 +4,7 @@ import heroBgDefault from "@/assets/hero-students.png";
 import heroLogoDefault from "@/assets/zedu-hero-logo-text.png";
 import { getLandingIcon } from "@/lib/landing-icons";
 import { DEFAULT_HERO_PROPS, mergeSectionProps } from "@/lib/landing-defaults";
+import Editable from "@/components/landing-edit/Editable";
 
 interface HeroProps {
   props?: Partial<typeof DEFAULT_HERO_PROPS>;
@@ -71,7 +72,7 @@ const Hero = ({ props }: HeroProps) => {
             className="text-base md:text-lg text-white max-w-xl mx-auto mb-8 mt-4 animate-fade-in-up leading-relaxed drop-shadow-md whitespace-pre-line"
             style={{ animationDelay: "0.4s" }}
           >
-            {p.subtitle}
+            <Editable path="subtitle" value={p.subtitle} multiline placeholder="Podtitulek…" />
           </p>
 
           <div
@@ -82,13 +83,15 @@ const Hero = ({ props }: HeroProps) => {
               onClick={handlePrimary}
               className="bg-white text-primary font-semibold rounded-2xl px-8 py-4 text-lg shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all inline-flex items-center justify-center"
             >
-              <PrimaryIcon className="w-5 h-5 mr-2" /> {p.primary_cta?.label ?? "Vyzkoušet zdarma"}
+              <PrimaryIcon className="w-5 h-5 mr-2" />{" "}
+              <Editable path="primary_cta.label" value={p.primary_cta?.label ?? "Vyzkoušet zdarma"} placeholder="Text tlačítka" />
             </button>
             <button
               onClick={handleSecondary}
               className="bg-white/20 backdrop-blur-sm border border-white/30 text-white font-semibold rounded-2xl px-8 py-4 text-lg hover:bg-white/30 transition-all inline-flex items-center justify-center"
             >
-              <SecondaryIcon className="w-5 h-5 mr-2" /> {p.secondary_cta?.label ?? "Jak to funguje ↓"}
+              <SecondaryIcon className="w-5 h-5 mr-2" />{" "}
+              <Editable path="secondary_cta.label" value={p.secondary_cta?.label ?? "Jak to funguje ↓"} placeholder="Text tlačítka" />
             </button>
           </div>
 
@@ -97,7 +100,7 @@ const Hero = ({ props }: HeroProps) => {
               className="text-sm text-white/90 mt-4 animate-fade-in-up drop-shadow-md"
               style={{ animationDelay: "0.6s" }}
             >
-              {p.disclaimer}
+              <Editable path="disclaimer" value={p.disclaimer} placeholder="Poznámka pod tlačítky" />
             </p>
           )}
         </div>

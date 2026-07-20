@@ -3,6 +3,7 @@ import { Pencil, Trash2, GripVertical } from "lucide-react";
 import { useLandingEditMode } from "@/contexts/LandingEditModeContext";
 import type { LandingSectionRow } from "@/hooks/useLandingSections";
 import { SECTION_TYPE_LABELS } from "@/components/admin/landing/section-editors";
+import { SectionProvider } from "./SectionContext";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -16,7 +17,7 @@ export default function EditableSectionWrapper({ section, children, onDelete, dr
   const { isEditMode, openPanel, isDirty } = useLandingEditMode();
   const [hover, setHover] = useState(false);
 
-  if (!isEditMode) return <>{children}</>;
+  if (!isEditMode) return <SectionProvider section={section}>{children}</SectionProvider>;
 
   const dirty = isDirty(section.id);
 
@@ -72,7 +73,7 @@ export default function EditableSectionWrapper({ section, children, onDelete, dr
         )}
       </div>
 
-      {children}
+      <SectionProvider section={section}>{children}</SectionProvider>
     </div>
   );
 }
