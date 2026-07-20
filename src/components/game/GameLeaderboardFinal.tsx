@@ -95,7 +95,7 @@ export const GameLeaderboardFinal = ({ session, players, responses, highlightPla
                 <span className={style.size}>{style.emoji}</span>
                 <div className={`rounded-2xl border-2 p-4 ${style.bg} ${isHighlighted ? "ring-2 ring-primary" : ""}`}>
                   <div className="flex justify-center mb-2">
-                    <AvatarSvg slug={player.user_id ? avatars[player.user_id] : undefined} size={56} />
+                    <ProfileAvatarBubble userId={player.user_id ?? null} size={56} editable={false} />
                   </div>
                   <p className={`font-heading font-bold text-foreground ${style.nameSize} truncate`}>
                     {player.nickname}
