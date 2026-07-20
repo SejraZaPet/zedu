@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger,
 } from "@/components/ui/dialog";
-import { AvatarSvg } from "@/components/student/AvatarSvg";
-import { useStudentAvatar } from "@/hooks/useStudentAvatars";
+import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
+
 import { BADGES, getBadge, xpForLevel } from "@/lib/badges";
 import { Flame, Trophy, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
