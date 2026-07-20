@@ -273,7 +273,6 @@ export default function AvatarItemsManager() {
   const showBack = cat === "hairstyle";
   const showColor = cat === "hair_color";
   const CALIB_CATEGORIES: Category[] = [
-    "base",
     "hairstyle",
     "outfit",
     "face_accessory",
@@ -290,21 +289,11 @@ export default function AvatarItemsManager() {
 
   const saveCalibration = async () => {
     const expected = calibrationDraftRef.current;
-    console.log("[calib] start", {
-      id: editing?.id,
-      slug: editing?.slug,
-      category: editing?.category,
-      ox: expected?.layer_offset_x,
-      oy: expected?.layer_offset_y,
-      sc: expected?.layer_scale,
-    });
     if (!editing?.id || !editing.slug) {
-      console.log("[calib] final decision", { willShowSuccess: false, reason: "missing id/slug" });
       toast({ title: "Nejprve položku uložte", variant: "destructive" });
       return;
     }
     if (editing.slug === "base_01") {
-      console.log("[calib] final decision", { willShowSuccess: false, reason: "base_01 is reference" });
       toast({
         title: "base_01 je referenční a nelze kalibrovat",
         variant: "destructive",
@@ -314,7 +303,6 @@ export default function AvatarItemsManager() {
     const targetId = editing.id;
     const targetSlug = editing.slug;
     if (!calibrationMatches(expected, expected)) {
-      console.log("[calib] final decision", { willShowSuccess: false, reason: "invalid values" });
       toast({ title: "Neplatné hodnoty kalibrace", variant: "destructive" });
       return;
     }
@@ -330,10 +318,8 @@ export default function AvatarItemsManager() {
       .eq("slug", targetSlug)
       .select("id, slug, layer_offset_x, layer_offset_y, layer_scale, updated_at")
       .maybeSingle();
-    console.log("[calib] update result", { data, error });
     if (error) {
       setCalibrating(false);
-      console.log("[calib] final decision", { willShowSuccess: false, reason: `update error: ${error.message}` });
       toast({
         title: "Uložení kalibrace selhalo",
         description: error.message,
@@ -343,7 +329,6 @@ export default function AvatarItemsManager() {
     }
     if (!data) {
       setCalibrating(false);
-      console.log("[calib] final decision", { willShowSuccess: false, reason: "no row returned from update (RLS?)" });
       toast({
         title: "Kalibrace nebyla uložena",
         description:
@@ -354,7 +339,6 @@ export default function AvatarItemsManager() {
     }
     if (!calibrationMatches(data, expected)) {
       setCalibrating(false);
-      console.log("[calib] final decision", { willShowSuccess: false, reason: "update returned mismatched values" });
       toast({
         title: "Kalibrace nebyla potvrzena",
         description: `Odesláno ${expected.layer_offset_x} / ${expected.layer_offset_y} / ${expected.layer_scale}, server vrátil ${data.layer_offset_x} / ${data.layer_offset_y} / ${data.layer_scale}.`,
@@ -369,13 +353,8 @@ export default function AvatarItemsManager() {
       .eq("id", targetId)
       .eq("slug", targetSlug)
       .maybeSingle();
-    console.log("[calib] verify result", { verifyData, verifyError });
     setCalibrating(false);
     if (verifyError || !verifyData || !calibrationMatches(verifyData, expected)) {
-      console.log("[calib] final decision", {
-        willShowSuccess: false,
-        reason: verifyError ? `verify error: ${verifyError.message}` : !verifyData ? "verify returned no row" : "verify values mismatch",
-      });
       toast({
         title: "Kalibrace nebyla potvrzena v databázi",
         description: verifyError?.message ?? "Kontrolní SELECT po uložení nevrátil stejné hodnoty, proto nezobrazuji falešný úspěch.",
@@ -386,7 +365,6 @@ export default function AvatarItemsManager() {
     const persistedPatch = verifyData as Partial<AvatarItem>;
     setItems((current) => current.map((item) => (item.id === targetId ? { ...item, ...persistedPatch } : item)));
     setEditing((current) => (current?.id === targetId ? { ...current, ...persistedPatch } : current));
-    console.log("[calib] final decision", { willShowSuccess: true, reason: "update+verify both matched expected" });
     toast({ title: "Kalibrace uložena" });
   };
 
