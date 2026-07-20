@@ -785,14 +785,19 @@ export default function AvatarItemsManager() {
                                 ? bases.filter((b) => variants[b.id])
                                 : [];
                               const hasAnyVariant = variantBases.length > 0;
-                              const list = isHair && hasAnyVariant
-                                ? [
-                                    ...variantBases,
-                                    ...(variantBases.some((b) => b.slug === "base_01")
-                                      ? []
-                                      : bases.filter((b) => b.slug === "base_01")),
-                                  ]
-                                : bases.filter((b) => b.slug === "base_01");
+                              let list: typeof bases;
+                              if (!isHair) {
+                                list = bases;
+                              } else if (hasAnyVariant) {
+                                list = [
+                                  ...variantBases,
+                                  ...(variantBases.some((b) => b.slug === "base_01")
+                                    ? []
+                                    : bases.filter((b) => b.slug === "base_01")),
+                                ];
+                              } else {
+                                list = bases.filter((b) => b.slug === "base_01");
+                              }
                               return list.map((b) => (
                                 <SelectItem key={b.id} value={b.slug}>{b.slug}</SelectItem>
                               ));
