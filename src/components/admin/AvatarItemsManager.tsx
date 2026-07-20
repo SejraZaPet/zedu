@@ -543,21 +543,29 @@ export default function AvatarItemsManager() {
                           className="absolute inset-0 w-full h-full object-contain pointer-events-none select-none"
                         />
                       )}
-                      {editing.image_url && (
-                        <img
-                          src={editing.image_url}
-                          alt=""
-                          aria-hidden="true"
-                          draggable={false}
-                          style={{
-                            position: "absolute",
-                            inset: 0,
-                            transform: `translate(${Number(editing.layer_offset_x ?? 0)}%, ${Number(editing.layer_offset_y ?? 0)}%) scale(${Number(editing.layer_scale ?? 1)})`,
-                            transformOrigin: "center",
-                          }}
-                          className="w-full h-full object-contain pointer-events-none select-none"
-                        />
-                      )}
+                      {editing.image_url && (() => {
+                        const ox = Number(editing.layer_offset_x);
+                        const oy = Number(editing.layer_offset_y);
+                        const sc = Number(editing.layer_scale);
+                        const sx = Number.isFinite(ox) ? ox : 0;
+                        const sy = Number.isFinite(oy) ? oy : 0;
+                        const ss = Number.isFinite(sc) ? sc : 1;
+                        return (
+                          <img
+                            src={editing.image_url}
+                            alt=""
+                            aria-hidden="true"
+                            draggable={false}
+                            style={{
+                              position: "absolute",
+                              inset: 0,
+                              transform: `translate(${sx}%, ${sy}%) scale(${ss})`,
+                              transformOrigin: "center",
+                            }}
+                            className="w-full h-full object-contain pointer-events-none select-none"
+                          />
+                        );
+                      })()}
                     </div>
                   </div>
 
@@ -567,7 +575,9 @@ export default function AvatarItemsManager() {
                     { key: "layer_offset_y" as const, label: "Posun Y (%)", min: -20, max: 20, step: 0.5, def: 0 },
                     { key: "layer_scale" as const, label: "Velikost", min: 0.5, max: 1.5, step: 0.01, def: 1 },
                   ].map((s) => {
-                    const val = Number((editing as any)[s.key] ?? s.def);
+                    const raw = (editing as any)[s.key];
+                    const parsed = Number(raw ?? s.def);
+                    const val = Number.isFinite(parsed) ? parsed : s.def;
                     return (
                       <div key={s.key} className="space-y-1">
                         <div className="flex items-center justify-between">
@@ -577,9 +587,14 @@ export default function AvatarItemsManager() {
                             step={s.step}
                             className="h-7 w-24 text-right"
                             value={val}
-                            onChange={(e) =>
-                              setEditing({ ...editing, [s.key]: Number(e.target.value) })
-                            }
+                            onChange={(e) => {
+                              const n = parseFloat(e.target.value);
+                              // Ignore transient invalid input (empty, "-", "5.")
+                              // instead of writing NaN into state, which would
+                              // silently invalidate the CSS transform.
+                              if (!Number.isFinite(n)) return;
+                              setEditing({ ...editing, [s.key]: n });
+                            }}
                           />
                         </div>
                         <Slider
