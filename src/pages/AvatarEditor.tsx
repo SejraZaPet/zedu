@@ -22,6 +22,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   User, Scissors, Shirt, Glasses, Crown, Image as ImageIcon,
   Frame, Sparkles, Award, Type, Lock, Heart, Shuffle, ArrowLeft, Check, Droplet,
 } from "lucide-react";
