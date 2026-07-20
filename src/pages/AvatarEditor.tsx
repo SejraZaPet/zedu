@@ -316,17 +316,17 @@ function AvatarPreview({
           Vyber postavu, abys začal(a) skládat svůj avatar.
         </div>
       )}
-      {layers.map((l, idx) => (
-        <LayerVisual
-          key={`${l.item.id}-${l.sub ?? "main"}-${idx}`}
-          item={l.item}
-          subLayer={l.sub}
-          reduceMotion={reduceMotion}
-          hairColor={l.item.category === "hairstyle" ? hairColor : null}
-
-
-        />
-      ))}
+      <div className="absolute" style={{ top: "9%", left: "9%", width: "82%", height: "82%" }}>
+        {layers.map((l, idx) => (
+          <LayerVisual
+            key={`${l.item.id}-${l.sub ?? "main"}-${idx}`}
+            item={l.item}
+            subLayer={l.sub}
+            reduceMotion={reduceMotion}
+            hairColor={l.item.category === "hairstyle" ? hairColor : null}
+          />
+        ))}
+      </div>
       {profile.active_title && (
         <div className="absolute bottom-2 inset-x-2 text-center">
           <span className="inline-block rounded-full bg-background/90 backdrop-blur px-3 py-1 text-xs font-medium border">
