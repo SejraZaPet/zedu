@@ -22,6 +22,7 @@ interface AvatarItem {
 interface AvatarProfile {
   base_id: string | null;
   hairstyle_id: string | null;
+  hair_color_id: string | null;
   outfit_id: string | null;
   face_accessory_id: string | null;
   head_accessory_id: string | null;
@@ -43,7 +44,7 @@ const LAYER_ORDER: { field: keyof AvatarProfile; sub?: "back" | "front" }[] = [
   { field: "frame_id" },
 ];
 
-function Layer({ item, sub }: { item: AvatarItem; sub?: "back" | "front" }) {
+function Layer({ item, sub, hairColor }: { item: AvatarItem; sub?: "back" | "front"; hairColor?: string | null }) {
   if (item.category === "frame") {
     return <FrameOverlay slug={item.slug} />;
   }
@@ -58,6 +59,26 @@ function Layer({ item, sub }: { item: AvatarItem; sub?: "back" | "front" }) {
     transformOrigin: "center",
   };
   if (src) {
+    if (item.category === "hairstyle" && hairColor) {
+      return (
+        <div
+          aria-hidden
+          style={{
+            ...style,
+            background: hairColor,
+            WebkitMaskImage: `url(${src})`,
+            maskImage: `url(${src})`,
+            WebkitMaskRepeat: "no-repeat",
+            maskRepeat: "no-repeat",
+            WebkitMaskPosition: "center",
+            maskPosition: "center",
+            WebkitMaskSize: "contain",
+            maskSize: "contain",
+          }}
+          className="w-full h-full pointer-events-none select-none"
+        />
+      );
+    }
     return (
       <img
         src={src}
@@ -91,7 +112,7 @@ export default function ProfileAvatarBubble({ userId, size = 56, className }: Pr
     (async () => {
       const { data: prof } = await supabase
         .from("avatar_profiles")
-        .select("base_id, hairstyle_id, outfit_id, face_accessory_id, head_accessory_id, background_id, frame_id, effect_id")
+        .select("base_id, hairstyle_id, hair_color_id, outfit_id, face_accessory_id, head_accessory_id, background_id, frame_id, effect_id")
         .eq("user_id", userId)
         .maybeSingle();
 
@@ -135,6 +156,9 @@ export default function ProfileAvatarBubble({ userId, size = 56, className }: Pr
     }
   }
 
+  const hairColorItem = profile?.hair_color_id ? items.get(profile.hair_color_id) : null;
+  const hairColor = hairColorItem?.color_value ?? null;
+
   const hasContent = !loading && layers.length > 0;
 
   return (
@@ -153,7 +177,12 @@ export default function ProfileAvatarBubble({ userId, size = 56, className }: Pr
       >
         {hasContent ? (
           layers.map((l, i) => (
-            <Layer key={`${l.item.id}-${l.sub ?? "m"}-${i}`} item={l.item} sub={l.sub} />
+            <Layer
+              key={`${l.item.id}-${l.sub ?? "m"}-${i}`}
+              item={l.item}
+              sub={l.sub}
+              hairColor={l.item.category === "hairstyle" ? hairColor : null}
+            />
           ))
         ) : (
           <User className="w-1/2 h-1/2 text-muted-foreground" />

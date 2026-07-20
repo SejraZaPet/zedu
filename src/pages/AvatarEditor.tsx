@@ -155,8 +155,8 @@ function unlockLabel(item: AvatarItem): string {
 
 // ---------- Layer renderer ----------
 function LayerVisual({
-  item, subLayer, reduceMotion,
-}: { item: AvatarItem; subLayer?: "back" | "front"; reduceMotion?: boolean }) {
+  item, subLayer, reduceMotion, hairColor,
+}: { item: AvatarItem; subLayer?: "back" | "front"; reduceMotion?: boolean; hairColor?: string | null }) {
   // Decorative SVG overlays for frame/effect — no image_url needed
   if (item.category === "frame") {
     return <FrameOverlay slug={item.slug} reduceMotion={reduceMotion} />;
@@ -172,6 +172,28 @@ function LayerVisual({
     transformOrigin: "center",
   };
   if (src) {
+    // Hair tinting: mask by image alpha, fill wrapper with chosen color.
+    if (item.category === "hairstyle" && hairColor) {
+      const maskStyle: React.CSSProperties = {
+        ...style,
+        background: hairColor,
+        WebkitMaskImage: `url(${src})`,
+        maskImage: `url(${src})`,
+        WebkitMaskRepeat: "no-repeat",
+        maskRepeat: "no-repeat",
+        WebkitMaskPosition: "center",
+        maskPosition: "center",
+        WebkitMaskSize: "contain",
+        maskSize: "contain",
+      };
+      return (
+        <div
+          aria-hidden="true"
+          style={maskStyle}
+          className="w-full h-full pointer-events-none select-none"
+        />
+      );
+    }
     return (
       <img
         src={src}
@@ -241,6 +263,9 @@ function AvatarPreview({
     }
   }
 
+  const hairColorItem = profile.hair_color_id ? itemsById.get(profile.hair_color_id) : null;
+  const hairColor = hairColorItem?.color_value ?? null;
+
   return (
     <div
       className={cn(
@@ -256,7 +281,13 @@ function AvatarPreview({
         </div>
       )}
       {layers.map((l, idx) => (
-        <LayerVisual key={`${l.item.id}-${l.sub ?? "main"}-${idx}`} item={l.item} subLayer={l.sub} reduceMotion={reduceMotion} />
+        <LayerVisual
+          key={`${l.item.id}-${l.sub ?? "main"}-${idx}`}
+          item={l.item}
+          subLayer={l.sub}
+          reduceMotion={reduceMotion}
+          hairColor={l.item.category === "hairstyle" ? hairColor : null}
+        />
       ))}
       {profile.active_title && (
         <div className="absolute bottom-2 inset-x-2 text-center">
