@@ -24,9 +24,9 @@ function usePrefersReducedMotion() {
  * Occupies the full container (position: absolute inset-0).
  * Respects prefers-reduced-motion (system) — animations disabled if requested.
  */
-export default function FrameOverlay({ slug, size = 100 }: Props) {
-  const reduced = usePrefersReducedMotion();
-  const animate = !reduced;
+export default function FrameOverlay({ slug, reduceMotion }: Props) {
+  const sysReduced = usePrefersReducedMotion();
+  const animate = !reduceMotion && !sysReduced;
 
   const common = {
     xmlns: "http://www.w3.org/2000/svg",
