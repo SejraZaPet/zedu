@@ -17,7 +17,7 @@ export default function EditableSectionWrapper({ section, children, onDelete, dr
   const { isEditMode, openPanel, isDirty } = useLandingEditMode();
   const [hover, setHover] = useState(false);
 
-  if (!isEditMode) return <>{children}</>;
+  if (!isEditMode) return <SectionProvider section={section}>{children}</SectionProvider>;
 
   const dirty = isDirty(section.id);
 
