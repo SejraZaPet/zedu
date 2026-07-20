@@ -65,22 +65,32 @@ function Layer({ item, sub, hairColor }: { item: AvatarItem; sub?: "back" | "fro
   if (src) {
     if (item.category === "hairstyle" && hairColor) {
       return (
-        <div
-          aria-hidden
-          style={{
-            ...style,
-            background: hairColor,
-            WebkitMaskImage: `url(${src})`,
-            maskImage: `url(${src})`,
-            WebkitMaskRepeat: "no-repeat",
-            maskRepeat: "no-repeat",
-            WebkitMaskPosition: "center",
-            maskPosition: "center",
-            WebkitMaskSize: "contain",
-            maskSize: "contain",
-          }}
-          className="w-full h-full pointer-events-none select-none"
-        />
+        <div aria-hidden style={style} className="w-full h-full pointer-events-none select-none">
+          <img
+            src={src}
+            alt=""
+            aria-hidden
+            draggable={false}
+            className="absolute inset-0 w-full h-full object-contain pointer-events-none select-none"
+          />
+          <div
+            aria-hidden
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: hairColor,
+              mixBlendMode: "color",
+              WebkitMaskImage: `url(${src})`,
+              maskImage: `url(${src})`,
+              WebkitMaskRepeat: "no-repeat",
+              maskRepeat: "no-repeat",
+              WebkitMaskPosition: "center",
+              maskPosition: "center",
+              WebkitMaskSize: "contain",
+              maskSize: "contain",
+            }}
+          />
+        </div>
       );
     }
     return (
