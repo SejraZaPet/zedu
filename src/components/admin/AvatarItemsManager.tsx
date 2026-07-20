@@ -779,9 +779,24 @@ export default function AvatarItemsManager() {
                         <Select value={previewBaseSlug} onValueChange={setPreviewBaseSlug}>
                           <SelectTrigger className="h-8 w-[140px]"><SelectValue /></SelectTrigger>
                           <SelectContent>
-                            {bases.map((b) => (
-                              <SelectItem key={b.id} value={b.slug}>{b.slug}</SelectItem>
-                            ))}
+                            {(() => {
+                              const isHair = editing?.category === "hairstyle";
+                              const variantBases = isHair
+                                ? bases.filter((b) => variants[b.id])
+                                : [];
+                              const hasAnyVariant = variantBases.length > 0;
+                              const list = isHair && hasAnyVariant
+                                ? [
+                                    ...variantBases,
+                                    ...(variantBases.some((b) => b.slug === "base_01")
+                                      ? []
+                                      : bases.filter((b) => b.slug === "base_01")),
+                                  ]
+                                : bases.filter((b) => b.slug === "base_01");
+                              return list.map((b) => (
+                                <SelectItem key={b.id} value={b.slug}>{b.slug}</SelectItem>
+                              ));
+                            })()}
                           </SelectContent>
                         </Select>
                       </div>
