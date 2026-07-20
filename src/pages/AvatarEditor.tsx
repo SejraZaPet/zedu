@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import SiteHeader from "@/components/SiteHeader";
 import FrameOverlay from "@/components/avatar/FrameOverlay";
 import EffectOverlay from "@/components/avatar/EffectOverlay";
+import BadgeOverlay from "@/components/avatar/BadgeOverlay";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -39,6 +40,7 @@ interface AvatarItem {
   category: Category;
   rarity: "common" | "uncommon" | "rare" | "epic" | "legendary" | "mythic";
   image_url: string | null;
+  icon_name: string | null;
   image_url_back: string | null;
   color_value: string | null;
   recommended_for_role: "student" | "teacher" | "both";
@@ -287,6 +289,13 @@ function AvatarPreview({
             {profile.active_title}
           </span>
         </div>
+      )}
+      {profile.badge_id && itemsById.get(profile.badge_id) && (
+        <BadgeOverlay
+          iconName={itemsById.get(profile.badge_id)!.icon_name}
+          rarity={itemsById.get(profile.badge_id)!.rarity}
+          title={itemsById.get(profile.badge_id)!.name}
+        />
       )}
     </div>
   );

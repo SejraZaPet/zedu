@@ -5,6 +5,7 @@ import { User, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import FrameOverlay from "@/components/avatar/FrameOverlay";
 import EffectOverlay from "@/components/avatar/EffectOverlay";
+import BadgeOverlay from "@/components/avatar/BadgeOverlay";
 
 interface AvatarItem {
   id: string;
@@ -13,7 +14,9 @@ interface AvatarItem {
   name: string;
   image_url: string | null;
   image_url_back: string | null;
+  icon_name: string | null;
   color_value: string | null;
+  rarity: "common" | "uncommon" | "rare" | "epic" | "legendary" | "mythic";
   layer_offset_x: number;
   layer_offset_y: number;
   layer_scale: number;
@@ -29,6 +32,7 @@ interface AvatarProfile {
   background_id: string | null;
   frame_id: string | null;
   effect_id: string | null;
+  badge_id: string | null;
 }
 
 // Same order as AvatarEditor: bottom → top
@@ -112,7 +116,7 @@ export default function ProfileAvatarBubble({ userId, size = 56, className }: Pr
     (async () => {
       const { data: prof } = await supabase
         .from("avatar_profiles")
-        .select("base_id, hairstyle_id, hair_color_id, outfit_id, face_accessory_id, head_accessory_id, background_id, frame_id, effect_id")
+        .select("base_id, hairstyle_id, hair_color_id, outfit_id, face_accessory_id, head_accessory_id, background_id, frame_id, effect_id, badge_id")
         .eq("user_id", userId)
         .maybeSingle();
 
@@ -132,7 +136,7 @@ export default function ProfileAvatarBubble({ userId, size = 56, className }: Pr
       }
       const { data: rows } = await supabase
         .from("avatar_items")
-        .select("id, slug, category, name, image_url, image_url_back, color_value, layer_offset_x, layer_offset_y, layer_scale")
+        .select("id, slug, category, name, image_url, image_url_back, icon_name, color_value, rarity, layer_offset_x, layer_offset_y, layer_scale")
         .in("id", ids);
       if (!mounted) return;
       const m = new Map<string, AvatarItem>();
@@ -188,6 +192,15 @@ export default function ProfileAvatarBubble({ userId, size = 56, className }: Pr
           <User className="w-1/2 h-1/2 text-muted-foreground" />
         )}
       </span>
+      {profile?.badge_id && items.get(profile.badge_id) && (
+        <BadgeOverlay
+          iconName={items.get(profile.badge_id)!.icon_name}
+          rarity={items.get(profile.badge_id)!.rarity}
+          title={items.get(profile.badge_id)!.name}
+          size={Math.max(20, size * 0.32)}
+          className="-bottom-0.5 -left-0.5"
+        />
+      )}
       <span
         aria-hidden
         className="absolute -bottom-0.5 -right-0.5 rounded-full bg-primary text-primary-foreground shadow ring-2 ring-background flex items-center justify-center"

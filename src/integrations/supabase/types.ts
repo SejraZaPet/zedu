@@ -279,6 +279,7 @@ export type Database = {
           category: string
           color_value: string | null
           created_at: string
+          icon_name: string | null
           id: string
           image_url: string | null
           image_url_back: string | null
@@ -300,6 +301,7 @@ export type Database = {
           category: string
           color_value?: string | null
           created_at?: string
+          icon_name?: string | null
           id?: string
           image_url?: string | null
           image_url_back?: string | null
@@ -321,6 +323,7 @@ export type Database = {
           category?: string
           color_value?: string | null
           created_at?: string
+          icon_name?: string | null
           id?: string
           image_url?: string | null
           image_url_back?: string | null
