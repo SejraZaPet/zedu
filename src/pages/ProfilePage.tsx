@@ -330,8 +330,14 @@ const ProfilePage = () => {
       <div className="container mx-auto max-w-2xl px-4 py-8 space-y-6">
         {/* Read-only info */}
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
             <CardTitle className="text-base">Osobní údaje</CardTitle>
+            <Button size="sm" variant="outline" asChild className="gap-2">
+              <Link to="/avatar">
+                <Palette className="w-4 h-4" />
+                Upravit avatara
+              </Link>
+            </Button>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
