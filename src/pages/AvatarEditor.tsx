@@ -439,6 +439,7 @@ export default function AvatarEditor() {
   const [pendingNavigate, setPendingNavigate] = useState<string | null>(null);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const [newQueue, setNewQueue] = useState<string[]>([]);
+  const [hairVariants, setHairVariants] = useState<HairVariantMap>(new Map());
 
   const userId = user?.id;
 
