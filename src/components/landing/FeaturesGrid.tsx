@@ -1,5 +1,6 @@
 import { getLandingIcon } from "@/lib/landing-icons";
 import { DEFAULT_FEATURES_GRID_PROPS, mergeSectionProps } from "@/lib/landing-defaults";
+import Editable from "@/components/landing-edit/Editable";
 
 interface FeaturesGridProps {
   props?: Partial<typeof DEFAULT_FEATURES_GRID_PROPS>;
