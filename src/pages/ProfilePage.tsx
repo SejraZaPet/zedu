@@ -173,6 +173,26 @@ const ProfilePage = () => {
     })();
   }, [user, role]);
 
+  // Load game profile for students
+  useEffect(() => {
+    if (!user || role !== "user") return;
+    (async () => {
+      const [xpRes, badgesRes, avatarRes] = await Promise.all([
+        supabase.from("student_xp").select("level, total_xp, streak_days").eq("student_id", user.id).maybeSingle(),
+        supabase.from("student_badges").select("id", { count: "exact", head: true }).eq("student_id", user.id),
+        supabase.from("avatar_profiles").select("active_title").eq("user_id", user.id).maybeSingle(),
+      ]);
+      const xp = (xpRes.data as any) ?? { level: 1, total_xp: 0, streak_days: 0 };
+      setGameProfile({
+        level: xp.level ?? 1,
+        total_xp: xp.total_xp ?? 0,
+        streak_days: xp.streak_days ?? 0,
+        badge_count: badgesRes.count ?? 0,
+        active_title: (avatarRes.data as any)?.active_title ?? null,
+      });
+    })();
+  }, [user, role]);
+
   const togglePreferred = (id: string) => {
     setPreferredIds((prev) => {
       if (prev.includes(id)) return prev.filter((x) => x !== id);
