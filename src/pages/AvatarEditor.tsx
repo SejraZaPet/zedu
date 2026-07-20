@@ -328,6 +328,8 @@ function AvatarPreview({
           subLayer={l.sub}
           reduceMotion={reduceMotion}
           hairColor={l.item.category === "hairstyle" ? hairColor : null}
+          hairIsNeutral={l.item.category === "hairstyle" ? hairIsNeutral : false}
+
         />
       ))}
       {profile.active_title && (
