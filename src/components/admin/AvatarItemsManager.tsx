@@ -113,6 +113,14 @@ export default function AvatarItemsManager() {
   const [editing, setEditing] = useState<Partial<AvatarItem> | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AvatarItem | null>(null);
   const [saving, setSaving] = useState(false);
+  const [calibrating, setCalibrating] = useState(false);
+  const [previewBaseSlug, setPreviewBaseSlug] = useState<string>("base_01");
+
+  const bases = useMemo(() => items.filter((i) => i.category === "base" && i.image_url), [items]);
+  const previewBase = useMemo(
+    () => bases.find((b) => b.slug === previewBaseSlug) ?? bases[0],
+    [bases, previewBaseSlug],
+  );
 
   const load = async () => {
     setLoading(true);
