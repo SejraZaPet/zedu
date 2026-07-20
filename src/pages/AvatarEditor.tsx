@@ -155,14 +155,14 @@ function unlockLabel(item: AvatarItem): string {
 
 // ---------- Layer renderer ----------
 function LayerVisual({
-  item, subLayer,
-}: { item: AvatarItem; subLayer?: "back" | "front" }) {
+  item, subLayer, reduceMotion,
+}: { item: AvatarItem; subLayer?: "back" | "front"; reduceMotion?: boolean }) {
   // Decorative SVG overlays for frame/effect — no image_url needed
   if (item.category === "frame") {
-    return <FrameOverlay slug={item.slug} />;
+    return <FrameOverlay slug={item.slug} reduceMotion={reduceMotion} />;
   }
   if (item.category === "effect") {
-    return <EffectOverlay slug={item.slug} />;
+    return <EffectOverlay slug={item.slug} reduceMotion={reduceMotion} />;
   }
   const src = subLayer === "back" ? item.image_url_back : item.image_url;
   const style: React.CSSProperties = {
