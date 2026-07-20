@@ -337,6 +337,23 @@ export default function AvatarItemsManager() {
   const showCalibration =
     !!cat && CALIB_CATEGORIES.includes(cat) && !!(editing?.image_url ?? "").trim();
 
+  // Per-base variant handling (hairstyle only)
+  const activeVariant: HairVariant | null =
+    cat === "hairstyle" && previewBase ? variants[previewBase.id] ?? null : null;
+  const isVariantMode = !!activeVariant;
+
+  useEffect(() => {
+    if (activeVariant) {
+      const v = readCalibrationValues(activeVariant);
+      variantDraftRef.current = v;
+      setVariantValues(v);
+    } else {
+      const zero = { layer_offset_x: 0, layer_offset_y: 0, layer_scale: 1 };
+      variantDraftRef.current = zero;
+      setVariantValues(zero);
+    }
+  }, [activeVariant?.id]);
+
   const saveCalibration = async () => {
     const expected = calibrationDraftRef.current;
     if (!editing?.id || !editing.slug) {
