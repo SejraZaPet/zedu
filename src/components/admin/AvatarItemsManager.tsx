@@ -260,18 +260,47 @@ export default function AvatarItemsManager() {
       toast({ title: "Nejprve položku uložte", variant: "destructive" });
       return;
     }
+    if (editing.slug === "base_01") {
+      toast({
+        title: "base_01 je referenční a nelze kalibrovat",
+        variant: "destructive",
+      });
+      return;
+    }
+    const ox = Number(editing.layer_offset_x ?? 0);
+    const oy = Number(editing.layer_offset_y ?? 0);
+    const sc = Number(editing.layer_scale ?? 1);
+    if (!Number.isFinite(ox) || !Number.isFinite(oy) || !Number.isFinite(sc)) {
+      toast({ title: "Neplatné hodnoty kalibrace", variant: "destructive" });
+      return;
+    }
     setCalibrating(true);
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("avatar_items")
       .update({
-        layer_offset_x: Number(editing.layer_offset_x ?? 0),
-        layer_offset_y: Number(editing.layer_offset_y ?? 0),
-        layer_scale: Number(editing.layer_scale ?? 1),
+        layer_offset_x: ox,
+        layer_offset_y: oy,
+        layer_scale: sc,
+        updated_at: new Date().toISOString(),
       })
-      .eq("id", editing.id);
+      .eq("id", editing.id)
+      .select("id, slug, layer_offset_x, layer_offset_y, layer_scale");
     setCalibrating(false);
     if (error) {
-      toast({ title: "Uložení kalibrace selhalo", description: error.message, variant: "destructive" });
+      toast({
+        title: "Uložení kalibrace selhalo",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!data || data.length === 0) {
+      toast({
+        title: "Kalibrace nebyla uložena",
+        description:
+          "Databáze neaktualizovala žádný řádek. Pravděpodobně chybí oprávnění (RLS) nebo se položka mezitím změnila. Obnovte stránku a zkuste znovu.",
+        variant: "destructive",
+      });
       return;
     }
     toast({ title: "Kalibrace uložena" });
