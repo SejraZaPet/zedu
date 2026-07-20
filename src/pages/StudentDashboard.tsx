@@ -8,8 +8,8 @@ import SiteFooter from "@/components/SiteFooter";
 import TodayWidget from "@/components/calendar/TodayWidget";
 import StudentProgressWidgets from "@/components/student/StudentProgressWidgets";
 import PlayerProfileWidget from "@/components/student/PlayerProfileWidget";
-import { AvatarSvg } from "@/components/student/AvatarSvg";
-import { useStudentAvatar } from "@/hooks/useStudentAvatars";
+import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
+
 import { useAuth } from "@/contexts/AuthContext";
 
 interface Profile {
