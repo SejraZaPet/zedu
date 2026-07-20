@@ -274,6 +274,51 @@ export type Database = {
           },
         ]
       }
+      avatar_item_base_variants: {
+        Row: {
+          avatar_item_id: string
+          base_id: string
+          created_at: string
+          id: string
+          image_url: string
+          image_url_back: string | null
+          updated_at: string
+        }
+        Insert: {
+          avatar_item_id: string
+          base_id: string
+          created_at?: string
+          id?: string
+          image_url: string
+          image_url_back?: string | null
+          updated_at?: string
+        }
+        Update: {
+          avatar_item_id?: string
+          base_id?: string
+          created_at?: string
+          id?: string
+          image_url?: string
+          image_url_back?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "avatar_item_base_variants_avatar_item_id_fkey"
+            columns: ["avatar_item_id"]
+            isOneToOne: false
+            referencedRelation: "avatar_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "avatar_item_base_variants_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "avatar_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       avatar_items: {
         Row: {
           category: string
