@@ -99,17 +99,18 @@ const CATEGORY_ICON: Record<Category, React.ComponentType<{ className?: string }
   CATEGORY_META.map((c) => [c.key, c.icon]),
 ) as Record<Category, React.ComponentType<{ className?: string }>>;
 
-// Bottom-up render order for the preview stack
-const LAYER_ORDER: Category[] = [
-  "background",
-  "hairstyle",     // hair_back via image_url_back
-  "base",
-  "outfit",
-  "hairstyle",     // hair_front via image_url
-  "face_accessory",
-  "head_accessory",
-  "effect",
-  "frame",
+// Bottom-up render order for the preview stack.
+// Explicit sub: "back" | "front" for hairstyle so we don't rely on positional counting.
+const LAYER_ORDER: { category: Category; sub?: "back" | "front" }[] = [
+  { category: "background" },
+  { category: "hairstyle", sub: "back" },
+  { category: "base" },
+  { category: "outfit" },
+  { category: "hairstyle", sub: "front" },
+  { category: "face_accessory" },
+  { category: "head_accessory" },
+  { category: "effect" },
+  { category: "frame" },
 ];
 
 const RARITY_LABEL: Record<AvatarItem["rarity"], string> = {
@@ -236,31 +237,22 @@ function AvatarPreview({
   reduceMotion: boolean;
 }) {
   const layers: { item: AvatarItem; sub?: "back" | "front" }[] = [];
-  for (const cat of LAYER_ORDER) {
+  for (const l of LAYER_ORDER) {
     let id: string | null = null;
-    if (cat === "background") id = profile.background_id;
-    else if (cat === "base") id = profile.base_id;
-    else if (cat === "outfit") id = profile.outfit_id;
-    else if (cat === "hairstyle") id = profile.hairstyle_id;
-    else if (cat === "face_accessory") id = profile.face_accessory_id;
-    else if (cat === "head_accessory") id = profile.head_accessory_id;
-    else if (cat === "effect") id = profile.effect_id;
-    else if (cat === "frame") id = profile.frame_id;
+    if (l.category === "background") id = profile.background_id;
+    else if (l.category === "base") id = profile.base_id;
+    else if (l.category === "outfit") id = profile.outfit_id;
+    else if (l.category === "hairstyle") id = profile.hairstyle_id;
+    else if (l.category === "face_accessory") id = profile.face_accessory_id;
+    else if (l.category === "head_accessory") id = profile.head_accessory_id;
+    else if (l.category === "effect") id = profile.effect_id;
+    else if (l.category === "frame") id = profile.frame_id;
     if (!id) continue;
     const item = itemsById.get(id);
     if (!item) continue;
-    if (cat === "hairstyle") {
-      // Push twice: once as back (image_url_back), once as front (image_url)
-      // Only push the sub-layer that matches its position in LAYER_ORDER
-      const isBackPosition = layers.length < 2; // first hairstyle occurrence in LAYER_ORDER is back
-      if (isBackPosition && item.image_url_back) {
-        layers.push({ item, sub: "back" });
-      } else if (!isBackPosition) {
-        layers.push({ item, sub: "front" });
-      }
-    } else {
-      layers.push({ item });
-    }
+    if (l.sub === "back" && !item.image_url_back) continue;
+    if (l.sub === "front" && !item.image_url) continue;
+    layers.push({ item, sub: l.sub });
   }
 
   const hairColorItem = profile.hair_color_id ? itemsById.get(profile.hair_color_id) : null;
