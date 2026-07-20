@@ -549,7 +549,8 @@ export default function AvatarEditor() {
 
   return (
     <div className="min-h-screen bg-background pb-24 md:pb-8">
-      {/* Header */}
+      <SiteHeader />
+      {/* Sub-header (sticky "Zpět" bar) */}
       <header className="sticky top-0 z-20 bg-background/95 backdrop-blur border-b">
         <div className="container max-w-6xl mx-auto flex items-center justify-between h-14 px-4">
           <div className="flex items-center gap-2">
