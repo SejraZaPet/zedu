@@ -238,6 +238,39 @@ export default function AvatarItemsManager() {
   const cat = editing?.category as Category | undefined;
   const showBack = cat === "hairstyle";
   const showColor = cat === "hair_color";
+  const CALIB_CATEGORIES: Category[] = [
+    "hairstyle",
+    "outfit",
+    "face_accessory",
+    "head_accessory",
+    "frame",
+    "effect",
+  ];
+  const showCalibration =
+    !!cat && CALIB_CATEGORIES.includes(cat) && !!(editing?.image_url ?? "").trim();
+
+  const saveCalibration = async () => {
+    if (!editing?.id) {
+      toast({ title: "Nejprve položku uložte", variant: "destructive" });
+      return;
+    }
+    setCalibrating(true);
+    const { error } = await supabase
+      .from("avatar_items")
+      .update({
+        layer_offset_x: Number(editing.layer_offset_x ?? 0),
+        layer_offset_y: Number(editing.layer_offset_y ?? 0),
+        layer_scale: Number(editing.layer_scale ?? 1),
+      })
+      .eq("id", editing.id);
+    setCalibrating(false);
+    if (error) {
+      toast({ title: "Uložení kalibrace selhalo", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Kalibrace uložena" });
+    load();
+  };
 
   return (
     <div className="space-y-4">
