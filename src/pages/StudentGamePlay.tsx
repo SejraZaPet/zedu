@@ -16,8 +16,8 @@ import PollProjectorView from "@/components/activities/PollProjectorView";
 import QuizActivity from "@/components/activities/QuizActivity";
 import LiveWhiteboard, { WhiteboardData } from "@/components/game/LiveWhiteboard";
 import { Lock } from "lucide-react";
-import { AvatarSvg } from "@/components/student/AvatarSvg";
-import { useStudentAvatar } from "@/hooks/useStudentAvatars";
+import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
+
 import { useAuth } from "@/contexts/AuthContext";
 import { findPlayerTeam } from "@/lib/game-types";
 
