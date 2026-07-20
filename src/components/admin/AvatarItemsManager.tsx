@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Slider } from "@/components/ui/slider";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -86,7 +86,30 @@ type AvatarItem = {
   layer_offset_x: number;
   layer_offset_y: number;
   layer_scale: number;
+  updated_at?: string;
 };
+
+type CalibrationValues = {
+  layer_offset_x: number;
+  layer_offset_y: number;
+  layer_scale: number;
+};
+
+const calibrationKeys = ["layer_offset_x", "layer_offset_y", "layer_scale"] as const;
+
+const toFiniteNumber = (value: unknown, fallback: number) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const readCalibrationValues = (item: Partial<AvatarItem> | null | undefined): CalibrationValues => ({
+  layer_offset_x: toFiniteNumber(item?.layer_offset_x, 0),
+  layer_offset_y: toFiniteNumber(item?.layer_offset_y, 0),
+  layer_scale: toFiniteNumber(item?.layer_scale, 1),
+});
+
+const calibrationMatches = (actual: Partial<CalibrationValues>, expected: CalibrationValues) =>
+  calibrationKeys.every((key) => Math.abs(toFiniteNumber(actual[key], NaN) - expected[key]) < 0.000001);
 
 const emptyForm = (): Partial<AvatarItem> => ({
   slug: "",
@@ -116,6 +139,7 @@ export default function AvatarItemsManager() {
   const [saving, setSaving] = useState(false);
   const [calibrating, setCalibrating] = useState(false);
   const [previewBaseSlug, setPreviewBaseSlug] = useState<string>("base_01");
+  const calibrationDraftRef = useRef<CalibrationValues>(readCalibrationValues(null));
 
   const bases = useMemo(() => items.filter((i) => i.category === "base" && i.image_url), [items]);
   const previewBase = useMemo(
@@ -141,6 +165,15 @@ export default function AvatarItemsManager() {
   useEffect(() => {
     load();
   }, []);
+
+  useEffect(() => {
+    calibrationDraftRef.current = readCalibrationValues(editing);
+  }, [editing?.id, editing?.slug, editing?.layer_offset_x, editing?.layer_offset_y, editing?.layer_scale]);
+
+  const openEditor = (item: Partial<AvatarItem>) => {
+    calibrationDraftRef.current = readCalibrationValues(item);
+    setEditing(item);
+  };
 
   const filtered =
     filterCategory === "all" ? items : items.filter((i) => i.category === filterCategory);
@@ -256,7 +289,7 @@ export default function AvatarItemsManager() {
     !!cat && CALIB_CATEGORIES.includes(cat) && !!(editing?.image_url ?? "").trim();
 
   const saveCalibration = async () => {
-    if (!editing?.id) {
+    if (!editing?.id || !editing.slug) {
       toast({ title: "Nejprve položku uložte", variant: "destructive" });
       return;
     }
@@ -267,26 +300,27 @@ export default function AvatarItemsManager() {
       });
       return;
     }
-    const ox = Number(editing.layer_offset_x ?? 0);
-    const oy = Number(editing.layer_offset_y ?? 0);
-    const sc = Number(editing.layer_scale ?? 1);
-    if (!Number.isFinite(ox) || !Number.isFinite(oy) || !Number.isFinite(sc)) {
+    const targetId = editing.id;
+    const targetSlug = editing.slug;
+    const expected = calibrationDraftRef.current;
+    if (!calibrationMatches(expected, expected)) {
       toast({ title: "Neplatné hodnoty kalibrace", variant: "destructive" });
       return;
     }
+    const updatedAt = new Date().toISOString();
     setCalibrating(true);
     const { data, error } = await supabase
       .from("avatar_items")
       .update({
-        layer_offset_x: ox,
-        layer_offset_y: oy,
-        layer_scale: sc,
-        updated_at: new Date().toISOString(),
+        ...expected,
+        updated_at: updatedAt,
       })
-      .eq("id", editing.id)
-      .select("id, slug, layer_offset_x, layer_offset_y, layer_scale");
-    setCalibrating(false);
+      .eq("id", targetId)
+      .eq("slug", targetSlug)
+      .select("id, slug, layer_offset_x, layer_offset_y, layer_scale, updated_at")
+      .maybeSingle();
     if (error) {
+      setCalibrating(false);
       toast({
         title: "Uložení kalibrace selhalo",
         description: error.message,
@@ -294,7 +328,8 @@ export default function AvatarItemsManager() {
       });
       return;
     }
-    if (!data || data.length === 0) {
+    if (!data) {
+      setCalibrating(false);
       toast({
         title: "Kalibrace nebyla uložena",
         description:
@@ -303,8 +338,44 @@ export default function AvatarItemsManager() {
       });
       return;
     }
+    if (!calibrationMatches(data, expected)) {
+      setCalibrating(false);
+      toast({
+        title: "Kalibrace nebyla potvrzena",
+        description: `Odesláno ${expected.layer_offset_x} / ${expected.layer_offset_y} / ${expected.layer_scale}, server vrátil ${data.layer_offset_x} / ${data.layer_offset_y} / ${data.layer_scale}.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const { data: persisted, error: verifyError } = await supabase
+      .from("avatar_items")
+      .select("id, slug, layer_offset_x, layer_offset_y, layer_scale, updated_at")
+      .eq("id", targetId)
+      .eq("slug", targetSlug)
+      .maybeSingle();
+    setCalibrating(false);
+    if (verifyError || !persisted || !calibrationMatches(persisted, expected)) {
+      toast({
+        title: "Kalibrace nebyla potvrzena v databázi",
+        description: verifyError?.message ?? "Kontrolní SELECT po uložení nevrátil stejné hodnoty, proto nezobrazuji falešný úspěch.",
+        variant: "destructive",
+      });
+      return;
+    }
+    const persistedPatch = persisted as Partial<AvatarItem>;
+    setItems((current) => current.map((item) => (item.id === targetId ? { ...item, ...persistedPatch } : item)));
+    setEditing((current) => (current?.id === targetId ? { ...current, ...persistedPatch } : current));
     toast({ title: "Kalibrace uložena" });
-    load();
+  };
+
+  const updateCalibrationValue = (key: keyof CalibrationValues, value: number) => {
+    if (!Number.isFinite(value)) return;
+    calibrationDraftRef.current = {
+      ...calibrationDraftRef.current,
+      [key]: value,
+    };
+    setEditing((current) => (current ? { ...current, [key]: value } : current));
   };
 
   return (
@@ -327,7 +398,7 @@ export default function AvatarItemsManager() {
           </Select>
           <span className="text-sm text-muted-foreground ml-2">{filtered.length} položek</span>
         </div>
-        <Button onClick={() => setEditing(emptyForm())} size="sm">
+        <Button onClick={() => openEditor(emptyForm())} size="sm">
           <Plus className="w-4 h-4 mr-1" /> Nová položka
         </Button>
       </div>
@@ -389,7 +460,7 @@ export default function AvatarItemsManager() {
                   </td>
                   <td className="p-2 text-right">
                     <div className="flex gap-1 justify-end">
-                      <Button size="sm" variant="ghost" onClick={() => setEditing(item)}>
+                      <Button size="sm" variant="ghost" onClick={() => openEditor(item)}>
                         <Pencil className="w-4 h-4" />
                       </Button>
                       <Button
@@ -616,9 +687,7 @@ export default function AvatarItemsManager() {
                         });
                       }
                       if (editing.image_url) {
-                        const ox = Number(editing.layer_offset_x);
-                        const oy = Number(editing.layer_offset_y);
-                        const sc = Number(editing.layer_scale);
+                        const draft = calibrationDraftRef.current;
                         layers.push({
                           item: {
                             id: editing.id ?? "editing",
@@ -627,9 +696,9 @@ export default function AvatarItemsManager() {
                             image_url: editing.image_url ?? null,
                             image_url_back: editing.image_url_back ?? null,
                             color_value: editing.color_value ?? null,
-                            layer_offset_x: Number.isFinite(ox) ? ox : 0,
-                            layer_offset_y: Number.isFinite(oy) ? oy : 0,
-                            layer_scale: Number.isFinite(sc) ? sc : 1,
+                            layer_offset_x: draft.layer_offset_x,
+                            layer_offset_y: draft.layer_offset_y,
+                            layer_scale: draft.layer_scale,
                           },
                         });
                       }
@@ -665,9 +734,7 @@ export default function AvatarItemsManager() {
                                 className="h-7 w-24 text-right"
                                 value={val}
                                 onChange={(e) => {
-                                  const n = parseFloat(e.target.value);
-                                  if (!Number.isFinite(n)) return;
-                                  setEditing({ ...editing, [s.key]: n });
+                                  updateCalibrationValue(s.key, parseFloat(e.target.value));
                                 }}
                               />
                             </div>
@@ -676,7 +743,7 @@ export default function AvatarItemsManager() {
                               max={s.max}
                               step={s.step}
                               value={[val]}
-                              onValueChange={([v]) => setEditing({ ...editing, [s.key]: v })}
+                              onValueChange={([v]) => updateCalibrationValue(s.key, v)}
                             />
                           </div>
                         );
@@ -686,14 +753,19 @@ export default function AvatarItemsManager() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() =>
+                          onClick={() => {
+                            calibrationDraftRef.current = {
+                              layer_offset_x: 0,
+                              layer_offset_y: 0,
+                              layer_scale: 1,
+                            };
                             setEditing({
                               ...editing,
                               layer_offset_x: 0,
                               layer_offset_y: 0,
                               layer_scale: 1,
-                            })
-                          }
+                            });
+                          }}
                         >
                           Reset
                         </Button>
