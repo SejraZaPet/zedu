@@ -4,6 +4,7 @@ import heroBgDefault from "@/assets/hero-students.png";
 import heroLogoDefault from "@/assets/zedu-hero-logo-text.png";
 import { getLandingIcon } from "@/lib/landing-icons";
 import { DEFAULT_HERO_PROPS, mergeSectionProps } from "@/lib/landing-defaults";
+import Editable from "@/components/landing-edit/Editable";
 
 interface HeroProps {
   props?: Partial<typeof DEFAULT_HERO_PROPS>;
