@@ -183,11 +183,13 @@ function LayerVisual({
     transformOrigin: "center",
   };
   if (src) {
-    // Hair tinting: mask by image alpha, fill wrapper with chosen color.
+    // Hair tinting: keep original shading via mix-blend-mode "color" on a masked overlay.
     if (item.category === "hairstyle" && hairColor) {
-      const maskStyle: React.CSSProperties = {
-        ...style,
+      const overlayStyle: React.CSSProperties = {
+        position: "absolute",
+        inset: 0,
         background: hairColor,
+        mixBlendMode: "color",
         WebkitMaskImage: `url(${src})`,
         maskImage: `url(${src})`,
         WebkitMaskRepeat: "no-repeat",
@@ -198,11 +200,16 @@ function LayerVisual({
         maskSize: "contain",
       };
       return (
-        <div
-          aria-hidden="true"
-          style={maskStyle}
-          className="w-full h-full pointer-events-none select-none"
-        />
+        <div aria-hidden="true" style={style} className="w-full h-full pointer-events-none select-none">
+          <img
+            src={src}
+            alt=""
+            aria-hidden="true"
+            draggable={false}
+            className="absolute inset-0 w-full h-full object-contain pointer-events-none select-none"
+          />
+          <div aria-hidden="true" style={overlayStyle} />
+        </div>
       );
     }
     return (
