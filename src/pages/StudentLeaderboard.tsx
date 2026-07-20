@@ -28,8 +28,8 @@ interface Row {
   level: number;
   xp: number;
   badges: number;
-  avatarSlug?: string;
 }
+
 
 const StudentLeaderboard = () => {
   const { user } = useAuth();
