@@ -272,7 +272,13 @@ function LayerVisual({
 }
 
 // ---------- Preview ----------
-type HairVariantMap = Map<string, { image_url: string | null; image_url_back: string | null }>;
+type HairVariantMap = Map<string, {
+  image_url: string | null;
+  image_url_back: string | null;
+  layer_offset_x: number | null;
+  layer_offset_y: number | null;
+  layer_scale: number | null;
+}>;
 
 function applyHairVariant(item: AvatarItem, variants: HairVariantMap): AvatarItem {
   if (item.category !== "hairstyle") return item;
@@ -282,6 +288,9 @@ function applyHairVariant(item: AvatarItem, variants: HairVariantMap): AvatarIte
     ...item,
     image_url: v.image_url ?? item.image_url,
     image_url_back: v.image_url_back ?? item.image_url_back,
+    layer_offset_x: v.layer_offset_x ?? item.layer_offset_x,
+    layer_offset_y: v.layer_offset_y ?? item.layer_offset_y,
+    layer_scale: v.layer_scale ?? item.layer_scale,
   };
 }
 
@@ -476,12 +485,18 @@ export default function AvatarEditor() {
     (async () => {
       const { data } = await supabase
         .from("avatar_item_base_variants")
-        .select("avatar_item_id, image_url, image_url_back")
+        .select("avatar_item_id, image_url, image_url_back, layer_offset_x, layer_offset_y, layer_scale")
         .eq("base_id", baseId);
       if (cancelled) return;
       const m: HairVariantMap = new Map();
       (data ?? []).forEach((r: any) => {
-        m.set(r.avatar_item_id, { image_url: r.image_url, image_url_back: r.image_url_back });
+        m.set(r.avatar_item_id, {
+          image_url: r.image_url,
+          image_url_back: r.image_url_back,
+          layer_offset_x: r.layer_offset_x,
+          layer_offset_y: r.layer_offset_y,
+          layer_scale: r.layer_scale,
+        });
       });
       setHairVariants(m);
     })();
