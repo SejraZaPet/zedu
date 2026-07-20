@@ -304,6 +304,8 @@ function AvatarPreview({
 
   const hairColorItem = profile.hair_color_id ? itemsById.get(profile.hair_color_id) : null;
   const hairColor = hairColorItem?.color_value ?? null;
+  const hairIsNeutral = !!hairColorItem?.is_neutral_color;
+
 
   return (
     <div
