@@ -1,71 +1,88 @@
-Toto je pouze **informační odpověď** (žádné změny v kódu). Shrnutí toho, co jsem v projektu ověřila.
+# Inline Edit Mode pro Landing Page
 
----
+Nadstavba nad existujícím `landing_sections` + `SECTION_EDITORS`. Žádná změna DB vrstvy, žádná změna produkčního rendereru pro veřejné návštěvníky — jen nová editační UI vrstva, která se aktivuje pro adminy.
 
-## 1) Sekce landing page (pořadí a obsah)
+## Rozhodnutí: Batch vs. autosave (bod 3)
 
-Vstupní bod: `src/pages/Index.tsx`. Pořadí uvnitř `<main>`:
+**Volím batch model** ("Uložit / Zrušit" lišta dole) přesně jak popisuješ. Důvody:
 
-| # | Soubor | Typ obsahu (props/data) | Obrázky |
-|---|--------|--------------------------|---------|
-| 1 | `src/components/Hero.tsx` | Nadpis „• Tvoř • Uč • Objevuj", podtitulek, 2× CTA tlačítko (`Vyzkoušet zdarma` → `/auth`, `Jak to funguje ↓` scroll), disclaimer text. Pod hero panel se 3 feature kartami (ikona lucide + title + description + volitelný `href`). Data: 3× hardcoded `features[]`. | `@/assets/hero-students.png` (background), `@/assets/zedu-hero-logo-text.png` (nápis v H1) |
-| 2 | `src/components/landing/SocialProof.tsx` | 4 metriky (`icon`, `value`, `label`) + 3 badge stringy | žádné |
-| 3 | `src/components/landing/FeaturesGrid.tsx` | H2 „Co ZEdu umí" + podtitulek + 6 karet (`icon`, `title`, `description`) | žádné |
-| 4 | `src/components/landing/HowItWorks.tsx` (id=`jak-to-funguje`) | H2 „Jak začít?" + podtitulek + 3 kroky (`n`, `title`, `desc`) + CTA tlačítko → `/auth` | žádné |
-| 5 | `src/components/landing/ForWhom.tsx` | H2 „Pro koho je ZEdu?" + podtitulek + 3 karty (`icon`, `title`, bullets `string[]`, `cta`, `to`) | žádné (jen ikony) |
-| 6 | `src/components/landing/PlatformShowcase.tsx` | H2 „Podívejte se dovnitř" + 4 taby (`Editor učebnice`, `Živá hra`, `Rozvrh`, `Dashboard žáka`); právě teď jen placeholder `ImageIcon` | **placeholder – tady se počítá s obrázky/screenshoty** (1 per tab) |
-| 7 | `src/components/PodcastSection.tsx` | H2 „Rozhovory & epizody" + seznam **z DB** (`podcast_episodes`, top 5, status=published). Skryje se, pokud 0 epizod. | žádné |
-| 8 | `src/components/landing/FinalCTA.tsx` | H2 „Připraveni učit moderně?" + CTA → `/auth`, sekundární odkaz → `/cenik`, kontaktní e-mail | žádné |
+- Draft je jednoduše `Record<sectionId, props>` v jednom Contextu — inline i panel do něj zapisují stejně. Autosave by vyžadoval per-field debounce, řešení race conditions a nejasné UX ("uložilo se to už, když jsem odjel z pole?").
+- Uživatel často upravuje víc věcí v jedné sekci najednou (nadpis + subtitle + tlačítko) — batch = jedno psychologické "commitnutí".
+- "Zrušit" je jasné: zahoď draft, refetch z DB. Autosave by "Zrušit" v podstatě neuměl.
+- Reordering/add/delete zůstává immediate (jako v existujícím `LandingPageManager`) — jsou to strukturální akce, ne obsahové drafty; míchat je do batch commitu by komplikovalo UX.
 
-Wrapper `SiteHeader`, `SiteFooter` a plovoucí `AdminButton` nejsou součástí obsahu, které bys chtěla editovat.
+## Architektura
 
----
+```text
+<LandingEditModeProvider>            ← nový Context (isEditMode, draft, dirty sections, actions)
+  <Index />
+    <SiteHeader />
+    <AdminEditToggle />               ← nové tlačítko (jen is_admin)
+    <main>
+      {sections.map(s =>
+        <EditableSectionWrapper section={s}>   ← v edit módu: outline, drag handle, tužka, delete
+          <SectionBetween />                   ← "+" tlačítko mezi sekcemi
+          <Component props={draft[s.id] ?? s.props} />   ← živý náhled z draftu
+        </EditableSectionWrapper>
+      )}
+    </main>
+    <EditModeFloatingBar />           ← jen v edit módu: Uložit / Zrušit + počet dirty
+    <EditModeSidePanel />             ← Sheet zprava se SECTION_EDITORS pro aktivní sekci
+</LandingEditModeProvider>
+```
 
-## 2) Existující vzory pro dynamický/JSONB obsah
+## Nové soubory
 
-**Ne, landing page je aktuálně 100 % statická** – všechna copy jsou hardcoded pole v komponentách (`features`, `steps`, `cards`, `metrics`, `tabs`, `badges`). Jediná dynamická sekce je `PodcastSection`, která se plní z tabulky `podcast_episodes`.
+- `src/contexts/LandingEditModeContext.tsx` — provider + hook `useLandingEditMode()`. State: `isEditMode`, `draft: Record<string, any>`, `activePanelSectionId`, `enterEditMode()`, `exitEditMode()`, `setDraftProps(id, props)`, `getEffectiveProps(section)`, `saveAll()`, `discardAll()`, dirty count. Provider vloží kolem `Index` v `App.tsx` nebo přímo v `Index.tsx`.
+- `src/components/landing-edit/AdminEditToggle.tsx` — pill tlačítko "Upravit stránku" (fixed top-right, jen když `useAdmin() === true` a mimo edit mód). V edit módu skryto (Floating Bar převezme).
+- `src/components/landing-edit/EditableSectionWrapper.tsx` — obalí každou sekci. V edit módu: přerušovaný outline na hover, tužka v rohu (otevře side panel), drag handle vlevo, delete v pravém horním rohu s AlertDialog. Mimo edit mód: passthrough (žádný DOM overhead).
+- `src/components/landing-edit/InlineTextField.tsx` — klikací contentEditable pro string pole. Používá se přes `InlineEditContext` — komponenty jako `Hero`, `FinalCTA` atd. dostanou pomocníka `useInlineField(section, path)` a když je edit mód aktivní, obalí text tímto komponentem; jinak vrátí čistý string. Aby se nemuselo přepisovat 8 komponent, řešíme přes malý helper `<Editable path="subtitle">{p.subtitle}</Editable>` renderovaný tam, kde jsou triviální stringy (title, subtitle, disclaimer, tlačítkové labely). Enter/blur → `setDraftProps`.
+- `src/components/landing-edit/EditModeFloatingBar.tsx` — fixed bottom bar. Zobrazuje "N neuložených změn", "Uložit" (batch update per dirty section), "Zrušit" (discard + refetch), "Ukončit editaci".
+- `src/components/landing-edit/EditModeSidePanel.tsx` — shadcn `Sheet` side=right, uvnitř `SECTION_EDITORS[type]` napojený na draft (value = effective props, onChange = setDraftProps). Reuse beze změny.
+- `src/components/landing-edit/BetweenSectionsInsert.tsx` — 2px pruh mezi sekcemi, na hover se rozšíří na "+" tlačítko → picker section_type (reuse `AddSectionDialog`) → insert do DB s `order_index` mezi sousedy (avg × 10 shift pokud kolize) → invalidate.
+- `src/components/landing-edit/useSectionDnd.ts` — helper hook, který obalí sekce v `DndContext` + `SortableContext` a při dropu volá immediate update `order_index` (stejná logika jako `LandingPageManager`).
 
-Ale máme **hodně silné vzory JSONB + block editoru** k inspiraci:
+## Změny existujících souborů
 
-- `articles.blocks jsonb` (`ArticlesManager.tsx`), `help_guides` (`content_json jsonb`), `podcast_episodes`, `lesson_plans`, `worksheets`, `teacher_textbook_lessons`, `textbook_lessons` – všechny drží obsah jako pole bloků v `jsonb`.
-- **Block editor UI**: `src/components/admin/BlockEditor.tsx` + `src/components/admin/block-editors/*` (`ImageBlock`, `ImageTextBlock`, `GalleryBlock`, `HierarchyBlock`, `ActivityBlock`, …). Podporuje drag&drop řazení, přidávání/mazání bloků, kategorizované menu (Text / Média / Struktura / Interaktivní), inline náhledy.
-- Doprovodná typová definice: `src/lib/textbook-config.ts` (`Block` type).
-- Podobný „manager" pattern pro CRUD nad JSONB obsahem: `ArticlesManager.tsx`, `HelpGuidesManager.tsx`, `PodcastManager.tsx`.
+- `src/pages/Index.tsx` — obalit provider, nahradit prostý `sections.map` za DnD kontejner s `EditableSectionWrapper`. V ne-edit módu vypadá identicky.
+- `src/components/Hero.tsx`, `SocialProof.tsx`, `FeaturesGrid.tsx`, `HowItWorks.tsx`, `ForWhom.tsx`, `PlatformShowcase.tsx`, `FinalCTA.tsx` — kolem string polí obalit `<Editable path="…">{p.xxx}</Editable>`. Když není edit mód, `Editable` vyrenderuje `<>{children}</>` — nulový overhead. Podcast sekce: jen wrapper title, epizody se dál needitují inline.
+- `src/components/AdminButton.tsx` — beze změny, `AdminEditToggle` je vedle.
+- `src/hooks/useLandingSections.ts` — přidat mutation helper (nebo použít existující `supabase.from(...)` přímo v Contextu).
 
-Pro CMS landing page je nejpřímější vzor **`ArticlesManager` + `BlockEditor`**: jedna admin stránka, která načte řádek, edituje pole `blocks` (drag&drop), a uloží zpět jednou UPDATE-em na JSONB. Přesně tenhle pattern lze recyklovat pro landing – buď jednu řadu v nové tabulce `landing_pages` s `sections jsonb`, nebo tabulku `landing_sections` (řádek = sekce, `order_index`, `type`, `props jsonb`).
+## Draft flow (batch save)
 
----
+1. Vstup do edit módu → snapshot aktuálních `props` per sekce zůstává v React Query cache; `draft` je prázdný `{}`.
+2. Inline změna nebo změna v panelu → `setDraftProps(sectionId, newProps)` → `draft[sectionId] = newProps`.
+3. Render všech sekcí čte `draft[id] ?? section.props` → živý náhled.
+4. **Uložit**: `for (const [id, props] of Object.entries(draft)) update landing_sections`. Paralelní `Promise.all`. Po úspěchu: invalidate, `draft = {}`, toast.
+5. **Zrušit**: `draft = {}`, invalidate (refetch produkčního stavu), toast.
+6. Reorder / delete / insert → immediate DB write + invalidate (nedotýkají se draftu).
 
-## 3) Upload obrázků – existující mechanismus
+## UX detaily
 
-Používáme **Supabase Storage veřejný bucket `lesson-images`** jako obecný veřejně čitelný bucket:
+- Outline v edit módu: `outline-2 outline-dashed outline-primary/40` na hover celé sekce, `outline-primary` když má dirty draft.
+- Tužka + drag handle + delete jsou v malém floating toolbaru v pravém horním rohu sekce (absolute), viditelném na hover.
+- Inline editace: `contenteditable="plaintext-only"`, Enter potvrdí, Shift+Enter přidá `\n`, Escape zahodí, klik mimo = commit do draftu.
+- Side panel má vlastní "Zavřít" tlačítko (změny už jsou v draftu, ale ještě neuložené globálně).
+- Před opuštěním stránky s dirty draftem `beforeunload` prompt.
+- Floating bar sticky bottom, `z-50`, backdrop blur, výrazné "Uložit" tlačítko (brand gradient).
 
-- **RLS** (migrace `20260222164519…`): SELECT pro všechny, INSERT/UPDATE/DELETE jen pro `public.is_admin()`.
-- **Upload flow** (nejjednodušší reference `src/components/admin/block-editors/ImageBlock.tsx`, řádky 20-30):
-  ```ts
-  const path = `${crypto.randomUUID()}.${ext}`;
-  await supabase.storage.from("lesson-images").upload(path, file);
-  const { data } = supabase.storage.from("lesson-images").getPublicUrl(path);
-  onChange({ ...block.props, url: data.publicUrl });
-  ```
-- **Bohatší varianta s validací** (max 1 MB, kontrola rozměrů, cache-control, upsert): `src/components/school/SchoolBrandingSection.tsx` (bucket `school-logos`, per-school prefix v path).
-- **Media Library UI** (přepínání mezi novým uploadem a výběrem již nahraného obrázku): `MediaPickerDialog` z `src/components/media/`. Řeší i tag/hledání. Dá se přímo použít.
+## Bezpečnost
 
-Další existující veřejné buckety a jejich účel (pro orientaci, ne pro landing):
-- `school-logos` – loga škol
-- `student-attachments` – přílohy k odevzdaným úkolům (privátní)
-- `student-portfolio` – portfolio žáků
+RLS z Fáze 1 už zajišťuje, že non-admin nemůže mutovat. `is_admin()` check v `AdminEditToggle` jen skrývá UI. Server je autoritativní.
 
-**Doporučení pro landing CMS**: buď recyklovat `lesson-images` (rychlé, RLS už restriktivní na admina), nebo vytvořit nový bucket `landing-media` se stejnou strukturou politik (SELECT public, mutace jen `is_admin()`). Druhá varianta je čistší – budeš mít oddělenou životnost obrázků landing page od učebnic a snadnější správu.
+## Postup implementace (menší kroky, potvrzuji po každém)
 
----
+1. **Krok 1** — Context + toggle + Floating Bar + shell: přepnutí edit módu funguje, sekce dostanou dashed outline na hover, "Uložit / Zrušit" jsou zatím no-op. **Cíl: proof of concept UI.**
+2. **Krok 2** — Inline editace stringů (Hero + FinalCTA jako první): `<Editable>` helper + draft flow + batch save reálně píše do DB. **Cíl: nejjednodušší e2e loop.**
+3. **Krok 3** — Rozšíření `<Editable>` na zbylé sekce (SocialProof texty, FeaturesGrid, HowItWorks, ForWhom, PlatformShowcase, Podcast title).
+4. **Krok 4** — Side panel s reuse `SECTION_EDITORS` napojený na draft (živý náhled).
+5. **Krok 5** — Drag&drop pořadí + insert mezi sekcemi + delete (všechny immediate, mimo draft).
+6. **Krok 6** — Polish: `beforeunload` prompt, keyboard shortcuts (Esc opustí edit mód pokud čistý draft), dirty indikátor per sekce.
 
-## Krátký návrh, jak by CMS mohl vypadat (jen náčrt – bez implementace)
+Po každém kroku napíšu, co je hotové, a počkám na "pokračuj".
 
-- Tabulka `landing_sections` (`id`, `order_index`, `section_type` enum: hero / features_grid / how_it_works / for_whom / platform_showcase / social_proof / final_cta / podcast, `enabled bool`, `props jsonb`, `updated_at`, `updated_by`).
-- Admin stránka `/admin/landing`: seznam sekcí s drag handle, per-sekce editor formulář odvozený od `section_type` (podobný `BlockEditor` menu), toggle „zobrazit/skrýt", tlačítka přidat/duplikovat/smazat.
-- Runtime: `Index.tsx` načte řádky, řadí podle `order_index`, mapuje `section_type` na existující komponentu, do které pošle `props` (aktuální hardcoded pole se přesunou do defaultních `props` v DB seed migraci).
-- Obrázky: `MediaPickerDialog` + bucket `landing-media`.
-- Ikony: seznam allowlist z `lucide-react` v `<Select>` (protože ikony teď nejsou stringy, ale komponenty – v CMS je budeme identifikovat jménem a mapovat na komponentu při renderu).
+## Otevřené otázky (můj default)
 
-Až budeš chtít, můžu z toho udělat plný implementační plán.
+- **Obrázky (`background_image_url`, `logo_image_url`) inline?** Můj default: **ne**, obrázky se mění jen přes side panel (reuse `LandingImageInput`). Inline editace obrázků by chtěla samostatný overlay a přidá to komplexitu bez velké přidané hodnoty.
+- **Podcast epizody?** Zůstávají spravované přes vlastní `PodcastManager`, jak jsi řekla v Fázi 1.

@@ -10,6 +10,10 @@ import FinalCTA from "@/components/landing/FinalCTA";
 import SiteFooter from "@/components/SiteFooter";
 import AdminButton from "@/components/AdminButton";
 import { useLandingSections, type LandingSectionRow } from "@/hooks/useLandingSections";
+import { LandingEditModeProvider, useLandingEditMode } from "@/contexts/LandingEditModeContext";
+import AdminEditToggle from "@/components/landing-edit/AdminEditToggle";
+import EditModeFloatingBar from "@/components/landing-edit/EditModeFloatingBar";
+import EditableSectionWrapper from "@/components/landing-edit/EditableSectionWrapper";
 
 const COMPONENT_BY_TYPE: Record<string, React.ComponentType<{ props?: any }>> = {
   hero: Hero,
@@ -34,24 +38,41 @@ const FALLBACK_ORDER: LandingSectionRow[] = [
   { id: "final_cta", order_index: 80, section_type: "final_cta", enabled: true, props: {} },
 ];
 
-const Index = () => {
+function LandingSections() {
   const { data, isLoading, isError } = useLandingSections();
-  // Fall back to defaults during initial load or on error so the page never renders empty.
+  const { getEffectiveProps } = useLandingEditMode();
   const sections = !isLoading && !isError && data && data.length > 0 ? data : FALLBACK_ORDER;
 
   return (
-    <div className="min-h-screen bg-background">
-      <SiteHeader />
-      <main>
-        {sections.map((section) => {
-          const Component = COMPONENT_BY_TYPE[section.section_type];
-          if (!Component) return null;
-          return <Component key={section.id} props={section.props} />;
-        })}
-      </main>
-      <SiteFooter />
-      <AdminButton />
-    </div>
+    <>
+      {sections.map((section) => {
+        const Component = COMPONENT_BY_TYPE[section.section_type];
+        if (!Component) return null;
+        const props = getEffectiveProps(section);
+        return (
+          <EditableSectionWrapper key={section.id} section={section}>
+            <Component props={props} />
+          </EditableSectionWrapper>
+        );
+      })}
+    </>
+  );
+}
+
+const Index = () => {
+  return (
+    <LandingEditModeProvider>
+      <div className="min-h-screen bg-background">
+        <SiteHeader />
+        <main>
+          <LandingSections />
+        </main>
+        <SiteFooter />
+        <AdminButton />
+        <AdminEditToggle />
+        <EditModeFloatingBar />
+      </div>
+    </LandingEditModeProvider>
   );
 };
 
