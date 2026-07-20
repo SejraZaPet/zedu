@@ -272,12 +272,26 @@ function LayerVisual({
 }
 
 // ---------- Preview ----------
+type HairVariantMap = Map<string, { image_url: string | null; image_url_back: string | null }>;
+
+function applyHairVariant(item: AvatarItem, variants: HairVariantMap): AvatarItem {
+  if (item.category !== "hairstyle") return item;
+  const v = variants.get(item.id);
+  if (!v) return item;
+  return {
+    ...item,
+    image_url: v.image_url ?? item.image_url,
+    image_url_back: v.image_url_back ?? item.image_url_back,
+  };
+}
+
 function AvatarPreview({
-  profile, itemsById, reduceMotion,
+  profile, itemsById, reduceMotion, variants,
 }: {
   profile: Profile;
   itemsById: Map<string, AvatarItem>;
   reduceMotion: boolean;
+  variants: HairVariantMap;
 }) {
   const layers: { item: AvatarItem; sub?: "back" | "front" }[] = [];
   for (const l of LAYER_ORDER) {
@@ -291,8 +305,9 @@ function AvatarPreview({
     else if (l.category === "effect") id = profile.effect_id;
     else if (l.category === "frame") id = profile.frame_id;
     if (!id) continue;
-    const item = itemsById.get(id);
-    if (!item) continue;
+    const raw = itemsById.get(id);
+    if (!raw) continue;
+    const item = applyHairVariant(raw, variants);
     if (l.sub === "back" && !item.image_url_back) continue;
     if (l.sub === "front" && !item.image_url) continue;
     layers.push({ item, sub: l.sub });
