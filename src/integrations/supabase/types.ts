@@ -285,6 +285,7 @@ export type Database = {
           image_url_back: string | null
           is_active: boolean
           is_default: boolean
+          is_neutral_color: boolean
           layer_offset_x: number
           layer_offset_y: number
           layer_scale: number
@@ -307,6 +308,7 @@ export type Database = {
           image_url_back?: string | null
           is_active?: boolean
           is_default?: boolean
+          is_neutral_color?: boolean
           layer_offset_x?: number
           layer_offset_y?: number
           layer_scale?: number
@@ -329,6 +331,7 @@ export type Database = {
           image_url_back?: string | null
           is_active?: boolean
           is_default?: boolean
+          is_neutral_color?: boolean
           layer_offset_x?: number
           layer_offset_y?: number
           layer_scale?: number
