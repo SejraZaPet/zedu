@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Activity, CheckCircle2, Target, Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { BrandGradientBar } from "@/components/charts/BrandGradientBar";
 
 interface Props {
   studentIds: string[];
