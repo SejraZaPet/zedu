@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { Rocket } from "lucide-react";
 import { getLandingIcon } from "@/lib/landing-icons";
 import { DEFAULT_FINAL_CTA_PROPS, mergeSectionProps } from "@/lib/landing-defaults";
+import Editable from "@/components/landing-edit/Editable";
 
 interface FinalCTAProps {
   props?: Partial<typeof DEFAULT_FINAL_CTA_PROPS>;
@@ -15,30 +16,31 @@ const FinalCTA = ({ props }: FinalCTAProps) => {
   return (
     <section className="w-full py-20 md:py-28 bg-background">
       <div className="container mx-auto max-w-3xl px-4 text-center">
-        <h2 className="font-heading text-2xl md:text-3xl font-bold mb-4">{p.title}</h2>
-        {p.subtitle && <p className="text-muted-foreground mb-8">{p.subtitle}</p>}
+        <h2 className="font-heading text-2xl md:text-3xl font-bold mb-4">
+          <Editable path="title" value={p.title} placeholder="Nadpis závěrečné sekce" />
+        </h2>
+        <p className="text-muted-foreground mb-8">
+          <Editable path="subtitle" value={p.subtitle} multiline placeholder="Podtitulek (nepovinné)" />
+        </p>
         <button
           onClick={() => p.primary_cta?.href && navigate(p.primary_cta.href)}
           className="bg-gradient-brand text-primary-foreground rounded-2xl px-8 py-4 text-lg font-semibold shadow-lg hover:shadow-xl hover:opacity-90 transition-all inline-flex items-center gap-2"
         >
-          <PrimaryIcon className="w-5 h-5" /> {p.primary_cta?.label ?? "Vytvořit účet zdarma"}
+          <PrimaryIcon className="w-5 h-5" />{" "}
+          <Editable path="primary_cta.label" value={p.primary_cta?.label ?? "Vytvořit účet zdarma"} placeholder="Text tlačítka" />
         </button>
-        {p.secondary_link?.label && (
-          <button
-            onClick={() => p.secondary_link?.href && navigate(p.secondary_link.href)}
-            className="text-primary text-sm mt-4 block mx-auto hover:underline"
-          >
-            {p.secondary_link.label}
-          </button>
-        )}
-        {p.contact_email && (
-          <p className="text-xs text-muted-foreground mt-6">
-            Máte otázky? Napište nám na{" "}
-            <a href={`mailto:${p.contact_email}`} className="hover:underline">
-              {p.contact_email}
-            </a>
-          </p>
-        )}
+        <button
+          onClick={() => p.secondary_link?.href && navigate(p.secondary_link.href)}
+          className="text-primary text-sm mt-4 block mx-auto hover:underline"
+        >
+          <Editable path="secondary_link.label" value={p.secondary_link?.label} placeholder="Sekundární odkaz (nepovinné)" />
+        </button>
+        <p className="text-xs text-muted-foreground mt-6">
+          Máte otázky? Napište nám na{" "}
+          <a href={`mailto:${p.contact_email ?? ""}`} className="hover:underline">
+            <Editable path="contact_email" value={p.contact_email} placeholder="email@zedu.cz" />
+          </a>
+        </p>
       </div>
     </section>
   );

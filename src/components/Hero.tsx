@@ -100,7 +100,7 @@ const Hero = ({ props }: HeroProps) => {
               className="text-sm text-white/90 mt-4 animate-fade-in-up drop-shadow-md"
               style={{ animationDelay: "0.6s" }}
             >
-              {p.disclaimer}
+              <Editable path="disclaimer" value={p.disclaimer} placeholder="Poznámka pod tlačítky" />
             </p>
           )}
         </div>
