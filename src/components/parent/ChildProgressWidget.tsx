@@ -256,14 +256,7 @@ const ChildProgressWidget = ({ studentIds, studentNames }: Props) => {
                     labelFormatter={(v) => fmtDate(String(v))}
                     formatter={(value: any) => [`${value}`, "Aktivit"]}
                   />
-                  <defs>
-                    <linearGradient id="brandBarGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="hsl(var(--brand-gradient-from))" />
-                      <stop offset="var(--brand-gradient-stop-lg, 35%)" stopColor="hsl(var(--brand-gradient-to))" />
-                      <stop offset="100%" stopColor="hsl(var(--brand-gradient-to))" />
-                    </linearGradient>
-                  </defs>
-                  <Bar dataKey="count" fill="url(#brandBarGradient)" radius={[3, 3, 0, 0]} />
+                  <Bar dataKey="count" shape={<BrandGradientBar radius={[3, 3, 0, 0]} />} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
