@@ -523,7 +523,7 @@ export default function AvatarItemsManager() {
                 <div className="col-span-2 space-y-3 rounded-lg border p-3 bg-muted/20">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <Label className="text-sm font-semibold">Kalibrace vrstvy</Label>
-                    {bases.length > 0 && (
+                    {bases.length > 0 && !isCalibratingBase && (
                       <div className="flex items-center gap-2">
                         <Label className="text-xs text-muted-foreground">Base:</Label>
                         <Select value={previewBaseSlug} onValueChange={setPreviewBaseSlug}>
@@ -536,12 +536,42 @@ export default function AvatarItemsManager() {
                         </Select>
                       </div>
                     )}
+                    {isCalibratingBase && showBase01Ghost && (
+                      <span className="text-xs text-muted-foreground">
+                        Reference: base_01 (obrys, 40% opacity)
+                      </span>
+                    )}
                   </div>
 
                   <div className="mx-auto relative w-64 h-64 rounded-md border bg-background overflow-hidden">
+                    {showBase01Ghost && base01?.image_url && (
+                      <div
+                        className="absolute inset-0 pointer-events-none"
+                        style={{ opacity: 0.4 }}
+                        aria-hidden="true"
+                      >
+                        <AvatarLayerStack
+                          layers={[
+                            {
+                              item: {
+                                id: base01.id,
+                                slug: base01.slug,
+                                category: "base",
+                                image_url: base01.image_url,
+                                image_url_back: base01.image_url_back,
+                                color_value: base01.color_value,
+                                layer_offset_x: 0,
+                                layer_offset_y: 0,
+                                layer_scale: 1,
+                              },
+                            },
+                          ]}
+                        />
+                      </div>
+                    )}
                     {(() => {
                       const layers: StackLayer[] = [];
-                      if (previewBase?.image_url) {
+                      if (!isCalibratingBase && previewBase?.image_url) {
                         layers.push({
                           item: {
                             id: previewBase.id,
