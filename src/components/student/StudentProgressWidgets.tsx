@@ -6,6 +6,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from "recharts";
 import { Trophy, Flame, Sparkles, BookOpenCheck, BarChart3, Award } from "lucide-react";
+import { BrandGradientBar } from "@/components/charts/BrandGradientBar";
 
 type WeekBucket = { label: string; avg: number; count: number };
 
