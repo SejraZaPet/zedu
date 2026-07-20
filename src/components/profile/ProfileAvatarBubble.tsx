@@ -222,7 +222,6 @@ export default function ProfileAvatarBubble({ userId, size = 56, className }: Pr
       >
         <Pencil style={{ width: Math.max(10, size * 0.16), height: Math.max(10, size * 0.16) }} />
       </span>
-      </span>
       {hasNew && (
         <span
           aria-label="Nové položky odemčeny"
