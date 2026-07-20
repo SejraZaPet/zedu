@@ -534,41 +534,45 @@ export default function AvatarItemsManager() {
                   </div>
 
                   <div className="mx-auto relative w-64 h-64 rounded-md border bg-background overflow-hidden">
-                    <div className="absolute" style={{ top: "9%", left: "9%", width: "82%", height: "82%" }}>
-                      {previewBase?.image_url && (
-                        <img
-                          src={previewBase.image_url}
-                          alt=""
-                          aria-hidden="true"
-                          draggable={false}
-                          className="absolute inset-0 w-full h-full object-contain pointer-events-none select-none"
-                        />
-                      )}
-                      {editing.image_url && (() => {
+                    {(() => {
+                      const layers: StackLayer[] = [];
+                      if (previewBase?.image_url) {
+                        layers.push({
+                          item: {
+                            id: previewBase.id,
+                            slug: previewBase.slug,
+                            category: "base",
+                            image_url: previewBase.image_url,
+                            image_url_back: previewBase.image_url_back,
+                            color_value: previewBase.color_value,
+                            layer_offset_x: Number(previewBase.layer_offset_x) || 0,
+                            layer_offset_y: Number(previewBase.layer_offset_y) || 0,
+                            layer_scale: Number(previewBase.layer_scale) || 1,
+                          },
+                        });
+                      }
+                      if (editing.image_url) {
                         const ox = Number(editing.layer_offset_x);
                         const oy = Number(editing.layer_offset_y);
                         const sc = Number(editing.layer_scale);
-                        const sx = Number.isFinite(ox) ? ox : 0;
-                        const sy = Number.isFinite(oy) ? oy : 0;
-                        const ss = Number.isFinite(sc) ? sc : 1;
-                        return (
-                          <img
-                            src={editing.image_url}
-                            alt=""
-                            aria-hidden="true"
-                            draggable={false}
-                            style={{
-                              position: "absolute",
-                              inset: 0,
-                              transform: `translate(${sx}%, ${sy}%) scale(${ss})`,
-                              transformOrigin: "center",
-                            }}
-                            className="w-full h-full object-contain pointer-events-none select-none"
-                          />
-                        );
-                      })()}
-                    </div>
+                        layers.push({
+                          item: {
+                            id: editing.id ?? "editing",
+                            slug: editing.slug ?? "editing",
+                            category: (editing.category as string) ?? "outfit",
+                            image_url: editing.image_url ?? null,
+                            image_url_back: editing.image_url_back ?? null,
+                            color_value: editing.color_value ?? null,
+                            layer_offset_x: Number.isFinite(ox) ? ox : 0,
+                            layer_offset_y: Number.isFinite(oy) ? oy : 0,
+                            layer_scale: Number.isFinite(sc) ? sc : 1,
+                          },
+                        });
+                      }
+                      return <AvatarLayerStack layers={layers} />;
+                    })()}
                   </div>
+
 
 
                   {[
