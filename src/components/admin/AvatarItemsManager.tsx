@@ -533,31 +533,34 @@ export default function AvatarItemsManager() {
                   </div>
 
                   <div className="mx-auto relative w-64 h-64 rounded-md border bg-background overflow-hidden">
-                    {previewBase?.image_url && (
-                      <img
-                        src={previewBase.image_url}
-                        alt=""
-                        aria-hidden="true"
-                        draggable={false}
-                        className="absolute inset-0 w-full h-full object-contain pointer-events-none select-none"
-                      />
-                    )}
-                    {editing.image_url && (
-                      <img
-                        src={editing.image_url}
-                        alt=""
-                        aria-hidden="true"
-                        draggable={false}
-                        style={{
-                          position: "absolute",
-                          inset: 0,
-                          transform: `translate(${Number(editing.layer_offset_x ?? 0)}%, ${Number(editing.layer_offset_y ?? 0)}%) scale(${Number(editing.layer_scale ?? 1)})`,
-                          transformOrigin: "center",
-                        }}
-                        className="w-full h-full object-contain pointer-events-none select-none"
-                      />
-                    )}
+                    <div className="absolute" style={{ top: "9%", left: "9%", width: "82%", height: "82%" }}>
+                      {previewBase?.image_url && (
+                        <img
+                          src={previewBase.image_url}
+                          alt=""
+                          aria-hidden="true"
+                          draggable={false}
+                          className="absolute inset-0 w-full h-full object-contain pointer-events-none select-none"
+                        />
+                      )}
+                      {editing.image_url && (
+                        <img
+                          src={editing.image_url}
+                          alt=""
+                          aria-hidden="true"
+                          draggable={false}
+                          style={{
+                            position: "absolute",
+                            inset: 0,
+                            transform: `translate(${Number(editing.layer_offset_x ?? 0)}%, ${Number(editing.layer_offset_y ?? 0)}%) scale(${Number(editing.layer_scale ?? 1)})`,
+                            transformOrigin: "center",
+                          }}
+                          className="w-full h-full object-contain pointer-events-none select-none"
+                        />
+                      )}
+                    </div>
                   </div>
+
 
                   {[
                     { key: "layer_offset_x" as const, label: "Posun X (%)", min: -20, max: 20, step: 0.5, def: 0 },
