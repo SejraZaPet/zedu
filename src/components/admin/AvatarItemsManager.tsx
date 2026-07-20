@@ -513,33 +513,140 @@ export default function AvatarItemsManager() {
                   onChange={(e) => setEditing({ ...editing, sort_order: Number(e.target.value) })}
                 />
               </div>
-              <div>
-                <Label>Layer scale</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={editing.layer_scale ?? 1}
-                  onChange={(e) => setEditing({ ...editing, layer_scale: Number(e.target.value) })}
-                />
-              </div>
-              <div>
-                <Label>Layer offset X</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={editing.layer_offset_x ?? 0}
-                  onChange={(e) => setEditing({ ...editing, layer_offset_x: Number(e.target.value) })}
-                />
-              </div>
-              <div>
-                <Label>Layer offset Y</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={editing.layer_offset_y ?? 0}
-                  onChange={(e) => setEditing({ ...editing, layer_offset_y: Number(e.target.value) })}
-                />
-              </div>
+              {showCalibration ? (
+                <div className="col-span-2 space-y-3 rounded-lg border p-3 bg-muted/20">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <Label className="text-sm font-semibold">Kalibrace vrstvy</Label>
+                    {bases.length > 0 && (
+                      <div className="flex items-center gap-2">
+                        <Label className="text-xs text-muted-foreground">Base:</Label>
+                        <Select value={previewBaseSlug} onValueChange={setPreviewBaseSlug}>
+                          <SelectTrigger className="h-8 w-[140px]"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {bases.map((b) => (
+                              <SelectItem key={b.id} value={b.slug}>{b.slug}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mx-auto relative w-64 h-64 rounded-md border bg-background overflow-hidden">
+                    {previewBase?.image_url && (
+                      <img
+                        src={previewBase.image_url}
+                        alt=""
+                        aria-hidden="true"
+                        draggable={false}
+                        className="absolute inset-0 w-full h-full object-contain pointer-events-none select-none"
+                      />
+                    )}
+                    {editing.image_url && (
+                      <img
+                        src={editing.image_url}
+                        alt=""
+                        aria-hidden="true"
+                        draggable={false}
+                        style={{
+                          position: "absolute",
+                          inset: 0,
+                          transform: `translate(${Number(editing.layer_offset_x ?? 0)}%, ${Number(editing.layer_offset_y ?? 0)}%) scale(${Number(editing.layer_scale ?? 1)})`,
+                          transformOrigin: "center",
+                        }}
+                        className="w-full h-full object-contain pointer-events-none select-none"
+                      />
+                    )}
+                  </div>
+
+                  {[
+                    { key: "layer_offset_x" as const, label: "Posun X (%)", min: -20, max: 20, step: 0.5, def: 0 },
+                    { key: "layer_offset_y" as const, label: "Posun Y (%)", min: -20, max: 20, step: 0.5, def: 0 },
+                    { key: "layer_scale" as const, label: "Velikost", min: 0.5, max: 1.5, step: 0.01, def: 1 },
+                  ].map((s) => {
+                    const val = Number((editing as any)[s.key] ?? s.def);
+                    return (
+                      <div key={s.key} className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs">{s.label}</Label>
+                          <Input
+                            type="number"
+                            step={s.step}
+                            className="h-7 w-24 text-right"
+                            value={val}
+                            onChange={(e) =>
+                              setEditing({ ...editing, [s.key]: Number(e.target.value) })
+                            }
+                          />
+                        </div>
+                        <Slider
+                          min={s.min}
+                          max={s.max}
+                          step={s.step}
+                          value={[val]}
+                          onValueChange={([v]) => setEditing({ ...editing, [s.key]: v })}
+                        />
+                      </div>
+                    );
+                  })}
+
+                  <div className="flex gap-2 justify-end pt-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        setEditing({
+                          ...editing,
+                          layer_offset_x: 0,
+                          layer_offset_y: 0,
+                          layer_scale: 1,
+                        })
+                      }
+                    >
+                      Reset
+                    </Button>
+                    <Button size="sm" onClick={saveCalibration} disabled={calibrating || !editing.id}>
+                      {calibrating && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                      Uložit kalibraci
+                    </Button>
+                  </div>
+                  {!editing.id && (
+                    <p className="text-xs text-muted-foreground">
+                      Kalibraci lze uložit až po prvním vytvoření položky.
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <Label>Layer scale</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={editing.layer_scale ?? 1}
+                      onChange={(e) => setEditing({ ...editing, layer_scale: Number(e.target.value) })}
+                    />
+                  </div>
+                  <div>
+                    <Label>Layer offset X</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={editing.layer_offset_x ?? 0}
+                      onChange={(e) => setEditing({ ...editing, layer_offset_x: Number(e.target.value) })}
+                    />
+                  </div>
+                  <div>
+                    <Label>Layer offset Y</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={editing.layer_offset_y ?? 0}
+                      onChange={(e) => setEditing({ ...editing, layer_offset_y: Number(e.target.value) })}
+                    />
+                  </div>
+                </>
+              )}
 
               <div className="flex items-center gap-2 pt-2">
                 <Switch
