@@ -489,6 +489,52 @@ const ProfilePage = () => {
           );
         })()}
 
+        {/* Teaching overview (teachers) */}
+        {role === "teacher" && teacherOverview && (() => {
+          const joined = new Date(profile.created_at).toLocaleDateString("cs-CZ", { month: "long", year: "numeric" });
+          return (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <GraduationCap className="w-4 h-4 text-primary" />
+                  Přehled výuky
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-lg border p-3">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Users className="w-4 h-4 text-primary" />
+                      Vyučované třídy
+                    </div>
+                    <p className="mt-1 font-semibold">{teacherOverview.class_count}</p>
+                  </div>
+                  <div className="rounded-lg border p-3">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <ClipboardList className="w-4 h-4 text-secondary" />
+                      Vytvořené úkoly
+                    </div>
+                    <p className="mt-1 font-semibold">{teacherOverview.assignment_count}</p>
+                  </div>
+                </div>
+
+                {teacherOverview.active_title && (
+                  <div>
+                    <Label className="text-muted-foreground text-xs">Aktivní titul</Label>
+                    <div className="mt-1">
+                      <Badge variant="outline" className="text-xs">{teacherOverview.active_title}</Badge>
+                    </div>
+                  </div>
+                )}
+
+                <p className="text-xs text-muted-foreground">Na ZEDU od {joined}</p>
+              </CardContent>
+            </Card>
+          );
+        })()}
+
+
+
 
 
         {/* Editable fields */}
