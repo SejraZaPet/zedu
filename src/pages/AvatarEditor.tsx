@@ -889,6 +889,60 @@ export default function AvatarEditor() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {(() => {
+        const currentId = newQueue[0];
+        const item = currentId ? itemsById.get(currentId) : null;
+        if (!item) return null;
+        return (
+          <Dialog
+            open={true}
+            onOpenChange={(open) => { if (!open) continueNewItem(item); }}
+          >
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Nová položka odemčena!</DialogTitle>
+                <DialogDescription>
+                  Do své sbírky získáváš nový kosmetický předmět.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex flex-col items-center gap-3 py-2">
+                <div className="relative w-32 h-32 rounded-xl border-2 bg-muted/40 overflow-hidden">
+                  <LayerVisual item={item} />
+                  {item.category === "badge" && (
+                    <BadgeOverlay
+                      iconName={item.icon_name}
+                      rarity={item.rarity}
+                      className="top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+                      size={56}
+                    />
+                  )}
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-base font-semibold">{item.name}</span>
+                  <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0", RARITY_TONE[item.rarity])}>
+                    {RARITY_LABEL[item.rarity]}
+                  </Badge>
+                </div>
+                <p className="text-sm text-muted-foreground text-center">
+                  Právě jsi odemkl(a) položku <strong>{item.name}</strong>.
+                </p>
+              </div>
+              <DialogFooter className="flex-col sm:flex-row gap-2">
+                <Button variant="outline" onClick={() => continueNewItem(item)}>
+                  Pokračovat
+                </Button>
+                <Button variant="outline" onClick={() => favoriteNewItem(item)}>
+                  <Heart className="w-4 h-4 mr-1" /> Přidat do oblíbených
+                </Button>
+                <Button onClick={() => tryOnNewItem(item)}>
+                  Vyzkoušet na avatarovi
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        );
+      })()}
     </div>
   );
 }
