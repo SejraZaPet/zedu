@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 interface Props {
   slug: string;
   size?: number;
+  reduceMotion?: boolean;
 }
 
 function usePrefersReducedMotion() {
@@ -20,12 +21,11 @@ function usePrefersReducedMotion() {
 
 /**
  * Decorative full-avatar effect drawn as inline SVG, mapped by item.slug.
- * Respects prefers-reduced-motion — animations disabled if requested.
- * Unknown slug → renders nothing.
+ * Respects prefers-reduced-motion (system + profile). Unknown slug → nothing.
  */
-export default function EffectOverlay({ slug }: Props) {
-  const reduced = usePrefersReducedMotion();
-  const animate = !reduced;
+export default function EffectOverlay({ slug, reduceMotion }: Props) {
+  const sysReduced = usePrefersReducedMotion();
+  const animate = !reduceMotion && !sysReduced;
 
   const common = {
     xmlns: "http://www.w3.org/2000/svg",
