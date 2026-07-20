@@ -238,14 +238,16 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
         aria-hidden
       >
         {hasContent ? (
-          layers.map((l, i) => (
-            <Layer
-              key={`${l.item.id}-${l.sub ?? "m"}-${i}`}
-              item={l.item}
-              sub={l.sub}
-              hairColor={l.item.category === "hairstyle" ? hairColor : null}
-            />
-          ))
+          <div className="absolute" style={{ top: "9%", left: "9%", width: "82%", height: "82%" }}>
+            {layers.map((l, i) => (
+              <Layer
+                key={`${l.item.id}-${l.sub ?? "m"}-${i}`}
+                item={l.item}
+                sub={l.sub}
+                hairColor={l.item.category === "hairstyle" ? hairColor : null}
+              />
+            ))}
+          </div>
         ) : (
           <User className="w-1/2 h-1/2 text-muted-foreground" />
         )}
