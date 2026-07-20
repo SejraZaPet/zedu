@@ -51,6 +51,8 @@ interface AvatarItem {
   icon_name: string | null;
   image_url_back: string | null;
   color_value: string | null;
+  is_neutral_color: boolean | null;
+
   recommended_for_role: "student" | "teacher" | "both";
   unlock_type: string;
   unlock_value: string | null;
