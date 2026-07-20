@@ -110,6 +110,20 @@ export default function ProfileAvatarBubble({ userId, size = 56, className }: Pr
   const [profile, setProfile] = useState<AvatarProfile | null>(null);
   const [items, setItems] = useState<Map<string, AvatarItem>>(new Map());
   const [loading, setLoading] = useState(true);
+  const [hasNew, setHasNew] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const { count } = await supabase
+        .from("user_avatar_items")
+        .select("item_id", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .eq("is_new", true);
+      if (mounted) setHasNew((count ?? 0) > 0);
+    })();
+    return () => { mounted = false; };
+  }, [userId]);
 
   useEffect(() => {
     let mounted = true;
