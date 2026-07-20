@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   User, Scissors, Shirt, Glasses, Crown, Image as ImageIcon,
-  Frame, Sparkles, Award, Type, Lock, Heart, Shuffle, ArrowLeft, Check,
+  Frame, Sparkles, Award, Type, Lock, Heart, Shuffle, ArrowLeft, Check, Droplet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
