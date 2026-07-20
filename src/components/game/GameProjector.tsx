@@ -59,7 +59,7 @@ export const GameProjector = ({ session, players, responses, countdown, onShowRe
     [session.teams, players]
   );
 
-  const avatars = useStudentAvatars(leaderboard.map((p) => p.user_id));
+
 
   // Play themed sounds for new responses on current question
   const lastPlayedRef = useRef(0);
