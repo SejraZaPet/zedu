@@ -89,7 +89,7 @@ const PlayerProfileWidget = ({ userId, firstName, lastName }: Props) => {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-center gap-4">
-          <AvatarSvg slug={avatarSlug} size={88} />
+          <ProfileAvatarBubble userId={userId} size={88} editable={false} />
           <div className="flex-1 min-w-0">
             <div className="font-heading text-xl font-semibold truncate">{fullName}</div>
             <div className="flex items-center gap-3 mt-1 flex-wrap">
