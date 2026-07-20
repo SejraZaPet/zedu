@@ -3,9 +3,12 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
+import FrameOverlay from "@/components/avatar/FrameOverlay";
+import EffectOverlay from "@/components/avatar/EffectOverlay";
 
 interface AvatarItem {
   id: string;
+  slug: string;
   category: string;
   name: string;
   image_url: string | null;
