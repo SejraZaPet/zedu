@@ -5,6 +5,7 @@ import { User, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import FrameOverlay from "@/components/avatar/FrameOverlay";
 import EffectOverlay from "@/components/avatar/EffectOverlay";
+import BadgeOverlay from "@/components/avatar/BadgeOverlay";
 
 interface AvatarItem {
   id: string;
@@ -13,7 +14,9 @@ interface AvatarItem {
   name: string;
   image_url: string | null;
   image_url_back: string | null;
+  icon_name: string | null;
   color_value: string | null;
+  rarity: "common" | "uncommon" | "rare" | "epic" | "legendary" | "mythic";
   layer_offset_x: number;
   layer_offset_y: number;
   layer_scale: number;
@@ -29,6 +32,7 @@ interface AvatarProfile {
   background_id: string | null;
   frame_id: string | null;
   effect_id: string | null;
+  badge_id: string | null;
 }
 
 // Same order as AvatarEditor: bottom → top
