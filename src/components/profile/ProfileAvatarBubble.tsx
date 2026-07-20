@@ -17,10 +17,12 @@ interface AvatarItem {
   icon_name: string | null;
   color_value: string | null;
   rarity: "common" | "uncommon" | "rare" | "epic" | "legendary" | "mythic";
+  is_neutral_color: boolean | null;
   layer_offset_x: number;
   layer_offset_y: number;
   layer_scale: number;
 }
+
 
 interface AvatarProfile {
   base_id: string | null;
@@ -48,7 +50,19 @@ const LAYER_ORDER: { field: keyof AvatarProfile; sub?: "back" | "front" }[] = [
   { field: "frame_id" },
 ];
 
-function Layer({ item, sub, hairColor }: { item: AvatarItem; sub?: "back" | "front"; hairColor?: string | null }) {
+function hexToBrightness(hex: string): number {
+  const m = hex.trim().match(/^#?([0-9a-f]{6})$/i);
+  if (!m) return 1;
+  const n = parseInt(m[1], 16);
+  const r = ((n >> 16) & 255) / 255;
+  const g = ((n >> 8) & 255) / 255;
+  const b = (n & 255) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  const L = ((max + min) / 2) * 100;
+  return Math.max(0.35, Math.min(2.2, 0.4 + (L / 100) * 1.7));
+}
+
+function Layer({ item, sub, hairColor, hairIsNeutral }: { item: AvatarItem; sub?: "back" | "front"; hairColor?: string | null; hairIsNeutral?: boolean }) {
   if (item.category === "frame") {
     return <FrameOverlay slug={item.slug} />;
   }
@@ -64,6 +78,19 @@ function Layer({ item, sub, hairColor }: { item: AvatarItem; sub?: "back" | "fro
   };
   if (src) {
     if (item.category === "hairstyle" && hairColor) {
+      if (hairIsNeutral) {
+        const f = hexToBrightness(hairColor);
+        return (
+          <img
+            src={src}
+            alt=""
+            aria-hidden
+            draggable={false}
+            style={{ ...style, filter: `brightness(${f})` }}
+            className="w-full h-full object-contain pointer-events-none select-none"
+          />
+        );
+      }
       return (
         <div aria-hidden style={style} className="w-full h-full pointer-events-none select-none">
           <img
@@ -109,6 +136,7 @@ function Layer({ item, sub, hairColor }: { item: AvatarItem; sub?: "back" | "fro
   }
   return null;
 }
+
 
 interface Props {
   userId: string;
@@ -160,7 +188,7 @@ export default function ProfileAvatarBubble({ userId, size = 56, className }: Pr
       }
       const { data: rows } = await supabase
         .from("avatar_items")
-        .select("id, slug, category, name, image_url, image_url_back, icon_name, color_value, rarity, layer_offset_x, layer_offset_y, layer_scale")
+        .select("id, slug, category, name, image_url, image_url_back, icon_name, color_value, is_neutral_color, rarity, layer_offset_x, layer_offset_y, layer_scale")
         .in("id", ids);
       if (!mounted) return;
       const m = new Map<string, AvatarItem>();
@@ -186,6 +214,8 @@ export default function ProfileAvatarBubble({ userId, size = 56, className }: Pr
 
   const hairColorItem = profile?.hair_color_id ? items.get(profile.hair_color_id) : null;
   const hairColor = hairColorItem?.color_value ?? null;
+  const hairIsNeutral = !!hairColorItem?.is_neutral_color;
+
 
   const hasContent = !loading && layers.length > 0;
 
@@ -210,6 +240,8 @@ export default function ProfileAvatarBubble({ userId, size = 56, className }: Pr
               item={l.item}
               sub={l.sub}
               hairColor={l.item.category === "hairstyle" ? hairColor : null}
+              hairIsNeutral={l.item.category === "hairstyle" ? hairIsNeutral : false}
+
             />
           ))
         ) : (

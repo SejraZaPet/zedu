@@ -51,6 +51,8 @@ interface AvatarItem {
   icon_name: string | null;
   image_url_back: string | null;
   color_value: string | null;
+  is_neutral_color: boolean | null;
+
   recommended_for_role: "student" | "teacher" | "both";
   unlock_type: string;
   unlock_value: string | null;
@@ -165,9 +167,21 @@ function unlockLabel(item: AvatarItem): string {
 }
 
 // ---------- Layer renderer ----------
+function hexToBrightness(hex: string): number {
+  const m = hex.trim().match(/^#?([0-9a-f]{6})$/i);
+  if (!m) return 1;
+  const n = parseInt(m[1], 16);
+  const r = ((n >> 16) & 255) / 255;
+  const g = ((n >> 8) & 255) / 255;
+  const b = (n & 255) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  const L = ((max + min) / 2) * 100;
+  return Math.max(0.35, Math.min(2.2, 0.4 + (L / 100) * 1.7));
+}
+
 function LayerVisual({
-  item, subLayer, reduceMotion, hairColor,
-}: { item: AvatarItem; subLayer?: "back" | "front"; reduceMotion?: boolean; hairColor?: string | null }) {
+  item, subLayer, reduceMotion, hairColor, hairIsNeutral,
+}: { item: AvatarItem; subLayer?: "back" | "front"; reduceMotion?: boolean; hairColor?: string | null; hairIsNeutral?: boolean }) {
   // Decorative SVG overlays for frame/effect — no image_url needed
   if (item.category === "frame") {
     return <FrameOverlay slug={item.slug} reduceMotion={reduceMotion} />;
@@ -183,8 +197,23 @@ function LayerVisual({
     transformOrigin: "center",
   };
   if (src) {
-    // Hair tinting: keep original shading via mix-blend-mode "color" on a masked overlay.
+    // Hair tinting
     if (item.category === "hairstyle" && hairColor) {
+      // Neutral (black/gray/white): brightness filter only, no color overlay
+      if (hairIsNeutral) {
+        const f = hexToBrightness(hairColor);
+        return (
+          <img
+            src={src}
+            alt=""
+            aria-hidden="true"
+            draggable={false}
+            style={{ ...style, filter: `brightness(${f})` }}
+            className="w-full h-full object-contain pointer-events-none select-none"
+          />
+        );
+      }
+      // Chromatic: keep original shading via mix-blend-mode "color" on masked overlay.
       const overlayStyle: React.CSSProperties = {
         position: "absolute",
         inset: 0,
@@ -223,6 +252,7 @@ function LayerVisual({
       />
     );
   }
+
   // Fallback: colored bubble with category icon + item name
   const Icon = CATEGORY_ICON[item.category] ?? Sparkles;
   const bg = item.color_value ?? "hsl(var(--muted))";
@@ -274,6 +304,8 @@ function AvatarPreview({
 
   const hairColorItem = profile.hair_color_id ? itemsById.get(profile.hair_color_id) : null;
   const hairColor = hairColorItem?.color_value ?? null;
+  const hairIsNeutral = !!hairColorItem?.is_neutral_color;
+
 
   return (
     <div
@@ -296,6 +328,8 @@ function AvatarPreview({
           subLayer={l.sub}
           reduceMotion={reduceMotion}
           hairColor={l.item.category === "hairstyle" ? hairColor : null}
+          hairIsNeutral={l.item.category === "hairstyle" ? hairIsNeutral : false}
+
         />
       ))}
       {profile.active_title && (
