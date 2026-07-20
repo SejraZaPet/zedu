@@ -22,6 +22,7 @@ interface AvatarItem {
 interface AvatarProfile {
   base_id: string | null;
   hairstyle_id: string | null;
+  hair_color_id: string | null;
   outfit_id: string | null;
   face_accessory_id: string | null;
   head_accessory_id: string | null;
@@ -43,7 +44,7 @@ const LAYER_ORDER: { field: keyof AvatarProfile; sub?: "back" | "front" }[] = [
   { field: "frame_id" },
 ];
 
-function Layer({ item, sub }: { item: AvatarItem; sub?: "back" | "front" }) {
+function Layer({ item, sub, hairColor }: { item: AvatarItem; sub?: "back" | "front"; hairColor?: string | null }) {
   if (item.category === "frame") {
     return <FrameOverlay slug={item.slug} />;
   }
@@ -58,6 +59,26 @@ function Layer({ item, sub }: { item: AvatarItem; sub?: "back" | "front" }) {
     transformOrigin: "center",
   };
   if (src) {
+    if (item.category === "hairstyle" && hairColor) {
+      return (
+        <div
+          aria-hidden
+          style={{
+            ...style,
+            background: hairColor,
+            WebkitMaskImage: `url(${src})`,
+            maskImage: `url(${src})`,
+            WebkitMaskRepeat: "no-repeat",
+            maskRepeat: "no-repeat",
+            WebkitMaskPosition: "center",
+            maskPosition: "center",
+            WebkitMaskSize: "contain",
+            maskSize: "contain",
+          }}
+          className="w-full h-full pointer-events-none select-none"
+        />
+      );
+    }
     return (
       <img
         src={src}
