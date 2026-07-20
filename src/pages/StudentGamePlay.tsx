@@ -144,7 +144,7 @@ const StudentGamePlay = () => {
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
         <div className="text-center space-y-4">
           <div className="flex justify-center">
-            <AvatarSvg slug={myAvatar} size={96} />
+            <ProfileAvatarBubble userId={user?.id ?? null} size={96} editable={false} />
           </div>
           {myPlayer?.nickname && (
             <p className="font-heading text-xl font-bold">{myPlayer.nickname}</p>
