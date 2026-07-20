@@ -198,7 +198,7 @@ export default function ProfileAvatarBubble({ userId, size = 56, className }: Pr
           rarity={items.get(profile.badge_id)!.rarity}
           title={items.get(profile.badge_id)!.name}
           size={Math.max(20, size * 0.32)}
-          className="!bottom-auto !left-auto -bottom-0.5 -left-0.5"
+          className="-bottom-0.5 -left-0.5"
         />
       )}
       <span
