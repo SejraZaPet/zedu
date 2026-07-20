@@ -3,6 +3,7 @@ import { Pencil, Trash2, GripVertical } from "lucide-react";
 import { useLandingEditMode } from "@/contexts/LandingEditModeContext";
 import type { LandingSectionRow } from "@/hooks/useLandingSections";
 import { SECTION_TYPE_LABELS } from "@/components/admin/landing/section-editors";
+import { SectionProvider } from "./SectionContext";
 import { cn } from "@/lib/utils";
 
 interface Props {
