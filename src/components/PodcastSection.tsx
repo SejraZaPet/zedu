@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Mic, Play } from "lucide-react";
 import { DEFAULT_PODCAST_PROPS, mergeSectionProps } from "@/lib/landing-defaults";
+import Editable from "@/components/landing-edit/Editable";
+import { useLandingEditModeOptional } from "@/contexts/LandingEditModeContext";
 
 interface Episode {
   id: string;
@@ -20,6 +22,7 @@ const PodcastSection = ({ props }: PodcastSectionProps) => {
   const p = mergeSectionProps(DEFAULT_PODCAST_PROPS, props);
   const limit = typeof p.limit === "number" && p.limit > 0 ? p.limit : 5;
   const [episodes, setEpisodes] = useState<Episode[]>([]);
+  const editCtx = useLandingEditModeOptional();
 
   useEffect(() => {
     const fetchEps = async () => {
@@ -34,7 +37,7 @@ const PodcastSection = ({ props }: PodcastSectionProps) => {
     fetchEps();
   }, [limit]);
 
-  if (episodes.length === 0) return null;
+  if (episodes.length === 0 && !editCtx?.isEditMode) return null;
 
   return (
     <section id="podcast" className="section-padding bg-gradient-surface">
@@ -43,10 +46,12 @@ const PodcastSection = ({ props }: PodcastSectionProps) => {
           <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
             <Mic className="w-5 h-5 text-primary" />
           </div>
-          <span className="text-sm font-medium uppercase tracking-widest text-primary">{p.eyebrow}</span>
+          <span className="text-sm font-medium uppercase tracking-widest text-primary">
+            <Editable path="eyebrow" value={p.eyebrow} placeholder="Eyebrow" />
+          </span>
         </div>
         <h2 className="font-heading text-2xl md:text-[32px] font-bold mb-12 text-foreground">
-          {p.title}
+          <Editable path="title" value={p.title} placeholder="Nadpis podcastu" />
         </h2>
 
         <div className="space-y-4">
