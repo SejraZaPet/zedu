@@ -38,7 +38,7 @@ export const GameModeOverlay = ({ session, players }: Props) => {
     () => [...players].sort((a, b) => b.total_score - a.total_score),
     [players],
   );
-  const avatars = useStudentAvatars(sorted.map((p) => p.user_id));
+
 
   if (mode === "standard" || players.length === 0) return null;
 
