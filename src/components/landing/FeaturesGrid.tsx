@@ -10,13 +10,15 @@ interface FeaturesGridProps {
 const FeaturesGrid = ({ props }: FeaturesGridProps) => {
   const p = mergeSectionProps(DEFAULT_FEATURES_GRID_PROPS, props);
   const features = Array.isArray(p.features) ? p.features : DEFAULT_FEATURES_GRID_PROPS.features;
+  const editCtx = useLandingEditModeOptional();
+  const showSubtitle = !!p.subtitle || !!editCtx?.isEditMode;
   return (
     <section className="w-full py-20 md:py-28 bg-muted/20">
       <div className="container mx-auto max-w-6xl px-4">
         <h2 className="font-heading text-2xl md:text-3xl font-bold text-center mb-4">
           <Editable path="title" value={p.title} placeholder="Nadpis sekce" />
         </h2>
-        {(p.subtitle || true) && (
+        {showSubtitle && (
           <p className="text-muted-foreground text-center mb-12 max-w-xl mx-auto">
             <Editable path="subtitle" value={p.subtitle} placeholder="Podnadpis (volitelný)" multiline />
           </p>
