@@ -23,6 +23,7 @@ import SchoolsManager from "@/components/admin/SchoolsManager";
 import SystemStats from "@/components/admin/SystemStats";
 import AuditLogViewer from "@/components/admin/AuditLogViewer";
 import TextbookTemplatesManager from "@/components/admin/TextbookTemplatesManager";
+import LandingPageManager from "@/components/admin/LandingPageManager";
 import { Button } from "@/components/ui/button";
 import { BookOpen, LogOut, Home, GraduationCap, Settings, Users, School, BarChart3, LayoutDashboard, HelpCircle, ListTree, CircleHelp, Link2, Pencil, Video, Bell, Activity, FileText, Sparkles } from "lucide-react";
 
