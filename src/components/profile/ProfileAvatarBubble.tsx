@@ -44,6 +44,12 @@ const LAYER_ORDER: { field: keyof AvatarProfile; sub?: "back" | "front" }[] = [
 ];
 
 function Layer({ item, sub }: { item: AvatarItem; sub?: "back" | "front" }) {
+  if (item.category === "frame") {
+    return <FrameOverlay slug={item.slug} />;
+  }
+  if (item.category === "effect") {
+    return <EffectOverlay slug={item.slug} />;
+  }
   const src = sub === "back" ? item.image_url_back : item.image_url;
   const style: React.CSSProperties = {
     position: "absolute",
