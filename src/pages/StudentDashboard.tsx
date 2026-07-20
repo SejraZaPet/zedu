@@ -102,13 +102,8 @@ const StudentDashboard = () => {
         style={{ paddingTop: "calc(70px + 3rem)" }}
       >
         <div className="mb-8 flex items-center gap-4">
-          <button
-            onClick={() => navigate("/profil")}
-            className="shrink-0 rounded-full ring-2 ring-primary/20 hover:ring-primary/50 transition"
-            aria-label="Změnit avatar"
-          >
-            <AvatarSvg slug={avatarSlug} size={72} />
-          </button>
+          <ProfileAvatarBubble userId={user?.id ?? null} size={72} />
+
           <div>
             <h1 className="font-heading text-3xl font-bold">
               Ahoj, {profile?.first_name || "studente"}! 👋
