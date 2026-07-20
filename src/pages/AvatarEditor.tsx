@@ -256,7 +256,7 @@ function AvatarPreview({
         </div>
       )}
       {layers.map((l, idx) => (
-        <LayerVisual key={`${l.item.id}-${l.sub ?? "main"}-${idx}`} item={l.item} subLayer={l.sub} />
+        <LayerVisual key={`${l.item.id}-${l.sub ?? "main"}-${idx}`} item={l.item} subLayer={l.sub} reduceMotion={reduceMotion} />
       ))}
       {profile.active_title && (
         <div className="absolute bottom-2 inset-x-2 text-center">
