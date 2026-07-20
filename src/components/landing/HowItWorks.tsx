@@ -1,6 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { DEFAULT_HOW_IT_WORKS_PROPS, mergeSectionProps } from "@/lib/landing-defaults";
+import Editable from "@/components/landing-edit/Editable";
+import { useLandingEditModeOptional } from "@/contexts/LandingEditModeContext";
 
 interface HowItWorksProps {
   props?: Partial<typeof DEFAULT_HOW_IT_WORKS_PROPS>;
