@@ -71,6 +71,7 @@ import SchoolAdmin from "./pages/SchoolAdmin";
 import MarketplacePage from "./pages/MarketplacePage";
 import MarketplaceDetailPage from "./pages/MarketplaceDetailPage";
 import TeacherPublications from "./pages/TeacherPublications";
+import AvatarEditor from "./pages/AvatarEditor";
 import ViewAsBanner from "./components/ViewAsBanner";
 
 
@@ -156,6 +157,7 @@ const App = () => (
             <Route path="/marketplace" element={<ProtectedRoute><MarketplacePage /></ProtectedRoute>} />
             <Route path="/marketplace/:id" element={<ProtectedRoute><MarketplaceDetailPage /></ProtectedRoute>} />
             <Route path="/ucitel/publikace" element={<ProtectedRoute><TeacherPublications /></ProtectedRoute>} />
+            <Route path="/avatar" element={<ProtectedRoute><AvatarEditor /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
