@@ -212,6 +212,19 @@ export default function AvatarItemsManager() {
             map[v.base_id] = v as HairVariant;
           });
           setVariants(map);
+          // Auto-select the base of the most-recently-updated existing variant
+          const list = (data ?? []) as HairVariant[];
+          if (list.length > 0) {
+            const newest = [...list].sort((a, b) => {
+              const ta = a.updated_at ? Date.parse(a.updated_at) : 0;
+              const tb = b.updated_at ? Date.parse(b.updated_at) : 0;
+              return tb - ta;
+            })[0];
+            const baseItem = items.find((i) => i.id === newest.base_id);
+            if (baseItem?.slug) setPreviewBaseSlug(baseItem.slug);
+          } else {
+            setPreviewBaseSlug("base_01");
+          }
         });
     } else {
       setVariants({});
