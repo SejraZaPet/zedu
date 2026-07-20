@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Mic, Play } from "lucide-react";
+import { DEFAULT_PODCAST_PROPS, mergeSectionProps } from "@/lib/landing-defaults";
 
 interface Episode {
   id: string;
@@ -11,21 +12,27 @@ interface Episode {
   excerpt: string;
 }
 
-const PodcastSection = () => {
+interface PodcastSectionProps {
+  props?: Partial<typeof DEFAULT_PODCAST_PROPS>;
+}
+
+const PodcastSection = ({ props }: PodcastSectionProps) => {
+  const p = mergeSectionProps(DEFAULT_PODCAST_PROPS, props);
+  const limit = typeof p.limit === "number" && p.limit > 0 ? p.limit : 5;
   const [episodes, setEpisodes] = useState<Episode[]>([]);
 
   useEffect(() => {
-    const fetch = async () => {
+    const fetchEps = async () => {
       const { data } = await supabase
         .from("podcast_episodes")
         .select("id, title, published_date, duration, excerpt")
         .eq("status", "published")
         .order("published_date", { ascending: false })
-        .limit(5);
+        .limit(limit);
       if (data) setEpisodes(data);
     };
-    fetch();
-  }, []);
+    fetchEps();
+  }, [limit]);
 
   if (episodes.length === 0) return null;
 
@@ -36,10 +43,10 @@ const PodcastSection = () => {
           <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
             <Mic className="w-5 h-5 text-primary" />
           </div>
-          <span className="text-sm font-medium uppercase tracking-widest text-primary">Podcast</span>
+          <span className="text-sm font-medium uppercase tracking-widest text-primary">{p.eyebrow}</span>
         </div>
         <h2 className="font-heading text-2xl md:text-[32px] font-bold mb-12 text-foreground">
-          Rozhovory & epizody
+          {p.title}
         </h2>
 
         <div className="space-y-4">
