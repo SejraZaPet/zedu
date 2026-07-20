@@ -274,6 +274,204 @@ export type Database = {
           },
         ]
       }
+      avatar_items: {
+        Row: {
+          category: string
+          color_value: string | null
+          created_at: string
+          id: string
+          image_url: string | null
+          image_url_back: string | null
+          is_active: boolean
+          is_default: boolean
+          layer_offset_x: number
+          layer_offset_y: number
+          layer_scale: number
+          name: string
+          rarity: string
+          recommended_for_role: string
+          slug: string
+          sort_order: number
+          unlock_type: string
+          unlock_value: string | null
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          color_value?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          image_url_back?: string | null
+          is_active?: boolean
+          is_default?: boolean
+          layer_offset_x?: number
+          layer_offset_y?: number
+          layer_scale?: number
+          name: string
+          rarity?: string
+          recommended_for_role?: string
+          slug: string
+          sort_order?: number
+          unlock_type?: string
+          unlock_value?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          color_value?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          image_url_back?: string | null
+          is_active?: boolean
+          is_default?: boolean
+          layer_offset_x?: number
+          layer_offset_y?: number
+          layer_scale?: number
+          name?: string
+          rarity?: string
+          recommended_for_role?: string
+          slug?: string
+          sort_order?: number
+          unlock_type?: string
+          unlock_value?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      avatar_profiles: {
+        Row: {
+          active_title: string | null
+          background_id: string | null
+          badge_id: string | null
+          base_id: string | null
+          created_at: string
+          effect_id: string | null
+          face_accessory_id: string | null
+          frame_id: string | null
+          hair_color_id: string | null
+          hairstyle_id: string | null
+          head_accessory_id: string | null
+          outfit_id: string | null
+          reduce_motion: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active_title?: string | null
+          background_id?: string | null
+          badge_id?: string | null
+          base_id?: string | null
+          created_at?: string
+          effect_id?: string | null
+          face_accessory_id?: string | null
+          frame_id?: string | null
+          hair_color_id?: string | null
+          hairstyle_id?: string | null
+          head_accessory_id?: string | null
+          outfit_id?: string | null
+          reduce_motion?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active_title?: string | null
+          background_id?: string | null
+          badge_id?: string | null
+          base_id?: string | null
+          created_at?: string
+          effect_id?: string | null
+          face_accessory_id?: string | null
+          frame_id?: string | null
+          hair_color_id?: string | null
+          hairstyle_id?: string | null
+          head_accessory_id?: string | null
+          outfit_id?: string | null
+          reduce_motion?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "avatar_profiles_background_id_fkey"
+            columns: ["background_id"]
+            isOneToOne: false
+            referencedRelation: "avatar_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "avatar_profiles_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "avatar_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "avatar_profiles_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "avatar_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "avatar_profiles_effect_id_fkey"
+            columns: ["effect_id"]
+            isOneToOne: false
+            referencedRelation: "avatar_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "avatar_profiles_face_accessory_id_fkey"
+            columns: ["face_accessory_id"]
+            isOneToOne: false
+            referencedRelation: "avatar_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "avatar_profiles_frame_id_fkey"
+            columns: ["frame_id"]
+            isOneToOne: false
+            referencedRelation: "avatar_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "avatar_profiles_hair_color_id_fkey"
+            columns: ["hair_color_id"]
+            isOneToOne: false
+            referencedRelation: "avatar_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "avatar_profiles_hairstyle_id_fkey"
+            columns: ["hairstyle_id"]
+            isOneToOne: false
+            referencedRelation: "avatar_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "avatar_profiles_head_accessory_id_fkey"
+            columns: ["head_accessory_id"]
+            isOneToOne: false
+            referencedRelation: "avatar_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "avatar_profiles_outfit_id_fkey"
+            columns: ["outfit_id"]
+            isOneToOne: false
+            referencedRelation: "avatar_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "avatar_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       class_leaderboard_baselines: {
         Row: {
           baseline_xp: number
@@ -2674,6 +2872,48 @@ export type Database = {
         }
         Relationships: []
       }
+      user_avatar_items: {
+        Row: {
+          acquired_at: string
+          avatar_item_id: string
+          id: string
+          is_favorite: boolean
+          is_new: boolean
+          user_id: string
+        }
+        Insert: {
+          acquired_at?: string
+          avatar_item_id: string
+          id?: string
+          is_favorite?: boolean
+          is_new?: boolean
+          user_id: string
+        }
+        Update: {
+          acquired_at?: string
+          avatar_item_id?: string
+          id?: string
+          is_favorite?: boolean
+          is_new?: boolean
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_avatar_items_avatar_item_id_fkey"
+            columns: ["avatar_item_id"]
+            isOneToOne: false
+            referencedRelation: "avatar_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_avatar_items_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
@@ -2969,6 +3209,10 @@ export type Database = {
       get_internal_secret: { Args: { _name: string }; Returns: string }
       get_login_password: { Args: { _profile_id: string }; Returns: string }
       get_user_school_id: { Args: { _user_id: string }; Returns: string }
+      grant_avatar_item_by_teacher: {
+        Args: { p_item_slug: string; p_student_id: string }
+        Returns: undefined
+      }
       has_login_credential: { Args: { _profile_id: string }; Returns: boolean }
       increment_player_score: {
         Args: { _player_id: string; _score_delta: number }
@@ -3052,6 +3296,10 @@ export type Database = {
       }
       set_user_pin: { Args: { _pin: string }; Returns: Json }
       strip_correct_flags: { Args: { _data: Json }; Returns: Json }
+      sync_avatar_unlocks: {
+        Args: { p_student_id: string }
+        Returns: undefined
+      }
       verify_pin_login: {
         Args: { _pin: string; _username: string }
         Returns: Json
