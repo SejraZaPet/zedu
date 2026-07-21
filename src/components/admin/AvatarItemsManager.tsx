@@ -625,6 +625,14 @@ export default function AvatarItemsManager() {
                   </td>
                   <td className="p-2 text-right">
                     <div className="flex gap-1 justify-end">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleBumpCache(item)}
+                        title="Obnovit cache"
+                      >
+                        <RefreshCw className="w-4 h-4" />
+                      </Button>
                       <Button size="sm" variant="ghost" onClick={() => openEditor(item)}>
                         <Pencil className="w-4 h-4" />
                       </Button>
