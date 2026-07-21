@@ -102,7 +102,7 @@ const StudentDashboard = () => {
         style={{ paddingTop: "calc(70px + 3rem)" }}
       >
         <div className="mb-8 flex items-center gap-4">
-          <ProfileAvatarBubble userId={user?.id ?? null} size={72} />
+          <ProfileAvatarBubble userId={user?.id ?? null} size={72} crop="head" />
 
           <div>
             <h1 className="font-heading text-3xl font-bold">

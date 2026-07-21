@@ -390,7 +390,7 @@ const ProfilePage = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
             <CardTitle className="text-base">Osobní údaje</CardTitle>
-            {user && <ProfileAvatarBubble userId={user.id} size={56} />}
+            {user && <ProfileAvatarBubble userId={user.id} size={56} crop="head" />}
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
