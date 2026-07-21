@@ -209,7 +209,10 @@ function LayerVisual({
   if (item.category === "effect") {
     return <EffectOverlay slug={item.slug} reduceMotion={reduceMotion} />;
   }
-  const src = subLayer === "back" ? item.image_url_back : item.image_url;
+  const rawSrc = subLayer === "back" ? item.image_url_back : item.image_url;
+  const src = rawSrc
+    ? `${rawSrc}${rawSrc.includes("?") ? "&" : "?"}v=${encodeURIComponent(item.updated_at ?? "")}`
+    : rawSrc;
   const style: React.CSSProperties = {
     position: "absolute",
     inset: 0,
