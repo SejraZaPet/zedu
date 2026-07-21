@@ -163,7 +163,7 @@ const emptyProfile = (userId: string): Profile => ({
   frame_id: null, effect_id: null, badge_id: null,
   active_title: null, reduce_motion: false,
   base_color: null, hairstyle_color: null, outfit_color: null,
-  face_accessory_color: null, head_accessory_color: null,
+  face_accessory_color: null, head_accessory_color: null, background_color: null,
 });
 
 function unlockLabel(item: AvatarItem): string {
