@@ -8,7 +8,7 @@ import FrameOverlay from "@/components/avatar/FrameOverlay";
 import EffectOverlay from "@/components/avatar/EffectOverlay";
 import BadgeOverlay from "@/components/avatar/BadgeOverlay";
 import { hairTintFromHex } from "@/components/avatar/AvatarLayerStack";
-import { isTintable, CATEGORY_COLOR_COLUMN, type TintableCategory } from "@/lib/avatar-palettes";
+import { isTintable, CATEGORY_COLOR_COLUMN, isGradientValue, BRAND_GRADIENT_CSS, type TintableCategory } from "@/lib/avatar-palettes";
 
 interface AvatarItem {
   id: string;
