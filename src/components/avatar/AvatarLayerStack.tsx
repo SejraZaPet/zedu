@@ -113,6 +113,7 @@ export function AvatarLayer({
             style={{
               position: "absolute",
               inset: 0,
+              opacity: 1,
               background: BRAND_GRADIENT_CSS,
               WebkitMaskImage: `url(${src})`,
               maskImage: `url(${src})`,
@@ -122,10 +123,13 @@ export function AvatarLayer({
               maskPosition: "center",
               WebkitMaskSize: "contain",
               maskSize: "contain",
-            }}
+              WebkitMaskMode: "alpha",
+              maskMode: "alpha",
+            } as React.CSSProperties}
           />
         </div>
       );
+
     }
     if (tintColor && !isGradientValue(tintColor)) {
 
