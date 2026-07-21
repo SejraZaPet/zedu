@@ -1,5 +1,6 @@
 import FrameOverlay from "@/components/avatar/FrameOverlay";
 import EffectOverlay from "@/components/avatar/EffectOverlay";
+import { BRAND_GRADIENT_CSS, isGradientValue } from "@/lib/avatar-palettes";
 
 /**
  * Shared avatar rendering primitives used by both the student-facing
