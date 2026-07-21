@@ -354,9 +354,9 @@ export default function AvatarItemsManager() {
     !!cat && CALIB_CATEGORIES.includes(cat) && !!(editing?.image_url ?? "").trim();
 
   // Per-base variant handling (hairstyle only)
-  const activeVariant: HairVariant | null =
-    cat === "hairstyle" && previewBase ? variants[previewBase.id] ?? null : null;
-  const isVariantMode = !!activeVariant;
+  // Variant mode retired — one canonical base_01 is used everywhere.
+  const activeVariant: HairVariant | null = null;
+  const isVariantMode = false;
 
   useEffect(() => {
     if (activeVariant) {
