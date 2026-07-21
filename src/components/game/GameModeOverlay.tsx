@@ -79,7 +79,7 @@ export const GameModeOverlay = ({ session, players }: Props) => {
                     className="absolute top-1/2 -translate-y-1/2 transition-all duration-700 ease-out"
                     style={{ left: `calc(${pct}% - 16px)` }}
                   >
-                    <ProfileAvatarBubble userId={p.user_id ?? null} size={32} editable={false} />
+                    <ProfileAvatarBubble userId={p.user_id ?? null} size={32} editable={false} crop="head" />
                   </div>
                 </div>
                 <div className="flex items-center justify-between text-xs mt-1 px-1">
@@ -126,7 +126,7 @@ export const GameModeOverlay = ({ session, players }: Props) => {
                     />
                   ))}
                 </div>
-                <ProfileAvatarBubble userId={p.user_id ?? null} size={28} editable={false} />
+                <ProfileAvatarBubble userId={p.user_id ?? null} size={28} editable={false} crop="head" />
                 <span className="text-[11px] text-foreground truncate max-w-[64px]">{p.nickname}</span>
                 <span className="text-xs font-mono font-bold text-primary">{blocks}</span>
               </div>
@@ -160,7 +160,7 @@ export const GameModeOverlay = ({ session, players }: Props) => {
                 <Trophy className="absolute top-1 right-1 w-4 h-4 text-yellow-300" />
               )}
               <div className="relative">
-                <ProfileAvatarBubble userId={p.user_id ?? null} size={36} editable={false} />
+                <ProfileAvatarBubble userId={p.user_id ?? null} size={36} editable={false} crop="head" />
                 {themeId === "pirate" && (
                   <Skull className="absolute -bottom-1 -right-1 w-4 h-4 text-amber-300 bg-black/60 rounded-full p-0.5" />
                 )}

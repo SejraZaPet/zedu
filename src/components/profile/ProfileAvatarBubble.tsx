@@ -4,28 +4,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { User, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-import FrameOverlay from "@/components/avatar/FrameOverlay";
-import EffectOverlay from "@/components/avatar/EffectOverlay";
 import BadgeOverlay from "@/components/avatar/BadgeOverlay";
-import { hairTintFromHex } from "@/components/avatar/AvatarLayerStack";
-import { isTintable, CATEGORY_COLOR_COLUMN, isGradientValue, BRAND_GRADIENT_CSS, type TintableCategory } from "@/lib/avatar-palettes";
+import AvatarLayerStack, { type AvatarStackItem, type StackLayer } from "@/components/avatar/AvatarLayerStack";
+import { isTintable, CATEGORY_COLOR_COLUMN, type TintableCategory } from "@/lib/avatar-palettes";
 
-interface AvatarItem {
-  id: string;
-  slug: string;
-  category: string;
+interface AvatarItem extends AvatarStackItem {
   name: string;
-  image_url: string | null;
-  image_url_back: string | null;
   icon_name: string | null;
-  color_value: string | null;
   rarity: "common" | "uncommon" | "rare" | "epic" | "legendary" | "mythic";
   is_neutral_color: boolean | null;
-  layer_offset_x: number;
-  layer_offset_y: number;
-  layer_scale: number;
 }
-
 
 interface AvatarProfile {
   base_id: string | null;
@@ -60,88 +48,21 @@ const LAYER_ORDER: { field: keyof AvatarProfile; sub?: "back" | "front" }[] = [
   { field: "frame_id" },
 ];
 
-function Layer({ item, sub, tintColor }: { item: AvatarItem; sub?: "back" | "front"; tintColor?: string | null }) {
-  if (item.category === "frame") {
-    return <FrameOverlay slug={item.slug} />;
-  }
-  if (item.category === "effect") {
-    return <EffectOverlay slug={item.slug} />;
-  }
-  const src = sub === "back" ? item.image_url_back : item.image_url;
-  const style: React.CSSProperties = {
-    position: "absolute",
-    inset: 0,
-    transform: `translate(${item.layer_offset_x}%, ${item.layer_offset_y}%) scale(${item.layer_scale})`,
-    transformOrigin: "center",
-  };
-  if (item.category === "background") {
-    const fill = tintColor
-      ? (isGradientValue(tintColor) ? BRAND_GRADIENT_CSS : tintColor)
-      : item.color_value;
-    if (fill) return <div aria-hidden style={{ ...style, background: fill }} />;
-    return null;
-  }
-  if (src) {
-    if (tintColor && !isGradientValue(tintColor)) {
-      const { filter, useOverlay } = hairTintFromHex(tintColor);
-      return (
-        <div aria-hidden style={style} className="w-full h-full pointer-events-none select-none">
-          <img
-            src={src}
-            alt=""
-            aria-hidden
-            draggable={false}
-            style={{ filter }}
-            className="absolute inset-0 w-full h-full object-contain pointer-events-none select-none"
-          />
-          {useOverlay && (
-            <div
-              aria-hidden
-              style={{
-                position: "absolute",
-                inset: 0,
-                background: tintColor,
-                mixBlendMode: "color",
-                WebkitMaskImage: `url(${src})`,
-                maskImage: `url(${src})`,
-                WebkitMaskRepeat: "no-repeat",
-                maskRepeat: "no-repeat",
-                WebkitMaskPosition: "center",
-                maskPosition: "center",
-                WebkitMaskSize: "contain",
-                maskSize: "contain",
-              }}
-            />
-          )}
-        </div>
-      );
-    }
-    return (
-      <img
-        src={src}
-        alt=""
-        aria-hidden
-        draggable={false}
-        style={style}
-        className="w-full h-full object-contain pointer-events-none select-none"
-      />
-    );
-  }
-  // background is handled above (before src check)
-  return null;
-}
-
-
-
 interface Props {
   userId: string | null | undefined;
   size?: number;
   className?: string;
   /** When false, renders a plain (non-linked) avatar without pencil badge. Default true. */
   editable?: boolean;
+  /**
+   * "full" (default): show the entire avatar as authored.
+   * "head": zoom in on the head/shoulders — hides legs/arms. Useful for small
+   * nav/header/list bubbles where the full character wouldn't be legible.
+   */
+  crop?: "head" | "full";
 }
 
-export default function ProfileAvatarBubble({ userId, size = 56, className, editable = true }: Props) {
+export default function ProfileAvatarBubble({ userId, size = 56, className, editable = true, crop = "full" }: Props) {
   const [profile, setProfile] = useState<AvatarProfile | null>(null);
   const [items, setItems] = useState<Map<string, AvatarItem>>(new Map());
   const [loading, setLoading] = useState(true);
@@ -199,7 +120,7 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
       }
       const { data: rows } = await supabase
         .from("avatar_items")
-        .select("id, slug, category, name, image_url, image_url_back, icon_name, color_value, is_neutral_color, rarity, layer_offset_x, layer_offset_y, layer_scale")
+        .select("id, slug, category, name, image_url, image_url_back, icon_name, color_value, is_neutral_color, rarity, layer_offset_x, layer_offset_y, layer_scale, updated_at")
         .in("id", ids);
       if (!mounted) return;
       const m = new Map<string, AvatarItem>();
@@ -225,7 +146,7 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
     return null;
   };
 
-  const layers: { item: AvatarItem; sub?: "back" | "front" }[] = [];
+  const stackLayers: StackLayer[] = [];
   if (profile) {
     for (const l of LAYER_ORDER) {
       const id = profile[l.field];
@@ -234,12 +155,18 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
       if (!item) continue;
       if (l.sub === "back" && !item.image_url_back) continue;
       if (l.sub === "front" && !item.image_url) continue;
-      layers.push({ item, sub: l.sub });
+      stackLayers.push({ item, sub: l.sub, tintColor: tintFor(item.category) });
     }
   }
 
+  const hasContent = !loading && stackLayers.length > 0;
 
-  const hasContent = !loading && layers.length > 0;
+  // "head" crop: zoom the layer stack so the head/shoulders fill the bubble.
+  // Values tuned against the canonical 1000x1200 base_01 template where the head
+  // sits roughly in the top third; scale(2.15) + translateY(-22%) centers it.
+  const headCropStyle: React.CSSProperties | undefined = crop === "head"
+    ? { transform: "scale(2.15) translateY(-22%)", transformOrigin: "center top" }
+    : undefined;
 
   const inner = (
     <>
@@ -251,15 +178,8 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
         aria-hidden
       >
         {hasContent ? (
-          <div className="absolute" style={{ top: "9%", left: "9%", width: "82%", height: "82%" }}>
-            {layers.map((l, i) => (
-              <Layer
-                key={`${l.item.id}-${l.sub ?? "m"}-${i}`}
-                item={l.item}
-                sub={l.sub}
-                tintColor={tintFor(l.item.category)}
-              />
-            ))}
+          <div className="absolute inset-0" style={headCropStyle}>
+            <AvatarLayerStack layers={stackLayers} />
           </div>
         ) : (
           <User className="w-1/2 h-1/2 text-muted-foreground" />

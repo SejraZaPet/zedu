@@ -176,7 +176,7 @@ const StudentLeaderboard = () => {
                             className={`flex items-center gap-3 px-3 py-2 rounded-lg border ${r.isMe ? "border-primary bg-primary/5" : "border-border bg-muted/30"}`}
                           >
                             <span className={`w-7 text-right font-bold ${medal}`}>{i + 1}.</span>
-                            <ProfileAvatarBubble userId={r.isMe || r.display !== "Anonymní žák" ? r.user_id : null} size={36} editable={false} />
+                            <ProfileAvatarBubble userId={r.isMe || r.display !== "Anonymní žák" ? r.user_id : null} size={36} editable={false} crop="head" />
                             <div className="flex-1 min-w-0">
                               <p className="font-medium truncate">
                                 {r.display}{r.isMe && <span className="ml-1 text-xs text-primary">(ty)</span>}

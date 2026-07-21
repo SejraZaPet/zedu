@@ -216,7 +216,7 @@ export const GameProjector = ({ session, players, responses, countdown, onShowRe
                         <span className={`text-xl font-bold ${i === 0 ? "text-yellow-500" : i === 1 ? "text-gray-400" : i === 2 ? "text-amber-600" : "text-muted-foreground"}`}>
                           {i + 1}.
                         </span>
-                        <ProfileAvatarBubble userId={player.user_id ?? null} size={32} editable={false} />
+                        <ProfileAvatarBubble userId={player.user_id ?? null} size={32} editable={false} crop="head" />
                         <span className="flex-1 font-medium text-foreground">{player.nickname}</span>
                         <span className="font-mono font-bold text-primary">{player.total_score}</span>
                       </div>
