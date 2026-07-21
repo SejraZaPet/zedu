@@ -75,7 +75,7 @@ export default function ColorPalette({
               type="button"
               role="radio"
               aria-checked={selected}
-              aria-label={`Barva ${hex}`}
+              aria-label={isGradientValue(hex) ? "Brand gradient" : `Barva ${hex}`}
               onClick={() => onChange(n)}
               className={cn(
                 "relative w-8 h-8 rounded-full border-2 transition-transform",
@@ -84,7 +84,7 @@ export default function ColorPalette({
                   ? "border-primary scale-110 ring-2 ring-primary/30"
                   : "border-border hover:scale-105",
               )}
-              style={{ background: hex }}
+              style={{ background: swatchBackground(hex) }}
             />
           );
         })}
