@@ -44,6 +44,7 @@ interface AvatarProfile {
   outfit_color: string | null;
   face_accessory_color: string | null;
   head_accessory_color: string | null;
+  background_color: string | null;
 }
 
 // Same order as AvatarEditor: bottom → top
