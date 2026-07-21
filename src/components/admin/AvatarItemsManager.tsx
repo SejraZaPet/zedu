@@ -1100,10 +1100,10 @@ export default function AvatarItemsManager() {
           <AlertDialogHeader>
             <AlertDialogTitle>Smazat položku „{deleteTarget?.name}"?</AlertDialogTitle>
             <AlertDialogDescription>
-              Akce je nevratná. Smaže se také všechna vazba na tuto položku v odemčených
-              položkách uživatelů (user_avatar_items). Pokud je položka aktuálně nastavena
-              v něčím profilu (avatar_profiles), smazání selže — nejprve ji z profilů
-              odeberte nebo ji deaktivujte.
+              Akce je nevratná. Uživatelé, kteří mají tuto položku aktuálně nastavenou,
+              o ni přijdou (u kategorie Postava budou automaticky přepnuti na Základ 01,
+              u ostatních kategorií jim daná vrstva zmizí z avatara). Odemčení této
+              položky bude uživatelům také odebráno.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
