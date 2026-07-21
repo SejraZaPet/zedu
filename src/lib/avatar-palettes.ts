@@ -4,14 +4,16 @@
  */
 
 export const SKIN_SWATCHES: string[] = [
-  "#F5D5B3", // very fair
-  "#E8B48F", // fair
-  "#D89B72", // light tan
-  "#C08260", // tan
-  "#A86A4B", // medium
-  "#8A5236", // brown
-  "#6A3E27", // dark brown
-  "#4A2A18", // deep
+  "#1B1B1B", // black
+  "#FFFFFF", // white
+  "#8A8A8A", // grey
+  "#B23A48", // red
+  "#E08A2A", // orange
+  "#F2C94C", // yellow
+  "#3AA35A", // green
+  "#2D6EDB", // blue
+  "#A065D7", // brand purple
+  "#63C7CF", // brand teal
 ];
 
 export const HAIR_SWATCHES: string[] = [
