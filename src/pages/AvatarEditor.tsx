@@ -64,6 +64,7 @@ interface AvatarItem {
   layer_offset_x: number;
   layer_offset_y: number;
   layer_scale: number;
+  updated_at?: string | null;
 }
 
 interface Profile {
