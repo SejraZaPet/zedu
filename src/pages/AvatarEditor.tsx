@@ -454,7 +454,7 @@ export default function AvatarEditor() {
   const [owned, setOwned] = useState<Map<string, OwnedItem>>(new Map());
   const [dbProfile, setDbProfile] = useState<Profile | null>(null);
   const [draft, setDraft] = useState<Profile | null>(null);
-  const [activeCategory, setActiveCategory] = useState<Category>("hairstyle");
+  const [activeCategory, setActiveCategory] = useState<Category>("base");
   const [filter, setFilter] = useState<FilterKey>("all");
   const [saving, setSaving] = useState(false);
   const [pendingNavigate, setPendingNavigate] = useState<string | null>(null);
