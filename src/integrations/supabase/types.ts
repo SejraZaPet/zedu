@@ -405,14 +405,19 @@ export type Database = {
           active_title: string | null
           background_id: string | null
           badge_id: string | null
+          base_color: string | null
           base_id: string | null
           created_at: string
           effect_id: string | null
+          face_accessory_color: string | null
           face_accessory_id: string | null
           frame_id: string | null
           hair_color_id: string | null
+          hairstyle_color: string | null
           hairstyle_id: string | null
+          head_accessory_color: string | null
           head_accessory_id: string | null
+          outfit_color: string | null
           outfit_id: string | null
           reduce_motion: boolean
           skin_tone_id: string | null
@@ -423,14 +428,19 @@ export type Database = {
           active_title?: string | null
           background_id?: string | null
           badge_id?: string | null
+          base_color?: string | null
           base_id?: string | null
           created_at?: string
           effect_id?: string | null
+          face_accessory_color?: string | null
           face_accessory_id?: string | null
           frame_id?: string | null
           hair_color_id?: string | null
+          hairstyle_color?: string | null
           hairstyle_id?: string | null
+          head_accessory_color?: string | null
           head_accessory_id?: string | null
+          outfit_color?: string | null
           outfit_id?: string | null
           reduce_motion?: boolean
           skin_tone_id?: string | null
@@ -441,14 +451,19 @@ export type Database = {
           active_title?: string | null
           background_id?: string | null
           badge_id?: string | null
+          base_color?: string | null
           base_id?: string | null
           created_at?: string
           effect_id?: string | null
+          face_accessory_color?: string | null
           face_accessory_id?: string | null
           frame_id?: string | null
           hair_color_id?: string | null
+          hairstyle_color?: string | null
           hairstyle_id?: string | null
+          head_accessory_color?: string | null
           head_accessory_id?: string | null
+          outfit_color?: string | null
           outfit_id?: string | null
           reduce_motion?: boolean
           skin_tone_id?: string | null

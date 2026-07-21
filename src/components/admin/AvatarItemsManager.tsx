@@ -43,9 +43,9 @@ type Category =
 
 const CATEGORIES: { value: Category; label: string }[] = [
   { value: "base", label: "Postava (base)" },
-  { value: "skin_tone", label: "Barva pleti (skin_tone)" },
+  { value: "skin_tone", label: "Barva pleti — DEPRECATED (skin_tone)" },
   { value: "hairstyle", label: "Účes (hairstyle)" },
-  { value: "hair_color", label: "Barva vlasů (hair_color)" },
+  { value: "hair_color", label: "Barva vlasů — DEPRECATED (hair_color)" },
   { value: "outfit", label: "Oblečení (outfit)" },
   { value: "face_accessory", label: "Doplněk obličej" },
   { value: "head_accessory", label: "Doplněk hlava" },
