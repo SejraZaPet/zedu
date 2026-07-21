@@ -35,7 +35,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ColorPalette from "@/components/avatar/ColorPalette";
-import { isTintable, CATEGORY_COLOR_COLUMN, paletteFor, type TintableCategory } from "@/lib/avatar-palettes";
+import { isTintable, CATEGORY_COLOR_COLUMN, paletteFor, isGradientValue, BRAND_GRADIENT_CSS, type TintableCategory } from "@/lib/avatar-palettes";
 
 // ---------- Types ----------
 type Category =
