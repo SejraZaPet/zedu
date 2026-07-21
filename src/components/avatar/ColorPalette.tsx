@@ -35,6 +35,7 @@ export default function ColorPalette({
   swatches,
   label = "Barva",
   allowClear = true,
+  allowCustom = true,
   className,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
