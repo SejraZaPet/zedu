@@ -158,7 +158,7 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
   // Values tuned against the canonical 1000x1200 base_01 template where the head
   // sits roughly in the top third; scale(2.15) + translateY(-22%) centers it.
   const headCropStyle: React.CSSProperties | undefined = crop === "head"
-    ? { transform: "scale(2.15) translateY(-22%)", transformOrigin: "center top" }
+    ? { transform: "scale(2.7) translateY(-30%)", transformOrigin: "center top" }
     : undefined;
 
   const inner = (
