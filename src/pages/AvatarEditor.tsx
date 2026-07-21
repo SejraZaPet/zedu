@@ -852,6 +852,8 @@ export default function AvatarEditor() {
                     ? "Barva pleti"
                     : activeCategory === "hairstyle"
                     ? "Barva vlasů"
+                    : activeCategory === "background"
+                    ? "Barva pozadí"
                     : "Barva"
                 }
                 swatches={paletteFor(activeCategory as TintableCategory)}
