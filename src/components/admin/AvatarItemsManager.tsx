@@ -24,7 +24,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Pencil, Plus, Trash2, ImageOff } from "lucide-react";
+import { Loader2, Pencil, Plus, Trash2, ImageOff, RefreshCw } from "lucide-react";
 import AvatarLayerStack, { type StackLayer } from "@/components/avatar/AvatarLayerStack";
 
 type Category =
@@ -335,6 +335,19 @@ export default function AvatarItemsManager() {
     setDeleteTarget(null);
   };
 
+  const handleBumpCache = async (item: AvatarItem) => {
+    const { error } = await supabase
+      .from("avatar_items")
+      .update({ updated_at: new Date().toISOString() })
+      .eq("id", item.id);
+    if (error) {
+      toast({ title: "Obnovení cache selhalo", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Cache obnovena — uživatelé uvidí novou verzi obrázku." });
+    load();
+  };
+
   const cat = editing?.category as Category | undefined;
   const showBack = cat === "hairstyle";
   const showColor = cat === "hair_color" || cat === "skin_tone";
@@ -612,6 +625,14 @@ export default function AvatarItemsManager() {
                   </td>
                   <td className="p-2 text-right">
                     <div className="flex gap-1 justify-end">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleBumpCache(item)}
+                        title="Obnovit cache"
+                      >
+                        <RefreshCw className="w-4 h-4" />
+                      </Button>
                       <Button size="sm" variant="ghost" onClick={() => openEditor(item)}>
                         <Pencil className="w-4 h-4" />
                       </Button>
