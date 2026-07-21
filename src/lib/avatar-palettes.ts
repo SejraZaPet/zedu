@@ -11,29 +11,26 @@ export const SKIN_SWATCHES: string[] = [
   "#1B1B1B", "#FFFFFF", "#8A8A8A",
   "#B23A48", "#E08A2A", "#F2C94C",
   "#3AA35A", "#2D6EDB", "#A065D7",
-  "gradient:brand",
 ];
 
 export const HAIR_SWATCHES: string[] = [
   "#1B1B1B", "#3A2416", "#6B4423", "#A67B4A",
   "#D9B96A", "#F2D98A", "#C64B1B", "#8A8A8A",
   "#FFFFFF",
-  "gradient:brand",
 ];
 
 export const OUTFIT_SWATCHES: string[] = [
   "#1B1B1B", "#FFFFFF", "#8A8A8A",
   "#B23A48", "#E08A2A", "#F2C94C",
   "#3AA35A", "#2D6EDB", "#A065D7",
-  "gradient:brand",
 ];
 
 export const ACCESSORY_SWATCHES: string[] = [
   "#1B1B1B", "#FFFFFF", "#8A8A8A",
   "#B23A48", "#E08A2A", "#F2C94C",
   "#3AA35A", "#2D6EDB", "#A065D7",
-  "gradient:brand",
 ];
+
 
 /**
  * Backgrounds — light/pastel variants so the character stays legible on top.

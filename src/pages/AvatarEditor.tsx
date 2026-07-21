@@ -234,38 +234,8 @@ function LayerVisual({
     return null;
   }
   if (src) {
-    if (tintColor && isGradientValue(tintColor)) {
-      // Mask-only technique: skip the underlying <img> entirely and render the
-      // brand gradient clipped by the image's alpha channel. mix-blend-mode:
-      // color would darken the result with the silhouette's own luminance
-      // (hair siluety are painted #3a3a42), producing a muted gradient. This
-      // matches the vibrancy of Zedík's body gradient.
-      return (
-        <div aria-hidden="true" style={style} className="w-full h-full pointer-events-none select-none">
-          <div
-            aria-hidden="true"
-            style={{
-              position: "absolute",
-              inset: 0,
-              opacity: 1,
-              background: BRAND_GRADIENT_CSS,
-              WebkitMaskImage: `url(${src})`,
-              maskImage: `url(${src})`,
-              WebkitMaskRepeat: "no-repeat",
-              maskRepeat: "no-repeat",
-              WebkitMaskPosition: "center",
-              maskPosition: "center",
-              WebkitMaskSize: "contain",
-              maskSize: "contain",
-              WebkitMaskMode: "alpha",
-              maskMode: "alpha",
-            } as React.CSSProperties}
-          />
-        </div>
-      );
-
-    }
     if (tintColor && !isGradientValue(tintColor)) {
+
 
       const { filter, useOverlay } = hairTintFromHex(tintColor);
       return (
