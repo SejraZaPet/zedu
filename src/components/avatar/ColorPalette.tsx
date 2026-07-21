@@ -90,41 +90,45 @@ export default function ColorPalette({
             />
           );
         })}
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          className={cn(
-            "relative w-8 h-8 rounded-full border-2 flex items-center justify-center overflow-hidden",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
-            isCustom
-              ? "border-primary scale-110 ring-2 ring-primary/30"
-              : "border-border hover:scale-105",
-          )}
-          aria-label="Vlastní barva"
-          style={
-            isCustom && currentNormalized
-              ? { background: currentNormalized }
-              : {
-                  background:
-                    "conic-gradient(from 0deg, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)",
-                }
-          }
-        >
-          {!isCustom && (
-            <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white drop-shadow">
-              +
-            </span>
-          )}
-        </button>
-        <input
-          ref={inputRef}
-          type="color"
-          value={currentNormalized && !isGradientValue(currentNormalized) ? currentNormalized : "#000000"}
-          onChange={(e) => onChange(normalize(e.target.value))}
-          className="sr-only"
-          aria-label="Vybrat vlastní barvu"
-          tabIndex={-1}
-        />
+        {allowCustom && (
+          <>
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              className={cn(
+                "relative w-8 h-8 rounded-full border-2 flex items-center justify-center overflow-hidden",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
+                isCustom
+                  ? "border-primary scale-110 ring-2 ring-primary/30"
+                  : "border-border hover:scale-105",
+              )}
+              aria-label="Vlastní barva"
+              style={
+                isCustom && currentNormalized
+                  ? { background: currentNormalized }
+                  : {
+                      background:
+                        "conic-gradient(from 0deg, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)",
+                    }
+              }
+            >
+              {!isCustom && (
+                <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white drop-shadow">
+                  +
+                </span>
+              )}
+            </button>
+            <input
+              ref={inputRef}
+              type="color"
+              value={currentNormalized && !isGradientValue(currentNormalized) ? currentNormalized : "#000000"}
+              onChange={(e) => onChange(normalize(e.target.value))}
+              className="sr-only"
+              aria-label="Vybrat vlastní barvu"
+              tabIndex={-1}
+            />
+          </>
+        )}
       </div>
     </div>
   );
