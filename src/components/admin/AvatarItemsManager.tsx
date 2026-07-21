@@ -337,7 +337,7 @@ export default function AvatarItemsManager() {
 
   const cat = editing?.category as Category | undefined;
   const showBack = cat === "hairstyle";
-  const showColor = cat === "hair_color";
+  const showColor = cat === "hair_color" || cat === "skin_tone";
   const CALIB_CATEGORIES: Category[] = [
     "hairstyle",
     "outfit",
