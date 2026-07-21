@@ -27,6 +27,7 @@ interface AvatarItem {
 
 interface AvatarProfile {
   base_id: string | null;
+  skin_tone_id: string | null;
   hairstyle_id: string | null;
   hair_color_id: string | null;
   outfit_id: string | null;
@@ -67,7 +68,7 @@ function hairTintFromHex(hex: string): { filter: string; useOverlay: boolean } {
   return { filter: `brightness(${F}) contrast(${C})`, useOverlay: S > 0.08 };
 }
 
-function Layer({ item, sub, hairColor }: { item: AvatarItem; sub?: "back" | "front"; hairColor?: string | null }) {
+function Layer({ item, sub, hairColor, skinTone }: { item: AvatarItem; sub?: "back" | "front"; hairColor?: string | null; skinTone?: string | null }) {
   if (item.category === "frame") {
     return <FrameOverlay slug={item.slug} />;
   }
@@ -82,8 +83,14 @@ function Layer({ item, sub, hairColor }: { item: AvatarItem; sub?: "back" | "fro
     transformOrigin: "center",
   };
   if (src) {
-    if (item.category === "hairstyle" && hairColor) {
-      const { filter, useOverlay } = hairTintFromHex(hairColor);
+    const tintColor =
+      item.category === "hairstyle" && hairColor
+        ? hairColor
+        : item.category === "base" && skinTone
+        ? skinTone
+        : null;
+    if (tintColor) {
+      const { filter, useOverlay } = hairTintFromHex(tintColor);
       return (
         <div aria-hidden style={style} className="w-full h-full pointer-events-none select-none">
           <img
@@ -100,7 +107,7 @@ function Layer({ item, sub, hairColor }: { item: AvatarItem; sub?: "back" | "fro
               style={{
                 position: "absolute",
                 inset: 0,
-                background: hairColor,
+                background: tintColor,
                 mixBlendMode: "color",
                 WebkitMaskImage: `url(${src})`,
                 maskImage: `url(${src})`,
@@ -146,7 +153,6 @@ interface Props {
 export default function ProfileAvatarBubble({ userId, size = 56, className, editable = true }: Props) {
   const [profile, setProfile] = useState<AvatarProfile | null>(null);
   const [items, setItems] = useState<Map<string, AvatarItem>>(new Map());
-  const [hairVariants, setHairVariants] = useState<Map<string, { image_url: string | null; image_url_back: string | null; layer_offset_x: number | null; layer_offset_y: number | null; layer_scale: number | null }>>(new Map());
   const [loading, setLoading] = useState(true);
   const [hasNew, setHasNew] = useState(false);
 
@@ -171,7 +177,6 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
     if (!userId) {
       setProfile(null);
       setItems(new Map());
-      setHairVariants(new Map());
       setLoading(false);
       return;
     }
@@ -180,7 +185,7 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
     (async () => {
       const { data: prof } = await supabase
         .from("avatar_profiles")
-        .select("base_id, hairstyle_id, hair_color_id, outfit_id, face_accessory_id, head_accessory_id, background_id, frame_id, effect_id, badge_id")
+        .select("base_id, skin_tone_id, hairstyle_id, hair_color_id, outfit_id, face_accessory_id, head_accessory_id, background_id, frame_id, effect_id, badge_id")
         .eq("user_id", userId)
         .maybeSingle();
 
@@ -198,33 +203,14 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
         setLoading(false);
         return;
       }
-      const [{ data: rows }, variantsRes] = await Promise.all([
-        supabase
-          .from("avatar_items")
-          .select("id, slug, category, name, image_url, image_url_back, icon_name, color_value, is_neutral_color, rarity, layer_offset_x, layer_offset_y, layer_scale")
-          .in("id", ids),
-        prof.base_id
-          ? supabase
-              .from("avatar_item_base_variants")
-              .select("avatar_item_id, image_url, image_url_back, layer_offset_x, layer_offset_y, layer_scale")
-              .eq("base_id", prof.base_id)
-          : Promise.resolve({ data: [] as any[] }),
-      ]);
+      const { data: rows } = await supabase
+        .from("avatar_items")
+        .select("id, slug, category, name, image_url, image_url_back, icon_name, color_value, is_neutral_color, rarity, layer_offset_x, layer_offset_y, layer_scale")
+        .in("id", ids);
       if (!mounted) return;
       const m = new Map<string, AvatarItem>();
       (rows ?? []).forEach((r: any) => m.set(r.id, r));
       setItems(m);
-      const vm = new Map<string, { image_url: string | null; image_url_back: string | null; layer_offset_x: number | null; layer_offset_y: number | null; layer_scale: number | null }>();
-      ((variantsRes as any).data ?? []).forEach((r: any) => {
-        vm.set(r.avatar_item_id, {
-          image_url: r.image_url,
-          image_url_back: r.image_url_back,
-          layer_offset_x: r.layer_offset_x,
-          layer_offset_y: r.layer_offset_y,
-          layer_scale: r.layer_scale,
-        });
-      });
-      setHairVariants(vm);
       setLoading(false);
     })();
     return () => { mounted = false; };
@@ -235,22 +221,8 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
     for (const l of LAYER_ORDER) {
       const id = profile[l.field];
       if (!id) continue;
-      const raw = items.get(id);
-      if (!raw) continue;
-      let item = raw;
-      if (raw.category === "hairstyle") {
-        const v = hairVariants.get(raw.id);
-        if (v) {
-          item = {
-            ...raw,
-            image_url: v.image_url ?? raw.image_url,
-            image_url_back: v.image_url_back ?? raw.image_url_back,
-            layer_offset_x: v.layer_offset_x ?? raw.layer_offset_x,
-            layer_offset_y: v.layer_offset_y ?? raw.layer_offset_y,
-            layer_scale: v.layer_scale ?? raw.layer_scale,
-          };
-        }
-      }
+      const item = items.get(id);
+      if (!item) continue;
       if (l.sub === "back" && !item.image_url_back) continue;
       if (l.sub === "front" && !item.image_url) continue;
       layers.push({ item, sub: l.sub });
@@ -259,6 +231,8 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
 
   const hairColorItem = profile?.hair_color_id ? items.get(profile.hair_color_id) : null;
   const hairColor = hairColorItem?.color_value ?? null;
+  const skinToneItem = profile?.skin_tone_id ? items.get(profile.skin_tone_id) : null;
+  const skinTone = skinToneItem?.color_value ?? null;
 
 
   const hasContent = !loading && layers.length > 0;
@@ -280,6 +254,7 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
                 item={l.item}
                 sub={l.sub}
                 hairColor={l.item.category === "hairstyle" ? hairColor : null}
+                skinTone={l.item.category === "base" ? skinTone : null}
               />
             ))}
           </div>
