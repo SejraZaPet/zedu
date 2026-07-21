@@ -335,6 +335,19 @@ export default function AvatarItemsManager() {
     setDeleteTarget(null);
   };
 
+  const handleBumpCache = async (item: AvatarItem) => {
+    const { error } = await supabase
+      .from("avatar_items")
+      .update({ updated_at: new Date().toISOString() })
+      .eq("id", item.id);
+    if (error) {
+      toast({ title: "Obnovení cache selhalo", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Cache obnovena — uživatelé uvidí novou verzi obrázku." });
+    load();
+  };
+
   const cat = editing?.category as Category | undefined;
   const showBack = cat === "hairstyle";
   const showColor = cat === "hair_color" || cat === "skin_tone";
