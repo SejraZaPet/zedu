@@ -319,13 +319,99 @@ export default function AvatarItemsManager() {
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
+
+    const CATEGORY_PROFILE_FIELD: Record<string, string> = {
+      base: "base_id",
+      hairstyle: "hairstyle_id",
+      outfit: "outfit_id",
+      face_accessory: "face_accessory_id",
+      head_accessory: "head_accessory_id",
+      background: "background_id",
+      frame: "frame_id",
+      effect: "effect_id",
+      badge: "badge_id",
+    };
+
+    const cat = deleteTarget.category as string;
+
+    // Special case: base_01 is the referential base and cannot be deleted.
+    if (cat === "base" && deleteTarget.slug === "base_01") {
+      toast({
+        title: "Nelze smazat",
+        description: "base_01 je referenční základ a nelze jej smazat.",
+        variant: "destructive",
+      });
+      setDeleteTarget(null);
+      return;
+    }
+
+    // Step 1+2: clear/reassign references in avatar_profiles
+    if (cat === "title") {
+      const { error: updErr } = await supabase
+        .from("avatar_profiles" as any)
+        .update({ active_title: null } as any)
+        .eq("active_title", deleteTarget.name);
+      if (updErr) {
+        toast({
+          title: "Nepodařilo se odpojit položku z profilů",
+          description: updErr.message,
+          variant: "destructive",
+        });
+        return;
+      }
+    } else if (CATEGORY_PROFILE_FIELD[cat]) {
+      const field = CATEGORY_PROFILE_FIELD[cat];
+      let fallback: string | null = null;
+      if (cat === "base") {
+        const { data: baseRow, error: baseErr } = await supabase
+          .from("avatar_items")
+          .select("id")
+          .eq("slug", "base_01")
+          .maybeSingle();
+        if (baseErr || !baseRow?.id) {
+          toast({
+            title: "Nepodařilo se najít fallback base_01",
+            description: baseErr?.message ?? "base_01 nebyl nalezen v katalogu.",
+            variant: "destructive",
+          });
+          return;
+        }
+        fallback = baseRow.id as string;
+      }
+      const { error: updErr } = await (supabase
+        .from("avatar_profiles") as any)
+        .update({ [field]: fallback })
+        .eq(field, deleteTarget.id);
+      if (updErr) {
+        toast({
+          title: "Nepodařilo se odpojit položku z profilů",
+          description: updErr.message,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    // Step 3: remove ownership rows
+    const { error: uaiErr } = await supabase
+      .from("user_avatar_items")
+      .delete()
+      .eq("avatar_item_id", deleteTarget.id);
+    if (uaiErr) {
+      toast({
+        title: "Nepodařilo se odebrat odemčení u uživatelů",
+        description: uaiErr.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Step 4: delete the item itself
     const { error } = await supabase.from("avatar_items").delete().eq("id", deleteTarget.id);
     if (error) {
       toast({
         title: "Smazání selhalo",
-        description: error.message.includes("foreign")
-          ? "Položka je použita v profilu některého uživatele. Nejprve ji z profilů odeberte."
-          : error.message,
+        description: error.message,
         variant: "destructive",
       });
     } else {
@@ -1014,10 +1100,10 @@ export default function AvatarItemsManager() {
           <AlertDialogHeader>
             <AlertDialogTitle>Smazat položku „{deleteTarget?.name}"?</AlertDialogTitle>
             <AlertDialogDescription>
-              Akce je nevratná. Smaže se také všechna vazba na tuto položku v odemčených
-              položkách uživatelů (user_avatar_items). Pokud je položka aktuálně nastavena
-              v něčím profilu (avatar_profiles), smazání selže — nejprve ji z profilů
-              odeberte nebo ji deaktivujte.
+              Akce je nevratná. Uživatelé, kteří mají tuto položku aktuálně nastavenou,
+              o ni přijdou (u kategorie Postava budou automaticky přepnuti na Základ 01,
+              u ostatních kategorií jim daná vrstva zmizí z avatara). Odemčení této
+              položky bude uživatelům také odebráno.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
