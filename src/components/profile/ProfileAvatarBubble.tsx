@@ -127,9 +127,7 @@ function Layer({ item, sub, tintColor }: { item: AvatarItem; sub?: "back" | "fro
       />
     );
   }
-  if (item.category === "background" && item.color_value) {
-    return <div style={{ ...style, background: item.color_value }} />;
-  }
+  // background is handled above (before src check)
   return null;
 }
 
