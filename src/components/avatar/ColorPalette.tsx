@@ -117,7 +117,7 @@ export default function ColorPalette({
         <input
           ref={inputRef}
           type="color"
-          value={currentNormalized ?? "#000000"}
+          value={currentNormalized && !isGradientValue(currentNormalized) ? currentNormalized : "#000000"}
           onChange={(e) => onChange(normalize(e.target.value))}
           className="sr-only"
           aria-label="Vybrat vlastní barvu"
