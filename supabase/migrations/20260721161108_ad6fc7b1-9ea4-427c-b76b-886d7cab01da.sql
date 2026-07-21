@@ -1,0 +1,1 @@
+ALTER TABLE public.avatar_profiles ADD COLUMN IF NOT EXISTS background_color text;

@@ -403,6 +403,7 @@ export type Database = {
       avatar_profiles: {
         Row: {
           active_title: string | null
+          background_color: string | null
           background_id: string | null
           badge_id: string | null
           base_color: string | null
@@ -426,6 +427,7 @@ export type Database = {
         }
         Insert: {
           active_title?: string | null
+          background_color?: string | null
           background_id?: string | null
           badge_id?: string | null
           base_color?: string | null
@@ -449,6 +451,7 @@ export type Database = {
         }
         Update: {
           active_title?: string | null
+          background_color?: string | null
           background_id?: string | null
           badge_id?: string | null
           base_color?: string | null

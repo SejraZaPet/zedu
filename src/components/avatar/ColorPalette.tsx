@@ -1,6 +1,7 @@
 import { useId, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
+import { BRAND_GRADIENT_CSS, isGradientValue } from "@/lib/avatar-palettes";
 
 interface Props {
   value: string | null;
@@ -11,10 +12,16 @@ interface Props {
   className?: string;
 }
 
+/** Normalize hex-only values. Special sentinel values (e.g. "gradient:brand") pass through untouched. */
 function normalize(hex: string | null | undefined): string | null {
   if (!hex) return null;
+  if (isGradientValue(hex)) return hex;
   const m = hex.trim().match(/^#?([0-9a-f]{6})$/i);
   return m ? `#${m[1].toLowerCase()}` : null;
+}
+
+function swatchBackground(v: string): string {
+  return isGradientValue(v) ? BRAND_GRADIENT_CSS : v;
 }
 
 /**
@@ -32,7 +39,10 @@ export default function ColorPalette({
   const inputRef = useRef<HTMLInputElement>(null);
   const labelId = useId();
   const currentNormalized = normalize(value);
-  const isCustom = !!currentNormalized && !swatches.some((s) => normalize(s) === currentNormalized);
+  const isCustom =
+    !!currentNormalized &&
+    !isGradientValue(currentNormalized) &&
+    !swatches.some((s) => normalize(s) === currentNormalized);
 
   return (
     <div className={cn("rounded-lg border bg-card p-3", className)}>
@@ -65,7 +75,7 @@ export default function ColorPalette({
               type="button"
               role="radio"
               aria-checked={selected}
-              aria-label={`Barva ${hex}`}
+              aria-label={isGradientValue(hex) ? "Brand gradient" : `Barva ${hex}`}
               onClick={() => onChange(n)}
               className={cn(
                 "relative w-8 h-8 rounded-full border-2 transition-transform",
@@ -74,7 +84,7 @@ export default function ColorPalette({
                   ? "border-primary scale-110 ring-2 ring-primary/30"
                   : "border-border hover:scale-105",
               )}
-              style={{ background: hex }}
+              style={{ background: swatchBackground(hex) }}
             />
           );
         })}
@@ -107,7 +117,7 @@ export default function ColorPalette({
         <input
           ref={inputRef}
           type="color"
-          value={currentNormalized ?? "#000000"}
+          value={currentNormalized && !isGradientValue(currentNormalized) ? currentNormalized : "#000000"}
           onChange={(e) => onChange(normalize(e.target.value))}
           className="sr-only"
           aria-label="Vybrat vlastní barvu"

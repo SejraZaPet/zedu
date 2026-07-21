@@ -35,7 +35,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ColorPalette from "@/components/avatar/ColorPalette";
-import { isTintable, CATEGORY_COLOR_COLUMN, paletteFor, type TintableCategory } from "@/lib/avatar-palettes";
+import { isTintable, CATEGORY_COLOR_COLUMN, paletteFor, isGradientValue, BRAND_GRADIENT_CSS, type TintableCategory } from "@/lib/avatar-palettes";
 
 // ---------- Types ----------
 type Category =
@@ -86,6 +86,7 @@ interface Profile {
   outfit_color: string | null;
   face_accessory_color: string | null;
   head_accessory_color: string | null;
+  background_color: string | null;
 }
 
 interface OwnedItem {
@@ -162,7 +163,7 @@ const emptyProfile = (userId: string): Profile => ({
   frame_id: null, effect_id: null, badge_id: null,
   active_title: null, reduce_motion: false,
   base_color: null, hairstyle_color: null, outfit_color: null,
-  face_accessory_color: null, head_accessory_color: null,
+  face_accessory_color: null, head_accessory_color: null, background_color: null,
 });
 
 function unlockLabel(item: AvatarItem): string {
@@ -214,8 +215,16 @@ function LayerVisual({
     transform: `translate(${item.layer_offset_x}%, ${item.layer_offset_y}%) scale(${item.layer_scale})`,
     transformOrigin: "center",
   };
+  // Background is always a full-plane fill — solid color OR brand gradient.
+  if (item.category === "background") {
+    const fill = tintColor
+      ? (isGradientValue(tintColor) ? BRAND_GRADIENT_CSS : tintColor)
+      : item.color_value;
+    if (fill) return <div aria-hidden="true" style={{ ...style, background: fill }} />;
+    return null;
+  }
   if (src) {
-    if (tintColor) {
+    if (tintColor && !isGradientValue(tintColor)) {
       const { filter, useOverlay } = hairTintFromHex(tintColor);
       return (
         <div aria-hidden="true" style={style} className="w-full h-full pointer-events-none select-none">
@@ -843,6 +852,8 @@ export default function AvatarEditor() {
                     ? "Barva pleti"
                     : activeCategory === "hairstyle"
                     ? "Barva vlasů"
+                    : activeCategory === "background"
+                    ? "Barva pozadí"
                     : "Barva"
                 }
                 swatches={paletteFor(activeCategory as TintableCategory)}

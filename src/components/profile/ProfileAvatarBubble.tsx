@@ -8,7 +8,7 @@ import FrameOverlay from "@/components/avatar/FrameOverlay";
 import EffectOverlay from "@/components/avatar/EffectOverlay";
 import BadgeOverlay from "@/components/avatar/BadgeOverlay";
 import { hairTintFromHex } from "@/components/avatar/AvatarLayerStack";
-import { isTintable, CATEGORY_COLOR_COLUMN, type TintableCategory } from "@/lib/avatar-palettes";
+import { isTintable, CATEGORY_COLOR_COLUMN, isGradientValue, BRAND_GRADIENT_CSS, type TintableCategory } from "@/lib/avatar-palettes";
 
 interface AvatarItem {
   id: string;
@@ -44,6 +44,7 @@ interface AvatarProfile {
   outfit_color: string | null;
   face_accessory_color: string | null;
   head_accessory_color: string | null;
+  background_color: string | null;
 }
 
 // Same order as AvatarEditor: bottom → top
@@ -73,8 +74,15 @@ function Layer({ item, sub, tintColor }: { item: AvatarItem; sub?: "back" | "fro
     transform: `translate(${item.layer_offset_x}%, ${item.layer_offset_y}%) scale(${item.layer_scale})`,
     transformOrigin: "center",
   };
+  if (item.category === "background") {
+    const fill = tintColor
+      ? (isGradientValue(tintColor) ? BRAND_GRADIENT_CSS : tintColor)
+      : item.color_value;
+    if (fill) return <div aria-hidden style={{ ...style, background: fill }} />;
+    return null;
+  }
   if (src) {
-    if (tintColor) {
+    if (tintColor && !isGradientValue(tintColor)) {
       const { filter, useOverlay } = hairTintFromHex(tintColor);
       return (
         <div aria-hidden style={style} className="w-full h-full pointer-events-none select-none">
@@ -119,9 +127,7 @@ function Layer({ item, sub, tintColor }: { item: AvatarItem; sub?: "back" | "fro
       />
     );
   }
-  if (item.category === "background" && item.color_value) {
-    return <div style={{ ...style, background: item.color_value }} />;
-  }
+  // background is handled above (before src check)
   return null;
 }
 
@@ -170,7 +176,7 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
     (async () => {
       const { data: prof } = await supabase
         .from("avatar_profiles")
-        .select("base_id, skin_tone_id, hairstyle_id, hair_color_id, outfit_id, face_accessory_id, head_accessory_id, background_id, frame_id, effect_id, badge_id, base_color, hairstyle_color, outfit_color, face_accessory_color, head_accessory_color")
+        .select("base_id, skin_tone_id, hairstyle_id, hair_color_id, outfit_id, face_accessory_id, head_accessory_id, background_id, frame_id, effect_id, badge_id, base_color, hairstyle_color, outfit_color, face_accessory_color, head_accessory_color, background_color")
         .eq("user_id", userId)
         .maybeSingle();
 
