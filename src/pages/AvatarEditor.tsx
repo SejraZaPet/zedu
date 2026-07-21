@@ -39,7 +39,7 @@ import { isTintable, CATEGORY_COLOR_COLUMN, paletteFor, isGradientValue, BRAND_G
 
 // ---------- Types ----------
 type Category =
-  | "base" | "skin_tone" | "hairstyle" | "hair_color" | "eyes" | "outfit"
+  | "base" | "skin_tone" | "hairstyle" | "hair_color" | "eyes" | "eyebrow" | "outfit"
   | "face_accessory" | "head_accessory" | "background"
   | "frame" | "effect" | "badge" | "title";
 
