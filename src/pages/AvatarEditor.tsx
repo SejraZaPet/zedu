@@ -215,8 +215,16 @@ function LayerVisual({
     transform: `translate(${item.layer_offset_x}%, ${item.layer_offset_y}%) scale(${item.layer_scale})`,
     transformOrigin: "center",
   };
+  // Background is always a full-plane fill — solid color OR brand gradient.
+  if (item.category === "background") {
+    const fill = tintColor
+      ? (isGradientValue(tintColor) ? BRAND_GRADIENT_CSS : tintColor)
+      : item.color_value;
+    if (fill) return <div aria-hidden="true" style={{ ...style, background: fill }} />;
+    return null;
+  }
   if (src) {
-    if (tintColor) {
+    if (tintColor && !isGradientValue(tintColor)) {
       const { filter, useOverlay } = hairTintFromHex(tintColor);
       return (
         <div aria-hidden="true" style={style} className="w-full h-full pointer-events-none select-none">
