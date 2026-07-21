@@ -234,7 +234,7 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
       to="/avatar"
       aria-label="Upravit avatara"
       className={cn(
-        "relative inline-block rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background group",
+        "relative inline-block rounded-[14px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background group",
         className,
       )}
       style={{ width: size, height: size }}
