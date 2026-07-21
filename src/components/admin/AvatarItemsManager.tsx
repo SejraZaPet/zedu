@@ -32,6 +32,7 @@ type Category =
   | "skin_tone"
   | "hairstyle"
   | "hair_color"
+  | "eyes"
   | "outfit"
   | "face_accessory"
   | "head_accessory"
@@ -46,6 +47,7 @@ const CATEGORIES: { value: Category; label: string }[] = [
   { value: "skin_tone", label: "Barva pleti — DEPRECATED (skin_tone)" },
   { value: "hairstyle", label: "Účes (hairstyle)" },
   { value: "hair_color", label: "Barva vlasů — DEPRECATED (hair_color)" },
+  { value: "eyes", label: "Oči (eyes)" },
   { value: "outfit", label: "Oblečení (outfit)" },
   { value: "face_accessory", label: "Doplněk obličej" },
   { value: "head_accessory", label: "Doplněk hlava" },
