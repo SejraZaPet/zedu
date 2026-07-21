@@ -57,8 +57,8 @@ export function hairTintFromHex(hex: string): { filter: string; useOverlay: bool
   // Neutral (black/white/grey): mix-blend-mode:color can't tint zero-saturation
   // targets, so bypass the overlay entirely and desaturate the source instead.
   if (S < 0.12) {
-    const Fn = Math.max(0.3, Math.min(2.4, 0.4 + L * 1.8));
-    return { filter: `brightness(${Fn}) saturate(0)`, useOverlay: false, neutral: true };
+    const Fn = Math.max(0.3, Math.min(2.3, 0.35 + L * 1.85));
+    return { filter: `brightness(${Fn}) saturate(0.15)`, useOverlay: false, neutral: true };
   }
   const F = Math.max(0.35, Math.min(2.6, 0.4 + L * 2.0));
   const C = Math.max(0.45, Math.min(1, 1 - Math.max(0, F - 1) * 0.4));
