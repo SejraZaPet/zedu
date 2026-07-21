@@ -169,7 +169,7 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
   // wrapper) maps to S*(y0 + T). Solving for image top (9%) → 0 and head bottom
   // (~43.4%) → 100% gives T = -9%, S ≈ 100/34.4 ≈ 2.9.
   const headCropStyle: React.CSSProperties | undefined = crop === "head"
-    ? { transform: "scale(2.9) translateY(-9%)", transformOrigin: "center top" }
+    ? { transform: "scale(2.1) translateY(-9%)", transformOrigin: "center top" }
     : undefined;
 
   const inner = (
