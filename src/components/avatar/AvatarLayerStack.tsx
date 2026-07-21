@@ -101,7 +101,38 @@ export function AvatarLayer({
   }
 
   if (src) {
+    if (tintColor && isGradientValue(tintColor)) {
+      return (
+        <div aria-hidden="true" style={style} className="w-full h-full pointer-events-none select-none">
+          <img
+            src={src}
+            alt=""
+            aria-hidden="true"
+            draggable={false}
+            className="absolute inset-0 w-full h-full object-contain pointer-events-none select-none"
+          />
+          <div
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: BRAND_GRADIENT_CSS,
+              mixBlendMode: "color",
+              WebkitMaskImage: `url(${src})`,
+              maskImage: `url(${src})`,
+              WebkitMaskRepeat: "no-repeat",
+              maskRepeat: "no-repeat",
+              WebkitMaskPosition: "center",
+              maskPosition: "center",
+              WebkitMaskSize: "contain",
+              maskSize: "contain",
+            }}
+          />
+        </div>
+      );
+    }
     if (tintColor && !isGradientValue(tintColor)) {
+
       const { filter, useOverlay } = hairTintFromHex(tintColor);
       return (
         <div aria-hidden="true" style={style} className="w-full h-full pointer-events-none select-none">
