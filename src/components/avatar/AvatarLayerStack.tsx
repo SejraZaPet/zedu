@@ -68,8 +68,20 @@ export function AvatarLayer({
     transformOrigin: "center",
   };
 
+  // Background is a full-plane fill (never a silhouette to tint).
+  // A picked color/gradient replaces the item's default color_value entirely.
+  if (item.category === "background") {
+    const fill = tintColor
+      ? (isGradientValue(tintColor) ? BRAND_GRADIENT_CSS : tintColor)
+      : item.color_value;
+    if (fill) {
+      return <div aria-hidden="true" style={{ ...style, background: fill }} />;
+    }
+    return null;
+  }
+
   if (src) {
-    if (tintColor) {
+    if (tintColor && !isGradientValue(tintColor)) {
       const { filter, useOverlay } = hairTintFromHex(tintColor);
       return (
         <div aria-hidden="true" style={style} className="w-full h-full pointer-events-none select-none">
@@ -115,9 +127,6 @@ export function AvatarLayer({
     );
   }
 
-  if (item.category === "background" && item.color_value) {
-    return <div style={{ ...style, background: item.color_value }} />;
-  }
   return null;
 }
 
