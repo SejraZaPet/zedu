@@ -9,6 +9,7 @@ interface Props {
   swatches: string[];
   label?: string;
   allowClear?: boolean;
+  allowCustom?: boolean;
   className?: string;
 }
 
