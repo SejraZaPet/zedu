@@ -25,10 +25,8 @@ export type AvatarStackItem = {
 export type StackLayer = {
   item: AvatarStackItem;
   sub?: "back" | "front";
-  /** Hex color applied to hairstyle layers (brightness/contrast + optional mask overlay). */
-  hairColor?: string | null;
-  /** Hex color applied to the base (skin) layer using the same tint technique as hair. */
-  skinTone?: string | null;
+  /** Optional hex color used to tint this specific layer via brightness/contrast + mask overlay. */
+  tintColor?: string | null;
 };
 
 export function hairTintFromHex(hex: string): { filter: string; useOverlay: boolean } {
@@ -48,12 +46,11 @@ export function hairTintFromHex(hex: string): { filter: string; useOverlay: bool
 }
 
 export function AvatarLayer({
-  item, sub, hairColor, skinTone, reduceMotion,
+  item, sub, tintColor, reduceMotion,
 }: {
   item: AvatarStackItem;
   sub?: "back" | "front";
-  hairColor?: string | null;
-  skinTone?: string | null;
+  tintColor?: string | null;
   reduceMotion?: boolean;
 }) {
   if (item.category === "frame") return <FrameOverlay slug={item.slug} reduceMotion={reduceMotion} />;
@@ -71,12 +68,6 @@ export function AvatarLayer({
   };
 
   if (src) {
-    const tintColor =
-      item.category === "hairstyle" && hairColor
-        ? hairColor
-        : item.category === "base" && skinTone
-        ? skinTone
-        : null;
     if (tintColor) {
       const { filter, useOverlay } = hairTintFromHex(tintColor);
       return (
@@ -146,8 +137,7 @@ export default function AvatarLayerStack({
           key={`${l.item.id}-${l.sub ?? "main"}-${i}`}
           item={l.item}
           sub={l.sub}
-          hairColor={l.hairColor}
-          skinTone={l.skinTone}
+          tintColor={l.tintColor}
           reduceMotion={reduceMotion}
         />
       ))}

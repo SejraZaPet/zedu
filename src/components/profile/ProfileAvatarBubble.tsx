@@ -7,6 +7,8 @@ import { cn } from "@/lib/utils";
 import FrameOverlay from "@/components/avatar/FrameOverlay";
 import EffectOverlay from "@/components/avatar/EffectOverlay";
 import BadgeOverlay from "@/components/avatar/BadgeOverlay";
+import { hairTintFromHex } from "@/components/avatar/AvatarLayerStack";
+import { isTintable, CATEGORY_COLOR_COLUMN, type TintableCategory } from "@/lib/avatar-palettes";
 
 interface AvatarItem {
   id: string;
@@ -37,6 +39,11 @@ interface AvatarProfile {
   frame_id: string | null;
   effect_id: string | null;
   badge_id: string | null;
+  base_color: string | null;
+  hairstyle_color: string | null;
+  outfit_color: string | null;
+  face_accessory_color: string | null;
+  head_accessory_color: string | null;
 }
 
 // Same order as AvatarEditor: bottom → top
@@ -52,23 +59,7 @@ const LAYER_ORDER: { field: keyof AvatarProfile; sub?: "back" | "front" }[] = [
   { field: "frame_id" },
 ];
 
-function hairTintFromHex(hex: string): { filter: string; useOverlay: boolean } {
-  const m = hex.trim().match(/^#?([0-9a-f]{6})$/i);
-  if (!m) return { filter: "none", useOverlay: false };
-  const n = parseInt(m[1], 16);
-  const r = ((n >> 16) & 255) / 255;
-  const g = ((n >> 8) & 255) / 255;
-  const b = (n & 255) / 255;
-  const max = Math.max(r, g, b), min = Math.min(r, g, b);
-  const L = (max + min) / 2;
-  const d = max - min;
-  const S = d === 0 ? 0 : d / (1 - Math.abs(2 * L - 1));
-  const F = Math.max(0.35, Math.min(2.6, 0.4 + L * 2.0));
-  const C = Math.max(0.45, Math.min(1, 1 - Math.max(0, F - 1) * 0.4));
-  return { filter: `brightness(${F}) contrast(${C})`, useOverlay: S > 0.08 };
-}
-
-function Layer({ item, sub, hairColor, skinTone }: { item: AvatarItem; sub?: "back" | "front"; hairColor?: string | null; skinTone?: string | null }) {
+function Layer({ item, sub, tintColor }: { item: AvatarItem; sub?: "back" | "front"; tintColor?: string | null }) {
   if (item.category === "frame") {
     return <FrameOverlay slug={item.slug} />;
   }
@@ -83,12 +74,6 @@ function Layer({ item, sub, hairColor, skinTone }: { item: AvatarItem; sub?: "ba
     transformOrigin: "center",
   };
   if (src) {
-    const tintColor =
-      item.category === "hairstyle" && hairColor
-        ? hairColor
-        : item.category === "base" && skinTone
-        ? skinTone
-        : null;
     if (tintColor) {
       const { filter, useOverlay } = hairTintFromHex(tintColor);
       return (
@@ -185,7 +170,7 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
     (async () => {
       const { data: prof } = await supabase
         .from("avatar_profiles")
-        .select("base_id, skin_tone_id, hairstyle_id, hair_color_id, outfit_id, face_accessory_id, head_accessory_id, background_id, frame_id, effect_id, badge_id")
+        .select("base_id, skin_tone_id, hairstyle_id, hair_color_id, outfit_id, face_accessory_id, head_accessory_id, background_id, frame_id, effect_id, badge_id, base_color, hairstyle_color, outfit_color, face_accessory_color, head_accessory_color")
         .eq("user_id", userId)
         .maybeSingle();
 
@@ -198,7 +183,10 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
       }
       setProfile(prof as AvatarProfile);
 
-      const ids = Object.values(prof).filter((v): v is string => !!v);
+      const ids = Object.entries(prof)
+        .filter(([k]) => k.endsWith("_id"))
+        .map(([, v]) => v)
+        .filter((v): v is string => !!v);
       if (ids.length === 0) {
         setLoading(false);
         return;
@@ -216,11 +204,26 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
     return () => { mounted = false; };
   }, [userId]);
 
+  // Legacy fallback so users who haven't re-saved keep their old skin/hair choice.
+  const legacyHair = profile?.hair_color_id ? items.get(profile.hair_color_id)?.color_value ?? null : null;
+  const legacySkin = profile?.skin_tone_id ? items.get(profile.skin_tone_id)?.color_value ?? null : null;
+
+  const tintFor = (category: string): string | null => {
+    if (!profile) return null;
+    if (!isTintable(category)) return null;
+    const col = CATEGORY_COLOR_COLUMN[category as TintableCategory];
+    const val = (profile as any)[col] as string | null | undefined;
+    if (val) return val;
+    if (category === "hairstyle") return legacyHair;
+    if (category === "base") return legacySkin;
+    return null;
+  };
+
   const layers: { item: AvatarItem; sub?: "back" | "front" }[] = [];
   if (profile) {
     for (const l of LAYER_ORDER) {
       const id = profile[l.field];
-      if (!id) continue;
+      if (!id || typeof id !== "string") continue;
       const item = items.get(id);
       if (!item) continue;
       if (l.sub === "back" && !item.image_url_back) continue;
@@ -228,11 +231,6 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
       layers.push({ item, sub: l.sub });
     }
   }
-
-  const hairColorItem = profile?.hair_color_id ? items.get(profile.hair_color_id) : null;
-  const hairColor = hairColorItem?.color_value ?? null;
-  const skinToneItem = profile?.skin_tone_id ? items.get(profile.skin_tone_id) : null;
-  const skinTone = skinToneItem?.color_value ?? null;
 
 
   const hasContent = !loading && layers.length > 0;
@@ -253,8 +251,7 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
                 key={`${l.item.id}-${l.sub ?? "m"}-${i}`}
                 item={l.item}
                 sub={l.sub}
-                hairColor={l.item.category === "hairstyle" ? hairColor : null}
-                skinTone={l.item.category === "base" ? skinTone : null}
+                tintColor={tintFor(l.item.category)}
               />
             ))}
           </div>
@@ -316,4 +313,3 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
     </Link>
   );
 }
-

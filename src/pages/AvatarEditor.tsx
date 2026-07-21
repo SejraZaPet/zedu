@@ -31,9 +31,11 @@ import {
 } from "@/components/ui/dialog";
 import {
   User, Scissors, Shirt, Glasses, Crown, Image as ImageIcon,
-  Frame, Sparkles, Award, Type, Lock, Heart, Shuffle, ArrowLeft, Check, Droplet,
+  Frame, Sparkles, Award, Type, Lock, Heart, Shuffle, ArrowLeft, Check,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import ColorPalette from "@/components/avatar/ColorPalette";
+import { isTintable, CATEGORY_COLOR_COLUMN, paletteFor, type TintableCategory } from "@/lib/avatar-palettes";
 
 // ---------- Types ----------
 type Category =
@@ -79,6 +81,11 @@ interface Profile {
   badge_id: string | null;
   active_title: string | null;
   reduce_motion: boolean;
+  base_color: string | null;
+  hairstyle_color: string | null;
+  outfit_color: string | null;
+  face_accessory_color: string | null;
+  head_accessory_color: string | null;
 }
 
 interface OwnedItem {
@@ -88,10 +95,10 @@ interface OwnedItem {
 }
 
 // ---------- Config ----------
-// NOTE: "base" is intentionally omitted from the visible category list.
-// We now use one canonical head (base_01) + a "skin_tone" recolor step.
-// The `base` category still exists in the DB and Profile.base_id is still
-// rendered — it is just not selectable in the editor UI.
+// NOTE: `base` is not selectable — we use one canonical head (base_01).
+// The old `skin_tone` and `hair_color` categories are removed from the UI:
+// per-category colors are now picked directly inside each tintable category
+// (base/hairstyle/outfit/face_accessory/head_accessory) via a ColorPalette.
 
 const CATEGORY_META: {
   key: Category;
@@ -100,9 +107,8 @@ const CATEGORY_META: {
   profileField: keyof Profile | "active_title";
   storesValue: "id" | "name";
 }[] = [
-  { key: "skin_tone",       label: "Barva pleti",     icon: User,       profileField: "skin_tone_id",      storesValue: "id" },
+  { key: "base",            label: "Postava",         icon: User,       profileField: "base_id",           storesValue: "id" },
   { key: "hairstyle",       label: "Vlasy",           icon: Scissors,   profileField: "hairstyle_id",      storesValue: "id" },
-  { key: "hair_color",      label: "Barva vlasů",     icon: Droplet,    profileField: "hair_color_id",     storesValue: "id" },
   { key: "outfit",          label: "Oblečení",        icon: Shirt,      profileField: "outfit_id",         storesValue: "id" },
   { key: "face_accessory",  label: "Doplňky obličej", icon: Glasses,    profileField: "face_accessory_id", storesValue: "id" },
   { key: "head_accessory",  label: "Doplňky hlava",   icon: Crown,      profileField: "head_accessory_id", storesValue: "id" },
@@ -155,6 +161,8 @@ const emptyProfile = (userId: string): Profile => ({
   face_accessory_id: null, head_accessory_id: null, background_id: null,
   frame_id: null, effect_id: null, badge_id: null,
   active_title: null, reduce_motion: false,
+  base_color: null, hairstyle_color: null, outfit_color: null,
+  face_accessory_color: null, head_accessory_color: null,
 });
 
 function unlockLabel(item: AvatarItem): string {
@@ -190,8 +198,8 @@ function hairTintFromHex(hex: string): { filter: string; useOverlay: boolean } {
 }
 
 function LayerVisual({
-  item, subLayer, reduceMotion, hairColor, skinTone,
-}: { item: AvatarItem; subLayer?: "back" | "front"; reduceMotion?: boolean; hairColor?: string | null; skinTone?: string | null }) {
+  item, subLayer, reduceMotion, tintColor,
+}: { item: AvatarItem; subLayer?: "back" | "front"; reduceMotion?: boolean; tintColor?: string | null }) {
   // Decorative SVG overlays for frame/effect — no image_url needed
   if (item.category === "frame") {
     return <FrameOverlay slug={item.slug} reduceMotion={reduceMotion} />;
@@ -207,13 +215,6 @@ function LayerVisual({
     transformOrigin: "center",
   };
   if (src) {
-    // Unified tint: hair uses hair_color, base uses skin_tone. Same math.
-    const tintColor =
-      item.category === "hairstyle" && hairColor
-        ? hairColor
-        : item.category === "base" && skinTone
-        ? skinTone
-        : null;
     if (tintColor) {
       const { filter, useOverlay } = hairTintFromHex(tintColor);
       return (
@@ -310,10 +311,19 @@ function AvatarPreview({
     layers.push({ item, sub: l.sub });
   }
 
-  const hairColorItem = profile.hair_color_id ? itemsById.get(profile.hair_color_id) : null;
-  const hairColor = hairColorItem?.color_value ?? null;
-  const skinToneItem = profile.skin_tone_id ? itemsById.get(profile.skin_tone_id) : null;
-  const skinTone = skinToneItem?.color_value ?? null;
+  // Legacy fallback so users who haven't re-saved still see the color they picked.
+  const legacyHair = profile.hair_color_id ? itemsById.get(profile.hair_color_id)?.color_value ?? null : null;
+  const legacySkin = profile.skin_tone_id ? itemsById.get(profile.skin_tone_id)?.color_value ?? null : null;
+
+  const tintFor = (category: string): string | null => {
+    if (!isTintable(category)) return null;
+    const col = CATEGORY_COLOR_COLUMN[category as TintableCategory];
+    const val = (profile as any)[col] as string | null | undefined;
+    if (val) return val;
+    if (category === "hairstyle") return legacyHair;
+    if (category === "base") return legacySkin;
+    return null;
+  };
 
   return (
     <div
@@ -336,8 +346,7 @@ function AvatarPreview({
             item={l.item}
             subLayer={l.sub}
             reduceMotion={reduceMotion}
-            hairColor={l.item.category === "hairstyle" ? hairColor : null}
-            skinTone={l.item.category === "base" ? skinTone : null}
+            tintColor={tintFor(l.item.category)}
           />
         ))}
       </div>
@@ -432,7 +441,7 @@ export default function AvatarEditor() {
   const [owned, setOwned] = useState<Map<string, OwnedItem>>(new Map());
   const [dbProfile, setDbProfile] = useState<Profile | null>(null);
   const [draft, setDraft] = useState<Profile | null>(null);
-  const [activeCategory, setActiveCategory] = useState<Category>("skin_tone");
+  const [activeCategory, setActiveCategory] = useState<Category>("hairstyle");
   const [filter, setFilter] = useState<FilterKey>("all");
   const [saving, setSaving] = useState(false);
   const [pendingNavigate, setPendingNavigate] = useState<string | null>(null);
@@ -825,6 +834,27 @@ export default function AvatarEditor() {
               ))}
             </div>
           </div>
+
+          {isTintable(activeCategory) && draft && (
+            <div className="mb-3">
+              <ColorPalette
+                label={
+                  activeCategory === "base"
+                    ? "Barva pleti"
+                    : activeCategory === "hairstyle"
+                    ? "Barva vlasů"
+                    : "Barva"
+                }
+                swatches={paletteFor(activeCategory as TintableCategory)}
+                value={(draft as any)[CATEGORY_COLOR_COLUMN[activeCategory as TintableCategory]] ?? null}
+                onChange={(hex) => {
+                  const col = CATEGORY_COLOR_COLUMN[activeCategory as TintableCategory];
+                  setDraft({ ...(draft as Profile), [col]: hex } as Profile);
+                }}
+              />
+            </div>
+          )}
+
 
           {filteredList.length === 0 ? (
             <p className="rounded-lg border p-6 text-sm text-muted-foreground bg-muted/40">
