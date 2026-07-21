@@ -857,6 +857,7 @@ export default function AvatarEditor() {
                     : "Barva"
                 }
                 swatches={paletteFor(activeCategory as TintableCategory)}
+                allowCustom={activeCategory !== "background"}
                 value={(draft as any)[CATEGORY_COLOR_COLUMN[activeCategory as TintableCategory]] ?? null}
                 onChange={(hex) => {
                   const col = CATEGORY_COLOR_COLUMN[activeCategory as TintableCategory];
