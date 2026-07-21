@@ -114,6 +114,7 @@ const CATEGORY_META: {
   { key: "base",            label: "Postava",         icon: User,       profileField: "base_id",           storesValue: "id" },
   { key: "hairstyle",       label: "Vlasy",           icon: Scissors,   profileField: "hairstyle_id",      storesValue: "id" },
   { key: "eyes",            label: "Oči",             icon: Eye,        profileField: "eyes_id",           storesValue: "id" },
+  { key: "eyebrow",         label: "Obočí",           icon: Eye,        profileField: "eyebrow_id",        storesValue: "id" },
   { key: "outfit",          label: "Oblečení",        icon: Shirt,      profileField: "outfit_id",         storesValue: "id" },
   { key: "face_accessory",  label: "Doplňky obličej", icon: Glasses,    profileField: "face_accessory_id", storesValue: "id" },
   { key: "head_accessory",  label: "Doplňky hlava",   icon: Crown,      profileField: "head_accessory_id", storesValue: "id" },
