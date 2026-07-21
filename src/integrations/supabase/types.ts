@@ -415,6 +415,7 @@ export type Database = {
           head_accessory_id: string | null
           outfit_id: string | null
           reduce_motion: boolean
+          skin_tone_id: string | null
           updated_at: string
           user_id: string
         }
@@ -432,6 +433,7 @@ export type Database = {
           head_accessory_id?: string | null
           outfit_id?: string | null
           reduce_motion?: boolean
+          skin_tone_id?: string | null
           updated_at?: string
           user_id: string
         }
@@ -449,6 +451,7 @@ export type Database = {
           head_accessory_id?: string | null
           outfit_id?: string | null
           reduce_motion?: boolean
+          skin_tone_id?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -519,6 +522,13 @@ export type Database = {
           {
             foreignKeyName: "avatar_profiles_outfit_id_fkey"
             columns: ["outfit_id"]
+            isOneToOne: false
+            referencedRelation: "avatar_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "avatar_profiles_skin_tone_id_fkey"
+            columns: ["skin_tone_id"]
             isOneToOne: false
             referencedRelation: "avatar_items"
             referencedColumns: ["id"]

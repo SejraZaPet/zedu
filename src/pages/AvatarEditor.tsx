@@ -37,7 +37,7 @@ import { cn } from "@/lib/utils";
 
 // ---------- Types ----------
 type Category =
-  | "base" | "hairstyle" | "hair_color" | "outfit"
+  | "base" | "skin_tone" | "hairstyle" | "hair_color" | "outfit"
   | "face_accessory" | "head_accessory" | "background"
   | "frame" | "effect" | "badge" | "title";
 
@@ -67,6 +67,7 @@ interface AvatarItem {
 interface Profile {
   user_id: string;
   base_id: string | null;
+  skin_tone_id: string | null;
   hairstyle_id: string | null;
   hair_color_id: string | null;
   outfit_id: string | null;
@@ -87,6 +88,11 @@ interface OwnedItem {
 }
 
 // ---------- Config ----------
+// NOTE: "base" is intentionally omitted from the visible category list.
+// We now use one canonical head (base_01) + a "skin_tone" recolor step.
+// The `base` category still exists in the DB and Profile.base_id is still
+// rendered — it is just not selectable in the editor UI.
+
 const CATEGORY_META: {
   key: Category;
   label: string;
@@ -94,7 +100,7 @@ const CATEGORY_META: {
   profileField: keyof Profile | "active_title";
   storesValue: "id" | "name";
 }[] = [
-  { key: "base",            label: "Postava",         icon: User,       profileField: "base_id",           storesValue: "id" },
+  { key: "skin_tone",       label: "Barva pleti",     icon: User,       profileField: "skin_tone_id",      storesValue: "id" },
   { key: "hairstyle",       label: "Vlasy",           icon: Scissors,   profileField: "hairstyle_id",      storesValue: "id" },
   { key: "hair_color",      label: "Barva vlasů",     icon: Droplet,    profileField: "hair_color_id",     storesValue: "id" },
   { key: "outfit",          label: "Oblečení",        icon: Shirt,      profileField: "outfit_id",         storesValue: "id" },
@@ -145,7 +151,7 @@ const RARITY_TONE: Record<AvatarItem["rarity"], string> = {
 
 const emptyProfile = (userId: string): Profile => ({
   user_id: userId,
-  base_id: null, hairstyle_id: null, hair_color_id: null, outfit_id: null,
+  base_id: null, skin_tone_id: null, hairstyle_id: null, hair_color_id: null, outfit_id: null,
   face_accessory_id: null, head_accessory_id: null, background_id: null,
   frame_id: null, effect_id: null, badge_id: null,
   active_title: null, reduce_motion: false,
@@ -184,8 +190,8 @@ function hairTintFromHex(hex: string): { filter: string; useOverlay: boolean } {
 }
 
 function LayerVisual({
-  item, subLayer, reduceMotion, hairColor,
-}: { item: AvatarItem; subLayer?: "back" | "front"; reduceMotion?: boolean; hairColor?: string | null }) {
+  item, subLayer, reduceMotion, hairColor, skinTone,
+}: { item: AvatarItem; subLayer?: "back" | "front"; reduceMotion?: boolean; hairColor?: string | null; skinTone?: string | null }) {
   // Decorative SVG overlays for frame/effect — no image_url needed
   if (item.category === "frame") {
     return <FrameOverlay slug={item.slug} reduceMotion={reduceMotion} />;
@@ -201,9 +207,15 @@ function LayerVisual({
     transformOrigin: "center",
   };
   if (src) {
-    // Hair tinting: unified brightness/contrast + optional color overlay for saturated hues.
-    if (item.category === "hairstyle" && hairColor) {
-      const { filter, useOverlay } = hairTintFromHex(hairColor);
+    // Unified tint: hair uses hair_color, base uses skin_tone. Same math.
+    const tintColor =
+      item.category === "hairstyle" && hairColor
+        ? hairColor
+        : item.category === "base" && skinTone
+        ? skinTone
+        : null;
+    if (tintColor) {
+      const { filter, useOverlay } = hairTintFromHex(tintColor);
       return (
         <div aria-hidden="true" style={style} className="w-full h-full pointer-events-none select-none">
           <img
@@ -220,7 +232,7 @@ function LayerVisual({
               style={{
                 position: "absolute",
                 inset: 0,
-                background: hairColor,
+                background: tintColor,
                 mixBlendMode: "color",
                 WebkitMaskImage: `url(${src})`,
                 maskImage: `url(${src})`,
@@ -272,35 +284,12 @@ function LayerVisual({
 }
 
 // ---------- Preview ----------
-type HairVariantMap = Map<string, {
-  image_url: string | null;
-  image_url_back: string | null;
-  layer_offset_x: number | null;
-  layer_offset_y: number | null;
-  layer_scale: number | null;
-}>;
-
-function applyHairVariant(item: AvatarItem, variants: HairVariantMap): AvatarItem {
-  if (item.category !== "hairstyle") return item;
-  const v = variants.get(item.id);
-  if (!v) return item;
-  return {
-    ...item,
-    image_url: v.image_url ?? item.image_url,
-    image_url_back: v.image_url_back ?? item.image_url_back,
-    layer_offset_x: v.layer_offset_x ?? item.layer_offset_x,
-    layer_offset_y: v.layer_offset_y ?? item.layer_offset_y,
-    layer_scale: v.layer_scale ?? item.layer_scale,
-  };
-}
-
 function AvatarPreview({
-  profile, itemsById, reduceMotion, variants,
+  profile, itemsById, reduceMotion,
 }: {
   profile: Profile;
   itemsById: Map<string, AvatarItem>;
   reduceMotion: boolean;
-  variants: HairVariantMap;
 }) {
   const layers: { item: AvatarItem; sub?: "back" | "front" }[] = [];
   for (const l of LAYER_ORDER) {
@@ -314,9 +303,8 @@ function AvatarPreview({
     else if (l.category === "effect") id = profile.effect_id;
     else if (l.category === "frame") id = profile.frame_id;
     if (!id) continue;
-    const raw = itemsById.get(id);
-    if (!raw) continue;
-    const item = applyHairVariant(raw, variants);
+    const item = itemsById.get(id);
+    if (!item) continue;
     if (l.sub === "back" && !item.image_url_back) continue;
     if (l.sub === "front" && !item.image_url) continue;
     layers.push({ item, sub: l.sub });
@@ -324,7 +312,8 @@ function AvatarPreview({
 
   const hairColorItem = profile.hair_color_id ? itemsById.get(profile.hair_color_id) : null;
   const hairColor = hairColorItem?.color_value ?? null;
-
+  const skinToneItem = profile.skin_tone_id ? itemsById.get(profile.skin_tone_id) : null;
+  const skinTone = skinToneItem?.color_value ?? null;
 
   return (
     <div
@@ -337,7 +326,7 @@ function AvatarPreview({
     >
       {layers.length === 0 && (
         <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground text-center px-4">
-          Vyber postavu, abys začal(a) skládat svůj avatar.
+          Načítání avatara…
         </div>
       )}
       <div className="absolute" style={{ top: "9%", left: "9%", width: "82%", height: "82%" }}>
@@ -348,6 +337,7 @@ function AvatarPreview({
             subLayer={l.sub}
             reduceMotion={reduceMotion}
             hairColor={l.item.category === "hairstyle" ? hairColor : null}
+            skinTone={l.item.category === "base" ? skinTone : null}
           />
         ))}
       </div>
@@ -442,13 +432,13 @@ export default function AvatarEditor() {
   const [owned, setOwned] = useState<Map<string, OwnedItem>>(new Map());
   const [dbProfile, setDbProfile] = useState<Profile | null>(null);
   const [draft, setDraft] = useState<Profile | null>(null);
-  const [activeCategory, setActiveCategory] = useState<Category>("base");
+  const [activeCategory, setActiveCategory] = useState<Category>("skin_tone");
   const [filter, setFilter] = useState<FilterKey>("all");
   const [saving, setSaving] = useState(false);
   const [pendingNavigate, setPendingNavigate] = useState<string | null>(null);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const [newQueue, setNewQueue] = useState<string[]>([]);
-  const [hairVariants, setHairVariants] = useState<HairVariantMap>(new Map());
+  
 
   const userId = user?.id;
 
@@ -474,34 +464,6 @@ export default function AvatarEditor() {
 
   useEffect(() => { load(); }, [load]);
 
-  // Fetch hairstyle variants specific to the currently selected base
-  useEffect(() => {
-    const baseId = draft?.base_id;
-    if (!baseId) {
-      setHairVariants(new Map());
-      return;
-    }
-    let cancelled = false;
-    (async () => {
-      const { data } = await supabase
-        .from("avatar_item_base_variants")
-        .select("avatar_item_id, image_url, image_url_back, layer_offset_x, layer_offset_y, layer_scale")
-        .eq("base_id", baseId);
-      if (cancelled) return;
-      const m: HairVariantMap = new Map();
-      (data ?? []).forEach((r: any) => {
-        m.set(r.avatar_item_id, {
-          image_url: r.image_url,
-          image_url_back: r.image_url_back,
-          layer_offset_x: r.layer_offset_x,
-          layer_offset_y: r.layer_offset_y,
-          layer_scale: r.layer_scale,
-        });
-      });
-      setHairVariants(m);
-    })();
-    return () => { cancelled = true; };
-  }, [draft?.base_id]);
 
   const itemsById = useMemo(() => {
     const m = new Map<string, AvatarItem>();
@@ -715,12 +677,15 @@ export default function AvatarEditor() {
   }
 
   if (!dbProfile) {
-    const ownedIds = new Set(owned.keys());
-    bases.forEach((b) => { if (b.unlock_type === "default" || b.is_default) ownedIds.add(b.id); });
+    // Auto-create profile with the canonical base_01. Base is no longer a choice.
+    const base01 = bases.find((b) => b.slug === "base_01") ?? bases[0];
+    if (base01) {
+      void onboardPickBase(base01.id);
+    }
     return (
       <div className="min-h-screen bg-background">
         <SiteHeader />
-        <BaseOnboarding bases={bases} ownedIds={ownedIds} onPick={onboardPickBase} />
+        <div className="flex items-center justify-center py-24 text-muted-foreground">Připravujeme editor…</div>
       </div>
     );
   }
@@ -829,7 +794,7 @@ export default function AvatarEditor() {
 
         {/* Middle: preview */}
         <section aria-label="Náhled avatara" className="space-y-3">
-          {draft && <AvatarPreview profile={draft} itemsById={itemsById} reduceMotion={draft.reduce_motion} variants={hairVariants} />}
+          {draft && <AvatarPreview profile={draft} itemsById={itemsById} reduceMotion={draft.reduce_motion} />}
           <Button variant="outline" className="w-full" onClick={randomize}>
             <Shuffle className="w-4 h-4 mr-2" /> Náhodný vzhled
           </Button>
@@ -894,7 +859,7 @@ export default function AvatarEditor() {
                         )}
                       >
                         <div className="relative w-full aspect-square rounded-lg bg-muted/40 overflow-hidden mb-2">
-                          <LayerVisual item={applyHairVariant(it, hairVariants)} />
+                          <LayerVisual item={it} />
                           {selected && (
                             <span className="absolute top-1 left-1 rounded-full bg-primary text-primary-foreground w-6 h-6 flex items-center justify-center">
                               <Check className="w-3.5 h-3.5" />
@@ -998,7 +963,7 @@ export default function AvatarEditor() {
               </DialogHeader>
               <div className="flex flex-col items-center gap-3 py-2">
                 <div className="relative w-32 h-32 rounded-xl border-2 bg-muted/40 overflow-hidden">
-                  <LayerVisual item={applyHairVariant(item, hairVariants)} />
+                  <LayerVisual item={item} />
                   {item.category === "badge" && (
                     <BadgeOverlay
                       iconName={item.icon_name}

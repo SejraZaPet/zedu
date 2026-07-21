@@ -29,6 +29,7 @@ import AvatarLayerStack, { type StackLayer } from "@/components/avatar/AvatarLay
 
 type Category =
   | "base"
+  | "skin_tone"
   | "hairstyle"
   | "hair_color"
   | "outfit"
@@ -42,6 +43,7 @@ type Category =
 
 const CATEGORIES: { value: Category; label: string }[] = [
   { value: "base", label: "Postava (base)" },
+  { value: "skin_tone", label: "Barva pleti (skin_tone)" },
   { value: "hairstyle", label: "Účes (hairstyle)" },
   { value: "hair_color", label: "Barva vlasů (hair_color)" },
   { value: "outfit", label: "Oblečení (outfit)" },
@@ -335,7 +337,7 @@ export default function AvatarItemsManager() {
 
   const cat = editing?.category as Category | undefined;
   const showBack = cat === "hairstyle";
-  const showColor = cat === "hair_color";
+  const showColor = cat === "hair_color" || cat === "skin_tone";
   const CALIB_CATEGORIES: Category[] = [
     "hairstyle",
     "outfit",
@@ -352,9 +354,9 @@ export default function AvatarItemsManager() {
     !!cat && CALIB_CATEGORIES.includes(cat) && !!(editing?.image_url ?? "").trim();
 
   // Per-base variant handling (hairstyle only)
-  const activeVariant: HairVariant | null =
-    cat === "hairstyle" && previewBase ? variants[previewBase.id] ?? null : null;
-  const isVariantMode = !!activeVariant;
+  // Variant mode retired — one canonical base_01 is used everywhere.
+  const activeVariant: HairVariant | null = null;
+  const isVariantMode = false;
 
   useEffect(() => {
     if (activeVariant) {
@@ -773,39 +775,6 @@ export default function AvatarItemsManager() {
                 <div className="col-span-2 space-y-3 rounded-lg border p-3 bg-muted/20">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <Label className="text-sm font-semibold">Kalibrace vrstvy</Label>
-                    {bases.length > 0 && !isCalibratingBase && (
-                      <div className="flex items-center gap-2">
-                        <Label className="text-xs text-muted-foreground">Base:</Label>
-                        <Select value={previewBaseSlug} onValueChange={setPreviewBaseSlug}>
-                          <SelectTrigger className="h-8 w-[140px]"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            {(() => {
-                              const isHair = editing?.category === "hairstyle";
-                              const variantBases = isHair
-                                ? bases.filter((b) => variants[b.id])
-                                : [];
-                              const hasAnyVariant = variantBases.length > 0;
-                              let list: typeof bases;
-                              if (!isHair) {
-                                list = bases;
-                              } else if (hasAnyVariant) {
-                                list = [
-                                  ...variantBases,
-                                  ...(variantBases.some((b) => b.slug === "base_01")
-                                    ? []
-                                    : bases.filter((b) => b.slug === "base_01")),
-                                ];
-                              } else {
-                                list = bases.filter((b) => b.slug === "base_01");
-                              }
-                              return list.map((b) => (
-                                <SelectItem key={b.id} value={b.slug}>{b.slug}</SelectItem>
-                              ));
-                            })()}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
                     {isCalibratingBase && showBase01Ghost && (
                       <span className="text-xs text-muted-foreground">
                         Reference: base_01 (obrys, 40% opacity)
@@ -883,17 +852,8 @@ export default function AvatarItemsManager() {
                     })()}
                   </div>
 
-                  {cat === "hairstyle" && previewBase && (
-                    isVariantMode ? (
-                      <div className="rounded-md border border-amber-400 bg-amber-50 dark:bg-amber-950/30 px-3 py-2 text-xs text-amber-900 dark:text-amber-200 font-medium">
-                        Kalibruješ variantu pro {previewBase.slug} (specifický obrázek této kombinace).
-                      </div>
-                    ) : (
-                      <div className="rounded-md border border-dashed bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-                        Kalibruješ OBECNÝ obrázek (žádná varianta pro {previewBase.slug}).
-                      </div>
-                    )
-                  )}
+
+
 
                   {editing.slug === "base_01" ? (
                     <p className="text-xs rounded-md border border-dashed p-3 bg-background text-muted-foreground">

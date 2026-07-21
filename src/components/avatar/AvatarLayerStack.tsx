@@ -27,6 +27,8 @@ export type StackLayer = {
   sub?: "back" | "front";
   /** Hex color applied to hairstyle layers (brightness/contrast + optional mask overlay). */
   hairColor?: string | null;
+  /** Hex color applied to the base (skin) layer using the same tint technique as hair. */
+  skinTone?: string | null;
 };
 
 export function hairTintFromHex(hex: string): { filter: string; useOverlay: boolean } {
@@ -46,11 +48,12 @@ export function hairTintFromHex(hex: string): { filter: string; useOverlay: bool
 }
 
 export function AvatarLayer({
-  item, sub, hairColor, reduceMotion,
+  item, sub, hairColor, skinTone, reduceMotion,
 }: {
   item: AvatarStackItem;
   sub?: "back" | "front";
   hairColor?: string | null;
+  skinTone?: string | null;
   reduceMotion?: boolean;
 }) {
   if (item.category === "frame") return <FrameOverlay slug={item.slug} reduceMotion={reduceMotion} />;
@@ -68,8 +71,14 @@ export function AvatarLayer({
   };
 
   if (src) {
-    if (item.category === "hairstyle" && hairColor) {
-      const { filter, useOverlay } = hairTintFromHex(hairColor);
+    const tintColor =
+      item.category === "hairstyle" && hairColor
+        ? hairColor
+        : item.category === "base" && skinTone
+        ? skinTone
+        : null;
+    if (tintColor) {
+      const { filter, useOverlay } = hairTintFromHex(tintColor);
       return (
         <div aria-hidden="true" style={style} className="w-full h-full pointer-events-none select-none">
           <img
@@ -86,7 +95,7 @@ export function AvatarLayer({
               style={{
                 position: "absolute",
                 inset: 0,
-                background: hairColor,
+                background: tintColor,
                 mixBlendMode: "color",
                 WebkitMaskImage: `url(${src})`,
                 maskImage: `url(${src})`,
@@ -138,6 +147,7 @@ export default function AvatarLayerStack({
           item={l.item}
           sub={l.sub}
           hairColor={l.hairColor}
+          skinTone={l.skinTone}
           reduceMotion={reduceMotion}
         />
       ))}
