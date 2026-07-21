@@ -323,6 +323,7 @@ function AvatarPreview({
     else if (l.category === "base") id = profile.base_id;
     else if (l.category === "outfit") id = profile.outfit_id;
     else if (l.category === "hairstyle") id = profile.hairstyle_id;
+    else if (l.category === "eyes") id = profile.eyes_id;
     else if (l.category === "face_accessory") id = profile.face_accessory_id;
     else if (l.category === "head_accessory") id = profile.head_accessory_id;
     else if (l.category === "effect") id = profile.effect_id;
