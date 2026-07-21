@@ -43,9 +43,9 @@ export type StackLayer = {
   tintColor?: string | null;
 };
 
-export function hairTintFromHex(hex: string): { filter: string; useOverlay: boolean } {
+export function hairTintFromHex(hex: string): { filter: string; useOverlay: boolean; neutral: boolean } {
   const m = hex.trim().match(/^#?([0-9a-f]{6})$/i);
-  if (!m) return { filter: "none", useOverlay: false };
+  if (!m) return { filter: "none", useOverlay: false, neutral: false };
   const n = parseInt(m[1], 16);
   const r = ((n >> 16) & 255) / 255;
   const g = ((n >> 8) & 255) / 255;
@@ -54,9 +54,15 @@ export function hairTintFromHex(hex: string): { filter: string; useOverlay: bool
   const L = (max + min) / 2;
   const d = max - min;
   const S = d === 0 ? 0 : d / (1 - Math.abs(2 * L - 1));
+  // Neutral (black/white/grey): mix-blend-mode:color can't tint zero-saturation
+  // targets, so bypass the overlay entirely and desaturate the source instead.
+  if (S < 0.12) {
+    const Fn = Math.max(0.3, Math.min(2.4, 0.4 + L * 1.8));
+    return { filter: `brightness(${Fn}) saturate(0)`, useOverlay: false, neutral: true };
+  }
   const F = Math.max(0.35, Math.min(2.6, 0.4 + L * 2.0));
   const C = Math.max(0.45, Math.min(1, 1 - Math.max(0, F - 1) * 0.4));
-  return { filter: `brightness(${F}) contrast(${C})`, useOverlay: S > 0.08 };
+  return { filter: `brightness(${F}) contrast(${C})`, useOverlay: S > 0.08, neutral: false };
 }
 
 export function AvatarLayer({
