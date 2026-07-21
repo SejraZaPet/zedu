@@ -443,6 +443,8 @@ export default function AvatarItemsManager() {
   const showColor = cat === "hair_color" || cat === "skin_tone";
   const CALIB_CATEGORIES: Category[] = [
     "hairstyle",
+    "eyes",
+    "eyebrow",
     "outfit",
     "face_accessory",
     "head_accessory",
