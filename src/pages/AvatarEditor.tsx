@@ -160,7 +160,7 @@ const RARITY_TONE: Record<AvatarItem["rarity"], string> = {
 
 const emptyProfile = (userId: string): Profile => ({
   user_id: userId,
-  base_id: null, skin_tone_id: null, hairstyle_id: null, hair_color_id: null, outfit_id: null,
+  base_id: null, skin_tone_id: null, hairstyle_id: null, hair_color_id: null, eyes_id: null, outfit_id: null,
   face_accessory_id: null, head_accessory_id: null, background_id: null,
   frame_id: null, effect_id: null, badge_id: null,
   active_title: null, reduce_motion: false,
