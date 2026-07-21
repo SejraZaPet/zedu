@@ -852,17 +852,8 @@ export default function AvatarItemsManager() {
                     })()}
                   </div>
 
-                  {cat === "hairstyle" && previewBase && (
-                    isVariantMode ? (
-                      <div className="rounded-md border border-amber-400 bg-amber-50 dark:bg-amber-950/30 px-3 py-2 text-xs text-amber-900 dark:text-amber-200 font-medium">
-                        Kalibruješ variantu pro {previewBase.slug} (specifický obrázek této kombinace).
-                      </div>
-                    ) : (
-                      <div className="rounded-md border border-dashed bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-                        Kalibruješ OBECNÝ obrázek (žádná varianta pro {previewBase.slug}).
-                      </div>
-                    )
-                  )}
+
+
 
                   {editing.slug === "base_01" ? (
                     <p className="text-xs rounded-md border border-dashed p-3 bg-background text-muted-foreground">
