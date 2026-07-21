@@ -928,14 +928,6 @@ export default function AvatarEditor() {
                             </span>
                           )}
                         </div>
-                        <div className="flex items-start justify-between gap-1">
-                          <span className="text-sm font-medium truncate" title={it.name}>{it.name}</span>
-                        </div>
-                        <div className="mt-1 flex items-center justify-between gap-1">
-                          <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0", RARITY_TONE[it.rarity])}>
-                            {RARITY_LABEL[it.rarity]}
-                          </Badge>
-                        </div>
                         {!unlocked && (
                           <p className="text-[11px] text-muted-foreground mt-1 line-clamp-2">
                             {unlockLabel(it)}
