@@ -131,19 +131,12 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
     return () => { mounted = false; };
   }, [userId]);
 
-  // Legacy fallback so users who haven't re-saved keep their old skin/hair choice.
-  const legacyHair = profile?.hair_color_id ? items.get(profile.hair_color_id)?.color_value ?? null : null;
-  const legacySkin = profile?.skin_tone_id ? items.get(profile.skin_tone_id)?.color_value ?? null : null;
-
   const tintFor = (category: string): string | null => {
     if (!profile) return null;
     if (!isTintable(category)) return null;
     const col = CATEGORY_COLOR_COLUMN[category as TintableCategory];
     const val = (profile as any)[col] as string | null | undefined;
-    if (val) return val;
-    if (category === "hairstyle") return legacyHair;
-    if (category === "base") return legacySkin;
-    return null;
+    return val ?? null;
   };
 
   const stackLayers: StackLayer[] = [];
