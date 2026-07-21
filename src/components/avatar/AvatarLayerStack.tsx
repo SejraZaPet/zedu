@@ -70,7 +70,8 @@ export function AvatarLayer({
   if (item.category === "frame") return <FrameOverlay slug={item.slug} reduceMotion={reduceMotion} />;
   if (item.category === "effect") return <EffectOverlay slug={item.slug} reduceMotion={reduceMotion} />;
 
-  const src = sub === "back" ? item.image_url_back : item.image_url;
+  const rawSrc = sub === "back" ? item.image_url_back : item.image_url;
+  const src = rawSrc ? withCacheBuster(rawSrc, item.updated_at) : rawSrc;
   const ox = Number.isFinite(item.layer_offset_x) ? item.layer_offset_x : 0;
   const oy = Number.isFinite(item.layer_offset_y) ? item.layer_offset_y : 0;
   const sc = Number.isFinite(item.layer_scale) ? item.layer_scale : 1;
