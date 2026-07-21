@@ -1,101 +1,73 @@
-# Plán: Per-kategorie barvení v AvatarEditoru
+# Per-kategorie barvení v Avatar editoru
 
-Zrušit samostatné kroky "Barva pleti" a "Barva vlasů" a přesunout výběr barvy přímo pod náhled/položku každé barvitelné kategorie (base, hairstyle, outfit, face_accessory, head_accessory). Barva se ukládá per-kategorie jako hex řetězec.
+## Cíl
+Zrušit samostatné kategorie **Barva pleti** (`skin_tone`) a **Barva vlasů** (`hair_color`) z levého menu. Místo toho u každé barvitelné kategorie (`base`, `hairstyle`, `outfit`, `face_accessory`, `head_accessory`) zobrazit v panelu položek paletu 8–10 předdefinovaných teček + tlačítko „vlastní barva" (nativní `<input type="color">`). Barva se ukládá per-kategorie.
 
-## 1. DB schéma (bez rozbití dat)
+## Odpovědi na otázky
 
-Migrace na `avatar_profiles` — přidat nullable text sloupce (uloží hex `#RRGGBB` nebo NULL = bez tintu):
+### 1. DB schéma `avatar_profiles`
+Přidat 5 nullable sloupců `text` (hex `#RRGGBB`), neinvazivní migrace:
 
-```
+```sql
 ALTER TABLE public.avatar_profiles
-  ADD COLUMN base_color            text,
-  ADD COLUMN hairstyle_color       text,
-  ADD COLUMN outfit_color          text,
-  ADD COLUMN face_accessory_color  text,
-  ADD COLUMN head_accessory_color  text;
+  ADD COLUMN IF NOT EXISTS base_color            text,
+  ADD COLUMN IF NOT EXISTS hairstyle_color       text,
+  ADD COLUMN IF NOT EXISTS outfit_color          text,
+  ADD COLUMN IF NOT EXISTS face_accessory_color  text,
+  ADD COLUMN IF NOT EXISTS head_accessory_color  text;
 ```
 
-Backfill ze staré struktury, aby uživatelé neztratili barvu, kterou už mají vybranou:
+Backfill ze staré logiky (aby uživatelé nepřišli o vybrané barvy):
 
-```
-UPDATE public.avatar_profiles p SET
-  base_color      = (SELECT color_value FROM avatar_items WHERE id = p.skin_tone_id),
-  hairstyle_color = (SELECT color_value FROM avatar_items WHERE id = p.hair_color_id);
-```
+- `base_color`   ← `color_value` položky odkazované ze `skin_tone_id`
+- `hairstyle_color` ← `color_value` položky odkazované ze `hair_color_id`
 
-Staré sloupce `skin_tone_id` a `hair_color_id` **necháváme** (nullable) v prvním kole — nulové riziko regrese, a případný rollback je triviální. Ve druhém, oddělěném cleanup kroku (po ověření v produkci) je můžeme dropnout spolu s daty v `avatar_items`.
+Staré sloupce `skin_tone_id` a `hair_color_id` zůstávají v tabulce jako **legacy read-only fallback** (nemažeme, jen na ně přestaneme zapisovat). Riziko rozbití starých dat = 0.
 
-## 2. `avatar_items` — kategorie `skin_tone` a `hair_color`
+### 2. Osud kategorií `skin_tone` a `hair_color` v `avatar_items`
+Nemazat. Fáze 1: `UPDATE avatar_items SET is_active = false WHERE category IN ('skin_tone','hair_color')` — položky přežijí jako historický seed pro palety (vytáhneme z nich hex hodnoty do defaultních swatchů) a zůstanou pro případný rollback. V UI se přestanou renderovat, protože `CATEGORY_META` je nebude obsahovat a načítací dotaz filtruje `is_active = true`. Případný pozdější `DELETE` může přijít po ověření migrace v produkci.
 
-Nemažeme řádky. Nastavíme `is_active = false` pro `category IN ('skin_tone','hair_color')`. Důvody:
-- Zpětná kompatibilita s starými profily, dokud nedoběhne backfill a nevymažeme staré sloupce.
-- Předdefinované hex hodnoty z těchto řádků použijeme jako zdroj pravdy pro paletu (viz níže) — nemusíme je hardcodovat v kódu.
-- Admin UI (AvatarItemsManager) je bude nadále umět editovat, ale ve výběrech pro studenty se neobjeví (filtrujeme `is_active = true`).
+### 3. Dopad na sdílené komponenty
 
-## 3. Paleta barev v editoru
+**`AvatarLayerStack.tsx`** — zobecnit: `StackLayer` dostane volitelnou `tintColor: string | null` (místo dnešního specifického `hairColor` / `skinTone`). Rendering podmínku `if (item.category === "hairstyle" && hairColor) … else if (item.category === "base" && skinTone) …` nahradit generickou větví „když `tintColor` != null, použij `hairTintFromHex(tintColor)` (filter + volitelný mask overlay)". `hairTintFromHex` zůstává beze změny — už teď je category-agnostic.
 
-Nová sdílená komponenta `src/components/avatar/ColorPalette.tsx`:
-- Props: `value: string | null`, `onChange: (hex: string | null) => void`, `swatches: string[]`, `allowClear?: boolean`.
-- Render: 8-10 kulatých swatchů + tlačítko "Vlastní" (`<input type="color">`) + volitelně tlačítko "Bez barvy" (`null`).
-- A11y: role=radiogroup, klávesnicová navigace, `aria-label` s hex hodnotou.
+**`AvatarItemsManager.tsx`** (admin) — sjednotit:
+- Odstranit z formuláře speciální UI pro kategorie `skin_tone` / `hair_color` (color picker vázaný na položku). Zůstane základní CRUD pro případné historické editace, ale kategorie se v selectu označí jako `(deprecated)`.
+- Kalibrační živý náhled dál používá `AvatarLayerStack`, takže po jeho zobecnění admin automaticky ukazuje totéž co produkce — bez další práce.
 
-Palety per-kategorie definujeme v `src/lib/avatar-palettes.ts`:
-- `HAIR_SWATCHES` — přirozené (černá, tmavohnědá, hnědá, blond, zrzavá, šedá, bílá) + 2 fantasy (fialová, tyrkysová).
-- `SKIN_SWATCHES` — realistické odstíny pleti.
-- `OUTFIT_SWATCHES`, `ACCESSORY_SWATCHES` — brand + neutrály.
-Seed pro tyto konstanty: přečteme `color_value` z existujících `skin_tone` a `hair_color` řádků (jednorázově, nekopírujeme runtime).
+**`ProfileAvatarBubble.tsx`** — čte nové sloupce `*_color` z `avatar_profiles` a předává je jako `tintColor` do odpovídajících vrstev. Legacy fallback: pokud `hairstyle_color` je `null` ale `hair_color_id` existuje, použije `color_value` staré položky (jednorázově dokud backfill nedoběhne).
 
-V `AvatarEditor.tsx`:
-- Odebrat `skin_tone` a `hair_color` z `CATEGORIES`.
-- Levé menu tedy: Barva pleti mizí → nahrazena barvou uvnitř kroku `base`; krok `hair_color` mizí úplně.
-- V panelu položek každé barvitelné kategorie renderovat pod gridem položek `<ColorPalette>` s hodnotou `profile[<cat>_color]` (viz mapa níže) a callbackem, který ji uloží do lokálního draftu profilu.
-- Kategorie bez obrázkové vrstvy (background, frame, effect, badge) paletu nemají.
+### 4. Rozsah a rizika
 
-Mapa kategorie → sloupec:
-```
-base              -> base_color
-hairstyle         -> hairstyle_color
-outfit            -> outfit_color
-face_accessory    -> face_accessory_color
-head_accessory    -> head_accessory_color
-```
+**Rozsah** (5 souborů + 1 migrace + 2 nové soubory):
 
-Save flow: `avatar_profiles` upsert dostane i nové `*_color` sloupce; staré `skin_tone_id`/`hair_color_id` do save nezasahujeme (a v UI je už nikdo nemění).
+| Soubor | Změna |
+|---|---|
+| migrace | přidat 5 sloupců, backfill, `is_active=false` |
+| `src/lib/avatar-palettes.ts` | **nový** – definice palet per kategorii |
+| `src/components/avatar/ColorPalette.tsx` | **nový** – swatch grid + `<input type="color">` |
+| `src/components/avatar/AvatarLayerStack.tsx` | `hairColor`+`skinTone` → generic `tintColor` |
+| `src/components/profile/ProfileAvatarBubble.tsx` | číst nové sloupce, mapovat per-kategorie tint |
+| `src/pages/AvatarEditor.tsx` | odebrat `skin_tone`+`hair_color` z `CATEGORY_META`, vložit `<ColorPalette>` panel do každé barvitelné kategorie, ukládat do nových sloupců |
+| `src/components/admin/AvatarItemsManager.tsx` | deprecated labely, cleanup |
 
-## 4. Rendering — `AvatarLayerStack.tsx`
-
-Zobecníme tint:
-- `StackLayer` dnes má `hairColor` a `skinTone`. Nahradíme jedním polem `tintColor?: string | null` per-layer.
-- `AvatarLayer` aplikuje `hairTintFromHex(tintColor)` bez ohledu na kategorii, pokud je `tintColor` neprázdný a layer má `src`. Existující matematika (brightness/contrast + volitelný `mix-blend-mode: color` overlay maskovaný přes obrázek) zůstává — jen se přestěhuje z kategorie-specifické větve do univerzální.
-- Volání v `AvatarEditor` a `ProfileAvatarBubble`: při skládání `layers` každé vrstvě přiřadíme `tintColor = profile[<category>_color] ?? null`. Pro kategorie bez tint sloupce (background, frame, effect) je to prostě `null`.
-
-Frame/effect/background zůstávají nedotčeny (nejsou tintovatelné).
-
-## 5. Admin — `AvatarItemsManager.tsx`
-
-- V select filtru kategorií nechat `skin_tone` a `hair_color` viditelné (admin je pořád může spravovat kvůli seedu palety), ale doplnit vizuální označení "deprecated" u nich.
-- Kalibrační panel a ostatní logika zůstávají beze změny. Žádná další úprava tam nepotřebná — barva se teď nastavuje na profilu, ne na položce.
-
-## 6. `ProfileAvatarBubble.tsx`
-
-- Select z `avatar_profiles` rozšířit o `base_color, hairstyle_color, outfit_color, face_accessory_color, head_accessory_color`.
-- Stáhnout `skin_tone_id`/`hair_color_id` fetch (nebo zachovat jako read-only fallback pro profily bez backfillu — bezpečnější).
-- Při buildu `layers` přiřadit `tintColor` z odpovídajícího sloupce; pokud je NULL a existuje starý `*_id`, fallback na `color_value` toho item (dočasně, dokud staré sloupce žijí).
-
-## 7. Rozsah a rizika
-
-**Rozsah:** střední. Dotčené soubory:
-- Migrace: 1 (přidání sloupců + backfill + deaktivace starých itemů).
-- Nové: `ColorPalette.tsx`, `avatar-palettes.ts`.
-- Upravené: `AvatarEditor.tsx` (největší kus — kroky, save, render), `AvatarLayerStack.tsx` (zobecnění tintu), `ProfileAvatarBubble.tsx` (fetch + render).
-- `AvatarItemsManager.tsx`: minimum (jen štítek "deprecated").
+**Palety (návrh):**
+- `base` (pleť): 6 tónů od nejsvětlejšího po nejtmavší
+- `hairstyle` (vlasy): černá, tmavě hnědá, hnědá, blond, zrzavá, šedá, + brand tyrkysová + brand fialová (special edition)
+- `outfit`, `face_accessory`, `head_accessory`: neutrální paleta (černá/bílá/šedá + 4 brand akcenty)
+- Vše doplněné tlačítkem „Vlastní barva" → `<input type="color">`
 
 **Rizika:**
-- **Ztráta barvy u existujících uživatelů** — mitigace přes backfill v migraci a přes fallback čtení `*_id` v prvním kole.
-- **Types** (`src/integrations/supabase/types.ts`) se regeneruje po migraci; kód, který stále čte `skin_tone_id`/`hair_color_id`, poběží dál (sloupce necháváme).
-- **Realtime konzistence** admin ↔ editor ↔ bubble — `AvatarLayerStack` je jediný zdroj pravdy pro tint, takže po zobecnění by měly být všechny tři pohledy identické. Ověříme vizuálně headless Playwrightem po implementaci.
-- **A11y** — nový color picker (radiogroup + native input) potřebuje label a fokus management.
+- **Nízké — data:** nové sloupce jsou additive; staré `*_id` sloupce zůstávají. Rollback = přestat zapisovat do nových sloupců.
+- **Střední — UX konzistence:** uživatelé mají dnes zvolenou barvu vlasů globálně; backfill musí proběhnout před nasazením FE, jinak přijdou o výběr. Řešeno v jedné migraci.
+- **Nízké — rendering:** `hairTintFromHex` je už deterministický a category-agnostic; zobecnění `AvatarLayerStack` je čistě refactor beze změny výstupu pro existující kombinace.
+- **Nízké — admin:** kalibrace se nezmění, protože stack komponenta je sdílená.
 
-## Deferred / mimo tento plán
-- Fyzické mazání `skin_tone`/`hair_color` řádků z `avatar_items` a drop starých sloupců v `avatar_profiles` — až v samostatné cleanup migraci po ověření.
-- Rozšíření palety o "avatar item"-level constrainty (např. accessory, který se nedá tintovat) — pokud takové existují, přidáme příznak `tintable: boolean` na `avatar_items` v následné iteraci.
+## Postup implementace
+1. Migrace (sloupce + backfill + deaktivace starých kategorií).
+2. `avatar-palettes.ts` + `ColorPalette.tsx`.
+3. Refaktor `AvatarLayerStack` na `tintColor`.
+4. `ProfileAvatarBubble` – nové sloupce s legacy fallbackem.
+5. `AvatarEditor` – odebrat 2 kategorie z menu, přidat paletu do panelu položek, přepsat `save()` na nové sloupce.
+6. `AvatarItemsManager` – deprecated značky.
+7. Smoke test: nový uživatel, existující uživatel se starou volbou pleti/vlasů, admin kalibrace.
