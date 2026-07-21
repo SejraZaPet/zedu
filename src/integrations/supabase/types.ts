@@ -410,6 +410,7 @@ export type Database = {
           base_id: string | null
           created_at: string
           effect_id: string | null
+          eyebrow_id: string | null
           eyes_id: string | null
           face_accessory_color: string | null
           face_accessory_id: string | null
@@ -435,6 +436,7 @@ export type Database = {
           base_id?: string | null
           created_at?: string
           effect_id?: string | null
+          eyebrow_id?: string | null
           eyes_id?: string | null
           face_accessory_color?: string | null
           face_accessory_id?: string | null
@@ -460,6 +462,7 @@ export type Database = {
           base_id?: string | null
           created_at?: string
           effect_id?: string | null
+          eyebrow_id?: string | null
           eyes_id?: string | null
           face_accessory_color?: string | null
           face_accessory_id?: string | null
@@ -501,6 +504,13 @@ export type Database = {
           {
             foreignKeyName: "avatar_profiles_effect_id_fkey"
             columns: ["effect_id"]
+            isOneToOne: false
+            referencedRelation: "avatar_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "avatar_profiles_eyebrow_id_fkey"
+            columns: ["eyebrow_id"]
             isOneToOne: false
             referencedRelation: "avatar_items"
             referencedColumns: ["id"]

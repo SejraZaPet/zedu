@@ -33,6 +33,7 @@ type Category =
   | "hairstyle"
   | "hair_color"
   | "eyes"
+  | "eyebrow"
   | "outfit"
   | "face_accessory"
   | "head_accessory"
@@ -48,6 +49,7 @@ const CATEGORIES: { value: Category; label: string }[] = [
   { value: "hairstyle", label: "Účes (hairstyle)" },
   { value: "hair_color", label: "Barva vlasů — DEPRECATED (hair_color)" },
   { value: "eyes", label: "Oči (eyes)" },
+  { value: "eyebrow", label: "Obočí (eyebrow)" },
   { value: "outfit", label: "Oblečení (outfit)" },
   { value: "face_accessory", label: "Doplněk obličej" },
   { value: "head_accessory", label: "Doplněk hlava" },
