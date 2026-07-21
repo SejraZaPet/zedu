@@ -1,6 +1,7 @@
 import { useId, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
+import { BRAND_GRADIENT_CSS, isGradientValue } from "@/lib/avatar-palettes";
 
 interface Props {
   value: string | null;
@@ -11,10 +12,16 @@ interface Props {
   className?: string;
 }
 
+/** Normalize hex-only values. Special sentinel values (e.g. "gradient:brand") pass through untouched. */
 function normalize(hex: string | null | undefined): string | null {
   if (!hex) return null;
+  if (isGradientValue(hex)) return hex;
   const m = hex.trim().match(/^#?([0-9a-f]{6})$/i);
   return m ? `#${m[1].toLowerCase()}` : null;
+}
+
+function swatchBackground(v: string): string {
+  return isGradientValue(v) ? BRAND_GRADIENT_CSS : v;
 }
 
 /**
