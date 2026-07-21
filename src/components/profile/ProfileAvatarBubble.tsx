@@ -41,6 +41,7 @@ const LAYER_ORDER: { field: keyof AvatarProfile; sub?: "back" | "front" }[] = [
   { field: "background_id" },
   { field: "hairstyle_id", sub: "back" },
   { field: "base_id" },
+  { field: "eyes_id" },
   { field: "outfit_id" },
   { field: "hairstyle_id", sub: "front" },
   { field: "face_accessory_id" },
