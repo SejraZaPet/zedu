@@ -220,7 +220,7 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
   if (!editable) {
     return (
       <span
-        className={cn("relative inline-block rounded-full", className)}
+        className={cn("relative inline-block rounded-[14px]", className)}
         style={{ width: size, height: size }}
         aria-hidden
       >
