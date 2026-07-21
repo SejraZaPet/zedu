@@ -39,7 +39,10 @@ export default function ColorPalette({
   const inputRef = useRef<HTMLInputElement>(null);
   const labelId = useId();
   const currentNormalized = normalize(value);
-  const isCustom = !!currentNormalized && !swatches.some((s) => normalize(s) === currentNormalized);
+  const isCustom =
+    !!currentNormalized &&
+    !isGradientValue(currentNormalized) &&
+    !swatches.some((s) => normalize(s) === currentNormalized);
 
   return (
     <div className={cn("rounded-lg border bg-card p-3", className)}>
