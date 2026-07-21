@@ -102,22 +102,18 @@ export function AvatarLayer({
 
   if (src) {
     if (tintColor && isGradientValue(tintColor)) {
+      // Mask-only: render the brand gradient clipped by the image's alpha,
+      // without the underlying <img>. Using mix-blend-mode:color on top of
+      // dark silhouettes (e.g. #3a3a42 hair) muted the gradient; this keeps
+      // the same vibrancy as Zedík's body gradient.
       return (
         <div aria-hidden="true" style={style} className="w-full h-full pointer-events-none select-none">
-          <img
-            src={src}
-            alt=""
-            aria-hidden="true"
-            draggable={false}
-            className="absolute inset-0 w-full h-full object-contain pointer-events-none select-none"
-          />
           <div
             aria-hidden="true"
             style={{
               position: "absolute",
               inset: 0,
               background: BRAND_GRADIENT_CSS,
-              mixBlendMode: "color",
               WebkitMaskImage: `url(${src})`,
               maskImage: `url(${src})`,
               WebkitMaskRepeat: "no-repeat",
