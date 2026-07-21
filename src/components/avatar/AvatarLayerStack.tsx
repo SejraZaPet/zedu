@@ -21,7 +21,20 @@ export type AvatarStackItem = {
   layer_offset_x: number;
   layer_offset_y: number;
   layer_scale: number;
+  /** Optional updated_at timestamp used as cache-buster query parameter on image URLs. */
+  updated_at?: string | null;
 };
+
+/**
+ * Append `?v=<updated_at>` to a storage URL so browsers (and the service worker)
+ * refetch the file when it's been replaced under the same name.
+ */
+export function withCacheBuster(url: string | null | undefined, version?: string | null): string {
+  if (!url) return "";
+  if (!version) return url;
+  const sep = url.includes("?") ? "&" : "?";
+  return `${url}${sep}v=${encodeURIComponent(version)}`;
+}
 
 export type StackLayer = {
   item: AvatarStackItem;
