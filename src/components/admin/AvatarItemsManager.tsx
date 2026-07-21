@@ -775,39 +775,6 @@ export default function AvatarItemsManager() {
                 <div className="col-span-2 space-y-3 rounded-lg border p-3 bg-muted/20">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <Label className="text-sm font-semibold">Kalibrace vrstvy</Label>
-                    {bases.length > 0 && !isCalibratingBase && (
-                      <div className="flex items-center gap-2">
-                        <Label className="text-xs text-muted-foreground">Base:</Label>
-                        <Select value={previewBaseSlug} onValueChange={setPreviewBaseSlug}>
-                          <SelectTrigger className="h-8 w-[140px]"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            {(() => {
-                              const isHair = editing?.category === "hairstyle";
-                              const variantBases = isHair
-                                ? bases.filter((b) => variants[b.id])
-                                : [];
-                              const hasAnyVariant = variantBases.length > 0;
-                              let list: typeof bases;
-                              if (!isHair) {
-                                list = bases;
-                              } else if (hasAnyVariant) {
-                                list = [
-                                  ...variantBases,
-                                  ...(variantBases.some((b) => b.slug === "base_01")
-                                    ? []
-                                    : bases.filter((b) => b.slug === "base_01")),
-                                ];
-                              } else {
-                                list = bases.filter((b) => b.slug === "base_01");
-                              }
-                              return list.map((b) => (
-                                <SelectItem key={b.id} value={b.slug}>{b.slug}</SelectItem>
-                              ));
-                            })()}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
                     {isCalibratingBase && showBase01Ghost && (
                       <span className="text-xs text-muted-foreground">
                         Reference: base_01 (obrys, 40% opacity)
