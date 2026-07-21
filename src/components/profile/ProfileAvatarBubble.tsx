@@ -176,7 +176,7 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
     <>
       <span
         className={cn(
-          "absolute inset-0 rounded-full overflow-hidden border-2 border-border bg-muted flex items-center justify-center",
+          "absolute inset-0 rounded-[14px] overflow-hidden border-2 border-border bg-muted flex items-center justify-center",
           editable && "transition-colors group-hover:border-primary/50",
         )}
         aria-hidden
