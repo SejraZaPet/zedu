@@ -136,6 +136,7 @@ const LAYER_ORDER: { category: Category; sub?: "back" | "front" }[] = [
   { category: "hairstyle", sub: "back" },
   { category: "base" },
   { category: "eyes" },
+  { category: "eyebrow" },
   { category: "outfit" },
   { category: "hairstyle", sub: "front" },
   { category: "face_accessory" },
