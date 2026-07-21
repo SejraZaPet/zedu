@@ -378,9 +378,9 @@ export default function AvatarItemsManager() {
         }
         fallback = baseRow.id as string;
       }
-      const { error: updErr } = await supabase
-        .from("avatar_profiles")
-        .update({ [field]: fallback } as any)
+      const { error: updErr } = await (supabase
+        .from("avatar_profiles") as any)
+        .update({ [field]: fallback })
         .eq(field, deleteTarget.id);
       if (updErr) {
         toast({
