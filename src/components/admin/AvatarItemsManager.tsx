@@ -29,6 +29,7 @@ import AvatarLayerStack, { type StackLayer } from "@/components/avatar/AvatarLay
 
 type Category =
   | "base"
+  | "skin_tone"
   | "hairstyle"
   | "hair_color"
   | "outfit"
@@ -42,6 +43,7 @@ type Category =
 
 const CATEGORIES: { value: Category; label: string }[] = [
   { value: "base", label: "Postava (base)" },
+  { value: "skin_tone", label: "Barva pleti (skin_tone)" },
   { value: "hairstyle", label: "Účes (hairstyle)" },
   { value: "hair_color", label: "Barva vlasů (hair_color)" },
   { value: "outfit", label: "Oblečení (outfit)" },
