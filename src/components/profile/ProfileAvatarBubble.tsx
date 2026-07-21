@@ -21,6 +21,7 @@ interface AvatarProfile {
   hairstyle_id: string | null;
   hair_color_id: string | null;
   eyes_id: string | null;
+  eyebrow_id: string | null;
   outfit_id: string | null;
   face_accessory_id: string | null;
   head_accessory_id: string | null;
