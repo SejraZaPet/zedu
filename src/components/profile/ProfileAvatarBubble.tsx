@@ -154,18 +154,29 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
 
   const hasContent = !loading && stackLayers.length > 0;
 
-  // "head" crop: zoom the layer stack so the head/shoulders fill the bubble.
-  // Values tuned against the canonical 1000x1200 base_01 template where the head
-  // sits roughly in the top third; scale(2.15) + translateY(-22%) centers it.
+  // "head" crop: zoom the layer stack so head + a hint of shoulders fill the bubble.
+  //
+  // Geometry: AvatarLayerStack renders inside an inset 9% (top:9%, height:82%) box
+  // of this wrapper. base_01.png is 1000x1200 (portrait) and is displayed with
+  // object-contain inside that 82%-square inner box → the image fits by height,
+  // so vertically it spans wrapper Y = 9%..91%.
+  //
+  // Head + a hint of shoulders ≈ top ~42% of the source image →
+  // spans wrapper Y = 9%..9% + 0.42*82% ≈ 43.4%.
+  //
+  // With transformOrigin "center top" and transform "scale(S) translateY(T%)"
+  // (applied right-to-left: translate → scale), a Y coordinate y0 (as % of
+  // wrapper) maps to S*(y0 + T). Solving for image top (9%) → 0 and head bottom
+  // (~43.4%) → 100% gives T = -9%, S ≈ 100/34.4 ≈ 2.9.
   const headCropStyle: React.CSSProperties | undefined = crop === "head"
-    ? { transform: "scale(2.7) translateY(-30%)", transformOrigin: "center top" }
+    ? { transform: "scale(2.9) translateY(-9%)", transformOrigin: "center top" }
     : undefined;
 
   const inner = (
     <>
       <span
         className={cn(
-          "absolute inset-0 rounded-full overflow-hidden border-2 border-border bg-muted flex items-center justify-center",
+          "absolute inset-0 rounded-[14px] overflow-hidden border-2 border-border bg-muted flex items-center justify-center",
           editable && "transition-colors group-hover:border-primary/50",
         )}
         aria-hidden
@@ -209,7 +220,7 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
   if (!editable) {
     return (
       <span
-        className={cn("relative inline-block rounded-full", className)}
+        className={cn("relative inline-block rounded-[14px]", className)}
         style={{ width: size, height: size }}
         aria-hidden
       >
@@ -223,7 +234,7 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
       to="/avatar"
       aria-label="Upravit avatara"
       className={cn(
-        "relative inline-block rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background group",
+        "relative inline-block rounded-[14px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background group",
         className,
       )}
       style={{ width: size, height: size }}
