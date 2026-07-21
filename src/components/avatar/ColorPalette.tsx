@@ -103,16 +103,18 @@ export default function ColorPalette({
                   : "border-border hover:scale-105",
               )}
               aria-label="Vlastní barva"
-              style={
-                isCustom && currentNormalized
-                  ? { background: currentNormalized }
-                  : {
-                      background:
-                        "conic-gradient(from 0deg, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)",
-                    }
-              }
+              style={{
+                background:
+                  "conic-gradient(from 0deg, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)",
+              }}
             >
-              {!isCustom && (
+              {isCustom && currentNormalized ? (
+                <span
+                  className="w-4 h-4 rounded-full border-2 border-white shadow"
+                  style={{ background: currentNormalized }}
+                  aria-hidden
+                />
+              ) : (
                 <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white drop-shadow">
                   +
                 </span>
