@@ -197,7 +197,7 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
           <User className="w-1/2 h-1/2 text-muted-foreground" />
         )}
       </span>
-      {profile?.badge_id && items.get(profile.badge_id) && (
+      {showStreakBadge && profile?.badge_id && items.get(profile.badge_id) && (
         <BadgeOverlay
           iconName={items.get(profile.badge_id)!.icon_name}
           rarity={items.get(profile.badge_id)!.rarity}
