@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/dialog";
 import {
   User, Scissors, Shirt, Glasses, Crown, Image as ImageIcon,
-  Frame, Sparkles, Award, Type, Lock, Heart, Shuffle, ArrowLeft, Check, Eye,
+  Frame, Sparkles, Award, Type, Lock, Heart, Shuffle, ArrowLeft, Check, Eye, Smile,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ColorPalette from "@/components/avatar/ColorPalette";
