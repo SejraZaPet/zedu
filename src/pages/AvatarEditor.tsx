@@ -425,7 +425,14 @@ function AvatarPreview({
   const legacyHair = profile.hair_color_id ? itemsById.get(profile.hair_color_id)?.color_value ?? null : null;
   const legacySkin = profile.skin_tone_id ? itemsById.get(profile.skin_tone_id)?.color_value ?? null : null;
 
-  const tintFor = (category: string): string | null => {
+  const tintFor = (item: AvatarItem): string | null => {
+    // Slot-based items (new clothing model) — each slot has its own color column.
+    if (item.layer_slot) {
+      const col = SLOT_COLOR_COLUMN[item.layer_slot];
+      const val = (profile as any)[col] as string | null | undefined;
+      return val ?? null;
+    }
+    const category = item.category;
     if (!isTintable(category)) return null;
     const col = CATEGORY_COLOR_COLUMN[category as TintableCategory];
     const val = (profile as any)[col] as string | null | undefined;
