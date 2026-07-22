@@ -84,10 +84,10 @@ export function outfitTintFromHex(hex: string): { filter: string; useOverlay: bo
     const Fn = Math.max(0.3, Math.min(2.3, L / 0.85));
     return { filter: `grayscale(1) brightness(${Fn})`, useOverlay: true, neutral: true };
   }
-  // Normalize very light garment PNGs (near-white) to mid-grey BEFORE the
-  // mix-blend-mode:color overlay. Fixed values, independent of target color —
-  // otherwise `color` blend preserves source luminance and the tint disappears.
-  return { filter: "grayscale(1) brightness(0.55)", useOverlay: true, neutral: false };
+  // Derive brightness from target color's L so the rendered lightness matches
+  // the selected swatch (mix-blend-mode:color takes lightness from backdrop).
+  const Fn = Math.max(0.3, Math.min(2.3, L / 0.85));
+  return { filter: `grayscale(1) brightness(${Fn})`, useOverlay: true, neutral: false };
 }
 
 export function AvatarLayer({
