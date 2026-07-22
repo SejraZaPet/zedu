@@ -1011,28 +1011,36 @@ export default function AvatarEditor() {
           )}
 
 
-          {isTintable(activeCategory) && draft && (
-            <div className="mb-3">
-              <ColorPalette
-                label={
-                  activeCategory === "base"
-                    ? "Barva pleti"
-                    : activeCategory === "hairstyle"
-                    ? "Barva vlasů"
-                    : activeCategory === "background"
-                    ? "Barva pozadí"
-                    : "Barva"
-                }
-                swatches={paletteFor(activeCategory as TintableCategory)}
-                allowCustom={activeCategory !== "background"}
-                value={(draft as any)[CATEGORY_COLOR_COLUMN[activeCategory as TintableCategory]] ?? null}
-                onChange={(hex) => {
-                  const col = CATEGORY_COLOR_COLUMN[activeCategory as TintableCategory];
-                  setDraft({ ...(draft as Profile), [col]: hex } as Profile);
-                }}
-              />
-            </div>
-          )}
+          {isTintable(activeCategory) && draft && (() => {
+            // For "outfit" the tint is per-slot (each garment has its own color
+            // column) so the palette follows the currently open sub-slot tab.
+            const isOutfit = activeCategory === "outfit";
+            const colorCol = isOutfit
+              ? SLOT_COLOR_COLUMN[activeSlot]
+              : CATEGORY_COLOR_COLUMN[activeCategory as TintableCategory];
+            const label = isOutfit
+              ? `Barva – ${SLOT_LABEL[activeSlot]}`
+              : activeCategory === "base"
+              ? "Barva pleti"
+              : activeCategory === "hairstyle"
+              ? "Barva vlasů"
+              : activeCategory === "background"
+              ? "Barva pozadí"
+              : "Barva";
+            return (
+              <div className="mb-3">
+                <ColorPalette
+                  label={label}
+                  swatches={paletteFor(activeCategory as TintableCategory)}
+                  allowCustom={activeCategory !== "background"}
+                  value={(draft as any)[colorCol] ?? null}
+                  onChange={(hex) => {
+                    setDraft({ ...(draft as Profile), [colorCol]: hex } as Profile);
+                  }}
+                />
+              </div>
+            );
+          })()}
 
 
           {filteredList.length === 0 ? (
