@@ -19,6 +19,7 @@ import {
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import TodayWidget from "@/components/calendar/TodayWidget";
+import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
 import { useTeacherClasses } from "@/hooks/useTeacherClasses";
@@ -356,13 +357,16 @@ const TeacherDashboard = () => {
         style={{ paddingTop: "calc(70px + 3rem)" }}
       >
         <div className="mb-8 flex items-end justify-between gap-4 flex-wrap">
-          <div>
-            <h1 className="font-heading text-3xl font-bold">
-              Ahoj, {profile?.first_name || (isLektor ? "lektore" : "učiteli")}! 👋
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              {isLektor ? "Lektorský panel" : "Učitelský panel"} · widgety lze přesouvat
-            </p>
+          <div className="flex items-center gap-4">
+            <ProfileAvatarBubble userId={user?.id ?? null} size={72} crop="head" showEditButton={false} />
+            <div>
+              <h1 className="font-heading text-3xl font-bold">
+                Ahoj, {profile?.first_name || (isLektor ? "lektore" : "učiteli")}! 👋
+              </h1>
+              <p className="text-muted-foreground mt-1">
+                {isLektor ? "Lektorský panel" : "Učitelský panel"} · widgety lze přesouvat
+              </p>
+            </div>
           </div>
           <Button
             variant="ghost"
