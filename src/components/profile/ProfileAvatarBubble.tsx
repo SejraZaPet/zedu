@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import BadgeOverlay from "@/components/avatar/BadgeOverlay";
 import AvatarLayerStack, { type AvatarStackItem, type StackLayer } from "@/components/avatar/AvatarLayerStack";
 import { isTintable, CATEGORY_COLOR_COLUMN, type TintableCategory } from "@/lib/avatar-palettes";
+import { SLOT_PROFILE_COLUMN, type LayerSlot } from "@/lib/avatar-slots";
 
 interface AvatarItem extends AvatarStackItem {
   name: string;
@@ -35,19 +36,44 @@ interface AvatarProfile {
   face_accessory_color: string | null;
   head_accessory_color: string | null;
   background_color: string | null;
+  clothing_top_id: string | null;
+  clothing_bottom_id: string | null;
+  clothing_full_id: string | null;
+  clothing_shoes_id: string | null;
+  clothing_head_id: string | null;
+  clothing_face_id: string | null;
+  clothing_neck_id: string | null;
+  clothing_hands_id: string | null;
+  clothing_bag_id: string | null;
+  hair_accessory_id: string | null;
 }
 
-// Same order as AvatarEditor: bottom → top
-const LAYER_ORDER: { field: keyof AvatarProfile; sub?: "back" | "front" }[] = [
+// Same order as AvatarEditor: bottom → top.
+// Entries reference either a legacy category field on AvatarProfile
+// or a layer slot column (see avatar-slots.ts).
+type LayerEntry =
+  | { field: keyof AvatarProfile; sub?: "back" | "front"; slot?: undefined }
+  | { slot: LayerSlot; field?: undefined; sub?: undefined };
+const LAYER_ORDER: LayerEntry[] = [
   { field: "background_id" },
   { field: "hairstyle_id", sub: "back" },
   { field: "base_id" },
   { field: "eyes_id" },
   { field: "eyebrow_id" },
+  { slot: "clothing_bottom" },
+  { slot: "clothing_shoes" },
+  { slot: "clothing_top" },
+  { slot: "clothing_full" },
+  { slot: "clothing_neck" },
+  { slot: "clothing_bag" },
+  { slot: "clothing_hands" },
   { field: "outfit_id" },
   { field: "hairstyle_id", sub: "front" },
+  { slot: "hair_accessory" },
   { field: "face_accessory_id" },
   { field: "head_accessory_id" },
+  { slot: "clothing_head" },
+  { slot: "clothing_face" },
   { field: "effect_id" },
   { field: "frame_id" },
 ];
@@ -105,7 +131,7 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
     (async () => {
       const { data: prof } = await supabase
         .from("avatar_profiles")
-        .select("base_id, skin_tone_id, hairstyle_id, hair_color_id, eyes_id, eyebrow_id, outfit_id, face_accessory_id, head_accessory_id, background_id, frame_id, effect_id, badge_id, base_color, hairstyle_color, outfit_color, face_accessory_color, head_accessory_color, background_color")
+        .select("base_id, skin_tone_id, hairstyle_id, hair_color_id, eyes_id, eyebrow_id, outfit_id, face_accessory_id, head_accessory_id, background_id, frame_id, effect_id, badge_id, base_color, hairstyle_color, outfit_color, face_accessory_color, head_accessory_color, background_color, clothing_top_id, clothing_bottom_id, clothing_full_id, clothing_shoes_id, clothing_head_id, clothing_face_id, clothing_neck_id, clothing_hands_id, clothing_bag_id, hair_accessory_id")
         .eq("user_id", userId)
         .maybeSingle();
 
@@ -150,7 +176,9 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
   const stackLayers: StackLayer[] = [];
   if (profile) {
     for (const l of LAYER_ORDER) {
-      const id = profile[l.field];
+      const id = l.slot
+        ? ((profile as any)[SLOT_PROFILE_COLUMN[l.slot]] as string | null)
+        : (profile[l.field] as string | null);
       if (!id || typeof id !== "string") continue;
       const item = items.get(id);
       if (!item) continue;

@@ -36,6 +36,10 @@ import {
 import { cn } from "@/lib/utils";
 import ColorPalette from "@/components/avatar/ColorPalette";
 import { isTintable, CATEGORY_COLOR_COLUMN, paletteFor, isGradientValue, BRAND_GRADIENT_CSS, type TintableCategory } from "@/lib/avatar-palettes";
+import {
+  SLOT_PROFILE_COLUMN, SLOT_LABEL, CLOTHING_SLOTS, SLOT_CONFLICTS, SLOT_LAYER_ORDER,
+  type LayerSlot,
+} from "@/lib/avatar-slots";
 
 // ---------- Types ----------
 type Category =
@@ -54,6 +58,7 @@ interface AvatarItem {
   image_url_back: string | null;
   color_value: string | null;
   is_neutral_color: boolean | null;
+  layer_slot: LayerSlot | null;
 
   recommended_for_role: "student" | "teacher" | "both";
   unlock_type: string;
@@ -90,6 +95,17 @@ interface Profile {
   face_accessory_color: string | null;
   head_accessory_color: string | null;
   background_color: string | null;
+  // Layer-slot columns (added migration 2026-07-22)
+  clothing_top_id: string | null;
+  clothing_bottom_id: string | null;
+  clothing_full_id: string | null;
+  clothing_shoes_id: string | null;
+  clothing_head_id: string | null;
+  clothing_face_id: string | null;
+  clothing_neck_id: string | null;
+  clothing_hands_id: string | null;
+  clothing_bag_id: string | null;
+  hair_accessory_id: string | null;
 }
 
 interface OwnedItem {
@@ -130,17 +146,31 @@ const CATEGORY_ICON: Record<Category, React.ComponentType<{ className?: string }
 ) as Record<Category, React.ComponentType<{ className?: string }>>;
 
 // Bottom-up render order for the preview stack.
-// Explicit sub: "back" | "front" for hairstyle so we don't rely on positional counting.
-const LAYER_ORDER: { category: Category; sub?: "back" | "front" }[] = [
+// Each entry is either a { category, sub? } (single-item categories on the
+// profile) or a { slot } (one of the layer-slot columns).
+type LayerSpec =
+  | { category: Category; sub?: "back" | "front"; slot?: undefined }
+  | { slot: LayerSlot; category?: undefined; sub?: undefined };
+const LAYER_ORDER: LayerSpec[] = [
   { category: "background" },
   { category: "hairstyle", sub: "back" },
   { category: "base" },
   { category: "eyes" },
   { category: "eyebrow" },
+  { slot: "clothing_bottom" },
+  { slot: "clothing_shoes" },
+  { slot: "clothing_top" },
+  { slot: "clothing_full" },
+  { slot: "clothing_neck" },
+  { slot: "clothing_bag" },
+  { slot: "clothing_hands" },
   { category: "outfit" },
   { category: "hairstyle", sub: "front" },
+  { slot: "hair_accessory" },
   { category: "face_accessory" },
   { category: "head_accessory" },
+  { slot: "clothing_head" },
+  { slot: "clothing_face" },
   { category: "effect" },
   { category: "frame" },
 ];
@@ -171,6 +201,10 @@ const emptyProfile = (userId: string): Profile => ({
   active_title: null, reduce_motion: false,
   base_color: null, hairstyle_color: null, outfit_color: null,
   face_accessory_color: null, head_accessory_color: null, background_color: null,
+  clothing_top_id: null, clothing_bottom_id: null, clothing_full_id: null,
+  clothing_shoes_id: null, clothing_head_id: null, clothing_face_id: null,
+  clothing_neck_id: null, clothing_hands_id: null, clothing_bag_id: null,
+  hair_accessory_id: null,
 });
 
 function unlockLabel(item: AvatarItem): string {
@@ -322,7 +356,9 @@ function AvatarPreview({
   const layers: { item: AvatarItem; sub?: "back" | "front" }[] = [];
   for (const l of LAYER_ORDER) {
     let id: string | null = null;
-    if (l.category === "background") id = profile.background_id;
+    if (l.slot) {
+      id = (profile as any)[SLOT_PROFILE_COLUMN[l.slot]] ?? null;
+    } else if (l.category === "background") id = profile.background_id;
     else if (l.category === "base") id = profile.base_id;
     else if (l.category === "outfit") id = profile.outfit_id;
     else if (l.category === "hairstyle") id = profile.hairstyle_id;
@@ -471,6 +507,7 @@ export default function AvatarEditor() {
   const [dbProfile, setDbProfile] = useState<Profile | null>(null);
   const [draft, setDraft] = useState<Profile | null>(null);
   const [activeCategory, setActiveCategory] = useState<Category>("base");
+  const [activeSlot, setActiveSlot] = useState<LayerSlot>("clothing_top");
   const [filter, setFilter] = useState<FilterKey>("all");
   const [saving, setSaving] = useState(false);
   const [pendingNavigate, setPendingNavigate] = useState<string | null>(null);
@@ -538,11 +575,28 @@ export default function AvatarEditor() {
 
   const applyPick = (item: AvatarItem) => {
     if (!draft) return;
+    const next: Profile = { ...draft };
+    // Slot-based items (clothing/hair-accessory/hair): one item per slot,
+    // plus optional cross-slot conflict clearing (full outfit vs top/bottom).
+    if (item.layer_slot) {
+      const col = SLOT_PROFILE_COLUMN[item.layer_slot];
+      const current = (next as any)[col];
+      if (current === item.id) {
+        (next as any)[col] = null;
+      } else {
+        (next as any)[col] = item.id;
+        const conflicts = SLOT_CONFLICTS[item.layer_slot] ?? [];
+        for (const other of conflicts) {
+          (next as any)[SLOT_PROFILE_COLUMN[other]] = null;
+        }
+      }
+      setDraft(next);
+      return;
+    }
+    // Category-based items (legacy single-slot categories).
     const meta = CATEGORY_META.find((c) => c.key === item.category);
     if (!meta) return;
-    const next: Profile = { ...draft };
     const val = meta.storesValue === "id" ? item.id : item.name;
-    // toggle off when clicking already-selected (except base)
     const current = (next as any)[meta.profileField];
     if (current === val && item.category !== "base") {
       (next as any)[meta.profileField] = null;
@@ -554,6 +608,10 @@ export default function AvatarEditor() {
 
   const isSelected = (item: AvatarItem) => {
     if (!draft) return false;
+    if (item.layer_slot) {
+      const col = SLOT_PROFILE_COLUMN[item.layer_slot];
+      return (draft as any)[col] === item.id;
+    }
     const meta = CATEGORY_META.find((c) => c.key === item.category);
     if (!meta) return false;
     const val = meta.storesValue === "id" ? item.id : item.name;
@@ -666,11 +724,10 @@ export default function AvatarEditor() {
 
   const tryOnNewItem = (item: AvatarItem) => {
     if (draft) {
-      const meta = CATEGORY_META.find((c) => c.key === item.category);
-      if (meta) {
-        const val = meta.storesValue === "id" ? item.id : item.name;
-        setDraft({ ...draft, [meta.profileField]: val } as Profile);
-        setActiveCategory(item.category);
+      applyPick(item);
+      setActiveCategory(item.category);
+      if (item.category === "outfit" && item.layer_slot) {
+        setActiveSlot(item.layer_slot);
       }
     }
     void clearIsNew(item.id);
@@ -728,7 +785,13 @@ export default function AvatarEditor() {
     );
   }
 
-  const currentList = (itemsByCategory.get(activeCategory) ?? []).slice().sort((a, b) => a.sort_order - b.sort_order);
+  // For "outfit" we split by layer_slot into subtabs. Items with no slot
+  // (legacy full outfits from before the slot system) fall under `clothing_full`
+  // so authors can still see them.
+  const rawList = (itemsByCategory.get(activeCategory) ?? []).slice().sort((a, b) => a.sort_order - b.sort_order);
+  const currentList = activeCategory === "outfit"
+    ? rawList.filter((it) => (it.layer_slot ?? "clothing_full") === activeSlot)
+    : rawList;
   const filteredList = currentList.filter((it) => {
     const unlocked = isUnlocked(it);
     const fav = owned.get(it.id)?.is_favorite;
@@ -863,6 +926,38 @@ export default function AvatarEditor() {
               ))}
             </div>
           </div>
+
+          {activeCategory === "outfit" && (
+            <nav
+              aria-label="Sloty oblečení"
+              className="mb-3 -mx-1 overflow-x-auto"
+            >
+              <div className="flex gap-1 px-1 min-w-max" role="tablist">
+                {CLOTHING_SLOTS.map((slot) => {
+                  const active = activeSlot === slot;
+                  return (
+                    <button
+                      key={slot}
+                      type="button"
+                      role="tab"
+                      aria-selected={active}
+                      onClick={() => setActiveSlot(slot)}
+                      className={cn(
+                        "min-h-[36px] px-3 py-1.5 rounded-full text-xs font-medium border whitespace-nowrap transition-colors",
+                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                        active
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-background text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      {SLOT_LABEL[slot]}
+                    </button>
+                  );
+                })}
+              </div>
+            </nav>
+          )}
+
 
           {isTintable(activeCategory) && draft && (
             <div className="mb-3">
