@@ -358,7 +358,7 @@ const TeacherDashboard = () => {
       >
         <div className="mb-8 flex items-end justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-4">
-            <ProfileAvatarBubble userId={user?.id ?? null} size={72} crop="head" showEditButton={false} />
+            <ProfileAvatarBubble userId={user?.id ?? null} size={72} crop="head" showEditButton={false} showStreakBadge={false} />
             <div>
               <h1 className="font-heading text-3xl font-bold">
                 Ahoj, {profile?.first_name || (isLektor ? "lektore" : "učiteli")}! 👋
