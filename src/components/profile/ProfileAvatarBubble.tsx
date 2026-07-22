@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import BadgeOverlay from "@/components/avatar/BadgeOverlay";
 import AvatarLayerStack, { type AvatarStackItem, type StackLayer } from "@/components/avatar/AvatarLayerStack";
 import { isTintable, CATEGORY_COLOR_COLUMN, type TintableCategory } from "@/lib/avatar-palettes";
-import { SLOT_PROFILE_COLUMN, SLOT_LAYER_ORDER, type LayerSlot } from "@/lib/avatar-slots";
+import { SLOT_PROFILE_COLUMN, type LayerSlot } from "@/lib/avatar-slots";
 
 interface AvatarItem extends AvatarStackItem {
   name: string;
