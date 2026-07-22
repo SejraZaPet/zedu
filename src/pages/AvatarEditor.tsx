@@ -107,6 +107,17 @@ interface Profile {
   clothing_hands_id: string | null;
   clothing_bag_id: string | null;
   hair_accessory_id: string | null;
+  // Per-slot tint colors (added migration 2026-07-22)
+  clothing_top_color: string | null;
+  clothing_bottom_color: string | null;
+  clothing_full_color: string | null;
+  clothing_shoes_color: string | null;
+  clothing_head_color: string | null;
+  clothing_face_color: string | null;
+  clothing_neck_color: string | null;
+  clothing_hands_color: string | null;
+  clothing_bag_color: string | null;
+  hair_accessory_color: string | null;
 }
 
 interface OwnedItem {
