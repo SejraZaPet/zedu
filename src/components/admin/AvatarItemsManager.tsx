@@ -34,6 +34,7 @@ type Category =
   | "hair_color"
   | "eyes"
   | "eyebrow"
+  | "mouth"
   | "outfit"
   | "face_accessory"
   | "head_accessory"
@@ -50,6 +51,7 @@ const CATEGORIES: { value: Category; label: string }[] = [
   { value: "hair_color", label: "Barva vlasů — DEPRECATED (hair_color)" },
   { value: "eyes", label: "Oči (eyes)" },
   { value: "eyebrow", label: "Obočí (eyebrow)" },
+  { value: "mouth", label: "Ústa (mouth)" },
   { value: "outfit", label: "Oblečení (outfit)" },
   { value: "face_accessory", label: "Doplněk obličej" },
   { value: "head_accessory", label: "Doplněk hlava" },
@@ -445,6 +447,7 @@ export default function AvatarItemsManager() {
     "hairstyle",
     "eyes",
     "eyebrow",
+    "mouth",
     "outfit",
     "face_accessory",
     "head_accessory",

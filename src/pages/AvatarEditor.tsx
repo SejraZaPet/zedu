@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/dialog";
 import {
   User, Scissors, Shirt, Glasses, Crown, Image as ImageIcon,
-  Frame, Sparkles, Award, Type, Lock, Heart, Shuffle, ArrowLeft, Check, Eye,
+  Frame, Sparkles, Award, Type, Lock, Heart, Shuffle, ArrowLeft, Check, Eye, Smile,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ColorPalette from "@/components/avatar/ColorPalette";
@@ -43,7 +43,7 @@ import {
 
 // ---------- Types ----------
 type Category =
-  | "base" | "skin_tone" | "hairstyle" | "hair_color" | "eyes" | "eyebrow" | "outfit"
+  | "base" | "skin_tone" | "hairstyle" | "hair_color" | "eyes" | "eyebrow" | "mouth" | "outfit"
   | "face_accessory" | "head_accessory" | "background"
   | "frame" | "effect" | "badge" | "title";
 
@@ -80,6 +80,7 @@ interface Profile {
   hair_color_id: string | null;
   eyes_id: string | null;
   eyebrow_id: string | null;
+  mouth_id: string | null;
   outfit_id: string | null;
   face_accessory_id: string | null;
   head_accessory_id: string | null;
@@ -131,6 +132,7 @@ const CATEGORY_META: {
   { key: "hairstyle",       label: "Vlasy",           icon: Scissors,   profileField: "hairstyle_id",      storesValue: "id" },
   { key: "eyes",            label: "Oči",             icon: Eye,        profileField: "eyes_id",           storesValue: "id" },
   { key: "eyebrow",         label: "Obočí",           icon: Eye,        profileField: "eyebrow_id",        storesValue: "id" },
+  { key: "mouth",           label: "Ústa",            icon: Smile,      profileField: "mouth_id",          storesValue: "id" },
   { key: "outfit",          label: "Oblečení",        icon: Shirt,      profileField: "outfit_id",         storesValue: "id" },
   { key: "face_accessory",  label: "Doplňky obličej", icon: Glasses,    profileField: "face_accessory_id", storesValue: "id" },
   { key: "head_accessory",  label: "Doplňky hlava",   icon: Crown,      profileField: "head_accessory_id", storesValue: "id" },
@@ -157,6 +159,7 @@ const LAYER_ORDER: LayerSpec[] = [
   { category: "base" },
   { category: "eyes" },
   { category: "eyebrow" },
+  { category: "mouth" },
   { slot: "clothing_bottom" },
   { slot: "clothing_shoes" },
   { slot: "clothing_top" },
@@ -195,7 +198,7 @@ const RARITY_TONE: Record<AvatarItem["rarity"], string> = {
 
 const emptyProfile = (userId: string): Profile => ({
   user_id: userId,
-  base_id: null, skin_tone_id: null, hairstyle_id: null, hair_color_id: null, eyes_id: null, eyebrow_id: null, outfit_id: null,
+  base_id: null, skin_tone_id: null, hairstyle_id: null, hair_color_id: null, eyes_id: null, eyebrow_id: null, mouth_id: null, outfit_id: null,
   face_accessory_id: null, head_accessory_id: null, background_id: null,
   frame_id: null, effect_id: null, badge_id: null,
   active_title: null, reduce_motion: false,
@@ -364,6 +367,7 @@ function AvatarPreview({
     else if (l.category === "hairstyle") id = profile.hairstyle_id;
     else if (l.category === "eyes") id = profile.eyes_id;
     else if (l.category === "eyebrow") id = profile.eyebrow_id;
+    else if (l.category === "mouth") id = profile.mouth_id;
     else if (l.category === "face_accessory") id = profile.face_accessory_id;
     else if (l.category === "head_accessory") id = profile.head_accessory_id;
     else if (l.category === "effect") id = profile.effect_id;
