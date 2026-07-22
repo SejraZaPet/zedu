@@ -283,8 +283,10 @@ function outfitTintFromHex(hex: string): { filter: string; useOverlay: boolean; 
     const Fn = Math.max(0.3, Math.min(2.3, 0.35 + L * 1.85));
     return { filter: `brightness(${Fn}) saturate(0)`, useOverlay: false, neutral: true };
   }
-  const F = Math.max(0.35, Math.min(2.6, 0.4 + L * 2.0));
-  return { filter: `brightness(${F})`, useOverlay: S > 0.08, neutral: false };
+  // Normalize very light garment PNGs (near-white) to mid-grey BEFORE the
+  // mix-blend-mode:color overlay. Fixed values, independent of target color —
+  // otherwise `color` blend preserves source luminance and the tint disappears.
+  return { filter: "grayscale(1) brightness(0.55)", useOverlay: true, neutral: false };
 }
 
 function LayerVisual({
