@@ -356,7 +356,9 @@ function AvatarPreview({
   const layers: { item: AvatarItem; sub?: "back" | "front" }[] = [];
   for (const l of LAYER_ORDER) {
     let id: string | null = null;
-    if (l.category === "background") id = profile.background_id;
+    if (l.slot) {
+      id = (profile as any)[SLOT_PROFILE_COLUMN[l.slot]] ?? null;
+    } else if (l.category === "background") id = profile.background_id;
     else if (l.category === "base") id = profile.base_id;
     else if (l.category === "outfit") id = profile.outfit_id;
     else if (l.category === "hairstyle") id = profile.hairstyle_id;
