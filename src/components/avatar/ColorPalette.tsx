@@ -80,13 +80,13 @@ export default function ColorPalette({
               aria-label={isGradientValue(hex) ? "Brand gradient" : `Barva ${hex}`}
               onClick={() => onChange(n)}
               className={cn(
-                "relative w-8 h-8 rounded-full border-2 transition-transform",
+                "relative w-8 h-8 rounded-full border-2 transition-transform touch-manipulation",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
                 selected
                   ? "border-primary scale-110 ring-2 ring-primary/30"
                   : "border-border hover:scale-105",
               )}
-              style={{ background: swatchBackground(hex) }}
+              style={{ background: swatchBackground(hex), touchAction: "manipulation" }}
             />
           );
         })}

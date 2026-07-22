@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -397,6 +397,89 @@ function LayerVisual({
   );
 }
 
+// ---------- Memoized grid tile ----------
+// Isolated so that toggling a color in the palette (which mutates `draft`)
+// doesn't re-render every item in the picker grid. Each tile only re-renders
+// when its own props change (item identity, unlocked/selected/favorite/new).
+interface AvatarTileProps {
+  item: AvatarItem;
+  unlocked: boolean;
+  selected: boolean;
+  isFavorite: boolean;
+  isNew: boolean;
+  unlockText: string;
+  onPick: (item: AvatarItem) => void;
+  onToggleFavorite: (item: AvatarItem) => void;
+}
+const AvatarTile = React.memo(function AvatarTile({
+  item, unlocked, selected, isFavorite, isNew, unlockText, onPick, onToggleFavorite,
+}: AvatarTileProps) {
+  return (
+    <div
+      className={cn(
+        "group relative rounded-xl border-2 bg-card overflow-hidden transition-all",
+        selected ? "border-primary ring-2 ring-primary/30" : "border-border",
+        !unlocked && "opacity-70",
+      )}
+    >
+      <button
+        type="button"
+        onClick={() => unlocked && onPick(item)}
+        disabled={!unlocked}
+        aria-label={`${item.name}${unlocked ? "" : " (zamčeno)"}`}
+        style={{ touchAction: "manipulation" }}
+        className={cn(
+          "w-full text-left p-2 min-h-[44px] touch-manipulation",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+          !unlocked && "cursor-not-allowed",
+        )}
+      >
+        <div className="relative w-full aspect-square rounded-lg bg-muted/40 overflow-hidden mb-2">
+          <LayerVisual item={item} />
+          {selected && (
+            <span className="absolute top-1 left-1 rounded-full bg-primary text-primary-foreground w-6 h-6 flex items-center justify-center">
+              <Check className="w-3.5 h-3.5" />
+            </span>
+          )}
+          {!unlocked && (
+            <span className="absolute inset-0 bg-background/40 flex items-center justify-center">
+              <Lock className="w-6 h-6 text-foreground/80" />
+            </span>
+          )}
+          {isNew && unlocked && (
+            <span className="absolute top-1 right-1 rounded-full bg-secondary text-secondary-foreground text-[10px] font-bold px-1.5 py-0.5">
+              NOVÉ
+            </span>
+          )}
+        </div>
+        {!unlocked && (
+          <p className="text-[11px] text-muted-foreground mt-1 line-clamp-2">
+            {unlockText}
+          </p>
+        )}
+      </button>
+      {unlocked && (
+        <button
+          type="button"
+          onClick={() => onToggleFavorite(item)}
+          aria-label={isFavorite ? "Odebrat z oblíbených" : "Přidat do oblíbených"}
+          aria-pressed={isFavorite}
+          style={{ touchAction: "manipulation" }}
+          className={cn(
+            "absolute bottom-2 right-2 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center touch-manipulation",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+            "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          <Heart
+            className={cn("w-5 h-5", isFavorite && "fill-current text-red-500")}
+          />
+        </button>
+      )}
+    </div>
+  );
+});
+
 // ---------- Preview ----------
 function AvatarPreview({
   profile, itemsById, reduceMotion,
@@ -714,6 +797,18 @@ export default function AvatarEditor() {
       });
     }
   };
+
+  // Stable references for memoized grid tiles: keep identity constant across
+  // renders so React.memo tiles don't re-render when unrelated state (colors)
+  // changes.
+  const applyPickRef = useRef(applyPick);
+  applyPickRef.current = applyPick;
+  const toggleFavoriteRef = useRef(toggleFavorite);
+  toggleFavoriteRef.current = toggleFavorite;
+  const stableApplyPick = useCallback((it: AvatarItem) => applyPickRef.current(it), []);
+  const stableToggleFavorite = useCallback((it: AvatarItem) => { void toggleFavoriteRef.current(it); }, []);
+
+
 
   const randomize = () => {
     if (!draft) return;
@@ -1065,66 +1160,16 @@ export default function AvatarEditor() {
                 const meta = owned.get(it.id);
                 return (
                   <li key={it.id}>
-                    <div
-                      className={cn(
-                        "group relative rounded-xl border-2 bg-card overflow-hidden transition-all",
-                        selected ? "border-primary ring-2 ring-primary/30" : "border-border",
-                        !unlocked && "opacity-70",
-                      )}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => unlocked && applyPick(it)}
-                        disabled={!unlocked}
-                        aria-label={`${it.name}${unlocked ? "" : " (zamčeno)"}`}
-                        className={cn(
-                          "w-full text-left p-2 min-h-[44px]",
-                          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-                          !unlocked && "cursor-not-allowed",
-                        )}
-                      >
-                        <div className="relative w-full aspect-square rounded-lg bg-muted/40 overflow-hidden mb-2">
-                          <LayerVisual item={it} />
-                          {selected && (
-                            <span className="absolute top-1 left-1 rounded-full bg-primary text-primary-foreground w-6 h-6 flex items-center justify-center">
-                              <Check className="w-3.5 h-3.5" />
-                            </span>
-                          )}
-                          {!unlocked && (
-                            <span className="absolute inset-0 bg-background/40 flex items-center justify-center">
-                              <Lock className="w-6 h-6 text-foreground/80" />
-                            </span>
-                          )}
-                          {meta?.is_new && unlocked && (
-                            <span className="absolute top-1 right-1 rounded-full bg-secondary text-secondary-foreground text-[10px] font-bold px-1.5 py-0.5">
-                              NOVÉ
-                            </span>
-                          )}
-                        </div>
-                        {!unlocked && (
-                          <p className="text-[11px] text-muted-foreground mt-1 line-clamp-2">
-                            {unlockLabel(it)}
-                          </p>
-                        )}
-                      </button>
-                      {unlocked && (
-                        <button
-                          type="button"
-                          onClick={() => toggleFavorite(it)}
-                          aria-label={meta?.is_favorite ? "Odebrat z oblíbených" : "Přidat do oblíbených"}
-                          aria-pressed={!!meta?.is_favorite}
-                          className={cn(
-                            "absolute bottom-2 right-2 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center",
-                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-                            "text-muted-foreground hover:text-foreground",
-                          )}
-                        >
-                          <Heart
-                            className={cn("w-5 h-5", meta?.is_favorite && "fill-current text-red-500")}
-                          />
-                        </button>
-                      )}
-                    </div>
+                    <AvatarTile
+                      item={it}
+                      unlocked={unlocked}
+                      selected={selected}
+                      isFavorite={!!meta?.is_favorite}
+                      isNew={!!meta?.is_new}
+                      unlockText={unlockLabel(it)}
+                      onPick={stableApplyPick}
+                      onToggleFavorite={stableToggleFavorite}
+                    />
                   </li>
                 );
               })}
