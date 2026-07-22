@@ -58,6 +58,7 @@ interface AvatarItem {
   image_url_back: string | null;
   color_value: string | null;
   is_neutral_color: boolean | null;
+  layer_slot: LayerSlot | null;
 
   recommended_for_role: "student" | "teacher" | "both";
   unlock_type: string;
