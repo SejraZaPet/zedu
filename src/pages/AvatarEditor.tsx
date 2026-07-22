@@ -95,6 +95,17 @@ interface Profile {
   face_accessory_color: string | null;
   head_accessory_color: string | null;
   background_color: string | null;
+  // Layer-slot columns (added migration 2026-07-22)
+  clothing_top_id: string | null;
+  clothing_bottom_id: string | null;
+  clothing_full_id: string | null;
+  clothing_shoes_id: string | null;
+  clothing_head_id: string | null;
+  clothing_face_id: string | null;
+  clothing_neck_id: string | null;
+  clothing_hands_id: string | null;
+  clothing_bag_id: string | null;
+  hair_accessory_id: string | null;
 }
 
 interface OwnedItem {
