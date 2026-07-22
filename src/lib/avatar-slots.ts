@@ -39,6 +39,21 @@ export const SLOT_PROFILE_COLUMN: Record<LayerSlot, string> = {
   clothing_bag: "clothing_bag_id",
 };
 
+/** Profile column name that stores the picked tint color for each slot. */
+export const SLOT_COLOR_COLUMN: Record<LayerSlot, string> = {
+  hair: "hairstyle_color",
+  hair_accessory: "hair_accessory_color",
+  clothing_top: "clothing_top_color",
+  clothing_bottom: "clothing_bottom_color",
+  clothing_full: "clothing_full_color",
+  clothing_shoes: "clothing_shoes_color",
+  clothing_head: "clothing_head_color",
+  clothing_face: "clothing_face_color",
+  clothing_neck: "clothing_neck_color",
+  clothing_hands: "clothing_hands_color",
+  clothing_bag: "clothing_bag_color",
+};
+
 /** Human labels (Czech) shown as subtabs in the editor. */
 export const SLOT_LABEL: Record<LayerSlot, string> = {
   hair: "Vlasy",
