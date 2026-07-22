@@ -37,7 +37,7 @@ import { cn } from "@/lib/utils";
 import ColorPalette from "@/components/avatar/ColorPalette";
 import { isTintable, CATEGORY_COLOR_COLUMN, paletteFor, isGradientValue, BRAND_GRADIENT_CSS, type TintableCategory } from "@/lib/avatar-palettes";
 import {
-  SLOT_PROFILE_COLUMN, SLOT_LABEL, CLOTHING_SLOTS, SLOT_CONFLICTS, SLOT_LAYER_ORDER,
+  SLOT_PROFILE_COLUMN, SLOT_COLOR_COLUMN, SLOT_LABEL, CLOTHING_SLOTS, SLOT_CONFLICTS, SLOT_LAYER_ORDER,
   type LayerSlot,
 } from "@/lib/avatar-slots";
 
