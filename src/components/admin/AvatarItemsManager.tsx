@@ -34,6 +34,7 @@ type Category =
   | "hair_color"
   | "eyes"
   | "eyebrow"
+  | "mouth"
   | "outfit"
   | "face_accessory"
   | "head_accessory"
