@@ -146,17 +146,31 @@ const CATEGORY_ICON: Record<Category, React.ComponentType<{ className?: string }
 ) as Record<Category, React.ComponentType<{ className?: string }>>;
 
 // Bottom-up render order for the preview stack.
-// Explicit sub: "back" | "front" for hairstyle so we don't rely on positional counting.
-const LAYER_ORDER: { category: Category; sub?: "back" | "front" }[] = [
+// Each entry is either a { category, sub? } (single-item categories on the
+// profile) or a { slot } (one of the layer-slot columns).
+type LayerSpec =
+  | { category: Category; sub?: "back" | "front"; slot?: undefined }
+  | { slot: LayerSlot; category?: undefined; sub?: undefined };
+const LAYER_ORDER: LayerSpec[] = [
   { category: "background" },
   { category: "hairstyle", sub: "back" },
   { category: "base" },
   { category: "eyes" },
   { category: "eyebrow" },
+  { slot: "clothing_bottom" },
+  { slot: "clothing_shoes" },
+  { slot: "clothing_top" },
+  { slot: "clothing_full" },
+  { slot: "clothing_neck" },
+  { slot: "clothing_bag" },
+  { slot: "clothing_hands" },
   { category: "outfit" },
   { category: "hairstyle", sub: "front" },
+  { slot: "hair_accessory" },
   { category: "face_accessory" },
   { category: "head_accessory" },
+  { slot: "clothing_head" },
+  { slot: "clothing_face" },
   { category: "effect" },
   { category: "frame" },
 ];
