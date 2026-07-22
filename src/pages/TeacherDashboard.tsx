@@ -19,6 +19,7 @@ import {
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import TodayWidget from "@/components/calendar/TodayWidget";
+import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
 import { useTeacherClasses } from "@/hooks/useTeacherClasses";
