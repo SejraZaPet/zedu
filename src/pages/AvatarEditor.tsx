@@ -159,6 +159,7 @@ const LAYER_ORDER: LayerSpec[] = [
   { category: "base" },
   { category: "eyes" },
   { category: "eyebrow" },
+  { category: "mouth" },
   { slot: "clothing_bottom" },
   { slot: "clothing_shoes" },
   { slot: "clothing_top" },
