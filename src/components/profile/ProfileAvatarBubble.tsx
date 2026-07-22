@@ -61,6 +61,7 @@ const LAYER_ORDER: LayerEntry[] = [
   { field: "base_id" },
   { field: "eyes_id" },
   { field: "eyebrow_id" },
+  { field: "mouth_id" },
   { slot: "clothing_bottom" },
   { slot: "clothing_shoes" },
   { slot: "clothing_top" },
