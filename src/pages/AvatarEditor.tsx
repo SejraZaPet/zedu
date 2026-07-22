@@ -575,11 +575,28 @@ export default function AvatarEditor() {
 
   const applyPick = (item: AvatarItem) => {
     if (!draft) return;
+    const next: Profile = { ...draft };
+    // Slot-based items (clothing/hair-accessory/hair): one item per slot,
+    // plus optional cross-slot conflict clearing (full outfit vs top/bottom).
+    if (item.layer_slot) {
+      const col = SLOT_PROFILE_COLUMN[item.layer_slot];
+      const current = (next as any)[col];
+      if (current === item.id) {
+        (next as any)[col] = null;
+      } else {
+        (next as any)[col] = item.id;
+        const conflicts = SLOT_CONFLICTS[item.layer_slot] ?? [];
+        for (const other of conflicts) {
+          (next as any)[SLOT_PROFILE_COLUMN[other]] = null;
+        }
+      }
+      setDraft(next);
+      return;
+    }
+    // Category-based items (legacy single-slot categories).
     const meta = CATEGORY_META.find((c) => c.key === item.category);
     if (!meta) return;
-    const next: Profile = { ...draft };
     const val = meta.storesValue === "id" ? item.id : item.name;
-    // toggle off when clicking already-selected (except base)
     const current = (next as any)[meta.profileField];
     if (current === val && item.category !== "base") {
       (next as any)[meta.profileField] = null;
@@ -591,6 +608,10 @@ export default function AvatarEditor() {
 
   const isSelected = (item: AvatarItem) => {
     if (!draft) return false;
+    if (item.layer_slot) {
+      const col = SLOT_PROFILE_COLUMN[item.layer_slot];
+      return (draft as any)[col] === item.id;
+    }
     const meta = CATEGORY_META.find((c) => c.key === item.category);
     if (!meta) return false;
     const val = meta.storesValue === "id" ? item.id : item.name;
