@@ -463,7 +463,7 @@ function AvatarPreview({
             item={l.item}
             subLayer={l.sub}
             reduceMotion={reduceMotion}
-            tintColor={tintFor(l.item.category)}
+            tintColor={tintFor(l.item)}
           />
         ))}
       </div>
