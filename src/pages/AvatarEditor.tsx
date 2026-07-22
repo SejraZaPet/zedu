@@ -319,7 +319,9 @@ function LayerVisual({
     if (tintColor && !isGradientValue(tintColor)) {
 
 
-      const { filter, useOverlay } = hairTintFromHex(tintColor);
+      const { filter, useOverlay } = item.category === "outfit"
+        ? outfitTintFromHex(tintColor)
+        : hairTintFromHex(tintColor);
       return (
         <div aria-hidden="true" style={style} className="w-full h-full pointer-events-none select-none">
           <img
