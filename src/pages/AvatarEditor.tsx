@@ -724,11 +724,10 @@ export default function AvatarEditor() {
 
   const tryOnNewItem = (item: AvatarItem) => {
     if (draft) {
-      const meta = CATEGORY_META.find((c) => c.key === item.category);
-      if (meta) {
-        const val = meta.storesValue === "id" ? item.id : item.name;
-        setDraft({ ...draft, [meta.profileField]: val } as Profile);
-        setActiveCategory(item.category);
+      applyPick(item);
+      setActiveCategory(item.category);
+      if (item.category === "outfit" && item.layer_slot) {
+        setActiveSlot(item.layer_slot);
       }
     }
     void clearIsNew(item.id);
