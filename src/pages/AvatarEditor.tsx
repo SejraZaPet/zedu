@@ -37,7 +37,7 @@ import { cn } from "@/lib/utils";
 import ColorPalette from "@/components/avatar/ColorPalette";
 import { isTintable, CATEGORY_COLOR_COLUMN, paletteFor, isGradientValue, BRAND_GRADIENT_CSS, type TintableCategory } from "@/lib/avatar-palettes";
 import {
-  SLOT_PROFILE_COLUMN, SLOT_LABEL, CLOTHING_SLOTS, SLOT_CONFLICTS, SLOT_LAYER_ORDER,
+  SLOT_PROFILE_COLUMN, SLOT_COLOR_COLUMN, SLOT_LABEL, CLOTHING_SLOTS, SLOT_CONFLICTS, SLOT_LAYER_ORDER,
   type LayerSlot,
 } from "@/lib/avatar-slots";
 
@@ -107,6 +107,17 @@ interface Profile {
   clothing_hands_id: string | null;
   clothing_bag_id: string | null;
   hair_accessory_id: string | null;
+  // Per-slot tint colors (added migration 2026-07-22)
+  clothing_top_color: string | null;
+  clothing_bottom_color: string | null;
+  clothing_full_color: string | null;
+  clothing_shoes_color: string | null;
+  clothing_head_color: string | null;
+  clothing_face_color: string | null;
+  clothing_neck_color: string | null;
+  clothing_hands_color: string | null;
+  clothing_bag_color: string | null;
+  hair_accessory_color: string | null;
 }
 
 interface OwnedItem {
@@ -208,6 +219,10 @@ const emptyProfile = (userId: string): Profile => ({
   clothing_shoes_id: null, clothing_head_id: null, clothing_face_id: null,
   clothing_neck_id: null, clothing_hands_id: null, clothing_bag_id: null,
   hair_accessory_id: null,
+  clothing_top_color: null, clothing_bottom_color: null, clothing_full_color: null,
+  clothing_shoes_color: null, clothing_head_color: null, clothing_face_color: null,
+  clothing_neck_color: null, clothing_hands_color: null, clothing_bag_color: null,
+  hair_accessory_color: null,
 });
 
 function unlockLabel(item: AvatarItem): string {
@@ -248,6 +263,30 @@ function hairTintFromHex(hex: string): { filter: string; useOverlay: boolean; ne
   return { filter: `brightness(${F}) contrast(${C})`, useOverlay: S > 0.08, neutral: false };
 }
 
+/**
+ * Outfit variant — same brightness math as hair, but WITHOUT the CSS
+ * contrast() reduction. Keeps fine garment details (buttons, zippers, seams)
+ * visible when tinting. Mirrors AvatarLayerStack.outfitTintFromHex.
+ */
+function outfitTintFromHex(hex: string): { filter: string; useOverlay: boolean; neutral: boolean } {
+  const m = hex.trim().match(/^#?([0-9a-f]{6})$/i);
+  if (!m) return { filter: "none", useOverlay: false, neutral: false };
+  const n = parseInt(m[1], 16);
+  const r = ((n >> 16) & 255) / 255;
+  const g = ((n >> 8) & 255) / 255;
+  const b = (n & 255) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  const L = (max + min) / 2;
+  const d = max - min;
+  const S = d === 0 ? 0 : d / (1 - Math.abs(2 * L - 1));
+  if (S < 0.12) {
+    const Fn = Math.max(0.3, Math.min(2.3, 0.35 + L * 1.85));
+    return { filter: `brightness(${Fn}) saturate(0)`, useOverlay: false, neutral: true };
+  }
+  const F = Math.max(0.35, Math.min(2.6, 0.4 + L * 2.0));
+  return { filter: `brightness(${F})`, useOverlay: S > 0.08, neutral: false };
+}
+
 function LayerVisual({
   item, subLayer, reduceMotion, tintColor,
 }: { item: AvatarItem; subLayer?: "back" | "front"; reduceMotion?: boolean; tintColor?: string | null }) {
@@ -280,7 +319,9 @@ function LayerVisual({
     if (tintColor && !isGradientValue(tintColor)) {
 
 
-      const { filter, useOverlay } = hairTintFromHex(tintColor);
+      const { filter, useOverlay } = item.category === "outfit"
+        ? outfitTintFromHex(tintColor)
+        : hairTintFromHex(tintColor);
       return (
         <div aria-hidden="true" style={style} className="w-full h-full pointer-events-none select-none">
           <img
@@ -384,7 +425,14 @@ function AvatarPreview({
   const legacyHair = profile.hair_color_id ? itemsById.get(profile.hair_color_id)?.color_value ?? null : null;
   const legacySkin = profile.skin_tone_id ? itemsById.get(profile.skin_tone_id)?.color_value ?? null : null;
 
-  const tintFor = (category: string): string | null => {
+  const tintFor = (item: AvatarItem): string | null => {
+    // Slot-based items (new clothing model) — each slot has its own color column.
+    if (item.layer_slot) {
+      const col = SLOT_COLOR_COLUMN[item.layer_slot];
+      const val = (profile as any)[col] as string | null | undefined;
+      return val ?? null;
+    }
+    const category = item.category;
     if (!isTintable(category)) return null;
     const col = CATEGORY_COLOR_COLUMN[category as TintableCategory];
     const val = (profile as any)[col] as string | null | undefined;
@@ -415,7 +463,7 @@ function AvatarPreview({
             item={l.item}
             subLayer={l.sub}
             reduceMotion={reduceMotion}
-            tintColor={tintFor(l.item.category)}
+            tintColor={tintFor(l.item)}
           />
         ))}
       </div>
@@ -963,28 +1011,36 @@ export default function AvatarEditor() {
           )}
 
 
-          {isTintable(activeCategory) && draft && (
-            <div className="mb-3">
-              <ColorPalette
-                label={
-                  activeCategory === "base"
-                    ? "Barva pleti"
-                    : activeCategory === "hairstyle"
-                    ? "Barva vlasů"
-                    : activeCategory === "background"
-                    ? "Barva pozadí"
-                    : "Barva"
-                }
-                swatches={paletteFor(activeCategory as TintableCategory)}
-                allowCustom={activeCategory !== "background"}
-                value={(draft as any)[CATEGORY_COLOR_COLUMN[activeCategory as TintableCategory]] ?? null}
-                onChange={(hex) => {
-                  const col = CATEGORY_COLOR_COLUMN[activeCategory as TintableCategory];
-                  setDraft({ ...(draft as Profile), [col]: hex } as Profile);
-                }}
-              />
-            </div>
-          )}
+          {isTintable(activeCategory) && draft && (() => {
+            // For "outfit" the tint is per-slot (each garment has its own color
+            // column) so the palette follows the currently open sub-slot tab.
+            const isOutfit = activeCategory === "outfit";
+            const colorCol = isOutfit
+              ? SLOT_COLOR_COLUMN[activeSlot]
+              : CATEGORY_COLOR_COLUMN[activeCategory as TintableCategory];
+            const label = isOutfit
+              ? `Barva – ${SLOT_LABEL[activeSlot]}`
+              : activeCategory === "base"
+              ? "Barva pleti"
+              : activeCategory === "hairstyle"
+              ? "Barva vlasů"
+              : activeCategory === "background"
+              ? "Barva pozadí"
+              : "Barva";
+            return (
+              <div className="mb-3">
+                <ColorPalette
+                  label={label}
+                  swatches={paletteFor(activeCategory as TintableCategory)}
+                  allowCustom={activeCategory !== "background"}
+                  value={(draft as any)[colorCol] ?? null}
+                  onChange={(hex) => {
+                    setDraft({ ...(draft as Profile), [colorCol]: hex } as Profile);
+                  }}
+                />
+              </div>
+            );
+          })()}
 
 
           {filteredList.length === 0 ? (

@@ -411,14 +411,23 @@ export type Database = {
           badge_id: string | null
           base_color: string | null
           base_id: string | null
+          clothing_bag_color: string | null
           clothing_bag_id: string | null
+          clothing_bottom_color: string | null
           clothing_bottom_id: string | null
+          clothing_face_color: string | null
           clothing_face_id: string | null
+          clothing_full_color: string | null
           clothing_full_id: string | null
+          clothing_hands_color: string | null
           clothing_hands_id: string | null
+          clothing_head_color: string | null
           clothing_head_id: string | null
+          clothing_neck_color: string | null
           clothing_neck_id: string | null
+          clothing_shoes_color: string | null
           clothing_shoes_id: string | null
+          clothing_top_color: string | null
           clothing_top_id: string | null
           created_at: string
           effect_id: string | null
@@ -427,6 +436,7 @@ export type Database = {
           face_accessory_color: string | null
           face_accessory_id: string | null
           frame_id: string | null
+          hair_accessory_color: string | null
           hair_accessory_id: string | null
           hair_color_id: string | null
           hairstyle_color: string | null
@@ -448,14 +458,23 @@ export type Database = {
           badge_id?: string | null
           base_color?: string | null
           base_id?: string | null
+          clothing_bag_color?: string | null
           clothing_bag_id?: string | null
+          clothing_bottom_color?: string | null
           clothing_bottom_id?: string | null
+          clothing_face_color?: string | null
           clothing_face_id?: string | null
+          clothing_full_color?: string | null
           clothing_full_id?: string | null
+          clothing_hands_color?: string | null
           clothing_hands_id?: string | null
+          clothing_head_color?: string | null
           clothing_head_id?: string | null
+          clothing_neck_color?: string | null
           clothing_neck_id?: string | null
+          clothing_shoes_color?: string | null
           clothing_shoes_id?: string | null
+          clothing_top_color?: string | null
           clothing_top_id?: string | null
           created_at?: string
           effect_id?: string | null
@@ -464,6 +483,7 @@ export type Database = {
           face_accessory_color?: string | null
           face_accessory_id?: string | null
           frame_id?: string | null
+          hair_accessory_color?: string | null
           hair_accessory_id?: string | null
           hair_color_id?: string | null
           hairstyle_color?: string | null
@@ -485,14 +505,23 @@ export type Database = {
           badge_id?: string | null
           base_color?: string | null
           base_id?: string | null
+          clothing_bag_color?: string | null
           clothing_bag_id?: string | null
+          clothing_bottom_color?: string | null
           clothing_bottom_id?: string | null
+          clothing_face_color?: string | null
           clothing_face_id?: string | null
+          clothing_full_color?: string | null
           clothing_full_id?: string | null
+          clothing_hands_color?: string | null
           clothing_hands_id?: string | null
+          clothing_head_color?: string | null
           clothing_head_id?: string | null
+          clothing_neck_color?: string | null
           clothing_neck_id?: string | null
+          clothing_shoes_color?: string | null
           clothing_shoes_id?: string | null
+          clothing_top_color?: string | null
           clothing_top_id?: string | null
           created_at?: string
           effect_id?: string | null
@@ -501,6 +530,7 @@ export type Database = {
           face_accessory_color?: string | null
           face_accessory_id?: string | null
           frame_id?: string | null
+          hair_accessory_color?: string | null
           hair_accessory_id?: string | null
           hair_color_id?: string | null
           hairstyle_color?: string | null
