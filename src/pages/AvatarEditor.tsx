@@ -928,6 +928,38 @@ export default function AvatarEditor() {
             </div>
           </div>
 
+          {activeCategory === "outfit" && (
+            <nav
+              aria-label="Sloty oblečení"
+              className="mb-3 -mx-1 overflow-x-auto"
+            >
+              <div className="flex gap-1 px-1 min-w-max" role="tablist">
+                {CLOTHING_SLOTS.map((slot) => {
+                  const active = activeSlot === slot;
+                  return (
+                    <button
+                      key={slot}
+                      type="button"
+                      role="tab"
+                      aria-selected={active}
+                      onClick={() => setActiveSlot(slot)}
+                      className={cn(
+                        "min-h-[36px] px-3 py-1.5 rounded-full text-xs font-medium border whitespace-nowrap transition-colors",
+                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                        active
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-background text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      {SLOT_LABEL[slot]}
+                    </button>
+                  );
+                })}
+              </div>
+            </nav>
+          )}
+
+
           {isTintable(activeCategory) && draft && (
             <div className="mb-3">
               <ColorPalette
