@@ -507,6 +507,7 @@ export default function AvatarEditor() {
   const [dbProfile, setDbProfile] = useState<Profile | null>(null);
   const [draft, setDraft] = useState<Profile | null>(null);
   const [activeCategory, setActiveCategory] = useState<Category>("base");
+  const [activeSlot, setActiveSlot] = useState<LayerSlot>("clothing_top");
   const [filter, setFilter] = useState<FilterKey>("all");
   const [saving, setSaving] = useState(false);
   const [pendingNavigate, setPendingNavigate] = useState<string | null>(null);
