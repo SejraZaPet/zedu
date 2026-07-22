@@ -204,7 +204,7 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
           className="-bottom-0.5 -left-0.5"
         />
       )}
-      {editable && (
+      {editable && showEditButton && (
         <span
           aria-hidden
           className="absolute -bottom-0.5 -right-0.5 rounded-full bg-primary text-primary-foreground shadow ring-2 ring-background flex items-center justify-center"
@@ -213,7 +213,7 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
           <Pencil style={{ width: Math.max(10, size * 0.16), height: Math.max(10, size * 0.16) }} />
         </span>
       )}
-      {editable && hasNew && (
+      {editable && showEditButton && hasNew && (
         <span
           aria-label="Nové položky odemčeny"
           className="absolute -top-0.5 -right-0.5 rounded-full bg-destructive ring-2 ring-background"
