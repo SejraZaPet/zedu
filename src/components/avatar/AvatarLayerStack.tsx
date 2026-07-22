@@ -65,6 +65,25 @@ export function hairTintFromHex(hex: string): { filter: string; useOverlay: bool
   return { filter: `brightness(${F}) contrast(${C})`, useOverlay: S > 0.08, neutral: false };
 }
 
+export function outfitTintFromHex(hex: string): { filter: string; useOverlay: boolean; neutral: boolean } {
+  const m = hex.trim().match(/^#?([0-9a-f]{6})$/i);
+  if (!m) return { filter: "none", useOverlay: false, neutral: false };
+  const n = parseInt(m[1], 16);
+  const r = ((n >> 16) & 255) / 255;
+  const g = ((n >> 8) & 255) / 255;
+  const b = (n & 255) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  const L = (max + min) / 2;
+  const d = max - min;
+  const S = d === 0 ? 0 : d / (1 - Math.abs(2 * L - 1));
+  if (S < 0.12) {
+    const Fn = Math.max(0.3, Math.min(2.3, 0.35 + L * 1.85));
+    return { filter: `brightness(${Fn}) saturate(0)`, useOverlay: false, neutral: true };
+  }
+  const F = Math.max(0.35, Math.min(2.6, 0.4 + L * 2.0));
+  return { filter: `brightness(${F})`, useOverlay: S > 0.08, neutral: false };
+}
+
 export function AvatarLayer({
   item, sub, tintColor, reduceMotion,
 }: {
@@ -104,7 +123,9 @@ export function AvatarLayer({
     if (tintColor && !isGradientValue(tintColor)) {
 
 
-      const { filter, useOverlay } = hairTintFromHex(tintColor);
+      const { filter, useOverlay } = item.category === "outfit"
+        ? outfitTintFromHex(tintColor)
+        : hairTintFromHex(tintColor);
       return (
         <div aria-hidden="true" style={style} className="w-full h-full pointer-events-none select-none">
           <img
