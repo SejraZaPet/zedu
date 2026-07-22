@@ -43,7 +43,7 @@ import {
 
 // ---------- Types ----------
 type Category =
-  | "base" | "skin_tone" | "hairstyle" | "hair_color" | "eyes" | "eyebrow" | "outfit"
+  | "base" | "skin_tone" | "hairstyle" | "hair_color" | "eyes" | "eyebrow" | "mouth" | "outfit"
   | "face_accessory" | "head_accessory" | "background"
   | "frame" | "effect" | "badge" | "title";
 
