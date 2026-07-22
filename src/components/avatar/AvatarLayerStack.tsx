@@ -129,9 +129,11 @@ export function AvatarLayer({
     if (tintColor && !isGradientValue(tintColor)) {
 
 
-      const { filter, useOverlay } = item.category === "outfit"
+      const { filter, useOverlay, neutral } = item.category === "outfit"
         ? outfitTintFromHex(tintColor)
         : hairTintFromHex(tintColor);
+      const overlayBlend: React.CSSProperties["mixBlendMode"] =
+        item.category === "outfit" && neutral ? "normal" : "color";
       return (
         <div aria-hidden="true" style={style} className="w-full h-full pointer-events-none select-none">
           <img
@@ -149,7 +151,7 @@ export function AvatarLayer({
                 position: "absolute",
                 inset: 0,
                 background: tintColor,
-                mixBlendMode: "color",
+                mixBlendMode: overlayBlend,
                 WebkitMaskImage: `url(${src})`,
                 maskImage: `url(${src})`,
                 WebkitMaskRepeat: "no-repeat",
