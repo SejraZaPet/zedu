@@ -447,6 +447,7 @@ export default function AvatarItemsManager() {
     "hairstyle",
     "eyes",
     "eyebrow",
+    "mouth",
     "outfit",
     "face_accessory",
     "head_accessory",
