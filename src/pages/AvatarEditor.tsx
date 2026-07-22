@@ -219,6 +219,10 @@ const emptyProfile = (userId: string): Profile => ({
   clothing_shoes_id: null, clothing_head_id: null, clothing_face_id: null,
   clothing_neck_id: null, clothing_hands_id: null, clothing_bag_id: null,
   hair_accessory_id: null,
+  clothing_top_color: null, clothing_bottom_color: null, clothing_full_color: null,
+  clothing_shoes_color: null, clothing_head_color: null, clothing_face_color: null,
+  clothing_neck_color: null, clothing_hands_color: null, clothing_bag_color: null,
+  hair_accessory_color: null,
 });
 
 function unlockLabel(item: AvatarItem): string {
