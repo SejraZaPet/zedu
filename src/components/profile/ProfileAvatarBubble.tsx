@@ -36,19 +36,44 @@ interface AvatarProfile {
   face_accessory_color: string | null;
   head_accessory_color: string | null;
   background_color: string | null;
+  clothing_top_id: string | null;
+  clothing_bottom_id: string | null;
+  clothing_full_id: string | null;
+  clothing_shoes_id: string | null;
+  clothing_head_id: string | null;
+  clothing_face_id: string | null;
+  clothing_neck_id: string | null;
+  clothing_hands_id: string | null;
+  clothing_bag_id: string | null;
+  hair_accessory_id: string | null;
 }
 
-// Same order as AvatarEditor: bottom → top
-const LAYER_ORDER: { field: keyof AvatarProfile; sub?: "back" | "front" }[] = [
+// Same order as AvatarEditor: bottom → top.
+// Entries reference either a legacy category field on AvatarProfile
+// or a layer slot column (see avatar-slots.ts).
+type LayerEntry =
+  | { field: keyof AvatarProfile; sub?: "back" | "front"; slot?: undefined }
+  | { slot: LayerSlot; field?: undefined; sub?: undefined };
+const LAYER_ORDER: LayerEntry[] = [
   { field: "background_id" },
   { field: "hairstyle_id", sub: "back" },
   { field: "base_id" },
   { field: "eyes_id" },
   { field: "eyebrow_id" },
+  { slot: "clothing_bottom" },
+  { slot: "clothing_shoes" },
+  { slot: "clothing_top" },
+  { slot: "clothing_full" },
+  { slot: "clothing_neck" },
+  { slot: "clothing_bag" },
+  { slot: "clothing_hands" },
   { field: "outfit_id" },
   { field: "hairstyle_id", sub: "front" },
+  { slot: "hair_accessory" },
   { field: "face_accessory_id" },
   { field: "head_accessory_id" },
+  { slot: "clothing_head" },
+  { slot: "clothing_face" },
   { field: "effect_id" },
   { field: "frame_id" },
 ];
