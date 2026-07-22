@@ -64,9 +64,11 @@ interface Props {
    * nav/header/list bubbles where the full character wouldn't be legible.
    */
   crop?: "head" | "full";
+  /** When false, hides the pencil edit badge (and "new items" dot) overlay. Default true. */
+  showEditButton?: boolean;
 }
 
-export default function ProfileAvatarBubble({ userId, size = 56, className, editable = true, crop = "full" }: Props) {
+export default function ProfileAvatarBubble({ userId, size = 56, className, editable = true, crop = "full", showEditButton = true }: Props) {
   const [profile, setProfile] = useState<AvatarProfile | null>(null);
   const [items, setItems] = useState<Map<string, AvatarItem>>(new Map());
   const [loading, setLoading] = useState(true);
