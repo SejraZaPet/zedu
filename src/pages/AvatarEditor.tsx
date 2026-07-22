@@ -786,7 +786,13 @@ export default function AvatarEditor() {
     );
   }
 
-  const currentList = (itemsByCategory.get(activeCategory) ?? []).slice().sort((a, b) => a.sort_order - b.sort_order);
+  // For "outfit" we split by layer_slot into subtabs. Items with no slot
+  // (legacy full outfits from before the slot system) fall under `clothing_full`
+  // so authors can still see them.
+  const rawList = (itemsByCategory.get(activeCategory) ?? []).slice().sort((a, b) => a.sort_order - b.sort_order);
+  const currentList = activeCategory === "outfit"
+    ? rawList.filter((it) => (it.layer_slot ?? "clothing_full") === activeSlot)
+    : rawList;
   const filteredList = currentList.filter((it) => {
     const unlocked = isUnlocked(it);
     const fav = owned.get(it.id)?.is_favorite;
