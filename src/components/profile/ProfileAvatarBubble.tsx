@@ -133,7 +133,7 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
     (async () => {
       const { data: prof } = await supabase
         .from("avatar_profiles")
-        .select("base_id, skin_tone_id, hairstyle_id, hair_color_id, eyes_id, eyebrow_id, outfit_id, face_accessory_id, head_accessory_id, background_id, frame_id, effect_id, badge_id, base_color, hairstyle_color, outfit_color, face_accessory_color, head_accessory_color, background_color, clothing_top_id, clothing_bottom_id, clothing_full_id, clothing_shoes_id, clothing_head_id, clothing_face_id, clothing_neck_id, clothing_hands_id, clothing_bag_id, hair_accessory_id")
+        .select("base_id, skin_tone_id, hairstyle_id, hair_color_id, eyes_id, eyebrow_id, mouth_id, outfit_id, face_accessory_id, head_accessory_id, background_id, frame_id, effect_id, badge_id, base_color, hairstyle_color, outfit_color, face_accessory_color, head_accessory_color, background_color, clothing_top_id, clothing_bottom_id, clothing_full_id, clothing_shoes_id, clothing_head_id, clothing_face_id, clothing_neck_id, clothing_hands_id, clothing_bag_id, hair_accessory_id")
         .eq("user_id", userId)
         .maybeSingle();
 
