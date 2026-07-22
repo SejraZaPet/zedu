@@ -176,7 +176,9 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
   const stackLayers: StackLayer[] = [];
   if (profile) {
     for (const l of LAYER_ORDER) {
-      const id = profile[l.field];
+      const id = l.slot
+        ? ((profile as any)[SLOT_PROFILE_COLUMN[l.slot]] as string | null)
+        : (profile[l.field] as string | null);
       if (!id || typeof id !== "string") continue;
       const item = items.get(id);
       if (!item) continue;
