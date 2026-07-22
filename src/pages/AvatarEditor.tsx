@@ -798,6 +798,18 @@ export default function AvatarEditor() {
     }
   };
 
+  // Stable references for memoized grid tiles: keep identity constant across
+  // renders so React.memo tiles don't re-render when unrelated state (colors)
+  // changes.
+  const applyPickRef = useRef(applyPick);
+  applyPickRef.current = applyPick;
+  const toggleFavoriteRef = useRef(toggleFavorite);
+  toggleFavoriteRef.current = toggleFavorite;
+  const stableApplyPick = useCallback((it: AvatarItem) => applyPickRef.current(it), []);
+  const stableToggleFavorite = useCallback((it: AvatarItem) => { void toggleFavoriteRef.current(it); }, []);
+
+
+
   const randomize = () => {
     if (!draft) return;
     const next: Profile = { ...draft };
