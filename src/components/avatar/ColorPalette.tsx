@@ -91,18 +91,17 @@ export default function ColorPalette({
           );
         })}
         {allowCustom && (
-          <>
-            <button
-              type="button"
-              onClick={() => inputRef.current?.click()}
-              className={cn(
-                "relative w-8 h-8 rounded-full border-2 flex items-center justify-center overflow-hidden",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
-                isCustom
-                  ? "border-primary scale-110 ring-2 ring-primary/30"
-                  : "border-border hover:scale-105",
-              )}
-              aria-label="Vlastní barva"
+          <div
+            className={cn(
+              "relative w-8 h-8 rounded-full border-2 overflow-hidden",
+              isCustom
+                ? "border-primary scale-110 ring-2 ring-primary/30"
+                : "border-border hover:scale-105",
+            )}
+          >
+            <div
+              aria-hidden
+              className="absolute inset-0 rounded-full flex items-center justify-center pointer-events-none"
               style={{
                 background:
                   "conic-gradient(from 0deg, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)",
@@ -112,24 +111,23 @@ export default function ColorPalette({
                 <span
                   className="w-4 h-4 rounded-full border-2 border-white shadow"
                   style={{ background: currentNormalized }}
-                  aria-hidden
                 />
               ) : (
-                <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white drop-shadow">
+                <span className="text-[10px] font-bold text-white drop-shadow">
                   +
                 </span>
               )}
-            </button>
+            </div>
             <input
               ref={inputRef}
               type="color"
               value={currentNormalized && !isGradientValue(currentNormalized) ? currentNormalized : "#000000"}
               onChange={(e) => onChange(normalize(e.target.value))}
-              className="sr-only"
-              aria-label="Vybrat vlastní barvu"
-              tabIndex={-1}
+              aria-label="Vlastní barva"
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer rounded-full"
+              style={{ WebkitAppearance: "none", appearance: "none", padding: 0, border: 0 }}
             />
-          </>
+          </div>
         )}
       </div>
     </div>
