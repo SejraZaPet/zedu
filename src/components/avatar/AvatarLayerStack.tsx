@@ -76,9 +76,13 @@ export function outfitTintFromHex(hex: string): { filter: string; useOverlay: bo
   const L = (max + min) / 2;
   const d = max - min;
   const S = d === 0 ? 0 : d / (1 - Math.abs(2 * L - 1));
+  // Neutral swatches (black/white/grey): mix-blend-mode:color can't tint
+  // zero-saturation targets, so use "normal" blend via mask (handled in
+  // renderer) with the source normalized to grayscale first for parity with
+  // the chromatic branch.
   if (S < 0.12) {
-    const Fn = Math.max(0.3, Math.min(2.3, 0.35 + L * 1.85));
-    return { filter: `brightness(${Fn}) saturate(0)`, useOverlay: false, neutral: true };
+    const Fn = Math.max(0.3, Math.min(2.3, L / 0.85));
+    return { filter: `grayscale(1) brightness(${Fn})`, useOverlay: true, neutral: true };
   }
   // Normalize very light garment PNGs (near-white) to mid-grey BEFORE the
   // mix-blend-mode:color overlay. Fixed values, independent of target color —
