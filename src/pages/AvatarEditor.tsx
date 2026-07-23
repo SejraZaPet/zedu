@@ -32,7 +32,9 @@ import {
 import {
   User, Scissors, Shirt, Glasses, Crown, Image as ImageIcon,
   Frame, Sparkles, Award, Type, Lock, Heart, Shuffle, ArrowLeft, Check, Eye, Smile,
+  icons as lucideIcons,
 } from "lucide-react";
+
 import { cn } from "@/lib/utils";
 import ColorPalette from "@/components/avatar/ColorPalette";
 import { isTintable, CATEGORY_COLOR_COLUMN, paletteFor, isGradientValue, BRAND_GRADIENT_CSS, type TintableCategory } from "@/lib/avatar-palettes";
