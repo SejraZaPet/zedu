@@ -559,6 +559,8 @@ function AvatarPreview({
           />
         ))}
       </div>
+      {frameItem && <FrameOverlay slug={frameItem.slug} reduceMotion={reduceMotion} />}
+
       {profile.active_title && (
         <div className="absolute bottom-2 inset-x-2 text-center">
           <span className="inline-block rounded-full bg-background/90 backdrop-blur px-3 py-1 text-xs font-medium border">
