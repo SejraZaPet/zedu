@@ -58,6 +58,7 @@ interface AvatarItem {
   image_url: string | null;
   icon_name: string | null;
   image_url_back: string | null;
+  thumbnail_url: string | null;
   color_value: string | null;
   is_neutral_color: boolean | null;
   layer_slot: LayerSlot | null;
@@ -296,13 +297,16 @@ function outfitTintFromHex(hex: string): { filter: string; useOverlay: boolean; 
 }
 
 function LayerVisual({
-  item, subLayer, reduceMotion, tintColor,
-}: { item: AvatarItem; subLayer?: "back" | "front"; reduceMotion?: boolean; tintColor?: string | null }) {
+  item, subLayer, reduceMotion, tintColor, useThumbnail,
+}: { item: AvatarItem; subLayer?: "back" | "front"; reduceMotion?: boolean; tintColor?: string | null; useThumbnail?: boolean }) {
   // Decorative SVG overlays for frame — no image_url needed
   if (item.category === "frame") {
     return <FrameOverlay slug={item.slug} reduceMotion={reduceMotion} />;
   }
-  const rawSrc = subLayer === "back" ? item.image_url_back : item.image_url;
+  // Catalog/grid tiles may opt in to `thumbnail_url` (falls back to image_url).
+  // Character rendering NEVER uses thumbnail_url — it must use the layered image_url.
+  const layeredSrc = subLayer === "back" ? item.image_url_back : item.image_url;
+  const rawSrc = useThumbnail && !subLayer ? (item.thumbnail_url ?? layeredSrc) : layeredSrc;
   const src = rawSrc
     ? `${rawSrc}${rawSrc.includes("?") ? "&" : "?"}v=${encodeURIComponent(item.updated_at ?? "")}`
     : rawSrc;
@@ -467,7 +471,7 @@ const AvatarTile = React.memo(function AvatarTile({
         )}
       >
         <div className="relative w-full aspect-square rounded-lg bg-muted/40 overflow-hidden mb-2">
-          <LayerVisual item={item} />
+          <LayerVisual item={item} useThumbnail />
           {selected && (
             <span className="absolute top-1 left-1 rounded-full bg-primary text-primary-foreground w-6 h-6 flex items-center justify-center">
               <Check className="w-3.5 h-3.5" />
@@ -655,7 +659,7 @@ function BaseOnboarding({
                 )}
               >
                 <div className="relative w-full h-full">
-                  <LayerVisual item={b} />
+                  <LayerVisual item={b} useThumbnail />
                 </div>
                 <span className="absolute inset-x-1 bottom-1 text-xs font-medium truncate bg-background/80 rounded px-1">
                   {b.name}
@@ -1266,7 +1270,7 @@ export default function AvatarEditor() {
               </DialogHeader>
               <div className="flex flex-col items-center gap-3 py-2">
                 <div className="relative w-32 h-32 rounded-xl border-2 bg-muted/40 overflow-hidden">
-                  <LayerVisual item={item} />
+                  <LayerVisual item={item} useThumbnail />
                   {item.category === "badge" && (
                     <BadgeOverlay
                       iconName={item.icon_name}

@@ -82,6 +82,7 @@ type AvatarItem = {
   rarity: string;
   image_url: string | null;
   image_url_back: string | null;
+  thumbnail_url: string | null;
   color_value: string | null;
   recommended_for_role: string;
   unlock_type: string;
@@ -124,6 +125,7 @@ const emptyForm = (): Partial<AvatarItem> => ({
   rarity: "common",
   image_url: "",
   image_url_back: "",
+  thumbnail_url: "",
   color_value: "",
   recommended_for_role: "both",
   unlock_type: "default",
@@ -290,6 +292,7 @@ export default function AvatarItemsManager() {
       rarity: editing.rarity ?? "common",
       image_url: (editing.image_url ?? "") || null,
       image_url_back: (editing.image_url_back ?? "") || null,
+      thumbnail_url: (editing.thumbnail_url ?? "") || null,
       color_value: (editing.color_value ?? "") || null,
       recommended_for_role: editing.recommended_for_role ?? "both",
       unlock_type: editing.unlock_type ?? "default",
@@ -804,12 +807,27 @@ export default function AvatarItemsManager() {
               </div>
 
               <div className="col-span-2">
-                <Label>Image URL</Label>
+                <Label>Image URL (vrstvení na postavě)</Label>
                 <Input
                   value={editing.image_url ?? ""}
                   onChange={(e) => setEditing({ ...editing, image_url: e.target.value })}
                   placeholder="https://..."
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Používá se pro vykreslení na avataru (respektuje kalibraci layer_offset_x/y a layer_scale).
+                </p>
+              </div>
+
+              <div className="col-span-2">
+                <Label>Náhled v katalogu (thumbnail_url)</Label>
+                <Input
+                  value={editing.thumbnail_url ?? ""}
+                  onChange={(e) => setEditing({ ...editing, thumbnail_url: e.target.value })}
+                  placeholder="https://... (nepovinné)"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Nepovinné. Zobrazí se v mřížce výběru položek místo image_url. Pokud je prázdné, použije se image_url i tam. Nemá vliv na vrstvení na postavě.
+                </p>
               </div>
 
               {showBack && (
