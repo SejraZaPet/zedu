@@ -548,7 +548,7 @@ function AvatarPreview({
         </div>
       )}
       {/* Slightly shrunk + nudged down so tallest hairstyles/accessories fit inside the preview frame. */}
-      <div className="absolute" style={{ top: "15%", left: "12%", width: "76%", height: "76%" }}>
+      <div className="absolute" style={{ top: "10%", left: "16%", width: "68%", height: "68%" }}>
 
         {layers.map((l, idx) => (
           <LayerVisual
