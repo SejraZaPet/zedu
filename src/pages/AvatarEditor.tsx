@@ -486,7 +486,12 @@ function AvatarPreview({
   reduceMotion: boolean;
 }) {
   const layers: { item: AvatarItem; sub?: "back" | "front" }[] = [];
+  let frameItem: AvatarItem | null = null;
+  if (profile.frame_id) {
+    frameItem = itemsById.get(profile.frame_id) ?? null;
+  }
   for (const l of LAYER_ORDER) {
+    if (l.category === "frame") continue;
     let id: string | null = null;
     if (l.slot) {
       id = (profile as any)[SLOT_PROFILE_COLUMN[l.slot]] ?? null;
@@ -499,8 +504,6 @@ function AvatarPreview({
     else if (l.category === "mouth") id = profile.mouth_id;
     else if (l.category === "face_accessory") id = profile.face_accessory_id;
     else if (l.category === "head_accessory") id = profile.head_accessory_id;
-    
-    else if (l.category === "frame") id = profile.frame_id;
     if (!id) continue;
     const item = itemsById.get(id);
     if (!item) continue;
@@ -508,6 +511,7 @@ function AvatarPreview({
     if (l.sub === "front" && !item.image_url) continue;
     layers.push({ item, sub: l.sub });
   }
+
 
   // Legacy fallback so users who haven't re-saved still see the color they picked.
   const legacyHair = profile.hair_color_id ? itemsById.get(profile.hair_color_id)?.color_value ?? null : null;
