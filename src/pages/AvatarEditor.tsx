@@ -373,7 +373,12 @@ function LayerVisual({
 
 
   // Fallback: colored bubble with category icon + item name
-  const Icon = CATEGORY_ICON[item.category] ?? Sparkles;
+  let Icon: React.ComponentType<{ className?: string }> = CATEGORY_ICON[item.category] ?? Sparkles;
+  if (item.category === "badge") {
+    const iconMap = lucideIcons as unknown as Record<string, React.ComponentType<{ className?: string }>>;
+    Icon = (item.icon_name && iconMap[item.icon_name]) || Award;
+  }
+
   const bg = item.color_value ?? "hsl(var(--muted))";
   return (
     <div style={style} className="w-full h-full flex items-center justify-center pointer-events-none">
