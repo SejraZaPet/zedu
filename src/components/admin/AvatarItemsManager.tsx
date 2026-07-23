@@ -24,8 +24,86 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Pencil, Plus, Trash2, ImageOff, RefreshCw } from "lucide-react";
+import { Loader2, Pencil, Plus, Trash2, ImageOff, RefreshCw, Upload } from "lucide-react";
 import AvatarLayerStack, { type StackLayer } from "@/components/avatar/AvatarLayerStack";
+
+const slugifyName = (input: string): string => {
+  return (input || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^[_-]+|[_-]+$/g, "");
+};
+
+type UploadFieldProps = {
+  label: string;
+  helper?: string;
+  value: string;
+  onChange: (url: string) => void;
+  placeholder?: string;
+};
+
+function ImageUrlField({ label, helper, value, onChange, placeholder }: UploadFieldProps) {
+  const [uploading, setUploading] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setUploading(true);
+    try {
+      const dot = file.name.lastIndexOf(".");
+      const base = dot >= 0 ? file.name.slice(0, dot) : file.name;
+      const ext = dot >= 0 ? file.name.slice(dot + 1).toLowerCase() : "png";
+      const path = `${Date.now()}_${slugifyName(base) || "file"}.${ext}`;
+      const { error } = await supabase.storage
+        .from("avatar-assets")
+        .upload(path, file, { cacheControl: "3600", upsert: false, contentType: file.type });
+      if (error) throw error;
+      const { data } = supabase.storage.from("avatar-assets").getPublicUrl(path);
+      onChange(data.publicUrl);
+      toast({ title: "Soubor nahrán" });
+    } catch (err: any) {
+      toast({ title: "Nahrání selhalo", description: err?.message ?? String(err), variant: "destructive" });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div>
+      <Label>{label}</Label>
+      <div className="flex gap-2">
+        <Input
+          value={value ?? ""}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder ?? "https://..."}
+          className="flex-1"
+        />
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => inputRef.current?.click()}
+          disabled={uploading}
+          className="shrink-0"
+        >
+          {uploading ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Upload className="w-4 h-4 mr-1" />}
+          Nahrát soubor
+        </Button>
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/png,image/webp,image/jpeg"
+          className="hidden"
+          onChange={handleFile}
+        />
+      </div>
+      {helper && <p className="text-xs text-muted-foreground mt-1">{helper}</p>}
+    </div>
+  );
+}
 
 type Category =
   | "base"
@@ -445,6 +523,7 @@ export default function AvatarItemsManager() {
   const showBack = cat === "hairstyle";
   const showColor = cat === "hair_color" || cat === "skin_tone";
   const CALIB_CATEGORIES: Category[] = [
+    "base",
     "hairstyle",
     "eyes",
     "eyebrow",
@@ -453,7 +532,6 @@ export default function AvatarItemsManager() {
     "face_accessory",
     "head_accessory",
     "frame",
-    
   ];
   const base01 = useMemo(() => bases.find((b) => b.slug === "base_01"), [bases]);
   const isCalibratingBase = cat === "base";
@@ -774,9 +852,22 @@ export default function AvatarItemsManager() {
                 <Label>Název *</Label>
                 <Input
                   value={editing.name ?? ""}
-                  onChange={(e) => setEditing({ ...editing, name: e.target.value })}
+                  onChange={(e) => {
+                    const nextName = e.target.value;
+                    const prevName = editing.name ?? "";
+                    const currentSlug = (editing.slug ?? "").trim();
+                    const autoFromPrev = slugifyName(prevName);
+                    // Auto-sync slug if it's empty or still matches the auto-generated form of the previous name.
+                    const shouldAutoSync = currentSlug === "" || currentSlug === autoFromPrev;
+                    setEditing({
+                      ...editing,
+                      name: nextName,
+                      slug: shouldAutoSync ? slugifyName(nextName) : editing.slug,
+                    });
+                  }}
                 />
               </div>
+
 
               <div>
                 <Label>Kategorie *</Label>
@@ -807,39 +898,34 @@ export default function AvatarItemsManager() {
               </div>
 
               <div className="col-span-2">
-                <Label>Image URL (vrstvení na postavě)</Label>
-                <Input
+                <ImageUrlField
+                  label="Image URL (vrstvení na postavě)"
+                  helper="Používá se pro vykreslení na avataru (respektuje kalibraci layer_offset_x/y a layer_scale)."
                   value={editing.image_url ?? ""}
-                  onChange={(e) => setEditing({ ...editing, image_url: e.target.value })}
-                  placeholder="https://..."
+                  onChange={(url) => setEditing({ ...editing, image_url: url })}
                 />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Používá se pro vykreslení na avataru (respektuje kalibraci layer_offset_x/y a layer_scale).
-                </p>
               </div>
 
               <div className="col-span-2">
-                <Label>Náhled v katalogu (thumbnail_url)</Label>
-                <Input
+                <ImageUrlField
+                  label="Náhled v katalogu (thumbnail_url)"
+                  helper="Nepovinné. Zobrazí se v mřížce výběru položek místo image_url. Pokud je prázdné, použije se image_url i tam. Nemá vliv na vrstvení na postavě."
                   value={editing.thumbnail_url ?? ""}
-                  onChange={(e) => setEditing({ ...editing, thumbnail_url: e.target.value })}
+                  onChange={(url) => setEditing({ ...editing, thumbnail_url: url })}
                   placeholder="https://... (nepovinné)"
                 />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Nepovinné. Zobrazí se v mřížce výběru položek místo image_url. Pokud je prázdné, použije se image_url i tam. Nemá vliv na vrstvení na postavě.
-                </p>
               </div>
 
               {showBack && (
                 <div className="col-span-2">
-                  <Label>Image URL – zadní vrstva (hair_back)</Label>
-                  <Input
+                  <ImageUrlField
+                    label="Image URL – zadní vrstva (hair_back)"
                     value={editing.image_url_back ?? ""}
-                    onChange={(e) => setEditing({ ...editing, image_url_back: e.target.value })}
-                    placeholder="https://..."
+                    onChange={(url) => setEditing({ ...editing, image_url_back: url })}
                   />
                 </div>
               )}
+
 
               {showColor && (
                 <div className="col-span-2">
