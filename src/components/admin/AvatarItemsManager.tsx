@@ -24,8 +24,86 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Pencil, Plus, Trash2, ImageOff, RefreshCw } from "lucide-react";
+import { Loader2, Pencil, Plus, Trash2, ImageOff, RefreshCw, Upload } from "lucide-react";
 import AvatarLayerStack, { type StackLayer } from "@/components/avatar/AvatarLayerStack";
+
+const slugifyName = (input: string): string => {
+  return (input || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^[_-]+|[_-]+$/g, "");
+};
+
+type UploadFieldProps = {
+  label: string;
+  helper?: string;
+  value: string;
+  onChange: (url: string) => void;
+  placeholder?: string;
+};
+
+function ImageUrlField({ label, helper, value, onChange, placeholder }: UploadFieldProps) {
+  const [uploading, setUploading] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setUploading(true);
+    try {
+      const dot = file.name.lastIndexOf(".");
+      const base = dot >= 0 ? file.name.slice(0, dot) : file.name;
+      const ext = dot >= 0 ? file.name.slice(dot + 1).toLowerCase() : "png";
+      const path = `${Date.now()}_${slugifyName(base) || "file"}.${ext}`;
+      const { error } = await supabase.storage
+        .from("avatar-assets")
+        .upload(path, file, { cacheControl: "3600", upsert: false, contentType: file.type });
+      if (error) throw error;
+      const { data } = supabase.storage.from("avatar-assets").getPublicUrl(path);
+      onChange(data.publicUrl);
+      toast({ title: "Soubor nahrán" });
+    } catch (err: any) {
+      toast({ title: "Nahrání selhalo", description: err?.message ?? String(err), variant: "destructive" });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div>
+      <Label>{label}</Label>
+      <div className="flex gap-2">
+        <Input
+          value={value ?? ""}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder ?? "https://..."}
+          className="flex-1"
+        />
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => inputRef.current?.click()}
+          disabled={uploading}
+          className="shrink-0"
+        >
+          {uploading ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Upload className="w-4 h-4 mr-1" />}
+          Nahrát soubor
+        </Button>
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/png,image/webp,image/jpeg"
+          className="hidden"
+          onChange={handleFile}
+        />
+      </div>
+      {helper && <p className="text-xs text-muted-foreground mt-1">{helper}</p>}
+    </div>
+  );
+}
 
 type Category =
   | "base"
