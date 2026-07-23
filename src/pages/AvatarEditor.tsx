@@ -548,7 +548,7 @@ function AvatarPreview({
           Načítání avatara…
         </div>
       )}
-      <div className="absolute" style={{ top: "25%", left: "14%", width: "72%", height: "72%" }}>
+      <div className="absolute" style={{ top: "20%", left: "10%", width: "80%", height: "80%" }}>
         {layers.map((l, idx) => (
           <LayerVisual
             key={`${l.item.id}-${l.sub ?? "main"}-${idx}`}
