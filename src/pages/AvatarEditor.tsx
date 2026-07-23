@@ -547,18 +547,19 @@ function AvatarPreview({
           Načítání avatara…
         </div>
       )}
-      {/* Slightly shrunk + nudged down so tallest hairstyles/accessories fit inside the preview frame. */}
-      <div className="absolute" style={{ top: "10%", left: "16%", width: "68%", height: "68%" }}>
-
-        {layers.map((l, idx) => (
-          <LayerVisual
-            key={`${l.item.id}-${l.sub ?? "main"}-${idx}`}
-            item={l.item}
-            subLayer={l.sub}
-            reduceMotion={reduceMotion}
-            tintColor={tintFor(l.item)}
-          />
-        ))}
+      {/* Container restored to original size; character itself is scaled down so tall hairstyles fit. */}
+      <div className="absolute" style={{ top: "9%", left: "9%", width: "82%", height: "82%" }}>
+        <div className="w-full h-full" style={{ transform: "scale(0.85)", transformOrigin: "center" }}>
+          {layers.map((l, idx) => (
+            <LayerVisual
+              key={`${l.item.id}-${l.sub ?? "main"}-${idx}`}
+              item={l.item}
+              subLayer={l.sub}
+              reduceMotion={reduceMotion}
+              tintColor={tintFor(l.item)}
+            />
+          ))}
+        </div>
       </div>
       {profile.active_title && (
         <div className="absolute bottom-2 inset-x-2 text-center">
