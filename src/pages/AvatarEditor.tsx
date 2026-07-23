@@ -544,18 +544,16 @@ function AvatarPreview({
           Načítání avatara…
         </div>
       )}
-      <div className="absolute" style={{ top: "9%", left: "9%", width: "82%", height: "82%" }}>
-        <div className="absolute inset-0" style={{ transform: "scale(0.9)", transformOrigin: "center" }}>
-          {layers.map((l, idx) => (
-            <LayerVisual
-              key={`${l.item.id}-${l.sub ?? "main"}-${idx}`}
-              item={l.item}
-              subLayer={l.sub}
-              reduceMotion={reduceMotion}
-              tintColor={tintFor(l.item)}
-            />
-          ))}
-        </div>
+      <div className="absolute" style={{ top: "25%", left: "14%", width: "72%", height: "72%" }}>
+        {layers.map((l, idx) => (
+          <LayerVisual
+            key={`${l.item.id}-${l.sub ?? "main"}-${idx}`}
+            item={l.item}
+            subLayer={l.sub}
+            reduceMotion={reduceMotion}
+            tintColor={tintFor(l.item)}
+          />
+        ))}
       </div>
       {profile.active_title && (
         <div className="absolute bottom-2 inset-x-2 text-center">
