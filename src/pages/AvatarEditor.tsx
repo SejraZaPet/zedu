@@ -297,13 +297,16 @@ function outfitTintFromHex(hex: string): { filter: string; useOverlay: boolean; 
 }
 
 function LayerVisual({
-  item, subLayer, reduceMotion, tintColor,
-}: { item: AvatarItem; subLayer?: "back" | "front"; reduceMotion?: boolean; tintColor?: string | null }) {
+  item, subLayer, reduceMotion, tintColor, useThumbnail,
+}: { item: AvatarItem; subLayer?: "back" | "front"; reduceMotion?: boolean; tintColor?: string | null; useThumbnail?: boolean }) {
   // Decorative SVG overlays for frame — no image_url needed
   if (item.category === "frame") {
     return <FrameOverlay slug={item.slug} reduceMotion={reduceMotion} />;
   }
-  const rawSrc = subLayer === "back" ? item.image_url_back : item.image_url;
+  // Catalog/grid tiles may opt in to `thumbnail_url` (falls back to image_url).
+  // Character rendering NEVER uses thumbnail_url — it must use the layered image_url.
+  const layeredSrc = subLayer === "back" ? item.image_url_back : item.image_url;
+  const rawSrc = useThumbnail && !subLayer ? (item.thumbnail_url ?? layeredSrc) : layeredSrc;
   const src = rawSrc
     ? `${rawSrc}${rawSrc.includes("?") ? "&" : "?"}v=${encodeURIComponent(item.updated_at ?? "")}`
     : rawSrc;
