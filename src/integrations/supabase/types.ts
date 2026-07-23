@@ -349,6 +349,7 @@ export type Database = {
           recommended_for_role: string
           slug: string
           sort_order: number
+          thumbnail_url: string | null
           unlock_type: string
           unlock_value: string | null
           updated_at: string
@@ -373,6 +374,7 @@ export type Database = {
           recommended_for_role?: string
           slug: string
           sort_order?: number
+          thumbnail_url?: string | null
           unlock_type?: string
           unlock_value?: string | null
           updated_at?: string
@@ -397,6 +399,7 @@ export type Database = {
           recommended_for_role?: string
           slug?: string
           sort_order?: number
+          thumbnail_url?: string | null
           unlock_type?: string
           unlock_value?: string | null
           updated_at?: string
