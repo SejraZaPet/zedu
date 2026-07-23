@@ -45,7 +45,7 @@ import {
 type Category =
   | "base" | "skin_tone" | "hairstyle" | "hair_color" | "eyes" | "eyebrow" | "mouth" | "outfit"
   | "face_accessory" | "head_accessory" | "background"
-  | "frame" | "effect" | "badge" | "title";
+  | "frame" | "badge" | "title";
 
 interface AvatarItem {
   id: string;
@@ -149,7 +149,7 @@ const CATEGORY_META: {
   { key: "head_accessory",  label: "Doplňky hlava",   icon: Crown,      profileField: "head_accessory_id", storesValue: "id" },
   { key: "background",      label: "Pozadí",          icon: ImageIcon,  profileField: "background_id",     storesValue: "id" },
   { key: "frame",           label: "Rámeček",         icon: Frame,      profileField: "frame_id",          storesValue: "id" },
-  { key: "effect",          label: "Efekty",          icon: Sparkles,   profileField: "effect_id",         storesValue: "id" },
+  
   { key: "badge",           label: "Odznaky",         icon: Award,      profileField: "badge_id",          storesValue: "id" },
   { key: "title",           label: "Titul",           icon: Type,       profileField: "active_title",      storesValue: "name" },
 ];
@@ -185,7 +185,7 @@ const LAYER_ORDER: LayerSpec[] = [
   { category: "head_accessory" },
   { slot: "clothing_head" },
   { slot: "clothing_face" },
-  { category: "effect" },
+  
   { category: "frame" },
 ];
 
@@ -296,12 +296,9 @@ function outfitTintFromHex(hex: string): { filter: string; useOverlay: boolean; 
 function LayerVisual({
   item, subLayer, reduceMotion, tintColor,
 }: { item: AvatarItem; subLayer?: "back" | "front"; reduceMotion?: boolean; tintColor?: string | null }) {
-  // Decorative SVG overlays for frame/effect — no image_url needed
+  // Decorative SVG overlays for frame — no image_url needed
   if (item.category === "frame") {
     return <FrameOverlay slug={item.slug} reduceMotion={reduceMotion} />;
-  }
-  if (item.category === "effect") {
-    return <EffectOverlay slug={item.slug} reduceMotion={reduceMotion} />;
   }
   const rawSrc = subLayer === "back" ? item.image_url_back : item.image_url;
   const src = rawSrc
@@ -502,7 +499,7 @@ function AvatarPreview({
     else if (l.category === "mouth") id = profile.mouth_id;
     else if (l.category === "face_accessory") id = profile.face_accessory_id;
     else if (l.category === "head_accessory") id = profile.head_accessory_id;
-    else if (l.category === "effect") id = profile.effect_id;
+    
     else if (l.category === "frame") id = profile.frame_id;
     if (!id) continue;
     const item = itemsById.get(id);
@@ -768,7 +765,7 @@ export default function AvatarEditor() {
 
   const selectCategory = (category: Category) => {
     setActiveCategory(category);
-    if (category === "frame" || category === "effect") {
+    if (category === "frame") {
       setFilter("all");
     }
   };

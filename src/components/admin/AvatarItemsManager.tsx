@@ -40,7 +40,7 @@ type Category =
   | "head_accessory"
   | "background"
   | "frame"
-  | "effect"
+  
   | "badge"
   | "title";
 
@@ -57,7 +57,7 @@ const CATEGORIES: { value: Category; label: string }[] = [
   { value: "head_accessory", label: "Doplněk hlava" },
   { value: "background", label: "Pozadí" },
   { value: "frame", label: "Rámeček" },
-  { value: "effect", label: "Efekt" },
+  
   { value: "badge", label: "Odznak" },
   { value: "title", label: "Titul" },
 ];
@@ -452,7 +452,7 @@ export default function AvatarItemsManager() {
     "face_accessory",
     "head_accessory",
     "frame",
-    "effect",
+    
   ];
   const base01 = useMemo(() => bases.find((b) => b.slug === "base_01"), [bases]);
   const isCalibratingBase = cat === "base";
