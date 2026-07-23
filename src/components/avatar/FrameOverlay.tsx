@@ -20,8 +20,9 @@ function usePrefersReducedMotion() {
 }
 
 /**
- * Decorative circular frame drawn as inline SVG, mapped by item.slug.
- * Occupies the full container (position: absolute inset-0).
+ * Decorative rounded-rectangle frame drawn as inline SVG, mapped by item.slug.
+ * Occupies the full container (position: absolute inset-0) and follows the
+ * card shape (rounded-2xl), not a circle around the character.
  * Respects prefers-reduced-motion (system) — animations disabled if requested.
  */
 export default function FrameOverlay({ slug, reduceMotion }: Props) {
@@ -31,6 +32,7 @@ export default function FrameOverlay({ slug, reduceMotion }: Props) {
   const common = {
     xmlns: "http://www.w3.org/2000/svg",
     viewBox: "0 0 100 100",
+    preserveAspectRatio: "none" as const,
     "aria-hidden": true as const,
     className: "absolute inset-0 w-full h-full pointer-events-none",
   };
@@ -41,7 +43,7 @@ export default function FrameOverlay({ slug, reduceMotion }: Props) {
     case "frame_basic_line":
       return (
         <svg {...common}>
-          <circle cx="50" cy="50" r="48" fill="none" stroke="hsl(var(--border))" strokeWidth="1.5" />
+          <rect x="2" y="2" width="96" height="96" rx="12" ry="12" fill="none" stroke="hsl(var(--border))" strokeWidth="1.5" />
         </svg>
       );
 
@@ -54,21 +56,18 @@ export default function FrameOverlay({ slug, reduceMotion }: Props) {
               <stop offset="100%" stopColor="#9B87C9" />
             </linearGradient>
           </defs>
-          <circle cx="50" cy="50" r="47.5" fill="none" stroke={`url(#${uid})`} strokeWidth="3" opacity="0.75" />
+          <rect x="2.5" y="2.5" width="95" height="95" rx="12" ry="12" fill="none" stroke={`url(#${uid})`} strokeWidth="3" opacity="0.75" />
         </svg>
       );
 
     case "frame_violet_pulse":
       return (
         <svg {...common}>
-          <circle cx="50" cy="50" r="47" fill="none" stroke="#9B87C9" strokeWidth="2.5">
+          <rect x="3" y="3" width="94" height="94" rx="12" ry="12" fill="none" stroke="#9B87C9" strokeWidth="2.5">
             {animate && (
-              <>
-                <animate attributeName="opacity" values="0.7;1;0.7" dur="2.4s" repeatCount="indefinite" />
-                <animate attributeName="r" values="46;48;46" dur="2.4s" repeatCount="indefinite" />
-              </>
+              <animate attributeName="opacity" values="0.6;1;0.6" dur="2.4s" repeatCount="indefinite" />
             )}
-          </circle>
+          </rect>
         </svg>
       );
 
@@ -84,10 +83,13 @@ export default function FrameOverlay({ slug, reduceMotion }: Props) {
               </feMerge>
             </filter>
           </defs>
-          <circle
-            cx="50"
-            cy="50"
-            r="47"
+          <rect
+            x="3"
+            y="3"
+            width="94"
+            height="94"
+            rx="12"
+            ry="12"
             fill="none"
             stroke="#2A7BF0"
             strokeWidth="2.5"
@@ -106,15 +108,15 @@ export default function FrameOverlay({ slug, reduceMotion }: Props) {
               <stop offset="100%" stopColor="#B8860B" />
             </linearGradient>
           </defs>
-          <circle cx="50" cy="50" r="48" fill="none" stroke={`url(#${uid})`} strokeWidth="2.5" />
-          <circle cx="50" cy="50" r="44" fill="none" stroke={`url(#${uid})`} strokeWidth="1.5" opacity="0.85" />
+          <rect x="2" y="2" width="96" height="96" rx="13" ry="13" fill="none" stroke={`url(#${uid})`} strokeWidth="2.5" />
+          <rect x="6" y="6" width="88" height="88" rx="10" ry="10" fill="none" stroke={`url(#${uid})`} strokeWidth="1.5" opacity="0.85" />
         </svg>
       );
 
     default:
       return (
         <svg {...common}>
-          <circle cx="50" cy="50" r="48" fill="none" stroke="hsl(var(--muted-foreground))" strokeWidth="1.5" opacity="0.6" />
+          <rect x="2" y="2" width="96" height="96" rx="12" ry="12" fill="none" stroke="hsl(var(--muted-foreground))" strokeWidth="1.5" opacity="0.6" />
         </svg>
       );
   }
