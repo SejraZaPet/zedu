@@ -35,7 +35,7 @@ interface Props {
 export default function BadgeOverlay({
   iconName,
   rarity = "common",
-  size = 28,
+  size = 40,
   className,
   title,
 }: Props) {
