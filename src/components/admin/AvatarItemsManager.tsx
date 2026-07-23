@@ -82,6 +82,7 @@ type AvatarItem = {
   rarity: string;
   image_url: string | null;
   image_url_back: string | null;
+  thumbnail_url: string | null;
   color_value: string | null;
   recommended_for_role: string;
   unlock_type: string;
