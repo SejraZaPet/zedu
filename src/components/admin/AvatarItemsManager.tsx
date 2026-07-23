@@ -807,12 +807,27 @@ export default function AvatarItemsManager() {
               </div>
 
               <div className="col-span-2">
-                <Label>Image URL</Label>
+                <Label>Image URL (vrstvení na postavě)</Label>
                 <Input
                   value={editing.image_url ?? ""}
                   onChange={(e) => setEditing({ ...editing, image_url: e.target.value })}
                   placeholder="https://..."
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Používá se pro vykreslení na avataru (respektuje kalibraci layer_offset_x/y a layer_scale).
+                </p>
+              </div>
+
+              <div className="col-span-2">
+                <Label>Náhled v katalogu (thumbnail_url)</Label>
+                <Input
+                  value={editing.thumbnail_url ?? ""}
+                  onChange={(e) => setEditing({ ...editing, thumbnail_url: e.target.value })}
+                  placeholder="https://... (nepovinné)"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Nepovinné. Zobrazí se v mřížce výběru položek místo image_url. Pokud je prázdné, použije se image_url i tam. Nemá vliv na vrstvení na postavě.
+                </p>
               </div>
 
               {showBack && (
