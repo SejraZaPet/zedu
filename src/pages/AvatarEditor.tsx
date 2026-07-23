@@ -58,6 +58,7 @@ interface AvatarItem {
   image_url: string | null;
   icon_name: string | null;
   image_url_back: string | null;
+  thumbnail_url: string | null;
   color_value: string | null;
   is_neutral_color: boolean | null;
   layer_slot: LayerSlot | null;
