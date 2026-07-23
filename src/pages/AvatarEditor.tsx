@@ -536,7 +536,7 @@ function AvatarPreview({
   return (
     <div
       className={cn(
-        "relative w-full aspect-square rounded-2xl overflow-hidden border bg-gradient-to-br from-muted/50 to-muted",
+        "relative w-full aspect-square rounded-2xl overflow-hidden border bg-muted/30",
         !reduceMotion && "transition-all",
       )}
       role="img"
@@ -547,19 +547,16 @@ function AvatarPreview({
           Načítání avatara…
         </div>
       )}
-      {/* Container restored to original size; character itself is scaled down so tall hairstyles fit. */}
-      <div className="absolute" style={{ top: "6.5%", left: "6.5%", width: "87%", height: "87%" }}>
-        <div className="w-full h-full" style={{ transform: "scale(0.85)", transformOrigin: "center" }}>
-          {layers.map((l, idx) => (
-            <LayerVisual
-              key={`${l.item.id}-${l.sub ?? "main"}-${idx}`}
-              item={l.item}
-              subLayer={l.sub}
-              reduceMotion={reduceMotion}
-              tintColor={tintFor(l.item)}
-            />
-          ))}
-        </div>
+      <div className="absolute" style={{ top: "9%", left: "9%", width: "82%", height: "82%" }}>
+        {layers.map((l, idx) => (
+          <LayerVisual
+            key={`${l.item.id}-${l.sub ?? "main"}-${idx}`}
+            item={l.item}
+            subLayer={l.sub}
+            reduceMotion={reduceMotion}
+            tintColor={tintFor(l.item)}
+          />
+        ))}
       </div>
       {profile.active_title && (
         <div className="absolute bottom-2 inset-x-2 text-center">
