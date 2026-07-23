@@ -32,7 +32,9 @@ import {
 import {
   User, Scissors, Shirt, Glasses, Crown, Image as ImageIcon,
   Frame, Sparkles, Award, Type, Lock, Heart, Shuffle, ArrowLeft, Check, Eye, Smile,
+  icons as lucideIcons,
 } from "lucide-react";
+
 import { cn } from "@/lib/utils";
 import ColorPalette from "@/components/avatar/ColorPalette";
 import { isTintable, CATEGORY_COLOR_COLUMN, paletteFor, isGradientValue, BRAND_GRADIENT_CSS, type TintableCategory } from "@/lib/avatar-palettes";
@@ -373,7 +375,12 @@ function LayerVisual({
 
 
   // Fallback: colored bubble with category icon + item name
-  const Icon = CATEGORY_ICON[item.category] ?? Sparkles;
+  let Icon: React.ComponentType<{ className?: string }> = CATEGORY_ICON[item.category] ?? Sparkles;
+  if (item.category === "badge") {
+    const iconMap = lucideIcons as unknown as Record<string, React.ComponentType<{ className?: string }>>;
+    Icon = (item.icon_name && iconMap[item.icon_name]) || Award;
+  }
+
   const bg = item.color_value ?? "hsl(var(--muted))";
   return (
     <div style={style} className="w-full h-full flex items-center justify-center pointer-events-none">
