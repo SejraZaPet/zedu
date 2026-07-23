@@ -5,13 +5,14 @@ type Rarity = "common" | "uncommon" | "rare" | "epic" | "legendary" | "mythic";
 
 // Mirrors RARITY_TONE from AvatarEditor grid tiles so the badge dot matches.
 const RARITY_TONE: Record<Rarity, string> = {
-  common: "bg-muted text-muted-foreground",
-  uncommon: "bg-primary/15 text-primary",
-  rare: "bg-secondary/15 text-secondary",
-  epic: "bg-accent/20 text-accent-foreground",
-  legendary: "bg-yellow-500/20 text-yellow-700 dark:text-yellow-300",
+  common: "bg-muted-foreground/90 text-background",
+  uncommon: "bg-primary text-primary-foreground",
+  rare: "bg-secondary text-secondary-foreground",
+  epic: "bg-accent text-accent-foreground",
+  legendary: "bg-yellow-500 text-white",
   mythic: "bg-gradient-brand-sm text-white",
 };
+
 
 function resolveIcon(name: string | null | undefined): LucideIcon {
   if (!name) return Award;
