@@ -471,7 +471,7 @@ const AvatarTile = React.memo(function AvatarTile({
         )}
       >
         <div className="relative w-full aspect-square rounded-lg bg-muted/40 overflow-hidden mb-2">
-          <LayerVisual item={item} />
+          <LayerVisual item={item} useThumbnail />
           {selected && (
             <span className="absolute top-1 left-1 rounded-full bg-primary text-primary-foreground w-6 h-6 flex items-center justify-center">
               <Check className="w-3.5 h-3.5" />
