@@ -41,8 +41,7 @@ type Category =
   | "background"
   | "frame"
   
-  | "badge"
-  | "title";
+  | "badge";
 
 const CATEGORIES: { value: Category; label: string }[] = [
   { value: "base", label: "Postava (base)" },
@@ -59,7 +58,6 @@ const CATEGORIES: { value: Category; label: string }[] = [
   { value: "frame", label: "Rámeček" },
   
   { value: "badge", label: "Odznak" },
-  { value: "title", label: "Titul" },
 ];
 
 const RARITIES = ["common", "uncommon", "rare", "epic", "legendary", "mythic"] as const;
