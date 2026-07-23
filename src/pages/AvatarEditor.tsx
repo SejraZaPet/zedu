@@ -1058,17 +1058,7 @@ export default function AvatarEditor() {
             })}
           </ul>
 
-          <div className="mt-6 rounded-lg border p-3 space-y-2">
-            <div className="flex items-center justify-between gap-2">
-              <Label htmlFor="reduce-motion" className="text-sm">Omezit animace</Label>
-              <Switch
-                id="reduce-motion"
-                checked={draft?.reduce_motion ?? false}
-                onCheckedChange={toggleReduceMotion}
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">Šetrnější pohyb u efektů a přechodů.</p>
-          </div>
+
         </aside>
 
         {/* Middle: preview */}
