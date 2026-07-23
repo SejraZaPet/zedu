@@ -116,7 +116,7 @@ export default function FrameOverlay({ slug, reduceMotion }: Props) {
     default:
       return (
         <svg {...common}>
-          <rect x="0" y="0" width="100" height="100" rx="14" ry="14" fill="none" stroke="hsl(var(--muted-foreground))" strokeWidth="1.5" opacity="0.6" />
+          <rect x="0" y="0" width="100" height="100" rx="14" ry="14" fill="none" stroke="hsl(var(--foreground))" strokeWidth="2" opacity="0.35" />
         </svg>
       );
   }
