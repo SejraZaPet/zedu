@@ -153,7 +153,7 @@ const CATEGORY_META: {
   { key: "frame",           label: "Rámeček",         icon: Frame,      profileField: "frame_id",          storesValue: "id" },
   
   { key: "badge",           label: "Odznaky",         icon: Award,      profileField: "badge_id",          storesValue: "id" },
-  { key: "title",           label: "Titul",           icon: Type,       profileField: "active_title",      storesValue: "name" },
+  
 ];
 
 const CATEGORY_ICON: Record<Category, React.ComponentType<{ className?: string }>> = Object.fromEntries(
@@ -581,13 +581,6 @@ function AvatarPreview({
       </div>
       {frameItem && <FrameOverlay slug={frameItem.slug} reduceMotion={reduceMotion} />}
 
-      {profile.active_title && (
-        <div className="absolute bottom-2 inset-x-2 text-center">
-          <span className="inline-block rounded-full bg-background/90 backdrop-blur px-3 py-1 text-xs font-medium border">
-            {profile.active_title}
-          </span>
-        </div>
-      )}
       {profile.badge_id && itemsById.get(profile.badge_id) && (
         <BadgeOverlay
           iconName={itemsById.get(profile.badge_id)!.icon_name}
