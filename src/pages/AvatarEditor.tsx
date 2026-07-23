@@ -659,7 +659,7 @@ function BaseOnboarding({
                 )}
               >
                 <div className="relative w-full h-full">
-                  <LayerVisual item={b} />
+                  <LayerVisual item={b} useThumbnail />
                 </div>
                 <span className="absolute inset-x-1 bottom-1 text-xs font-medium truncate bg-background/80 rounded px-1">
                   {b.name}
