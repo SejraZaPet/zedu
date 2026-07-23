@@ -381,6 +381,33 @@ function LayerVisual({
     Icon = (item.icon_name && iconMap[item.icon_name]) || Award;
   }
 
+  if (item.category === "badge") {
+    const BADGE_TONE: Record<AvatarItem["rarity"], string> = {
+      common: "bg-muted-foreground/90 text-background",
+      uncommon: "bg-primary text-primary-foreground",
+      rare: "bg-secondary text-secondary-foreground",
+      epic: "bg-accent text-accent-foreground",
+      legendary: "bg-yellow-500 text-white",
+      mythic: "bg-gradient-brand-sm text-white",
+    };
+    return (
+      <div style={style} className="w-full h-full flex items-center justify-center pointer-events-none">
+        <div
+          className={cn(
+            "rounded-full flex flex-col items-center justify-center border-2 border-white/60 shadow-sm",
+            BADGE_TONE[item.rarity],
+          )}
+          style={{ width: "55%", height: "55%" }}
+        >
+          <Icon className="w-6 h-6 drop-shadow" />
+          <span className="text-[10px] font-semibold mt-0.5 px-1 text-center leading-tight line-clamp-2 opacity-95">
+            {item.name}
+          </span>
+        </div>
+      </div>
+    );
+  }
+
   const bg = item.color_value ?? "hsl(var(--muted))";
   return (
     <div style={style} className="w-full h-full flex items-center justify-center pointer-events-none">
@@ -400,6 +427,7 @@ function LayerVisual({
     </div>
   );
 }
+
 
 // ---------- Memoized grid tile ----------
 // Isolated so that toggling a color in the palette (which mutates `draft`)
