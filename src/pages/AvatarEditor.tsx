@@ -560,6 +560,14 @@ function AvatarPreview({
           Načítání avatara…
         </div>
       )}
+      {backgroundItem && (() => {
+        const t = tintFor(backgroundItem);
+        const fill = t
+          ? (isGradientValue(t) ? BRAND_GRADIENT_CSS : t)
+          : backgroundItem.color_value;
+        return fill ? <div aria-hidden="true" className="absolute inset-0" style={{ background: fill }} /> : null;
+      })()}
+
       <div className="absolute" style={{ top: "20%", left: "10%", width: "80%", height: "80%" }}>
         {layers.map((l, idx) => (
           <LayerVisual
