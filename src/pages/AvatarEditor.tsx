@@ -547,7 +547,9 @@ function AvatarPreview({
           Načítání avatara…
         </div>
       )}
-      <div className="absolute" style={{ top: "9%", left: "9%", width: "82%", height: "82%" }}>
+      {/* Slightly shrunk + nudged down so tallest hairstyles/accessories fit inside the preview frame. */}
+      <div className="absolute" style={{ top: "13%", left: "12%", width: "76%", height: "76%" }}>
+
         {layers.map((l, idx) => (
           <LayerVisual
             key={`${l.item.id}-${l.sub ?? "main"}-${idx}`}
