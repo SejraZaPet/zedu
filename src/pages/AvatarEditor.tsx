@@ -909,7 +909,14 @@ export default function AvatarEditor() {
   // Onboarding: need to create profile first
   const onboardPickBase = async (baseId: string) => {
     if (!userId) return;
-    const payload = { ...emptyProfile(userId), base_id: baseId };
+    const defaultBackground = (itemsByCategory.get("background") ?? []).find(
+      (i) => i.slug === "background_solid",
+    );
+    const payload = {
+      ...emptyProfile(userId),
+      base_id: baseId,
+      background_id: defaultBackground?.id ?? null,
+    };
     const { error } = await supabase.from("avatar_profiles").insert(payload);
     if (error) {
       toast({ title: "Chyba", description: error.message, variant: "destructive" });
