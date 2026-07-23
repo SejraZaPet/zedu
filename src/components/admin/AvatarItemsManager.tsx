@@ -125,6 +125,7 @@ const emptyForm = (): Partial<AvatarItem> => ({
   rarity: "common",
   image_url: "",
   image_url_back: "",
+  thumbnail_url: "",
   color_value: "",
   recommended_for_role: "both",
   unlock_type: "default",
