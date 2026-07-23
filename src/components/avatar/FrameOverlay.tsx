@@ -43,7 +43,7 @@ export default function FrameOverlay({ slug, reduceMotion }: Props) {
     case "frame_basic_line":
       return (
         <svg {...common}>
-          <rect x="2" y="2" width="96" height="96" rx="12" ry="12" fill="none" stroke="hsl(var(--border))" strokeWidth="1.5" />
+          <rect x="0.5" y="0.5" width="99" height="99" rx="14" ry="14" fill="none" stroke="hsl(var(--border))" strokeWidth="1.5" />
         </svg>
       );
 
@@ -56,14 +56,14 @@ export default function FrameOverlay({ slug, reduceMotion }: Props) {
               <stop offset="100%" stopColor="#9B87C9" />
             </linearGradient>
           </defs>
-          <rect x="2.5" y="2.5" width="95" height="95" rx="12" ry="12" fill="none" stroke={`url(#${uid})`} strokeWidth="3" opacity="0.75" />
+          <rect x="0.5" y="0.5" width="99" height="99" rx="14" ry="14" fill="none" stroke={`url(#${uid})`} strokeWidth="3" opacity="0.75" />
         </svg>
       );
 
     case "frame_violet_pulse":
       return (
         <svg {...common}>
-          <rect x="3" y="3" width="94" height="94" rx="12" ry="12" fill="none" stroke="#9B87C9" strokeWidth="2.5">
+          <rect x="0.5" y="0.5" width="99" height="99" rx="14" ry="14" fill="none" stroke="#9B87C9" strokeWidth="2.5">
             {animate && (
               <animate attributeName="opacity" values="0.6;1;0.6" dur="2.4s" repeatCount="indefinite" />
             )}
@@ -84,12 +84,12 @@ export default function FrameOverlay({ slug, reduceMotion }: Props) {
             </filter>
           </defs>
           <rect
-            x="3"
-            y="3"
-            width="94"
-            height="94"
-            rx="12"
-            ry="12"
+            x="0.5"
+            y="0.5"
+            width="99"
+            height="99"
+            rx="14"
+            ry="14"
             fill="none"
             stroke="#2A7BF0"
             strokeWidth="2.5"
@@ -108,15 +108,15 @@ export default function FrameOverlay({ slug, reduceMotion }: Props) {
               <stop offset="100%" stopColor="#B8860B" />
             </linearGradient>
           </defs>
-          <rect x="2" y="2" width="96" height="96" rx="13" ry="13" fill="none" stroke={`url(#${uid})`} strokeWidth="2.5" />
-          <rect x="6" y="6" width="88" height="88" rx="10" ry="10" fill="none" stroke={`url(#${uid})`} strokeWidth="1.5" opacity="0.85" />
+          <rect x="0.5" y="0.5" width="99" height="99" rx="14" ry="14" fill="none" stroke={`url(#${uid})`} strokeWidth="2.5" />
+          <rect x="4" y="4" width="92" height="92" rx="11" ry="11" fill="none" stroke={`url(#${uid})`} strokeWidth="1.5" opacity="0.85" />
         </svg>
       );
 
     default:
       return (
         <svg {...common}>
-          <rect x="2" y="2" width="96" height="96" rx="12" ry="12" fill="none" stroke="hsl(var(--muted-foreground))" strokeWidth="1.5" opacity="0.6" />
+          <rect x="0.5" y="0.5" width="99" height="99" rx="14" ry="14" fill="none" stroke="hsl(var(--muted-foreground))" strokeWidth="1.5" opacity="0.6" />
         </svg>
       );
   }
