@@ -292,6 +292,7 @@ export default function AvatarItemsManager() {
       rarity: editing.rarity ?? "common",
       image_url: (editing.image_url ?? "") || null,
       image_url_back: (editing.image_url_back ?? "") || null,
+      thumbnail_url: (editing.thumbnail_url ?? "") || null,
       color_value: (editing.color_value ?? "") || null,
       recommended_for_role: editing.recommended_for_role ?? "both",
       unlock_type: editing.unlock_type ?? "default",
