@@ -494,16 +494,20 @@ function AvatarPreview({
 }) {
   const layers: { item: AvatarItem; sub?: "back" | "front" }[] = [];
   let frameItem: AvatarItem | null = null;
+  let backgroundItem: AvatarItem | null = null;
   if (profile.frame_id) {
     frameItem = itemsById.get(profile.frame_id) ?? null;
   }
+  if (profile.background_id) {
+    backgroundItem = itemsById.get(profile.background_id) ?? null;
+  }
   for (const l of LAYER_ORDER) {
     if (l.category === "frame") continue;
+    if (l.category === "background") continue;
     let id: string | null = null;
     if (l.slot) {
       id = (profile as any)[SLOT_PROFILE_COLUMN[l.slot]] ?? null;
-    } else if (l.category === "background") id = profile.background_id;
-    else if (l.category === "base") id = profile.base_id;
+    } else if (l.category === "base") id = profile.base_id;
     else if (l.category === "outfit") id = profile.outfit_id;
     else if (l.category === "hairstyle") id = profile.hairstyle_id;
     else if (l.category === "eyes") id = profile.eyes_id;
@@ -518,6 +522,7 @@ function AvatarPreview({
     if (l.sub === "front" && !item.image_url) continue;
     layers.push({ item, sub: l.sub });
   }
+
 
 
   // Legacy fallback so users who haven't re-saved still see the color they picked.
@@ -555,6 +560,14 @@ function AvatarPreview({
           Načítání avatara…
         </div>
       )}
+      {backgroundItem && (() => {
+        const t = tintFor(backgroundItem);
+        const fill = t
+          ? (isGradientValue(t) ? BRAND_GRADIENT_CSS : t)
+          : backgroundItem.color_value;
+        return fill ? <div aria-hidden="true" className="absolute inset-0" style={{ background: fill }} /> : null;
+      })()}
+
       <div className="absolute" style={{ top: "20%", left: "10%", width: "80%", height: "80%" }}>
         {layers.map((l, idx) => (
           <LayerVisual
