@@ -852,9 +852,22 @@ export default function AvatarItemsManager() {
                 <Label>Název *</Label>
                 <Input
                   value={editing.name ?? ""}
-                  onChange={(e) => setEditing({ ...editing, name: e.target.value })}
+                  onChange={(e) => {
+                    const nextName = e.target.value;
+                    const prevName = editing.name ?? "";
+                    const currentSlug = (editing.slug ?? "").trim();
+                    const autoFromPrev = slugifyName(prevName);
+                    // Auto-sync slug if it's empty or still matches the auto-generated form of the previous name.
+                    const shouldAutoSync = currentSlug === "" || currentSlug === autoFromPrev;
+                    setEditing({
+                      ...editing,
+                      name: nextName,
+                      slug: shouldAutoSync ? slugifyName(nextName) : editing.slug,
+                    });
+                  }}
                 />
               </div>
+
 
               <div>
                 <Label>Kategorie *</Label>
