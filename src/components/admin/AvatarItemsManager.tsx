@@ -898,39 +898,34 @@ export default function AvatarItemsManager() {
               </div>
 
               <div className="col-span-2">
-                <Label>Image URL (vrstvení na postavě)</Label>
-                <Input
+                <ImageUrlField
+                  label="Image URL (vrstvení na postavě)"
+                  helper="Používá se pro vykreslení na avataru (respektuje kalibraci layer_offset_x/y a layer_scale)."
                   value={editing.image_url ?? ""}
-                  onChange={(e) => setEditing({ ...editing, image_url: e.target.value })}
-                  placeholder="https://..."
+                  onChange={(url) => setEditing({ ...editing, image_url: url })}
                 />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Používá se pro vykreslení na avataru (respektuje kalibraci layer_offset_x/y a layer_scale).
-                </p>
               </div>
 
               <div className="col-span-2">
-                <Label>Náhled v katalogu (thumbnail_url)</Label>
-                <Input
+                <ImageUrlField
+                  label="Náhled v katalogu (thumbnail_url)"
+                  helper="Nepovinné. Zobrazí se v mřížce výběru položek místo image_url. Pokud je prázdné, použije se image_url i tam. Nemá vliv na vrstvení na postavě."
                   value={editing.thumbnail_url ?? ""}
-                  onChange={(e) => setEditing({ ...editing, thumbnail_url: e.target.value })}
+                  onChange={(url) => setEditing({ ...editing, thumbnail_url: url })}
                   placeholder="https://... (nepovinné)"
                 />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Nepovinné. Zobrazí se v mřížce výběru položek místo image_url. Pokud je prázdné, použije se image_url i tam. Nemá vliv na vrstvení na postavě.
-                </p>
               </div>
 
               {showBack && (
                 <div className="col-span-2">
-                  <Label>Image URL – zadní vrstva (hair_back)</Label>
-                  <Input
+                  <ImageUrlField
+                    label="Image URL – zadní vrstva (hair_back)"
                     value={editing.image_url_back ?? ""}
-                    onChange={(e) => setEditing({ ...editing, image_url_back: e.target.value })}
-                    placeholder="https://..."
+                    onChange={(url) => setEditing({ ...editing, image_url_back: url })}
                   />
                 </div>
               )}
+
 
               {showColor && (
                 <div className="col-span-2">
