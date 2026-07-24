@@ -184,6 +184,11 @@ const TextbookList = ({ textbooks, loading, subjects, onOpen, onChanged, onShare
         <DropdownMenuItem onClick={() => onOpen(tb)}>
           <Eye className="w-4 h-4 mr-2" /> Otevřít
         </DropdownMenuItem>
+        {onShare && (
+          <DropdownMenuItem onClick={() => onShare(tb)}>
+            <Share2 className="w-4 h-4 mr-2" /> Sdílet
+          </DropdownMenuItem>
+        )}
         {tb.archived
           ? <DropdownMenuItem onClick={() => handleArchive(tb.id, false)}>
               <ArchiveRestore className="w-4 h-4 mr-2" /> Obnovit
