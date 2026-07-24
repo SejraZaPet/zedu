@@ -417,6 +417,14 @@ export default function TeacherWorksheets() {
                     <Button
                       variant="outline"
                       size="sm"
+                      onClick={() => setShareTarget({ id: row.id, title: row.title })}
+                      title="Sdílet"
+                    >
+                      <Share2 className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => setDeleteId(row.id)}
                       title="Smazat"
                       className="text-destructive hover:text-destructive"
