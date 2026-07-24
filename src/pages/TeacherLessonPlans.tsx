@@ -62,6 +62,7 @@ export default function TeacherLessonPlans() {
   const [loading, setLoading] = useState(true);
   const [subjectFilter, setSubjectFilter] = useState<string>("__all");
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [shareTarget, setShareTarget] = useState<{ id: string; title: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [templates, setTemplates] = useState<
     { id: string; title: string; description: string | null; phases_json: any; created_at: string }[]
