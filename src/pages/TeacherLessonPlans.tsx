@@ -647,6 +647,14 @@ export default function TeacherLessonPlans() {
         </AlertDialogContent>
       </AlertDialog>
 
+      <ShareContentDialog
+        open={!!shareTarget}
+        onOpenChange={(o) => !o && setShareTarget(null)}
+        kind="lesson_plan"
+        targetId={shareTarget?.id ?? ""}
+        targetTitle={shareTarget?.title}
+      />
+
       <SiteFooter />
     </div>
   );
