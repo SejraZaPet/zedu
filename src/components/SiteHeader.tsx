@@ -187,13 +187,13 @@ const SiteHeader = () => {
                         <BarChart3 size={16} />
                         Výsledky
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate("/marketplace")} className="gap-2 cursor-pointer">
+                      <DropdownMenuItem onClick={() => navigate("/zedumarket")} className="gap-2 cursor-pointer">
                         <ShoppingBag size={16} />
-                        Marketplace
+                        ZEduMarket
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate("/ucitel/publikace")} className="gap-2 cursor-pointer">
+                      <DropdownMenuItem onClick={() => navigate("/ucitel/sdileno-se-mnou")} className="gap-2 cursor-pointer">
                         <Layers size={16} />
-                        Moje publikace
+                        Sdíleno se mnou
                       </DropdownMenuItem>
                     </>
                   )}
