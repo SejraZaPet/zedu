@@ -68,9 +68,8 @@ import TeacherMethods from "./pages/TeacherMethods";
 import StudentMethods from "./pages/StudentMethods";
 import StudentPractice from "./pages/StudentPractice";
 import SchoolAdmin from "./pages/SchoolAdmin";
-import MarketplacePage from "./pages/MarketplacePage";
-import MarketplaceDetailPage from "./pages/MarketplaceDetailPage";
-import TeacherPublications from "./pages/TeacherPublications";
+import ZEduMarket from "./pages/ZEduMarket";
+import SharedWithMe from "./pages/SharedWithMe";
 import AvatarEditor from "./pages/AvatarEditor";
 import ViewAsBanner from "./components/ViewAsBanner";
 
