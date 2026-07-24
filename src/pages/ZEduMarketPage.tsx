@@ -5,7 +5,6 @@ import SiteFooter from "@/components/SiteFooter";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -13,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import MultiSelectFilter from "@/components/sharing/MultiSelectFilter";
 import { Loader2, Search, BookOpen, FileText, LayoutTemplate, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -30,7 +30,7 @@ const MATERIAL_MODES = [
   { value: "material_only", label: "Jen materiál" },
 ] as const;
 
-export default function ZEduMarket() {
+export default function ZEduMarketPage() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [items, setItems] = useState<PublicShareItem[]>([]);
@@ -38,8 +38,8 @@ export default function ZEduMarket() {
   const [addingId, setAddingId] = useState<string | null>(null);
   const [subjects, setSubjects] = useState<{ slug: string; label: string }[]>([]);
   const [search, setSearch] = useState("");
-  const [subject, setSubject] = useState<string>("all");
-  const [grade, setGrade] = useState<string>("all");
+  const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+  const [selectedGrades, setSelectedGrades] = useState<string[]>([]);
   const [materialMode, setMaterialMode] = useState<
     "all" | "with" | "without" | "material_only"
   >("all");
@@ -61,8 +61,8 @@ export default function ZEduMarket() {
       try {
         const rows = await listPublicShares({
           search: search || undefined,
-          subjects: subject !== "all" ? [subject] : undefined,
-          grades: grade !== "all" ? [grade] : undefined,
+          subjects: selectedSubjects.length > 0 ? selectedSubjects : undefined,
+          grades: selectedGrades.length > 0 ? selectedGrades : undefined,
           materialMode,
         });
         if (!cancel) setItems(rows);
@@ -80,7 +80,7 @@ export default function ZEduMarket() {
     return () => {
       cancel = true;
     };
-  }, [search, subject, grade, materialMode, toast]);
+  }, [search, selectedSubjects, selectedGrades, materialMode, toast]);
 
   async function handleAdd(item: PublicShareItem) {
     setAddingId(item.id);
@@ -118,7 +118,7 @@ export default function ZEduMarket() {
           </p>
         </div>
 
-        <div className="grid gap-3 md:grid-cols-[1fr_180px_180px_180px] mb-6">
+        <div className="grid gap-3 md:grid-cols-[1fr_220px_220px_180px] mb-6">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
             <Input
@@ -128,32 +128,20 @@ export default function ZEduMarket() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <Select value={subject} onValueChange={setSubject}>
-            <SelectTrigger>
-              <SelectValue placeholder="Předmět" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Všechny předměty</SelectItem>
-              {subjects.map((s) => (
-                <SelectItem key={s.slug} value={s.slug}>
-                  {s.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={grade} onValueChange={setGrade}>
-            <SelectTrigger>
-              <SelectValue placeholder="Stupeň" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Všechny stupně</SelectItem>
-              {GRADE_LEVEL_OPTIONS.map((g) => (
-                <SelectItem key={g.value} value={g.value}>
-                  {g.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <MultiSelectFilter
+            label="Předmět"
+            allLabel="všechny"
+            values={selectedSubjects}
+            options={subjects.map((s) => ({ value: s.slug, label: s.label }))}
+            onChange={setSelectedSubjects}
+          />
+          <MultiSelectFilter
+            label="Stupeň"
+            allLabel="všechny"
+            values={selectedGrades}
+            options={GRADE_LEVEL_OPTIONS}
+            onChange={setSelectedGrades}
+          />
           <Select
             value={materialMode}
             onValueChange={(v) => setMaterialMode(v as any)}
