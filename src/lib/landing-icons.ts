@@ -25,6 +25,9 @@ import {
   Target,
   Lightbulb,
   MessageCircle,
+  Layers,
+  Presentation,
+  Network,
   type LucideIcon,
 } from "lucide-react";
 
@@ -57,6 +60,9 @@ export const LANDING_ICONS: Record<string, LucideIcon> = {
   Target,
   Lightbulb,
   MessageCircle,
+  Layers,
+  Presentation,
+  Network,
 };
 
 export const LANDING_ICON_NAMES = Object.keys(LANDING_ICONS);
