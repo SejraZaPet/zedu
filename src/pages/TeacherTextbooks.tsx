@@ -18,6 +18,7 @@ import CreateFromTemplateDialog from "@/components/admin/CreateFromTemplateDialo
 import SaveAsTemplateDialog from "@/components/admin/SaveAsTemplateDialog";
 import ImportTextbookFileDialog from "@/components/admin/ImportTextbookFileDialog";
 import TeacherTextbookLessonEditorSheet from "@/components/teacher/TeacherTextbookLessonEditorSheet";
+import ShareContentDialog from "@/components/sharing/ShareContentDialog";
 import type { Block } from "@/lib/textbook-config";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
