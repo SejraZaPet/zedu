@@ -455,6 +455,15 @@ export default function TeacherWorksheets() {
         </AlertDialogContent>
       </AlertDialog>
 
+      <ShareContentDialog
+        open={!!shareTarget}
+        onOpenChange={(o) => !o && setShareTarget(null)}
+        kind="worksheet"
+        targetId={shareTarget?.id ?? ""}
+        targetTitle={shareTarget?.title}
+      />
+
+
       {pendingLessonCtx && (
         <WorksheetsForLessonDialog
           open={worksheetsForLessonOpen}
