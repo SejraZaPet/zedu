@@ -102,6 +102,17 @@ const SiteHeader = () => {
     navigate("/");
   };
 
+  const handleNavClick = (href: string) => {
+    if (href.includes("#")) {
+      const [path, hash] = href.split("#");
+      if (path === "/licence" && location.pathname === "/") {
+        document.getElementById(hash)?.scrollIntoView({ behavior: "smooth" });
+        return;
+      }
+    }
+    navigate(href);
+  };
+
   return (
     <header
       className="fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b border-border/50"
@@ -135,7 +146,7 @@ const SiteHeader = () => {
               return (
                 <button
                   key={item.label}
-                  onClick={() => navigate(item.href)}
+                  onClick={() => handleNavClick(item.href)}
                   className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
                     active
                       ? "bg-primary/10 text-primary"
