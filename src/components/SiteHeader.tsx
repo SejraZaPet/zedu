@@ -243,7 +243,7 @@ const SiteHeader = () => {
               return (
                 <button
                   key={item.label}
-                  onClick={() => { setMenuOpen(false); navigate(item.href); }}
+                  onClick={() => { setMenuOpen(false); handleNavClick(item.href); }}
                   className={`flex items-center gap-3 px-3 py-3 rounded-lg text-base font-medium transition-colors text-left ${
                     active
                       ? "bg-primary/10 text-primary"
