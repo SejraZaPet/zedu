@@ -24,8 +24,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Pencil, Plus, Trash2, ImageOff, RefreshCw, Upload } from "lucide-react";
+import { Loader2, Pencil, Plus, Trash2, ImageOff, RefreshCw, Upload, Layers } from "lucide-react";
 import AvatarLayerStack, { type StackLayer } from "@/components/avatar/AvatarLayerStack";
+import BulkUploadDialog from "@/components/admin/BulkUploadDialog";
 
 const slugifyName = (input: string): string => {
   return (input || "")
@@ -234,6 +235,7 @@ export default function AvatarItemsManager() {
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [editing, setEditing] = useState<Partial<AvatarItem> | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AvatarItem | null>(null);
+  const [bulkOpen, setBulkOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [calibrating, setCalibrating] = useState(false);
   const [previewBaseSlug, setPreviewBaseSlug] = useState<string>("base_01");
@@ -737,9 +739,14 @@ export default function AvatarItemsManager() {
           </Select>
           <span className="text-sm text-muted-foreground ml-2">{filtered.length} položek</span>
         </div>
-        <Button onClick={() => openEditor(emptyForm())} size="sm">
-          <Plus className="w-4 h-4 mr-1" /> Nová položka
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setBulkOpen(true)} size="sm">
+            <Layers className="w-4 h-4 mr-1" /> Hromadně nahrát
+          </Button>
+          <Button onClick={() => openEditor(emptyForm())} size="sm">
+            <Plus className="w-4 h-4 mr-1" /> Nová položka
+          </Button>
+        </div>
       </div>
 
       {loading ? (
@@ -1223,6 +1230,8 @@ export default function AvatarItemsManager() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <BulkUploadDialog open={bulkOpen} onOpenChange={setBulkOpen} onCreated={load} />
     </div>
   );
 }
