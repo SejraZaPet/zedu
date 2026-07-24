@@ -33,6 +33,7 @@ const SiteFooter = () => {
                 <>
                   <a href="#features" className="text-sm text-muted-foreground hover:text-primary transition-colors text-left">Funkce</a>
                   <button onClick={() => navigate("/cenik")} className="text-sm text-muted-foreground hover:text-primary transition-colors text-left">Ceník</button>
+                  <button onClick={() => navigate("/licence")} className="text-sm text-muted-foreground hover:text-primary transition-colors text-left">Licence pro školy</button>
                   <button onClick={() => navigate("/napoveda")} className="text-sm text-muted-foreground hover:text-primary transition-colors text-left">Nápověda</button>
                 </>
               )}

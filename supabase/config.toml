@@ -68,5 +68,10 @@ verify_jwt = false
 [functions.confirm-password-reset]
 verify_jwt = false
 
+[functions.send-license-inquiry]
+verify_jwt = false
+
+
+
 
 
