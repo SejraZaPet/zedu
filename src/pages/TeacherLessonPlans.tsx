@@ -30,6 +30,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { BookOpen, Plus, Search, Calendar, Loader2, Trash2, LayoutTemplate, Share2, Globe, School, Copy, User as UserIcon } from "lucide-react";
+import ShareContentDialog from "@/components/sharing/ShareContentDialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
