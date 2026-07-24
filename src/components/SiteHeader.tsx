@@ -187,13 +187,13 @@ const SiteHeader = () => {
                         <BarChart3 size={16} />
                         Výsledky
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate("/marketplace")} className="gap-2 cursor-pointer">
+                      <DropdownMenuItem onClick={() => navigate("/zedumarket")} className="gap-2 cursor-pointer">
                         <ShoppingBag size={16} />
-                        Marketplace
+                        ZEduMarket
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate("/ucitel/publikace")} className="gap-2 cursor-pointer">
+                      <DropdownMenuItem onClick={() => navigate("/ucitel/sdileno-se-mnou")} className="gap-2 cursor-pointer">
                         <Layers size={16} />
-                        Moje publikace
+                        Sdíleno se mnou
                       </DropdownMenuItem>
                     </>
                   )}
@@ -257,11 +257,11 @@ const SiteHeader = () => {
                 <button onClick={() => { setMenuOpen(false); navigate("/ucitel/vysledky"); }} className={`flex items-center gap-3 pl-6 py-2 rounded-lg text-sm font-medium transition-colors text-left ${location.pathname.startsWith("/ucitel/vysledky") ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-primary hover:bg-muted/50"}`}>
                   <BarChart3 size={16} /> Výsledky
                 </button>
-                <button onClick={() => { setMenuOpen(false); navigate("/marketplace"); }} className={`flex items-center gap-3 pl-6 py-2 rounded-lg text-sm font-medium transition-colors text-left ${location.pathname.startsWith("/marketplace") ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-primary hover:bg-muted/50"}`}>
-                  <ShoppingBag size={16} /> Marketplace
+                <button onClick={() => { setMenuOpen(false); navigate("/zedumarket"); }} className={`flex items-center gap-3 pl-6 py-2 rounded-lg text-sm font-medium transition-colors text-left ${location.pathname.startsWith("/zedumarket") ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-primary hover:bg-muted/50"}`}>
+                  <ShoppingBag size={16} /> ZEduMarket
                 </button>
-                <button onClick={() => { setMenuOpen(false); navigate("/ucitel/publikace"); }} className={`flex items-center gap-3 pl-6 py-2 rounded-lg text-sm font-medium transition-colors text-left ${location.pathname.startsWith("/ucitel/publikace") ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-primary hover:bg-muted/50"}`}>
-                  <Layers size={16} /> Moje publikace
+                <button onClick={() => { setMenuOpen(false); navigate("/ucitel/sdileno-se-mnou"); }} className={`flex items-center gap-3 pl-6 py-2 rounded-lg text-sm font-medium transition-colors text-left ${location.pathname.startsWith("/ucitel/sdileno-se-mnou") ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-primary hover:bg-muted/50"}`}>
+                  <Layers size={16} /> Sdíleno se mnou
                 </button>
               </>
             )}

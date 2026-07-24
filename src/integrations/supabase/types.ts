@@ -990,6 +990,88 @@ export type Database = {
         }
         Relationships: []
       }
+      content_shares: {
+        Row: {
+          created_at: string
+          id: string
+          includes_presentations: boolean
+          includes_worksheets: boolean
+          lesson_plan_id: string | null
+          shared_by: string
+          shared_with: string | null
+          status: string
+          textbook_id: string | null
+          worksheet_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          includes_presentations?: boolean
+          includes_worksheets?: boolean
+          lesson_plan_id?: string | null
+          shared_by: string
+          shared_with?: string | null
+          status?: string
+          textbook_id?: string | null
+          worksheet_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          includes_presentations?: boolean
+          includes_worksheets?: boolean
+          lesson_plan_id?: string | null
+          shared_by?: string
+          shared_with?: string | null
+          status?: string
+          textbook_id?: string | null
+          worksheet_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_shares_lesson_plan_id_fkey"
+            columns: ["lesson_plan_id"]
+            isOneToOne: false
+            referencedRelation: "lesson_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_shares_shared_by_fkey"
+            columns: ["shared_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_shares_shared_with_fkey"
+            columns: ["shared_with"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_shares_textbook_id_fkey"
+            columns: ["textbook_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_textbooks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_shares_textbook_id_fkey"
+            columns: ["textbook_id"]
+            isOneToOne: false
+            referencedRelation: "textbook_marketplace_stats"
+            referencedColumns: ["textbook_id"]
+          },
+          {
+            foreignKeyName: "content_shares_worksheet_id_fkey"
+            columns: ["worksheet_id"]
+            isOneToOne: false
+            referencedRelation: "worksheets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       export_jobs: {
         Row: {
           attempt: number
@@ -1709,150 +1791,6 @@ export type Database = {
           success?: boolean
         }
         Relationships: []
-      }
-      marketplace_listings: {
-        Row: {
-          cover_url: string | null
-          created_at: string
-          currency: string
-          description: string
-          downloads: number
-          grade: number | null
-          id: string
-          preview_content: Json
-          price: number
-          rating: number
-          rating_count: number
-          seller_id: string
-          status: string
-          subject: string
-          textbook_id: string
-          title: string
-          updated_at: string
-        }
-        Insert: {
-          cover_url?: string | null
-          created_at?: string
-          currency?: string
-          description?: string
-          downloads?: number
-          grade?: number | null
-          id?: string
-          preview_content?: Json
-          price?: number
-          rating?: number
-          rating_count?: number
-          seller_id: string
-          status?: string
-          subject?: string
-          textbook_id: string
-          title: string
-          updated_at?: string
-        }
-        Update: {
-          cover_url?: string | null
-          created_at?: string
-          currency?: string
-          description?: string
-          downloads?: number
-          grade?: number | null
-          id?: string
-          preview_content?: Json
-          price?: number
-          rating?: number
-          rating_count?: number
-          seller_id?: string
-          status?: string
-          subject?: string
-          textbook_id?: string
-          title?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "marketplace_listings_textbook_id_fkey"
-            columns: ["textbook_id"]
-            isOneToOne: true
-            referencedRelation: "teacher_textbooks"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      marketplace_purchases: {
-        Row: {
-          buyer_id: string
-          created_at: string
-          currency: string
-          id: string
-          listing_id: string
-          payment_status: string
-          price_paid: number
-          stripe_payment_id: string | null
-        }
-        Insert: {
-          buyer_id: string
-          created_at?: string
-          currency?: string
-          id?: string
-          listing_id: string
-          payment_status?: string
-          price_paid?: number
-          stripe_payment_id?: string | null
-        }
-        Update: {
-          buyer_id?: string
-          created_at?: string
-          currency?: string
-          id?: string
-          listing_id?: string
-          payment_status?: string
-          price_paid?: number
-          stripe_payment_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "marketplace_purchases_listing_id_fkey"
-            columns: ["listing_id"]
-            isOneToOne: false
-            referencedRelation: "marketplace_listings"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      marketplace_reviews: {
-        Row: {
-          comment: string
-          created_at: string
-          id: string
-          listing_id: string
-          rating: number
-          reviewer_id: string
-        }
-        Insert: {
-          comment?: string
-          created_at?: string
-          id?: string
-          listing_id: string
-          rating: number
-          reviewer_id: string
-        }
-        Update: {
-          comment?: string
-          created_at?: string
-          id?: string
-          listing_id?: string
-          rating?: number
-          reviewer_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "marketplace_reviews_listing_id_fkey"
-            columns: ["listing_id"]
-            isOneToOne: false
-            referencedRelation: "marketplace_listings"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       notification_broadcasts: {
         Row: {
@@ -2747,6 +2685,13 @@ export type Database = {
             referencedRelation: "teacher_textbooks"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "teacher_textbook_enrollments_textbook_id_fkey"
+            columns: ["textbook_id"]
+            isOneToOne: false
+            referencedRelation: "textbook_marketplace_stats"
+            referencedColumns: ["textbook_id"]
+          },
         ]
       }
       teacher_textbook_lessons: {
@@ -2800,6 +2745,13 @@ export type Database = {
             referencedRelation: "teacher_textbooks"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "teacher_textbook_lessons_textbook_id_fkey"
+            columns: ["textbook_id"]
+            isOneToOne: false
+            referencedRelation: "textbook_marketplace_stats"
+            referencedColumns: ["textbook_id"]
+          },
         ]
       }
       teacher_textbooks: {
@@ -2808,8 +2760,10 @@ export type Database = {
           archived: boolean
           created_at: string
           description: string
+          grade_level: string[] | null
           id: string
           order_index: number
+          school_type: string[] | null
           subject: string
           teacher_id: string
           title: string
@@ -2821,8 +2775,10 @@ export type Database = {
           archived?: boolean
           created_at?: string
           description?: string
+          grade_level?: string[] | null
           id?: string
           order_index?: number
+          school_type?: string[] | null
           subject?: string
           teacher_id: string
           title: string
@@ -2834,8 +2790,10 @@ export type Database = {
           archived?: boolean
           created_at?: string
           description?: string
+          grade_level?: string[] | null
           id?: string
           order_index?: number
+          school_type?: string[] | null
           subject?: string
           teacher_id?: string
           title?: string
@@ -3397,6 +3355,31 @@ export type Database = {
           subdomain?: string | null
         }
         Relationships: []
+      }
+      textbook_marketplace_stats: {
+        Row: {
+          author: string | null
+          direct_shares: number | null
+          grade_level: string[] | null
+          has_materials: boolean | null
+          public_shares: number | null
+          school_type: string[] | null
+          subject: string | null
+          teacher_id: string | null
+          textbook_id: string | null
+          title: string | null
+          total_shares: number | null
+          used_in_classes: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_textbooks_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Functions: {

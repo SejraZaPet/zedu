@@ -18,6 +18,7 @@ import CreateFromTemplateDialog from "@/components/admin/CreateFromTemplateDialo
 import SaveAsTemplateDialog from "@/components/admin/SaveAsTemplateDialog";
 import ImportTextbookFileDialog from "@/components/admin/ImportTextbookFileDialog";
 import TeacherTextbookLessonEditorSheet from "@/components/teacher/TeacherTextbookLessonEditorSheet";
+import ShareContentDialog from "@/components/sharing/ShareContentDialog";
 import type { Block } from "@/lib/textbook-config";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -90,6 +91,7 @@ const TeacherTextbooks = () => {
   const { data: subjects } = useSubjects(true);
   const [textbooks, setTextbooks] = useState<Textbook[]>([]);
   const [createOpen, setCreateOpen] = useState(false);
+  const [shareTarget, setShareTarget] = useState<{ id: string; title: string } | null>(null);
   const [createFromTemplateOpen, setCreateFromTemplateOpen] = useState(false);
   const [saveAsTemplateOpen, setSaveAsTemplateOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -812,6 +814,15 @@ const TeacherTextbooks = () => {
           onOpen={openDetail}
           onCreate={() => setCreateOpen(true)}
           onChanged={fetchTextbooks}
+          onShare={(tb) => setShareTarget({ id: tb.id, title: tb.title })}
+        />
+
+        <ShareContentDialog
+          open={!!shareTarget}
+          onOpenChange={(o) => !o && setShareTarget(null)}
+          kind="textbook"
+          targetId={shareTarget?.id ?? ""}
+          targetTitle={shareTarget?.title}
         />
 
         <CreateTextbookDialog

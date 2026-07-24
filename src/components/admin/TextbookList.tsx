@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   BookOpen, Copy, Eye, Search, ArrowUpDown, LayoutGrid, List as ListIcon,
-  MoreVertical, GripVertical, Archive, ArchiveRestore, Trash2,
+  MoreVertical, GripVertical, Archive, ArchiveRestore, Trash2, Share2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -48,12 +48,13 @@ interface Props {
   onOpen: (tb: Textbook) => void;
   onCreate: () => void;
   onChanged?: () => void;
+  onShare?: (tb: Textbook) => void;
 }
 
 type SortKey = "name_asc" | "name_desc" | "created_desc" | "created_asc" | "updated_desc" | "manual";
 type ViewMode = "grid" | "list";
 
-const TextbookList = ({ textbooks, loading, subjects, onOpen, onChanged }: Props) => {
+const TextbookList = ({ textbooks, loading, subjects, onOpen, onChanged, onShare }: Props) => {
   const { toast } = useToast();
   const [sortBy, setSortBy] = useState<SortKey>("created_desc");
   const [search, setSearch] = useState("");
@@ -183,6 +184,11 @@ const TextbookList = ({ textbooks, loading, subjects, onOpen, onChanged }: Props
         <DropdownMenuItem onClick={() => onOpen(tb)}>
           <Eye className="w-4 h-4 mr-2" /> Otevřít
         </DropdownMenuItem>
+        {onShare && (
+          <DropdownMenuItem onClick={() => onShare(tb)}>
+            <Share2 className="w-4 h-4 mr-2" /> Sdílet
+          </DropdownMenuItem>
+        )}
         {tb.archived
           ? <DropdownMenuItem onClick={() => handleArchive(tb.id, false)}>
               <ArchiveRestore className="w-4 h-4 mr-2" /> Obnovit

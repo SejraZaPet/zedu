@@ -30,6 +30,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { BookOpen, Plus, Search, Calendar, Loader2, Trash2, LayoutTemplate, Share2, Globe, School, Copy, User as UserIcon } from "lucide-react";
+import ShareContentDialog from "@/components/sharing/ShareContentDialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -61,6 +62,7 @@ export default function TeacherLessonPlans() {
   const [loading, setLoading] = useState(true);
   const [subjectFilter, setSubjectFilter] = useState<string>("__all");
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [shareTarget, setShareTarget] = useState<{ id: string; title: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [templates, setTemplates] = useState<
     { id: string; title: string; description: string | null; phases_json: any; created_at: string }[]
@@ -334,17 +336,30 @@ export default function TeacherLessonPlans() {
             Upraveno {format(new Date(plan.updated_at), "d. M. yyyy", { locale: cs })}
           </p>
         </button>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setDeleteId(plan.id);
-          }}
-          className="absolute top-3 right-3 p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
-          aria-label="Smazat plán"
-          title="Smazat plán"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
+        <div className="absolute top-3 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShareTarget({ id: plan.id, title: plan.title });
+            }}
+            className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10"
+            aria-label="Sdílet plán"
+            title="Sdílet plán"
+          >
+            <Share2 className="w-4 h-4" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setDeleteId(plan.id);
+            }}
+            className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+            aria-label="Smazat plán"
+            title="Smazat plán"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     );
   }
@@ -631,6 +646,14 @@ export default function TeacherLessonPlans() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ShareContentDialog
+        open={!!shareTarget}
+        onOpenChange={(o) => !o && setShareTarget(null)}
+        kind="lesson_plan"
+        targetId={shareTarget?.id ?? ""}
+        targetTitle={shareTarget?.title}
+      />
 
       <SiteFooter />
     </div>

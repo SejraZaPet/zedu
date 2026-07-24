@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import HelpPage from "./pages/HelpPage";
@@ -68,9 +68,8 @@ import TeacherMethods from "./pages/TeacherMethods";
 import StudentMethods from "./pages/StudentMethods";
 import StudentPractice from "./pages/StudentPractice";
 import SchoolAdmin from "./pages/SchoolAdmin";
-import MarketplacePage from "./pages/MarketplacePage";
-import MarketplaceDetailPage from "./pages/MarketplaceDetailPage";
-import TeacherPublications from "./pages/TeacherPublications";
+import ZEduMarket from "./pages/ZEduMarket";
+import SharedWithMe from "./pages/SharedWithMe";
 import AvatarEditor from "./pages/AvatarEditor";
 import ViewAsBanner from "./components/ViewAsBanner";
 
@@ -154,9 +153,11 @@ const App = () => (
             <Route path="/ucitel/metody" element={<ProtectedRoute><TeacherMethods /></ProtectedRoute>} />
             <Route path="/student/metody" element={<ProtectedRoute><StudentMethods /></ProtectedRoute>} />
             <Route path="/student/metody/:slug/procviceni" element={<ProtectedRoute><StudentPractice /></ProtectedRoute>} />
-            <Route path="/marketplace" element={<ProtectedRoute><MarketplacePage /></ProtectedRoute>} />
-            <Route path="/marketplace/:id" element={<ProtectedRoute><MarketplaceDetailPage /></ProtectedRoute>} />
-            <Route path="/ucitel/publikace" element={<ProtectedRoute><TeacherPublications /></ProtectedRoute>} />
+            <Route path="/zedumarket" element={<ProtectedRoute><ZEduMarket /></ProtectedRoute>} />
+            <Route path="/ucitel/sdileno-se-mnou" element={<ProtectedRoute><SharedWithMe /></ProtectedRoute>} />
+            <Route path="/marketplace" element={<Navigate to="/zedumarket" replace />} />
+            <Route path="/marketplace/:id" element={<Navigate to="/zedumarket" replace />} />
+            <Route path="/ucitel/publikace" element={<Navigate to="/zedumarket" replace />} />
             <Route path="/avatar" element={<ProtectedRoute><AvatarEditor /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>

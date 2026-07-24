@@ -24,7 +24,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { FileText, Plus, Search, Copy, Trash2 } from "lucide-react";
+import { FileText, Plus, Search, Copy, Trash2, Share2 } from "lucide-react";
+import ShareContentDialog from "@/components/sharing/ShareContentDialog";
 import { toast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -64,6 +65,7 @@ export default function TeacherWorksheets() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "published">("all");
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [shareTarget, setShareTarget] = useState<{ id: string; title: string } | null>(null);
   const [worksheetsForLessonOpen, setWorksheetsForLessonOpen] = useState(false);
   const [worksheetsForLesson, setWorksheetsForLesson] = useState<WorksheetForLessonItem[]>([]);
   const [lessonTitle, setLessonTitle] = useState<string>("");
@@ -415,6 +417,14 @@ export default function TeacherWorksheets() {
                     <Button
                       variant="outline"
                       size="sm"
+                      onClick={() => setShareTarget({ id: row.id, title: row.title })}
+                      title="Sdílet"
+                    >
+                      <Share2 className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => setDeleteId(row.id)}
                       title="Smazat"
                       className="text-destructive hover:text-destructive"
@@ -444,6 +454,15 @@ export default function TeacherWorksheets() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ShareContentDialog
+        open={!!shareTarget}
+        onOpenChange={(o) => !o && setShareTarget(null)}
+        kind="worksheet"
+        targetId={shareTarget?.id ?? ""}
+        targetTitle={shareTarget?.title}
+      />
+
 
       {pendingLessonCtx && (
         <WorksheetsForLessonDialog
