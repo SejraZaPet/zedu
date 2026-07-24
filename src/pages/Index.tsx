@@ -20,6 +20,7 @@ import ForWhom from "@/components/landing/ForWhom";
 import PlatformShowcase from "@/components/landing/PlatformShowcase";
 import PodcastSection from "@/components/PodcastSection";
 import FinalCTA from "@/components/landing/FinalCTA";
+import LicensePlansSection from "@/components/LicensePlansSection";
 import SiteFooter from "@/components/SiteFooter";
 import AdminButton from "@/components/AdminButton";
 import { useLandingSections, useAllLandingSections, type LandingSectionRow, type LandingSectionType } from "@/hooks/useLandingSections";
@@ -244,6 +245,7 @@ const Index = () => {
         <SiteHeader />
         <main>
           <LandingSections />
+          <LicensePlansSection />
         </main>
         <SiteFooter />
         <AdminButton />

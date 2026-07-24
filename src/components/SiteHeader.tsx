@@ -79,6 +79,7 @@ const SiteHeader = () => {
     return [
       { label: "Učebnice", href: "/ucebnice", icon: BookOpen },
       { label: "Aktivity", href: "/aktivity", icon: Activity },
+      { label: "Pro školy", href: "/licence#licence", icon: School },
       { label: "Nápověda", href: "/napoveda", icon: HelpCircle },
     ];
   };
@@ -99,6 +100,17 @@ const SiteHeader = () => {
   const handleLogout = async () => {
     await signOut();
     navigate("/");
+  };
+
+  const handleNavClick = (href: string) => {
+    if (href.includes("#")) {
+      const [path, hash] = href.split("#");
+      if (path === "/licence" && location.pathname === "/") {
+        document.getElementById(hash)?.scrollIntoView({ behavior: "smooth" });
+        return;
+      }
+    }
+    navigate(href);
   };
 
   return (
@@ -134,7 +146,7 @@ const SiteHeader = () => {
               return (
                 <button
                   key={item.label}
-                  onClick={() => navigate(item.href)}
+                  onClick={() => handleNavClick(item.href)}
                   className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
                     active
                       ? "bg-primary/10 text-primary"
@@ -231,7 +243,7 @@ const SiteHeader = () => {
               return (
                 <button
                   key={item.label}
-                  onClick={() => { setMenuOpen(false); navigate(item.href); }}
+                  onClick={() => { setMenuOpen(false); handleNavClick(item.href); }}
                   className={`flex items-center gap-3 px-3 py-3 rounded-lg text-base font-medium transition-colors text-left ${
                     active
                       ? "bg-primary/10 text-primary"
