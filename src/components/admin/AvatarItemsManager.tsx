@@ -739,9 +739,14 @@ export default function AvatarItemsManager() {
           </Select>
           <span className="text-sm text-muted-foreground ml-2">{filtered.length} položek</span>
         </div>
-        <Button onClick={() => openEditor(emptyForm())} size="sm">
-          <Plus className="w-4 h-4 mr-1" /> Nová položka
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setBulkOpen(true)} size="sm">
+            <Layers className="w-4 h-4 mr-1" /> Hromadně nahrát
+          </Button>
+          <Button onClick={() => openEditor(emptyForm())} size="sm">
+            <Plus className="w-4 h-4 mr-1" /> Nová položka
+          </Button>
+        </div>
       </div>
 
       {loading ? (
