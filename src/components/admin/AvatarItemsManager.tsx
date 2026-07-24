@@ -1230,6 +1230,8 @@ export default function AvatarItemsManager() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <BulkUploadDialog open={bulkOpen} onOpenChange={setBulkOpen} onCreated={load} />
     </div>
   );
 }
