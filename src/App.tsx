@@ -135,6 +135,8 @@ const App = () => (
             <Route path="/napoveda" element={<HelpPage />} />
             <Route path="/napoveda/:guideId" element={<HelpDetailPage />} />
             <Route path="/gdpr" element={<GdprPage />} />
+            <Route path="/licence" element={<LicencePage />} />
+
             <Route path="/todo" element={<ProtectedRoute><TodoPage /></ProtectedRoute>} />
             <Route path="/student/kalendar" element={<ProtectedRoute><StudentCalendar /></ProtectedRoute>} />
             <Route path="/student/rozvrh" element={<ProtectedRoute><StudentSchedule /></ProtectedRoute>} />
