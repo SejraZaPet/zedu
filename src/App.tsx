@@ -68,7 +68,7 @@ import TeacherMethods from "./pages/TeacherMethods";
 import StudentMethods from "./pages/StudentMethods";
 import StudentPractice from "./pages/StudentPractice";
 import SchoolAdmin from "./pages/SchoolAdmin";
-import ZEduMarket from "./pages/ZEduMarket";
+import ZEduMarketPage from "./pages/ZEduMarketPage";
 import SharedWithMe from "./pages/SharedWithMe";
 import AvatarEditor from "./pages/AvatarEditor";
 import ViewAsBanner from "./components/ViewAsBanner";
@@ -153,7 +153,7 @@ const App = () => (
             <Route path="/ucitel/metody" element={<ProtectedRoute><TeacherMethods /></ProtectedRoute>} />
             <Route path="/student/metody" element={<ProtectedRoute><StudentMethods /></ProtectedRoute>} />
             <Route path="/student/metody/:slug/procviceni" element={<ProtectedRoute><StudentPractice /></ProtectedRoute>} />
-            <Route path="/zedumarket" element={<ProtectedRoute><ZEduMarket /></ProtectedRoute>} />
+            <Route path="/zedumarket" element={<ProtectedRoute><ZEduMarketPage /></ProtectedRoute>} />
             <Route path="/ucitel/sdileno-se-mnou" element={<ProtectedRoute><SharedWithMe /></ProtectedRoute>} />
             <Route path="/marketplace" element={<Navigate to="/zedumarket" replace />} />
             <Route path="/marketplace/:id" element={<Navigate to="/zedumarket" replace />} />
