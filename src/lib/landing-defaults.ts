@@ -20,9 +20,9 @@ export const DEFAULT_HERO_PROPS = {
 
 export const DEFAULT_SOCIAL_PROOF_PROPS = {
   metrics: [
-    { icon: "Layout", value: "56", label: "stránek v aplikaci" },
-    { icon: "Code", value: "22 000+", label: "řádků kódu" },
-    { icon: "Users", value: "4", label: "role uživatelů" },
+    { icon: "Layers", value: "12+", label: "typů interaktivních aktivit" },
+    { icon: "Presentation", value: "Živě", label: "prezentace i domácí procvičování" },
+    { icon: "Users", value: "4", label: "propojené role" },
     { icon: "Gift", value: "100%", label: "zdarma v betě" },
   ],
   badges: [
