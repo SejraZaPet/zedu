@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   BookOpen, Copy, Eye, Search, ArrowUpDown, LayoutGrid, List as ListIcon,
-  MoreVertical, GripVertical, Archive, ArchiveRestore, Trash2,
+  MoreVertical, GripVertical, Archive, ArchiveRestore, Trash2, Share2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
