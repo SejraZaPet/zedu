@@ -235,6 +235,7 @@ export default function AvatarItemsManager() {
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [editing, setEditing] = useState<Partial<AvatarItem> | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AvatarItem | null>(null);
+  const [bulkOpen, setBulkOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [calibrating, setCalibrating] = useState(false);
   const [previewBaseSlug, setPreviewBaseSlug] = useState<string>("base_01");
