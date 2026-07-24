@@ -336,17 +336,30 @@ export default function TeacherLessonPlans() {
             Upraveno {format(new Date(plan.updated_at), "d. M. yyyy", { locale: cs })}
           </p>
         </button>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setDeleteId(plan.id);
-          }}
-          className="absolute top-3 right-3 p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
-          aria-label="Smazat plán"
-          title="Smazat plán"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
+        <div className="absolute top-3 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShareTarget({ id: plan.id, title: plan.title });
+            }}
+            className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10"
+            aria-label="Sdílet plán"
+            title="Sdílet plán"
+          >
+            <Share2 className="w-4 h-4" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setDeleteId(plan.id);
+            }}
+            className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+            aria-label="Smazat plán"
+            title="Smazat plán"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     );
   }
