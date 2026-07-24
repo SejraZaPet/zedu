@@ -48,12 +48,13 @@ interface Props {
   onOpen: (tb: Textbook) => void;
   onCreate: () => void;
   onChanged?: () => void;
+  onShare?: (tb: Textbook) => void;
 }
 
 type SortKey = "name_asc" | "name_desc" | "created_desc" | "created_asc" | "updated_desc" | "manual";
 type ViewMode = "grid" | "list";
 
-const TextbookList = ({ textbooks, loading, subjects, onOpen, onChanged }: Props) => {
+const TextbookList = ({ textbooks, loading, subjects, onOpen, onChanged, onShare }: Props) => {
   const { toast } = useToast();
   const [sortBy, setSortBy] = useState<SortKey>("created_desc");
   const [search, setSearch] = useState("");
