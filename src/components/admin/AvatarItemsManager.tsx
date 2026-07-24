@@ -24,8 +24,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Pencil, Plus, Trash2, ImageOff, RefreshCw, Upload } from "lucide-react";
+import { Loader2, Pencil, Plus, Trash2, ImageOff, RefreshCw, Upload, Layers } from "lucide-react";
 import AvatarLayerStack, { type StackLayer } from "@/components/avatar/AvatarLayerStack";
+import BulkUploadDialog from "@/components/admin/BulkUploadDialog";
 
 const slugifyName = (input: string): string => {
   return (input || "")
