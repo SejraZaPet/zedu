@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { GRADE_LEVEL_OPTIONS } from "@/lib/content-shares";
+import MultiSelectFilter from "@/components/sharing/MultiSelectFilter";
 import {
   Table,
   TableBody,
@@ -38,8 +39,8 @@ export default function TextbookOverviewManager() {
   const [loading, setLoading] = useState(true);
   const [subjects, setSubjects] = useState<{ slug: string; label: string }[]>([]);
   const [search, setSearch] = useState("");
-  const [subject, setSubject] = useState("all");
-  const [grade, setGrade] = useState("all");
+  const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+  const [selectedGrades, setSelectedGrades] = useState<string[]>([]);
   const [materials, setMaterials] = useState<"all" | "yes" | "no">("all");
 
   useEffect(() => {
@@ -63,13 +64,13 @@ export default function TextbookOverviewManager() {
     return rows.filter((r) => {
       if (search && !(r.title ?? "").toLowerCase().includes(search.toLowerCase()))
         return false;
-      if (subject !== "all" && r.subject !== subject) return false;
-      if (grade !== "all" && !(r.grade_level ?? []).includes(grade)) return false;
+      if (selectedSubjects.length > 0 && !selectedSubjects.includes(r.subject ?? "")) return false;
+      if (selectedGrades.length > 0 && !(r.grade_level ?? []).some((g) => selectedGrades.includes(g))) return false;
       if (materials === "yes" && !r.has_materials) return false;
       if (materials === "no" && r.has_materials) return false;
       return true;
     });
-  }, [rows, search, subject, grade, materials]);
+  }, [rows, search, selectedSubjects, selectedGrades, materials]);
 
   return (
     <div className="space-y-4">
@@ -80,7 +81,7 @@ export default function TextbookOverviewManager() {
         </p>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-[1fr_180px_180px_180px]">
+      <div className="grid gap-3 md:grid-cols-[1fr_220px_220px_180px]">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
           <Input
@@ -90,32 +91,20 @@ export default function TextbookOverviewManager() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <Select value={subject} onValueChange={setSubject}>
-          <SelectTrigger>
-            <SelectValue placeholder="Předmět" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Všechny předměty</SelectItem>
-            {subjects.map((s) => (
-              <SelectItem key={s.slug} value={s.slug}>
-                {s.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={grade} onValueChange={setGrade}>
-          <SelectTrigger>
-            <SelectValue placeholder="Stupeň" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Všechny stupně</SelectItem>
-            {GRADE_LEVEL_OPTIONS.map((g) => (
-              <SelectItem key={g.value} value={g.value}>
-                {g.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <MultiSelectFilter
+          label="Předmět"
+          allLabel="všechny"
+          values={selectedSubjects}
+          options={subjects.map((s) => ({ value: s.slug, label: s.label }))}
+          onChange={setSelectedSubjects}
+        />
+        <MultiSelectFilter
+          label="Stupeň"
+          allLabel="všechny"
+          values={selectedGrades}
+          options={GRADE_LEVEL_OPTIONS}
+          onChange={setSelectedGrades}
+        />
         <Select value={materials} onValueChange={(v) => setMaterials(v as any)}>
           <SelectTrigger>
             <SelectValue />

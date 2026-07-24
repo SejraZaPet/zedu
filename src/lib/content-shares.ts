@@ -197,7 +197,7 @@ export async function searchTeachers(query: string) {
   const { data: teacherRoles } = await supabase
     .from("user_roles")
     .select("user_id")
-    .in("role", ["teacher", "admin"]);
+    .in("role", ["teacher", "lektor", "admin"]);
   const ids = (teacherRoles ?? []).map((r) => r.user_id);
   if (ids.length === 0) return [];
 
