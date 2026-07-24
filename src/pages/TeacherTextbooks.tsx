@@ -813,6 +813,15 @@ const TeacherTextbooks = () => {
           onOpen={openDetail}
           onCreate={() => setCreateOpen(true)}
           onChanged={fetchTextbooks}
+          onShare={(tb) => setShareTarget({ id: tb.id, title: tb.title })}
+        />
+
+        <ShareContentDialog
+          open={!!shareTarget}
+          onOpenChange={(o) => !o && setShareTarget(null)}
+          kind="textbook"
+          targetId={shareTarget?.id ?? ""}
+          targetTitle={shareTarget?.title}
         />
 
         <CreateTextbookDialog
