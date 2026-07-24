@@ -44,6 +44,51 @@ export async function createShare(input: CreateShareInput): Promise<ContentShare
     .select("*")
     .single();
   if (error) throw error;
+
+  // Direct share → notify recipient (public shares get no notification).
+  if (input.sharedWith) {
+    try {
+      const [{ data: sender }, { data: target }] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("first_name, last_name")
+          .eq("id", session.user.id)
+          .maybeSingle(),
+        input.kind === "textbook"
+          ? supabase.from("teacher_textbooks").select("title").eq("id", input.targetId).maybeSingle()
+          : input.kind === "worksheet"
+          ? supabase.from("worksheets").select("title").eq("id", input.targetId).maybeSingle()
+          : supabase.from("lesson_plans").select("title").eq("id", input.targetId).maybeSingle(),
+      ]);
+      const senderName =
+        [sender?.first_name, sender?.last_name].filter(Boolean).join(" ").trim() || "Kolega";
+      const kindLabel =
+        input.kind === "textbook"
+          ? "učebnici"
+          : input.kind === "worksheet"
+          ? "pracovní list"
+          : "prezentaci";
+      const title = (target as any)?.title ?? "materiál";
+      await supabase.from("notifications").insert({
+        recipient_id: input.sharedWith,
+        sender_id: session.user.id,
+        type: "content_share",
+        title: "Nový sdílený materiál",
+        body: `${senderName} s vámi sdílel/a ${kindLabel} „${title}“`,
+        link: "/ucitel/sdileno-se-mnou",
+        status: "sent",
+        sent_at: new Date().toISOString(),
+        payload: {
+          share_id: (data as any).id,
+          kind: input.kind,
+          target_id: input.targetId,
+        },
+      } as any);
+    } catch (e) {
+      console.warn("[createShare] notification insert failed", e);
+    }
+  }
+
   return data as unknown as ContentShareRow;
 }
 
