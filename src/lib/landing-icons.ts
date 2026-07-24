@@ -25,6 +25,9 @@ import {
   Target,
   Lightbulb,
   MessageCircle,
+  Layers,
+  Presentation,
+  Network,
   type LucideIcon,
 } from "lucide-react";
 
