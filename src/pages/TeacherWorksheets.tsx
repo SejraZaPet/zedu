@@ -65,6 +65,7 @@ export default function TeacherWorksheets() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "published">("all");
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [shareTarget, setShareTarget] = useState<{ id: string; title: string } | null>(null);
   const [worksheetsForLessonOpen, setWorksheetsForLessonOpen] = useState(false);
   const [worksheetsForLesson, setWorksheetsForLesson] = useState<WorksheetForLessonItem[]>([]);
   const [lessonTitle, setLessonTitle] = useState<string>("");
