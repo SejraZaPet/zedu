@@ -3484,6 +3484,40 @@ export type Database = {
       generate_teacher_join_code: { Args: never; Returns: string }
       get_internal_secret: { Args: { _name: string }; Returns: string }
       get_login_password: { Args: { _profile_id: string }; Returns: string }
+      get_public_textbook_all_lessons: {
+        Args: { _textbook_id: string }
+        Returns: {
+          blocks: Json
+          hero_image_url: string
+          id: string
+          sort_order: number
+          title: string
+          topic_id: string
+          topic_sort_order: number
+          topic_title: string
+        }[]
+      }
+      get_public_textbook_lesson: {
+        Args: { _lesson_id: string; _textbook_id: string }
+        Returns: {
+          blocks: Json
+          hero_image_url: string
+          id: string
+          title: string
+        }[]
+      }
+      get_public_textbook_outline: {
+        Args: { _textbook_id: string }
+        Returns: {
+          chapter_id: string
+          chapter_sort_order: number
+          chapter_title: string
+          lesson_count: number
+          textbook_id: string
+          textbook_title: string
+          total_lessons: number
+        }[]
+      }
       get_user_school_id: { Args: { _user_id: string }; Returns: string }
       grant_avatar_item_by_teacher: {
         Args: { p_item_slug: string; p_student_id: string }
