@@ -52,7 +52,9 @@ interface PlanRow {
   subject: string;
   updated_at: string;
   input_data: any;
+  copied_from_lesson_plan_id?: string | null;
 }
+
 
 const NO_SUBJECT = "—";
 
