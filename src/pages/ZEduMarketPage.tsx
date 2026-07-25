@@ -333,6 +333,19 @@ export default function ZEduMarketPage() {
                         {GRADE_LEVEL_OPTIONS.find((o) => o.value === g)?.label ?? g}
                       </Badge>
                     ))}
+                    {i.kind === "textbook" && i.target_language && i.target_language !== "cs" && (
+                      <Badge variant="outline" className="text-[10px]">
+                        {LANGUAGE_OPTIONS.find((o) => o.value === i.target_language)?.label ?? i.target_language}
+                      </Badge>
+                    )}
+                    {i.kind === "textbook" && i.target_difficulty_level && (
+                      <Badge
+                        variant="outline"
+                        className="text-[10px] border-primary/40 text-primary"
+                      >
+                        {DIFFICULTY_OPTIONS.find((o) => o.value === i.target_difficulty_level)?.label ?? i.target_difficulty_level}
+                      </Badge>
+                    )}
                     {i.kind === "textbook" && i.includes_worksheets && (
                       <Badge variant="outline" className="text-[10px]">
                         + pracovní listy
@@ -344,6 +357,7 @@ export default function ZEduMarketPage() {
                       </Badge>
                     )}
                   </div>
+
                   {i.kind === "textbook" && i.textbook_id && (
                     <TextbookOutlinePreview textbookId={i.textbook_id as string} />
                   )}
