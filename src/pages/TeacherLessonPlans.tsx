@@ -31,6 +31,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { BookOpen, Plus, Search, Calendar, Loader2, Trash2, LayoutTemplate, Share2, Globe, School, Copy, User as UserIcon } from "lucide-react";
 import ShareContentDialog from "@/components/sharing/ShareContentDialog";
+import ReviewButton from "@/components/sharing/ReviewButton";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -50,7 +52,9 @@ interface PlanRow {
   subject: string;
   updated_at: string;
   input_data: any;
+  copied_from_lesson_plan_id?: string | null;
 }
+
 
 const NO_SUBJECT = "—";
 
@@ -182,7 +186,7 @@ export default function TeacherLessonPlans() {
     const [{ data: plans }, { data: tpls }] = await Promise.all([
       supabase
         .from("lesson_plans")
-        .select("id, title, subject, updated_at, input_data")
+        .select("id, title, subject, updated_at, input_data, copied_from_lesson_plan_id")
         .eq("teacher_id", user.id)
         .order("updated_at", { ascending: false }),
       supabase
@@ -337,6 +341,16 @@ export default function TeacherLessonPlans() {
           </p>
         </button>
         <div className="absolute top-3 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+          {plan.copied_from_lesson_plan_id && (
+            <div onClick={(e) => e.stopPropagation()}>
+              <ReviewButton
+                originalId={plan.copied_from_lesson_plan_id}
+                kind="lesson_plan"
+                targetTitle={plan.title}
+              />
+            </div>
+          )}
+
           <button
             onClick={(e) => {
               e.stopPropagation();

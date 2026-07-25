@@ -21,10 +21,14 @@ import TextbookTrialButton from "@/components/sharing/TextbookTrialButton";
 import {
   listPublicShares,
   acceptShare,
+  getReviewAggregates,
   GRADE_LEVEL_OPTIONS,
   type PublicShareItem,
+  type ReviewAggregate,
 } from "@/lib/content-shares";
+import ReviewSummary from "@/components/sharing/ReviewSummary";
 import { supabase } from "@/integrations/supabase/client";
+
 
 const MATERIAL_MODES = [
   { value: "all", label: "Vše" },
@@ -37,6 +41,8 @@ export default function ZEduMarketPage() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [items, setItems] = useState<PublicShareItem[]>([]);
+  const [ratings, setRatings] = useState<Map<string, ReviewAggregate>>(new Map());
+
   const [loading, setLoading] = useState(true);
   const [addingId, setAddingId] = useState<string | null>(null);
   const [previewTextbook, setPreviewTextbook] = useState<{ id: string; title: string } | null>(null);
@@ -69,7 +75,29 @@ export default function ZEduMarketPage() {
           grades: selectedGrades.length > 0 ? selectedGrades : undefined,
           materialMode,
         });
-        if (!cancel) setItems(rows);
+        if (!cancel) {
+          setItems(rows);
+          // Batch-load ratings per kind
+          const tbIds = rows.filter((r) => r.kind === "textbook" && r.textbook_id).map((r) => r.textbook_id as string);
+          const wsIds = rows.filter((r) => r.kind === "worksheet" && r.worksheet_id).map((r) => r.worksheet_id as string);
+          const lpIds = rows.filter((r) => r.kind === "lesson_plan" && r.lesson_plan_id).map((r) => r.lesson_plan_id as string);
+          try {
+            const [tbMap, wsMap, lpMap] = await Promise.all([
+              getReviewAggregates("textbook", tbIds),
+              getReviewAggregates("worksheet", wsIds),
+              getReviewAggregates("lesson_plan", lpIds),
+            ]);
+            if (cancel) return;
+            const merged = new Map<string, ReviewAggregate>();
+            for (const [k, v] of tbMap) merged.set(`textbook:${k}`, v);
+            for (const [k, v] of wsMap) merged.set(`worksheet:${k}`, v);
+            for (const [k, v] of lpMap) merged.set(`lesson_plan:${k}`, v);
+            setRatings(merged);
+          } catch {
+            /* ignore */
+          }
+        }
+
       } catch (e: any) {
         if (!cancel)
           toast({
@@ -201,6 +229,25 @@ export default function ZEduMarketPage() {
                   <div className="text-xs text-muted-foreground">
                     {subjectLabel(i.target_subject)} · {i.sharer_name ?? "Neznámý autor"}
                   </div>
+                  {(() => {
+                    const targetId =
+                      i.kind === "textbook"
+                        ? i.textbook_id
+                        : i.kind === "worksheet"
+                        ? i.worksheet_id
+                        : i.lesson_plan_id;
+                    if (!targetId) return null;
+                    const agg = ratings.get(`${i.kind}:${targetId}`);
+                    if (!agg || agg.count === 0) return null;
+                    return (
+                      <ReviewSummary
+                        kind={i.kind}
+                        targetId={targetId as string}
+                        aggregate={agg}
+                      />
+                    );
+                  })()}
+
                   <div className="flex flex-wrap gap-1">
                     {(i.target_grade_level ?? []).map((g) => (
                       <Badge key={g} variant="secondary" className="text-[10px]">

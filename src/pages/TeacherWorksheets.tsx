@@ -26,6 +26,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { FileText, Plus, Search, Copy, Trash2, Share2 } from "lucide-react";
 import ShareContentDialog from "@/components/sharing/ShareContentDialog";
+import ReviewButton from "@/components/sharing/ReviewButton";
+
 import { toast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -44,7 +46,9 @@ interface WorksheetRow {
   status: "draft" | "published";
   spec: any;
   updated_at: string;
+  copied_from_worksheet_id?: string | null;
 }
+
 
 const MODE_LABELS: Record<string, string> = {
   classwork: "Práce v hodině",
@@ -422,7 +426,14 @@ export default function TeacherWorksheets() {
                     >
                       <Share2 className="w-4 h-4" />
                     </Button>
+                    <ReviewButton
+                      originalId={row.copied_from_worksheet_id ?? null}
+                      kind="worksheet"
+                      targetTitle={row.title}
+                    />
+
                     <Button
+
                       variant="outline"
                       size="sm"
                       onClick={() => setDeleteId(row.id)}
