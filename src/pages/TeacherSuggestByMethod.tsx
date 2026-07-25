@@ -489,9 +489,44 @@ export default function TeacherSuggestByMethod() {
                             {m.category}
                           </Badge>
                         )}
+                        {(m.description || m.example) && (
+                          <Popover>
+                            <PopoverTrigger asChild onClick={(e) => e.preventDefault()}>
+                              <button
+                                type="button"
+                                aria-label={`Nápověda: ${m.name}`}
+                                className="text-muted-foreground hover:text-primary transition-colors"
+                              >
+                                <HelpCircle className="w-4 h-4" />
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent
+                              className="w-80 text-sm space-y-3"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <div className="font-semibold">{m.name}</div>
+                              {m.description && (
+                                <p className="text-muted-foreground whitespace-pre-line">
+                                  {m.description}
+                                </p>
+                              )}
+                              {m.example && (
+                                <div className="rounded-md border border-primary/20 bg-primary/5 p-2.5">
+                                  <div className="flex items-center gap-1.5 text-xs font-semibold text-primary mb-1">
+                                    <Lightbulb className="w-3.5 h-3.5" />
+                                    Příklad z hodiny
+                                  </div>
+                                  <p className="text-xs text-foreground/80 whitespace-pre-line">
+                                    {m.example}
+                                  </p>
+                                </div>
+                              )}
+                            </PopoverContent>
+                          </Popover>
+                        )}
                       </div>
                       {m.description && (
-                        <p className="text-sm text-muted-foreground mt-1">{m.description}</p>
+                        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{m.description}</p>
                       )}
                     </div>
                   </label>
