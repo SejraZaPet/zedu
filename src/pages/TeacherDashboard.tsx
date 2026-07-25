@@ -15,6 +15,7 @@ import {
   BookOpen,
   Library,
   GripVertical,
+  Wand2,
 } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
