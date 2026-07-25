@@ -36,6 +36,7 @@ const adminTabs = [
   { id: "schools", label: "Školy", icon: School },
   { id: "users", label: "Uživatelé", icon: Users },
   { id: "textbook-overview", label: "Přehled učebnic", icon: Library },
+  { id: "academy", label: "Akademie", icon: Award },
   { id: "templates", label: "Šablony", icon: Sparkles },
   { id: "landing", label: "Landing page", icon: Globe },
   { id: "avatars", label: "Avatary", icon: Smile },
@@ -59,7 +60,7 @@ const teacherTabs = [
   { id: "help", label: "Nápověda", icon: HelpCircle },
 ] as const;
 
-type Tab = "dashboard" | "stats" | "textbooks" | "lessons" | "outline" | "mcq" | "matching" | "slide-edit" | "video-ai" | "subjects" | "users" | "classes" | "results" | "help" | "notifications" | "schools" | "audit" | "templates" | "landing" | "avatars" | "textbook-overview";
+type Tab = "dashboard" | "stats" | "textbooks" | "lessons" | "outline" | "mcq" | "matching" | "slide-edit" | "video-ai" | "subjects" | "users" | "classes" | "results" | "help" | "notifications" | "schools" | "audit" | "templates" | "landing" | "avatars" | "textbook-overview" | "academy";
 
 const Admin = () => {
   const { isAdmin, isTeacher, loading, logout } = useAdmin();
@@ -146,6 +147,7 @@ const Admin = () => {
         {activeTab === "landing" && !isTeacher && <LandingPageManager />}
         {activeTab === "avatars" && !isTeacher && <AvatarItemsManager />}
         {activeTab === "textbook-overview" && !isTeacher && <TextbookOverviewManager />}
+        {activeTab === "academy" && !isTeacher && <AcademyCoursesManager />}
         {activeTab === "help" && <HelpGuidesManager />}
       </div>
     </div>
