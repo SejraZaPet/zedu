@@ -2879,8 +2879,10 @@ export type Database = {
           copied_from_textbook_id: string | null
           created_at: string
           description: string
+          difficulty_level: string | null
           grade_level: string[] | null
           id: string
+          language: string
           order_index: number
           school_type: string[] | null
           subject: string
@@ -2895,8 +2897,10 @@ export type Database = {
           copied_from_textbook_id?: string | null
           created_at?: string
           description?: string
+          difficulty_level?: string | null
           grade_level?: string[] | null
           id?: string
+          language?: string
           order_index?: number
           school_type?: string[] | null
           subject?: string
@@ -2911,8 +2915,10 @@ export type Database = {
           copied_from_textbook_id?: string | null
           created_at?: string
           description?: string
+          difficulty_level?: string | null
           grade_level?: string[] | null
           id?: string
+          language?: string
           order_index?: number
           school_type?: string[] | null
           subject?: string

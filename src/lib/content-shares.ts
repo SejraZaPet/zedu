@@ -145,6 +145,8 @@ export interface PublicShareItem extends ContentShareRow {
   target_title: string | null;
   target_subject: string | null;
   target_grade_level: string[] | null;
+  target_language: string | null;
+  target_difficulty_level: string | null;
   sharer_name: string | null;
 }
 
@@ -152,8 +154,11 @@ export interface PublicSharesFilters {
   search?: string;
   grades?: string[]; // grade_level values
   subjects?: string[];
+  languages?: string[];
+  difficulties?: string[];
   materialMode?: "all" | "with" | "without" | "material_only";
 }
+
 
 export async function listPublicShares(
   filters: PublicSharesFilters = {},
@@ -163,7 +168,7 @@ export async function listPublicShares(
     .select(
       `id, textbook_id, worksheet_id, lesson_plan_id, shared_by, shared_with,
        includes_worksheets, includes_presentations, status, created_at,
-       teacher_textbooks:textbook_id ( title, subject, grade_level ),
+       teacher_textbooks:textbook_id ( title, subject, grade_level, language, difficulty_level ),
        worksheets:worksheet_id ( title, subject, grade_band ),
        lesson_plans:lesson_plan_id ( title, subject, grade_band ),
        sharer:profiles!content_shares_shared_by_fkey ( first_name, last_name )`,
@@ -198,11 +203,14 @@ export async function listPublicShares(
       target_title: target?.title ?? null,
       target_subject: target?.subject ?? null,
       target_grade_level: grades,
+      target_language: kind === "textbook" ? (target?.language ?? null) : null,
+      target_difficulty_level: kind === "textbook" ? (target?.difficulty_level ?? null) : null,
       sharer_name: sharer
         ? [sharer.first_name, sharer.last_name].filter(Boolean).join(" ") || null
         : null,
     } as PublicShareItem;
   });
+
 
   if (filters.search) {
     const q = filters.search.toLowerCase();
@@ -216,6 +224,20 @@ export async function listPublicShares(
       (i.target_grade_level ?? []).some((g) => filters.grades!.includes(g)),
     );
   }
+  if (filters.languages && filters.languages.length > 0) {
+
+    items = items.filter((i) => {
+      if (i.kind !== "textbook") return false;
+      return filters.languages!.includes(i.target_language ?? "cs");
+    });
+  }
+  if (filters.difficulties && filters.difficulties.length > 0) {
+    items = items.filter((i) => {
+      if (i.kind !== "textbook") return false;
+      return filters.difficulties!.includes(i.target_difficulty_level ?? "standard");
+    });
+  }
+
   switch (filters.materialMode) {
     case "with":
       items = items.filter(
@@ -359,7 +381,10 @@ export async function copyTextbook(
       access_code: newAccessCode,
       grade_level: (src as any).grade_level ?? null,
       school_type: (src as any).school_type ?? null,
+      language: (src as any).language ?? "cs",
+      difficulty_level: (src as any).difficulty_level ?? null,
       copied_from_textbook_id: sourceId,
+
     } as any)
     .select("id")
     .single();
@@ -481,7 +506,21 @@ export async function acceptShare(
   throw new Error("Sdílení bez cíle");
 }
 
+export const LANGUAGE_OPTIONS: { value: string; label: string }[] = [
+  { value: "cs", label: "Čeština" },
+  { value: "sk", label: "Slovenština" },
+  { value: "en", label: "Angličtina" },
+  { value: "other", label: "Jiný" },
+];
+
+export const DIFFICULTY_OPTIONS: { value: string; label: string }[] = [
+  { value: "standard", label: "Standardní" },
+  { value: "simplified", label: "Zjednodušená" },
+  { value: "advanced", label: "Rozšířená" },
+];
+
 export const GRADE_LEVEL_OPTIONS: { value: string; label: string }[] = [
+
   { value: "zs1", label: "ZŠ 1. stupeň" },
   { value: "zs2", label: "ZŠ 2. stupeň" },
   { value: "ss", label: "SŠ" },
