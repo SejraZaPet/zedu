@@ -27,6 +27,7 @@ interface LearningMethod {
   slug: string;
   name: string;
   description: string | null;
+  example: string | null;
   category: string | null;
   tips: string | null;
 }
