@@ -426,7 +426,14 @@ export default function TeacherWorksheets() {
                     >
                       <Share2 className="w-4 h-4" />
                     </Button>
+                    <ReviewButton
+                      originalId={row.copied_from_worksheet_id ?? null}
+                      kind="worksheet"
+                      targetTitle={row.title}
+                      compact
+                    />
                     <Button
+
                       variant="outline"
                       size="sm"
                       onClick={() => setDeleteId(row.id)}
