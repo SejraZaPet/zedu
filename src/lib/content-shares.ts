@@ -325,9 +325,11 @@ export async function copyWorksheet(sourceId: string): Promise<string> {
       worksheet_mode: src.worksheet_mode,
       spec: src.spec,
       status: "draft",
+      copied_from_worksheet_id: sourceId,
     } as any)
     .select("id")
     .single();
+
   if (insErr) throw insErr;
   return copy!.id as string;
 }
