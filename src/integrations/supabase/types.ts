@@ -3594,6 +3594,18 @@ export type Database = {
       generate_teacher_join_code: { Args: never; Returns: string }
       get_internal_secret: { Args: { _name: string }; Returns: string }
       get_login_password: { Args: { _profile_id: string }; Returns: string }
+      get_public_content_usage_counts: {
+        Args: {
+          _lesson_plan_ids: string[]
+          _textbook_ids: string[]
+          _worksheet_ids: string[]
+        }
+        Returns: {
+          kind: string
+          source_id: string
+          usage_count: number
+        }[]
+      }
       get_public_textbook_all_lessons: {
         Args: { _textbook_id: string }
         Returns: {
