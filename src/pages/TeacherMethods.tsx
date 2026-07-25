@@ -15,6 +15,7 @@ type LearningMethod = {
   name: string;
   slug: string | null;
   description: string | null;
+  example: string | null;
   category: string | null;
   difficulty: string | null;
   time_range: string | null;
