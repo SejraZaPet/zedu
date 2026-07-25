@@ -61,6 +61,7 @@ import StudentWorksheetView from "./pages/StudentWorksheetView";
 import TeacherNotifications from "./pages/TeacherNotifications";
 import TeacherLessonPlans from "./pages/TeacherLessonPlans";
 import TeacherLessonPlanEditor from "./pages/TeacherLessonPlanEditor";
+import TeacherSuggestByMethod from "./pages/TeacherSuggestByMethod";
 import TeacherSchedule from "./pages/TeacherSchedule";
 import TeacherMediaLibrary from "./pages/TeacherMediaLibrary";
 import TeacherSubjectClass from "./pages/TeacherSubjectClass";
