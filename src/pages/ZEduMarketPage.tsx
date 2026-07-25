@@ -41,6 +41,8 @@ export default function ZEduMarketPage() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [items, setItems] = useState<PublicShareItem[]>([]);
+  const [ratings, setRatings] = useState<Map<string, ReviewAggregate>>(new Map());
+
   const [loading, setLoading] = useState(true);
   const [addingId, setAddingId] = useState<string | null>(null);
   const [previewTextbook, setPreviewTextbook] = useState<{ id: string; title: string } | null>(null);
