@@ -229,6 +229,25 @@ export default function ZEduMarketPage() {
                   <div className="text-xs text-muted-foreground">
                     {subjectLabel(i.target_subject)} · {i.sharer_name ?? "Neznámý autor"}
                   </div>
+                  {(() => {
+                    const targetId =
+                      i.kind === "textbook"
+                        ? i.textbook_id
+                        : i.kind === "worksheet"
+                        ? i.worksheet_id
+                        : i.lesson_plan_id;
+                    if (!targetId) return null;
+                    const agg = ratings.get(`${i.kind}:${targetId}`);
+                    if (!agg || agg.count === 0) return null;
+                    return (
+                      <ReviewSummary
+                        kind={i.kind}
+                        targetId={targetId as string}
+                        aggregate={agg}
+                      />
+                    );
+                  })()}
+
                   <div className="flex flex-wrap gap-1">
                     {(i.target_grade_level ?? []).map((g) => (
                       <Badge key={g} variant="secondary" className="text-[10px]">
