@@ -3048,6 +3048,45 @@ export type Database = {
         }
         Relationships: []
       }
+      textbook_trial_activations: {
+        Row: {
+          expires_at: string
+          id: string
+          started_at: string
+          teacher_id: string
+          textbook_id: string
+        }
+        Insert: {
+          expires_at?: string
+          id?: string
+          started_at?: string
+          teacher_id: string
+          textbook_id: string
+        }
+        Update: {
+          expires_at?: string
+          id?: string
+          started_at?: string
+          teacher_id?: string
+          textbook_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "textbook_trial_activations_textbook_id_fkey"
+            columns: ["textbook_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_textbooks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "textbook_trial_activations_textbook_id_fkey"
+            columns: ["textbook_id"]
+            isOneToOne: false
+            referencedRelation: "textbook_marketplace_stats"
+            referencedColumns: ["textbook_id"]
+          },
+        ]
+      }
       todos: {
         Row: {
           created_at: string | null
@@ -3449,6 +3488,10 @@ export type Database = {
       grant_avatar_item_by_teacher: {
         Args: { p_item_slug: string; p_student_id: string }
         Returns: undefined
+      }
+      has_active_textbook_trial: {
+        Args: { _textbook_id: string; _user_id: string }
+        Returns: boolean
       }
       has_login_credential: { Args: { _profile_id: string }; Returns: boolean }
       increment_player_score: {
