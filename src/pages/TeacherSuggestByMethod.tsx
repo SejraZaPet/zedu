@@ -503,7 +503,7 @@ export default function TeacherSuggestByMethod() {
             <div className="mt-4">
               <Label htmlFor="custom">Doplňující pokyny (nepovinné)</Label>
               <Textarea
-                id="custom",
+                id="custom"
                 value={customInstructions}
                 onChange={(e) => setCustomInstructions(e.target.value)}
                 rows={2}
