@@ -247,8 +247,25 @@ export default function ZEduMarketPage() {
                   <h3 className="font-semibold text-sm line-clamp-2">
                     {i.target_title ?? "Bez názvu"}
                   </h3>
-                  <div className="text-xs text-muted-foreground">
-                    {subjectLabel(i.target_subject)} · {i.sharer_name ?? "Neznámý autor"}
+                  <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
+                    <span>
+                      {subjectLabel(i.target_subject)} · {i.sharer_name ?? "Neznámý autor"}
+                    </span>
+                    {i.shared_by && currentUserId && i.shared_by !== currentUserId && (
+                      <FollowCreatorButton
+                        creatorId={i.shared_by}
+                        creatorName={i.sharer_name ?? undefined}
+                        isFollowing={followingIds.has(i.shared_by)}
+                        onChange={(now) => {
+                          setFollowingIds((prev) => {
+                            const next = new Set(prev);
+                            if (now) next.add(i.shared_by);
+                            else next.delete(i.shared_by);
+                            return next;
+                          });
+                        }}
+                      />
+                    )}
                   </div>
                   {(() => {
                     const targetId =
