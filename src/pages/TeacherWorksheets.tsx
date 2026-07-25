@@ -46,7 +46,9 @@ interface WorksheetRow {
   status: "draft" | "published";
   spec: any;
   updated_at: string;
+  copied_from_worksheet_id?: string | null;
 }
+
 
 const MODE_LABELS: Record<string, string> = {
   classwork: "Práce v hodině",
