@@ -17,6 +17,7 @@ import { Loader2, Search, BookOpen, FileText, LayoutTemplate, Download, Eye } fr
 import { useToast } from "@/hooks/use-toast";
 import PublicTextbookPreviewDialog from "@/components/sharing/PublicTextbookPreviewDialog";
 import TextbookOutlinePreview from "@/components/sharing/TextbookOutlinePreview";
+import TextbookTrialButton from "@/components/sharing/TextbookTrialButton";
 import {
   listPublicShares,
   acceptShare,
