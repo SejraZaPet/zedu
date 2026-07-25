@@ -341,6 +341,16 @@ export default function TeacherLessonPlans() {
           </p>
         </button>
         <div className="absolute top-3 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+          {plan.copied_from_lesson_plan_id && (
+            <div onClick={(e) => e.stopPropagation()}>
+              <ReviewButton
+                originalId={plan.copied_from_lesson_plan_id}
+                kind="lesson_plan"
+                targetTitle={plan.title}
+              />
+            </div>
+          )}
+
           <button
             onClick={(e) => {
               e.stopPropagation();
