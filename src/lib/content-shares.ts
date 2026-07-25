@@ -297,12 +297,14 @@ export async function copyLessonPlan(sourceId: string): Promise<string> {
       input_data: src.input_data,
       shared_visibility: "private",
       anonymous: false,
+      copied_from_lesson_plan_id: sourceId,
     } as any)
     .select("id")
     .single();
   if (insErr) throw insErr;
   return copy!.id as string;
 }
+
 
 export async function copyWorksheet(sourceId: string): Promise<string> {
   const userId = await requireUserId();
