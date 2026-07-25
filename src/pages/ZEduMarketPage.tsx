@@ -84,10 +84,11 @@ export default function ZEduMarketPage() {
           const wsIds = rows.filter((r) => r.kind === "worksheet" && r.worksheet_id).map((r) => r.worksheet_id as string);
           const lpIds = rows.filter((r) => r.kind === "lesson_plan" && r.lesson_plan_id).map((r) => r.lesson_plan_id as string);
           try {
-            const [tbMap, wsMap, lpMap] = await Promise.all([
+            const [tbMap, wsMap, lpMap, usageMap] = await Promise.all([
               getReviewAggregates("textbook", tbIds),
               getReviewAggregates("worksheet", wsIds),
               getReviewAggregates("lesson_plan", lpIds),
+              getUsageCounts({ textbookIds: tbIds, worksheetIds: wsIds, lessonPlanIds: lpIds }),
             ]);
             if (cancel) return;
             const merged = new Map<string, ReviewAggregate>();
@@ -95,6 +96,7 @@ export default function ZEduMarketPage() {
             for (const [k, v] of wsMap) merged.set(`worksheet:${k}`, v);
             for (const [k, v] of lpMap) merged.set(`lesson_plan:${k}`, v);
             setRatings(merged);
+            setUsage(usageMap);
           } catch {
             /* ignore */
           }
