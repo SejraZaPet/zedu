@@ -69,6 +69,18 @@ export default function ZEduMarketPage() {
         .order("label");
       setSubjects((data ?? []) as any);
     })();
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setCurrentUserId(session?.user.id ?? null);
+      if (session) {
+        try {
+          const ids = await listFollowedCreatorIds();
+          setFollowingIds(new Set(ids));
+        } catch {
+          /* ignore */
+        }
+      }
+    })();
   }, []);
 
   useEffect(() => {
