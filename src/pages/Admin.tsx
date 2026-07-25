@@ -26,8 +26,9 @@ import TextbookTemplatesManager from "@/components/admin/TextbookTemplatesManage
 import LandingPageManager from "@/components/admin/LandingPageManager";
 import AvatarItemsManager from "@/components/admin/AvatarItemsManager";
 import TextbookOverviewManager from "@/components/admin/TextbookOverviewManager";
+import AcademyCoursesManager from "@/components/admin/AcademyCoursesManager";
 import { Button } from "@/components/ui/button";
-import { BookOpen, LogOut, Home, GraduationCap, Settings, Users, School, BarChart3, LayoutDashboard, HelpCircle, ListTree, CircleHelp, Link2, Pencil, Video, Bell, Activity, FileText, Sparkles, Globe, Smile, Library } from "lucide-react";
+import { BookOpen, LogOut, Home, GraduationCap, Settings, Users, School, BarChart3, LayoutDashboard, HelpCircle, ListTree, CircleHelp, Link2, Pencil, Video, Bell, Activity, FileText, Sparkles, Globe, Smile, Library, Award } from "lucide-react";
 
 const adminTabs = [
   { id: "dashboard", label: "Přehled", icon: LayoutDashboard },
@@ -35,6 +36,7 @@ const adminTabs = [
   { id: "schools", label: "Školy", icon: School },
   { id: "users", label: "Uživatelé", icon: Users },
   { id: "textbook-overview", label: "Přehled učebnic", icon: Library },
+  { id: "academy", label: "Akademie", icon: Award },
   { id: "templates", label: "Šablony", icon: Sparkles },
   { id: "landing", label: "Landing page", icon: Globe },
   { id: "avatars", label: "Avatary", icon: Smile },
@@ -58,7 +60,7 @@ const teacherTabs = [
   { id: "help", label: "Nápověda", icon: HelpCircle },
 ] as const;
 
-type Tab = "dashboard" | "stats" | "textbooks" | "lessons" | "outline" | "mcq" | "matching" | "slide-edit" | "video-ai" | "subjects" | "users" | "classes" | "results" | "help" | "notifications" | "schools" | "audit" | "templates" | "landing" | "avatars" | "textbook-overview";
+type Tab = "dashboard" | "stats" | "textbooks" | "lessons" | "outline" | "mcq" | "matching" | "slide-edit" | "video-ai" | "subjects" | "users" | "classes" | "results" | "help" | "notifications" | "schools" | "audit" | "templates" | "landing" | "avatars" | "textbook-overview" | "academy";
 
 const Admin = () => {
   const { isAdmin, isTeacher, loading, logout } = useAdmin();
@@ -145,6 +147,7 @@ const Admin = () => {
         {activeTab === "landing" && !isTeacher && <LandingPageManager />}
         {activeTab === "avatars" && !isTeacher && <AvatarItemsManager />}
         {activeTab === "textbook-overview" && !isTeacher && <TextbookOverviewManager />}
+        {activeTab === "academy" && !isTeacher && <AcademyCoursesManager />}
         {activeTab === "help" && <HelpGuidesManager />}
       </div>
     </div>

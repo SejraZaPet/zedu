@@ -74,6 +74,7 @@ import ZEduMarketPage from "./pages/ZEduMarketPage";
 import SharedWithMe from "./pages/SharedWithMe";
 import FollowedCreators from "./pages/FollowedCreators";
 import AvatarEditor from "./pages/AvatarEditor";
+import TeacherAcademy from "./pages/TeacherAcademy";
 import ViewAsBanner from "./components/ViewAsBanner";
 
 
@@ -166,6 +167,7 @@ const App = () => (
             <Route path="/marketplace/:id" element={<Navigate to="/zedumarket" replace />} />
             <Route path="/ucitel/publikace" element={<Navigate to="/zedumarket" replace />} />
             <Route path="/avatar" element={<ProtectedRoute><AvatarEditor /></ProtectedRoute>} />
+            <Route path="/ucitel/akademie" element={<ProtectedRoute><TeacherAcademy /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

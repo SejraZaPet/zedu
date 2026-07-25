@@ -16,6 +16,7 @@ import {
   Library,
   GripVertical,
   Wand2,
+  Award,
 } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
@@ -63,6 +64,7 @@ const DEFAULT_ORDER = [
   "worksheets",
   "lesson-plans",
   "suggest-method",
+  "academy",
   "todos",
   "notifications",
   "profile",
@@ -251,6 +253,14 @@ const TeacherDashboard = () => {
       description: "AI navrhne strukturu lekce podle zvolené výukové metody (Bloom, Flipped, projektová výuka…).",
       button: "Otevřít nástroj",
       onClick: () => navigate("/ucitel/navrh-podle-metody"),
+    },
+    academy: {
+      id: "academy",
+      icon: Award,
+      title: "ZEdu Akademie",
+      description: "Kurzy a webináře pro učitele – rozvíjejte se s ZEdu.",
+      button: "Otevřít akademii",
+      onClick: () => navigate("/ucitel/akademie"),
     },
     todos: {
       id: "todos",
