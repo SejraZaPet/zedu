@@ -148,6 +148,14 @@ export default function PublicTextbookPreviewDialog({
           <DialogTitle className="text-sm font-medium">
             {mode === "trial" ? "Zkušební přístup" : "Náhled první lekce zdarma"} · {textbookTitle}
           </DialogTitle>
+          <div className="flex items-center gap-2 mr-8">
+            {usageCount !== null && (
+              <Badge variant="secondary" className="text-[10px]">
+                {usageCount === 0
+                  ? "Zatím nikým nepoužito"
+                  : `Použito ${usageCount} ${usageCount === 1 ? "učitelem" : "učiteli"}`}
+              </Badge>
+            )}
           {mode === "trial" && trialDaysLeft !== null && (
             <Badge variant="secondary" className="text-[10px] flex items-center gap-1 mr-8">
               <Clock className="w-3 h-3" />
