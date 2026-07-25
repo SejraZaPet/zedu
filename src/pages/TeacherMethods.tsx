@@ -50,7 +50,7 @@ export default function TeacherMethods() {
   useEffect(() => {
     supabase
       .from("learning_methods")
-      .select("id,name,slug,description,category,difficulty,time_range,tips")
+      .select("id,name,slug,description,example,category,difficulty,time_range,tips")
       .order("name", { ascending: true })
       .then(({ data }) => setMethods((data as any[]) ?? []));
   }, []);
