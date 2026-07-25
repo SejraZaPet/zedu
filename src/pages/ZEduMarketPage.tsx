@@ -28,6 +28,8 @@ import {
   type ReviewAggregate,
 } from "@/lib/content-shares";
 import ReviewSummary from "@/components/sharing/ReviewSummary";
+import FollowCreatorButton from "@/components/sharing/FollowCreatorButton";
+import { listFollowedCreatorIds } from "@/lib/creator-follows";
 import { supabase } from "@/integrations/supabase/client";
 
 
@@ -44,6 +46,9 @@ export default function ZEduMarketPage() {
   const [items, setItems] = useState<PublicShareItem[]>([]);
   const [ratings, setRatings] = useState<Map<string, ReviewAggregate>>(new Map());
   const [usage, setUsage] = useState<Map<string, number>>(new Map());
+  const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
 
   const [loading, setLoading] = useState(true);
   const [addingId, setAddingId] = useState<string | null>(null);
@@ -63,6 +68,18 @@ export default function ZEduMarketPage() {
         .select("slug,label")
         .order("label");
       setSubjects((data ?? []) as any);
+    })();
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setCurrentUserId(session?.user.id ?? null);
+      if (session) {
+        try {
+          const ids = await listFollowedCreatorIds();
+          setFollowingIds(new Set(ids));
+        } catch {
+          /* ignore */
+        }
+      }
     })();
   }, []);
 
@@ -230,8 +247,25 @@ export default function ZEduMarketPage() {
                   <h3 className="font-semibold text-sm line-clamp-2">
                     {i.target_title ?? "Bez názvu"}
                   </h3>
-                  <div className="text-xs text-muted-foreground">
-                    {subjectLabel(i.target_subject)} · {i.sharer_name ?? "Neznámý autor"}
+                  <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
+                    <span>
+                      {subjectLabel(i.target_subject)} · {i.sharer_name ?? "Neznámý autor"}
+                    </span>
+                    {i.shared_by && currentUserId && i.shared_by !== currentUserId && (
+                      <FollowCreatorButton
+                        creatorId={i.shared_by}
+                        creatorName={i.sharer_name ?? undefined}
+                        isFollowing={followingIds.has(i.shared_by)}
+                        onChange={(now) => {
+                          setFollowingIds((prev) => {
+                            const next = new Set(prev);
+                            if (now) next.add(i.shared_by);
+                            else next.delete(i.shared_by);
+                            return next;
+                          });
+                        }}
+                      />
+                    )}
                   </div>
                   {(() => {
                     const targetId =

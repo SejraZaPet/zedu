@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Menu, X, LogIn, LogOut, User, BookOpen, GraduationCap, LayoutDashboard, Users, BarChart3, HelpCircle, Layers, FolderOpen, Activity, TrendingUp, Gamepad2, Settings, CalendarDays, Brain, School, Image as ImageIcon, ShoppingBag } from "lucide-react";
+import { Menu, X, LogIn, LogOut, User, BookOpen, GraduationCap, LayoutDashboard, Users, BarChart3, HelpCircle, Layers, FolderOpen, Activity, TrendingUp, Gamepad2, Settings, CalendarDays, Brain, School, Image as ImageIcon, ShoppingBag, UserCheck } from "lucide-react";
 import logo from "@/assets/zedu-logo-new.png";
 import { Button } from "@/components/ui/button";
 import {
@@ -207,6 +207,10 @@ const SiteHeader = () => {
                         <Layers size={16} />
                         Sdíleno se mnou
                       </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/ucitel/sledovani-tvurci")} className="gap-2 cursor-pointer">
+                        <UserCheck size={16} />
+                        Sledovaní tvůrci
+                      </DropdownMenuItem>
                     </>
                   )}
                   <DropdownMenuSeparator />
@@ -274,6 +278,9 @@ const SiteHeader = () => {
                 </button>
                 <button onClick={() => { setMenuOpen(false); navigate("/ucitel/sdileno-se-mnou"); }} className={`flex items-center gap-3 pl-6 py-2 rounded-lg text-sm font-medium transition-colors text-left ${location.pathname.startsWith("/ucitel/sdileno-se-mnou") ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-primary hover:bg-muted/50"}`}>
                   <Layers size={16} /> Sdíleno se mnou
+                </button>
+                <button onClick={() => { setMenuOpen(false); navigate("/ucitel/sledovani-tvurci"); }} className={`flex items-center gap-3 pl-6 py-2 rounded-lg text-sm font-medium transition-colors text-left ${location.pathname.startsWith("/ucitel/sledovani-tvurci") ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-primary hover:bg-muted/50"}`}>
+                  <UserCheck size={16} /> Sledovaní tvůrci
                 </button>
               </>
             )}

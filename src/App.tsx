@@ -71,6 +71,7 @@ import StudentPractice from "./pages/StudentPractice";
 import SchoolAdmin from "./pages/SchoolAdmin";
 import ZEduMarketPage from "./pages/ZEduMarketPage";
 import SharedWithMe from "./pages/SharedWithMe";
+import FollowedCreators from "./pages/FollowedCreators";
 import AvatarEditor from "./pages/AvatarEditor";
 import ViewAsBanner from "./components/ViewAsBanner";
 
@@ -158,6 +159,7 @@ const App = () => (
             <Route path="/student/metody/:slug/procviceni" element={<ProtectedRoute><StudentPractice /></ProtectedRoute>} />
             <Route path="/zedumarket" element={<ProtectedRoute><ZEduMarketPage /></ProtectedRoute>} />
             <Route path="/ucitel/sdileno-se-mnou" element={<ProtectedRoute><SharedWithMe /></ProtectedRoute>} />
+            <Route path="/ucitel/sledovani-tvurci" element={<ProtectedRoute><FollowedCreators /></ProtectedRoute>} />
             <Route path="/marketplace" element={<Navigate to="/zedumarket" replace />} />
             <Route path="/marketplace/:id" element={<Navigate to="/zedumarket" replace />} />
             <Route path="/ucitel/publikace" element={<Navigate to="/zedumarket" replace />} />
