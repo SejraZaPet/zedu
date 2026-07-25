@@ -13,8 +13,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import MultiSelectFilter from "@/components/sharing/MultiSelectFilter";
-import { Loader2, Search, BookOpen, FileText, LayoutTemplate, Download } from "lucide-react";
+import { Loader2, Search, BookOpen, FileText, LayoutTemplate, Download, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import PublicTextbookPreviewDialog from "@/components/sharing/PublicTextbookPreviewDialog";
 import {
   listPublicShares,
   acceptShare,
