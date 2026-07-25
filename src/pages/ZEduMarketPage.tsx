@@ -22,6 +22,7 @@ import {
   listPublicShares,
   acceptShare,
   getReviewAggregates,
+  getUsageCounts,
   GRADE_LEVEL_OPTIONS,
   type PublicShareItem,
   type ReviewAggregate,
@@ -42,6 +43,7 @@ export default function ZEduMarketPage() {
   const navigate = useNavigate();
   const [items, setItems] = useState<PublicShareItem[]>([]);
   const [ratings, setRatings] = useState<Map<string, ReviewAggregate>>(new Map());
+  const [usage, setUsage] = useState<Map<string, number>>(new Map());
 
   const [loading, setLoading] = useState(true);
   const [addingId, setAddingId] = useState<string | null>(null);
@@ -82,10 +84,11 @@ export default function ZEduMarketPage() {
           const wsIds = rows.filter((r) => r.kind === "worksheet" && r.worksheet_id).map((r) => r.worksheet_id as string);
           const lpIds = rows.filter((r) => r.kind === "lesson_plan" && r.lesson_plan_id).map((r) => r.lesson_plan_id as string);
           try {
-            const [tbMap, wsMap, lpMap] = await Promise.all([
+            const [tbMap, wsMap, lpMap, usageMap] = await Promise.all([
               getReviewAggregates("textbook", tbIds),
               getReviewAggregates("worksheet", wsIds),
               getReviewAggregates("lesson_plan", lpIds),
+              getUsageCounts({ textbookIds: tbIds, worksheetIds: wsIds, lessonPlanIds: lpIds }),
             ]);
             if (cancel) return;
             const merged = new Map<string, ReviewAggregate>();
@@ -93,6 +96,7 @@ export default function ZEduMarketPage() {
             for (const [k, v] of wsMap) merged.set(`worksheet:${k}`, v);
             for (const [k, v] of lpMap) merged.set(`lesson_plan:${k}`, v);
             setRatings(merged);
+            setUsage(usageMap);
           } catch {
             /* ignore */
           }
@@ -238,13 +242,30 @@ export default function ZEduMarketPage() {
                         : i.lesson_plan_id;
                     if (!targetId) return null;
                     const agg = ratings.get(`${i.kind}:${targetId}`);
-                    if (!agg || agg.count === 0) return null;
+                    const count = usage.get(`${i.kind}:${targetId}`) ?? 0;
+                    const hasRating = agg && agg.count > 0;
+                    if (!hasRating && count === 0) {
+                      return (
+                        <div className="text-[11px] text-muted-foreground">
+                          Zatím nikým nepoužito
+                        </div>
+                      );
+                    }
                     return (
-                      <ReviewSummary
-                        kind={i.kind}
-                        targetId={targetId as string}
-                        aggregate={agg}
-                      />
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {hasRating && (
+                          <ReviewSummary
+                            kind={i.kind}
+                            targetId={targetId as string}
+                            aggregate={agg}
+                          />
+                        )}
+                        {count > 0 && (
+                          <Badge variant="secondary" className="text-[10px]">
+                            Použito {count} {count === 1 ? "učitelem" : count >= 2 && count <= 4 ? "učiteli" : "učiteli"}
+                          </Badge>
+                        )}
+                      </div>
                     );
                   })()}
 
