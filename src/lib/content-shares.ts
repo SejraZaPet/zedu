@@ -696,7 +696,7 @@ export async function getReviewAggregate(
     .select("rating")
     .eq(col, targetId);
   if (error) throw error;
-  const arr = (data ?? []) as { rating: number }[];
+  const arr = (data ?? []) as unknown as { rating: number }[];
   const count = arr.length;
   const average = count === 0 ? 0 : arr.reduce((s, r) => s + r.rating, 0) / count;
   return { count, average };
@@ -767,7 +767,7 @@ export async function getMyReview(
     .eq("reviewer_id", session.user.id)
     .maybeSingle();
   if (error) throw error;
-  return (data as ContentReview) ?? null;
+  return (data as unknown as ContentReview) ?? null;
 }
 
 export async function upsertReview(input: {
@@ -790,7 +790,7 @@ export async function upsertReview(input: {
       .select("*")
       .single();
     if (error) throw error;
-    return data as ContentReview;
+    return data as unknown as ContentReview;
   }
 
   const payload: Record<string, any> = {
@@ -805,7 +805,7 @@ export async function upsertReview(input: {
     .select("*")
     .single();
   if (error) throw error;
-  return data as ContentReview;
+  return data as unknown as ContentReview;
 }
 
 export async function deleteReview(reviewId: string): Promise<void> {
