@@ -50,6 +50,8 @@ interface Textbook {
   updated_at?: string;
   archived?: boolean;
   order_index?: number;
+  copied_from_textbook_id?: string | null;
+
 }
 
 interface Enrollment {
