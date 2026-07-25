@@ -3473,6 +3473,10 @@ export type Database = {
         Args: { _student_id: string; _user_id: string }
         Returns: boolean
       }
+      is_public_shared_textbook: {
+        Args: { _textbook_id: string }
+        Returns: boolean
+      }
       is_school_admin: { Args: { _user_id: string }; Returns: boolean }
       is_school_admin_of: {
         Args: { _school_id: string; _user_id: string }

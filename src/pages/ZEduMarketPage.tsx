@@ -13,8 +13,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import MultiSelectFilter from "@/components/sharing/MultiSelectFilter";
-import { Loader2, Search, BookOpen, FileText, LayoutTemplate, Download } from "lucide-react";
+import { Loader2, Search, BookOpen, FileText, LayoutTemplate, Download, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import PublicTextbookPreviewDialog from "@/components/sharing/PublicTextbookPreviewDialog";
+import TextbookOutlinePreview from "@/components/sharing/TextbookOutlinePreview";
 import {
   listPublicShares,
   acceptShare,
@@ -36,6 +38,7 @@ export default function ZEduMarketPage() {
   const [items, setItems] = useState<PublicShareItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [addingId, setAddingId] = useState<string | null>(null);
+  const [previewTextbook, setPreviewTextbook] = useState<{ id: string; title: string } | null>(null);
   const [subjects, setSubjects] = useState<{ slug: string; label: string }[]>([]);
   const [search, setSearch] = useState("");
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
@@ -214,25 +217,50 @@ export default function ZEduMarketPage() {
                       </Badge>
                     )}
                   </div>
-                  <Button
-                    size="sm"
-                    className="mt-auto"
-                    onClick={() => handleAdd(i)}
-                    disabled={addingId === i.id}
-                  >
-                    {addingId === i.id ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    ) : (
-                      <Download className="w-4 h-4 mr-2" />
+                  {i.kind === "textbook" && i.textbook_id && (
+                    <TextbookOutlinePreview textbookId={i.textbook_id as string} />
+                  )}
+                  <div className="mt-auto flex flex-col gap-2">
+                    {i.kind === "textbook" && i.textbook_id && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                          setPreviewTextbook({
+                            id: i.textbook_id as string,
+                            title: i.target_title ?? "Učebnice",
+                          })
+                        }
+                      >
+                        <Eye className="w-4 h-4 mr-2" />
+                        Náhled první lekce zdarma
+                      </Button>
                     )}
-                    Přidat do mých materiálů
-                  </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => handleAdd(i)}
+                      disabled={addingId === i.id}
+                    >
+                      {addingId === i.id ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Download className="w-4 h-4 mr-2" />
+                      )}
+                      Přidat do mých materiálů
+                    </Button>
+                  </div>
                 </div>
               );
             })}
           </div>
         )}
       </main>
+      <PublicTextbookPreviewDialog
+        open={!!previewTextbook}
+        onOpenChange={(o) => !o && setPreviewTextbook(null)}
+        textbookId={previewTextbook?.id ?? null}
+        textbookTitle={previewTextbook?.title ?? ""}
+      />
       <SiteFooter />
     </div>
   );

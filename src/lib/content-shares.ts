@@ -481,3 +481,170 @@ export const GRADE_LEVEL_OPTIONS: { value: string; label: string }[] = [
   { value: "ss", label: "SŠ" },
   { value: "vs", label: "VŠ" },
 ];
+
+// ------------------------- Public textbook preview -------------------------
+
+export interface PublicTextbookOutlineChapter {
+  id: string; // topic id or "__no_topic__"
+  title: string;
+  sort_order: number;
+  lesson_count: number;
+}
+
+export interface PublicTextbookOutline {
+  textbook_id: string;
+  title: string;
+  chapters: PublicTextbookOutlineChapter[];
+  total_lessons: number;
+}
+
+export interface PublicTextbookFirstLesson {
+  id: string;
+  title: string;
+  hero_image_url: string | null;
+  blocks: any[];
+}
+
+/**
+ * Fetch chapter structure of a publicly-shared teacher textbook.
+ * Groups lessons by topic via lesson_placements; ungrouped lessons fall under
+ * a single "Ostatní lekce" chapter. Only lesson counts (no content) are returned.
+ */
+export async function getPublicTextbookOutline(
+  textbookId: string,
+): Promise<PublicTextbookOutline | null> {
+  const { data: tb } = await supabase
+    .from("teacher_textbooks")
+    .select("id, title")
+    .eq("id", textbookId)
+    .maybeSingle();
+  if (!tb) return null;
+
+  const { data: lessons } = await supabase
+    .from("teacher_textbook_lessons")
+    .select("id, sort_order, status")
+    .eq("textbook_id", textbookId)
+    .eq("status", "published");
+
+  const lessonIds = (lessons ?? []).map((l: any) => l.id);
+  if (lessonIds.length === 0) {
+    return { textbook_id: textbookId, title: (tb as any).title, chapters: [], total_lessons: 0 };
+  }
+
+  const { data: placements } = await supabase
+    .from("lesson_placements")
+    .select("lesson_id, topic_id")
+    .in("lesson_id", lessonIds);
+
+  const topicIds = Array.from(
+    new Set((placements ?? []).map((p: any) => p.topic_id).filter(Boolean)),
+  );
+  const topicsById = new Map<string, { title: string; sort_order: number }>();
+  if (topicIds.length > 0) {
+    const { data: topics } = await supabase
+      .from("textbook_topics")
+      .select("id, title, sort_order")
+      .in("id", topicIds);
+    (topics ?? []).forEach((t: any) =>
+      topicsById.set(t.id, { title: t.title, sort_order: t.sort_order ?? 0 }),
+    );
+  }
+
+  const lessonToTopic = new Map<string, string>();
+  (placements ?? []).forEach((p: any) => {
+    if (p.topic_id && !lessonToTopic.has(p.lesson_id)) {
+      lessonToTopic.set(p.lesson_id, p.topic_id);
+    }
+  });
+
+  const counts = new Map<string, number>();
+  for (const l of lessons ?? []) {
+    const key = lessonToTopic.get((l as any).id) ?? "__no_topic__";
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+
+  const chapters: PublicTextbookOutlineChapter[] = [];
+  for (const [key, count] of counts.entries()) {
+    if (key === "__no_topic__") {
+      chapters.push({
+        id: key,
+        title: "Ostatní lekce",
+        sort_order: 9999,
+        lesson_count: count,
+      });
+    } else {
+      const t = topicsById.get(key);
+      chapters.push({
+        id: key,
+        title: t?.title ?? "Kapitola",
+        sort_order: t?.sort_order ?? 0,
+        lesson_count: count,
+      });
+    }
+  }
+  chapters.sort((a, b) => a.sort_order - b.sort_order);
+
+  return {
+    textbook_id: textbookId,
+    title: (tb as any).title,
+    chapters,
+    total_lessons: lessonIds.length,
+  };
+}
+
+/**
+ * Load the first lesson of a publicly-shared teacher textbook (free preview).
+ * "First" = lesson from the first chapter (by topic sort_order) with the
+ * lowest lesson sort_order; falls back to the lesson with the lowest overall
+ * sort_order when no chapter grouping exists.
+ */
+export async function getPublicTextbookFirstLesson(
+  textbookId: string,
+): Promise<PublicTextbookFirstLesson | null> {
+  const { data: lessons } = await supabase
+    .from("teacher_textbook_lessons")
+    .select("id, title, blocks, sort_order, hero_image_url, status")
+    .eq("textbook_id", textbookId)
+    .eq("status", "published")
+    .order("sort_order", { ascending: true });
+  const list = (lessons ?? []) as any[];
+  if (list.length === 0) return null;
+
+  const lessonIds = list.map((l) => l.id);
+  const { data: placements } = await supabase
+    .from("lesson_placements")
+    .select("lesson_id, topic_id")
+    .in("lesson_id", lessonIds);
+
+  const topicIds = Array.from(
+    new Set((placements ?? []).map((p: any) => p.topic_id).filter(Boolean)),
+  );
+  let firstTopicId: string | null = null;
+  if (topicIds.length > 0) {
+    const { data: topics } = await supabase
+      .from("textbook_topics")
+      .select("id, sort_order")
+      .in("id", topicIds)
+      .order("sort_order", { ascending: true });
+    firstTopicId = ((topics ?? [])[0] as any)?.id ?? null;
+  }
+
+  let pick: any = list[0];
+  if (firstTopicId) {
+    const idsInFirstTopic = new Set(
+      (placements ?? [])
+        .filter((p: any) => p.topic_id === firstTopicId)
+        .map((p: any) => p.lesson_id),
+    );
+    const inTopic = list.filter((l) => idsInFirstTopic.has(l.id));
+    if (inTopic.length > 0) pick = inTopic[0];
+  }
+
+  return {
+    id: pick.id,
+    title: pick.title,
+    hero_image_url: pick.hero_image_url ?? null,
+    blocks: (pick.blocks ?? []) as any[],
+  };
+}
+
