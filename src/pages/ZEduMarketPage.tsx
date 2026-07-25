@@ -28,6 +28,8 @@ import {
   type ReviewAggregate,
 } from "@/lib/content-shares";
 import ReviewSummary from "@/components/sharing/ReviewSummary";
+import FollowCreatorButton from "@/components/sharing/FollowCreatorButton";
+import { listFollowedCreatorIds } from "@/lib/creator-follows";
 import { supabase } from "@/integrations/supabase/client";
 
 
