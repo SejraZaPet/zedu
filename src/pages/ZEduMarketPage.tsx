@@ -216,6 +216,9 @@ export default function ZEduMarketPage() {
                       </Badge>
                     )}
                   </div>
+                  {i.kind === "textbook" && i.textbook_id && (
+                    <TextbookOutlinePreview textbookId={i.textbook_id as string} />
+                  )}
                   <div className="mt-auto flex flex-col gap-2">
                     {i.kind === "textbook" && i.textbook_id && (
                       <Button
