@@ -43,6 +43,7 @@ export default function ZEduMarketPage() {
   const navigate = useNavigate();
   const [items, setItems] = useState<PublicShareItem[]>([]);
   const [ratings, setRatings] = useState<Map<string, ReviewAggregate>>(new Map());
+  const [usage, setUsage] = useState<Map<string, number>>(new Map());
 
   const [loading, setLoading] = useState(true);
   const [addingId, setAddingId] = useState<string | null>(null);
