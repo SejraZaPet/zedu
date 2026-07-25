@@ -3497,6 +3497,15 @@ export type Database = {
           topic_title: string
         }[]
       }
+      get_public_textbook_first_lesson: {
+        Args: { _textbook_id: string }
+        Returns: {
+          blocks: Json
+          hero_image_url: string
+          id: string
+          title: string
+        }[]
+      }
       get_public_textbook_lesson: {
         Args: { _lesson_id: string; _textbook_id: string }
         Returns: {
