@@ -74,6 +74,7 @@ import ZEduMarketPage from "./pages/ZEduMarketPage";
 import SharedWithMe from "./pages/SharedWithMe";
 import FollowedCreators from "./pages/FollowedCreators";
 import AvatarEditor from "./pages/AvatarEditor";
+import TeacherAcademy from "./pages/TeacherAcademy";
 import ViewAsBanner from "./components/ViewAsBanner";
 
 
