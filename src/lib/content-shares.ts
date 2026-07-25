@@ -626,69 +626,29 @@ export interface PublicTextbookLessonFull {
 }
 
 /**
- * Load ALL published lessons of a publicly-shared teacher textbook — used only
- * during an active trial. Depends on the "Public share preview" RLS policies
- * that permit reading all lessons of publicly-shared textbooks for authenticated
- * teachers; the trial is enforced at the UI level by gating this call.
+ * Load ALL published lessons of a publicly-shared teacher textbook — the RPC
+ * only returns data when the caller has an active trial for this textbook.
+ * Direct SELECT on teacher_textbook_lessons is no longer permitted.
  */
 export async function getPublicTextbookAllLessons(
   textbookId: string,
 ): Promise<PublicTextbookLessonFull[]> {
-  const { data: lessons } = await supabase
-    .from("teacher_textbook_lessons")
-    .select("id, title, blocks, sort_order, hero_image_url, status")
-    .eq("textbook_id", textbookId)
-    .eq("status", "published")
-    .order("sort_order", { ascending: true });
-  const list = (lessons ?? []) as any[];
-  if (list.length === 0) return [];
-
-  const lessonIds = list.map((l) => l.id);
-  const { data: placements } = await supabase
-    .from("lesson_placements")
-    .select("lesson_id, topic_id")
-    .in("lesson_id", lessonIds);
-
-  const lessonToTopic = new Map<string, string>();
-  (placements ?? []).forEach((p: any) => {
-    if (p.topic_id && !lessonToTopic.has(p.lesson_id)) {
-      lessonToTopic.set(p.lesson_id, p.topic_id);
-    }
-  });
-
-  const topicIds = Array.from(new Set(Array.from(lessonToTopic.values())));
-  const topicsById = new Map<string, { title: string; sort_order: number }>();
-  if (topicIds.length > 0) {
-    const { data: topics } = await supabase
-      .from("textbook_topics")
-      .select("id, title, sort_order")
-      .in("id", topicIds);
-    (topics ?? []).forEach((t: any) =>
-      topicsById.set(t.id, { title: t.title, sort_order: t.sort_order ?? 0 }),
-    );
-  }
-
-  const rows: PublicTextbookLessonFull[] = list.map((l) => {
-    const tid = lessonToTopic.get(l.id) ?? null;
-    const t = tid ? topicsById.get(tid) : null;
-    return {
-      id: l.id,
-      title: l.title,
-      hero_image_url: l.hero_image_url ?? null,
-      blocks: (l.blocks ?? []) as any[],
-      topic_id: tid,
-      topic_title: t?.title ?? null,
-      topic_sort_order: t?.sort_order ?? 9999,
-      sort_order: l.sort_order ?? 0,
-    };
-  });
-
-  rows.sort((a, b) => {
-    if (a.topic_sort_order !== b.topic_sort_order)
-      return a.topic_sort_order - b.topic_sort_order;
-    return a.sort_order - b.sort_order;
-  });
-  return rows;
+  const { data, error } = await supabase.rpc(
+    "get_public_textbook_all_lessons" as any,
+    { _textbook_id: textbookId },
+  );
+  if (error) throw error;
+  const rows = (data ?? []) as any[];
+  return rows.map((r) => ({
+    id: r.id,
+    title: r.title,
+    hero_image_url: r.hero_image_url ?? null,
+    blocks: (r.blocks ?? []) as any[],
+    topic_id: r.topic_id ?? null,
+    topic_title: r.topic_title ?? null,
+    topic_sort_order: r.topic_sort_order ?? 9999,
+    sort_order: r.sort_order ?? 0,
+  }));
 }
 
 
