@@ -15,6 +15,7 @@ import {
   BookOpen,
   Library,
   GripVertical,
+  Wand2,
 } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
@@ -61,6 +62,7 @@ const DEFAULT_ORDER = [
   "calendar",
   "worksheets",
   "lesson-plans",
+  "suggest-method",
   "todos",
   "notifications",
   "profile",
@@ -241,6 +243,14 @@ const TeacherDashboard = () => {
       description: "Organizujte lekce do tematických plánů hodin.",
       button: "Otevřít plány",
       onClick: () => navigate("/ucitel/plany-hodin"),
+    },
+    "suggest-method": {
+      id: "suggest-method",
+      icon: Wand2,
+      title: "Návrh podle metody",
+      description: "AI navrhne strukturu lekce podle zvolené výukové metody (Bloom, Flipped, projektová výuka…).",
+      button: "Otevřít nástroj",
+      onClick: () => navigate("/ucitel/navrh-podle-metody"),
     },
     todos: {
       id: "todos",
