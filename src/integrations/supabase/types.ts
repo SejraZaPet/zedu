@@ -990,6 +990,78 @@ export type Database = {
         }
         Relationships: []
       }
+      content_reviews: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          lesson_plan_id: string | null
+          rating: number
+          reviewer_id: string
+          textbook_id: string | null
+          updated_at: string
+          worksheet_id: string | null
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          lesson_plan_id?: string | null
+          rating: number
+          reviewer_id: string
+          textbook_id?: string | null
+          updated_at?: string
+          worksheet_id?: string | null
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          lesson_plan_id?: string | null
+          rating?: number
+          reviewer_id?: string
+          textbook_id?: string | null
+          updated_at?: string
+          worksheet_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_reviews_lesson_plan_id_fkey"
+            columns: ["lesson_plan_id"]
+            isOneToOne: false
+            referencedRelation: "lesson_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_reviews_textbook_id_fkey"
+            columns: ["textbook_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_textbooks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_reviews_textbook_id_fkey"
+            columns: ["textbook_id"]
+            isOneToOne: false
+            referencedRelation: "textbook_marketplace_stats"
+            referencedColumns: ["textbook_id"]
+          },
+          {
+            foreignKeyName: "content_reviews_worksheet_id_fkey"
+            columns: ["worksheet_id"]
+            isOneToOne: false
+            referencedRelation: "worksheets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       content_shares: {
         Row: {
           created_at: string
@@ -1596,6 +1668,7 @@ export type Database = {
       lesson_plans: {
         Row: {
           anonymous: boolean
+          copied_from_lesson_plan_id: string | null
           created_at: string
           grade_band: string
           id: string
@@ -1610,6 +1683,7 @@ export type Database = {
         }
         Insert: {
           anonymous?: boolean
+          copied_from_lesson_plan_id?: string | null
           created_at?: string
           grade_band?: string
           id?: string
@@ -1624,6 +1698,7 @@ export type Database = {
         }
         Update: {
           anonymous?: boolean
+          copied_from_lesson_plan_id?: string | null
           created_at?: string
           grade_band?: string
           id?: string
@@ -1637,6 +1712,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "lesson_plans_copied_from_lesson_plan_id_fkey"
+            columns: ["copied_from_lesson_plan_id"]
+            isOneToOne: false
+            referencedRelation: "lesson_plans"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "lesson_plans_lesson_id_fkey"
             columns: ["lesson_id"]
@@ -2758,6 +2840,7 @@ export type Database = {
         Row: {
           access_code: string
           archived: boolean
+          copied_from_textbook_id: string | null
           created_at: string
           description: string
           grade_level: string[] | null
@@ -2773,6 +2856,7 @@ export type Database = {
         Insert: {
           access_code: string
           archived?: boolean
+          copied_from_textbook_id?: string | null
           created_at?: string
           description?: string
           grade_level?: string[] | null
@@ -2788,6 +2872,7 @@ export type Database = {
         Update: {
           access_code?: string
           archived?: boolean
+          copied_from_textbook_id?: string | null
           created_at?: string
           description?: string
           grade_level?: string[] | null
@@ -2801,6 +2886,20 @@ export type Database = {
           visibility?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "teacher_textbooks_copied_from_textbook_id_fkey"
+            columns: ["copied_from_textbook_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_textbooks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_textbooks_copied_from_textbook_id_fkey"
+            columns: ["copied_from_textbook_id"]
+            isOneToOne: false
+            referencedRelation: "textbook_marketplace_stats"
+            referencedColumns: ["textbook_id"]
+          },
           {
             foreignKeyName: "teacher_textbooks_teacher_id_fkey"
             columns: ["teacher_id"]
@@ -3220,6 +3319,7 @@ export type Database = {
       }
       worksheets: {
         Row: {
+          copied_from_worksheet_id: string | null
           created_at: string
           grade_band: string
           id: string
@@ -3235,6 +3335,7 @@ export type Database = {
           worksheet_mode: string
         }
         Insert: {
+          copied_from_worksheet_id?: string | null
           created_at?: string
           grade_band?: string
           id?: string
@@ -3250,6 +3351,7 @@ export type Database = {
           worksheet_mode?: string
         }
         Update: {
+          copied_from_worksheet_id?: string | null
           created_at?: string
           grade_band?: string
           id?: string
@@ -3264,7 +3366,15 @@ export type Database = {
           updated_at?: string
           worksheet_mode?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "worksheets_copied_from_worksheet_id_fkey"
+            columns: ["copied_from_worksheet_id"]
+            isOneToOne: false
+            referencedRelation: "worksheets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
