@@ -459,9 +459,15 @@ const TeacherTextbooks = () => {
               {selectedTextbook.description && <p className="text-sm mt-2">{selectedTextbook.description}</p>}
             </div>
             <div className="flex items-center gap-2">
+              <ReviewButton
+                originalId={selectedTextbook.copied_from_textbook_id ?? null}
+                kind="textbook"
+                targetTitle={selectedTextbook.title}
+              />
               <Button size="sm" variant="outline" onClick={() => setSaveAsTemplateOpen(true)} className="gap-1">
                 <BookmarkPlus className="w-4 h-4" /> Uložit jako šablonu
               </Button>
+
               <div className="bg-card border border-border rounded-lg px-3 py-2 flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">Kód:</span>
                 <span className="font-mono font-bold text-primary">{selectedTextbook.access_code}</span>
