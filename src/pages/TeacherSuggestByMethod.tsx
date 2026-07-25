@@ -113,7 +113,7 @@ export default function TeacherSuggestByMethod() {
     (async () => {
       const { data } = await supabase
         .from("learning_methods")
-        .select("id, slug, name, description, category, tips")
+        .select("id, slug, name, description, example, category, tips")
         .order("name");
       setMethods((data as any) ?? []);
     })();
