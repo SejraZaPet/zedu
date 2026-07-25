@@ -200,7 +200,21 @@ export default function TeacherMethods() {
                     </div>
                   </header>
                   {m.description && (
-                    <p className="text-sm text-muted-foreground line-clamp-4">{m.description}</p>
+                    <p className="text-sm text-muted-foreground whitespace-pre-line">{m.description}</p>
+                  )}
+                  {m.example && (
+                    <div className="mt-1 rounded-lg border border-primary/20 bg-primary/5 p-3">
+                      <div className="flex items-center gap-1.5 text-xs font-semibold text-primary mb-1">
+                        <Lightbulb className="w-3.5 h-3.5" />
+                        Příklad z hodiny
+                      </div>
+                      <p className="text-xs text-foreground/80 whitespace-pre-line">{m.example}</p>
+                    </div>
+                  )}
+                  {m.tips && (
+                    <p className="text-xs text-muted-foreground mt-1 italic whitespace-pre-line">
+                      Tip: {m.tips}
+                    </p>
                   )}
                 </article>
               ))}
