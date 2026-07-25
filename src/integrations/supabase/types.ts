@@ -1485,6 +1485,7 @@ export type Database = {
           created_at: string
           description: string | null
           difficulty: string | null
+          example: string | null
           id: string
           name: string
           slug: string | null
@@ -1498,6 +1499,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           difficulty?: string | null
+          example?: string | null
           id?: string
           name: string
           slug?: string | null
@@ -1511,6 +1513,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           difficulty?: string | null
+          example?: string | null
           id?: string
           name?: string
           slug?: string | null
