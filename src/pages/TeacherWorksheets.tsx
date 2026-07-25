@@ -26,6 +26,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { FileText, Plus, Search, Copy, Trash2, Share2 } from "lucide-react";
 import ShareContentDialog from "@/components/sharing/ShareContentDialog";
+import ReviewButton from "@/components/sharing/ReviewButton";
+
 import { toast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { cs } from "date-fns/locale";
