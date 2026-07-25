@@ -156,14 +156,15 @@ export default function PublicTextbookPreviewDialog({
                   : `Použito ${usageCount} ${usageCount === 1 ? "učitelem" : "učiteli"}`}
               </Badge>
             )}
-          {mode === "trial" && trialDaysLeft !== null && (
-            <Badge variant="secondary" className="text-[10px] flex items-center gap-1 mr-8">
-              <Clock className="w-3 h-3" />
-              {trialDaysLeft > 0
-                ? `Zbývá ${trialDaysLeft} ${trialDaysLeft === 1 ? "den" : trialDaysLeft < 5 ? "dny" : "dní"}`
-                : "Vypršel"}
-            </Badge>
-          )}
+            {mode === "trial" && trialDaysLeft !== null && (
+              <Badge variant="secondary" className="text-[10px] flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                {trialDaysLeft > 0
+                  ? `Zbývá ${trialDaysLeft} ${trialDaysLeft === 1 ? "den" : trialDaysLeft < 5 ? "dny" : "dní"}`
+                  : "Vypršel"}
+              </Badge>
+            )}
+          </div>
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden flex">
