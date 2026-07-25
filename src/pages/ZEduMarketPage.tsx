@@ -75,7 +75,29 @@ export default function ZEduMarketPage() {
           grades: selectedGrades.length > 0 ? selectedGrades : undefined,
           materialMode,
         });
-        if (!cancel) setItems(rows);
+        if (!cancel) {
+          setItems(rows);
+          // Batch-load ratings per kind
+          const tbIds = rows.filter((r) => r.kind === "textbook" && r.textbook_id).map((r) => r.textbook_id as string);
+          const wsIds = rows.filter((r) => r.kind === "worksheet" && r.worksheet_id).map((r) => r.worksheet_id as string);
+          const lpIds = rows.filter((r) => r.kind === "lesson_plan" && r.lesson_plan_id).map((r) => r.lesson_plan_id as string);
+          try {
+            const [tbMap, wsMap, lpMap] = await Promise.all([
+              getReviewAggregates("textbook", tbIds),
+              getReviewAggregates("worksheet", wsIds),
+              getReviewAggregates("lesson_plan", lpIds),
+            ]);
+            if (cancel) return;
+            const merged = new Map<string, ReviewAggregate>();
+            for (const [k, v] of tbMap) merged.set(`textbook:${k}`, v);
+            for (const [k, v] of wsMap) merged.set(`worksheet:${k}`, v);
+            for (const [k, v] of lpMap) merged.set(`lesson_plan:${k}`, v);
+            setRatings(merged);
+          } catch {
+            /* ignore */
+          }
+        }
+
       } catch (e: any) {
         if (!cancel)
           toast({
