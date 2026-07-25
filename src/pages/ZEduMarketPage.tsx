@@ -21,10 +21,14 @@ import TextbookTrialButton from "@/components/sharing/TextbookTrialButton";
 import {
   listPublicShares,
   acceptShare,
+  getReviewAggregates,
   GRADE_LEVEL_OPTIONS,
   type PublicShareItem,
+  type ReviewAggregate,
 } from "@/lib/content-shares";
+import ReviewSummary from "@/components/sharing/ReviewSummary";
 import { supabase } from "@/integrations/supabase/client";
+
 
 const MATERIAL_MODES = [
   { value: "all", label: "Vše" },
