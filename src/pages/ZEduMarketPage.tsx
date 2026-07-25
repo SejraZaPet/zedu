@@ -216,19 +216,35 @@ export default function ZEduMarketPage() {
                       </Badge>
                     )}
                   </div>
-                  <Button
-                    size="sm"
-                    className="mt-auto"
-                    onClick={() => handleAdd(i)}
-                    disabled={addingId === i.id}
-                  >
-                    {addingId === i.id ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    ) : (
-                      <Download className="w-4 h-4 mr-2" />
+                  <div className="mt-auto flex flex-col gap-2">
+                    {i.kind === "textbook" && i.textbook_id && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                          setPreviewTextbook({
+                            id: i.textbook_id as string,
+                            title: i.target_title ?? "Učebnice",
+                          })
+                        }
+                      >
+                        <Eye className="w-4 h-4 mr-2" />
+                        Náhled první lekce zdarma
+                      </Button>
                     )}
-                    Přidat do mých materiálů
-                  </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => handleAdd(i)}
+                      disabled={addingId === i.id}
+                    >
+                      {addingId === i.id ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Download className="w-4 h-4 mr-2" />
+                      )}
+                      Přidat do mých materiálů
+                    </Button>
+                  </div>
                 </div>
               );
             })}
