@@ -648,3 +648,119 @@ export async function getPublicTextbookFirstLesson(
   };
 }
 
+// ------------------------- Trial: 3-day full preview -------------------------
+
+export interface TextbookTrial {
+  id: string;
+  textbook_id: string;
+  teacher_id: string;
+  started_at: string;
+  expires_at: string;
+}
+
+export async function getTextbookTrial(
+  textbookId: string,
+): Promise<TextbookTrial | null> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return null;
+  const { data } = await supabase
+    .from("textbook_trial_activations")
+    .select("id, textbook_id, teacher_id, started_at, expires_at")
+    .eq("textbook_id", textbookId)
+    .eq("teacher_id", session.user.id)
+    .maybeSingle();
+  return (data as TextbookTrial | null) ?? null;
+}
+
+export async function activateTextbookTrial(
+  textbookId: string,
+): Promise<TextbookTrial> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error("Musíte se přihlásit.");
+  const { data, error } = await supabase
+    .from("textbook_trial_activations")
+    .insert({ textbook_id: textbookId, teacher_id: session.user.id })
+    .select("id, textbook_id, teacher_id, started_at, expires_at")
+    .single();
+  if (error) throw new Error(error.message);
+  return data as TextbookTrial;
+}
+
+export interface PublicTextbookLessonFull {
+  id: string;
+  title: string;
+  hero_image_url: string | null;
+  blocks: any[];
+  topic_id: string | null;
+  topic_title: string | null;
+  topic_sort_order: number;
+  sort_order: number;
+}
+
+/**
+ * Load ALL published lessons of a publicly-shared teacher textbook — used only
+ * during an active trial. Depends on the "Public share preview" RLS policies
+ * that permit reading all lessons of publicly-shared textbooks for authenticated
+ * teachers; the trial is enforced at the UI level by gating this call.
+ */
+export async function getPublicTextbookAllLessons(
+  textbookId: string,
+): Promise<PublicTextbookLessonFull[]> {
+  const { data: lessons } = await supabase
+    .from("teacher_textbook_lessons")
+    .select("id, title, blocks, sort_order, hero_image_url, status")
+    .eq("textbook_id", textbookId)
+    .eq("status", "published")
+    .order("sort_order", { ascending: true });
+  const list = (lessons ?? []) as any[];
+  if (list.length === 0) return [];
+
+  const lessonIds = list.map((l) => l.id);
+  const { data: placements } = await supabase
+    .from("lesson_placements")
+    .select("lesson_id, topic_id")
+    .in("lesson_id", lessonIds);
+
+  const lessonToTopic = new Map<string, string>();
+  (placements ?? []).forEach((p: any) => {
+    if (p.topic_id && !lessonToTopic.has(p.lesson_id)) {
+      lessonToTopic.set(p.lesson_id, p.topic_id);
+    }
+  });
+
+  const topicIds = Array.from(new Set(Array.from(lessonToTopic.values())));
+  const topicsById = new Map<string, { title: string; sort_order: number }>();
+  if (topicIds.length > 0) {
+    const { data: topics } = await supabase
+      .from("textbook_topics")
+      .select("id, title, sort_order")
+      .in("id", topicIds);
+    (topics ?? []).forEach((t: any) =>
+      topicsById.set(t.id, { title: t.title, sort_order: t.sort_order ?? 0 }),
+    );
+  }
+
+  const rows: PublicTextbookLessonFull[] = list.map((l) => {
+    const tid = lessonToTopic.get(l.id) ?? null;
+    const t = tid ? topicsById.get(tid) : null;
+    return {
+      id: l.id,
+      title: l.title,
+      hero_image_url: l.hero_image_url ?? null,
+      blocks: (l.blocks ?? []) as any[],
+      topic_id: tid,
+      topic_title: t?.title ?? null,
+      topic_sort_order: t?.sort_order ?? 9999,
+      sort_order: l.sort_order ?? 0,
+    };
+  });
+
+  rows.sort((a, b) => {
+    if (a.topic_sort_order !== b.topic_sort_order)
+      return a.topic_sort_order - b.topic_sort_order;
+    return a.sort_order - b.sort_order;
+  });
+  return rows;
+}
+
+

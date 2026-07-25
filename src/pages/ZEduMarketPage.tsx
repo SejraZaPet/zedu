@@ -17,6 +17,7 @@ import { Loader2, Search, BookOpen, FileText, LayoutTemplate, Download, Eye } fr
 import { useToast } from "@/hooks/use-toast";
 import PublicTextbookPreviewDialog from "@/components/sharing/PublicTextbookPreviewDialog";
 import TextbookOutlinePreview from "@/components/sharing/TextbookOutlinePreview";
+import TextbookTrialButton from "@/components/sharing/TextbookTrialButton";
 import {
   listPublicShares,
   acceptShare,
@@ -235,6 +236,12 @@ export default function ZEduMarketPage() {
                         <Eye className="w-4 h-4 mr-2" />
                         Náhled první lekce zdarma
                       </Button>
+                    )}
+                    {i.kind === "textbook" && i.textbook_id && (
+                      <TextbookTrialButton
+                        textbookId={i.textbook_id as string}
+                        textbookTitle={i.target_title ?? "Učebnice"}
+                      />
                     )}
                     <Button
                       size="sm"
