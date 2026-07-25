@@ -13,6 +13,7 @@ import {
   getPublicTextbookOutline,
   getPublicTextbookFirstLesson,
   getPublicTextbookAllLessons,
+  getUsageCounts,
   type PublicTextbookOutline,
   type PublicTextbookFirstLesson,
   type PublicTextbookLessonFull,
