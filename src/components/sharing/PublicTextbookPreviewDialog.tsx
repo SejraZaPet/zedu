@@ -46,6 +46,26 @@ export default function PublicTextbookPreviewDialog({
   const [activeId, setActiveId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [usageCount, setUsageCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!open || !textbookId) {
+      setUsageCount(null);
+      return;
+    }
+    let cancel = false;
+    (async () => {
+      try {
+        const m = await getUsageCounts({ textbookIds: [textbookId] });
+        if (!cancel) setUsageCount(m.get(`textbook:${textbookId}`) ?? 0);
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancel = true;
+    };
+  }, [open, textbookId]);
 
   useEffect(() => {
     if (!open || !textbookId) return;
