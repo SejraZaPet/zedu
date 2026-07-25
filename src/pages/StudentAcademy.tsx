@@ -2,14 +2,14 @@ import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import AcademyView from "@/components/academy/AcademyView";
 
-const TeacherAcademy = () => (
+const StudentAcademy = () => (
   <div className="min-h-screen bg-background flex flex-col">
     <SiteHeader />
     <main className="flex-1">
-      <AcademyView audience="teacher" title="ZEdu Akademie" subtitle="Kurzy a webináře pro učitele." />
+      <AcademyView audience="student" title="ZEdu Akademie" subtitle="Kurzy a doplňkové vzdělávání pro žáky." />
     </main>
     <SiteFooter />
   </div>
 );
 
-export default TeacherAcademy;
+export default StudentAcademy;
