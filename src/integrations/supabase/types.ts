@@ -14,44 +14,102 @@ export type Database = {
   }
   public: {
     Tables: {
+      academy_certificates: {
+        Row: {
+          certificate_number: string
+          enrollment_id: string
+          id: string
+          issued_at: string
+          pdf_url: string | null
+        }
+        Insert: {
+          certificate_number: string
+          enrollment_id: string
+          id?: string
+          issued_at?: string
+          pdf_url?: string | null
+        }
+        Update: {
+          certificate_number?: string
+          enrollment_id?: string
+          id?: string
+          issued_at?: string
+          pdf_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_certificates_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: true
+            referencedRelation: "academy_enrollments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       academy_courses: {
         Row: {
           accreditation_number: string | null
+          audience: string
           cover_image_url: string | null
           created_at: string
+          creator_id: string | null
           description: string | null
           id: string
           is_accredited: boolean
           is_published: boolean
+          issues_certificate: boolean
+          platform_commission_percent: number | null
+          price: number | null
+          revenue_type: string | null
           sort_order: number
           title: string
           updated_at: string
         }
         Insert: {
           accreditation_number?: string | null
+          audience?: string
           cover_image_url?: string | null
           created_at?: string
+          creator_id?: string | null
           description?: string | null
           id?: string
           is_accredited?: boolean
           is_published?: boolean
+          issues_certificate?: boolean
+          platform_commission_percent?: number | null
+          price?: number | null
+          revenue_type?: string | null
           sort_order?: number
           title: string
           updated_at?: string
         }
         Update: {
           accreditation_number?: string | null
+          audience?: string
           cover_image_url?: string | null
           created_at?: string
+          creator_id?: string | null
           description?: string | null
           id?: string
           is_accredited?: boolean
           is_published?: boolean
+          issues_certificate?: boolean
+          platform_commission_percent?: number | null
+          price?: number | null
+          revenue_type?: string | null
           sort_order?: number
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "academy_courses_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       academy_enrollments: {
         Row: {
@@ -3739,6 +3797,22 @@ export type Database = {
         }
         Returns: {
           recipient_id: string
+        }[]
+      }
+      academy_stats_by_course: {
+        Args: never
+        Returns: {
+          audience: string
+          certificates_count: number
+          completions_count: number
+          course_id: string
+          course_title: string
+          enrollments_count: number
+          issues_certificate: boolean
+          price: number
+          revenue_type: string
+          students_completed: number
+          teachers_completed: number
         }[]
       }
       add_xp: {
