@@ -237,6 +237,12 @@ export default function ZEduMarketPage() {
                         Náhled první lekce zdarma
                       </Button>
                     )}
+                    {i.kind === "textbook" && i.textbook_id && (
+                      <TextbookTrialButton
+                        textbookId={i.textbook_id as string}
+                        textbookTitle={i.target_title ?? "Učebnice"}
+                      />
+                    )}
                     <Button
                       size="sm"
                       onClick={() => handleAdd(i)}
