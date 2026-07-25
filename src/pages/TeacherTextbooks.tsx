@@ -39,6 +39,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import ReviewButton from "@/components/sharing/ReviewButton";
+import { LANGUAGE_OPTIONS, DIFFICULTY_OPTIONS } from "@/lib/content-shares";
 
 
 interface Textbook {
@@ -53,8 +54,10 @@ interface Textbook {
   archived?: boolean;
   order_index?: number;
   copied_from_textbook_id?: string | null;
-
+  language?: string | null;
+  difficulty_level?: string | null;
 }
+
 
 interface Enrollment {
   id: string;
@@ -117,7 +120,10 @@ const TeacherTextbooks = () => {
   // Textbook-level actions
   const [renameTextbookOpen, setRenameTextbookOpen] = useState(false);
   const [renameTextbookTitle, setRenameTextbookTitle] = useState("");
+  const [renameTextbookLanguage, setRenameTextbookLanguage] = useState<string>("cs");
+  const [renameTextbookDifficulty, setRenameTextbookDifficulty] = useState<string>("none");
   const [deleteTextbookOpen, setDeleteTextbookOpen] = useState(false);
+
 
   // Import file dialog
   const [importOpen, setImportOpen] = useState(false);
@@ -286,19 +292,31 @@ const TeacherTextbooks = () => {
   // === Textbook-level actions ===
   const handleRenameTextbook = async () => {
     if (!selectedTextbook || !renameTextbookTitle.trim()) return;
+    const difficulty = renameTextbookDifficulty === "none" ? null : renameTextbookDifficulty;
+    const update: any = {
+      title: renameTextbookTitle.trim(),
+      language: renameTextbookLanguage,
+      difficulty_level: difficulty,
+    };
     const { error } = await supabase
       .from("teacher_textbooks")
-      .update({ title: renameTextbookTitle.trim() })
+      .update(update)
       .eq("id", selectedTextbook.id);
     if (error) {
       toast({ title: "Chyba", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Učebnice přejmenována" });
-      setSelectedTextbook({ ...selectedTextbook, title: renameTextbookTitle.trim() });
+      toast({ title: "Učebnice upravena" });
+      setSelectedTextbook({
+        ...selectedTextbook,
+        title: renameTextbookTitle.trim(),
+        language: renameTextbookLanguage,
+        difficulty_level: difficulty,
+      });
       setRenameTextbookOpen(false);
       fetchTextbooks();
     }
   };
+
 
   const handleArchiveTextbook = async () => {
     if (!selectedTextbook) return;
@@ -484,10 +502,13 @@ const TeacherTextbooks = () => {
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={() => {
                     setRenameTextbookTitle(selectedTextbook.title);
+                    setRenameTextbookLanguage(selectedTextbook.language ?? "cs");
+                    setRenameTextbookDifficulty(selectedTextbook.difficulty_level ?? "none");
                     setRenameTextbookOpen(true);
                   }}>
-                    <Pencil className="w-4 h-4 mr-2" /> Přejmenovat
+                    <Pencil className="w-4 h-4 mr-2" /> Upravit
                   </DropdownMenuItem>
+
                   {selectedTextbook.archived ? (
                     <DropdownMenuItem onClick={async () => {
                       const { error } = await supabase.from("teacher_textbooks").update({ archived: false } as any).eq("id", selectedTextbook.id);
@@ -722,19 +743,43 @@ const TeacherTextbooks = () => {
           </DialogContent>
         </Dialog>
 
-        {/* === Rename Textbook Dialog === */}
+        {/* === Edit Textbook Dialog === */}
         <Dialog open={renameTextbookOpen} onOpenChange={setRenameTextbookOpen}>
           <DialogContent>
-            <DialogHeader><DialogTitle>Přejmenovat učebnici</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>Upravit učebnici</DialogTitle></DialogHeader>
             <div className="space-y-4 mt-2">
               <div>
                 <Label>Název učebnice</Label>
                 <Input value={renameTextbookTitle} onChange={(e) => setRenameTextbookTitle(e.target.value)} className="mt-1" />
               </div>
+              <div>
+                <Label>Jazyk</Label>
+                <Select value={renameTextbookLanguage} onValueChange={setRenameTextbookLanguage}>
+                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {LANGUAGE_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Obtížnost</Label>
+                <Select value={renameTextbookDifficulty} onValueChange={setRenameTextbookDifficulty}>
+                  <SelectTrigger className="mt-1"><SelectValue placeholder="Nevyplněno (standardní)" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Nevyplněno (standardní)</SelectItem>
+                    {DIFFICULTY_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <Button onClick={handleRenameTextbook} disabled={!renameTextbookTitle.trim()} className="w-full">Uložit</Button>
             </div>
           </DialogContent>
         </Dialog>
+
 
         {/* === Delete Textbook Confirmation === */}
         <AlertDialog open={deleteTextbookOpen} onOpenChange={setDeleteTextbookOpen}>

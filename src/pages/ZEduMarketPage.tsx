@@ -24,9 +24,12 @@ import {
   getReviewAggregates,
   getUsageCounts,
   GRADE_LEVEL_OPTIONS,
+  LANGUAGE_OPTIONS,
+  DIFFICULTY_OPTIONS,
   type PublicShareItem,
   type ReviewAggregate,
 } from "@/lib/content-shares";
+
 import ReviewSummary from "@/components/sharing/ReviewSummary";
 import FollowCreatorButton from "@/components/sharing/FollowCreatorButton";
 import { listFollowedCreatorIds } from "@/lib/creator-follows";
@@ -57,9 +60,12 @@ export default function ZEduMarketPage() {
   const [search, setSearch] = useState("");
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [selectedGrades, setSelectedGrades] = useState<string[]>([]);
+  const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
+  const [selectedDifficulties, setSelectedDifficulties] = useState<string[]>([]);
   const [materialMode, setMaterialMode] = useState<
     "all" | "with" | "without" | "material_only"
   >("all");
+
 
   useEffect(() => {
     (async () => {
@@ -92,8 +98,11 @@ export default function ZEduMarketPage() {
           search: search || undefined,
           subjects: selectedSubjects.length > 0 ? selectedSubjects : undefined,
           grades: selectedGrades.length > 0 ? selectedGrades : undefined,
+          languages: selectedLanguages.length > 0 ? selectedLanguages : undefined,
+          difficulties: selectedDifficulties.length > 0 ? selectedDifficulties : undefined,
           materialMode,
         });
+
         if (!cancel) {
           setItems(rows);
           // Batch-load ratings per kind
@@ -133,7 +142,7 @@ export default function ZEduMarketPage() {
     return () => {
       cancel = true;
     };
-  }, [search, selectedSubjects, selectedGrades, materialMode, toast]);
+  }, [search, selectedSubjects, selectedGrades, selectedLanguages, selectedDifficulties, materialMode, toast]);
 
   async function handleAdd(item: PublicShareItem) {
     setAddingId(item.id);
@@ -171,8 +180,8 @@ export default function ZEduMarketPage() {
           </p>
         </div>
 
-        <div className="grid gap-3 md:grid-cols-[1fr_220px_220px_180px] mb-6">
-          <div className="relative">
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 mb-6">
+          <div className="relative xl:col-span-2">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
             <Input
               className="pl-9"
@@ -195,6 +204,20 @@ export default function ZEduMarketPage() {
             options={GRADE_LEVEL_OPTIONS}
             onChange={setSelectedGrades}
           />
+          <MultiSelectFilter
+            label="Jazyk"
+            allLabel="všechny"
+            values={selectedLanguages}
+            options={LANGUAGE_OPTIONS}
+            onChange={setSelectedLanguages}
+          />
+          <MultiSelectFilter
+            label="Obtížnost"
+            allLabel="všechny"
+            values={selectedDifficulties}
+            options={DIFFICULTY_OPTIONS}
+            onChange={setSelectedDifficulties}
+          />
           <Select
             value={materialMode}
             onValueChange={(v) => setMaterialMode(v as any)}
@@ -211,6 +234,7 @@ export default function ZEduMarketPage() {
             </SelectContent>
           </Select>
         </div>
+
 
         {loading ? (
           <div className="flex justify-center py-16">
@@ -309,6 +333,19 @@ export default function ZEduMarketPage() {
                         {GRADE_LEVEL_OPTIONS.find((o) => o.value === g)?.label ?? g}
                       </Badge>
                     ))}
+                    {i.kind === "textbook" && i.target_language && i.target_language !== "cs" && (
+                      <Badge variant="outline" className="text-[10px]">
+                        {LANGUAGE_OPTIONS.find((o) => o.value === i.target_language)?.label ?? i.target_language}
+                      </Badge>
+                    )}
+                    {i.kind === "textbook" && i.target_difficulty_level && (
+                      <Badge
+                        variant="outline"
+                        className="text-[10px] border-primary/40 text-primary"
+                      >
+                        {DIFFICULTY_OPTIONS.find((o) => o.value === i.target_difficulty_level)?.label ?? i.target_difficulty_level}
+                      </Badge>
+                    )}
                     {i.kind === "textbook" && i.includes_worksheets && (
                       <Badge variant="outline" className="text-[10px]">
                         + pracovní listy
@@ -320,6 +357,7 @@ export default function ZEduMarketPage() {
                       </Badge>
                     )}
                   </div>
+
                   {i.kind === "textbook" && i.textbook_id && (
                     <TextbookOutlinePreview textbookId={i.textbook_id as string} />
                   )}
