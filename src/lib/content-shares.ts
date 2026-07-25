@@ -658,3 +658,157 @@ export async function getPublicTextbookAllLessons(
 }
 
 
+
+// ------------------------- Content reviews -------------------------
+
+export type ReviewTargetKind = "textbook" | "worksheet" | "lesson_plan";
+
+export interface ContentReview {
+  id: string;
+  textbook_id: string | null;
+  worksheet_id: string | null;
+  lesson_plan_id: string | null;
+  reviewer_id: string;
+  rating: number;
+  comment: string | null;
+  created_at: string;
+  updated_at: string;
+  reviewer_name?: string | null;
+}
+
+export interface ReviewAggregate {
+  count: number;
+  average: number;
+}
+
+function reviewColumnFor(kind: ReviewTargetKind): "textbook_id" | "worksheet_id" | "lesson_plan_id" {
+  return kind === "textbook" ? "textbook_id" : kind === "worksheet" ? "worksheet_id" : "lesson_plan_id";
+}
+
+/** Aggregate rating for a single target (kind + id). */
+export async function getReviewAggregate(
+  kind: ReviewTargetKind,
+  targetId: string,
+): Promise<ReviewAggregate> {
+  const col = reviewColumnFor(kind);
+  const { data, error } = await supabase
+    .from("content_reviews" as any)
+    .select("rating")
+    .eq(col, targetId);
+  if (error) throw error;
+  const arr = (data ?? []) as { rating: number }[];
+  const count = arr.length;
+  const average = count === 0 ? 0 : arr.reduce((s, r) => s + r.rating, 0) / count;
+  return { count, average };
+}
+
+/** Batch aggregate for several targets of the same kind — one query. */
+export async function getReviewAggregates(
+  kind: ReviewTargetKind,
+  ids: string[],
+): Promise<Map<string, ReviewAggregate>> {
+  const out = new Map<string, ReviewAggregate>();
+  if (ids.length === 0) return out;
+  const col = reviewColumnFor(kind);
+  const { data, error } = await supabase
+    .from("content_reviews" as any)
+    .select(`${col}, rating`)
+    .in(col, ids);
+  if (error) throw error;
+  for (const id of ids) out.set(id, { count: 0, average: 0 });
+  const acc = new Map<string, { sum: number; count: number }>();
+  for (const row of (data ?? []) as any[]) {
+    const key = row[col] as string;
+    const cur = acc.get(key) ?? { sum: 0, count: 0 };
+    cur.sum += row.rating;
+    cur.count += 1;
+    acc.set(key, cur);
+  }
+  for (const [id, v] of acc) {
+    out.set(id, { count: v.count, average: v.count === 0 ? 0 : v.sum / v.count });
+  }
+  return out;
+}
+
+export async function listReviews(
+  kind: ReviewTargetKind,
+  targetId: string,
+): Promise<ContentReview[]> {
+  const col = reviewColumnFor(kind);
+  const { data, error } = await supabase
+    .from("content_reviews" as any)
+    .select(
+      `id, textbook_id, worksheet_id, lesson_plan_id, reviewer_id, rating, comment, created_at, updated_at,
+       reviewer:profiles!content_reviews_reviewer_id_fkey ( first_name, last_name )`,
+    )
+    .eq(col, targetId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []).map((r: any) => ({
+    ...r,
+    reviewer_name: r.reviewer
+      ? [r.reviewer.first_name, r.reviewer.last_name].filter(Boolean).join(" ").trim() || null
+      : null,
+  })) as ContentReview[];
+}
+
+/** My review for a target (kind + id), or null. */
+export async function getMyReview(
+  kind: ReviewTargetKind,
+  targetId: string,
+): Promise<ContentReview | null> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return null;
+  const col = reviewColumnFor(kind);
+  const { data, error } = await supabase
+    .from("content_reviews" as any)
+    .select("*")
+    .eq(col, targetId)
+    .eq("reviewer_id", session.user.id)
+    .maybeSingle();
+  if (error) throw error;
+  return (data as ContentReview) ?? null;
+}
+
+export async function upsertReview(input: {
+  kind: ReviewTargetKind;
+  /** The ORIGINAL content id (the market entry), NOT the copy's id. */
+  targetId: string;
+  rating: number;
+  comment?: string | null;
+}): Promise<ContentReview> {
+  const userId = await requireUserId();
+  if (input.rating < 1 || input.rating > 5) throw new Error("Hodnocení musí být 1–5.");
+  const col = reviewColumnFor(input.kind);
+
+  const existing = await getMyReview(input.kind, input.targetId);
+  if (existing) {
+    const { data, error } = await supabase
+      .from("content_reviews" as any)
+      .update({ rating: input.rating, comment: input.comment ?? null })
+      .eq("id", existing.id)
+      .select("*")
+      .single();
+    if (error) throw error;
+    return data as ContentReview;
+  }
+
+  const payload: Record<string, any> = {
+    reviewer_id: userId,
+    rating: input.rating,
+    comment: input.comment ?? null,
+    [col]: input.targetId,
+  };
+  const { data, error } = await supabase
+    .from("content_reviews" as any)
+    .insert(payload)
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data as ContentReview;
+}
+
+export async function deleteReview(reviewId: string): Promise<void> {
+  const { error } = await supabase.from("content_reviews" as any).delete().eq("id", reviewId);
+  if (error) throw error;
+}
