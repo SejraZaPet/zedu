@@ -730,6 +730,35 @@ export async function getReviewAggregates(
   return out;
 }
 
+/**
+ * Batch usage counts — how many teachers copied each public item into their materials.
+ * Single RPC call for all kinds at once.
+ */
+export async function getUsageCounts(input: {
+  textbookIds?: string[];
+  worksheetIds?: string[];
+  lessonPlanIds?: string[];
+}): Promise<Map<string, number>> {
+  const out = new Map<string, number>();
+  const tb = input.textbookIds ?? [];
+  const ws = input.worksheetIds ?? [];
+  const lp = input.lessonPlanIds ?? [];
+  for (const id of tb) out.set(`textbook:${id}`, 0);
+  for (const id of ws) out.set(`worksheet:${id}`, 0);
+  for (const id of lp) out.set(`lesson_plan:${id}`, 0);
+  if (tb.length === 0 && ws.length === 0 && lp.length === 0) return out;
+  const { data, error } = await supabase.rpc("get_public_content_usage_counts" as any, {
+    _textbook_ids: tb,
+    _worksheet_ids: ws,
+    _lesson_plan_ids: lp,
+  });
+  if (error) throw error;
+  for (const row of (data ?? []) as any[]) {
+    out.set(`${row.kind}:${row.source_id}`, Number(row.usage_count) || 0);
+  }
+  return out;
+}
+
 export async function listReviews(
   kind: ReviewTargetKind,
   targetId: string,
