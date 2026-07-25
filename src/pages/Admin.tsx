@@ -26,8 +26,9 @@ import TextbookTemplatesManager from "@/components/admin/TextbookTemplatesManage
 import LandingPageManager from "@/components/admin/LandingPageManager";
 import AvatarItemsManager from "@/components/admin/AvatarItemsManager";
 import TextbookOverviewManager from "@/components/admin/TextbookOverviewManager";
+import AcademyCoursesManager from "@/components/admin/AcademyCoursesManager";
 import { Button } from "@/components/ui/button";
-import { BookOpen, LogOut, Home, GraduationCap, Settings, Users, School, BarChart3, LayoutDashboard, HelpCircle, ListTree, CircleHelp, Link2, Pencil, Video, Bell, Activity, FileText, Sparkles, Globe, Smile, Library } from "lucide-react";
+import { BookOpen, LogOut, Home, GraduationCap, Settings, Users, School, BarChart3, LayoutDashboard, HelpCircle, ListTree, CircleHelp, Link2, Pencil, Video, Bell, Activity, FileText, Sparkles, Globe, Smile, Library, Award } from "lucide-react";
 
 const adminTabs = [
   { id: "dashboard", label: "Přehled", icon: LayoutDashboard },
