@@ -186,7 +186,7 @@ export default function TeacherLessonPlans() {
     const [{ data: plans }, { data: tpls }] = await Promise.all([
       supabase
         .from("lesson_plans")
-        .select("id, title, subject, updated_at, input_data")
+        .select("id, title, subject, updated_at, input_data, copied_from_lesson_plan_id")
         .eq("teacher_id", user.id)
         .order("updated_at", { ascending: false }),
       supabase
