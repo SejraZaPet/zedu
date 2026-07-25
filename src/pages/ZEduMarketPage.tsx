@@ -251,6 +251,12 @@ export default function ZEduMarketPage() {
           </div>
         )}
       </main>
+      <PublicTextbookPreviewDialog
+        open={!!previewTextbook}
+        onOpenChange={(o) => !o && setPreviewTextbook(null)}
+        textbookId={previewTextbook?.id ?? null}
+        textbookTitle={previewTextbook?.title ?? ""}
+      />
       <SiteFooter />
     </div>
   );
