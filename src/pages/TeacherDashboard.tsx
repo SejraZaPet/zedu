@@ -243,6 +243,14 @@ const TeacherDashboard = () => {
       button: "Otevřít plány",
       onClick: () => navigate("/ucitel/plany-hodin"),
     },
+    "suggest-method": {
+      id: "suggest-method",
+      icon: Wand2,
+      title: "Návrh podle metody",
+      description: "AI navrhne strukturu lekce podle zvolené výukové metody (Bloom, Flipped, projektová výuka…).",
+      button: "Otevřít nástroj",
+      onClick: () => navigate("/ucitel/navrh-podle-metody"),
+    },
     todos: {
       id: "todos",
       icon: ListTodo,
