@@ -62,6 +62,7 @@ const DEFAULT_ORDER = [
   "calendar",
   "worksheets",
   "lesson-plans",
+  "suggest-method",
   "todos",
   "notifications",
   "profile",
