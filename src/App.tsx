@@ -167,6 +167,7 @@ const App = () => (
             <Route path="/marketplace/:id" element={<Navigate to="/zedumarket" replace />} />
             <Route path="/ucitel/publikace" element={<Navigate to="/zedumarket" replace />} />
             <Route path="/avatar" element={<ProtectedRoute><AvatarEditor /></ProtectedRoute>} />
+            <Route path="/ucitel/akademie" element={<ProtectedRoute><TeacherAcademy /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
