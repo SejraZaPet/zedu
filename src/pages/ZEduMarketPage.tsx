@@ -37,6 +37,7 @@ export default function ZEduMarketPage() {
   const [items, setItems] = useState<PublicShareItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [addingId, setAddingId] = useState<string | null>(null);
+  const [previewTextbook, setPreviewTextbook] = useState<{ id: string; title: string } | null>(null);
   const [subjects, setSubjects] = useState<{ slug: string; label: string }[]>([]);
   const [search, setSearch] = useState("");
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
