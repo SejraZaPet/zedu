@@ -430,8 +430,8 @@ export default function TeacherWorksheets() {
                       originalId={row.copied_from_worksheet_id ?? null}
                       kind="worksheet"
                       targetTitle={row.title}
-                      compact
                     />
+
                     <Button
 
                       variant="outline"
