@@ -359,9 +359,11 @@ export async function copyTextbook(
       access_code: newAccessCode,
       grade_level: (src as any).grade_level ?? null,
       school_type: (src as any).school_type ?? null,
+      copied_from_textbook_id: sourceId,
     } as any)
     .select("id")
     .single();
+
   if (insErr) throw insErr;
   const newTextbookId = copy!.id as string;
 
