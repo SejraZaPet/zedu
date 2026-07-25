@@ -46,6 +46,9 @@ export default function ZEduMarketPage() {
   const [items, setItems] = useState<PublicShareItem[]>([]);
   const [ratings, setRatings] = useState<Map<string, ReviewAggregate>>(new Map());
   const [usage, setUsage] = useState<Map<string, number>>(new Map());
+  const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
 
   const [loading, setLoading] = useState(true);
   const [addingId, setAddingId] = useState<string | null>(null);
