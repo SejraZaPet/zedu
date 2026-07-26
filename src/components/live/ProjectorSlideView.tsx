@@ -184,7 +184,9 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
                   </div>
                 </div>
               )}
+              </div>
             </div>
+
 
             <div className="px-12 py-6 border-t border-border flex justify-between items-center text-muted-foreground shrink-0">
               <span className="text-lg">Kód: <span className="font-mono font-bold text-foreground">{gameCode}</span></span>
