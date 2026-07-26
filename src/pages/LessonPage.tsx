@@ -13,6 +13,51 @@ import { Button } from "@/components/ui/button";
 import LessonEditorSheet from "@/components/LessonEditorSheet";
 import { useActivityTracking } from "@/hooks/useActivityTracking";
 
+// Extract plain readable text from lesson blocks for TTS.
+const stripHtmlToText = (html: string): string => {
+  if (typeof document === "undefined") return html;
+  const tmp = document.createElement("div");
+  tmp.innerHTML = html || "";
+  return (tmp.textContent || tmp.innerText || "").replace(/\s+/g, " ").trim();
+};
+
+const buildLessonReadableText = (title: string, blocks: Block[]): string => {
+  const parts: string[] = [title];
+  for (const b of blocks) {
+    if (b.visible === false) continue;
+    const p: any = b.props || {};
+    switch (b.type) {
+      case "heading":
+        parts.push(stripHtmlToText(p.text || ""));
+        break;
+      case "paragraph":
+      case "callout":
+      case "summary":
+        parts.push(stripHtmlToText(p.text || ""));
+        break;
+      case "bullet_list":
+        if (p.html) parts.push(stripHtmlToText(p.html));
+        else if (Array.isArray(p.items)) parts.push(p.items.join(". "));
+        break;
+      case "quote":
+        if (p.text) parts.push(`Citát: ${p.text}${p.author ? `, ${p.author}` : ""}`);
+        break;
+      case "two_column":
+        parts.push(stripHtmlToText(p.left || ""));
+        parts.push(stripHtmlToText(p.right || ""));
+        break;
+      case "image":
+      case "gallery":
+        if (p.caption) parts.push(p.caption);
+        break;
+      default:
+        break;
+    }
+  }
+  return parts.filter(Boolean).join(". ");
+};
+
+
 const LessonPage = () => {
   const { subjectId, grade, topicSlug, lessonSlug } = useParams<{
     subjectId: string;
