@@ -13,7 +13,9 @@ import {
   CheckCircle2,
   Clock,
   ExternalLink,
+  FolderOpen,
 } from "lucide-react";
+
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { Button } from "@/components/ui/button";
@@ -331,12 +333,22 @@ export default function StudentSubjectClass() {
                 )}
               </div>
             </div>
-            {linkedTextbookId && (
-              <Button variant="outline" onClick={openTextbook}>
-                <BookOpen className="h-4 w-4 mr-2" />
-                Otevřít učebnici
+            <div className="flex gap-2 flex-wrap">
+              <Button
+                variant="outline"
+                onClick={() => navigate(`/student/portfolio?subject=${encodeURIComponent(subjectLabel)}`)}
+              >
+                <FolderOpen className="h-4 w-4 mr-2" />
+                Moje portfolio z tohoto předmětu
               </Button>
-            )}
+              {linkedTextbookId && (
+                <Button variant="outline" onClick={openTextbook}>
+                  <BookOpen className="h-4 w-4 mr-2" />
+                  Otevřít učebnici
+                </Button>
+              )}
+            </div>
+
           </div>
         </Card>
 
