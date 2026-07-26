@@ -373,12 +373,16 @@ const LiveWhiteboard = ({ sessionId, data, readOnly = false, onClose, overlay = 
 
           <div className="h-6 w-px bg-border mx-1" />
 
-          <Button size="sm" variant="ghost" onClick={undo} title="Zpět (Ctrl+Z)" className="h-8 w-8 p-0">
-            <Undo2 className="w-4 h-4" />
-          </Button>
-          <Button size="sm" variant="ghost" onClick={redo} title="Vpřed (Ctrl+Y)" className="h-8 w-8 p-0">
-            <Redo2 className="w-4 h-4" />
-          </Button>
+          {!simplified && (
+            <>
+              <Button size="sm" variant="ghost" onClick={undo} title="Zpět (Ctrl+Z)" className="h-8 w-8 p-0">
+                <Undo2 className="w-4 h-4" />
+              </Button>
+              <Button size="sm" variant="ghost" onClick={redo} title="Vpřed (Ctrl+Y)" className="h-8 w-8 p-0">
+                <Redo2 className="w-4 h-4" />
+              </Button>
+            </>
+          )}
           <Button size="sm" variant="ghost" onClick={clearAll} title="Vymazat vše" className="h-8 w-8 p-0 text-destructive">
             <Trash2 className="w-4 h-4" />
           </Button>
