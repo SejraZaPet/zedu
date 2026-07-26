@@ -13,6 +13,7 @@ import WorksheetPlayer from "@/components/WorksheetPlayer";
 import AttachmentsUploader from "@/components/assignments/AttachmentsUploader";
 import type { WorksheetSpec } from "@/lib/worksheet-spec";
 import { useLockdownMode } from "@/hooks/useLockdownMode";
+import ReadAloudButton from "@/components/a11y/ReadAloudButton";
 
 interface AssignmentData {
   id: string;
