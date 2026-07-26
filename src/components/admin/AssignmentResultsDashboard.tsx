@@ -6,10 +6,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Download, Users, Clock, CheckCircle2, AlertCircle, Minus, BarChart3, Filter, ShieldAlert } from "lucide-react";
+import { Loader2, Download, Users, Clock, CheckCircle2, AlertCircle, Minus, BarChart3, Filter, ShieldAlert, FolderOpen } from "lucide-react";
+import { Link } from "react-router-dom";
+import AttemptQuickPreviewDialog from "@/components/portfolio/AttemptQuickPreviewDialog";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
+
 
 type StudentStatus = "not_started" | "in_progress" | "submitted";
 
@@ -472,10 +475,12 @@ const AssignmentResultsDashboard = ({ teacherId }: Props) => {
                     <TableHead className="text-xs text-center">Skóre</TableHead>
                     <TableHead className="text-xs text-center">Porušení</TableHead>
                     <TableHead className="text-xs">Poslední aktivita</TableHead>
+                    <TableHead className="text-xs text-right">Akce</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredStudents.map((s) => {
+
                     const cfg = STATUS_CONFIG[s.status];
                     const StatusIcon = cfg.icon;
                     return (
@@ -513,9 +518,32 @@ const AssignmentResultsDashboard = ({ teacherId }: Props) => {
                         <TableCell className="text-xs text-muted-foreground">
                           {s.lastActivity ? format(new Date(s.lastActivity), "d.M. HH:mm", { locale: cs }) : "–"}
                         </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            {s.status === "submitted" && (
+                              <AttemptQuickPreviewDialog
+                                assignmentId={selectedAssignmentId}
+                                studentId={s.studentId}
+                                studentName={`${s.firstName} ${s.lastName}`}
+                              />
+                            )}
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              asChild
+                              aria-label="Portfolio žáka"
+                              title="Portfolio žáka"
+                            >
+                              <Link to={`/portfolio/${s.studentId}`}>
+                                <FolderOpen className="w-4 h-4" />
+                              </Link>
+                            </Button>
+                          </div>
+                        </TableCell>
                       </TableRow>
                     );
                   })}
+
                 </TableBody>
               </Table>
             </div>
