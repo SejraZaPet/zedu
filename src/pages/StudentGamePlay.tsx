@@ -41,6 +41,7 @@ const StudentGamePlay = () => {
   const [answered, setAnswered] = useState<Set<number>>(new Set());
   const [lastResult, setLastResult] = useState<{ correct: boolean; score: number } | null>(null);
   const [liveSettings, setLiveSettings] = useState<any>({});
+  const [studentDrawMode, setStudentDrawMode] = useState(false);
 
   useEffect(() => {
     if (!sessionId) return;
