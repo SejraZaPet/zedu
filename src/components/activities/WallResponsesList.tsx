@@ -123,8 +123,14 @@ const WallResponsesList = ({ sessionId, questionIndex, anonymous, darkMode = fal
               >
                 {r.text}
               </p>
-              {r.nickname && (
-                <p style={{ fontSize: darkMode ? "14px" : "12px", opacity: 0.7, marginTop: "4px" }}>— {r.nickname}</p>
+              {sessionAnonymous ? (
+                <p style={{ fontSize: darkMode ? "14px" : "12px", opacity: 0.7, marginTop: "4px" }}>
+                  — {anonymousLabelMap?.[r.player_id] ?? "Žák"}
+                </p>
+              ) : (
+                r.nickname && (
+                  <p style={{ fontSize: darkMode ? "14px" : "12px", opacity: 0.7, marginTop: "4px" }}>— {r.nickname}</p>
+                )
               )}
             </div>
           );
