@@ -202,9 +202,9 @@ const ProfilePage = () => {
     })();
   }, [user, role]);
 
-  // Load teaching overview for teachers
+  // Load teaching overview for teachers and independent lektors
   useEffect(() => {
-    if (!user || role !== "teacher") return;
+    if (!user || (role !== "teacher" && role !== "lektor")) return;
     (async () => {
       const [classesRes, assignmentsRes, avatarRes] = await Promise.all([
         supabase.from("class_teachers").select("class_id").eq("user_id", user.id),
@@ -490,8 +490,8 @@ const ProfilePage = () => {
           );
         })()}
 
-        {/* Teaching overview (teachers) */}
-        {role === "teacher" && teacherOverview && (() => {
+        {/* Teaching overview (teachers and lektors) */}
+        {(role === "teacher" || role === "lektor") && teacherOverview && (() => {
           const joined = new Date(profile.created_at).toLocaleDateString("cs-CZ", { month: "long", year: "numeric" });
           return (
             <Card>

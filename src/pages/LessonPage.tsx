@@ -81,8 +81,9 @@ const LessonPage = () => {
         .select("role")
         .limit(1);
       if (roles && roles.length > 0) {
-        if (roles[0].role === "admin") setIsAdmin(true);
-        if (roles[0].role === "admin" || roles[0].role === "teacher") setIsTeacherOrAdmin(true);
+        const userRoles = roles.map((row: any) => row.role);
+        if (userRoles.includes("admin")) setIsAdmin(true);
+        if (userRoles.some((r) => r === "admin" || r === "teacher" || r === "lektor")) setIsTeacherOrAdmin(true);
       }
     };
     check();
