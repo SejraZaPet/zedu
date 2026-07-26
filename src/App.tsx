@@ -176,6 +176,7 @@ const App = () => (
             <Route path="/avatar" element={<ProtectedRoute><AvatarEditor /></ProtectedRoute>} />
             <Route path="/ucitel/akademie" element={<ProtectedRoute><TeacherAcademy /></ProtectedRoute>} />
             <Route path="/student/akademie" element={<ProtectedRoute><StudentAcademy /></ProtectedRoute>} />
+            <Route path="/rodic/akademie" element={<ProtectedRoute><ParentAcademy /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
