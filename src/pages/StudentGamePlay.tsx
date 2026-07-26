@@ -495,7 +495,21 @@ const WhiteboardOverlay = ({
     const ro = new ResizeObserver(update);
     ro.observe(el);
     window.addEventListener("resize", update);
-    return () => { ro.disconnect(); window.removeEventListener("resize", update); };
+    window.addEventListener("scroll", update, { passive: true });
+    const onOrientation = () => {
+      // Mobilní prohlížeče mění viewport postupně (adresní řádek se skrývá
+      // se zpožděním), proto přepočítáváme scale opakovaně po orientationchange.
+      update();
+      setTimeout(update, 150);
+      setTimeout(update, 400);
+    };
+    window.addEventListener("orientationchange", onOrientation);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", update);
+      window.removeEventListener("orientationchange", onOrientation);
+    };
   }, [stageW, stageH]);
 
   return (
