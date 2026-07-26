@@ -117,6 +117,17 @@ const SchoolAdmin = () => {
     }
   };
 
+  const copyInviteLink = async () => {
+    if (!school?.registration_code) return;
+    const url = `${window.location.origin}/auth?role=teacher&skola=${encodeURIComponent(school.registration_code)}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      toast({ title: "Odkaz zkopírován", description: "Pozvánkový odkaz je ve schránce." });
+    } catch {
+      toast({ title: "Chyba", description: "Nepodařilo se zkopírovat odkaz.", variant: "destructive" });
+    }
+  };
+
   const regenerateCode = async () => {
     if (!school) return;
     if (!confirm("Vygenerovat nový registrační kód? Stávající kód přestane fungovat.")) return;
