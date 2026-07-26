@@ -259,21 +259,39 @@ const LiveWhiteboard = ({ sessionId, data, readOnly = false, onClose, overlay = 
   };
 
   const undo = useCallback(() => {
-    if (readOnly || strokes.length === 0) return;
+    if (readOnly) return;
+    if (localOnly) {
+      if (pendingStrokes.length === 0) return;
+      const last = pendingStrokes[pendingStrokes.length - 1];
+      setRedoStack((r) => [...r, last]);
+      setPendingStrokes((p) => p.slice(0, -1));
+      return;
+    }
+    if (strokes.length === 0) return;
     const last = strokes[strokes.length - 1];
     setRedoStack((r) => [...r, last]);
     commitStrokes(strokes.slice(0, -1));
-  }, [readOnly, strokes, commitStrokes]);
+  }, [readOnly, strokes, commitStrokes, localOnly, pendingStrokes]);
 
   const redo = useCallback(() => {
     if (readOnly || redoStack.length === 0) return;
     const last = redoStack[redoStack.length - 1];
     setRedoStack((r) => r.slice(0, -1));
+    if (localOnly) {
+      setPendingStrokes((p) => [...p, last]);
+      return;
+    }
     commitStrokes([...strokes, last]);
-  }, [readOnly, redoStack, strokes, commitStrokes]);
+  }, [readOnly, redoStack, strokes, commitStrokes, localOnly]);
 
   const clearAll = () => {
     if (readOnly) return;
+    if (localOnly) {
+      if (pendingStrokes.length && !window.confirm("Vymazat svoje kresby?")) return;
+      setRedoStack([]);
+      setPendingStrokes([]);
+      return;
+    }
     if (strokes.length && !window.confirm("Vymazat celou tabuli?")) return;
     setRedoStack([]);
     commitStrokes([]);
