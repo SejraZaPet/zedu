@@ -11,11 +11,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { FileText, HelpCircle, MessageSquare, ArrowLeft, Loader2 } from "lucide-react";
+import { FileText, HelpCircle, MessageSquare, Cloud, ArrowLeft, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-type AddKind = "menu" | "text" | "mcq" | "wall";
+type AddKind = "menu" | "text" | "mcq" | "wall" | "wordcloud";
 
 interface AddSlideSheetProps {
   open: boolean;
