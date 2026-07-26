@@ -122,6 +122,8 @@ export default function TeacherSuggestByMethod() {
   const [generating, setGenerating] = useState(false);
   const [creating, setCreating] = useState(false);
   const [suggestion, setSuggestion] = useState<Suggestion | null>(null);
+  const [thinkingTypes, setThinkingTypes] = useState<ThinkingType[]>([]);
+  const [curriculumPlan, setCurriculumPlan] = useState<{ subject: string; content: string | null; file_name: string | null } | null>(null);
 
   useEffect(() => {
     (async () => {
