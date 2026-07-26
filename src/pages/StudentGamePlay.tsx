@@ -17,7 +17,8 @@ import WordCloudActivity from "@/components/activities/WordCloudActivity";
 import WordCloudView from "@/components/activities/WordCloudView";
 import QuizActivity from "@/components/activities/QuizActivity";
 import LiveWhiteboard, { WhiteboardData } from "@/components/game/LiveWhiteboard";
-import { Lock, Pencil, Hand, ChevronLeft, ChevronRight } from "lucide-react";
+import { Lock, Pencil, Hand, ChevronLeft, ChevronRight, MessageCircleQuestion } from "lucide-react";
+import LiveQuestionsSheet from "@/components/game/LiveQuestionsSheet";
 import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
 
 import { useAuth } from "@/contexts/AuthContext";
@@ -44,6 +45,7 @@ const StudentGamePlay = () => {
   const [lastResult, setLastResult] = useState<{ correct: boolean; score: number } | null>(null);
   const [liveSettings, setLiveSettings] = useState<any>({});
   const [studentDrawMode, setStudentDrawMode] = useState(false);
+  const [questionsOpen, setQuestionsOpen] = useState(false);
 
   useEffect(() => {
     if (!sessionId) return;
@@ -230,6 +232,29 @@ const StudentGamePlay = () => {
             <Hand className="w-4 h-4" />
             {myPlayer?.hand_raised ? "Ruka nahoře" : "Zvednout ruku"}
           </button>
+
+          {/* Floating "Ask" button */}
+          <button
+            onClick={() => setQuestionsOpen(true)}
+            className="fixed top-14 right-3 z-40 rounded-full px-3 py-2 text-sm font-medium shadow-lg flex items-center gap-1.5 border bg-white/10 text-white border-white/20 backdrop-blur"
+            aria-label="Zeptej se"
+          >
+            <MessageCircleQuestion className="w-4 h-4" />
+            Zeptej se
+          </button>
+
+          {sessionId && (
+            <LiveQuestionsSheet
+              open={questionsOpen}
+              onOpenChange={setQuestionsOpen}
+              sessionId={sessionId}
+              role="student"
+              joinToken={joinToken}
+              playerId={playerId}
+              players={players as any}
+              anonymous={anonymousAnswers}
+            />
+          )}
 
           {/* Slide preview — stejný vizuál jako projekce, scalovaný do mobilní šířky */}
           <div className="px-3 pt-3">

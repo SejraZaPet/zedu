@@ -1519,6 +1519,105 @@ export type Database = {
           },
         ]
       }
+      game_question_votes: {
+        Row: {
+          created_at: string
+          id: string
+          player_id: string
+          question_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          player_id: string
+          question_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          player_id?: string
+          question_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_question_votes_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "game_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_question_votes_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "game_players_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_question_votes_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "game_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      game_questions: {
+        Row: {
+          answered: boolean
+          created_at: string
+          id: string
+          player_id: string
+          session_id: string
+          text: string
+        }
+        Insert: {
+          answered?: boolean
+          created_at?: string
+          id?: string
+          player_id: string
+          session_id: string
+          text: string
+        }
+        Update: {
+          answered?: boolean
+          created_at?: string
+          id?: string
+          player_id?: string
+          session_id?: string
+          text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_questions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "game_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_questions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "game_players_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_questions_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "game_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_questions_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "game_sessions_player_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       game_responses: {
         Row: {
           answer: Json
@@ -4229,15 +4328,27 @@ export type Database = {
         }
         Returns: string
       }
+      set_question_answered: {
+        Args: { _answered: boolean; _question_id: string }
+        Returns: undefined
+      }
       set_student_index: {
         Args: { _index: number; _join_token: string }
         Returns: undefined
       }
       set_user_pin: { Args: { _pin: string }; Returns: Json }
       strip_correct_flags: { Args: { _data: Json }; Returns: Json }
+      submit_live_question: {
+        Args: { _join_token: string; _text: string }
+        Returns: string
+      }
       sync_avatar_unlocks: {
         Args: { p_student_id: string }
         Returns: undefined
+      }
+      toggle_question_vote: {
+        Args: { _join_token: string; _question_id: string }
+        Returns: boolean
       }
       verify_pin_login: {
         Args: { _pin: string; _username: string }

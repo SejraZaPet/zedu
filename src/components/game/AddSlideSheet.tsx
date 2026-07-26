@@ -11,11 +11,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { FileText, HelpCircle, MessageSquare, Cloud, ArrowLeft, Loader2 } from "lucide-react";
+import { FileText, HelpCircle, MessageSquare, Cloud, DoorOpen, ArrowLeft, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-type AddKind = "menu" | "text" | "mcq" | "wall" | "wordcloud";
+type AddKind = "menu" | "text" | "mcq" | "wall" | "wordcloud" | "exit";
+
+const EXIT_TICKET_DEFAULT_PROMPT =
+  "Napiš jednu věc, kterou sis dnes odnesl/a, a jednu věc, která ti ještě není jasná.";
 
 interface AddSlideSheetProps {
   open: boolean;
@@ -218,6 +221,7 @@ export function AddSlideSheet({
               {kind === "mcq" && "Otázka (MCQ)"}
               {kind === "wall" && "Zeď aktivita"}
               {kind === "wordcloud" && "Slovní mrak"}
+              {kind === "exit" && "Exit ticket"}
             </SheetTitle>
           </div>
           <SheetDescription>
@@ -278,6 +282,23 @@ export function AddSlideSheet({
                   <p className="font-medium">Slovní mrak</p>
                   <p className="text-xs text-muted-foreground">
                     Žáci pošlou slovo/frázi, roste společný mrak
+                  </p>
+                </div>
+              </Button>
+              <Button
+                variant="outline"
+                className="justify-start h-auto py-3"
+                onClick={() => {
+                  setWallPrompt(EXIT_TICKET_DEFAULT_PROMPT);
+                  setWallAnonymous(true);
+                  setKind("exit");
+                }}
+              >
+                <DoorOpen className="w-5 h-5 mr-3 text-primary" />
+                <div className="text-left">
+                  <p className="font-medium">Exit ticket</p>
+                  <p className="text-xs text-muted-foreground">
+                    Rychlá šablona na konec hodiny
                   </p>
                 </div>
               </Button>
@@ -412,6 +433,38 @@ export function AddSlideSheet({
                 Anonymní
               </label>
               <Button onClick={submitWordcloud} disabled={busy} className="w-full">
+                {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Přidat a zobrazit
+              </Button>
+            </div>
+          )}
+
+          {kind === "exit" && (
+            <div className="space-y-3">
+              <p className="text-xs text-muted-foreground">
+                Šablona vytvoří anonymní zeď s otázkou reflektující dnešní hodinu. Zadání můžete upravit.
+              </p>
+              <div className="space-y-1.5">
+                <Label htmlFor="exit-prompt">Zadání</Label>
+                <Textarea
+                  id="exit-prompt"
+                  rows={3}
+                  value={wallPrompt}
+                  onChange={(e) => setWallPrompt(e.target.value)}
+                  disabled={busy}
+                />
+              </div>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4"
+                  checked={wallAnonymous}
+                  onChange={(e) => setWallAnonymous(e.target.checked)}
+                  disabled={busy}
+                />
+                Anonymní odpovědi
+              </label>
+              <Button onClick={submitWall} disabled={busy} className="w-full">
                 {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Přidat a zobrazit
               </Button>

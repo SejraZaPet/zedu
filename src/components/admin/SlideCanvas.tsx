@@ -29,6 +29,7 @@ interface BodyProps {
   slide: any;
   editable?: boolean;
   darkMode?: boolean;
+  revealStep?: number;
   onChangeHeadline?: (v: string) => void;
   onChangeBlock?: (blockId: string, patch: Partial<Block> | ((b: Block) => Block)) => void;
   onMoveBlock?: (blockId: string, dir: "up" | "down") => void;
