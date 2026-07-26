@@ -237,6 +237,7 @@ const StudentGamePlay = () => {
                         sessionId={sessionId || ""}
                         questionIndex={qi}
                         anonymous={liveSettings?.wallAnonymous ?? (currentSlideData as any).activitySpec?.anonymous ?? false}
+                        anonymousLabelMap={anonymousLabelMap}
                         darkMode={true}
                       />
                     </div>
