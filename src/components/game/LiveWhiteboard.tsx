@@ -216,8 +216,12 @@ const LiveWhiteboard = ({ sessionId, data, readOnly = false, onClose, overlay = 
   }, [persist, data.visible, localOnly, remoteStrokes]);
 
   const getRelative = (e: PointerEvent | React.PointerEvent): [number, number] => {
-    const cont = containerRef.current!;
-    const r = cont.getBoundingClientRect();
+    // Měříme přímo z canvas elementu, ne z obalového containeru — na mobilech
+    // s vysokým devicePixelRatio a transform:scale mohou být rozměry
+    // containeru zaokrouhleny jinak než skutečné plátno, což způsobuje posun.
+    const cvs = canvasRef.current ?? containerRef.current;
+    if (!cvs) return [0, 0];
+    const r = cvs.getBoundingClientRect();
     const x = r.width > 0 ? (e.clientX - r.left) / r.width : 0;
     const y = r.height > 0 ? (e.clientY - r.top) / r.height : 0;
     return [Math.max(0, Math.min(1, x)), Math.max(0, Math.min(1, y))];
