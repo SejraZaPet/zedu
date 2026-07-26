@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import PollProjectorView from "@/components/activities/PollProjectorView";
+import WordCloudView from "@/components/activities/WordCloudView";
 import LiveWhiteboard, { WhiteboardData } from "@/components/game/LiveWhiteboard";
 import RemoteControlButton from "@/components/live/RemoteControlButton";
 import { presenterRemoteChannelName } from "@/pages/PresenterRemote";
