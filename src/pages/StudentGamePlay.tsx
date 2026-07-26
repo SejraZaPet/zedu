@@ -170,10 +170,40 @@ const StudentGamePlay = () => {
     return <GameLeaderboardFinal session={session} players={players} responses={responses} highlightPlayerId={playerId} />;
   }
 
-  const qi = session.current_question_index;
+  const pacingMode = (session.settings as any)?.pacingMode === "student" ? "student" : "teacher";
+  const anonymousAnswers = !!(session.settings as any)?.anonymousAnswers;
+  const anonymousLabelMap = anonymousAnswers ? buildAnonymousLabelMap(players as GamePlayer[]) : undefined;
+  const totalSlides = (session?.activity_data as any[])?.length ?? 0;
+  const teacherQi = session.current_question_index;
+  const studentQi = Math.max(0, Math.min(totalSlides - 1, myPlayer?.student_index ?? 0));
+  const qi = pacingMode === "student" ? studentQi : teacherQi;
   const whiteboard: WhiteboardData = ((session as any).whiteboard_data as WhiteboardData) ?? { strokes: [], visible: false };
   const currentSlideData = (session?.activity_data as any[])?.[qi];
   const isSlideFormat = currentSlideData && currentSlideData.projector !== undefined && !currentSlideData.question;
+
+  // Initialize student_index once when entering student-paced mode without a value
+  useEffect(() => {
+    if (pacingMode !== "student") return;
+    if (!joinToken) return;
+    if (myPlayer && (myPlayer.student_index === null || myPlayer.student_index === undefined)) {
+      supabase.rpc("set_student_index" as any, { _join_token: joinToken, _index: 0 });
+    }
+  }, [pacingMode, joinToken, myPlayer?.id, myPlayer?.student_index]);
+
+  const setMyStudentIndex = async (next: number) => {
+    if (!joinToken) return;
+    const bounded = Math.max(0, Math.min(totalSlides - 1, next));
+    await supabase.rpc("set_student_index" as any, { _join_token: joinToken, _index: bounded });
+  };
+
+  const toggleHand = async () => {
+    if (!joinToken) return;
+    await supabase.rpc("raise_hand" as any, {
+      _join_token: joinToken,
+      _raised: !myPlayer?.hand_raised,
+    });
+  };
+
 
   if (isSlideFormat) {
     const isActivity = currentSlideData.type === "activity" && currentSlideData.activitySpec;
