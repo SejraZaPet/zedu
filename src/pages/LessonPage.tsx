@@ -154,9 +154,16 @@ const LessonPage = () => {
                   className="w-full rounded-lg mb-8 object-cover max-h-80"
                 />
               )}
-              <h1 className="font-heading text-4xl md:text-5xl font-bold mb-10 text-foreground">
-                {lesson.title}
-              </h1>
+              <div className="flex items-start justify-between gap-3 mb-10">
+                <h1 className="font-heading text-4xl md:text-5xl font-bold text-foreground">
+                  {lesson.title}
+                </h1>
+                <ReadAloudButton
+                  text={buildLessonReadableText(lesson.title, blocks)}
+                  label="Přečíst"
+                  className="mt-3 flex-shrink-0"
+                />
+              </div>
 
               <div className="space-y-6">
                 {blocks.filter((b) => b.visible !== false).map((block, index) => (
