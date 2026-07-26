@@ -217,6 +217,7 @@ export function AddSlideSheet({
               {kind === "text" && "Textový slide"}
               {kind === "mcq" && "Otázka (MCQ)"}
               {kind === "wall" && "Zeď aktivita"}
+              {kind === "wordcloud" && "Slovní mrak"}
             </SheetTitle>
           </div>
           <SheetDescription>
