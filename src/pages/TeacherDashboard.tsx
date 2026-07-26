@@ -18,6 +18,7 @@ import {
   Wand2,
   Award,
   BookMarked,
+} from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import TodayWidget from "@/components/calendar/TodayWidget";
