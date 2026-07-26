@@ -238,6 +238,38 @@ const LiveTeacherScreen = () => {
             />
             <span className="whitespace-nowrap">Kreslení žáků do streamu</span>
           </label>
+          <label className="flex items-center gap-2 rounded-md border border-border bg-background px-2.5 py-1.5 text-xs">
+            <Switch
+              checked={!!settings?.anonymousAnswers}
+              onCheckedChange={async (checked) => {
+                if (!sessionId) return;
+                await supabase
+                  .from("game_sessions")
+                  .update({ settings: { ...(settings || {}), anonymousAnswers: checked } })
+                  .eq("id", sessionId);
+              }}
+              aria-label="Anonymní odpovědi na projektoru"
+            />
+            <span className="whitespace-nowrap">Anonymní odpovědi</span>
+          </label>
+          <label className="flex items-center gap-2 rounded-md border border-border bg-background px-2.5 py-1.5 text-xs">
+            <Switch
+              checked={settings?.pacingMode === "student"}
+              onCheckedChange={async (checked) => {
+                if (!sessionId) return;
+                await supabase
+                  .from("game_sessions")
+                  .update({
+                    settings: { ...(settings || {}), pacingMode: checked ? "student" : "teacher" },
+                  })
+                  .eq("id", sessionId);
+              }}
+              aria-label="Vlastní tempo žáka"
+            />
+            <span className="whitespace-nowrap">
+              Tempo: {settings?.pacingMode === "student" ? "vlastní tempo" : "učitelem"}
+            </span>
+          </label>
           <Button
             size="sm"
             variant="outline"
