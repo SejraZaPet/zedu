@@ -600,9 +600,10 @@ const Auth = () => {
                 Podle volby přizpůsobíme registrační formulář.
               </p>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {([
-                { value: "teacher" as const, icon: BookOpenText, title: "Učitel", desc: "Tvořte lekce a sledujte třídy." },
+                { value: "teacher" as const, icon: BookOpenText, title: "Učitel", desc: "Ve škole se třídou." },
+                { value: "lektor" as const, icon: Presentation, title: "Lektor", desc: "Samostatná tutorská výuka." },
                 { value: "student" as const, icon: GraduationCap, title: "Žák", desc: "Učte se a plňte úkoly." },
                 { value: "rodic" as const, icon: Users, title: "Rodič", desc: "Sledujte pokrok dítěte." },
               ]).map((opt) => (
@@ -629,12 +630,19 @@ const Auth = () => {
             <div className="flex items-center justify-between rounded-xl border border-border bg-muted/30 px-4 py-3">
               <div className="flex items-center gap-3 min-w-0">
                 {role === "teacher" && <BookOpenText className="w-5 h-5 text-primary shrink-0" />}
+                {role === "lektor" && <Presentation className="w-5 h-5 text-primary shrink-0" />}
                 {role === "student" && <GraduationCap className="w-5 h-5 text-primary shrink-0" />}
                 {role === "rodic" && <Users className="w-5 h-5 text-primary shrink-0" />}
                 <div className="min-w-0">
                   <p className="text-xs text-muted-foreground">Typ účtu</p>
                   <p className="text-sm font-semibold truncate">
-                    {role === "teacher" ? "Učitel / Lektor" : role === "student" ? "Žák" : "Rodič"}
+                    {role === "teacher"
+                      ? "Učitel"
+                      : role === "lektor"
+                      ? "Lektor"
+                      : role === "student"
+                      ? "Žák"
+                      : "Rodič"}
                   </p>
                 </div>
               </div>
