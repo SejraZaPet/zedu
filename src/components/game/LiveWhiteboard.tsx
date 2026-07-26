@@ -427,6 +427,12 @@ const LiveWhiteboard = ({ sessionId, data, readOnly = false, onClose, overlay = 
 
       <div ref={containerRef} className="absolute inset-0">
         <canvas
+          ref={bottomCanvasRef}
+          className="absolute inset-0 pointer-events-none"
+          style={{ background: "transparent" }}
+          aria-hidden
+        />
+        <canvas
           ref={canvasRef}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
