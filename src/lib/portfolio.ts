@@ -7,6 +7,18 @@ export type PortfolioItemType =
   | "upload"
   | "achievement";
 
+export type PortfolioSourceType = "manual" | "worksheet" | "assignment" | "portfolio_task";
+
+export interface PortfolioFile {
+  id: string;
+  portfolio_item_id: string;
+  file_name: string;
+  file_url: string;
+  file_type: string;
+  sort_order: number;
+  created_at: string;
+}
+
 export interface PortfolioItem {
   id: string;
   student_id: string;
@@ -17,6 +29,10 @@ export interface PortfolioItem {
   attachment_url: string | null;
   content_json: Record<string, any>;
   created_at: string;
+  source_type?: PortfolioSourceType;
+  source_assignment_id?: string | null;
+  video_url?: string | null;
+  files?: PortfolioFile[];
   // synthetic flag — true for auto-aggregated items not present in DB
   synthetic?: boolean;
 }
@@ -79,9 +95,32 @@ export async function loadFullPortfolio(studentId: string): Promise<PortfolioIte
     content_json: r.content_json ?? {},
   }));
 
+  // Load files for manual items in bulk
+  const itemIds = manual.map((m) => m.id);
+  if (itemIds.length > 0) {
+    const { data: filesData } = await supabase
+      .from("student_portfolio_files" as any)
+      .select("*")
+      .in("portfolio_item_id", itemIds)
+      .order("sort_order", { ascending: true });
+    const byItem = new Map<string, PortfolioFile[]>();
+    for (const f of (filesData ?? []) as any[]) {
+      const arr = byItem.get(f.portfolio_item_id) ?? [];
+      arr.push(f as PortfolioFile);
+      byItem.set(f.portfolio_item_id, arr);
+    }
+    manual.forEach((m) => { m.files = byItem.get(m.id) ?? []; });
+  }
+
   const auto: PortfolioItem[] = [];
 
+  // Only include attempts that are NOT already reflected in a linked portfolio item
+  const linkedAssignmentIds = new Set(
+    manual.filter((m) => m.source_assignment_id).map((m) => m.source_assignment_id as string),
+  );
+
   for (const a of (attemptsRes.data ?? []) as any[]) {
+    if (linkedAssignmentIds.has(a.assignment_id)) continue;
     auto.push({
       id: `attempt-${a.id}`,
       student_id: studentId,
@@ -131,6 +170,15 @@ export async function getAttachmentSignedUrl(path: string): Promise<string | nul
   if (!path) return null;
   const { data } = await supabase.storage
     .from("student-portfolio")
+    .createSignedUrl(path, 3600);
+  return data?.signedUrl ?? null;
+}
+
+/** Signed URL for a file uploaded via assignment_attachments (student-attachments bucket). */
+export async function getStudentAttachmentSignedUrl(path: string): Promise<string | null> {
+  if (!path) return null;
+  const { data } = await supabase.storage
+    .from("student-attachments")
     .createSignedUrl(path, 3600);
   return data?.signedUrl ?? null;
 }
