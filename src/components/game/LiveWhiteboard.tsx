@@ -119,6 +119,10 @@ const LiveWhiteboard = ({ sessionId, data, readOnly = false, onClose, overlay = 
 
   const remoteStrokes = data.strokes ?? [];
   const strokes = useMemo(() => {
+    if (localOnly) {
+      // In local-only mode, keep pending strokes forever; render remote UNDER local
+      return [...remoteStrokes, ...pendingStrokes];
+    }
     if (pendingStrokes.length === 0) return remoteStrokes;
     const remoteIds = new Set(remoteStrokes.map((s) => s.id));
     const pendingFiltered = pendingStrokes.filter((s) => !remoteIds.has(s.id));
@@ -127,7 +131,7 @@ const LiveWhiteboard = ({ sessionId, data, readOnly = false, onClose, overlay = 
       queueMicrotask(() => setPendingStrokes(pendingFiltered));
     }
     return [...remoteStrokes, ...pendingFiltered];
-  }, [remoteStrokes, pendingStrokes]);
+  }, [remoteStrokes, pendingStrokes, localOnly]);
 
   useEffect(() => {
     const cvs = canvasRef.current;
