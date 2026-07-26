@@ -381,7 +381,14 @@ const StudentAssignmentPlayer = () => {
           <Card>
             <CardContent className="p-4 space-y-4">
               {assignment.description && (
-                <div className="text-sm whitespace-pre-wrap">{assignment.description}</div>
+                <div className="space-y-2">
+                  <ReadAloudButton
+                    text={assignment.description}
+                    label="Přečíst zadání"
+                    showText
+                    textClassName="text-sm"
+                  />
+                </div>
               )}
               <div className="flex justify-end">
                 <Button
