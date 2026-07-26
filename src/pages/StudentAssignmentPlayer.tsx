@@ -26,7 +26,9 @@ interface AssignmentData {
   settings: any;
   worksheet_id?: string | null;
   lockdown_mode?: boolean;
+  is_portfolio_task?: boolean;
 }
+
 
 interface AttemptData {
   id: string;
@@ -367,9 +369,44 @@ const StudentAssignmentPlayer = () => {
           </Card>
         )}
 
-        {/* Worksheet branch (přednost před legacy activity_data) */}
-        {worksheetSpec ? (
+        {/* Portfolio task branch (upload-only, no quiz) */}
+        {assignment.is_portfolio_task ? (
+          <Card>
+            <CardContent className="p-4 space-y-4">
+              {assignment.description && (
+                <div className="text-sm whitespace-pre-wrap">{assignment.description}</div>
+              )}
+              <div className="flex justify-end">
+                <Button
+                  disabled={submitting || isReadOnly || !attempt}
+                  onClick={async () => {
+                    if (!attempt) return;
+                    setSubmitting(true);
+                    try {
+                      await supabase
+                        .from("assignment_attempts" as any)
+                        .update({
+                          status: "submitted",
+                          submitted_at: new Date().toISOString(),
+                        } as any)
+                        .eq("id", attempt.id);
+                      setAttempt({ ...attempt, status: "submitted" });
+                      toast({ title: "Odevzdáno!", description: "Portfoliový úkol byl odevzdán." });
+                    } catch (e: any) {
+                      toast({ title: "Chyba", description: e.message, variant: "destructive" });
+                    } finally {
+                      setSubmitting(false);
+                    }
+                  }}
+                >
+                  <Send className="w-4 h-4 mr-1.5" /> Odevzdat úkol
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ) : worksheetSpec ? (
           <WorksheetPlayer
+
             spec={worksheetSpec}
             variantId={worksheetSpec.variants[0]?.variantId ?? "A"}
             attemptId={attempt?.id ?? null}
