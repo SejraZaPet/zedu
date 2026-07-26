@@ -40,8 +40,10 @@ interface Assignment {
   activity_data: any[];
   worksheet_id?: string | null;
   lockdown_mode?: boolean;
+  is_portfolio_task?: boolean;
   exam_type?: string | null;
 }
+
 
 interface WorksheetOption {
   id: string;
@@ -75,8 +77,10 @@ const TeacherAssignments = () => {
   const [worksheets, setWorksheets] = useState<WorksheetOption[]>([]);
   const [selectedWorksheetId, setSelectedWorksheetId] = useState<string>(prefillWorksheetId || "");
   const [lockdownMode, setLockdownMode] = useState(false);
+  const [isPortfolioTask, setIsPortfolioTask] = useState(false);
   const [examType, setExamType] = useState<ExamType | "ukol">("ukol");
   const [filterExamType, setFilterExamType] = useState<string>("__all__");
+
 
   useEffect(() => {
     loadData();
@@ -126,8 +130,10 @@ const TeacherAssignments = () => {
         activity_data: [] as any,
         worksheet_id: selectedWorksheetId || null,
         lockdown_mode: lockdownMode,
+        is_portfolio_task: isPortfolioTask,
         exam_type: examType === "ukol" ? null : examType,
       } as any);
+
 
       if (error) throw error;
       toast({ title: "Úloha vytvořena" });
@@ -151,8 +157,10 @@ const TeacherAssignments = () => {
     setSelectedClassId("");
     setSelectedWorksheetId("");
     setLockdownMode(false);
+    setIsPortfolioTask(false);
     setExamType("ukol");
   };
+
 
   const handlePublish = async (id: string) => {
     const { error } = await supabase.from("assignments" as any).update({ status: "published" } as any).eq("id", id);
@@ -307,6 +315,20 @@ const TeacherAssignments = () => {
               </div>
             </div>
 
+            {/* Portfolio task */}
+            <div className="flex items-start justify-between gap-3 p-3 border border-border rounded-lg bg-muted/30">
+              <div className="flex items-start gap-2">
+                <FileText className="w-4 h-4 text-muted-foreground mt-0.5" />
+                <div>
+                  <Label className="text-sm">Portfoliový úkol</Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Místo kvízu žáci nahrají výstup (soubor/foto/PDF). Odevzdání se automaticky přidá do jejich portfolia.
+                  </p>
+                </div>
+              </div>
+              <Switch checked={isPortfolioTask} onCheckedChange={setIsPortfolioTask} />
+            </div>
+
             {/* Lockdown mode */}
             <div className="flex items-start justify-between gap-3 p-3 border border-border rounded-lg bg-muted/30">
               <div className="flex items-start gap-2">
@@ -318,8 +340,10 @@ const TeacherAssignments = () => {
                   </p>
                 </div>
               </div>
-              <Switch checked={lockdownMode} onCheckedChange={setLockdownMode} />
+              <Switch checked={lockdownMode} onCheckedChange={setLockdownMode} disabled={isPortfolioTask} />
             </div>
+
+
 
             {/* Pracovní list selector */}
             <div className="p-3 border border-border rounded-lg bg-muted/30 space-y-2">

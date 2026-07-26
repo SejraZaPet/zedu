@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import SiteHeader from "@/components/SiteHeader";
 import PortfolioTimeline from "@/components/portfolio/PortfolioTimeline";
 import AddPortfolioItemDialog from "@/components/portfolio/AddPortfolioItemDialog";
@@ -10,11 +11,15 @@ import { downloadHtmlAsPdf } from "@/lib/html-to-pdf";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+
 export default function StudentPortfolio() {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const initialSubject = searchParams.get("subject") || undefined;
   const [items, setItems] = useState<PortfolioItem[]>([]);
   const [profileName, setProfileName] = useState("");
   const [loading, setLoading] = useState(true);
+
 
   const refresh = useCallback(async () => {
     if (!user) return;
@@ -95,9 +100,10 @@ export default function StudentPortfolio() {
         {loading ? (
           <p className="text-center text-muted-foreground py-12">Načítám…</p>
         ) : (
-          <PortfolioTimeline items={items} canDelete onItemDeleted={refresh} />
+          <PortfolioTimeline items={items} canDelete onItemDeleted={refresh} initialSubject={initialSubject} />
         )}
       </main>
+
     </>
   );
 }

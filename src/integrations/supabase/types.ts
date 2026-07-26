@@ -373,6 +373,7 @@ export type Database = {
           description: string
           exam_type: string | null
           id: string
+          is_portfolio_task: boolean
           lesson_plan_id: string | null
           lockdown_mode: boolean
           max_attempts: number
@@ -393,6 +394,7 @@ export type Database = {
           description?: string
           exam_type?: string | null
           id?: string
+          is_portfolio_task?: boolean
           lesson_plan_id?: string | null
           lockdown_mode?: boolean
           max_attempts?: number
@@ -413,6 +415,7 @@ export type Database = {
           description?: string
           exam_type?: string | null
           id?: string
+          is_portfolio_task?: boolean
           lesson_plan_id?: string | null
           lockdown_mode?: boolean
           max_attempts?: number
@@ -2730,6 +2733,44 @@ export type Database = {
           },
         ]
       }
+      student_portfolio_files: {
+        Row: {
+          created_at: string
+          file_name: string
+          file_type: string
+          file_url: string
+          id: string
+          portfolio_item_id: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          file_type?: string
+          file_url: string
+          id?: string
+          portfolio_item_id: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          file_type?: string
+          file_url?: string
+          id?: string
+          portfolio_item_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_portfolio_files_portfolio_item_id_fkey"
+            columns: ["portfolio_item_id"]
+            isOneToOne: false
+            referencedRelation: "student_portfolio_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_portfolio_items: {
         Row: {
           attachment_url: string | null
@@ -2737,11 +2778,14 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          source_assignment_id: string | null
+          source_type: string
           student_id: string
           subject: string | null
           title: string
           type: string
           updated_at: string
+          video_url: string | null
         }
         Insert: {
           attachment_url?: string | null
@@ -2749,11 +2793,14 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          source_assignment_id?: string | null
+          source_type?: string
           student_id: string
           subject?: string | null
           title: string
           type?: string
           updated_at?: string
+          video_url?: string | null
         }
         Update: {
           attachment_url?: string | null
@@ -2761,13 +2808,24 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          source_assignment_id?: string | null
+          source_type?: string
           student_id?: string
           subject?: string | null
           title?: string
           type?: string
           updated_at?: string
+          video_url?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "student_portfolio_items_source_assignment_id_fkey"
+            columns: ["source_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "assignments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       student_practice_recommendations: {
         Row: {

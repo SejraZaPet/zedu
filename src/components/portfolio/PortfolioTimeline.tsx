@@ -9,10 +9,11 @@ import {
 } from "@/components/ui/select";
 import {
   Award, Trophy, FileText, Lightbulb, Paperclip, MessageSquare,
-  Trash2, ExternalLink, Filter,
+  Trash2, ExternalLink, Filter, Video, ClipboardList,
 } from "lucide-react";
 import {
-  PortfolioItem, PortfolioComment, TYPE_LABEL, getAttachmentSignedUrl,
+  PortfolioItem, PortfolioComment, PortfolioFile, TYPE_LABEL,
+  getAttachmentSignedUrl, getStudentAttachmentSignedUrl,
 } from "@/lib/portfolio";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -25,6 +26,8 @@ interface Props {
   /** If true, viewer is a teacher and can post comments. */
   canComment?: boolean;
   onItemDeleted?: (id: string) => void;
+  /** Preselect subject filter (from URL query e.g. ?subject=Matematika) */
+  initialSubject?: string;
 }
 
 const ICONS: Record<string, any> = {
@@ -41,11 +44,15 @@ function formatDate(iso: string) {
 }
 
 export default function PortfolioTimeline({
-  items, canDelete, canComment, onItemDeleted,
+  items, canDelete, canComment, onItemDeleted, initialSubject,
 }: Props) {
   const [typeFilter, setTypeFilter] = useState<string>("all");
-  const [subjectFilter, setSubjectFilter] = useState<string>("all");
+  const [subjectFilter, setSubjectFilter] = useState<string>(initialSubject || "all");
   const [periodFilter, setPeriodFilter] = useState<string>("all");
+
+  useEffect(() => {
+    if (initialSubject) setSubjectFilter(initialSubject);
+  }, [initialSubject]);
 
   const subjects = useMemo(() => {
     const set = new Set<string>();
@@ -136,6 +143,7 @@ function PortfolioCard({
   const [commentText, setCommentText] = useState("");
   const [busy, setBusy] = useState(false);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [fileUrls, setFileUrls] = useState<Record<string, string | null>>({});
   const { user } = useAuth();
 
   useEffect(() => {
@@ -161,6 +169,25 @@ function PortfolioCard({
     }
     return () => { cancelled = true; };
   }, [item.attachment_url]);
+
+  useEffect(() => {
+    if (!item.files || item.files.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      const entries = await Promise.all(item.files!.map(async (f) => {
+        // Files copied from assignment_attachments live in student-attachments bucket
+        // Manually added files should be in student-portfolio bucket. We try both.
+        let url = await getStudentAttachmentSignedUrl(f.file_url);
+        if (!url) url = await getAttachmentSignedUrl(f.file_url);
+        return [f.id, url] as const;
+      }));
+      if (cancelled) return;
+      const map: Record<string, string | null> = {};
+      for (const [id, u] of entries) map[id] = u;
+      setFileUrls(map);
+    })();
+    return () => { cancelled = true; };
+  }, [item.files]);
 
   const remove = async () => {
     if (!confirm("Opravdu smazat tuto položku?")) return;
@@ -192,6 +219,13 @@ function PortfolioCard({
     setCommentText("");
   };
 
+  const sourceLabel = ({
+    worksheet: "Z pracovního listu",
+    assignment: "Z úkolu",
+    portfolio_task: "Portfoliový úkol",
+    manual: null,
+  } as Record<string, string | null>)[item.source_type || "manual"];
+
   return (
     <li className="ml-4">
       <span className="absolute -left-[9px] mt-3 w-4 h-4 rounded-full bg-primary border-2 border-background" />
@@ -207,6 +241,11 @@ function PortfolioCard({
                   <h3 className="font-semibold truncate">{item.title}</h3>
                   <Badge variant="outline" className="text-[10px]">{TYPE_LABEL[item.type] || item.type}</Badge>
                   {item.subject && <Badge variant="secondary" className="text-[10px]">{item.subject}</Badge>}
+                  {sourceLabel && (
+                    <Badge variant="outline" className="text-[10px] gap-1">
+                      <ClipboardList className="w-3 h-3" />{sourceLabel}
+                    </Badge>
+                  )}
                   {item.synthetic && <Badge variant="outline" className="text-[10px]">Automaticky</Badge>}
                 </div>
                 <p className="text-xs text-muted-foreground mt-0.5">{formatDate(item.created_at)}</p>
@@ -227,6 +266,36 @@ function PortfolioCard({
                   >
                     <ExternalLink className="w-3.5 h-3.5" /> Otevřít přílohu
                   </a>
+                )}
+                {item.video_url && (
+                  <a
+                    href={item.video_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-sm text-primary hover:underline mt-2 ml-3"
+                  >
+                    <Video className="w-3.5 h-3.5" /> Otevřít video
+                  </a>
+                )}
+                {item.files && item.files.length > 0 && (
+                  <ul className="mt-2 space-y-1">
+                    {item.files.map((f) => (
+                      <li key={f.id} className="flex items-center gap-2 text-sm">
+                        <FileText className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                        <span className="flex-1 truncate">{f.file_name}</span>
+                        {fileUrls[f.id] && (
+                          <a
+                            href={fileUrls[f.id]!}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-primary hover:underline inline-flex items-center gap-1 text-xs"
+                          >
+                            <ExternalLink className="w-3 h-3" /> Otevřít
+                          </a>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
                 )}
               </div>
             </div>
@@ -271,3 +340,4 @@ function PortfolioCard({
 
 // Re-export Textarea so consumers don't need extra import (kept for tree-shaking elsewhere)
 export { Textarea };
+export type { PortfolioFile };
