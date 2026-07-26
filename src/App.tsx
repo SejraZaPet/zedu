@@ -89,6 +89,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <AccessibilitySettingsSync />
           <ViewAsBanner />
           <Routes>
            <Route path="/" element={<Index />} />
