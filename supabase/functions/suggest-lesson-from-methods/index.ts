@@ -57,6 +57,8 @@ serve(async (req) => {
       gradeBand = "",
       methods = [],
       customInstructions = "",
+      thinkingTypes = [],
+      curriculumContext = "",
     } = await req.json();
 
     if (!Array.isArray(methods) || methods.length === 0) {
@@ -65,6 +67,19 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const VALID_THINKING = ["creative", "logical", "practical"] as const;
+    const thinkingList: string[] = Array.isArray(thinkingTypes)
+      ? thinkingTypes.filter((t: any) => VALID_THINKING.includes(t))
+      : [];
+    const thinkingLabels: Record<string, string> = {
+      creative: "kreativní uvažování (originální nápady, alternativy, propojování napříč obory)",
+      logical: "logické uvažování (argumentace, dedukce, hledání příčin a důsledků, důkazy)",
+      practical: "praktické uplatnění (přenos do reálného života, řešení konkrétních problémů, dovednosti)",
+    };
+    const wantsModelSituation = thinkingList.length > 0;
+    const truncatedCurriculum = String(curriculumContext || "").trim().slice(0, 6000);
+
 
     const methodsText = methods
       .map(
