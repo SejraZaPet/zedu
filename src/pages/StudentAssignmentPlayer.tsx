@@ -299,7 +299,13 @@ const StudentAssignmentPlayer = () => {
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <div className="flex-1">
-            <h1 className="text-lg font-bold">{assignment.title}</h1>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <h1 className="text-lg font-bold">{assignment.title}</h1>
+              <ReadAloudButton
+                text={`${assignment.title}. ${assignment.description || ""}`}
+                size="icon"
+              />
+            </div>
             <div className="flex items-center gap-3 text-xs text-muted-foreground">
               {attempt && <span>Pokus {attempt.attempt_number}/{assignment.max_attempts}</span>}
               {assignment.deadline && (
