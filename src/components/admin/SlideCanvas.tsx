@@ -206,9 +206,22 @@ function EditableBlock({
 
   if (block.type === "bullet_list") {
     const items: string[] = block.props?.items || [""];
+    const revealMode = !!block.props?.revealMode;
+    const revealToggle = editable ? (
+      <label className="flex items-center gap-2 text-xs text-white/70 mb-2 select-none">
+        <input
+          type="checkbox"
+          className="h-3.5 w-3.5"
+          checked={revealMode}
+          onChange={(e) => update((b) => ({ ...b, props: { ...b.props, revealMode: e.target.checked } }))}
+        />
+        Postupné odkrývání odrážek při prezentaci
+      </label>
+    ) : null;
     if (block.props?.html) {
       return (
         <div className={asCard ? "bg-white/10 rounded-xl p-4 border border-white/15" : ""}>
+          {revealToggle}
           <EditableText
             editable={editable}
             multiline
@@ -222,56 +235,60 @@ function EditableBlock({
       );
     }
     return (
-      <ul className={`space-y-2 ${asCard ? "bg-white/10 rounded-xl p-4 border border-white/15" : ""}`}>
-        {items.map((item, i) => (
-          <li key={i} className="flex items-start gap-3 text-2xl">
-            <span className="text-purple-400 mt-1 flex-shrink-0">•</span>
-            <div className="flex-1 flex items-center gap-2">
-              <EditableText
-                editable={editable}
-                value={item}
-                placeholder="Odrážka…"
-                className="flex-1"
-                onCommit={(v) => {
-                  const next = [...items];
-                  next[i] = v;
-                  update((b) => ({ ...b, props: { ...b.props, items: next } }));
-                }}
-              />
-              {editable && items.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() =>
-                    update((b) => ({
-                      ...b,
-                      props: { ...b.props, items: items.filter((_, j) => j !== i) },
-                    }))
-                  }
-                  className="opacity-40 hover:opacity-100 text-sm"
-                  title="Smazat odrážku"
-                >
-                  ×
-                </button>
-              )}
-            </div>
-          </li>
-        ))}
-        {editable && (
-          <li>
-            <button
-              type="button"
-              onClick={() =>
-                update((b) => ({ ...b, props: { ...b.props, items: [...items, ""] } }))
-              }
-              className="text-xs text-purple-300 hover:text-purple-200 ml-6"
-            >
-              + Přidat odrážku
-            </button>
-          </li>
-        )}
-      </ul>
+      <div className={asCard ? "bg-white/10 rounded-xl p-4 border border-white/15" : ""}>
+        {revealToggle}
+        <ul className="space-y-2">
+          {items.map((item, i) => (
+            <li key={i} className="flex items-start gap-3 text-2xl">
+              <span className="text-purple-400 mt-1 flex-shrink-0">•</span>
+              <div className="flex-1 flex items-center gap-2">
+                <EditableText
+                  editable={editable}
+                  value={item}
+                  placeholder="Odrážka…"
+                  className="flex-1"
+                  onCommit={(v) => {
+                    const next = [...items];
+                    next[i] = v;
+                    update((b) => ({ ...b, props: { ...b.props, items: next } }));
+                  }}
+                />
+                {editable && items.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      update((b) => ({
+                        ...b,
+                        props: { ...b.props, items: items.filter((_, j) => j !== i) },
+                      }))
+                    }
+                    className="opacity-40 hover:opacity-100 text-sm"
+                    title="Smazat odrážku"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            </li>
+          ))}
+          {editable && (
+            <li>
+              <button
+                type="button"
+                onClick={() =>
+                  update((b) => ({ ...b, props: { ...b.props, items: [...items, ""] } }))
+                }
+                className="text-xs text-purple-300 hover:text-purple-200 ml-6"
+              >
+                + Přidat odrážku
+              </button>
+            </li>
+          )}
+        </ul>
+      </div>
     );
   }
+
 
   // Fallback (image, table, accordion, etc.): use existing renderer
   return (
