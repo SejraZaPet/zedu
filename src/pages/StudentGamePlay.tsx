@@ -378,11 +378,45 @@ const StudentGamePlay = () => {
             </p>
           </div>
 
-          {whiteboard.visible && whiteboard.strokes.length > 0 && (
-            <div className="fixed inset-0 z-30 pointer-events-none overflow-hidden">
-              <WhiteboardOverlay stageW={1600} stageH={900} sessionId={sessionId || ""} data={whiteboard} />
-            </div>
-          )}
+          {(() => {
+            const allowSync = !!liveSettings?.allowStudentDrawSync;
+            const teacherBoardVisible = whiteboard.visible && whiteboard.strokes.length > 0;
+            const showBoard = teacherBoardVisible || studentDrawMode;
+            if (!showBoard && !allowSync && !teacherBoardVisible) {
+              // still allow student to open their local scratch pad via button
+            }
+            return (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setStudentDrawMode((v) => !v)}
+                  aria-label={studentDrawMode ? "Vypnout kreslení" : "Zapnout kreslení"}
+                  title={studentDrawMode ? "Vypnout kreslení" : "Zapnout kreslení"}
+                  className={`fixed bottom-4 right-4 z-[60] h-12 w-12 rounded-full shadow-lg flex items-center justify-center border-2 transition-colors ${
+                    studentDrawMode
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-background/90 text-foreground border-border"
+                  }`}
+                >
+                  <Pencil className="w-5 h-5" />
+                </button>
+                {(showBoard || teacherBoardVisible) && (
+                  <div
+                    className={`fixed inset-0 z-30 overflow-hidden ${studentDrawMode ? "" : "pointer-events-none"}`}
+                  >
+                    <WhiteboardOverlay
+                      stageW={1600}
+                      stageH={900}
+                      sessionId={sessionId || ""}
+                      data={whiteboard}
+                      interactive={studentDrawMode}
+                      localOnly={!allowSync}
+                    />
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </div>
       </>
     );
