@@ -1458,30 +1458,39 @@ export type Database = {
       game_players: {
         Row: {
           created_at: string
+          hand_raised: boolean
+          hand_raised_at: string | null
           id: string
           join_token: string | null
           nickname: string
           session_id: string
+          student_index: number | null
           token_expires_at: string | null
           total_score: number
           user_id: string | null
         }
         Insert: {
           created_at?: string
+          hand_raised?: boolean
+          hand_raised_at?: string | null
           id?: string
           join_token?: string | null
           nickname: string
           session_id: string
+          student_index?: number | null
           token_expires_at?: string | null
           total_score?: number
           user_id?: string | null
         }
         Update: {
           created_at?: string
+          hand_raised?: boolean
+          hand_raised_at?: string | null
           id?: string
           join_token?: string | null
           nickname?: string
           session_id?: string
+          student_index?: number | null
           token_expires_at?: string | null
           total_score?: number
           user_id?: string | null
@@ -3811,25 +3820,34 @@ export type Database = {
       game_players_public: {
         Row: {
           created_at: string | null
+          hand_raised: boolean | null
+          hand_raised_at: string | null
           id: string | null
           nickname: string | null
           session_id: string | null
+          student_index: number | null
           total_score: number | null
           user_id: string | null
         }
         Insert: {
           created_at?: string | null
+          hand_raised?: boolean | null
+          hand_raised_at?: string | null
           id?: string | null
           nickname?: string | null
           session_id?: string | null
+          student_index?: number | null
           total_score?: number | null
           user_id?: string | null
         }
         Update: {
           created_at?: string | null
+          hand_raised?: boolean | null
+          hand_raised_at?: string | null
           id?: string | null
           nickname?: string | null
           session_id?: string | null
+          student_index?: number | null
           total_score?: number | null
           user_id?: string | null
         }
@@ -4022,6 +4040,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      clear_player_hand: { Args: { _player_id: string }; Returns: undefined }
       dispatch_scheduled_notifications: { Args: never; Returns: number }
       enroll_by_textbook_code: {
         Args: { _code: string; _student_id: string }
@@ -4160,6 +4179,10 @@ export type Database = {
       }
       publish_due_lessons: { Args: never; Returns: number }
       publish_due_worksheets: { Args: never; Returns: number }
+      raise_hand: {
+        Args: { _join_token: string; _raised: boolean }
+        Returns: undefined
+      }
       reap_stale_export_jobs: { Args: never; Returns: number }
       regenerate_school_registration_code: {
         Args: { _school_id: string }
@@ -4205,6 +4228,10 @@ export type Database = {
           _type?: string
         }
         Returns: string
+      }
+      set_student_index: {
+        Args: { _index: number; _join_token: string }
+        Returns: undefined
       }
       set_user_pin: { Args: { _pin: string }; Returns: Json }
       strip_correct_flags: { Args: { _data: Json }; Returns: Json }
