@@ -570,10 +570,12 @@ const ProfilePage = () => {
             <CardTitle className="text-base">Studijní údaje</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="school">Škola</Label>
-              <Input id="school" value={school} onChange={(e) => setSchool(e.target.value)} />
-            </div>
+            {role !== "lektor" && (
+              <div>
+                <Label htmlFor="school">Škola</Label>
+                <Input id="school" value={school} onChange={(e) => setSchool(e.target.value)} />
+              </div>
+            )}
             <div>
               <Label htmlFor="field">Obor</Label>
               <Input id="field" value={fieldOfStudy} onChange={(e) => setFieldOfStudy(e.target.value)} />
