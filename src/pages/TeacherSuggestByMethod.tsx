@@ -44,13 +44,27 @@ interface PhaseValue {
   activities?: { kind: string; title: string }[];
 }
 
+interface ModelSituation {
+  scenario: string;
+  task: string;
+}
+
 interface Suggestion {
   title: string;
   subject?: string;
   summary: string;
   phases: Record<string, PhaseValue>;
   methodNotes: { method_id: string; note: string }[];
+  modelSituation?: ModelSituation | null;
 }
+
+type ThinkingType = "creative" | "logical" | "practical";
+
+const THINKING_LABELS: Record<ThinkingType, string> = {
+  creative: "Kreativní uvažování",
+  logical: "Logické uvažování",
+  practical: "Praktické uplatnění",
+};
 
 const PHASE_LABELS: Record<string, string> = {
   uvod: "Úvod",
@@ -108,6 +122,8 @@ export default function TeacherSuggestByMethod() {
   const [generating, setGenerating] = useState(false);
   const [creating, setCreating] = useState(false);
   const [suggestion, setSuggestion] = useState<Suggestion | null>(null);
+  const [thinkingTypes, setThinkingTypes] = useState<ThinkingType[]>([]);
+  const [curriculumPlan, setCurriculumPlan] = useState<{ subject: string; content: string | null; file_name: string | null } | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -131,6 +147,28 @@ export default function TeacherSuggestByMethod() {
       setTeacherLessons(((data as any[]) ?? []).map((l) => ({ id: l.id, title: l.title, content_data: l.content_data })));
     })();
   }, [user]);
+
+  useEffect(() => {
+    if (!user || !subject.trim()) {
+      setCurriculumPlan(null);
+      return;
+    }
+    const s = subject.trim();
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("teacher_curriculum_plans")
+        .select("subject, content, file_name")
+        .eq("teacher_id", user.id)
+        .ilike("subject", s)
+        .maybeSingle();
+      if (!cancelled) setCurriculumPlan((data as any) ?? null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user, subject]);
+
 
   const selectedMethods = useMemo(
     () => methods.filter((m) => selectedMethodIds.includes(m.id)),
@@ -223,6 +261,8 @@ export default function TeacherSuggestByMethod() {
             description: m.description,
             tips: m.tips,
           })),
+          thinkingTypes,
+          curriculumContext: curriculumPlan?.content ?? "",
         },
       });
       if (error) throw error;
@@ -321,10 +361,15 @@ export default function TeacherSuggestByMethod() {
             <div className="w-10 h-10 rounded-xl bg-gradient-brand-sm flex items-center justify-center">
               <Wand2 className="w-5 h-5 text-white" />
             </div>
-            <h1 className="font-heading text-3xl font-bold">Návrh lekce podle metody</h1>
+            <div>
+              <h1 className="font-heading text-3xl font-bold">Návrh lekce podle metody</h1>
+              <p className="text-xs font-medium text-primary mt-0.5 inline-flex items-center gap-1">
+                <Sparkles className="w-3 h-3" /> S asistentem ZedAI
+              </p>
+            </div>
           </div>
           <p className="text-muted-foreground">
-            Nahrajte materiál nebo vyberte lekci, zvolte jednu či více výukových metod a AI navrhne, jak lekci pojmout — včetně konkrétních procvičovacích aktivit.
+            Nahrajte materiál nebo vyberte lekci, zvolte jednu či více výukových metod a ZedAI navrhne, jak lekci pojmout — včetně konkrétních procvičovacích aktivit.
           </p>
         </div>
 
@@ -537,6 +582,47 @@ export default function TeacherSuggestByMethod() {
               )}
             </div>
 
+            <div className="mt-5 rounded-lg border bg-muted/20 p-3 space-y-2">
+              <div className="text-sm font-semibold">Zaměření myšlení a modelová situace (nepovinné)</div>
+              <p className="text-xs text-muted-foreground">
+                ZedAI zahrne do návrhu aktivity či otázky rozvíjející vybrané typy uvažování a přidá modelovou situaci z praxe.
+              </p>
+              <div className="flex flex-wrap gap-4 pt-1">
+                {(Object.keys(THINKING_LABELS) as ThinkingType[]).map((tt) => {
+                  const active = thinkingTypes.includes(tt);
+                  return (
+                    <label key={tt} className="flex items-center gap-2 cursor-pointer text-sm">
+                      <Checkbox
+                        checked={active}
+                        onCheckedChange={() =>
+                          setThinkingTypes((prev) =>
+                            prev.includes(tt) ? prev.filter((x) => x !== tt) : [...prev, tt],
+                          )
+                        }
+                      />
+                      {THINKING_LABELS[tt]}
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            {curriculumPlan && (curriculumPlan.content || curriculumPlan.file_name) && (
+              <div className="mt-3 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm flex items-start gap-2">
+                <FileText className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+                <div>
+                  <div className="font-medium">
+                    Použije se váš ŠVP pro předmět „{curriculumPlan.subject}" jako kontext.
+                  </div>
+                  {!curriculumPlan.content && curriculumPlan.file_name && (
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      Poznámka: máte uložený jen soubor ({curriculumPlan.file_name}). ZedAI zpracuje pouze textový obsah ŠVP – doplňte prosím text, pokud jej chcete použít.
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div className="mt-4">
               <Label htmlFor="custom">Doplňující pokyny (nepovinné)</Label>
               <Textarea
@@ -576,7 +662,26 @@ export default function TeacherSuggestByMethod() {
               <p className="text-muted-foreground mt-2">{suggestion.summary}</p>
             </CardHeader>
             <CardContent className="space-y-6">
+              {suggestion.modelSituation && (suggestion.modelSituation.scenario || suggestion.modelSituation.task) && (
+                <div className="rounded-xl border-2 border-primary/40 bg-gradient-to-br from-primary/5 to-secondary/5 p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Lightbulb className="w-5 h-5 text-primary" />
+                    <h3 className="font-semibold">Modelová situace</h3>
+                    <Badge variant="secondary" className="text-xs">ZedAI</Badge>
+                  </div>
+                  {suggestion.modelSituation.scenario && (
+                    <p className="text-sm mb-2 whitespace-pre-line">{suggestion.modelSituation.scenario}</p>
+                  )}
+                  {suggestion.modelSituation.task && (
+                    <div className="text-sm">
+                      <span className="font-medium">Úkol / otázka: </span>
+                      <span className="whitespace-pre-line">{suggestion.modelSituation.task}</span>
+                    </div>
+                  )}
+                </div>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
                 {Object.entries(PHASE_LABELS).map(([key, label]) => {
                   const p = suggestion.phases?.[key];
                   if (!p) return null;

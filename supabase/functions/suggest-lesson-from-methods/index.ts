@@ -57,6 +57,8 @@ serve(async (req) => {
       gradeBand = "",
       methods = [],
       customInstructions = "",
+      thinkingTypes = [],
+      curriculumContext = "",
     } = await req.json();
 
     if (!Array.isArray(methods) || methods.length === 0) {
@@ -65,6 +67,19 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const VALID_THINKING = ["creative", "logical", "practical"] as const;
+    const thinkingList: string[] = Array.isArray(thinkingTypes)
+      ? thinkingTypes.filter((t: any) => VALID_THINKING.includes(t))
+      : [];
+    const thinkingLabels: Record<string, string> = {
+      creative: "kreativní uvažování (originální nápady, alternativy, propojování napříč obory)",
+      logical: "logické uvažování (argumentace, dedukce, hledání příčin a důsledků, důkazy)",
+      practical: "praktické uplatnění (přenos do reálného života, řešení konkrétních problémů, dovednosti)",
+    };
+    const wantsModelSituation = thinkingList.length > 0;
+    const truncatedCurriculum = String(curriculumContext || "").trim().slice(0, 6000);
+
 
     const methodsText = methods
       .map(
@@ -75,7 +90,15 @@ serve(async (req) => {
 
     const truncatedSource = String(sourceText || "").slice(0, 12000);
 
-    const systemPrompt = `Jsi zkušený český pedagog a designer výukových aktivit. Na základě zdrojového materiálu a vybraných výukových metod navrhneš strukturu jedné vyučovací hodiny (typicky 45 minut) rozdělené do 6 fází: uvod, motivace, hlavni, procviceni, reflexe, zaver.
+    const thinkingInstructions = wantsModelSituation
+      ? `\n\nZAMĚŘENÍ MYŠLENÍ (aktivováno učitelem):\nZařaď do fází konkrétní aktivity a/nebo otázky rozvíjející tyto typy uvažování:\n${thinkingList.map((t) => `- ${thinkingLabels[t]}`).join("\n")}\nAktivity musí být konkrétní (ne obecné fráze), navázané na téma lekce, a jasně adresovat daný typ myšlení.\n\nMODELOVÁ SITUACE (povinné):\nVygeneruj jednu konkrétní modelovou situaci z praxe (scenario) – 1–2 věty popisující realistický scénář, kde se probíraná vědomost/dovednost musí uplatnit na základě principu (ne mechanicky). K situaci doplň jednu otázku nebo úkol pro žáka (task), který ověří pochopení principu.`
+      : "";
+
+    const curriculumInstructions = truncatedCurriculum
+      ? `\n\nŠKOLNÍ VZDĚLÁVACÍ PLÁN (ŠVP) učitele pro tento předmět – uč podle něj v místech, kde je to relevantní; nekopíruj jej doslova, ale respektuj cíle, výstupy a doporučené postupy:\n${truncatedCurriculum}`
+      : "";
+
+    const systemPrompt = `Jsi ZedAI – zkušený český pedagog a designer výukových aktivit. Na základě zdrojového materiálu a vybraných výukových metod navrhneš strukturu jedné vyučovací hodiny (typicky 45 minut) rozdělené do 6 fází: uvod, motivace, hlavni, procviceni, reflexe, zaver.
 
 Pravidla:
 - Popiš každou fázi 2–4 větami – konkrétně, ne obecně.
@@ -83,7 +106,7 @@ Pravidla:
 - Povolené hodnoty "kind": ${ACTIVITY_KINDS.join(", ")}. Pokud navrhuješ interaktivní aktivitu (quiz), doplň v title typ v závorce – povolené typy: ${INTERACTIVE_TYPES.join(", ")}. Př.: "Rychlý kvíz na klíčové pojmy (mcq)".
 - Uveď stručné pedagogické zdůvodnění (methodNotes) pro každou zvolenou metodu – proč se pro toto téma hodí.
 - Sečtený čas ve fázích by měl odpovídat cca 45 minutám.
-- Piš česky, formálně (vykání pro učitele).`;
+- Piš česky, formálně (vykání pro učitele).${thinkingInstructions}${curriculumInstructions}`;
 
     const userPrompt = [
       sourceTitle ? `Název zdrojové lekce: ${sourceTitle}` : "",
@@ -95,6 +118,7 @@ Pravidla:
     ]
       .filter(Boolean)
       .join("\n");
+
 
     const methodIds = methods.map((m: any) => m.id);
 
@@ -172,8 +196,22 @@ Pravidla:
                       additionalProperties: false,
                     },
                   },
+                  modelSituation: {
+                    type: "object",
+                    description: wantsModelSituation
+                      ? "Konkrétní modelová situace z praxe demonstrující princip a otázku/úkol pro žáka."
+                      : "Nepovinné – vynechej, pokud učitel nevyžádal zaměření myšlení.",
+                    properties: {
+                      scenario: { type: "string" },
+                      task: { type: "string" },
+                    },
+                    required: ["scenario", "task"],
+                    additionalProperties: false,
+                  },
                 },
-                required: ["title", "summary", "phases", "methodNotes"],
+                required: wantsModelSituation
+                  ? ["title", "summary", "phases", "methodNotes", "modelSituation"]
+                  : ["title", "summary", "phases", "methodNotes"],
                 additionalProperties: false,
               },
             },
