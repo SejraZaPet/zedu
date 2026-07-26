@@ -469,11 +469,15 @@ const WhiteboardOverlay = ({
   stageH,
   sessionId,
   data,
+  interactive = false,
+  localOnly = false,
 }: {
   stageW: number;
   stageH: number;
   sessionId: string;
   data: WhiteboardData;
+  interactive?: boolean;
+  localOnly?: boolean;
 }) => {
   const frameRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
@@ -507,9 +511,11 @@ const WhiteboardOverlay = ({
         <LiveWhiteboard
           sessionId={sessionId}
           data={data}
-          readOnly
+          readOnly={!interactive}
           overlay
-          className="pointer-events-none"
+          localOnly={localOnly}
+          simplified
+          className={interactive ? "" : "pointer-events-none"}
         />
       </div>
     </div>
