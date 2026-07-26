@@ -340,9 +340,12 @@ const SchoolAdmin = () => {
                 Učitelé tento kód zadají při registraci a budou automaticky přiřazeni k vaší škole.
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button variant="outline" size="sm" onClick={copyCode} disabled={!school.registration_code}>
-                <Copy className="w-4 h-4 mr-1" /> Kopírovat
+                <Copy className="w-4 h-4 mr-1" /> Kopírovat kód
+              </Button>
+              <Button variant="outline" size="sm" onClick={copyInviteLink} disabled={!school.registration_code}>
+                <Copy className="w-4 h-4 mr-1" /> Kopírovat pozvánkový odkaz
               </Button>
               <Button variant="outline" size="sm" onClick={regenerateCode}>
                 <RefreshCw className="w-4 h-4 mr-1" /> Regenerovat
