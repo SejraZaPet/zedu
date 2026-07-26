@@ -2506,6 +2506,76 @@ export type Database = {
         }
         Relationships: []
       }
+      school_licenses: {
+        Row: {
+          admin_notes: string | null
+          billing_cycle: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          plan: string
+          school_id: string
+          seats_students: number | null
+          seats_teachers: number | null
+          starts_at: string
+          status: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          billing_cycle?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          plan?: string
+          school_id: string
+          seats_students?: number | null
+          seats_teachers?: number | null
+          starts_at?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          billing_cycle?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          plan?: string
+          school_id?: string
+          seats_students?: number | null
+          seats_teachers?: number | null
+          starts_at?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "school_licenses_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: true
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "school_licenses_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: true
+            referencedRelation: "schools_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "school_licenses_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       schools: {
         Row: {
           created_at: string
@@ -4054,6 +4124,22 @@ export type Database = {
       reset_class_leaderboard: {
         Args: { _class_id: string }
         Returns: undefined
+      }
+      school_license_usage: {
+        Args: { _school_id: string }
+        Returns: {
+          school_id: string
+          students_used: number
+          teachers_used: number
+        }[]
+      }
+      school_license_usage_all: {
+        Args: never
+        Returns: {
+          school_id: string
+          students_used: number
+          teachers_used: number
+        }[]
       }
       send_admin_notification: {
         Args: {
