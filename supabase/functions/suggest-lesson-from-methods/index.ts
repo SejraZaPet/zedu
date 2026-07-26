@@ -196,8 +196,22 @@ Pravidla:
                       additionalProperties: false,
                     },
                   },
+                  modelSituation: {
+                    type: "object",
+                    description: wantsModelSituation
+                      ? "Konkrétní modelová situace z praxe demonstrující princip a otázku/úkol pro žáka."
+                      : "Nepovinné – vynechej, pokud učitel nevyžádal zaměření myšlení.",
+                    properties: {
+                      scenario: { type: "string" },
+                      task: { type: "string" },
+                    },
+                    required: ["scenario", "task"],
+                    additionalProperties: false,
+                  },
                 },
-                required: ["title", "summary", "phases", "methodNotes"],
+                required: wantsModelSituation
+                  ? ["title", "summary", "phases", "methodNotes", "modelSituation"]
+                  : ["title", "summary", "phases", "methodNotes"],
                 additionalProperties: false,
               },
             },
