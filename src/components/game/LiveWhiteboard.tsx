@@ -136,6 +136,7 @@ const LiveWhiteboard = ({ sessionId, data, readOnly = false, onClose, overlay = 
 
   useEffect(() => {
     const cvs = canvasRef.current;
+    const bottom = bottomCanvasRef.current;
     const cont = containerRef.current;
     if (!cvs || !cont) return;
     const resize = () => {
@@ -144,12 +145,14 @@ const LiveWhiteboard = ({ sessionId, data, readOnly = false, onClose, overlay = 
       const logicalHeight = cont.clientHeight || Math.round(r.height);
       if (!logicalWidth || !logicalHeight) return;
       const dpr = window.devicePixelRatio || 1;
-      cvs.width = Math.max(1, Math.floor(logicalWidth * dpr));
-      cvs.height = Math.max(1, Math.floor(logicalHeight * dpr));
-      cvs.style.width = `${logicalWidth}px`;
-      cvs.style.height = `${logicalHeight}px`;
-      const ctx = cvs.getContext("2d");
-      ctx?.setTransform(dpr, 0, 0, dpr, 0, 0);
+      for (const c of [cvs, bottom]) {
+        if (!c) continue;
+        c.width = Math.max(1, Math.floor(logicalWidth * dpr));
+        c.height = Math.max(1, Math.floor(logicalHeight * dpr));
+        c.style.width = `${logicalWidth}px`;
+        c.style.height = `${logicalHeight}px`;
+        c.getContext("2d")?.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
       rerender();
     };
     resize();
@@ -160,15 +163,33 @@ const LiveWhiteboard = ({ sessionId, data, readOnly = false, onClose, overlay = 
 
   useEffect(() => {
     const cvs = canvasRef.current;
+    const bottom = bottomCanvasRef.current;
     const cont = containerRef.current;
     if (!cvs) return;
     const ctx = cvs.getContext("2d");
     if (!ctx) return;
     const w = cont?.clientWidth || cvs.clientWidth;
     const h = cont?.clientHeight || cvs.clientHeight;
-    ctx.clearRect(0, 0, w, h);
-    for (const s of strokes) renderStroke(ctx, s, w, h);
-    if (drawingRef.current) renderStroke(ctx, drawingRef.current, w, h);
+
+    if (localOnly) {
+      // Bottom: remote strokes only (never affected by student eraser)
+      const bctx = bottom?.getContext("2d");
+      if (bctx) {
+        bctx.clearRect(0, 0, w, h);
+        for (const s of remoteStrokes) renderStroke(bctx, s, w, h);
+      }
+      // Top: student's own local strokes + in-progress
+      ctx.clearRect(0, 0, w, h);
+      for (const s of pendingStrokes) renderStroke(ctx, s, w, h);
+      if (drawingRef.current) renderStroke(ctx, drawingRef.current, w, h);
+    } else {
+      // Original single-canvas behavior; keep bottom cleared
+      const bctx = bottom?.getContext("2d");
+      bctx?.clearRect(0, 0, w, h);
+      ctx.clearRect(0, 0, w, h);
+      for (const s of strokes) renderStroke(ctx, s, w, h);
+      if (drawingRef.current) renderStroke(ctx, drawingRef.current, w, h);
+    }
   });
 
   const persist = useCallback(async (next: WhiteboardData) => {
