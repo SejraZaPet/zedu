@@ -670,7 +670,7 @@ const Auth = () => {
               <Label htmlFor="regEmail">E-mail</Label>
               <Input id="regEmail" type="email" value={regEmail} onChange={(e) => setRegEmail(e.target.value)} required className="mt-1" />
             </div>
-            {role !== "rodic" && (
+            {role !== "rodic" && role !== "lektor" && (
               <div>
                 <Label htmlFor="school">Škola</Label>
                 <Input id="school" value={school} onChange={(e) => setSchool(e.target.value)} className="mt-1" placeholder="Název školy" />
