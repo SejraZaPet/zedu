@@ -165,6 +165,16 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
                     (session.settings as any)?.wallPublishedQuestion === currentIndex
                   }
                 />
+              ) : currentSlide.type === "activity" && currentSlide.activitySpec?.activityType === "wordcloud" ? (
+                <WordCloudView
+                  sessionId={sessionId}
+                  questionIndex={currentIndex}
+                  published={
+                    (session.settings as any)?.wordcloudPublished === true &&
+                    (session.settings as any)?.wordcloudPublishedQuestion === currentIndex
+                  }
+                  darkMode
+                />
               ) : currentSlide.type === "activity" && (
                 <div className="mt-8 bg-primary/10 border border-primary/20 rounded-2xl px-8 py-6 shrink-0">
                   <div className="flex items-center gap-4 text-primary text-2xl font-medium">
