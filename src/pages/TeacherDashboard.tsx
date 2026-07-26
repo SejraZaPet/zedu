@@ -17,7 +17,7 @@ import {
   GripVertical,
   Wand2,
   Award,
-} from "lucide-react";
+  BookMarked,
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import TodayWidget from "@/components/calendar/TodayWidget";
