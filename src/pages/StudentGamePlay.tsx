@@ -15,11 +15,11 @@ import PollActivity from "@/components/activities/PollActivity";
 import PollProjectorView from "@/components/activities/PollProjectorView";
 import QuizActivity from "@/components/activities/QuizActivity";
 import LiveWhiteboard, { WhiteboardData } from "@/components/game/LiveWhiteboard";
-import { Lock, Pencil } from "lucide-react";
+import { Lock, Pencil, Hand, ChevronLeft, ChevronRight } from "lucide-react";
 import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
 
 import { useAuth } from "@/contexts/AuthContext";
-import { findPlayerTeam } from "@/lib/game-types";
+import { findPlayerTeam, buildAnonymousLabelMap, type GamePlayer } from "@/lib/game-types";
 
 const StudentGamePlay = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -170,10 +170,40 @@ const StudentGamePlay = () => {
     return <GameLeaderboardFinal session={session} players={players} responses={responses} highlightPlayerId={playerId} />;
   }
 
-  const qi = session.current_question_index;
+  const pacingMode = (session.settings as any)?.pacingMode === "student" ? "student" : "teacher";
+  const anonymousAnswers = !!(session.settings as any)?.anonymousAnswers;
+  const anonymousLabelMap = anonymousAnswers ? buildAnonymousLabelMap(players as GamePlayer[]) : undefined;
+  const totalSlides = (session?.activity_data as any[])?.length ?? 0;
+  const teacherQi = session.current_question_index;
+  const studentQi = Math.max(0, Math.min(totalSlides - 1, myPlayer?.student_index ?? 0));
+  const qi = pacingMode === "student" ? studentQi : teacherQi;
   const whiteboard: WhiteboardData = ((session as any).whiteboard_data as WhiteboardData) ?? { strokes: [], visible: false };
   const currentSlideData = (session?.activity_data as any[])?.[qi];
   const isSlideFormat = currentSlideData && currentSlideData.projector !== undefined && !currentSlideData.question;
+
+  // Initialize student_index once when entering student-paced mode without a value
+  useEffect(() => {
+    if (pacingMode !== "student") return;
+    if (!joinToken) return;
+    if (myPlayer && (myPlayer.student_index === null || myPlayer.student_index === undefined)) {
+      supabase.rpc("set_student_index" as any, { _join_token: joinToken, _index: 0 });
+    }
+  }, [pacingMode, joinToken, myPlayer?.id, myPlayer?.student_index]);
+
+  const setMyStudentIndex = async (next: number) => {
+    if (!joinToken) return;
+    const bounded = Math.max(0, Math.min(totalSlides - 1, next));
+    await supabase.rpc("set_student_index" as any, { _join_token: joinToken, _index: bounded });
+  };
+
+  const toggleHand = async () => {
+    if (!joinToken) return;
+    await supabase.rpc("raise_hand" as any, {
+      _join_token: joinToken,
+      _raised: !myPlayer?.hand_raised,
+    });
+  };
+
 
   if (isSlideFormat) {
     const isActivity = currentSlideData.type === "activity" && currentSlideData.activitySpec;
@@ -184,10 +214,49 @@ const StudentGamePlay = () => {
           className="min-h-screen min-h-[100dvh] flex flex-col overflow-y-auto text-white"
           style={{ background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)" }}
         >
+          {/* Floating hand-raise toggle */}
+          <button
+            onClick={toggleHand}
+            className={`fixed top-3 right-3 z-40 rounded-full px-3 py-2 text-sm font-medium shadow-lg flex items-center gap-1.5 border ${
+              myPlayer?.hand_raised
+                ? "bg-amber-400 text-slate-900 border-amber-300"
+                : "bg-white/10 text-white border-white/20 backdrop-blur"
+            }`}
+            aria-pressed={!!myPlayer?.hand_raised}
+            aria-label={myPlayer?.hand_raised ? "Položit ruku" : "Zvednout ruku"}
+          >
+            <Hand className="w-4 h-4" />
+            {myPlayer?.hand_raised ? "Ruka nahoře" : "Zvednout ruku"}
+          </button>
+
           {/* Slide preview — stejný vizuál jako projekce, scalovaný do mobilní šířky */}
           <div className="px-3 pt-3">
             <SlideCanvas slide={currentSlideData} darkMode />
           </div>
+
+          {/* Vlastní tempo — navigace mezi slidy */}
+          {pacingMode === "student" && (
+            <div className="px-3 pt-3 flex items-center justify-between gap-2">
+              <button
+                onClick={() => setMyStudentIndex(studentQi - 1)}
+                disabled={studentQi <= 0}
+                className="flex-1 flex items-center justify-center gap-1 rounded-lg bg-white/10 hover:bg-white/15 disabled:opacity-40 border border-white/15 py-2 text-sm"
+              >
+                <ChevronLeft className="w-4 h-4" /> Předchozí
+              </button>
+              <span className="text-xs opacity-70 tabular-nums">
+                {studentQi + 1} / {totalSlides}
+              </span>
+              <button
+                onClick={() => setMyStudentIndex(studentQi + 1)}
+                disabled={studentQi >= totalSlides - 1}
+                className="flex-1 flex items-center justify-center gap-1 rounded-lg bg-white/10 hover:bg-white/15 disabled:opacity-40 border border-white/15 py-2 text-sm"
+              >
+                Další <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
 
           {/* Aktivita */}
           {isActivity && (
@@ -207,6 +276,7 @@ const StudentGamePlay = () => {
                         sessionId={sessionId || ""}
                         questionIndex={qi}
                         anonymous={liveSettings?.wallAnonymous ?? (currentSlideData as any).activitySpec?.anonymous ?? false}
+                        anonymousLabelMap={anonymousLabelMap}
                         darkMode={true}
                       />
                     </div>

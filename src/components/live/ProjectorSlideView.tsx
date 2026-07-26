@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { BookOpen } from "lucide-react";
 import WallProjectorView from "@/components/activities/WallProjectorView";
 import { SlideBody } from "@/components/admin/SlideCanvas";
+import { buildAnonymousLabelMap, type GamePlayer } from "@/lib/game-types";
 
 const STAGE_WIDTH = 1600;
 const STAGE_HEIGHT = 900;
@@ -25,6 +26,11 @@ interface Props {
  */
 const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, slides, players, gameCode, overlayContent, scrollTop }: Props) => {
   const progressPct = slides.length > 0 ? ((currentIndex + 1) / slides.length) * 100 : 0;
+  const anonymousAnswers = !!(session?.settings as any)?.anonymousAnswers;
+  const anonymousLabelMap = useMemo(
+    () => (anonymousAnswers ? buildAnonymousLabelMap(players as GamePlayer[]) : undefined),
+    [anonymousAnswers, players]
+  );
   const frameRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
@@ -152,6 +158,7 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
                   sessionId={sessionId}
                   questionIndex={currentIndex}
                   anonymous={currentSlide.activitySpec?.anonymous || false}
+                  anonymousLabelMap={anonymousLabelMap}
                   published={
                     (session.settings as any)?.wallPublished === true &&
                     (session.settings as any)?.wallPublishedQuestion === currentIndex

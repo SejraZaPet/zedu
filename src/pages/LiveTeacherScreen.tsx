@@ -238,6 +238,38 @@ const LiveTeacherScreen = () => {
             />
             <span className="whitespace-nowrap">Kreslení žáků do streamu</span>
           </label>
+          <label className="flex items-center gap-2 rounded-md border border-border bg-background px-2.5 py-1.5 text-xs">
+            <Switch
+              checked={!!settings?.anonymousAnswers}
+              onCheckedChange={async (checked) => {
+                if (!sessionId) return;
+                await supabase
+                  .from("game_sessions")
+                  .update({ settings: { ...(settings || {}), anonymousAnswers: checked } })
+                  .eq("id", sessionId);
+              }}
+              aria-label="Anonymní odpovědi na projektoru"
+            />
+            <span className="whitespace-nowrap">Anonymní odpovědi</span>
+          </label>
+          <label className="flex items-center gap-2 rounded-md border border-border bg-background px-2.5 py-1.5 text-xs">
+            <Switch
+              checked={settings?.pacingMode === "student"}
+              onCheckedChange={async (checked) => {
+                if (!sessionId) return;
+                await supabase
+                  .from("game_sessions")
+                  .update({
+                    settings: { ...(settings || {}), pacingMode: checked ? "student" : "teacher" },
+                  })
+                  .eq("id", sessionId);
+              }}
+              aria-label="Vlastní tempo žáka"
+            />
+            <span className="whitespace-nowrap">
+              Tempo: {settings?.pacingMode === "student" ? "vlastní tempo" : "učitelem"}
+            </span>
+          </label>
           <Button
             size="sm"
             variant="outline"
@@ -296,6 +328,64 @@ const LiveTeacherScreen = () => {
                 <p className="text-xs text-muted-foreground">odpovědí</p>
               </div>
             </div>
+
+            {/* Zvednuté ruce */}
+            {(() => {
+              const raised = players
+                .filter((p: any) => p.hand_raised)
+                .sort((a: any, b: any) =>
+                  (a.hand_raised_at || "").localeCompare(b.hand_raised_at || "")
+                );
+              if (raised.length === 0) return null;
+              return (
+                <div className="border border-amber-300/60 bg-amber-50 dark:bg-amber-950/30 rounded-lg p-3">
+                  <p className="text-sm font-semibold mb-2 flex items-center gap-1.5">
+                    ✋ Zvednuté ruce ({raised.length})
+                  </p>
+                  <ul className="space-y-1">
+                    {raised.map((p: any, i: number) => (
+                      <li key={p.id} className="flex items-center justify-between gap-2 text-sm">
+                        <span className="truncate">
+                          <span className="text-muted-foreground mr-1">{i + 1}.</span>
+                          {p.nickname}
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 px-2 text-xs"
+                          onClick={async () => {
+                            await supabase.rpc("clear_player_hand" as any, { _player_id: p.id });
+                          }}
+                        >
+                          Odbavit
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })()}
+
+            {/* Průběh třídy při vlastním tempu žáka */}
+            {settings?.pacingMode === "student" && slides.length > 0 && (() => {
+              const indices = players
+                .map((p: any) => (typeof p.student_index === "number" ? p.student_index : 0))
+                .filter((n: number) => Number.isFinite(n));
+              if (indices.length === 0) return null;
+              const avg = indices.reduce((a: number, b: number) => a + b, 0) / indices.length;
+              const min = Math.min(...indices);
+              const max = Math.max(...indices);
+              return (
+                <div className="border border-border rounded-lg p-3">
+                  <p className="text-sm font-semibold mb-1">Postup třídy (vlastní tempo)</p>
+                  <p className="text-xs text-muted-foreground">
+                    Průměrně: {Math.round(avg) + 1}/{slides.length} · rozsah {min + 1}–{max + 1}
+                  </p>
+                </div>
+              );
+            })()}
+
+
 
             {/* Per-aktivita breakdown */}
             {slides.map((slide: any, idx) => {

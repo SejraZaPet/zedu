@@ -5,6 +5,7 @@ interface Response {
   id: string;
   text: string;
   nickname?: string;
+  player_id: string;
 }
 
 interface Props {
@@ -12,10 +13,14 @@ interface Props {
   questionIndex: number;
   anonymous: boolean;
   darkMode?: boolean;
+  /** When provided, replaces nicknames with stable "Žák N" labels. */
+  anonymousLabelMap?: Record<string, string>;
 }
 
-const WallResponsesList = ({ sessionId, questionIndex, anonymous, darkMode = false }: Props) => {
+const WallResponsesList = ({ sessionId, questionIndex, anonymous, darkMode = false, anonymousLabelMap }: Props) => {
   const [responses, setResponses] = useState<Response[]>([]);
+  const sessionAnonymous = !!anonymousLabelMap;
+  const effectiveAnonymous = anonymous || sessionAnonymous;
 
   const load = useCallback(async () => {
     if (!sessionId) return;
@@ -31,12 +36,13 @@ const WallResponsesList = ({ sessionId, questionIndex, anonymous, darkMode = fal
           .map((r: any) => ({
             id: r.id,
             text: (r.answer as any)?.text || "",
-            nickname: anonymous ? undefined : r.game_players?.nickname,
+            nickname: effectiveAnonymous ? undefined : r.game_players?.nickname,
+            player_id: r.player_id,
           }))
           .filter((r) => r.text)
       );
     }
-  }, [sessionId, questionIndex, anonymous]);
+  }, [sessionId, questionIndex, effectiveAnonymous]);
 
   useEffect(() => {
     load();
@@ -117,8 +123,14 @@ const WallResponsesList = ({ sessionId, questionIndex, anonymous, darkMode = fal
               >
                 {r.text}
               </p>
-              {r.nickname && (
-                <p style={{ fontSize: darkMode ? "14px" : "12px", opacity: 0.7, marginTop: "4px" }}>— {r.nickname}</p>
+              {sessionAnonymous ? (
+                <p style={{ fontSize: darkMode ? "14px" : "12px", opacity: 0.7, marginTop: "4px" }}>
+                  — {anonymousLabelMap?.[r.player_id] ?? "Žák"}
+                </p>
+              ) : (
+                r.nickname && (
+                  <p style={{ fontSize: darkMode ? "14px" : "12px", opacity: 0.7, marginTop: "4px" }}>— {r.nickname}</p>
+                )
               )}
             </div>
           );

@@ -31,6 +31,8 @@ export interface GameSettings {
   theme?: string;
   visualTheme?: "default" | "castle" | "space" | "pirate";
   soundsEnabled?: boolean;
+  anonymousAnswers?: boolean;
+  pacingMode?: "teacher" | "student";
 }
 
 export const TEAM_COLORS = [
@@ -83,6 +85,24 @@ export interface GamePlayer {
   nickname: string;
   total_score: number;
   created_at: string;
+  hand_raised?: boolean;
+  hand_raised_at?: string | null;
+  student_index?: number | null;
+}
+
+/**
+ * Builds a stable "Žák N" label map based on player join order (created_at asc).
+ * Used when session.settings.anonymousAnswers is true on projector/student views.
+ */
+export function buildAnonymousLabelMap(players: GamePlayer[]): Record<string, string> {
+  const sorted = [...players].sort((a, b) =>
+    (a.created_at || "").localeCompare(b.created_at || "")
+  );
+  const map: Record<string, string> = {};
+  sorted.forEach((p, i) => {
+    map[p.id] = `Žák ${i + 1}`;
+  });
+  return map;
 }
 
 export interface GameSession {
