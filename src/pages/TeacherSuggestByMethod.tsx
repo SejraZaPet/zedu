@@ -148,6 +148,28 @@ export default function TeacherSuggestByMethod() {
     })();
   }, [user]);
 
+  useEffect(() => {
+    if (!user || !subject.trim()) {
+      setCurriculumPlan(null);
+      return;
+    }
+    const s = subject.trim();
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("teacher_curriculum_plans")
+        .select("subject, content, file_name")
+        .eq("teacher_id", user.id)
+        .ilike("subject", s)
+        .maybeSingle();
+      if (!cancelled) setCurriculumPlan((data as any) ?? null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user, subject]);
+
+
   const selectedMethods = useMemo(
     () => methods.filter((m) => selectedMethodIds.includes(m.id)),
     [methods, selectedMethodIds],
