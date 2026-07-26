@@ -214,10 +214,49 @@ const StudentGamePlay = () => {
           className="min-h-screen min-h-[100dvh] flex flex-col overflow-y-auto text-white"
           style={{ background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)" }}
         >
+          {/* Floating hand-raise toggle */}
+          <button
+            onClick={toggleHand}
+            className={`fixed top-3 right-3 z-40 rounded-full px-3 py-2 text-sm font-medium shadow-lg flex items-center gap-1.5 border ${
+              myPlayer?.hand_raised
+                ? "bg-amber-400 text-slate-900 border-amber-300"
+                : "bg-white/10 text-white border-white/20 backdrop-blur"
+            }`}
+            aria-pressed={!!myPlayer?.hand_raised}
+            aria-label={myPlayer?.hand_raised ? "Položit ruku" : "Zvednout ruku"}
+          >
+            <Hand className="w-4 h-4" />
+            {myPlayer?.hand_raised ? "Ruka nahoře" : "Zvednout ruku"}
+          </button>
+
           {/* Slide preview — stejný vizuál jako projekce, scalovaný do mobilní šířky */}
           <div className="px-3 pt-3">
             <SlideCanvas slide={currentSlideData} darkMode />
           </div>
+
+          {/* Vlastní tempo — navigace mezi slidy */}
+          {pacingMode === "student" && (
+            <div className="px-3 pt-3 flex items-center justify-between gap-2">
+              <button
+                onClick={() => setMyStudentIndex(studentQi - 1)}
+                disabled={studentQi <= 0}
+                className="flex-1 flex items-center justify-center gap-1 rounded-lg bg-white/10 hover:bg-white/15 disabled:opacity-40 border border-white/15 py-2 text-sm"
+              >
+                <ChevronLeft className="w-4 h-4" /> Předchozí
+              </button>
+              <span className="text-xs opacity-70 tabular-nums">
+                {studentQi + 1} / {totalSlides}
+              </span>
+              <button
+                onClick={() => setMyStudentIndex(studentQi + 1)}
+                disabled={studentQi >= totalSlides - 1}
+                className="flex-1 flex items-center justify-center gap-1 rounded-lg bg-white/10 hover:bg-white/15 disabled:opacity-40 border border-white/15 py-2 text-sm"
+              >
+                Další <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
 
           {/* Aktivita */}
           {isActivity && (
