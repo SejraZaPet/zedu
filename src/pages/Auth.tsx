@@ -5,12 +5,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Lock, UserPlus, LogIn, GraduationCap, BookOpenText, KeyRound, CheckCircle2, Eye, EyeOff, Users, Hash } from "lucide-react";
+import { Lock, UserPlus, LogIn, GraduationCap, BookOpenText, KeyRound, CheckCircle2, Eye, EyeOff, Users, Hash, Presentation } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useSchoolBranding } from "@/hooks/useSchoolBranding";
 
-type Role = "student" | "teacher" | "rodic";
+type Role = "student" | "teacher" | "lektor" | "rodic";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -64,7 +64,7 @@ const Auth = () => {
   useEffect(() => {
     const r = searchParams.get("role");
     const skola = searchParams.get("skola");
-    if (r === "teacher" || r === "student" || r === "rodic") {
+    if (r === "teacher" || r === "student" || r === "rodic" || r === "lektor") {
       setRole(r);
       setMode("register");
     } else if (skola) {
@@ -263,8 +263,12 @@ const Auth = () => {
     const metadata: Record<string, unknown> = {
       first_name: firstName,
       last_name: lastName,
-      school: role === "rodic" ? "" : school,
-      role_label: role === "rodic" ? "rodic" : role === "teacher" ? "teacher" : "user",
+      school: role === "rodic" || role === "lektor" ? "" : school,
+      role_label:
+        role === "rodic" ? "rodic"
+        : role === "teacher" ? "teacher"
+        : role === "lektor" ? "lektor"
+        : "user",
       status: "pending",
     };
 
@@ -596,9 +600,10 @@ const Auth = () => {
                 Podle volby přizpůsobíme registrační formulář.
               </p>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {([
-                { value: "teacher" as const, icon: BookOpenText, title: "Učitel", desc: "Tvořte lekce a sledujte třídy." },
+                { value: "teacher" as const, icon: BookOpenText, title: "Učitel", desc: "Ve škole se třídou." },
+                { value: "lektor" as const, icon: Presentation, title: "Lektor", desc: "Samostatná tutorská výuka." },
                 { value: "student" as const, icon: GraduationCap, title: "Žák", desc: "Učte se a plňte úkoly." },
                 { value: "rodic" as const, icon: Users, title: "Rodič", desc: "Sledujte pokrok dítěte." },
               ]).map((opt) => (
@@ -625,12 +630,19 @@ const Auth = () => {
             <div className="flex items-center justify-between rounded-xl border border-border bg-muted/30 px-4 py-3">
               <div className="flex items-center gap-3 min-w-0">
                 {role === "teacher" && <BookOpenText className="w-5 h-5 text-primary shrink-0" />}
+                {role === "lektor" && <Presentation className="w-5 h-5 text-primary shrink-0" />}
                 {role === "student" && <GraduationCap className="w-5 h-5 text-primary shrink-0" />}
                 {role === "rodic" && <Users className="w-5 h-5 text-primary shrink-0" />}
                 <div className="min-w-0">
                   <p className="text-xs text-muted-foreground">Typ účtu</p>
                   <p className="text-sm font-semibold truncate">
-                    {role === "teacher" ? "Učitel / Lektor" : role === "student" ? "Žák" : "Rodič"}
+                    {role === "teacher"
+                      ? "Učitel"
+                      : role === "lektor"
+                      ? "Lektor"
+                      : role === "student"
+                      ? "Žák"
+                      : "Rodič"}
                   </p>
                 </div>
               </div>
@@ -658,7 +670,7 @@ const Auth = () => {
               <Label htmlFor="regEmail">E-mail</Label>
               <Input id="regEmail" type="email" value={regEmail} onChange={(e) => setRegEmail(e.target.value)} required className="mt-1" />
             </div>
-            {role !== "rodic" && (
+            {role !== "rodic" && role !== "lektor" && (
               <div>
                 <Label htmlFor="school">Škola</Label>
                 <Input id="school" value={school} onChange={(e) => setSchool(e.target.value)} className="mt-1" placeholder="Název školy" />

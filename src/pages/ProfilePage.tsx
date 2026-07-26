@@ -534,6 +534,32 @@ const ProfilePage = () => {
           );
         })()}
 
+        {/* Lektor package info */}
+        {role === "lektor" && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-primary" />
+                Balíček Lektor
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Máte účet <strong>Lektor</strong> pro samostatnou tutorskou výuku mimo školu. Můžete vytvářet vlastní třídy/skupiny žáků, lekce, učebnice, pracovní listy a spouštět živé hry stejně jako učitelé — bez napojení na školu.
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Podrobnosti o limitech a cenách jednotlivých balíčků najdete v přehledu licencí.
+              </p>
+              <Button variant="outline" size="sm" onClick={() => navigate("/licence")}>
+                Zobrazit balíčky a ceny
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+
+
+
 
 
 
