@@ -65,6 +65,7 @@ const DEFAULT_ORDER = [
   "worksheets",
   "lesson-plans",
   "suggest-method",
+  "svp",
   "academy",
   "todos",
   "notifications",
