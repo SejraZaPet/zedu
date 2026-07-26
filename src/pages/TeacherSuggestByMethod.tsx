@@ -662,7 +662,26 @@ export default function TeacherSuggestByMethod() {
               <p className="text-muted-foreground mt-2">{suggestion.summary}</p>
             </CardHeader>
             <CardContent className="space-y-6">
+              {suggestion.modelSituation && (suggestion.modelSituation.scenario || suggestion.modelSituation.task) && (
+                <div className="rounded-xl border-2 border-primary/40 bg-gradient-to-br from-primary/5 to-secondary/5 p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Lightbulb className="w-5 h-5 text-primary" />
+                    <h3 className="font-semibold">Modelová situace</h3>
+                    <Badge variant="secondary" className="text-xs">ZedAI</Badge>
+                  </div>
+                  {suggestion.modelSituation.scenario && (
+                    <p className="text-sm mb-2 whitespace-pre-line">{suggestion.modelSituation.scenario}</p>
+                  )}
+                  {suggestion.modelSituation.task && (
+                    <div className="text-sm">
+                      <span className="font-medium">Úkol / otázka: </span>
+                      <span className="whitespace-pre-line">{suggestion.modelSituation.task}</span>
+                    </div>
+                  )}
+                </div>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
                 {Object.entries(PHASE_LABELS).map(([key, label]) => {
                   const p = suggestion.phases?.[key];
                   if (!p) return null;
