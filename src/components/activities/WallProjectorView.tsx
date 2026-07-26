@@ -5,6 +5,7 @@ interface Response {
   id: string;
   text: string;
   nickname?: string;
+  player_id: string;
   created_at: string;
 }
 
@@ -13,10 +14,14 @@ interface Props {
   questionIndex: number;
   anonymous: boolean;
   published?: boolean;
+  /** When provided, replaces nicknames with stable "Žák N" labels (session-wide anonymous mode). */
+  anonymousLabelMap?: Record<string, string>;
 }
 
-const WallProjectorView = ({ sessionId, questionIndex, anonymous, published = false }: Props) => {
+const WallProjectorView = ({ sessionId, questionIndex, anonymous, published = false, anonymousLabelMap }: Props) => {
   const [responses, setResponses] = useState<Response[]>([]);
+  const sessionAnonymous = !!anonymousLabelMap;
+  const effectiveAnonymous = anonymous || sessionAnonymous;
 
   const loadResponses = useCallback(async () => {
     const { data } = await supabase
@@ -31,13 +36,14 @@ const WallProjectorView = ({ sessionId, questionIndex, anonymous, published = fa
           .map((r: any) => ({
             id: r.id,
             text: (r.answer as any)?.text || "",
-            nickname: anonymous ? undefined : r.game_players?.nickname,
+            nickname: effectiveAnonymous ? undefined : r.game_players?.nickname,
+            player_id: r.player_id,
             created_at: r.created_at,
           }))
           .filter((r) => r.text)
       );
     }
-  }, [sessionId, questionIndex, anonymous]);
+  }, [sessionId, questionIndex, effectiveAnonymous]);
 
   useEffect(() => {
     loadResponses();
@@ -120,8 +126,14 @@ const WallProjectorView = ({ sessionId, questionIndex, anonymous, published = fa
                 }}
               >
                 <p style={{ fontSize: "20px", fontWeight: 500, lineHeight: 1.4 }}>{r.text}</p>
-                {r.nickname && (
-                  <p style={{ fontSize: "14px", opacity: 0.7, marginTop: "8px" }}>— {r.nickname}</p>
+                {sessionAnonymous ? (
+                  <p style={{ fontSize: "14px", opacity: 0.7, marginTop: "8px" }}>
+                    — {anonymousLabelMap?.[r.player_id] ?? "Žák"}
+                  </p>
+                ) : (
+                  r.nickname && (
+                    <p style={{ fontSize: "14px", opacity: 0.7, marginTop: "8px" }}>— {r.nickname}</p>
+                  )
                 )}
               </div>
             );
