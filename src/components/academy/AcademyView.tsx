@@ -11,7 +11,7 @@ import {
   ArrowLeft, GraduationCap, CheckCircle2, Circle, Award, Play, Download, FileBadge2,
 } from "lucide-react";
 
-type AudienceScope = "teacher" | "student";
+type AudienceScope = "teacher" | "student" | "parent";
 
 interface Course {
   id: string;
@@ -86,7 +86,7 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
   const [certificates, setCertificates] = useState<CertificateRow[]>([]);
   const [certLoading, setCertLoading] = useState(false);
 
-  const audienceValues = audience === "teacher" ? ["teacher", "both"] : ["student", "both"];
+  const audienceValues = audience === "teacher" ? ["teacher", "both"] : audience === "parent" ? ["parent", "both"] : ["student", "both"];
 
   const fetchCourses = useCallback(async () => {
     setLoading(true);
@@ -261,7 +261,7 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
             </div>
             <div>
               <h1 className="font-heading text-2xl font-semibold">{title || "ZEdu Akademie"}</h1>
-              <p className="text-sm text-muted-foreground">{subtitle || (audience === "teacher" ? "Kurzy a webináře pro učitele." : "Kurzy a doplňkové vzdělávání pro žáky.")}</p>
+              <p className="text-sm text-muted-foreground">{subtitle || (audience === "teacher" ? "Kurzy a webináře pro učitele." : audience === "parent" ? "Kurzy a rady pro rodiče." : "Kurzy a doplňkové vzdělávání pro žáky.")}</p>
             </div>
           </div>
 

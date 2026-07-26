@@ -78,6 +78,7 @@ import FollowedCreators from "./pages/FollowedCreators";
 import AvatarEditor from "./pages/AvatarEditor";
 import TeacherAcademy from "./pages/TeacherAcademy";
 import StudentAcademy from "./pages/StudentAcademy";
+import ParentAcademy from "./pages/ParentAcademy";
 import ViewAsBanner from "./components/ViewAsBanner";
 
 
@@ -175,6 +176,7 @@ const App = () => (
             <Route path="/avatar" element={<ProtectedRoute><AvatarEditor /></ProtectedRoute>} />
             <Route path="/ucitel/akademie" element={<ProtectedRoute><TeacherAcademy /></ProtectedRoute>} />
             <Route path="/student/akademie" element={<ProtectedRoute><StudentAcademy /></ProtectedRoute>} />
+            <Route path="/rodic/akademie" element={<ProtectedRoute><ParentAcademy /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
