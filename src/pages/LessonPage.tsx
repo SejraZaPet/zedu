@@ -8,9 +8,55 @@ import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import type { Block } from "@/lib/textbook-config";
 import { LessonBlock } from "@/components/LessonBlockRenderer";
+import ReadAloudButton from "@/components/a11y/ReadAloudButton";
 import { Button } from "@/components/ui/button";
 import LessonEditorSheet from "@/components/LessonEditorSheet";
 import { useActivityTracking } from "@/hooks/useActivityTracking";
+
+// Extract plain readable text from lesson blocks for TTS.
+const stripHtmlToText = (html: string): string => {
+  if (typeof document === "undefined") return html;
+  const tmp = document.createElement("div");
+  tmp.innerHTML = html || "";
+  return (tmp.textContent || tmp.innerText || "").replace(/\s+/g, " ").trim();
+};
+
+const buildLessonReadableText = (title: string, blocks: Block[]): string => {
+  const parts: string[] = [title];
+  for (const b of blocks) {
+    if (b.visible === false) continue;
+    const p: any = b.props || {};
+    switch (b.type) {
+      case "heading":
+        parts.push(stripHtmlToText(p.text || ""));
+        break;
+      case "paragraph":
+      case "callout":
+      case "summary":
+        parts.push(stripHtmlToText(p.text || ""));
+        break;
+      case "bullet_list":
+        if (p.html) parts.push(stripHtmlToText(p.html));
+        else if (Array.isArray(p.items)) parts.push(p.items.join(". "));
+        break;
+      case "quote":
+        if (p.text) parts.push(`Citát: ${p.text}${p.author ? `, ${p.author}` : ""}`);
+        break;
+      case "two_column":
+        parts.push(stripHtmlToText(p.left || ""));
+        parts.push(stripHtmlToText(p.right || ""));
+        break;
+      case "image":
+      case "gallery":
+        if (p.caption) parts.push(p.caption);
+        break;
+      default:
+        break;
+    }
+  }
+  return parts.filter(Boolean).join(". ");
+};
+
 
 const LessonPage = () => {
   const { subjectId, grade, topicSlug, lessonSlug } = useParams<{
@@ -153,9 +199,16 @@ const LessonPage = () => {
                   className="w-full rounded-lg mb-8 object-cover max-h-80"
                 />
               )}
-              <h1 className="font-heading text-4xl md:text-5xl font-bold mb-10 text-foreground">
-                {lesson.title}
-              </h1>
+              <div className="flex items-start justify-between gap-3 mb-10">
+                <h1 className="font-heading text-4xl md:text-5xl font-bold text-foreground">
+                  {lesson.title}
+                </h1>
+                <ReadAloudButton
+                  text={buildLessonReadableText(lesson.title, blocks)}
+                  label="Přečíst"
+                  className="mt-3 flex-shrink-0"
+                />
+              </div>
 
               <div className="space-y-6">
                 {blocks.filter((b) => b.visible !== false).map((block, index) => (

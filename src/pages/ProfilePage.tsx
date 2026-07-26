@@ -15,6 +15,7 @@ import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
 import PushNotificationsCard from "@/components/profile/PushNotificationsCard";
+import { useAccessibilitySettings } from "@/hooks/useAccessibilitySettings";
 
 const statusLabels: Record<string, string> = {
   pending: "Čeká na schválení",
@@ -733,6 +734,9 @@ const ProfilePage = () => {
 
         <PushNotificationsCard />
 
+        <AccessibilityCard />
+
+
         {/* Password change */}
         <Card>
           <CardHeader>
@@ -769,6 +773,63 @@ const ProfilePage = () => {
         </Card>
       </div>
     </div>
+  );
+};
+
+const AccessibilityCard = () => {
+  const { toast } = useToast();
+  const { settings, save } = useAccessibilitySettings();
+  const [saving, setSaving] = useState(false);
+
+  const update = async (patch: Partial<typeof settings>) => {
+    const next = { ...settings, ...patch };
+    setSaving(true);
+    const { error } = await save(next);
+    setSaving(false);
+    if (error) {
+      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Přístupnost</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-xs text-muted-foreground">
+          Nastavení pro pohodlnější čtení textu v lekcích, pracovních listech a úkolech.
+        </p>
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <Label htmlFor="a11y-dyslexia" className="text-sm">Dyslexii přívětivé písmo</Label>
+            <p className="text-xs text-muted-foreground">
+              Přepne obsahový text na písmo <span className="font-medium">Lexend</span>, které pomáhá s plynulostí čtení.
+            </p>
+          </div>
+          <Switch
+            id="a11y-dyslexia"
+            checked={!!settings.dyslexiaFont}
+            disabled={saving}
+            onCheckedChange={(v) => update({ dyslexiaFont: v })}
+          />
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <Label htmlFor="a11y-line-height" className="text-sm">Větší řádkování textu</Label>
+            <p className="text-xs text-muted-foreground">
+              Zvětší rozestupy mezi řádky pro pohodlnější čtení delších textů.
+            </p>
+          </div>
+          <Switch
+            id="a11y-line-height"
+            checked={!!settings.largerLineHeight}
+            disabled={saving}
+            onCheckedChange={(v) => update({ largerLineHeight: v })}
+          />
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 

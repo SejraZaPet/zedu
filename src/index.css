@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&family=Lexend:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -185,3 +185,37 @@
 }
 
 .print-show { display: none; }
+
+/* Accessibility: dyslexia-friendly font & larger line height.
+   Applied via body classes toggled from user profile settings.
+   Scoped to main content, not global UI chrome. */
+body.a11y-dyslexia-font main,
+body.a11y-dyslexia-font main h1,
+body.a11y-dyslexia-font main h2,
+body.a11y-dyslexia-font main h3,
+body.a11y-dyslexia-font main h4,
+body.a11y-dyslexia-font main h5,
+body.a11y-dyslexia-font main h6,
+body.a11y-dyslexia-font main p,
+body.a11y-dyslexia-font main li,
+body.a11y-dyslexia-font main article,
+body.a11y-dyslexia-font main label,
+body.a11y-dyslexia-font main span:not(.no-a11y-font) {
+  font-family: 'Lexend', system-ui, sans-serif !important;
+  letter-spacing: 0.01em;
+}
+
+body.a11y-line-height main p,
+body.a11y-line-height main li,
+body.a11y-line-height main article,
+body.a11y-line-height main .prose,
+body.a11y-line-height main .whitespace-pre-wrap {
+  line-height: 1.9 !important;
+}
+
+.read-aloud-word.is-active {
+  background: hsl(var(--primary) / 0.25);
+  border-radius: 4px;
+  padding: 0 2px;
+  box-shadow: 0 0 0 1px hsl(var(--primary) / 0.4);
+}

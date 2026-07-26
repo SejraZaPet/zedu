@@ -13,6 +13,7 @@ import WorksheetPlayer from "@/components/WorksheetPlayer";
 import AttachmentsUploader from "@/components/assignments/AttachmentsUploader";
 import type { WorksheetSpec } from "@/lib/worksheet-spec";
 import { useLockdownMode } from "@/hooks/useLockdownMode";
+import ReadAloudButton from "@/components/a11y/ReadAloudButton";
 
 interface AssignmentData {
   id: string;
@@ -298,7 +299,13 @@ const StudentAssignmentPlayer = () => {
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <div className="flex-1">
-            <h1 className="text-lg font-bold">{assignment.title}</h1>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <h1 className="text-lg font-bold">{assignment.title}</h1>
+              <ReadAloudButton
+                text={`${assignment.title}. ${assignment.description || ""}`}
+                size="icon"
+              />
+            </div>
             <div className="flex items-center gap-3 text-xs text-muted-foreground">
               {attempt && <span>Pokus {attempt.attempt_number}/{assignment.max_attempts}</span>}
               {assignment.deadline && (
@@ -374,7 +381,14 @@ const StudentAssignmentPlayer = () => {
           <Card>
             <CardContent className="p-4 space-y-4">
               {assignment.description && (
-                <div className="text-sm whitespace-pre-wrap">{assignment.description}</div>
+                <div className="space-y-2">
+                  <ReadAloudButton
+                    text={assignment.description}
+                    label="Přečíst zadání"
+                    showText
+                    textClassName="text-sm"
+                  />
+                </div>
               )}
               <div className="flex justify-end">
                 <Button
