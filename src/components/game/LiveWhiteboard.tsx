@@ -33,6 +33,11 @@ interface Props {
   /** when true, renders a transparent overlay covering its parent */
   overlay?: boolean;
   className?: string;
+  /** when true, strokes are kept only in local state (never written to DB).
+   *  Remote strokes from `data.strokes` are still rendered underneath. */
+  localOnly?: boolean;
+  /** when true, hides advanced tools (text, shapes, undo/redo). Pen + eraser + colors + widths + clear only. */
+  simplified?: boolean;
 }
 
 const drawArrow = (ctx: CanvasRenderingContext2D, x1: number, y1: number, x2: number, y2: number) => {
@@ -97,7 +102,7 @@ const renderStroke = (ctx: CanvasRenderingContext2D, s: Stroke, w: number, h: nu
   ctx.restore();
 };
 
-const LiveWhiteboard = ({ sessionId, data, readOnly = false, onClose, overlay = true, className }: Props) => {
+const LiveWhiteboard = ({ sessionId, data, readOnly = false, onClose, overlay = true, className, localOnly = false, simplified = false }: Props) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const drawingRef = useRef<Stroke | null>(null);
@@ -114,6 +119,10 @@ const LiveWhiteboard = ({ sessionId, data, readOnly = false, onClose, overlay = 
 
   const remoteStrokes = data.strokes ?? [];
   const strokes = useMemo(() => {
+    if (localOnly) {
+      // In local-only mode, keep pending strokes forever; render remote UNDER local
+      return [...remoteStrokes, ...pendingStrokes];
+    }
     if (pendingStrokes.length === 0) return remoteStrokes;
     const remoteIds = new Set(remoteStrokes.map((s) => s.id));
     const pendingFiltered = pendingStrokes.filter((s) => !remoteIds.has(s.id));
@@ -122,7 +131,7 @@ const LiveWhiteboard = ({ sessionId, data, readOnly = false, onClose, overlay = 
       queueMicrotask(() => setPendingStrokes(pendingFiltered));
     }
     return [...remoteStrokes, ...pendingFiltered];
-  }, [remoteStrokes, pendingStrokes]);
+  }, [remoteStrokes, pendingStrokes, localOnly]);
 
   useEffect(() => {
     const cvs = canvasRef.current;
@@ -175,8 +184,14 @@ const LiveWhiteboard = ({ sessionId, data, readOnly = false, onClose, overlay = 
   }, [sessionId]);
 
   const commitStrokes = useCallback((next: Stroke[]) => {
+    if (localOnly) {
+      // Keep only strokes not in remote (i.e. the local ones)
+      const remoteIds = new Set(remoteStrokes.map((s) => s.id));
+      setPendingStrokes(next.filter((s) => !remoteIds.has(s.id)));
+      return;
+    }
     persist({ strokes: next, visible: data.visible });
-  }, [persist, data.visible]);
+  }, [persist, data.visible, localOnly, remoteStrokes]);
 
   const getRelative = (e: PointerEvent | React.PointerEvent): [number, number] => {
     const cont = containerRef.current!;
@@ -244,21 +259,39 @@ const LiveWhiteboard = ({ sessionId, data, readOnly = false, onClose, overlay = 
   };
 
   const undo = useCallback(() => {
-    if (readOnly || strokes.length === 0) return;
+    if (readOnly) return;
+    if (localOnly) {
+      if (pendingStrokes.length === 0) return;
+      const last = pendingStrokes[pendingStrokes.length - 1];
+      setRedoStack((r) => [...r, last]);
+      setPendingStrokes((p) => p.slice(0, -1));
+      return;
+    }
+    if (strokes.length === 0) return;
     const last = strokes[strokes.length - 1];
     setRedoStack((r) => [...r, last]);
     commitStrokes(strokes.slice(0, -1));
-  }, [readOnly, strokes, commitStrokes]);
+  }, [readOnly, strokes, commitStrokes, localOnly, pendingStrokes]);
 
   const redo = useCallback(() => {
     if (readOnly || redoStack.length === 0) return;
     const last = redoStack[redoStack.length - 1];
     setRedoStack((r) => r.slice(0, -1));
+    if (localOnly) {
+      setPendingStrokes((p) => [...p, last]);
+      return;
+    }
     commitStrokes([...strokes, last]);
-  }, [readOnly, redoStack, strokes, commitStrokes]);
+  }, [readOnly, redoStack, strokes, commitStrokes, localOnly]);
 
   const clearAll = () => {
     if (readOnly) return;
+    if (localOnly) {
+      if (pendingStrokes.length && !window.confirm("Vymazat svoje kresby?")) return;
+      setRedoStack([]);
+      setPendingStrokes([]);
+      return;
+    }
     if (strokes.length && !window.confirm("Vymazat celou tabuli?")) return;
     setRedoStack([]);
     commitStrokes([]);
@@ -277,15 +310,18 @@ const LiveWhiteboard = ({ sessionId, data, readOnly = false, onClose, overlay = 
     return () => window.removeEventListener("keydown", onKey);
   }, [undo, redo, readOnly]);
 
-  const tools: { id: WhiteboardTool; icon: any; label: string }[] = useMemo(() => [
-    { id: "pen", icon: Pencil, label: "Tužka" },
-    { id: "highlight", icon: Highlighter, label: "Zvýrazňovač" },
-    { id: "eraser", icon: Eraser, label: "Guma" },
-    { id: "text", icon: TypeIcon, label: "Text" },
-    { id: "rect", icon: Square, label: "Obdélník" },
-    { id: "circle", icon: CircleIcon, label: "Kruh" },
-    { id: "arrow", icon: ArrowUpRight, label: "Šipka" },
-  ], []);
+  const tools: { id: WhiteboardTool; icon: any; label: string }[] = useMemo(() => {
+    const all = [
+      { id: "pen" as WhiteboardTool, icon: Pencil, label: "Tužka" },
+      { id: "highlight" as WhiteboardTool, icon: Highlighter, label: "Zvýrazňovač" },
+      { id: "eraser" as WhiteboardTool, icon: Eraser, label: "Guma" },
+      { id: "text" as WhiteboardTool, icon: TypeIcon, label: "Text" },
+      { id: "rect" as WhiteboardTool, icon: Square, label: "Obdélník" },
+      { id: "circle" as WhiteboardTool, icon: CircleIcon, label: "Kruh" },
+      { id: "arrow" as WhiteboardTool, icon: ArrowUpRight, label: "Šipka" },
+    ];
+    return simplified ? all.filter((t) => t.id === "pen" || t.id === "eraser") : all;
+  }, [simplified]);
 
   return (
     <div
@@ -337,12 +373,16 @@ const LiveWhiteboard = ({ sessionId, data, readOnly = false, onClose, overlay = 
 
           <div className="h-6 w-px bg-border mx-1" />
 
-          <Button size="sm" variant="ghost" onClick={undo} title="Zpět (Ctrl+Z)" className="h-8 w-8 p-0">
-            <Undo2 className="w-4 h-4" />
-          </Button>
-          <Button size="sm" variant="ghost" onClick={redo} title="Vpřed (Ctrl+Y)" className="h-8 w-8 p-0">
-            <Redo2 className="w-4 h-4" />
-          </Button>
+          {!simplified && (
+            <>
+              <Button size="sm" variant="ghost" onClick={undo} title="Zpět (Ctrl+Z)" className="h-8 w-8 p-0">
+                <Undo2 className="w-4 h-4" />
+              </Button>
+              <Button size="sm" variant="ghost" onClick={redo} title="Vpřed (Ctrl+Y)" className="h-8 w-8 p-0">
+                <Redo2 className="w-4 h-4" />
+              </Button>
+            </>
+          )}
           <Button size="sm" variant="ghost" onClick={clearAll} title="Vymazat vše" className="h-8 w-8 p-0 text-destructive">
             <Trash2 className="w-4 h-4" />
           </Button>
