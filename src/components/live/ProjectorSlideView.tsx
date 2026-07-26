@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { BookOpen } from "lucide-react";
 import WallProjectorView from "@/components/activities/WallProjectorView";
+import WordCloudView from "@/components/activities/WordCloudView";
 import { SlideBody } from "@/components/admin/SlideCanvas";
 import { buildAnonymousLabelMap, type GamePlayer } from "@/lib/game-types";
 
