@@ -582,6 +582,47 @@ export default function TeacherSuggestByMethod() {
               )}
             </div>
 
+            <div className="mt-5 rounded-lg border bg-muted/20 p-3 space-y-2">
+              <div className="text-sm font-semibold">Zaměření myšlení a modelová situace (nepovinné)</div>
+              <p className="text-xs text-muted-foreground">
+                ZedAI zahrne do návrhu aktivity či otázky rozvíjející vybrané typy uvažování a přidá modelovou situaci z praxe.
+              </p>
+              <div className="flex flex-wrap gap-4 pt-1">
+                {(Object.keys(THINKING_LABELS) as ThinkingType[]).map((tt) => {
+                  const active = thinkingTypes.includes(tt);
+                  return (
+                    <label key={tt} className="flex items-center gap-2 cursor-pointer text-sm">
+                      <Checkbox
+                        checked={active}
+                        onCheckedChange={() =>
+                          setThinkingTypes((prev) =>
+                            prev.includes(tt) ? prev.filter((x) => x !== tt) : [...prev, tt],
+                          )
+                        }
+                      />
+                      {THINKING_LABELS[tt]}
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            {curriculumPlan && (curriculumPlan.content || curriculumPlan.file_name) && (
+              <div className="mt-3 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm flex items-start gap-2">
+                <FileText className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+                <div>
+                  <div className="font-medium">
+                    Použije se váš ŠVP pro předmět „{curriculumPlan.subject}" jako kontext.
+                  </div>
+                  {!curriculumPlan.content && curriculumPlan.file_name && (
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      Poznámka: máte uložený jen soubor ({curriculumPlan.file_name}). ZedAI zpracuje pouze textový obsah ŠVP – doplňte prosím text, pokud jej chcete použít.
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div className="mt-4">
               <Label htmlFor="custom">Doplňující pokyny (nepovinné)</Label>
               <Textarea
