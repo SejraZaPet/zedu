@@ -15,6 +15,7 @@ import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
 import PushNotificationsCard from "@/components/profile/PushNotificationsCard";
+import { useAccessibilitySettings } from "@/hooks/useAccessibilitySettings";
 
 const statusLabels: Record<string, string> = {
   pending: "Čeká na schválení",
