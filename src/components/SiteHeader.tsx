@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Menu, X, LogIn, LogOut, User, BookOpen, GraduationCap, LayoutDashboard, Users, BarChart3, HelpCircle, Layers, FolderOpen, Activity, TrendingUp, Gamepad2, Settings, CalendarDays, Brain, School, Image as ImageIcon, ShoppingBag, UserCheck } from "lucide-react";
+import { Menu, X, LogIn, LogOut, User, BookOpen, GraduationCap, LayoutDashboard, Users, BarChart3, HelpCircle, Layers, FolderOpen, Activity, TrendingUp, Gamepad2, Settings, CalendarDays, Brain, School, Image as ImageIcon, ShoppingBag, UserCheck, BookMarked } from "lucide-react";
 import logo from "@/assets/zedu-logo-new.png";
 import { Button } from "@/components/ui/button";
 import {
@@ -210,6 +210,10 @@ const SiteHeader = () => {
                       <DropdownMenuItem onClick={() => navigate("/ucitel/sledovani-tvurci")} className="gap-2 cursor-pointer">
                         <UserCheck size={16} />
                         Sledovaní tvůrci
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/ucitel/svp")} className="gap-2 cursor-pointer">
+                        <BookMarked size={16} />
+                        ŠVP k předmětům
                       </DropdownMenuItem>
                     </>
                   )}
