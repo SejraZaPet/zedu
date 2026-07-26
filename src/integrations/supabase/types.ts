@@ -2400,6 +2400,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          accessibility_settings: Json
           created_at: string
           email: string
           field_of_study: string
@@ -2419,6 +2420,7 @@ export type Database = {
           year: number | null
         }
         Insert: {
+          accessibility_settings?: Json
           created_at?: string
           email?: string
           field_of_study?: string
@@ -2438,6 +2440,7 @@ export type Database = {
           year?: number | null
         }
         Update: {
+          accessibility_settings?: Json
           created_at?: string
           email?: string
           field_of_study?: string
