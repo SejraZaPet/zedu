@@ -64,7 +64,7 @@ const Auth = () => {
   useEffect(() => {
     const r = searchParams.get("role");
     const skola = searchParams.get("skola");
-    if (r === "teacher" || r === "student" || r === "rodic") {
+    if (r === "teacher" || r === "student" || r === "rodic" || r === "lektor") {
       setRole(r);
       setMode("register");
     } else if (skola) {
