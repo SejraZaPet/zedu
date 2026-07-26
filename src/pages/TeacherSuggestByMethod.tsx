@@ -261,6 +261,8 @@ export default function TeacherSuggestByMethod() {
             description: m.description,
             tips: m.tips,
           })),
+          thinkingTypes,
+          curriculumContext: curriculumPlan?.content ?? "",
         },
       });
       if (error) throw error;
