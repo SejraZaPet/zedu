@@ -211,6 +211,10 @@ const SiteHeader = () => {
                         <UserCheck size={16} />
                         Sledovaní tvůrci
                       </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/ucitel/svp")} className="gap-2 cursor-pointer">
+                        <BookMarked size={16} />
+                        ŠVP k předmětům
+                      </DropdownMenuItem>
                     </>
                   )}
                   <DropdownMenuSeparator />
