@@ -310,15 +310,18 @@ const LiveWhiteboard = ({ sessionId, data, readOnly = false, onClose, overlay = 
     return () => window.removeEventListener("keydown", onKey);
   }, [undo, redo, readOnly]);
 
-  const tools: { id: WhiteboardTool; icon: any; label: string }[] = useMemo(() => [
-    { id: "pen", icon: Pencil, label: "Tužka" },
-    { id: "highlight", icon: Highlighter, label: "Zvýrazňovač" },
-    { id: "eraser", icon: Eraser, label: "Guma" },
-    { id: "text", icon: TypeIcon, label: "Text" },
-    { id: "rect", icon: Square, label: "Obdélník" },
-    { id: "circle", icon: CircleIcon, label: "Kruh" },
-    { id: "arrow", icon: ArrowUpRight, label: "Šipka" },
-  ], []);
+  const tools: { id: WhiteboardTool; icon: any; label: string }[] = useMemo(() => {
+    const all = [
+      { id: "pen" as WhiteboardTool, icon: Pencil, label: "Tužka" },
+      { id: "highlight" as WhiteboardTool, icon: Highlighter, label: "Zvýrazňovač" },
+      { id: "eraser" as WhiteboardTool, icon: Eraser, label: "Guma" },
+      { id: "text" as WhiteboardTool, icon: TypeIcon, label: "Text" },
+      { id: "rect" as WhiteboardTool, icon: Square, label: "Obdélník" },
+      { id: "circle" as WhiteboardTool, icon: CircleIcon, label: "Kruh" },
+      { id: "arrow" as WhiteboardTool, icon: ArrowUpRight, label: "Šipka" },
+    ];
+    return simplified ? all.filter((t) => t.id === "pen" || t.id === "eraser") : all;
+  }, [simplified]);
 
   return (
     <div
