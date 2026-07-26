@@ -67,6 +67,20 @@ function buildWallSlide(prompt: string, anonymous: boolean) {
   };
 }
 
+function buildWordcloudSlide(prompt: string, anonymous: boolean) {
+  return {
+    slideId: `live-${Date.now()}`,
+    type: "activity",
+    projector: { headline: prompt.trim(), body: "" },
+    device: { instructions: "Pošlete slovo nebo krátkou frázi." },
+    activitySpec: {
+      activityType: "wordcloud",
+      question: prompt.trim(),
+      anonymous,
+    },
+  };
+}
+
 export function AddSlideSheet({
   open,
   onOpenChange,
