@@ -5,12 +5,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Lock, UserPlus, LogIn, GraduationCap, BookOpenText, KeyRound, CheckCircle2, Eye, EyeOff, Users, Hash } from "lucide-react";
+import { Lock, UserPlus, LogIn, GraduationCap, BookOpenText, KeyRound, CheckCircle2, Eye, EyeOff, Users, Hash, Presentation } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useSchoolBranding } from "@/hooks/useSchoolBranding";
 
-type Role = "student" | "teacher" | "rodic";
+type Role = "student" | "teacher" | "lektor" | "rodic";
 
 const Auth = () => {
   const navigate = useNavigate();
