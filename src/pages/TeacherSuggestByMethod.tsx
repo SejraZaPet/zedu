@@ -44,13 +44,27 @@ interface PhaseValue {
   activities?: { kind: string; title: string }[];
 }
 
+interface ModelSituation {
+  scenario: string;
+  task: string;
+}
+
 interface Suggestion {
   title: string;
   subject?: string;
   summary: string;
   phases: Record<string, PhaseValue>;
   methodNotes: { method_id: string; note: string }[];
+  modelSituation?: ModelSituation | null;
 }
+
+type ThinkingType = "creative" | "logical" | "practical";
+
+const THINKING_LABELS: Record<ThinkingType, string> = {
+  creative: "Kreativní uvažování",
+  logical: "Logické uvažování",
+  practical: "Praktické uplatnění",
+};
 
 const PHASE_LABELS: Record<string, string> = {
   uvod: "Úvod",
