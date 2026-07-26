@@ -33,6 +33,11 @@ interface Props {
   /** when true, renders a transparent overlay covering its parent */
   overlay?: boolean;
   className?: string;
+  /** when true, strokes are kept only in local state (never written to DB).
+   *  Remote strokes from `data.strokes` are still rendered underneath. */
+  localOnly?: boolean;
+  /** when true, hides advanced tools (text, shapes, undo/redo). Pen + eraser + colors + widths + clear only. */
+  simplified?: boolean;
 }
 
 const drawArrow = (ctx: CanvasRenderingContext2D, x1: number, y1: number, x2: number, y2: number) => {
