@@ -256,6 +256,14 @@ const TeacherDashboard = () => {
       button: "Otevřít nástroj",
       onClick: () => navigate("/ucitel/navrh-podle-metody"),
     },
+    svp: {
+      id: "svp",
+      icon: BookMarked,
+      title: "ŠVP k předmětům",
+      description: "Uložte si školní vzdělávací plán ke každému předmětu – text nebo soubor.",
+      button: "Otevřít ŠVP",
+      onClick: () => navigate("/ucitel/svp"),
+    },
     academy: {
       id: "academy",
       icon: Award,
