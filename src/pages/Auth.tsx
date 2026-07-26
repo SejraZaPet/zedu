@@ -60,12 +60,20 @@ const Auth = () => {
     }
   }, [branding]);
 
-  // Preselect role + register mode from ?role= query param
+  // Preselect role + register mode from ?role= and ?skola= query params
   useEffect(() => {
     const r = searchParams.get("role");
+    const skola = searchParams.get("skola");
     if (r === "teacher" || r === "student" || r === "rodic") {
       setRole(r);
       setMode("register");
+    } else if (skola) {
+      // school invite link implies teacher registration by default
+      setRole("teacher");
+      setMode("register");
+    }
+    if (skola) {
+      setSchoolCode(skola.trim().toUpperCase());
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
