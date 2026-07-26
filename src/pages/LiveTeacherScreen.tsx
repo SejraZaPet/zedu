@@ -224,6 +224,20 @@ const LiveTeacherScreen = () => {
             <Pencil className="w-4 h-4" />
             {whiteboardVisible ? "Skrýt tabuli" : "Tabule"}
           </Button>
+          <label className="flex items-center gap-2 rounded-md border border-border bg-background px-2.5 py-1.5 text-xs">
+            <Switch
+              checked={!!settings?.allowStudentDrawSync}
+              onCheckedChange={async (checked) => {
+                if (!sessionId) return;
+                await supabase
+                  .from("game_sessions")
+                  .update({ settings: { ...(settings || {}), allowStudentDrawSync: checked } })
+                  .eq("id", sessionId);
+              }}
+              aria-label="Povolit kreslení žáků do streamu"
+            />
+            <span className="whitespace-nowrap">Kreslení žáků do streamu</span>
+          </label>
           <Button
             size="sm"
             variant="outline"
