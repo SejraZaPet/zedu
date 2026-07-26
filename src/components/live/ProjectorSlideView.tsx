@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { BookOpen } from "lucide-react";
 import WallProjectorView from "@/components/activities/WallProjectorView";
+import WordCloudView from "@/components/activities/WordCloudView";
 import { SlideBody } from "@/components/admin/SlideCanvas";
 import { buildAnonymousLabelMap, type GamePlayer } from "@/lib/game-types";
 
@@ -163,6 +164,16 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
                     (session.settings as any)?.wallPublished === true &&
                     (session.settings as any)?.wallPublishedQuestion === currentIndex
                   }
+                />
+              ) : currentSlide.type === "activity" && currentSlide.activitySpec?.activityType === "wordcloud" ? (
+                <WordCloudView
+                  sessionId={sessionId}
+                  questionIndex={currentIndex}
+                  published={
+                    (session.settings as any)?.wordcloudPublished === true &&
+                    (session.settings as any)?.wordcloudPublishedQuestion === currentIndex
+                  }
+                  darkMode
                 />
               ) : currentSlide.type === "activity" && (
                 <div className="mt-8 bg-primary/10 border border-primary/20 rounded-2xl px-8 py-6 shrink-0">

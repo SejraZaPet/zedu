@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import PollProjectorView from "@/components/activities/PollProjectorView";
+import WordCloudView from "@/components/activities/WordCloudView";
 import LiveWhiteboard, { WhiteboardData } from "@/components/game/LiveWhiteboard";
 import RemoteControlButton from "@/components/live/RemoteControlButton";
 import { presenterRemoteChannelName } from "@/pages/PresenterRemote";
@@ -754,6 +755,45 @@ const LiveTeacherScreen = () => {
                           sessionId={sessionId}
                           questionIndex={currentIndex}
                           totalPlayers={players.length}
+                        />
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {(currentSlide as any).activitySpec?.activityType === "wordcloud" && (() => {
+                const wcPublished =
+                  (settings?.wordcloudPublished === true) &&
+                  (settings?.wordcloudPublishedQuestion === currentIndex);
+                return (
+                  <div className="mt-3 p-3 border border-border rounded-lg space-y-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium">Slovní mrak</p>
+                      <Button
+                        size="sm"
+                        variant={wcPublished ? "default" : "outline"}
+                        onClick={async () => {
+                          if (!sessionId) return;
+                          await supabase.from("game_sessions").update({
+                            settings: {
+                              ...(settings || {}),
+                              wordcloudPublished: !wcPublished,
+                              wordcloudPublishedQuestion: currentIndex,
+                            },
+                          }).eq("id", sessionId);
+                        }}
+                        className="gap-1.5"
+                      >
+                        {wcPublished ? "✓ Mrak zobrazen" : "Zveřejnit mrak"}
+                      </Button>
+                    </div>
+                    {sessionId && (
+                      <div className="border border-border rounded-md p-3 bg-card">
+                        <WordCloudView
+                          sessionId={sessionId}
+                          questionIndex={currentIndex}
+                          published={true}
                         />
                       </div>
                     )}

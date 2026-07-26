@@ -13,6 +13,8 @@ import WallResponsesList from "@/components/activities/WallResponsesList";
 import WallActivity from "@/components/activities/WallActivity";
 import PollActivity from "@/components/activities/PollActivity";
 import PollProjectorView from "@/components/activities/PollProjectorView";
+import WordCloudActivity from "@/components/activities/WordCloudActivity";
+import WordCloudView from "@/components/activities/WordCloudView";
 import QuizActivity from "@/components/activities/QuizActivity";
 import LiveWhiteboard, { WhiteboardData } from "@/components/game/LiveWhiteboard";
 import { Lock, Pencil, Hand, ChevronLeft, ChevronRight } from "lucide-react";
@@ -354,6 +356,35 @@ const StudentGamePlay = () => {
                       joinToken={joinToken}
                       onComplete={() => {}}
                     />
+                  );
+                })()
+              ) : (currentSlideData as any).activitySpec?.activityType === "wordcloud" ? (
+                (() => {
+                  const spec = (currentSlideData as any).activitySpec || {};
+                  const question = spec.question || "";
+                  const published =
+                    liveSettings?.wordcloudPublished === true &&
+                    liveSettings?.wordcloudPublishedQuestion === qi;
+                  return (
+                    <div className="space-y-4">
+                      <WordCloudActivity
+                        question={question}
+                        sessionId={sessionId}
+                        questionIndex={qi}
+                        playerId={playerId}
+                        joinToken={joinToken}
+                      />
+                      {published && (
+                        <div className="border border-white/15 rounded-xl p-4 bg-white/10 backdrop-blur">
+                          <WordCloudView
+                            sessionId={sessionId || ""}
+                            questionIndex={qi}
+                            published={true}
+                            darkMode={true}
+                          />
+                        </div>
+                      )}
+                    </div>
                   );
                 })()
               ) : (currentSlideData as any).activitySpec?.activityType === "mcq" ? (

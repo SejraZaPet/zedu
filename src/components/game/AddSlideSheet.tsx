@@ -11,11 +11,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { FileText, HelpCircle, MessageSquare, ArrowLeft, Loader2 } from "lucide-react";
+import { FileText, HelpCircle, MessageSquare, Cloud, ArrowLeft, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-type AddKind = "menu" | "text" | "mcq" | "wall";
+type AddKind = "menu" | "text" | "mcq" | "wall" | "wordcloud";
 
 interface AddSlideSheetProps {
   open: boolean;
@@ -67,6 +67,20 @@ function buildWallSlide(prompt: string, anonymous: boolean) {
   };
 }
 
+function buildWordcloudSlide(prompt: string, anonymous: boolean) {
+  return {
+    slideId: `live-${Date.now()}`,
+    type: "activity",
+    projector: { headline: prompt.trim(), body: "" },
+    device: { instructions: "Pošlete slovo nebo krátkou frázi." },
+    activitySpec: {
+      activityType: "wordcloud",
+      question: prompt.trim(),
+      anonymous,
+    },
+  };
+}
+
 export function AddSlideSheet({
   open,
   onOpenChange,
@@ -89,6 +103,10 @@ export function AddSlideSheet({
   const [wallPrompt, setWallPrompt] = useState("");
   const [wallAnonymous, setWallAnonymous] = useState(true);
 
+  // wordcloud
+  const [wcPrompt, setWcPrompt] = useState("");
+  const [wcAnonymous, setWcAnonymous] = useState(true);
+
   const reset = () => {
     setKind("menu");
     setTextHeadline("");
@@ -98,6 +116,8 @@ export function AddSlideSheet({
     setMcqCorrect(0);
     setWallPrompt("");
     setWallAnonymous(true);
+    setWcPrompt("");
+    setWcAnonymous(true);
   };
 
   const close = () => {
@@ -162,6 +182,14 @@ export function AddSlideSheet({
     appendAndJump(buildWallSlide(wallPrompt, wallAnonymous));
   };
 
+  const submitWordcloud = () => {
+    if (!wcPrompt.trim()) {
+      toast.error("Doplňte zadání.");
+      return;
+    }
+    appendAndJump(buildWordcloudSlide(wcPrompt, wcAnonymous));
+  };
+
   return (
     <Sheet
       open={open}
@@ -189,6 +217,7 @@ export function AddSlideSheet({
               {kind === "text" && "Textový slide"}
               {kind === "mcq" && "Otázka (MCQ)"}
               {kind === "wall" && "Zeď aktivita"}
+              {kind === "wordcloud" && "Slovní mrak"}
             </SheetTitle>
           </div>
           <SheetDescription>
@@ -239,8 +268,22 @@ export function AddSlideSheet({
                   </p>
                 </div>
               </Button>
+              <Button
+                variant="outline"
+                className="justify-start h-auto py-3"
+                onClick={() => setKind("wordcloud")}
+              >
+                <Cloud className="w-5 h-5 mr-3 text-primary" />
+                <div className="text-left">
+                  <p className="font-medium">Slovní mrak</p>
+                  <p className="text-xs text-muted-foreground">
+                    Žáci pošlou slovo/frázi, roste společný mrak
+                  </p>
+                </div>
+              </Button>
             </div>
           )}
+
 
           {kind === "text" && (
             <div className="space-y-3">
@@ -339,6 +382,36 @@ export function AddSlideSheet({
                 Anonymní odpovědi
               </label>
               <Button onClick={submitWall} disabled={busy} className="w-full">
+                {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Přidat a zobrazit
+              </Button>
+            </div>
+          )}
+
+          {kind === "wordcloud" && (
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="wc-prompt">Zadání</Label>
+                <Textarea
+                  id="wc-prompt"
+                  rows={3}
+                  value={wcPrompt}
+                  onChange={(e) => setWcPrompt(e.target.value)}
+                  placeholder="Např. Jedním slovem popište, co jste se dnes naučili"
+                  disabled={busy}
+                />
+              </div>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4"
+                  checked={wcAnonymous}
+                  onChange={(e) => setWcAnonymous(e.target.checked)}
+                  disabled={busy}
+                />
+                Anonymní
+              </label>
+              <Button onClick={submitWordcloud} disabled={busy} className="w-full">
                 {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Přidat a zobrazit
               </Button>
