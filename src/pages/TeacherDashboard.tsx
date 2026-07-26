@@ -17,6 +17,7 @@ import {
   GripVertical,
   Wand2,
   Award,
+  BookMarked,
 } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
@@ -64,6 +65,7 @@ const DEFAULT_ORDER = [
   "worksheets",
   "lesson-plans",
   "suggest-method",
+  "svp",
   "academy",
   "todos",
   "notifications",
@@ -253,6 +255,14 @@ const TeacherDashboard = () => {
       description: "AI navrhne strukturu lekce podle zvolené výukové metody (Bloom, Flipped, projektová výuka…).",
       button: "Otevřít nástroj",
       onClick: () => navigate("/ucitel/navrh-podle-metody"),
+    },
+    svp: {
+      id: "svp",
+      icon: BookMarked,
+      title: "ŠVP k předmětům",
+      description: "Uložte si školní vzdělávací plán ke každému předmětu – text nebo soubor.",
+      button: "Otevřít ŠVP",
+      onClick: () => navigate("/ucitel/svp"),
     },
     academy: {
       id: "academy",

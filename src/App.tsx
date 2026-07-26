@@ -68,6 +68,7 @@ import TeacherMediaLibrary from "./pages/TeacherMediaLibrary";
 import TeacherSubjectClass from "./pages/TeacherSubjectClass";
 import TeacherSubjects from "./pages/TeacherSubjects";
 import TeacherMethods from "./pages/TeacherMethods";
+import TeacherCurriculumPlans from "./pages/TeacherCurriculumPlans";
 import StudentMethods from "./pages/StudentMethods";
 import StudentPractice from "./pages/StudentPractice";
 import SchoolAdmin from "./pages/SchoolAdmin";
@@ -161,6 +162,8 @@ const App = () => (
             <Route path="/ucitel/predmety" element={<ProtectedRoute><TeacherSubjects /></ProtectedRoute>} />
             <Route path="/ucitel/predmet/:subjectId/trida/:classId" element={<ProtectedRoute><TeacherSubjectClass /></ProtectedRoute>} />
             <Route path="/ucitel/metody" element={<ProtectedRoute><TeacherMethods /></ProtectedRoute>} />
+            <Route path="/ucitel/svp" element={<ProtectedRoute><TeacherCurriculumPlans /></ProtectedRoute>} />
+
             <Route path="/student/metody" element={<ProtectedRoute><StudentMethods /></ProtectedRoute>} />
             <Route path="/student/metody/:slug/procviceni" element={<ProtectedRoute><StudentPractice /></ProtectedRoute>} />
             <Route path="/zedumarket" element={<ProtectedRoute><ZEduMarketPage /></ProtectedRoute>} />
