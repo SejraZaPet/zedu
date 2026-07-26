@@ -263,8 +263,12 @@ const Auth = () => {
     const metadata: Record<string, unknown> = {
       first_name: firstName,
       last_name: lastName,
-      school: role === "rodic" ? "" : school,
-      role_label: role === "rodic" ? "rodic" : role === "teacher" ? "teacher" : "user",
+      school: role === "rodic" || role === "lektor" ? "" : school,
+      role_label:
+        role === "rodic" ? "rodic"
+        : role === "teacher" ? "teacher"
+        : role === "lektor" ? "lektor"
+        : "user",
       status: "pending",
     };
 
