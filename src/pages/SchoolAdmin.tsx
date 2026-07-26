@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogT
 import { useToast } from "@/components/ui/use-toast";
 import { Home, LogOut, School as SchoolIcon, Users, GraduationCap, Plus, Trash2, ShieldCheck, ShieldOff, Copy, RefreshCw, KeyRound, Palette } from "lucide-react";
 import SchoolBrandingSection from "@/components/school/SchoolBrandingSection";
+import SchoolLicenseCard from "@/components/school/SchoolLicenseCard";
 
 interface SchoolRow { id: string; name: string; registration_code: string | null; }
 interface MemberRow {
@@ -343,6 +344,7 @@ const SchoolAdmin = () => {
           <TabsList>
             <TabsTrigger value="teachers"><GraduationCap className="w-4 h-4 mr-1" /> Učitelé ({teachers.length})</TabsTrigger>
             <TabsTrigger value="students"><Users className="w-4 h-4 mr-1" /> Studenti ({students.length})</TabsTrigger>
+            <TabsTrigger value="license">Licence</TabsTrigger>
             <TabsTrigger value="branding"><Palette className="w-4 h-4 mr-1" /> Branding</TabsTrigger>
           </TabsList>
 
@@ -351,6 +353,9 @@ const SchoolAdmin = () => {
           </TabsContent>
           <TabsContent value="students">
             <MembersTable rows={students} onToggleRole={toggleRole} onRemove={removeFromSchool} kind="user" />
+          </TabsContent>
+          <TabsContent value="license">
+            <SchoolLicenseCard schoolId={school.id} />
           </TabsContent>
           <TabsContent value="branding">
             <SchoolBrandingSection schoolId={school.id} schoolName={school.name} />
