@@ -103,6 +103,10 @@ export function AddSlideSheet({
   const [wallPrompt, setWallPrompt] = useState("");
   const [wallAnonymous, setWallAnonymous] = useState(true);
 
+  // wordcloud
+  const [wcPrompt, setWcPrompt] = useState("");
+  const [wcAnonymous, setWcAnonymous] = useState(true);
+
   const reset = () => {
     setKind("menu");
     setTextHeadline("");
@@ -112,6 +116,8 @@ export function AddSlideSheet({
     setMcqCorrect(0);
     setWallPrompt("");
     setWallAnonymous(true);
+    setWcPrompt("");
+    setWcAnonymous(true);
   };
 
   const close = () => {
