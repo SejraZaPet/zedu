@@ -17,7 +17,7 @@ const TeacherNotifications = () => {
   useEffect(() => {
     if (loading) return;
     if (!user) { navigate("/auth"); return; }
-    if (role !== "teacher" && role !== "admin") {
+    if (role !== "teacher" && role !== "lektor" && role !== "admin") {
       navigate("/");
     }
   }, [loading, user, role, navigate]);

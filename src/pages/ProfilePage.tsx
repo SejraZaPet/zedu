@@ -202,9 +202,9 @@ const ProfilePage = () => {
     })();
   }, [user, role]);
 
-  // Load teaching overview for teachers
+  // Load teaching overview for teachers and independent lektors
   useEffect(() => {
-    if (!user || role !== "teacher") return;
+    if (!user || (role !== "teacher" && role !== "lektor")) return;
     (async () => {
       const [classesRes, assignmentsRes, avatarRes] = await Promise.all([
         supabase.from("class_teachers").select("class_id").eq("user_id", user.id),
@@ -490,8 +490,8 @@ const ProfilePage = () => {
           );
         })()}
 
-        {/* Teaching overview (teachers) */}
-        {role === "teacher" && teacherOverview && (() => {
+        {/* Teaching overview (teachers and lektors) */}
+        {(role === "teacher" || role === "lektor") && teacherOverview && (() => {
           const joined = new Date(profile.created_at).toLocaleDateString("cs-CZ", { month: "long", year: "numeric" });
           return (
             <Card>
@@ -570,10 +570,12 @@ const ProfilePage = () => {
             <CardTitle className="text-base">Studijní údaje</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="school">Škola</Label>
-              <Input id="school" value={school} onChange={(e) => setSchool(e.target.value)} />
-            </div>
+            {role !== "lektor" && (
+              <div>
+                <Label htmlFor="school">Škola</Label>
+                <Input id="school" value={school} onChange={(e) => setSchool(e.target.value)} />
+              </div>
+            )}
             <div>
               <Label htmlFor="field">Obor</Label>
               <Input id="field" value={fieldOfStudy} onChange={(e) => setFieldOfStudy(e.target.value)} />
