@@ -15,11 +15,11 @@ import PollActivity from "@/components/activities/PollActivity";
 import PollProjectorView from "@/components/activities/PollProjectorView";
 import QuizActivity from "@/components/activities/QuizActivity";
 import LiveWhiteboard, { WhiteboardData } from "@/components/game/LiveWhiteboard";
-import { Lock, Pencil } from "lucide-react";
+import { Lock, Pencil, Hand, ChevronLeft, ChevronRight } from "lucide-react";
 import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
 
 import { useAuth } from "@/contexts/AuthContext";
-import { findPlayerTeam } from "@/lib/game-types";
+import { findPlayerTeam, buildAnonymousLabelMap, type GamePlayer } from "@/lib/game-types";
 
 const StudentGamePlay = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
