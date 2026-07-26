@@ -8,6 +8,7 @@ import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import type { Block } from "@/lib/textbook-config";
 import { LessonBlock } from "@/components/LessonBlockRenderer";
+import ReadAloudButton from "@/components/a11y/ReadAloudButton";
 import { Button } from "@/components/ui/button";
 import LessonEditorSheet from "@/components/LessonEditorSheet";
 import { useActivityTracking } from "@/hooks/useActivityTracking";
