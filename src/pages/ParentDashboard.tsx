@@ -220,6 +220,10 @@ const ParentDashboard = () => {
             </p>
           </div>
           <div className="flex flex-wrap gap-2 shrink-0">
+            <Button variant="outline" onClick={() => navigate("/rodic/akademie")} className="gap-2">
+              <GraduationCap className="w-4 h-4" />
+              ZEdu Akademie
+            </Button>
             <Button variant="outline" onClick={() => navigate("/rodic/zpravy")} className="gap-2">
               <MessageCircle className="w-4 h-4" />
               Zprávy učitelům
