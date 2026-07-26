@@ -78,6 +78,7 @@ import FollowedCreators from "./pages/FollowedCreators";
 import AvatarEditor from "./pages/AvatarEditor";
 import TeacherAcademy from "./pages/TeacherAcademy";
 import StudentAcademy from "./pages/StudentAcademy";
+import ParentAcademy from "./pages/ParentAcademy";
 import ViewAsBanner from "./components/ViewAsBanner";
 
 
