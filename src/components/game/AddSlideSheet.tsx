@@ -182,6 +182,14 @@ export function AddSlideSheet({
     appendAndJump(buildWallSlide(wallPrompt, wallAnonymous));
   };
 
+  const submitWordcloud = () => {
+    if (!wcPrompt.trim()) {
+      toast.error("Doplňte zadání.");
+      return;
+    }
+    appendAndJump(buildWordcloudSlide(wcPrompt, wcAnonymous));
+  };
+
   return (
     <Sheet
       open={open}
