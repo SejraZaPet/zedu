@@ -346,6 +346,7 @@ export function SlideBody({
   slide,
   editable,
   darkMode = true,
+  revealStep,
   onChangeHeadline,
   onChangeBlock,
   onMoveBlock,
@@ -355,8 +356,30 @@ export function SlideBody({
   const layout: SlideLayout = (slide?.layout as SlideLayout) || "full";
   const headline: string = slide?.projector?.headline || "";
   const fontScale = slide?.projector?.fontScale || 1;
-  const blocks: Block[] = slide?.blocks || [];
+  const rawBlocks: Block[] = slide?.blocks || [];
   const heroImage: string | undefined = slide?.heroImage;
+
+  // Apply progressive-reveal transformation when not editing.
+  const blocks: Block[] = !editable && typeof revealStep === "number"
+    ? rawBlocks.map((b) => {
+        if (b.type !== "bullet_list" || !b.props?.revealMode) return b;
+        const step = Math.max(0, revealStep);
+        if (Array.isArray(b.props.items)) {
+          return { ...b, props: { ...b.props, items: (b.props.items as string[]).slice(0, step) } } as Block;
+        }
+        if (typeof b.props.html === "string") {
+          // Keep first N <li> elements and drop the rest.
+          const html = b.props.html as string;
+          let kept = 0;
+          const truncated = html.replace(/<li\b[^>]*>[\s\S]*?<\/li>/gi, (m) => {
+            kept += 1;
+            return kept <= step ? m : "";
+          });
+          return { ...b, props: { ...b.props, html: truncated } } as Block;
+        }
+        return b;
+      })
+    : rawBlocks;
 
   const blockTextScope = darkMode
     ? "[&_*]:!text-white [&_h1]:!text-white [&_h2]:!text-white [&_h3]:!text-white [&_.bg-card]:!bg-white/10 [&_.bg-muted\\/40]:!bg-white/10 [&_.bg-muted\\/30]:!bg-white/10 [&_.border]:!border-white/20"
