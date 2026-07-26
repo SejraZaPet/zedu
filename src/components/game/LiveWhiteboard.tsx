@@ -104,6 +104,7 @@ const renderStroke = (ctx: CanvasRenderingContext2D, s: Stroke, w: number, h: nu
 
 const LiveWhiteboard = ({ sessionId, data, readOnly = false, onClose, overlay = true, className, localOnly = false, simplified = false }: Props) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const bottomCanvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const drawingRef = useRef<Stroke | null>(null);
   const [, force] = useState(0);
