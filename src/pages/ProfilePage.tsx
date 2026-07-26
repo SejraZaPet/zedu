@@ -734,6 +734,9 @@ const ProfilePage = () => {
 
         <PushNotificationsCard />
 
+        <AccessibilityCard />
+
+
         {/* Password change */}
         <Card>
           <CardHeader>
