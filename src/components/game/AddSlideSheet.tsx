@@ -387,6 +387,36 @@ export function AddSlideSheet({
               </Button>
             </div>
           )}
+
+          {kind === "wordcloud" && (
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="wc-prompt">Zadání</Label>
+                <Textarea
+                  id="wc-prompt"
+                  rows={3}
+                  value={wcPrompt}
+                  onChange={(e) => setWcPrompt(e.target.value)}
+                  placeholder="Např. Jedním slovem popište, co jste se dnes naučili"
+                  disabled={busy}
+                />
+              </div>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4"
+                  checked={wcAnonymous}
+                  onChange={(e) => setWcAnonymous(e.target.checked)}
+                  disabled={busy}
+                />
+                Anonymní
+              </label>
+              <Button onClick={submitWordcloud} disabled={busy} className="w-full">
+                {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Přidat a zobrazit
+              </Button>
+            </div>
+          )}
         </div>
       </SheetContent>
     </Sheet>
