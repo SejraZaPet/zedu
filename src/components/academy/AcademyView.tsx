@@ -86,7 +86,7 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
   const [certificates, setCertificates] = useState<CertificateRow[]>([]);
   const [certLoading, setCertLoading] = useState(false);
 
-  const audienceValues = audience === "teacher" ? ["teacher", "both"] : ["student", "both"];
+  const audienceValues = audience === "teacher" ? ["teacher", "both"] : audience === "parent" ? ["parent", "both"] : ["student", "both"];
 
   const fetchCourses = useCallback(async () => {
     setLoading(true);
