@@ -86,6 +86,7 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
             </div>
 
             <div ref={scrollRef} className="flex-1 flex flex-col items-center justify-start px-6 py-4 gap-4 min-h-0 overflow-y-auto">
+              <div key={currentIndex} className="w-full flex-1 min-h-0 flex flex-col items-center gap-4 animate-fade-in">
               {currentSlide.type === "explain" && (
                 <div className="mb-2 inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-1.5 text-sm text-purple-300 shrink-0">
                   <BookOpen className="w-4 h-4" /> Výklad
@@ -94,7 +95,7 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
 
               {currentSlide.blocks && currentSlide.blocks.length > 0 ? (
                 <div className="w-full flex-1 min-h-0">
-                  <SlideBody slide={currentSlide} darkMode />
+                  <SlideBody slide={currentSlide} darkMode revealStep={(session?.settings as any)?.revealStep} />
                 </div>
               ) : (
                 <>
@@ -183,7 +184,9 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
                   </div>
                 </div>
               )}
+              </div>
             </div>
+
 
             <div className="px-12 py-6 border-t border-border flex justify-between items-center text-muted-foreground shrink-0">
               <span className="text-lg">Kód: <span className="font-mono font-bold text-foreground">{gameCode}</span></span>

@@ -5,7 +5,8 @@ import { GameLobby } from "@/components/game/GameLobby";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Monitor, Smartphone, StickyNote, ChevronLeft, ChevronRight, Users, StopCircle, ArrowLeft, Brain, Plus, Pencil, BarChart3 } from "lucide-react";
+import { Monitor, Smartphone, StickyNote, ChevronLeft, ChevronRight, Users, StopCircle, ArrowLeft, Brain, Plus, Pencil, BarChart3, MessageCircleQuestion, Eye } from "lucide-react";
+import LiveQuestionsSheet, { useLiveQuestions } from "@/components/game/LiveQuestionsSheet";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import SessionExports from "@/components/live/SessionExports";
 import { AdaptiveReviewDialog } from "@/components/game/AdaptiveReview";
@@ -44,6 +45,7 @@ const LiveTeacherScreen = () => {
   const [adaptiveOpen, setAdaptiveOpen] = useState(false);
   const [addSlideOpen, setAddSlideOpen] = useState(false);
   const [resultsPanelOpen, setResultsPanelOpen] = useState(false);
+  const [questionsOpen, setQuestionsOpen] = useState(false);
   const projectorPreviewRef = useRef<HTMLDivElement>(null);
   const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -56,6 +58,34 @@ const LiveTeacherScreen = () => {
   const gameCode = session?.game_code || "";
   const whiteboard: WhiteboardData = ((session as any)?.whiteboard_data as WhiteboardData) ?? { strokes: [], visible: false };
   const whiteboardVisible = whiteboard.visible;
+  const { unansweredCount } = useLiveQuestions(sessionId);
+
+  // Reveal step (progressive bullet reveal). Reset to 1 on slide change.
+  const revealStep = typeof settings?.revealStep === "number" ? settings.revealStep : 999;
+  const hasRevealBlocks = !!(currentSlide as any)?.blocks?.some(
+    (b: any) => b?.type === "bullet_list" && b?.props?.revealMode
+  );
+  const maxRevealCount = (() => {
+    const blocks = ((currentSlide as any)?.blocks || []) as any[];
+    let max = 0;
+    for (const b of blocks) {
+      if (b?.type !== "bullet_list" || !b?.props?.revealMode) continue;
+      if (Array.isArray(b.props.items)) max = Math.max(max, b.props.items.length);
+      else if (typeof b.props.html === "string") {
+        max = Math.max(max, (b.props.html.match(/<li[\s>]/gi) || []).length);
+      }
+    }
+    return max;
+  })();
+
+  const revealNext = useCallback(async () => {
+    if (!sessionId) return;
+    const next = Math.min(maxRevealCount, (revealStep === 999 ? 1 : revealStep) + 1);
+    await supabase
+      .from("game_sessions")
+      .update({ settings: { ...(settings || {}), revealStep: next } })
+      .eq("id", sessionId);
+  }, [sessionId, settings, revealStep, maxRevealCount]);
 
   const toggleWhiteboard = useCallback(async () => {
     if (!sessionId) return;
@@ -80,7 +110,7 @@ const LiveTeacherScreen = () => {
   useEffect(() => {
     if (!sessionId) return;
     supabase.from("game_sessions").update({
-      settings: { ...(settings || {}), projectorScrollTop: 0 },
+      settings: { ...(settings || {}), projectorScrollTop: 0, revealStep: 1 },
     }).eq("id", sessionId);
     if (projectorPreviewRef.current) {
       projectorPreviewRef.current.scrollTop = 0;
@@ -284,12 +314,27 @@ const LiveTeacherScreen = () => {
           <Button
             size="sm"
             variant="outline"
-            className="gap-1.5"
+            className="gap-1.5 relative"
             onClick={() => setResultsPanelOpen(true)}
             title="Výsledky celé prezentace"
           >
             <BarChart3 className="w-4 h-4" />
             Výsledky třídy
+          </Button>
+          <Button
+            size="sm"
+            variant={unansweredCount > 0 ? "default" : "outline"}
+            className="gap-1.5 relative"
+            onClick={() => setQuestionsOpen(true)}
+            title="Živé dotazy od žáků"
+          >
+            <MessageCircleQuestion className="w-4 h-4" />
+            Dotazy
+            {unansweredCount > 0 && (
+              <span className="ml-1 inline-flex items-center justify-center rounded-full bg-amber-500 text-white text-[10px] font-bold min-w-[18px] h-[18px] px-1">
+                {unansweredCount}
+              </span>
+            )}
           </Button>
           <Button size="sm" variant="destructive" onClick={endGame}>
             <StopCircle className="w-4 h-4 mr-1" /> Ukončit
@@ -305,6 +350,17 @@ const LiveTeacherScreen = () => {
           slides={slides}
           responses={responses}
           currentSettings={settings}
+        />
+      )}
+
+      {sessionId && (
+        <LiveQuestionsSheet
+          open={questionsOpen}
+          onOpenChange={setQuestionsOpen}
+          sessionId={sessionId}
+          role="teacher"
+          players={players as any}
+          anonymous={!!settings?.anonymousAnswers}
         />
       )}
 
@@ -835,6 +891,12 @@ const LiveTeacherScreen = () => {
             >
               <ChevronLeft className="w-4 h-4 mr-1" /> Předchozí
             </Button>
+            {hasRevealBlocks && revealStep < maxRevealCount && (
+              <Button variant="secondary" onClick={revealNext} className="gap-1.5">
+                <Eye className="w-4 h-4" />
+                Odkrýt další ({Math.min(revealStep, maxRevealCount)}/{maxRevealCount})
+              </Button>
+            )}
             <Button onClick={handleNext}>
               {currentIndex >= slides.length - 1 ? "Ukončit výuku" : "Další slide"}
               <ChevronRight className="w-4 h-4 ml-1" />

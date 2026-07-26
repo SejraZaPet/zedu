@@ -29,6 +29,7 @@ interface BodyProps {
   slide: any;
   editable?: boolean;
   darkMode?: boolean;
+  revealStep?: number;
   onChangeHeadline?: (v: string) => void;
   onChangeBlock?: (blockId: string, patch: Partial<Block> | ((b: Block) => Block)) => void;
   onMoveBlock?: (blockId: string, dir: "up" | "down") => void;
@@ -205,9 +206,22 @@ function EditableBlock({
 
   if (block.type === "bullet_list") {
     const items: string[] = block.props?.items || [""];
+    const revealMode = !!block.props?.revealMode;
+    const revealToggle = editable ? (
+      <label className="flex items-center gap-2 text-xs text-white/70 mb-2 select-none">
+        <input
+          type="checkbox"
+          className="h-3.5 w-3.5"
+          checked={revealMode}
+          onChange={(e) => update((b) => ({ ...b, props: { ...b.props, revealMode: e.target.checked } }))}
+        />
+        Postupné odkrývání odrážek při prezentaci
+      </label>
+    ) : null;
     if (block.props?.html) {
       return (
         <div className={asCard ? "bg-white/10 rounded-xl p-4 border border-white/15" : ""}>
+          {revealToggle}
           <EditableText
             editable={editable}
             multiline
@@ -221,56 +235,60 @@ function EditableBlock({
       );
     }
     return (
-      <ul className={`space-y-2 ${asCard ? "bg-white/10 rounded-xl p-4 border border-white/15" : ""}`}>
-        {items.map((item, i) => (
-          <li key={i} className="flex items-start gap-3 text-2xl">
-            <span className="text-purple-400 mt-1 flex-shrink-0">•</span>
-            <div className="flex-1 flex items-center gap-2">
-              <EditableText
-                editable={editable}
-                value={item}
-                placeholder="Odrážka…"
-                className="flex-1"
-                onCommit={(v) => {
-                  const next = [...items];
-                  next[i] = v;
-                  update((b) => ({ ...b, props: { ...b.props, items: next } }));
-                }}
-              />
-              {editable && items.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() =>
-                    update((b) => ({
-                      ...b,
-                      props: { ...b.props, items: items.filter((_, j) => j !== i) },
-                    }))
-                  }
-                  className="opacity-40 hover:opacity-100 text-sm"
-                  title="Smazat odrážku"
-                >
-                  ×
-                </button>
-              )}
-            </div>
-          </li>
-        ))}
-        {editable && (
-          <li>
-            <button
-              type="button"
-              onClick={() =>
-                update((b) => ({ ...b, props: { ...b.props, items: [...items, ""] } }))
-              }
-              className="text-xs text-purple-300 hover:text-purple-200 ml-6"
-            >
-              + Přidat odrážku
-            </button>
-          </li>
-        )}
-      </ul>
+      <div className={asCard ? "bg-white/10 rounded-xl p-4 border border-white/15" : ""}>
+        {revealToggle}
+        <ul className="space-y-2">
+          {items.map((item, i) => (
+            <li key={i} className="flex items-start gap-3 text-2xl">
+              <span className="text-purple-400 mt-1 flex-shrink-0">•</span>
+              <div className="flex-1 flex items-center gap-2">
+                <EditableText
+                  editable={editable}
+                  value={item}
+                  placeholder="Odrážka…"
+                  className="flex-1"
+                  onCommit={(v) => {
+                    const next = [...items];
+                    next[i] = v;
+                    update((b) => ({ ...b, props: { ...b.props, items: next } }));
+                  }}
+                />
+                {editable && items.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      update((b) => ({
+                        ...b,
+                        props: { ...b.props, items: items.filter((_, j) => j !== i) },
+                      }))
+                    }
+                    className="opacity-40 hover:opacity-100 text-sm"
+                    title="Smazat odrážku"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            </li>
+          ))}
+          {editable && (
+            <li>
+              <button
+                type="button"
+                onClick={() =>
+                  update((b) => ({ ...b, props: { ...b.props, items: [...items, ""] } }))
+                }
+                className="text-xs text-purple-300 hover:text-purple-200 ml-6"
+              >
+                + Přidat odrážku
+              </button>
+            </li>
+          )}
+        </ul>
+      </div>
     );
   }
+
 
   // Fallback (image, table, accordion, etc.): use existing renderer
   return (
@@ -328,6 +346,7 @@ export function SlideBody({
   slide,
   editable,
   darkMode = true,
+  revealStep,
   onChangeHeadline,
   onChangeBlock,
   onMoveBlock,
@@ -337,8 +356,30 @@ export function SlideBody({
   const layout: SlideLayout = (slide?.layout as SlideLayout) || "full";
   const headline: string = slide?.projector?.headline || "";
   const fontScale = slide?.projector?.fontScale || 1;
-  const blocks: Block[] = slide?.blocks || [];
+  const rawBlocks: Block[] = slide?.blocks || [];
   const heroImage: string | undefined = slide?.heroImage;
+
+  // Apply progressive-reveal transformation when not editing.
+  const blocks: Block[] = !editable && typeof revealStep === "number"
+    ? rawBlocks.map((b) => {
+        if (b.type !== "bullet_list" || !b.props?.revealMode) return b;
+        const step = Math.max(0, revealStep);
+        if (Array.isArray(b.props.items)) {
+          return { ...b, props: { ...b.props, items: (b.props.items as string[]).slice(0, step) } } as Block;
+        }
+        if (typeof b.props.html === "string") {
+          // Keep first N <li> elements and drop the rest.
+          const html = b.props.html as string;
+          let kept = 0;
+          const truncated = html.replace(/<li\b[^>]*>[\s\S]*?<\/li>/gi, (m) => {
+            kept += 1;
+            return kept <= step ? m : "";
+          });
+          return { ...b, props: { ...b.props, html: truncated } } as Block;
+        }
+        return b;
+      })
+    : rawBlocks;
 
   const blockTextScope = darkMode
     ? "[&_*]:!text-white [&_h1]:!text-white [&_h2]:!text-white [&_h3]:!text-white [&_.bg-card]:!bg-white/10 [&_.bg-muted\\/40]:!bg-white/10 [&_.bg-muted\\/30]:!bg-white/10 [&_.border]:!border-white/20"
