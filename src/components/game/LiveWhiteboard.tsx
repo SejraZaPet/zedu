@@ -184,8 +184,14 @@ const LiveWhiteboard = ({ sessionId, data, readOnly = false, onClose, overlay = 
   }, [sessionId]);
 
   const commitStrokes = useCallback((next: Stroke[]) => {
+    if (localOnly) {
+      // Keep only strokes not in remote (i.e. the local ones)
+      const remoteIds = new Set(remoteStrokes.map((s) => s.id));
+      setPendingStrokes(next.filter((s) => !remoteIds.has(s.id)));
+      return;
+    }
     persist({ strokes: next, visible: data.visible });
-  }, [persist, data.visible]);
+  }, [persist, data.visible, localOnly, remoteStrokes]);
 
   const getRelative = (e: PointerEvent | React.PointerEvent): [number, number] => {
     const cont = containerRef.current!;
