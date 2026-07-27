@@ -129,11 +129,25 @@ serve(async (req) => {
       if (isCorrect) {
         const { data: opponents } = await adminClient
           .from("game_players")
-          .select("id, total_score")
+          .select("id, total_score, nickname")
           .eq("session_id", session.id)
           .neq("id", player.id);
-        const eligible = (opponents || []).filter((o) => (o.total_score ?? 0) > 0);
-        const pool = eligible.length > 0 ? eligible : (opponents || []);
+
+        // Team-mode: exclude opponents on the attacker's team so a player
+        // can't steal from their own teammates.
+        const teamModeKind = settings?.teamModeKind ?? "none";
+        const teamsArr = ((session as any).teams?.teams ?? []) as Array<{ id: string; members: string[] }>;
+        let candidatePool = opponents || [];
+        if (teamModeKind !== "none" && teamsArr.length > 0) {
+          const myTeam = teamsArr.find((t) => Array.isArray(t.members) && t.members.includes(player.id));
+          if (myTeam) {
+            const teammateIds = new Set(myTeam.members);
+            candidatePool = candidatePool.filter((o) => !teammateIds.has(o.id));
+          }
+        }
+
+        const eligible = candidatePool.filter((o) => (o.total_score ?? 0) > 0);
+        const pool = eligible.length > 0 ? eligible : candidatePool;
         if (pool.length > 0) {
           const target = pool[Math.floor(Math.random() * pool.length)];
           stolenFrom = target.id;
@@ -141,6 +155,8 @@ serve(async (req) => {
             _player_id: target.id, _score_delta: -5,
           });
           score = 5;
+          // Include victim nickname in response for student-side feedback.
+          (globalThis as any).__stolenNick = (target as any).nickname ?? null;
         } else {
           score = 5;
         }
