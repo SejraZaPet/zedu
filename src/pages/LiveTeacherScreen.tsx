@@ -565,6 +565,22 @@ const LiveTeacherScreen = () => {
         </SheetContent>
       </Sheet>
 
+      <Dialog open={progressGridOpen} onOpenChange={setProgressGridOpen}>
+        <DialogContent className="max-w-6xl w-[95vw]">
+          <DialogHeader>
+            <DialogTitle>Přehled třídy — mřížka postupu</DialogTitle>
+          </DialogHeader>
+          <div className="mt-2">
+            <StudentProgressGrid
+              slides={slides as any}
+              players={players as any}
+              responses={responses as any}
+              pacingMode={settings?.pacingMode}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
+
 
       {/* Slide strip */}
       <div className="flex gap-1 overflow-x-auto pb-1">
