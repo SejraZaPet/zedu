@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import type { GamePlayer, GameSession } from "@/lib/game-types";
+import { findPlayerTeam } from "@/lib/game-types";
 import GameAvatarFigure from "@/components/game/GameAvatarFigure";
 import { Flag, Clock } from "lucide-react";
 
@@ -95,7 +96,10 @@ export default function RaceTrack({
       </div>
       <div className="relative">
         {sorted.map((player, idx) => {
-          const laneColor = LANE_COLORS[idx % LANE_COLORS.length];
+          const teamsArr = (session as any)?.teams?.teams;
+          const teamModeActive = ((session.settings as any)?.teamModeKind ?? "none") !== "none";
+          const playerTeam = teamModeActive ? findPlayerTeam(teamsArr, player.id) : null;
+          const laneColor = playerTeam?.color || LANE_COLORS[idx % LANE_COLORS.length];
           let ratio: number;
           if (mode === "progress") {
             const si = typeof player.student_index === "number" ? player.student_index : 0;

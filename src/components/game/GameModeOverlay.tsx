@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import type { GamePlayer, GameSession } from "@/lib/game-types";
+import type { GamePlayer, GameSession, Team } from "@/lib/game-types";
 import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
 
 import { getModeDef, getThemeDef, type GameMode } from "@/lib/game-modes";
@@ -96,13 +96,38 @@ export const GameModeOverlay = ({ session, players }: Props) => {
 
   if (mode === "tower") {
     const colors = TOWER_BLOCK[themeId || "bricks"] || TOWER_BLOCK.bricks;
-    const top = sorted.slice(0, 8);
-    const maxBlocks = Math.max(5, ...top.map((p) => p.total_score));
+    const teamsArr = (session as any)?.teams?.teams as Team[] | undefined;
+    const teamModeActive = (settings.teamModeKind ?? "none") !== "none";
+
+    // Team mode: aggregate per team; otherwise per player.
+    type Column = { id: string; label: string; count: number; color?: string; userId?: string | null };
+    let columns: Column[];
+    if (teamModeActive && teamsArr && teamsArr.length > 0) {
+      const byPlayer = new Map(players.map((p) => [p.id, p.total_score]));
+      columns = teamsArr
+        .map((t) => ({
+          id: t.id,
+          label: t.name,
+          count: t.members.reduce((sum, pid) => sum + (byPlayer.get(pid) || 0), 0),
+          color: t.color,
+        }))
+        .sort((a, b) => b.count - a.count);
+    } else {
+      columns = sorted.slice(0, 8).map((p) => ({
+        id: p.id,
+        label: p.nickname,
+        count: p.total_score,
+        userId: p.user_id ?? null,
+      }));
+    }
+
+    const maxBlocks = Math.max(5, ...columns.map((c) => c.count));
     return (
       <div className="rounded-2xl p-5 bg-gradient-to-b from-sky-100 to-sky-50 dark:from-slate-800 dark:to-slate-900 shadow-lg">
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-heading font-bold text-lg flex items-center gap-2 text-foreground">
             <span className="text-2xl">{themeDef.emoji}</span> Stavění věže
+            {teamModeActive && <span className="text-xs font-normal text-muted-foreground ml-1">(týmy)</span>}
           </h3>
           <span className="text-xs text-muted-foreground">+1 kostka za správnou odpověď</span>
         </div>
@@ -110,24 +135,38 @@ export const GameModeOverlay = ({ session, players }: Props) => {
           className="flex gap-3 items-end overflow-x-auto pb-2"
           style={{ minHeight: `${Math.min(360, maxBlocks * 18 + 60)}px` }}
         >
-          {top.map((p) => {
-            const blocks = p.total_score;
+          {columns.map((col) => {
+            const blocks = col.count;
+            const paletteColors = col.color ? [col.color] : colors;
             return (
-              <div key={p.id} className="flex flex-col items-center gap-1.5 flex-shrink-0 min-w-[64px]">
+              <div key={col.id} className="flex flex-col items-center gap-1.5 flex-shrink-0 min-w-[72px]">
                 <div className="flex flex-col-reverse gap-0.5 items-center">
                   {Array.from({ length: blocks }).map((_, i) => (
                     <div
                       key={i}
                       className="w-12 h-4 rounded-sm shadow-sm transition-all"
                       style={{
-                        background: colors[i % colors.length],
+                        background: paletteColors[i % paletteColors.length],
                         animation: i === blocks - 1 ? "scale-in 0.3s ease-out" : undefined,
                       }}
                     />
                   ))}
                 </div>
-                <ProfileAvatarBubble userId={p.user_id ?? null} size={28} editable={false} crop="head" />
-                <span className="text-[11px] text-foreground truncate max-w-[64px]">{p.nickname}</span>
+                {col.userId !== undefined ? (
+                  <ProfileAvatarBubble userId={col.userId ?? null} size={28} editable={false} crop="head" />
+                ) : (
+                  <div
+                    className="w-7 h-7 rounded-full border-2"
+                    style={{ borderColor: col.color, background: `${col.color}20` }}
+                    aria-hidden
+                  />
+                )}
+                <span
+                  className="text-[11px] truncate max-w-[72px] font-medium"
+                  style={col.color ? { color: col.color } : { color: "hsl(var(--foreground))" }}
+                >
+                  {col.label}
+                </span>
                 <span className="text-xs font-mono font-bold text-primary">{blocks}</span>
               </div>
             );
@@ -136,6 +175,7 @@ export const GameModeOverlay = ({ session, players }: Props) => {
       </div>
     );
   }
+
 
   if (mode === "steal") {
     return (

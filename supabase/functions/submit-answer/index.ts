@@ -54,7 +54,7 @@ serve(async (req) => {
 
     const { data: session, error: sErr } = await adminClient
       .from("game_sessions")
-      .select("id, status, current_question_index, question_started_at, activity_data, settings")
+      .select("id, status, current_question_index, question_started_at, activity_data, settings, teams")
       .eq("id", player.session_id)
       .single();
     if (sErr || !session) {
@@ -119,6 +119,7 @@ serve(async (req) => {
 
     let score = 0;
     let stolenFrom: string | null = null;
+    let stolenFromNickname: string | null = null;
 
     if (gameMode === "race") {
       // Time-to-Climb: flat 10 points per correct answer.
@@ -129,14 +130,29 @@ serve(async (req) => {
       if (isCorrect) {
         const { data: opponents } = await adminClient
           .from("game_players")
-          .select("id, total_score")
+          .select("id, total_score, nickname")
           .eq("session_id", session.id)
           .neq("id", player.id);
-        const eligible = (opponents || []).filter((o) => (o.total_score ?? 0) > 0);
-        const pool = eligible.length > 0 ? eligible : (opponents || []);
+
+        // Team-mode: exclude opponents on the attacker's team so a player
+        // can't steal from their own teammates.
+        const teamModeKind = settings?.teamModeKind ?? "none";
+        const teamsArr = ((session as any).teams?.teams ?? []) as Array<{ id: string; members: string[] }>;
+        let candidatePool = opponents || [];
+        if (teamModeKind !== "none" && teamsArr.length > 0) {
+          const myTeam = teamsArr.find((t) => Array.isArray(t.members) && t.members.includes(player.id));
+          if (myTeam) {
+            const teammateIds = new Set(myTeam.members);
+            candidatePool = candidatePool.filter((o) => !teammateIds.has(o.id));
+          }
+        }
+
+        const eligible = candidatePool.filter((o) => (o.total_score ?? 0) > 0);
+        const pool = eligible.length > 0 ? eligible : candidatePool;
         if (pool.length > 0) {
           const target = pool[Math.floor(Math.random() * pool.length)];
           stolenFrom = target.id;
+          stolenFromNickname = (target as any).nickname ?? null;
           await adminClient.rpc("increment_player_score", {
             _player_id: target.id, _score_delta: -5,
           });
@@ -168,7 +184,7 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ correct: isCorrect, score, stolenFrom, questionIndex: qi }),
+      JSON.stringify({ correct: isCorrect, score, stolenFrom, stolenFromNickname, questionIndex: qi }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {

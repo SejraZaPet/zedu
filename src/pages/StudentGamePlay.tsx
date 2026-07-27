@@ -44,6 +44,7 @@ const StudentGamePlay = () => {
   const myPlayer = players.find((p) => p.id === playerId);
   const [answered, setAnswered] = useState<Set<number>>(new Set());
   const [lastResult, setLastResult] = useState<{ correct: boolean; score: number } | null>(null);
+  const [modeFeedback, setModeFeedback] = useState<{ text: string; tone: "good" | "bad" } | null>(null);
   const [liveSettings, setLiveSettings] = useState<any>({});
   const [studentDrawMode, setStudentDrawMode] = useState(false);
   const [questionsOpen, setQuestionsOpen] = useState(false);
@@ -131,6 +132,27 @@ const StudentGamePlay = () => {
 
     setAnswered((prev) => new Set(prev).add(localQi));
     setLastResult({ correct: data.correct, score: data.score });
+
+    // Mode-specific micro-feedback for tower / steal.
+    const mode = settings.gameMode;
+    if (mode === "tower" && data.correct) {
+      setModeFeedback({ text: "+🧱 Kostka!", tone: "good" });
+      setTimeout(() => setModeFeedback(null), 1400);
+    } else if (mode === "steal") {
+      if (data.correct) {
+        const victimNick = (data as any).stolenFromNickname
+          || (data?.stolenFrom ? players.find((p) => p.id === data.stolenFrom)?.nickname : null);
+        setModeFeedback({
+          text: victimNick
+            ? `🏴‍☠️ Ukradl jsi 5 bodů ${victimNick}!`
+            : "🏴‍☠️ +5 bodů!",
+          tone: "good",
+        });
+      } else {
+        setModeFeedback({ text: "💸 Přišel jsi o 3 body", tone: "bad" });
+      }
+      setTimeout(() => setModeFeedback(null), 1800);
+    }
 
     if (isRace && data.correct) {
       // Auto-advance to next question after brief positive feedback.
@@ -289,6 +311,19 @@ const StudentGamePlay = () => {
     return (
       <>
         <ConnectionStatusBanner status={connectionStatus} onReconnect={reconnect} />
+        {modeFeedback && (
+          <div
+            className={`fixed top-16 left-1/2 -translate-x-1/2 z-[70] px-4 py-2 rounded-full text-sm font-semibold shadow-xl border-2 pointer-events-none animate-in fade-in slide-in-from-top-2 ${
+              modeFeedback.tone === "good"
+                ? "bg-emerald-500 text-white border-emerald-300"
+                : "bg-rose-500 text-white border-rose-300"
+            }`}
+            role="status"
+            aria-live="polite"
+          >
+            {modeFeedback.text}
+          </div>
+        )}
         <div
           className="min-h-screen min-h-[100dvh] flex flex-col overflow-y-auto text-white"
           style={{ background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)" }}
@@ -639,6 +674,19 @@ const StudentGamePlay = () => {
   return (
     <>
       <ConnectionStatusBanner status={connectionStatus} onReconnect={reconnect} />
+      {modeFeedback && (
+        <div
+          className={`fixed top-16 left-1/2 -translate-x-1/2 z-[70] px-4 py-2 rounded-full text-sm font-semibold shadow-xl border-2 pointer-events-none animate-in fade-in slide-in-from-top-2 ${
+            modeFeedback.tone === "good"
+              ? "bg-emerald-500 text-white border-emerald-300"
+              : "bg-rose-500 text-white border-rose-300"
+          }`}
+          role="status"
+          aria-live="polite"
+        >
+          {modeFeedback.text}
+        </div>
+      )}
       {myTeam && (
         <div
           className="fixed top-2 right-2 z-40 flex items-center gap-2 px-3 py-1.5 rounded-full border-2 text-sm font-semibold shadow-sm bg-background/90 backdrop-blur"
