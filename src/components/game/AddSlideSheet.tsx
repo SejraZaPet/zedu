@@ -509,6 +509,61 @@ export function AddSlideSheet({
               </Button>
             </div>
           )}
+
+          {kind === "teams" && (
+            <div className="space-y-4">
+              <p className="text-xs text-muted-foreground">
+                Rozděl třídu do menších skupin pro skupinovou práci. Rozdělení
+                se uloží do session a zobrazí se na projektoru i žákům.
+              </p>
+              <div className="space-y-1.5">
+                <Label>Způsob rozdělení</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {([
+                    { id: "random", label: "Náhodně", desc: "Automaticky" },
+                    { id: "manual", label: "Ručně", desc: "Drag & drop" },
+                  ] as const).map((opt) => {
+                    const active = teamsMode === opt.id;
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => setTeamsMode(opt.id)}
+                        disabled={busy}
+                        className={cn(
+                          "rounded-lg border p-3 text-left transition",
+                          active
+                            ? "border-primary bg-primary/10 ring-2 ring-primary/30"
+                            : "border-border hover:border-primary/50"
+                        )}
+                      >
+                        <div className="font-semibold text-sm">{opt.label}</div>
+                        <div className="text-[11px] text-muted-foreground">{opt.desc}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="teams-count">Počet skupin</Label>
+                <select
+                  id="teams-count"
+                  className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+                  value={teamsCount}
+                  onChange={(e) => setTeamsCount(parseInt(e.target.value, 10))}
+                  disabled={busy}
+                >
+                  {[2, 3, 4, 5, 6].map((n) => (
+                    <option key={n} value={n}>{n}</option>
+                  ))}
+                </select>
+              </div>
+              <Button onClick={submitTeams} disabled={busy} className="w-full">
+                {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Přidat a zobrazit
+              </Button>
+            </div>
+          )}
         </div>
       </SheetContent>
     </Sheet>
