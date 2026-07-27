@@ -176,6 +176,16 @@ const LiveProjectorScreen = () => {
   const scrollTop = (session.settings as any)?.projectorScrollTop ?? 0;
   const showRaceTrack = !!(session.settings as any)?.showRaceTrack;
 
+  // Standalone "teams" slide — fullscreen team layout
+  if ((currentSlide as any)?.activitySpec?.activityType === "teams") {
+    return (
+      <div className="relative">
+        <CloseButton />
+        <TeamsSlideProjector session={session} players={players} slide={currentSlide} />
+      </div>
+    );
+  }
+
   return (
     <div className="relative">
       <CloseButton />
