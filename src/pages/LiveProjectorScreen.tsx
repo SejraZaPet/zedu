@@ -8,6 +8,7 @@ import { AdaptiveReviewProjector } from "@/components/game/AdaptiveReview";
 import LiveWhiteboard, { WhiteboardData } from "@/components/game/LiveWhiteboard";
 import { LessonBlock } from "@/components/LessonBlockRenderer";
 import ProjectorSlideView from "@/components/live/ProjectorSlideView";
+import { TeamsSlideProjector } from "@/components/game/TeamsSlide";
 import RaceTrack from "@/components/game/RaceTrack";
 import { useEffect, useState } from "react";
 import { getClockOffset } from "@/lib/clock-sync";
