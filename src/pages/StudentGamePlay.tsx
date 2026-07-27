@@ -230,6 +230,58 @@ const StudentGamePlay = () => {
     });
   };
 
+  // ---- Race mode (Time-to-Climb) student-side overlay ----
+  const raceSettings = (session.settings as any) || {};
+  const isRaceMode = raceSettings.gameMode === "race";
+  const raceStartedAtMs = raceSettings.raceStartedAt ? new Date(raceSettings.raceStartedAt).getTime() : null;
+  const raceDurationSec = Number(raceSettings.raceDurationSec) || 180;
+
+  const [nowTick, setNowTick] = useState<number>(() => Date.now());
+  useEffect(() => {
+    if (!isRaceMode) return;
+    const id = setInterval(() => setNowTick(Date.now()), 500);
+    return () => clearInterval(id);
+  }, [isRaceMode]);
+
+  if (isRaceMode) {
+    const remainingSec = raceStartedAtMs
+      ? Math.max(0, Math.round((raceStartedAtMs + raceDurationSec * 1000 - nowTick) / 1000))
+      : raceDurationSec;
+    const myIdx = myPlayer?.student_index ?? 0;
+    const finishedRace = myIdx >= totalSlides;
+    const timeUp = raceStartedAtMs !== null && nowTick >= raceStartedAtMs + raceDurationSec * 1000;
+
+    if (finishedRace || timeUp) {
+      return (
+        <div
+          className="min-h-screen min-h-[100dvh] flex flex-col items-center justify-center gap-6 p-6 text-white"
+          style={{ background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)" }}
+        >
+          <p className="text-6xl">{finishedRace ? "🏁" : "⏰"}</p>
+          <h1 className="text-3xl font-bold text-center">
+            {finishedRace ? "Dojel jsi do cíle!" : "Čas vypršel"}
+          </h1>
+          <p className="text-white/70 text-center">
+            {finishedRace
+              ? "Počkej na ostatní, výsledky brzy uvidíš."
+              : "Podívej se, kdo dojel nejdál."}
+          </p>
+          <div className="w-full max-w-3xl">
+            <RaceTrack
+              session={session}
+              players={players}
+              mode="progress"
+              highlightPlayerId={playerId}
+              compact
+            />
+          </div>
+        </div>
+      );
+    }
+  }
+
+
+
 
   if (isSlideFormat) {
     const isActivity = currentSlideData.type === "activity" && currentSlideData.activitySpec;
