@@ -31,6 +31,13 @@ const LiveProjectorScreen = () => {
   );
   const { session, players, responses, loading } = useGameSession(sessionId);
 
+  // 1s tick so the race countdown stays live without hammering re-renders.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 500);
+    return () => clearInterval(id);
+  }, []);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
