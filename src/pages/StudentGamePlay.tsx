@@ -44,6 +44,7 @@ const StudentGamePlay = () => {
   const myPlayer = players.find((p) => p.id === playerId);
   const [answered, setAnswered] = useState<Set<number>>(new Set());
   const [lastResult, setLastResult] = useState<{ correct: boolean; score: number } | null>(null);
+  const [modeFeedback, setModeFeedback] = useState<{ text: string; tone: "good" | "bad" } | null>(null);
   const [liveSettings, setLiveSettings] = useState<any>({});
   const [studentDrawMode, setStudentDrawMode] = useState(false);
   const [questionsOpen, setQuestionsOpen] = useState(false);
