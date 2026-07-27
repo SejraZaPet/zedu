@@ -301,6 +301,20 @@ const LiveTeacherScreen = () => {
               Tempo: {settings?.pacingMode === "student" ? "vlastní tempo" : "učitelem"}
             </span>
           </label>
+          <label className="flex items-center gap-2 rounded-md border border-border bg-background px-2.5 py-1.5 text-xs">
+            <Switch
+              checked={!!settings?.showRaceTrack}
+              onCheckedChange={async (checked) => {
+                if (!sessionId) return;
+                await supabase
+                  .from("game_sessions")
+                  .update({ settings: { ...(settings || {}), showRaceTrack: checked } })
+                  .eq("id", sessionId);
+              }}
+              aria-label="Zobrazit závodní dráhu na projektoru"
+            />
+            <span className="whitespace-nowrap">Závodní dráha</span>
+          </label>
           <Button
             size="sm"
             variant="outline"

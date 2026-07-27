@@ -583,6 +583,7 @@ const StudentGamePlay = () => {
         timeLimit={timeLimit}
         questionStarted={questionStarted}
         status={session.status}
+        myUserId={user?.id ?? null}
       />
     </>
   );

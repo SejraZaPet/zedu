@@ -3,7 +3,8 @@ import { useMemo } from "react";
 import { Trophy, Home, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
+import GameAvatarFigure from "@/components/game/GameAvatarFigure";
+import Confetti from "@/components/game/Confetti";
 
 
 interface Props {
@@ -13,10 +14,11 @@ interface Props {
   highlightPlayerId?: string;
 }
 
-const PODIUM_STYLES = [
-  { emoji: "🥇", size: "text-6xl", bg: "bg-yellow-500/10 border-yellow-500/40", nameSize: "text-2xl" },
-  { emoji: "🥈", size: "text-5xl", bg: "bg-gray-400/10 border-gray-400/40", nameSize: "text-xl" },
-  { emoji: "🥉", size: "text-4xl", bg: "bg-amber-600/10 border-amber-600/40", nameSize: "text-lg" },
+// Podium slot styles keyed by rank (0 = 1st, 1 = 2nd, 2 = 3rd).
+const PODIUM_SLOTS = [
+  { label: "1", medal: "🥇", height: 160, blockColor: "hsl(var(--primary))", nameSize: "text-xl md:text-2xl" },
+  { label: "2", medal: "🥈", height: 120, blockColor: "hsl(var(--brand-turquoise))", nameSize: "text-lg md:text-xl" },
+  { label: "3", medal: "🥉", height: 90, blockColor: "hsl(var(--brand-purple))", nameSize: "text-base md:text-lg" },
 ];
 
 export const GameLeaderboardFinal = ({ session, players, responses, highlightPlayerId }: Props) => {
@@ -79,32 +81,53 @@ export const GameLeaderboardFinal = ({ session, players, responses, highlightPla
           </div>
         )}
 
-        {/* Podium */}
-        <div className="flex items-end justify-center gap-4 pt-4">
-          {[1, 0, 2].map((podiumIndex) => {
-            const player = top3[podiumIndex];
-            if (!player) return <div key={podiumIndex} className="w-1/3" />;
-            const style = PODIUM_STYLES[podiumIndex];
-            const isHighlighted = player.id === highlightPlayerId;
-            return (
-              <div
-                key={player.id}
-                className={`flex-1 text-center space-y-2 animate-scale-in ${podiumIndex === 0 ? "order-2" : podiumIndex === 1 ? "order-1" : "order-3"}`}
-                style={{ animationDelay: `${podiumIndex * 0.2}s` }}
-              >
-                <span className={style.size}>{style.emoji}</span>
-                <div className={`rounded-2xl border-2 p-4 ${style.bg} ${isHighlighted ? "ring-2 ring-primary" : ""}`}>
-                  <div className="flex justify-center mb-2">
-                    <ProfileAvatarBubble userId={player.user_id ?? null} size={56} editable={false} crop="head" />
+        {/* Podium — full-body avatars standing on colored blocks with confetti */}
+        <div className="relative">
+          <Confetti count={70} />
+          <div className="relative flex items-end justify-center gap-3 md:gap-6 pt-6 pb-2 min-h-[280px]">
+            {[1, 0, 2].map((rank) => {
+              const player = top3[rank];
+              const slot = PODIUM_SLOTS[rank];
+              const order = rank === 0 ? "order-2" : rank === 1 ? "order-1" : "order-3";
+              if (!player) {
+                return <div key={`empty-${rank}`} className={`flex-1 ${order}`} />;
+              }
+              const isHighlighted = player.id === highlightPlayerId;
+              return (
+                <div
+                  key={player.id}
+                  className={`flex-1 flex flex-col items-center animate-scale-in ${order}`}
+                  style={{ animationDelay: `${rank * 0.2}s` }}
+                >
+                  {/* Full-body avatar */}
+                  <div className={isHighlighted ? "drop-shadow-[0_0_16px_hsl(var(--primary)/0.6)]" : ""}>
+                    <GameAvatarFigure
+                      userId={player.user_id}
+                      size={rank === 0 ? 140 : 108}
+                      crop="full"
+                      idleBounce
+                      idleDelaySec={rank * 0.4}
+                    />
                   </div>
-                  <p className={`font-heading font-bold text-foreground ${style.nameSize} truncate`}>
-                    {player.nickname}
-                  </p>
-                  <p className="text-lg font-mono font-bold text-primary">{player.total_score} b.</p>
+                  {/* Podium block */}
+                  <div
+                    className="w-full rounded-t-xl border-2 border-b-0 border-white/20 flex flex-col items-center justify-start pt-2 text-white shadow-lg"
+                    style={{
+                      height: slot.height,
+                      background: `linear-gradient(180deg, ${slot.blockColor}, ${slot.blockColor}CC)`,
+                    }}
+                  >
+                    <span className="text-2xl md:text-3xl" aria-hidden>{slot.medal}</span>
+                    <span className="text-3xl md:text-4xl font-heading font-black leading-none">{slot.label}</span>
+                    <p className={`mt-1 px-1 font-heading font-bold ${slot.nameSize} truncate max-w-full`}>
+                      {player.nickname}
+                    </p>
+                    <p className="text-sm md:text-base font-mono font-bold opacity-90">{player.total_score} b.</p>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
 
         {/* Rest of players */}
@@ -116,7 +139,7 @@ export const GameLeaderboardFinal = ({ session, players, responses, highlightPla
                 className={`flex items-center gap-3 py-2 px-3 rounded-lg ${player.id === highlightPlayerId ? "bg-primary/10" : "hover:bg-muted/30"}`}
               >
                 <span className="text-sm font-bold text-muted-foreground w-6">{i + 4}.</span>
-                <ProfileAvatarBubble userId={player.user_id ?? null} size={32} editable={false} crop="head" />
+                <GameAvatarFigure userId={player.user_id} size={32} crop="head" />
                 <span className="flex-1 font-medium text-foreground">{player.nickname}</span>
                 <span className="font-mono font-bold text-primary text-sm">{player.total_score} b.</span>
               </div>

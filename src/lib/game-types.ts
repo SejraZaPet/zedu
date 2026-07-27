@@ -33,6 +33,7 @@ export interface GameSettings {
   soundsEnabled?: boolean;
   anonymousAnswers?: boolean;
   pacingMode?: "teacher" | "student";
+  showRaceTrack?: boolean;
 }
 
 export const TEAM_COLORS = [
