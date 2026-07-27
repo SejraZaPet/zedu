@@ -62,6 +62,17 @@ const LiveProjectorScreen = () => {
   const gameCode = session.game_code || "";
   const joinUrl = `${window.location.origin}/live/pripojit`;
 
+  const settings = (session.settings as any) || {};
+  const isRaceMode = settings.gameMode === "race";
+  const raceStartedAtMs = settings.raceStartedAt
+    ? new Date(settings.raceStartedAt).getTime()
+    : null;
+  const raceDurationSec = Number(settings.raceDurationSec) || 180;
+  const serverNow = now - getClockOffset();
+  const raceRemainingSec = raceStartedAtMs
+    ? Math.max(0, Math.round((raceStartedAtMs + raceDurationSec * 1000 - serverNow) / 1000))
+    : raceDurationSec;
+
   // Lobby screen
   if (session.status === "lobby") {
     return (
