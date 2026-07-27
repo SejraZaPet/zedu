@@ -258,6 +258,60 @@ export function AddSlideSheet({
     appendAndJump(buildTeamsSlide(teamsMode, teamsCount));
   };
 
+  const syncDiffTasksCount = (n: number) => {
+    setDiffCount(n);
+    setDiffTasks((prev) => {
+      const next = [...prev];
+      if (next.length < n) {
+        while (next.length < n) next.push({ title: "", content: "" });
+      } else if (next.length > n) {
+        next.length = n;
+      }
+      return next;
+    });
+  };
+
+  const runDiffAi = async () => {
+    if (!diffTopic.trim()) {
+      toast.error("Doplňte téma/zadání.");
+      return;
+    }
+    setDiffLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-differentiated-tasks", {
+        body: { topic: diffTopic, teamCount: diffCount },
+      });
+      if (error) throw error;
+      const tasks = Array.isArray((data as any)?.tasks) ? (data as any).tasks : [];
+      if (tasks.length === 0) throw new Error("AI nevrátila žádné varianty.");
+      const filled: { title: string; content: string }[] = [];
+      for (let i = 0; i < diffCount; i++) {
+        const t = tasks[i] || { title: `Varianta ${i + 1}`, content: diffTopic };
+        filled.push({ title: String(t.title || ""), content: String(t.content || "") });
+      }
+      setDiffTasks(filled);
+      toast.success("Varianty vygenerovány. Můžete je před uložením upravit.");
+    } catch (e: any) {
+      toast.error(e?.message || "Nepodařilo se vygenerovat varianty.");
+    } finally {
+      setDiffLoading(false);
+    }
+  };
+
+  const submitDifferentiated = () => {
+    if (!diffTopic.trim()) {
+      toast.error("Doplňte téma/zadání.");
+      return;
+    }
+    const tasks = diffTasks.slice(0, diffCount);
+    if (tasks.some((t) => !t.title.trim() || !t.content.trim())) {
+      toast.error("Vyplňte název i zadání pro každou variantu (nebo použijte AI).");
+      return;
+    }
+    appendAndJump(buildDifferentiatedSlide(diffTopic, tasks, diffCount));
+  };
+
+
   return (
     <Sheet
       open={open}
