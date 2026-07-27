@@ -151,6 +151,16 @@ export function AddSlideSheet({
   const [teamsMode, setTeamsMode] = useState<"random" | "manual">("random");
   const [teamsCount, setTeamsCount] = useState(2);
 
+  // differentiated
+  const [diffTopic, setDiffTopic] = useState("");
+  const [diffCount, setDiffCount] = useState(3);
+  const [diffTasks, setDiffTasks] = useState<{ title: string; content: string }[]>([
+    { title: "", content: "" },
+    { title: "", content: "" },
+    { title: "", content: "" },
+  ]);
+  const [diffLoading, setDiffLoading] = useState(false);
+
   const reset = () => {
     setKind("menu");
     setTextHeadline("");
@@ -164,6 +174,14 @@ export function AddSlideSheet({
     setWcAnonymous(true);
     setTeamsMode("random");
     setTeamsCount(2);
+    setDiffTopic("");
+    setDiffCount(3);
+    setDiffTasks([
+      { title: "", content: "" },
+      { title: "", content: "" },
+      { title: "", content: "" },
+    ]);
+    setDiffLoading(false);
   };
 
   const close = () => {
