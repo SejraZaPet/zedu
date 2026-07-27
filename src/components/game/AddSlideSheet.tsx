@@ -214,6 +214,10 @@ export function AddSlideSheet({
     appendAndJump(buildWordcloudSlide(wcPrompt, wcAnonymous));
   };
 
+  const submitTeams = () => {
+    appendAndJump(buildTeamsSlide(teamsMode, teamsCount));
+  };
+
   return (
     <Sheet
       open={open}
