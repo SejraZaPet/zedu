@@ -125,6 +125,10 @@ export function AddSlideSheet({
   const [wcPrompt, setWcPrompt] = useState("");
   const [wcAnonymous, setWcAnonymous] = useState(true);
 
+  // teams
+  const [teamsMode, setTeamsMode] = useState<"random" | "manual">("random");
+  const [teamsCount, setTeamsCount] = useState(2);
+
   const reset = () => {
     setKind("menu");
     setTextHeadline("");
@@ -136,6 +140,8 @@ export function AddSlideSheet({
     setWallAnonymous(true);
     setWcPrompt("");
     setWcAnonymous(true);
+    setTeamsMode("random");
+    setTeamsCount(2);
   };
 
   const close = () => {
