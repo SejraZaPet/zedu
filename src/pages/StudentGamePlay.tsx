@@ -133,6 +133,27 @@ const StudentGamePlay = () => {
     setAnswered((prev) => new Set(prev).add(localQi));
     setLastResult({ correct: data.correct, score: data.score });
 
+    // Mode-specific micro-feedback for tower / steal.
+    const mode = settings.gameMode;
+    if (mode === "tower" && data.correct) {
+      setModeFeedback({ text: "+🧱 Kostka!", tone: "good" });
+      setTimeout(() => setModeFeedback(null), 1400);
+    } else if (mode === "steal") {
+      if (data.correct) {
+        const victimNick = (data as any).stolenFromNickname
+          || (data?.stolenFrom ? players.find((p) => p.id === data.stolenFrom)?.nickname : null);
+        setModeFeedback({
+          text: victimNick
+            ? `🏴‍☠️ Ukradl jsi 5 bodů ${victimNick}!`
+            : "🏴‍☠️ +5 bodů!",
+          tone: "good",
+        });
+      } else {
+        setModeFeedback({ text: "💸 Přišel jsi o 3 body", tone: "bad" });
+      }
+      setTimeout(() => setModeFeedback(null), 1800);
+    }
+
     if (isRace && data.correct) {
       // Auto-advance to next question after brief positive feedback.
       setTimeout(() => {
