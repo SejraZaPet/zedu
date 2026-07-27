@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { t } from "@/lib/t";
 import { QRCodeSVG } from "qrcode.react";
 import { TeamSetup } from "@/components/game/TeamSetup";
+import GameAvatarFigure from "@/components/game/GameAvatarFigure";
 
 interface Props {
   session: GameSession;
@@ -107,7 +108,7 @@ export const GameLobby = ({ session, players, onStart, isTeacher }: Props) => {
           </div>
 
           <div
-            className="flex flex-wrap justify-center gap-2 max-h-40 overflow-y-auto"
+            className="flex flex-wrap justify-center gap-4 max-h-[22rem] overflow-y-auto px-2 py-3"
             role="list"
             aria-label={t("a11y.lobby.playerListLabel")}
             aria-live="polite"
@@ -117,10 +118,19 @@ export const GameLobby = ({ session, players, onStart, isTeacher }: Props) => {
               <div
                 key={player.id}
                 role="listitem"
-                className="bg-card border border-border rounded-xl px-4 py-2 text-sm font-medium text-foreground animate-scale-in"
+                className="flex flex-col items-center gap-1 w-20 animate-scale-in"
                 style={{ animationDelay: `${i * 0.05}s` }}
               >
-                {player.nickname}
+                <GameAvatarFigure
+                  userId={player.user_id}
+                  size={72}
+                  crop="full"
+                  idleBounce
+                  idleDelaySec={(i * 0.17) % 1.8}
+                />
+                <span className="text-xs font-medium text-foreground text-center truncate max-w-full">
+                  {player.nickname}
+                </span>
               </div>
             ))}
             {players.length === 0 && (
