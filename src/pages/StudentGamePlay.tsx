@@ -96,8 +96,15 @@ const StudentGamePlay = () => {
 
   const handleAnswer = async (answerIndex: number) => {
     if (!session || !joinToken) return;
-    const qi = session.current_question_index;
-    if (answered.has(qi)) return;
+    const settings = (session.settings as any) || {};
+    const isRace = settings.gameMode === "race";
+    // In race / student-paced modes each student is on their own question.
+    const pacing = settings.pacingMode === "student" || isRace ? "student" : "teacher";
+    const localQi =
+      pacing === "student"
+        ? Math.max(0, Math.min(((session.activity_data as any[])?.length ?? 1) - 1, myPlayer?.student_index ?? 0))
+        : session.current_question_index;
+    if (!isRace && answered.has(localQi)) return;
 
     // Submit answer via secure edge function (server validates token & computes score)
     const { data, error } = await supabase.functions.invoke("submit-answer", {
@@ -107,15 +114,30 @@ const StudentGamePlay = () => {
     if (error || data?.error) {
       // If already answered (409), just mark as answered
       if (data?.alreadyAnswered) {
-        setAnswered((prev) => new Set(prev).add(qi));
+        setAnswered((prev) => new Set(prev).add(localQi));
         return;
       }
       console.error("submit-answer error:", data?.error || error?.message);
       return;
     }
 
-    setAnswered((prev) => new Set(prev).add(qi));
+    if (isRace && data.correct === false) {
+      // Wrong answer in race mode: show shake, allow immediate retry (server did NOT persist).
+      setLastResult({ correct: false, score: 0 });
+      setTimeout(() => setLastResult(null), 800);
+      return;
+    }
+
+    setAnswered((prev) => new Set(prev).add(localQi));
     setLastResult({ correct: data.correct, score: data.score });
+
+    if (isRace && data.correct) {
+      // Auto-advance to next question after brief positive feedback.
+      setTimeout(() => {
+        setLastResult(null);
+        void setMyStudentIndex(localQi + 1);
+      }, 700);
+    }
   };
 
   if (loading) {
