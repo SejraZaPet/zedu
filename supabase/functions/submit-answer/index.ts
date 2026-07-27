@@ -54,7 +54,7 @@ serve(async (req) => {
 
     const { data: session, error: sErr } = await adminClient
       .from("game_sessions")
-      .select("id, status, current_question_index, question_started_at, activity_data, settings")
+      .select("id, status, current_question_index, question_started_at, activity_data, settings, teams")
       .eq("id", player.session_id)
       .single();
     if (sErr || !session) {
