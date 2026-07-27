@@ -145,6 +145,34 @@ const LiveTeacherScreen = () => {
     onSwipeRight: () => { if (currentIndex > 0) nextQuestion(currentIndex - 2); },
   });
 
+  // Race mode auto-end: finish the session when either every player has crossed
+  // the finish line or the countdown expires. Guarded so we only fire once.
+  const raceEndFiredRef = useRef(false);
+  useEffect(() => {
+    if (!session) return;
+    if (settings?.gameMode !== "race") return;
+    if (session.status !== "playing") return;
+    if (raceEndFiredRef.current) return;
+    const totalQ = slides.length;
+    if (totalQ === 0) return;
+    const startedAt = settings?.raceStartedAt ? new Date(settings.raceStartedAt).getTime() : null;
+    const durMs = (Number(settings?.raceDurationSec) || 180) * 1000;
+    const check = () => {
+      const timeUp = startedAt !== null && Date.now() >= startedAt + durMs;
+      const everyoneDone =
+        players.length > 0 &&
+        players.every((p) => (p.student_index ?? 0) >= totalQ);
+      if (timeUp || everyoneDone) {
+        raceEndFiredRef.current = true;
+        endGame();
+      }
+    };
+    check();
+    const id = setInterval(check, 1000);
+    return () => clearInterval(id);
+  }, [session, settings, players, slides.length, endGame]);
+
+
   // Listen for commands from mobile remote
   useEffect(() => {
     if (!sessionId) return;
@@ -198,7 +226,102 @@ const LiveTeacherScreen = () => {
   }
 
   if (isLobby) {
-    return <GameLobby session={session} players={players} onStart={startGame} isTeacher />;
+    const raceMode = settings?.gameMode === "race";
+    const raceDur = Number(settings?.raceDurationSec) || 180;
+    const setRaceMode = async (enabled: boolean) => {
+      if (!sessionId) return;
+      await supabase
+        .from("game_sessions")
+        .update({
+          settings: {
+            ...(settings || {}),
+            gameMode: enabled ? "race" : "standard",
+            raceDurationSec: raceDur,
+          },
+        })
+        .eq("id", sessionId);
+    };
+    const setRaceDur = async (sec: number) => {
+      if (!sessionId) return;
+      const clamped = Math.max(30, Math.min(1800, Math.round(sec)));
+      await supabase
+        .from("game_sessions")
+        .update({ settings: { ...(settings || {}), raceDurationSec: clamped } })
+        .eq("id", sessionId);
+    };
+    const wrappedStart = async () => {
+      if (raceMode && sessionId) {
+        // Stamp race start metadata BEFORE flipping status to playing.
+        await supabase
+          .from("game_sessions")
+          .update({
+            settings: {
+              ...(settings || {}),
+              gameMode: "race",
+              raceDurationSec: raceDur,
+              raceStartedAt: new Date().toISOString(),
+              pacingMode: "student",
+            },
+          })
+          .eq("id", sessionId);
+      }
+      startGame();
+    };
+    return (
+      <>
+        <div className="fixed top-3 left-3 right-3 sm:right-auto z-40 max-w-md rounded-xl border border-border bg-card/95 backdrop-blur p-3 shadow-lg space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Herní režim
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setRaceMode(false)}
+              className={`rounded-lg border-2 px-3 py-2 text-sm font-medium transition-colors ${
+                !raceMode
+                  ? "border-primary bg-primary/10 text-foreground"
+                  : "border-border text-muted-foreground hover:bg-muted/50"
+              }`}
+            >
+              Klasický kvíz
+            </button>
+            <button
+              type="button"
+              onClick={() => setRaceMode(true)}
+              className={`rounded-lg border-2 px-3 py-2 text-sm font-medium transition-colors ${
+                raceMode
+                  ? "border-primary bg-primary/10 text-foreground"
+                  : "border-border text-muted-foreground hover:bg-muted/50"
+              }`}
+            >
+              🏁 Závod
+            </button>
+          </div>
+          {raceMode && (
+            <label className="flex items-center justify-between gap-2 text-xs">
+              <span className="text-muted-foreground">Délka závodu</span>
+              <span className="inline-flex items-center gap-1">
+                <input
+                  type="number"
+                  min={1}
+                  max={30}
+                  value={Math.max(1, Math.round(raceDur / 60))}
+                  onChange={(e) => setRaceDur(Number(e.target.value) * 60)}
+                  className="w-14 rounded-md border border-border bg-background px-2 py-1 text-right"
+                />
+                <span>min</span>
+              </span>
+            </label>
+          )}
+          {raceMode && (
+            <p className="text-[11px] text-muted-foreground">
+              Každý žák se pohybuje po dráze podle svých správných odpovědí. Špatná odpověď žáka zpomalí.
+            </p>
+          )}
+        </div>
+        <GameLobby session={session} players={players} onStart={wrappedStart} isTeacher />
+      </>
+    );
   }
 
   if (isFinished) {

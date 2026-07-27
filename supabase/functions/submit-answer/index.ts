@@ -36,7 +36,7 @@ serve(async (req) => {
 
     const { data: players, error: pErr } = await adminClient
       .from("game_players")
-      .select("id, session_id, token_expires_at")
+      .select("id, session_id, token_expires_at, student_index")
       .eq("join_token", joinToken)
       .limit(1);
     if (pErr) throw pErr;
@@ -68,8 +68,37 @@ serve(async (req) => {
       });
     }
 
-    const qi = session.current_question_index;
+    const settings = (session.settings as any) || {};
+    const gameMode: string = settings.gameMode || "standard";
+    const pacingMode: string = settings.pacingMode || "teacher";
+    const isStudentPaced = gameMode === "race" || pacingMode === "student";
 
+    // In race / student-paced modes each player is on their own question.
+    // Trust the server-side player.student_index (set via set_student_index RPC).
+    const qi = isStudentPaced
+      ? (typeof (player as any).student_index === "number" ? (player as any).student_index : 0)
+      : session.current_question_index;
+
+    const questions = session.activity_data as any[];
+    const question = questions[qi];
+    if (!question) {
+      return new Response(JSON.stringify({ error: "Invalid question" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const isCorrect = !!question.answers?.[answerIndex]?.correct;
+
+    // Race mode: on WRONG answer we do NOT insert a response — student
+    // stays on the same question and retries. Only correct answers persist.
+    if (gameMode === "race" && !isCorrect) {
+      return new Response(
+        JSON.stringify({ correct: false, score: 0, retry: true }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Idempotency check (applies to all modes except race-wrong which returned above).
     const { data: existing } = await adminClient
       .from("game_responses")
       .select("id")
@@ -83,17 +112,6 @@ serve(async (req) => {
       });
     }
 
-    const questions = session.activity_data as any[];
-    const question = questions[qi];
-    if (!question) {
-      return new Response(JSON.stringify({ error: "Invalid question" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const isCorrect = question.answers?.[answerIndex]?.correct || false;
-    const settings = (session.settings as any) || {};
-    const gameMode: string = settings.gameMode || "standard";
     const timeLimitMs = (settings?.timePerQuestion || 20) * 1000;
     const elapsed = session.question_started_at
       ? Date.now() - new Date(session.question_started_at).getTime()
@@ -103,23 +121,12 @@ serve(async (req) => {
     let stolenFrom: string | null = null;
 
     if (gameMode === "race") {
-      // First correct gets 10, others 0
-      if (isCorrect) {
-        const { data: priorCorrect } = await adminClient
-          .from("game_responses")
-          .select("id")
-          .eq("session_id", session.id)
-          .eq("question_index", qi)
-          .eq("is_correct", true)
-          .limit(1);
-        score = priorCorrect?.length ? 0 : 10;
-      }
+      // Time-to-Climb: flat 10 points per correct answer.
+      score = 10;
     } else if (gameMode === "tower") {
-      // 1 block per correct answer
       score = isCorrect ? 1 : 0;
     } else if (gameMode === "steal") {
       if (isCorrect) {
-        // Steal 5 from a random opponent
         const { data: opponents } = await adminClient
           .from("game_players")
           .select("id, total_score")
@@ -135,7 +142,7 @@ serve(async (req) => {
           });
           score = 5;
         } else {
-          score = 5; // no opponents, just gain
+          score = 5;
         }
       } else {
         score = -3;
@@ -161,7 +168,7 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ correct: isCorrect, score, stolenFrom }),
+      JSON.stringify({ correct: isCorrect, score, stolenFrom, questionIndex: qi }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {

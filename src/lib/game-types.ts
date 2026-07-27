@@ -34,6 +34,10 @@ export interface GameSettings {
   anonymousAnswers?: boolean;
   pacingMode?: "teacher" | "student";
   showRaceTrack?: boolean;
+  /** Total race duration in seconds (Time-to-Climb style). Default 180 = 3 min. */
+  raceDurationSec?: number;
+  /** ISO timestamp when the race actually started (set on Start in race mode). */
+  raceStartedAt?: string | null;
 }
 
 export const TEAM_COLORS = [
@@ -77,6 +81,8 @@ export const DEFAULT_GAME_SETTINGS: GameSettings = {
   theme: "default",
   visualTheme: "default",
   soundsEnabled: true,
+  raceDurationSec: 180,
+  raceStartedAt: null,
 };
 
 export interface GamePlayer {
