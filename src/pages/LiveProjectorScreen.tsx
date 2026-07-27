@@ -8,6 +8,7 @@ import { AdaptiveReviewProjector } from "@/components/game/AdaptiveReview";
 import LiveWhiteboard, { WhiteboardData } from "@/components/game/LiveWhiteboard";
 import { LessonBlock } from "@/components/LessonBlockRenderer";
 import ProjectorSlideView from "@/components/live/ProjectorSlideView";
+import RaceTrack from "@/components/game/RaceTrack";
 
 const LiveProjectorScreen = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -112,6 +113,7 @@ const LiveProjectorScreen = () => {
   const whiteboard: WhiteboardData = ((session as any).whiteboard_data as WhiteboardData) ?? { strokes: [], visible: false };
 
   const scrollTop = (session.settings as any)?.projectorScrollTop ?? 0;
+  const showRaceTrack = !!(session.settings as any)?.showRaceTrack;
 
   return (
     <div className="relative">
@@ -129,6 +131,13 @@ const LiveProjectorScreen = () => {
           <LiveWhiteboard sessionId={sessionId} data={whiteboard} readOnly className="pointer-events-none" />
         ) : null}
       />
+      {showRaceTrack && players.length > 0 && (
+        <div className="fixed left-4 right-4 bottom-4 z-40 pointer-events-none">
+          <div className="pointer-events-auto backdrop-blur">
+            <RaceTrack session={session} players={players} compact />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
