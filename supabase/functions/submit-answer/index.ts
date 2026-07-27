@@ -119,6 +119,7 @@ serve(async (req) => {
 
     let score = 0;
     let stolenFrom: string | null = null;
+    let stolenFromNickname: string | null = null;
 
     if (gameMode === "race") {
       // Time-to-Climb: flat 10 points per correct answer.
@@ -151,12 +152,11 @@ serve(async (req) => {
         if (pool.length > 0) {
           const target = pool[Math.floor(Math.random() * pool.length)];
           stolenFrom = target.id;
+          stolenFromNickname = (target as any).nickname ?? null;
           await adminClient.rpc("increment_player_score", {
             _player_id: target.id, _score_delta: -5,
           });
           score = 5;
-          // Include victim nickname in response for student-side feedback.
-          (globalThis as any).__stolenNick = (target as any).nickname ?? null;
         } else {
           score = 5;
         }
@@ -184,7 +184,7 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ correct: isCorrect, score, stolenFrom, questionIndex: qi }),
+      JSON.stringify({ correct: isCorrect, score, stolenFrom, stolenFromNickname, questionIndex: qi }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {
