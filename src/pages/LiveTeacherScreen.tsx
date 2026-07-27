@@ -5,9 +5,11 @@ import { GameLobby } from "@/components/game/GameLobby";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Monitor, Smartphone, StickyNote, ChevronLeft, ChevronRight, Users, StopCircle, ArrowLeft, Brain, Plus, Pencil, BarChart3, MessageCircleQuestion, Eye } from "lucide-react";
+import { Monitor, Smartphone, StickyNote, ChevronLeft, ChevronRight, Users, StopCircle, ArrowLeft, Brain, Plus, Pencil, BarChart3, MessageCircleQuestion, Eye, LayoutGrid } from "lucide-react";
 import LiveQuestionsSheet, { useLiveQuestions } from "@/components/game/LiveQuestionsSheet";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import StudentProgressGrid from "@/components/game/StudentProgressGrid";
 import SessionExports from "@/components/live/SessionExports";
 import { AdaptiveReviewDialog } from "@/components/game/AdaptiveReview";
 import { AddSlideSheet } from "@/components/game/AddSlideSheet";
@@ -45,6 +47,7 @@ const LiveTeacherScreen = () => {
   const [adaptiveOpen, setAdaptiveOpen] = useState(false);
   const [addSlideOpen, setAddSlideOpen] = useState(false);
   const [resultsPanelOpen, setResultsPanelOpen] = useState(false);
+  const [progressGridOpen, setProgressGridOpen] = useState(false);
   const [questionsOpen, setQuestionsOpen] = useState(false);
   const projectorPreviewRef = useRef<HTMLDivElement>(null);
   const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -337,6 +340,16 @@ const LiveTeacherScreen = () => {
           </Button>
           <Button
             size="sm"
+            variant="outline"
+            className="gap-1.5"
+            onClick={() => setProgressGridOpen(true)}
+            title="Mřížka postupu žáků"
+          >
+            <LayoutGrid className="w-4 h-4" />
+            Přehled třídy
+          </Button>
+          <Button
+            size="sm"
             variant={unansweredCount > 0 ? "default" : "outline"}
             className="gap-1.5 relative"
             onClick={() => setQuestionsOpen(true)}
@@ -551,6 +564,22 @@ const LiveTeacherScreen = () => {
           </div>
         </SheetContent>
       </Sheet>
+
+      <Dialog open={progressGridOpen} onOpenChange={setProgressGridOpen}>
+        <DialogContent className="max-w-6xl w-[95vw]">
+          <DialogHeader>
+            <DialogTitle>Přehled třídy — mřížka postupu</DialogTitle>
+          </DialogHeader>
+          <div className="mt-2">
+            <StudentProgressGrid
+              slides={slides as any}
+              players={players as any}
+              responses={responses as any}
+              pacingMode={settings?.pacingMode}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
 
 
       {/* Slide strip */}
