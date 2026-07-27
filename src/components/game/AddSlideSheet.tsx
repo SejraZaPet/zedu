@@ -342,6 +342,7 @@ export function AddSlideSheet({
               {kind === "wordcloud" && "Slovní mrak"}
               {kind === "exit" && "Exit ticket"}
               {kind === "teams" && "Rozdělit do skupin"}
+              {kind === "differentiated" && "Diferencovaná aktivita"}
             </SheetTitle>
           </div>
           <SheetDescription>
