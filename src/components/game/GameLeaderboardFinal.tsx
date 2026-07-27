@@ -3,7 +3,8 @@ import { useMemo } from "react";
 import { Trophy, Home, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
+import GameAvatarFigure from "@/components/game/GameAvatarFigure";
+import Confetti from "@/components/game/Confetti";
 
 
 interface Props {
@@ -13,10 +14,11 @@ interface Props {
   highlightPlayerId?: string;
 }
 
-const PODIUM_STYLES = [
-  { emoji: "🥇", size: "text-6xl", bg: "bg-yellow-500/10 border-yellow-500/40", nameSize: "text-2xl" },
-  { emoji: "🥈", size: "text-5xl", bg: "bg-gray-400/10 border-gray-400/40", nameSize: "text-xl" },
-  { emoji: "🥉", size: "text-4xl", bg: "bg-amber-600/10 border-amber-600/40", nameSize: "text-lg" },
+// Podium slot styles keyed by rank (0 = 1st, 1 = 2nd, 2 = 3rd).
+const PODIUM_SLOTS = [
+  { label: "1", medal: "🥇", height: 160, blockColor: "hsl(var(--primary))", nameSize: "text-xl md:text-2xl" },
+  { label: "2", medal: "🥈", height: 120, blockColor: "hsl(var(--brand-turquoise))", nameSize: "text-lg md:text-xl" },
+  { label: "3", medal: "🥉", height: 90, blockColor: "hsl(var(--brand-purple))", nameSize: "text-base md:text-lg" },
 ];
 
 export const GameLeaderboardFinal = ({ session, players, responses, highlightPlayerId }: Props) => {
