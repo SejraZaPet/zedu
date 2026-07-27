@@ -11,12 +11,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { FileText, HelpCircle, MessageSquare, Cloud, DoorOpen, ArrowLeft, Loader2, Users2 } from "lucide-react";
+import { FileText, HelpCircle, MessageSquare, Cloud, DoorOpen, ArrowLeft, Loader2, Users2, SplitSquareHorizontal, Sparkles, Plus, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-type AddKind = "menu" | "text" | "mcq" | "wall" | "wordcloud" | "exit" | "teams";
+type AddKind = "menu" | "text" | "mcq" | "wall" | "wordcloud" | "exit" | "teams" | "differentiated";
 
 const EXIT_TICKET_DEFAULT_PROMPT =
   "Napiš jednu věc, kterou sis dnes odnesl/a, a jednu věc, která ti ještě není jasná.";
@@ -95,6 +95,28 @@ function buildTeamsSlide(mode: "random" | "manual", count: number) {
       activityType: "teams",
       teamMode: mode,
       teamCount: Math.max(2, Math.min(6, count)),
+    },
+  };
+}
+
+function buildDifferentiatedSlide(
+  topic: string,
+  tasks: { title: string; content: string }[],
+  teamCount: number,
+) {
+  return {
+    slideId: `live-${Date.now()}`,
+    type: "activity",
+    projector: { headline: topic.trim() || "Diferencovaná aktivita", body: "" },
+    device: { instructions: "Podívej se na úkol pro svou skupinu." },
+    activitySpec: {
+      activityType: "differentiated",
+      topic: topic.trim(),
+      tasks: tasks.map((t) => ({
+        title: (t.title || "").trim(),
+        content: (t.content || "").trim(),
+      })),
+      teamCount: Math.max(2, Math.min(6, teamCount)),
     },
   };
 }
