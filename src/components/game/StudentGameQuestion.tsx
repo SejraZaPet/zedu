@@ -37,6 +37,7 @@ export const StudentGameQuestion = ({
   timeLimit,
   questionStarted,
   status,
+  myUserId,
 }: Props) => {
   const [countdown, setCountdown] = useState<number>(timeLimit / 1000);
 
@@ -56,16 +57,30 @@ export const StudentGameQuestion = ({
       <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-background">
         {lastResult ? (
           <div className="text-center space-y-4 animate-scale-in">
+            {/* Player avatar reacting to the result. Keyed on questionIndex so the
+                animation re-runs on each new question. */}
+            <div key={`reaction-${questionIndex}`} className="flex justify-center">
+              <GameAvatarFigure
+                userId={myUserId ?? null}
+                size={128}
+                crop="full"
+                reaction={lastResult.correct ? "correct" : "wrong"}
+              />
+            </div>
             {lastResult.correct ? (
               <>
-                <CheckCircle2 className="w-20 h-20 text-green-500 mx-auto" />
-                <h2 className="text-3xl font-heading font-bold text-green-500">Správně!</h2>
+                <div className="flex items-center justify-center gap-2">
+                  <CheckCircle2 className="w-8 h-8 text-green-500" />
+                  <h2 className="text-3xl font-heading font-bold text-green-500">Správně!</h2>
+                </div>
                 <p className="text-5xl font-bold font-mono text-primary">+{lastResult.score}</p>
               </>
             ) : (
               <>
-                <XCircle className="w-20 h-20 text-destructive mx-auto" />
-                <h2 className="text-3xl font-heading font-bold text-destructive">Špatně</h2>
+                <div className="flex items-center justify-center gap-2">
+                  <XCircle className="w-8 h-8 text-destructive" />
+                  <h2 className="text-3xl font-heading font-bold text-destructive">Bohužel špatně</h2>
+                </div>
                 <p className="text-2xl font-mono text-muted-foreground">+0</p>
               </>
             )}
