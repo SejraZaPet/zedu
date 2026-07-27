@@ -672,6 +672,107 @@ export function AddSlideSheet({
               </Button>
             </div>
           )}
+
+          {kind === "differentiated" && (
+            <div className="space-y-4">
+              <p className="text-xs text-muted-foreground">
+                Každá skupina uvidí JEN svůj úkol. Můžete varianty vygenerovat pomocí AI
+                nebo je zadat ručně. Rozdělení do skupin proběhne automaticky po zobrazení
+                slidu (žáky lze potom případně přeskupit).
+              </p>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="diff-topic">Téma / společné zadání</Label>
+                <Textarea
+                  id="diff-topic"
+                  rows={3}
+                  value={diffTopic}
+                  onChange={(e) => setDiffTopic(e.target.value)}
+                  placeholder="Např. Vypočítejte obsah trojúhelníku"
+                  disabled={busy || diffLoading}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="diff-count">Počet skupin</Label>
+                <select
+                  id="diff-count"
+                  className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+                  value={diffCount}
+                  onChange={(e) => syncDiffTasksCount(parseInt(e.target.value, 10))}
+                  disabled={busy || diffLoading}
+                >
+                  {[2, 3, 4, 5, 6].map((n) => (
+                    <option key={n} value={n}>{n}</option>
+                  ))}
+                </select>
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full gap-2"
+                onClick={runDiffAi}
+                disabled={busy || diffLoading}
+              >
+                {diffLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Sparkles className="w-4 h-4" />
+                )}
+                Vygenerovat pomocí AI
+              </Button>
+
+              <div className="space-y-2">
+                <Label>Varianty úkolu ({diffCount})</Label>
+                <p className="text-xs text-muted-foreground">
+                  Můžete každou variantu ručně upravit.
+                </p>
+                {diffTasks.slice(0, diffCount).map((task, i) => (
+                  <div
+                    key={i}
+                    className="rounded-md border border-border p-3 space-y-2"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        Skupina {i + 1}
+                      </span>
+                    </div>
+                    <Input
+                      value={task.title}
+                      onChange={(e) => {
+                        const next = [...diffTasks];
+                        next[i] = { ...next[i], title: e.target.value };
+                        setDiffTasks(next);
+                      }}
+                      placeholder="Krátký název úkolu"
+                      disabled={busy || diffLoading}
+                    />
+                    <Textarea
+                      rows={3}
+                      value={task.content}
+                      onChange={(e) => {
+                        const next = [...diffTasks];
+                        next[i] = { ...next[i], content: e.target.value };
+                        setDiffTasks(next);
+                      }}
+                      placeholder="Konkrétní zadání pro tuto skupinu"
+                      disabled={busy || diffLoading}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <Button
+                onClick={submitDifferentiated}
+                disabled={busy || diffLoading}
+                className="w-full"
+              >
+                {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Přidat a zobrazit
+              </Button>
+            </div>
+          )}
         </div>
       </SheetContent>
     </Sheet>
