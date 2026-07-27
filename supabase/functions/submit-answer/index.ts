@@ -36,7 +36,7 @@ serve(async (req) => {
 
     const { data: players, error: pErr } = await adminClient
       .from("game_players")
-      .select("id, session_id, token_expires_at")
+      .select("id, session_id, token_expires_at, student_index")
       .eq("join_token", joinToken)
       .limit(1);
     if (pErr) throw pErr;
