@@ -85,6 +85,20 @@ function buildWordcloudSlide(prompt: string, anonymous: boolean) {
   };
 }
 
+function buildTeamsSlide(mode: "random" | "manual", count: number) {
+  return {
+    slideId: `live-${Date.now()}`,
+    type: "activity",
+    projector: { headline: "Rozdělení do skupin", body: "" },
+    device: { instructions: "Podívej se, ve které jsi skupině." },
+    activitySpec: {
+      activityType: "teams",
+      teamMode: mode,
+      teamCount: Math.max(2, Math.min(6, count)),
+    },
+  };
+}
+
 export function AddSlideSheet({
   open,
   onOpenChange,
