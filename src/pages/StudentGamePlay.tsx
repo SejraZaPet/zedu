@@ -311,6 +311,19 @@ const StudentGamePlay = () => {
     return (
       <>
         <ConnectionStatusBanner status={connectionStatus} onReconnect={reconnect} />
+        {modeFeedback && (
+          <div
+            className={`fixed top-16 left-1/2 -translate-x-1/2 z-[70] px-4 py-2 rounded-full text-sm font-semibold shadow-xl border-2 pointer-events-none animate-in fade-in slide-in-from-top-2 ${
+              modeFeedback.tone === "good"
+                ? "bg-emerald-500 text-white border-emerald-300"
+                : "bg-rose-500 text-white border-rose-300"
+            }`}
+            role="status"
+            aria-live="polite"
+          >
+            {modeFeedback.text}
+          </div>
+        )}
         <div
           className="min-h-screen min-h-[100dvh] flex flex-col overflow-y-auto text-white"
           style={{ background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)" }}
