@@ -121,6 +121,47 @@ const LiveProjectorScreen = () => {
     );
   }
 
+  // Race mode: fullscreen Time-to-Climb view instead of the slide projector.
+  if (isRaceMode && session.status === "playing") {
+    const totalQ = slides.length;
+    const finished = players.filter(
+      (p) => (p.student_index ?? 0) >= totalQ,
+    ).length;
+    return (
+      <div
+        className="min-h-screen flex flex-col p-6 md:p-10 gap-6 text-white"
+        style={{ background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)" }}
+      >
+        <CloseButton />
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm md:text-base uppercase tracking-widest text-white/60">
+              Závod – Time to Climb
+            </p>
+            <h1 className="text-3xl md:text-5xl font-bold">{session.title}</h1>
+          </div>
+          <div className="text-right">
+            <p className="text-xs md:text-sm text-white/60 uppercase tracking-widest">
+              Hotovo
+            </p>
+            <p className="text-2xl md:text-4xl font-mono font-bold tabular-nums">
+              {finished}/{players.length}
+            </p>
+          </div>
+        </div>
+        <div className="flex-1 min-h-0">
+          <RaceTrack
+            session={session}
+            players={players}
+            mode="progress"
+            remainingSec={raceRemainingSec}
+            className="h-full"
+          />
+        </div>
+      </div>
+    );
+  }
+
   // No slide yet — keep projector gradient background instead of jarring white screen
   if (!currentSlide) {
     return (
