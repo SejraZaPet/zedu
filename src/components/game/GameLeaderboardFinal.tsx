@@ -24,10 +24,19 @@ const PODIUM_SLOTS = [
 export const GameLeaderboardFinal = ({ session, players, responses, highlightPlayerId }: Props) => {
   const navigate = useNavigate();
 
-  const sortedPlayers = useMemo(
-    () => [...players].sort((a, b) => b.total_score - a.total_score),
-    [players]
-  );
+  const isRaceMode = (session.settings as any)?.gameMode === "race";
+  const sortedPlayers = useMemo(() => {
+    if (isRaceMode) {
+      // In race mode, farthest on the track wins; total_score is tiebreaker.
+      return [...players].sort((a, b) => {
+        const ai = typeof a.student_index === "number" ? a.student_index : 0;
+        const bi = typeof b.student_index === "number" ? b.student_index : 0;
+        if (bi !== ai) return bi - ai;
+        return (b.total_score || 0) - (a.total_score || 0);
+      });
+    }
+    return [...players].sort((a, b) => b.total_score - a.total_score);
+  }, [players, isRaceMode]);
 
 
 
