@@ -340,6 +340,16 @@ const LiveTeacherScreen = () => {
           </Button>
           <Button
             size="sm"
+            variant="outline"
+            className="gap-1.5"
+            onClick={() => setProgressGridOpen(true)}
+            title="Mřížka postupu žáků"
+          >
+            <LayoutGrid className="w-4 h-4" />
+            Přehled třídy
+          </Button>
+          <Button
+            size="sm"
             variant={unansweredCount > 0 ? "default" : "outline"}
             className="gap-1.5 relative"
             onClick={() => setQuestionsOpen(true)}
