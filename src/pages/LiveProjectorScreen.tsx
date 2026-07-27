@@ -9,6 +9,8 @@ import LiveWhiteboard, { WhiteboardData } from "@/components/game/LiveWhiteboard
 import { LessonBlock } from "@/components/LessonBlockRenderer";
 import ProjectorSlideView from "@/components/live/ProjectorSlideView";
 import RaceTrack from "@/components/game/RaceTrack";
+import { useEffect, useState } from "react";
+import { getClockOffset } from "@/lib/clock-sync";
 
 const LiveProjectorScreen = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
