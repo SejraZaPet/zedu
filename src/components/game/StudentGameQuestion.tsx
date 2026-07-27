@@ -2,6 +2,7 @@ import { GameQuestion } from "@/lib/game-types";
 import { useState, useEffect } from "react";
 import { CheckCircle2, XCircle } from "lucide-react";
 import { serverTsToClientMs } from "@/lib/clock-sync";
+import GameAvatarFigure from "@/components/game/GameAvatarFigure";
 
 interface Props {
   question: GameQuestion;
@@ -13,6 +14,8 @@ interface Props {
   timeLimit: number;
   questionStarted: number;
   status: string;
+  /** User id of the current player (for showing avatar in feedback screen). */
+  myUserId?: string | null;
 }
 
 const ANSWER_COLORS = [
