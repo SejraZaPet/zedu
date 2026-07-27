@@ -396,7 +396,11 @@ const StudentGamePlay = () => {
 
 
           {/* Aktivita */}
-          {isActivity && (
+          {isActivity && (currentSlideData as any).activitySpec?.activityType === "teams" && (
+            <TeamsSlideStudent session={session} playerId={playerId} />
+          )}
+
+          {isActivity && (currentSlideData as any).activitySpec?.activityType !== "teams" && (
             <div className="px-3 sm:px-4 pb-4 sm:pb-6 mt-3 sm:mt-4">
               {(currentSlideData as any).activitySpec?.activityType === "wall" ? (
                 liveSettings?.wallPublished === true && liveSettings?.wallPublishedQuestion === qi ? (
