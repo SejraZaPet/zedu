@@ -5,6 +5,7 @@ import { StudentGameQuestion } from "@/components/game/StudentGameQuestion";
 import { GameLeaderboardFinal } from "@/components/game/GameLeaderboardFinal";
 import RaceTrack from "@/components/game/RaceTrack";
 import { ConnectionStatusBanner } from "@/components/game/ConnectionStatusBanner";
+import { TeamsSlideStudent } from "@/components/game/TeamsSlide";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { serverTsToClientMs } from "@/lib/clock-sync";
