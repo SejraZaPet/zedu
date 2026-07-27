@@ -9,6 +9,7 @@ import LiveWhiteboard, { WhiteboardData } from "@/components/game/LiveWhiteboard
 import { LessonBlock } from "@/components/LessonBlockRenderer";
 import ProjectorSlideView from "@/components/live/ProjectorSlideView";
 import { TeamsSlideProjector } from "@/components/game/TeamsSlide";
+import { DifferentiatedSlideProjector } from "@/components/game/DifferentiatedSlide";
 import RaceTrack from "@/components/game/RaceTrack";
 import { useEffect, useState } from "react";
 import { getClockOffset } from "@/lib/clock-sync";
@@ -186,6 +187,16 @@ const LiveProjectorScreen = () => {
       </div>
     );
   }
+
+  if ((currentSlide as any)?.activitySpec?.activityType === "differentiated") {
+    return (
+      <div className="relative">
+        <CloseButton />
+        <DifferentiatedSlideProjector session={session} players={players} slide={currentSlide} />
+      </div>
+    );
+  }
+
 
   return (
     <div className="relative">

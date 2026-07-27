@@ -11,12 +11,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { FileText, HelpCircle, MessageSquare, Cloud, DoorOpen, ArrowLeft, Loader2, Users2 } from "lucide-react";
+import { FileText, HelpCircle, MessageSquare, Cloud, DoorOpen, ArrowLeft, Loader2, Users2, SplitSquareHorizontal, Sparkles, Plus, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-type AddKind = "menu" | "text" | "mcq" | "wall" | "wordcloud" | "exit" | "teams";
+type AddKind = "menu" | "text" | "mcq" | "wall" | "wordcloud" | "exit" | "teams" | "differentiated";
 
 const EXIT_TICKET_DEFAULT_PROMPT =
   "Napiš jednu věc, kterou sis dnes odnesl/a, a jednu věc, která ti ještě není jasná.";
@@ -99,6 +99,28 @@ function buildTeamsSlide(mode: "random" | "manual", count: number) {
   };
 }
 
+function buildDifferentiatedSlide(
+  topic: string,
+  tasks: { title: string; content: string }[],
+  teamCount: number,
+) {
+  return {
+    slideId: `live-${Date.now()}`,
+    type: "activity",
+    projector: { headline: topic.trim() || "Diferencovaná aktivita", body: "" },
+    device: { instructions: "Podívej se na úkol pro svou skupinu." },
+    activitySpec: {
+      activityType: "differentiated",
+      topic: topic.trim(),
+      tasks: tasks.map((t) => ({
+        title: (t.title || "").trim(),
+        content: (t.content || "").trim(),
+      })),
+      teamCount: Math.max(2, Math.min(6, teamCount)),
+    },
+  };
+}
+
 export function AddSlideSheet({
   open,
   onOpenChange,
@@ -129,6 +151,16 @@ export function AddSlideSheet({
   const [teamsMode, setTeamsMode] = useState<"random" | "manual">("random");
   const [teamsCount, setTeamsCount] = useState(2);
 
+  // differentiated
+  const [diffTopic, setDiffTopic] = useState("");
+  const [diffCount, setDiffCount] = useState(3);
+  const [diffTasks, setDiffTasks] = useState<{ title: string; content: string }[]>([
+    { title: "", content: "" },
+    { title: "", content: "" },
+    { title: "", content: "" },
+  ]);
+  const [diffLoading, setDiffLoading] = useState(false);
+
   const reset = () => {
     setKind("menu");
     setTextHeadline("");
@@ -142,6 +174,14 @@ export function AddSlideSheet({
     setWcAnonymous(true);
     setTeamsMode("random");
     setTeamsCount(2);
+    setDiffTopic("");
+    setDiffCount(3);
+    setDiffTasks([
+      { title: "", content: "" },
+      { title: "", content: "" },
+      { title: "", content: "" },
+    ]);
+    setDiffLoading(false);
   };
 
   const close = () => {
@@ -218,6 +258,60 @@ export function AddSlideSheet({
     appendAndJump(buildTeamsSlide(teamsMode, teamsCount));
   };
 
+  const syncDiffTasksCount = (n: number) => {
+    setDiffCount(n);
+    setDiffTasks((prev) => {
+      const next = [...prev];
+      if (next.length < n) {
+        while (next.length < n) next.push({ title: "", content: "" });
+      } else if (next.length > n) {
+        next.length = n;
+      }
+      return next;
+    });
+  };
+
+  const runDiffAi = async () => {
+    if (!diffTopic.trim()) {
+      toast.error("Doplňte téma/zadání.");
+      return;
+    }
+    setDiffLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-differentiated-tasks", {
+        body: { topic: diffTopic, teamCount: diffCount },
+      });
+      if (error) throw error;
+      const tasks = Array.isArray((data as any)?.tasks) ? (data as any).tasks : [];
+      if (tasks.length === 0) throw new Error("AI nevrátila žádné varianty.");
+      const filled: { title: string; content: string }[] = [];
+      for (let i = 0; i < diffCount; i++) {
+        const t = tasks[i] || { title: `Varianta ${i + 1}`, content: diffTopic };
+        filled.push({ title: String(t.title || ""), content: String(t.content || "") });
+      }
+      setDiffTasks(filled);
+      toast.success("Varianty vygenerovány. Můžete je před uložením upravit.");
+    } catch (e: any) {
+      toast.error(e?.message || "Nepodařilo se vygenerovat varianty.");
+    } finally {
+      setDiffLoading(false);
+    }
+  };
+
+  const submitDifferentiated = () => {
+    if (!diffTopic.trim()) {
+      toast.error("Doplňte téma/zadání.");
+      return;
+    }
+    const tasks = diffTasks.slice(0, diffCount);
+    if (tasks.some((t) => !t.title.trim() || !t.content.trim())) {
+      toast.error("Vyplňte název i zadání pro každou variantu (nebo použijte AI).");
+      return;
+    }
+    appendAndJump(buildDifferentiatedSlide(diffTopic, tasks, diffCount));
+  };
+
+
   return (
     <Sheet
       open={open}
@@ -248,6 +342,7 @@ export function AddSlideSheet({
               {kind === "wordcloud" && "Slovní mrak"}
               {kind === "exit" && "Exit ticket"}
               {kind === "teams" && "Rozdělit do skupin"}
+              {kind === "differentiated" && "Diferencovaná aktivita"}
             </SheetTitle>
           </div>
           <SheetDescription>
@@ -338,6 +433,19 @@ export function AddSlideSheet({
                   <p className="font-medium">Rozdělit do skupin</p>
                   <p className="text-xs text-muted-foreground">
                     Náhodně nebo ručně rozděl třídu na menší skupiny
+                  </p>
+                </div>
+              </Button>
+              <Button
+                variant="outline"
+                className="justify-start h-auto py-3"
+                onClick={() => setKind("differentiated")}
+              >
+                <SplitSquareHorizontal className="w-5 h-5 mr-3 text-primary" />
+                <div className="text-left">
+                  <p className="font-medium">Diferencovaná aktivita</p>
+                  <p className="text-xs text-muted-foreground">
+                    Každá skupina dostane jiný úkol (volitelně s AI)
                   </p>
                 </div>
               </Button>
@@ -559,6 +667,107 @@ export function AddSlideSheet({
                 </select>
               </div>
               <Button onClick={submitTeams} disabled={busy} className="w-full">
+                {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Přidat a zobrazit
+              </Button>
+            </div>
+          )}
+
+          {kind === "differentiated" && (
+            <div className="space-y-4">
+              <p className="text-xs text-muted-foreground">
+                Každá skupina uvidí JEN svůj úkol. Můžete varianty vygenerovat pomocí AI
+                nebo je zadat ručně. Rozdělení do skupin proběhne automaticky po zobrazení
+                slidu (žáky lze potom případně přeskupit).
+              </p>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="diff-topic">Téma / společné zadání</Label>
+                <Textarea
+                  id="diff-topic"
+                  rows={3}
+                  value={diffTopic}
+                  onChange={(e) => setDiffTopic(e.target.value)}
+                  placeholder="Např. Vypočítejte obsah trojúhelníku"
+                  disabled={busy || diffLoading}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="diff-count">Počet skupin</Label>
+                <select
+                  id="diff-count"
+                  className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+                  value={diffCount}
+                  onChange={(e) => syncDiffTasksCount(parseInt(e.target.value, 10))}
+                  disabled={busy || diffLoading}
+                >
+                  {[2, 3, 4, 5, 6].map((n) => (
+                    <option key={n} value={n}>{n}</option>
+                  ))}
+                </select>
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full gap-2"
+                onClick={runDiffAi}
+                disabled={busy || diffLoading}
+              >
+                {diffLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Sparkles className="w-4 h-4" />
+                )}
+                Vygenerovat pomocí AI
+              </Button>
+
+              <div className="space-y-2">
+                <Label>Varianty úkolu ({diffCount})</Label>
+                <p className="text-xs text-muted-foreground">
+                  Můžete každou variantu ručně upravit.
+                </p>
+                {diffTasks.slice(0, diffCount).map((task, i) => (
+                  <div
+                    key={i}
+                    className="rounded-md border border-border p-3 space-y-2"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        Skupina {i + 1}
+                      </span>
+                    </div>
+                    <Input
+                      value={task.title}
+                      onChange={(e) => {
+                        const next = [...diffTasks];
+                        next[i] = { ...next[i], title: e.target.value };
+                        setDiffTasks(next);
+                      }}
+                      placeholder="Krátký název úkolu"
+                      disabled={busy || diffLoading}
+                    />
+                    <Textarea
+                      rows={3}
+                      value={task.content}
+                      onChange={(e) => {
+                        const next = [...diffTasks];
+                        next[i] = { ...next[i], content: e.target.value };
+                        setDiffTasks(next);
+                      }}
+                      placeholder="Konkrétní zadání pro tuto skupinu"
+                      disabled={busy || diffLoading}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <Button
+                onClick={submitDifferentiated}
+                disabled={busy || diffLoading}
+                className="w-full"
+              >
                 {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Přidat a zobrazit
               </Button>
