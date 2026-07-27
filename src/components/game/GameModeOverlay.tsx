@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import type { GamePlayer, GameSession } from "@/lib/game-types";
+import type { GamePlayer, GameSession, Team } from "@/lib/game-types";
 import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
 
 import { getModeDef, getThemeDef, type GameMode } from "@/lib/game-modes";
