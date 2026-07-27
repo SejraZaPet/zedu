@@ -11,11 +11,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { FileText, HelpCircle, MessageSquare, Cloud, DoorOpen, ArrowLeft, Loader2 } from "lucide-react";
+import { FileText, HelpCircle, MessageSquare, Cloud, DoorOpen, ArrowLeft, Loader2, Users2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
-type AddKind = "menu" | "text" | "mcq" | "wall" | "wordcloud" | "exit";
+type AddKind = "menu" | "text" | "mcq" | "wall" | "wordcloud" | "exit" | "teams";
 
 const EXIT_TICKET_DEFAULT_PROMPT =
   "Napiš jednu věc, kterou sis dnes odnesl/a, a jednu věc, která ti ještě není jasná.";
@@ -84,6 +85,20 @@ function buildWordcloudSlide(prompt: string, anonymous: boolean) {
   };
 }
 
+function buildTeamsSlide(mode: "random" | "manual", count: number) {
+  return {
+    slideId: `live-${Date.now()}`,
+    type: "activity",
+    projector: { headline: "Rozdělení do skupin", body: "" },
+    device: { instructions: "Podívej se, ve které jsi skupině." },
+    activitySpec: {
+      activityType: "teams",
+      teamMode: mode,
+      teamCount: Math.max(2, Math.min(6, count)),
+    },
+  };
+}
+
 export function AddSlideSheet({
   open,
   onOpenChange,
@@ -110,6 +125,10 @@ export function AddSlideSheet({
   const [wcPrompt, setWcPrompt] = useState("");
   const [wcAnonymous, setWcAnonymous] = useState(true);
 
+  // teams
+  const [teamsMode, setTeamsMode] = useState<"random" | "manual">("random");
+  const [teamsCount, setTeamsCount] = useState(2);
+
   const reset = () => {
     setKind("menu");
     setTextHeadline("");
@@ -121,6 +140,8 @@ export function AddSlideSheet({
     setWallAnonymous(true);
     setWcPrompt("");
     setWcAnonymous(true);
+    setTeamsMode("random");
+    setTeamsCount(2);
   };
 
   const close = () => {
@@ -193,6 +214,10 @@ export function AddSlideSheet({
     appendAndJump(buildWordcloudSlide(wcPrompt, wcAnonymous));
   };
 
+  const submitTeams = () => {
+    appendAndJump(buildTeamsSlide(teamsMode, teamsCount));
+  };
+
   return (
     <Sheet
       open={open}
@@ -222,6 +247,7 @@ export function AddSlideSheet({
               {kind === "wall" && "Zeď aktivita"}
               {kind === "wordcloud" && "Slovní mrak"}
               {kind === "exit" && "Exit ticket"}
+              {kind === "teams" && "Rozdělit do skupin"}
             </SheetTitle>
           </div>
           <SheetDescription>
@@ -299,6 +325,19 @@ export function AddSlideSheet({
                   <p className="font-medium">Exit ticket</p>
                   <p className="text-xs text-muted-foreground">
                     Rychlá šablona na konec hodiny
+                  </p>
+                </div>
+              </Button>
+              <Button
+                variant="outline"
+                className="justify-start h-auto py-3"
+                onClick={() => setKind("teams")}
+              >
+                <Users2 className="w-5 h-5 mr-3 text-primary" />
+                <div className="text-left">
+                  <p className="font-medium">Rozdělit do skupin</p>
+                  <p className="text-xs text-muted-foreground">
+                    Náhodně nebo ručně rozděl třídu na menší skupiny
                   </p>
                 </div>
               </Button>
@@ -465,6 +504,61 @@ export function AddSlideSheet({
                 Anonymní odpovědi
               </label>
               <Button onClick={submitWall} disabled={busy} className="w-full">
+                {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Přidat a zobrazit
+              </Button>
+            </div>
+          )}
+
+          {kind === "teams" && (
+            <div className="space-y-4">
+              <p className="text-xs text-muted-foreground">
+                Rozděl třídu do menších skupin pro skupinovou práci. Rozdělení
+                se uloží do session a zobrazí se na projektoru i žákům.
+              </p>
+              <div className="space-y-1.5">
+                <Label>Způsob rozdělení</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {([
+                    { id: "random", label: "Náhodně", desc: "Automaticky" },
+                    { id: "manual", label: "Ručně", desc: "Drag & drop" },
+                  ] as const).map((opt) => {
+                    const active = teamsMode === opt.id;
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => setTeamsMode(opt.id)}
+                        disabled={busy}
+                        className={cn(
+                          "rounded-lg border p-3 text-left transition",
+                          active
+                            ? "border-primary bg-primary/10 ring-2 ring-primary/30"
+                            : "border-border hover:border-primary/50"
+                        )}
+                      >
+                        <div className="font-semibold text-sm">{opt.label}</div>
+                        <div className="text-[11px] text-muted-foreground">{opt.desc}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="teams-count">Počet skupin</Label>
+                <select
+                  id="teams-count"
+                  className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+                  value={teamsCount}
+                  onChange={(e) => setTeamsCount(parseInt(e.target.value, 10))}
+                  disabled={busy}
+                >
+                  {[2, 3, 4, 5, 6].map((n) => (
+                    <option key={n} value={n}>{n}</option>
+                  ))}
+                </select>
+              </div>
+              <Button onClick={submitTeams} disabled={busy} className="w-full">
                 {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Přidat a zobrazit
               </Button>

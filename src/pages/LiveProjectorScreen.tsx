@@ -8,6 +8,7 @@ import { AdaptiveReviewProjector } from "@/components/game/AdaptiveReview";
 import LiveWhiteboard, { WhiteboardData } from "@/components/game/LiveWhiteboard";
 import { LessonBlock } from "@/components/LessonBlockRenderer";
 import ProjectorSlideView from "@/components/live/ProjectorSlideView";
+import { TeamsSlideProjector } from "@/components/game/TeamsSlide";
 import RaceTrack from "@/components/game/RaceTrack";
 import { useEffect, useState } from "react";
 import { getClockOffset } from "@/lib/clock-sync";
@@ -175,6 +176,16 @@ const LiveProjectorScreen = () => {
 
   const scrollTop = (session.settings as any)?.projectorScrollTop ?? 0;
   const showRaceTrack = !!(session.settings as any)?.showRaceTrack;
+
+  // Standalone "teams" slide — fullscreen team layout
+  if ((currentSlide as any)?.activitySpec?.activityType === "teams") {
+    return (
+      <div className="relative">
+        <CloseButton />
+        <TeamsSlideProjector session={session} players={players} slide={currentSlide} />
+      </div>
+    );
+  }
 
   return (
     <div className="relative">

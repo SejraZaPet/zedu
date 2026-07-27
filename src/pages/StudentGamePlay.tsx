@@ -5,6 +5,7 @@ import { StudentGameQuestion } from "@/components/game/StudentGameQuestion";
 import { GameLeaderboardFinal } from "@/components/game/GameLeaderboardFinal";
 import RaceTrack from "@/components/game/RaceTrack";
 import { ConnectionStatusBanner } from "@/components/game/ConnectionStatusBanner";
+import { TeamsSlideStudent } from "@/components/game/TeamsSlide";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { serverTsToClientMs } from "@/lib/clock-sync";
@@ -396,7 +397,11 @@ const StudentGamePlay = () => {
 
 
           {/* Aktivita */}
-          {isActivity && (
+          {isActivity && (currentSlideData as any).activitySpec?.activityType === "teams" && (
+            <TeamsSlideStudent session={session} playerId={playerId} />
+          )}
+
+          {isActivity && (currentSlideData as any).activitySpec?.activityType !== "teams" && (
             <div className="px-3 sm:px-4 pb-4 sm:pb-6 mt-3 sm:mt-4">
               {(currentSlideData as any).activitySpec?.activityType === "wall" ? (
                 liveSettings?.wallPublished === true && liveSettings?.wallPublishedQuestion === qi ? (

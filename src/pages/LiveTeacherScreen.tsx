@@ -13,6 +13,7 @@ import StudentProgressGrid from "@/components/game/StudentProgressGrid";
 import SessionExports from "@/components/live/SessionExports";
 import { AdaptiveReviewDialog } from "@/components/game/AdaptiveReview";
 import { AddSlideSheet } from "@/components/game/AddSlideSheet";
+import { TeamsSlideTeacher } from "@/components/game/TeamsSlide";
 import { supabase } from "@/integrations/supabase/client";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -894,7 +895,11 @@ const LiveTeacherScreen = () => {
             )}
           </div>
 
-          {currentSlide.type === "activity" && (
+          {currentSlide.type === "activity" && (currentSlide as any).activitySpec?.activityType === "teams" && (
+            <TeamsSlideTeacher session={session} players={players} />
+          )}
+
+          {currentSlide.type === "activity" && (currentSlide as any).activitySpec?.activityType !== "teams" && (
             <div className="mt-4 space-y-3">
               <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
