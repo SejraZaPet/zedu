@@ -47,6 +47,7 @@ const LiveTeacherScreen = () => {
   const [adaptiveOpen, setAdaptiveOpen] = useState(false);
   const [addSlideOpen, setAddSlideOpen] = useState(false);
   const [resultsPanelOpen, setResultsPanelOpen] = useState(false);
+  const [progressGridOpen, setProgressGridOpen] = useState(false);
   const [questionsOpen, setQuestionsOpen] = useState(false);
   const projectorPreviewRef = useRef<HTMLDivElement>(null);
   const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
