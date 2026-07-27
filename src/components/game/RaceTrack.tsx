@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import type { GamePlayer, GameSession } from "@/lib/game-types";
+import { findPlayerTeam } from "@/lib/game-types";
 import GameAvatarFigure from "@/components/game/GameAvatarFigure";
 import { Flag, Clock } from "lucide-react";
 
