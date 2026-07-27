@@ -145,6 +145,34 @@ const LiveTeacherScreen = () => {
     onSwipeRight: () => { if (currentIndex > 0) nextQuestion(currentIndex - 2); },
   });
 
+  // Race mode auto-end: finish the session when either every player has crossed
+  // the finish line or the countdown expires. Guarded so we only fire once.
+  const raceEndFiredRef = useRef(false);
+  useEffect(() => {
+    if (!session) return;
+    if (settings?.gameMode !== "race") return;
+    if (session.status !== "playing") return;
+    if (raceEndFiredRef.current) return;
+    const totalQ = slides.length;
+    if (totalQ === 0) return;
+    const startedAt = settings?.raceStartedAt ? new Date(settings.raceStartedAt).getTime() : null;
+    const durMs = (Number(settings?.raceDurationSec) || 180) * 1000;
+    const check = () => {
+      const timeUp = startedAt !== null && Date.now() >= startedAt + durMs;
+      const everyoneDone =
+        players.length > 0 &&
+        players.every((p) => (p.student_index ?? 0) >= totalQ);
+      if (timeUp || everyoneDone) {
+        raceEndFiredRef.current = true;
+        endGame();
+      }
+    };
+    check();
+    const id = setInterval(check, 1000);
+    return () => clearInterval(id);
+  }, [session, settings, players, slides.length, endGame]);
+
+
   // Listen for commands from mobile remote
   useEffect(() => {
     if (!sessionId) return;
