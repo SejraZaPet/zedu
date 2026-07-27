@@ -228,19 +228,32 @@ const LiveTeacherScreen = () => {
   }
 
   if (isLobby) {
-    const raceMode = settings?.gameMode === "race";
+    const gameMode: GameMode = (settings?.gameMode as GameMode) || "standard";
+    const currentModeDef = getModeDef(gameMode);
     const raceDur = Number(settings?.raceDurationSec) || 180;
-    const setRaceMode = async (enabled: boolean) => {
+    const teamKind: TeamMode = (settings?.teamModeKind as TeamMode) ?? "none";
+    const teamCount: number = Number(settings?.teamCount ?? 2);
+
+    const setGameMode = async (id: GameMode) => {
       if (!sessionId) return;
+      const def = getModeDef(id);
       await supabase
         .from("game_sessions")
         .update({
           settings: {
             ...(settings || {}),
-            gameMode: enabled ? "race" : "standard",
+            gameMode: id,
+            theme: def.themes[0].id,
             raceDurationSec: raceDur,
           },
         })
+        .eq("id", sessionId);
+    };
+    const setTheme = async (themeId: string) => {
+      if (!sessionId) return;
+      await supabase
+        .from("game_sessions")
+        .update({ settings: { ...(settings || {}), theme: themeId } })
         .eq("id", sessionId);
     };
     const setRaceDur = async (sec: number) => {
@@ -251,8 +264,30 @@ const LiveTeacherScreen = () => {
         .update({ settings: { ...(settings || {}), raceDurationSec: clamped } })
         .eq("id", sessionId);
     };
+    const setTeamKind = async (kind: TeamMode) => {
+      if (!sessionId) return;
+      await supabase
+        .from("game_sessions")
+        .update({
+          settings: {
+            ...(settings || {}),
+            teamModeKind: kind,
+            teamMode: kind !== "none",
+            teamCount: teamCount || 2,
+          },
+        })
+        .eq("id", sessionId);
+    };
+    const setTeamCount = async (n: number) => {
+      if (!sessionId) return;
+      const clamped = Math.max(2, Math.min(6, n));
+      await supabase
+        .from("game_sessions")
+        .update({ settings: { ...(settings || {}), teamCount: clamped } })
+        .eq("id", sessionId);
+    };
     const wrappedStart = async () => {
-      if (raceMode && sessionId) {
+      if (gameMode === "race" && sessionId) {
         // Stamp race start metadata BEFORE flipping status to playing.
         await supabase
           .from("game_sessions")
@@ -271,35 +306,65 @@ const LiveTeacherScreen = () => {
     };
     return (
       <>
-        <div className="fixed top-3 left-3 right-3 sm:right-auto z-40 max-w-md rounded-xl border border-border bg-card/95 backdrop-blur p-3 shadow-lg space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Herní režim
-          </p>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => setRaceMode(false)}
-              className={`rounded-lg border-2 px-3 py-2 text-sm font-medium transition-colors ${
-                !raceMode
-                  ? "border-primary bg-primary/10 text-foreground"
-                  : "border-border text-muted-foreground hover:bg-muted/50"
-              }`}
-            >
-              Klasický kvíz
-            </button>
-            <button
-              type="button"
-              onClick={() => setRaceMode(true)}
-              className={`rounded-lg border-2 px-3 py-2 text-sm font-medium transition-colors ${
-                raceMode
-                  ? "border-primary bg-primary/10 text-foreground"
-                  : "border-border text-muted-foreground hover:bg-muted/50"
-              }`}
-            >
-              🏁 Závod
-            </button>
+        <div className="fixed top-3 left-3 right-3 sm:right-auto z-40 max-w-md rounded-xl border border-border bg-card/95 backdrop-blur p-3 shadow-lg space-y-3 max-h-[92vh] overflow-y-auto">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+              Herní režim
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {GAME_MODES.map((m) => {
+                const active = gameMode === m.id;
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => setGameMode(m.id)}
+                    className={`text-left rounded-lg border-2 p-2.5 transition-colors ${
+                      active
+                        ? "border-primary bg-primary/10"
+                        : "border-border hover:border-primary/50 hover:bg-muted/50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <span className="text-lg">{m.emoji}</span>
+                      <span className="font-semibold text-sm">{m.name}</span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground leading-snug">{m.description}</p>
+                    <p className="text-[10px] text-primary font-medium mt-0.5">{m.scoringHint}</p>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-          {raceMode && (
+
+          {currentModeDef.themes.length > 1 && (
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+                Téma
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {currentModeDef.themes.map((th) => {
+                  const active = (settings?.theme ?? currentModeDef.themes[0].id) === th.id;
+                  return (
+                    <button
+                      key={th.id}
+                      type="button"
+                      onClick={() => setTheme(th.id)}
+                      className={`rounded-full border px-2.5 py-1 text-xs transition-colors inline-flex items-center gap-1 ${
+                        active
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border hover:bg-muted/50"
+                      }`}
+                    >
+                      <span>{th.emoji}</span> {th.name}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {gameMode === "race" && (
             <label className="flex items-center justify-between gap-2 text-xs">
               <span className="text-muted-foreground">Délka závodu</span>
               <span className="inline-flex items-center gap-1">
@@ -315,16 +380,58 @@ const LiveTeacherScreen = () => {
               </span>
             </label>
           )}
-          {raceMode && (
-            <p className="text-[11px] text-muted-foreground">
-              Každý žák se pohybuje po dráze podle svých správných odpovědí. Špatná odpověď žáka zpomalí.
+
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+              Týmy
             </p>
-          )}
+            <div className="grid grid-cols-3 gap-1.5">
+              {([
+                { id: "none", label: "Bez týmů" },
+                { id: "random", label: "Náhodné" },
+                { id: "manual", label: "Ručně" },
+              ] as { id: TeamMode; label: string }[]).map((opt) => {
+                const active = teamKind === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setTeamKind(opt.id)}
+                    className={`rounded-lg border-2 px-2 py-1.5 text-xs font-medium transition-colors ${
+                      active
+                        ? "border-primary bg-primary/10 text-foreground"
+                        : "border-border text-muted-foreground hover:bg-muted/50"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+            {teamKind !== "none" && (
+              <div className="mt-2 flex items-center gap-2 text-xs">
+                <span className="text-muted-foreground">Počet týmů:</span>
+                <select
+                  className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+                  value={teamCount}
+                  onChange={(e) => setTeamCount(parseInt(e.target.value, 10))}
+                >
+                  {[2, 3, 4, 5, 6].map((n) => (
+                    <option key={n} value={n}>{n}</option>
+                  ))}
+                </select>
+                <span className="text-[11px] text-muted-foreground">
+                  {teamKind === "random" ? "Auto rozdělení po připojení" : "Drag & drop v lobby"}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
         <GameLobby session={session} players={players} onStart={wrappedStart} isTeacher />
       </>
     );
   }
+
 
   if (isFinished) {
     return (
