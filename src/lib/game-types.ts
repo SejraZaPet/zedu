@@ -81,6 +81,8 @@ export const DEFAULT_GAME_SETTINGS: GameSettings = {
   theme: "default",
   visualTheme: "default",
   soundsEnabled: true,
+  raceDurationSec: 180,
+  raceStartedAt: null,
 };
 
 export interface GamePlayer {
