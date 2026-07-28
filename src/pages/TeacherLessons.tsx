@@ -247,6 +247,7 @@ const TeacherLessons = () => {
               <SheetTitle>Úprava: {editingLesson.title}</SheetTitle>
             </SheetHeader>
             <div className="mt-4 space-y-4">
+              <LessonCurriculumTopicsPicker lessonId={editingLesson.id} textbookId={textbookId} />
               <BlockEditor blocks={editBlocks} onChange={setEditBlocks} />
               <Button onClick={handleSaveBlocks} className="w-full">Uložit bloky</Button>
             </div>
