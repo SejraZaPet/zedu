@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { KeyRound, Lock, Unlock, PartyPopper } from "lucide-react";
 import Confetti from "@/components/game/Confetti";
 import { Button } from "@/components/ui/button";
