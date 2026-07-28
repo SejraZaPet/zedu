@@ -41,6 +41,7 @@ const adminTabs = [
   { id: "users", label: "Uživatelé", icon: Users },
   { id: "textbook-overview", label: "Přehled učebnic", icon: Library },
   { id: "academy", label: "Akademie", icon: Award },
+  { id: "academy-pathways", label: "Kvalifikace", icon: GraduationCap },
   { id: "academy-evidence", label: "Posouzení důkazů", icon: FileBadge2 },
   { id: "templates", label: "Šablony", icon: Sparkles },
   { id: "landing", label: "Landing page", icon: Globe },
