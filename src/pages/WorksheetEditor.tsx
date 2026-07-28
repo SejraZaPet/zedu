@@ -1584,6 +1584,31 @@ export default function WorksheetEditor() {
 
   const paletteContent = (
     <>
+      <div className="pb-2 mb-2 border-b border-border space-y-1.5">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="w-full justify-start gap-2"
+          onClick={() => { setBankPickerOpen(true); setMobilePaletteOpen(false); }}
+        >
+          <Library className="w-4 h-4" />
+          Vybrat z banky otázek
+        </Button>
+        {selectedItem && ["mcq", "true_false", "short_answer"].includes(selectedItem.type) && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="w-full justify-start gap-2 text-xs"
+            onClick={saveSelectedItemToBank}
+          >
+            <BookmarkPlus className="w-4 h-4" />
+            Uložit vybranou otázku do banky
+          </Button>
+        )}
+      </div>
+
       <Collapsible defaultOpen>
         <SectionHeader count={LAYOUT_BLOCK_TYPES.length}>Layoutové bloky</SectionHeader>
         <CollapsibleContent className="space-y-1.5 pt-1">
