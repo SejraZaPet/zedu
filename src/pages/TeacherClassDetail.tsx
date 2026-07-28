@@ -336,6 +336,21 @@ const TeacherClassDetail = () => {
           </Button>
         </div>
 
+        {/* Rychlé uznání */}
+        {id && user && (
+          <QuickRecognitionCard
+            classId={id}
+            teacherId={user.id}
+            students={members.filter((m) => m.status !== "pending").map((m) => ({
+              user_id: m.user_id,
+              first_name: m.first_name,
+              last_name: m.last_name,
+            }))}
+          />
+        )}
+
+
+
         {/* Cards grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Žáci */}
