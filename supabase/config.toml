@@ -83,6 +83,9 @@ verify_jwt = false
 [functions.suggest-grading-feedback]
 verify_jwt = false
 
+[functions.detect-student-alerts]
+verify_jwt = false
+
 
 
 
