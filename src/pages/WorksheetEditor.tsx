@@ -750,6 +750,103 @@ export default function WorksheetEditor() {
     setSelectedId(newItem.id);
   }
 
+  const [bankPickerOpen, setBankPickerOpen] = useState(false);
+
+  function insertFromBank(bankItems: QuestionBankItem[]) {
+    if (!spec || bankItems.length === 0) return;
+    const variantId = spec.variants[0].variantId;
+    updateSpec((s) => {
+      const existingItems = s.variants[0].items;
+      const existingKeys = s.answerKeys[variantId] ?? [];
+      const newItems: WorksheetItem[] = [];
+      const newKeys: AnswerKeyEntry[] = [];
+      bankItems.forEach((b, i) => {
+        const type: ItemType = b.question_type;
+        const base = createDefaultItem(type, existingItems.length + i + 1);
+        const patch: Partial<WorksheetItem> = { prompt: b.question_text };
+        let correct: string | string[] | undefined;
+        if (type === "mcq") {
+          const ch = b.choices ?? [];
+          patch.choices = ch;
+          if (typeof b.correct_index === "number" && ch[b.correct_index] !== undefined) {
+            correct = ch[b.correct_index];
+          } else {
+            correct = ch[0] ?? "";
+          }
+        } else if (type === "true_false") {
+          correct = b.is_true ? "true" : "false";
+        } else if (type === "short_answer") {
+          correct = b.correct_answer ?? "";
+        }
+        const item: WorksheetItem = { ...base, ...patch };
+        const keyBase = createDefaultAnswerKey(item);
+        const key = correct !== undefined ? { ...keyBase, correctAnswer: correct } : keyBase;
+        newItems.push(item);
+        newKeys.push(key);
+      });
+      return {
+        ...s,
+        variants: s.variants.map((v, idx) =>
+          idx === 0 ? { ...v, items: [...existingItems, ...newItems] } : v,
+        ),
+        answerKeys: {
+          ...s.answerKeys,
+          [variantId]: [...existingKeys, ...newKeys],
+        },
+      };
+    });
+    toast({
+      title: "Vloženo z banky otázek",
+      description: `Přidáno ${bankItems.length} ${bankItems.length === 1 ? "otázka" : bankItems.length < 5 ? "otázky" : "otázek"}.`,
+    });
+  }
+
+  async function saveSelectedItemToBank() {
+    if (!spec || !selectedItem || !user) return;
+    const type = selectedItem.type;
+    if (type !== "mcq" && type !== "true_false" && type !== "short_answer") {
+      toast({
+        title: "Nelze uložit do banky",
+        description: "Do banky se ukládají jen typy: Výběr z možností, Pravda/Nepravda, Krátká odpověď.",
+        variant: "destructive",
+      });
+      return;
+    }
+    const key = spec.answerKeys[spec.variants[0].variantId]?.find((a) => a.itemId === selectedItem.id);
+    const payload: Record<string, unknown> = {
+      teacher_id: user.id,
+      subject: spec.header.subject ?? null,
+      curriculum_topic_id: null,
+      question_type: type,
+      question_text: selectedItem.prompt,
+      choices: null,
+      correct_index: null,
+      correct_answer: null,
+      is_true: null,
+    };
+    if (type === "mcq") {
+      const ch = selectedItem.choices ?? [];
+      payload.choices = ch;
+      const correct = String(key?.correctAnswer ?? "");
+      const idx = ch.findIndex((c) => c === correct);
+      payload.correct_index = idx >= 0 ? idx : 0;
+    } else if (type === "true_false") {
+      payload.is_true = String(key?.correctAnswer) === "true";
+    } else if (type === "short_answer") {
+      payload.correct_answer = Array.isArray(key?.correctAnswer)
+        ? key?.correctAnswer.join(", ")
+        : (key?.correctAnswer as string) ?? "";
+    }
+    const { error } = await supabase.from("question_bank_items").insert(payload as never);
+    if (error) {
+      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Uloženo do banky otázek" });
+  }
+
+
+
   function addOfflineActivity(mode: OfflineMode) {
     if (!spec) return;
     const variantId = spec.variants[0].variantId;
