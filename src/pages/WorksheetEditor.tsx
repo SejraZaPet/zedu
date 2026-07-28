@@ -831,7 +831,7 @@ export default function WorksheetEditor() {
       const idx = ch.findIndex((c) => c === correct);
       payload.correct_index = idx >= 0 ? idx : 0;
     } else if (type === "true_false") {
-      payload.is_true = String(key?.correctAnswer) === "true";
+      payload.is_true = String(key?.correctAnswer).toLowerCase() === "pravda";
     } else if (type === "short_answer") {
       payload.correct_answer = Array.isArray(key?.correctAnswer)
         ? key?.correctAnswer.join(", ")
