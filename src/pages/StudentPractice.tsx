@@ -254,6 +254,59 @@ const StudentPractice = () => {
           title: "Hotovo!",
           description: `Tvůj výsledek byl uložen.`,
         });
+
+        // Update mastery for this lesson (weighted avg of last 3 session percents)
+        if (data.lesson?.id && totalScorable > 0) {
+          const lessonId = data.lesson.id;
+          const { data: recent } = await supabase
+            .from("student_practice_sessions")
+            .select("answers_json, score, created_at")
+            .eq("student_id", session.user.id)
+            .eq("lesson_id", lessonId)
+            .order("created_at", { ascending: false })
+            .limit(3);
+
+          const percents: number[] = [];
+          for (const r of recent ?? []) {
+            const p = (r.answers_json as any)?.percent;
+            if (typeof p === "number") percents.push(p);
+          }
+          // Weighted average: newest gets highest weight (3,2,1)
+          const weights = [3, 2, 1];
+          let ws = 0, wsum = 0;
+          percents.forEach((p, i) => { const w = weights[i] ?? 1; ws += p * w; wsum += w; });
+          const newPercent = wsum > 0 ? Math.round(ws / wsum) : percent;
+
+          const { data: existing } = await supabase
+            .from("student_lesson_mastery")
+            .select("id, sessions_count, mastered_at")
+            .eq("student_id", session.user.id)
+            .eq("lesson_id", lessonId)
+            .maybeSingle();
+
+          const newCount = (existing?.sessions_count ?? 0) + 1;
+          const wasMastered = !!existing?.mastered_at;
+          const shouldMaster = !wasMastered && newPercent >= 85 && newCount >= 2;
+          const masteredAt = wasMastered ? existing!.mastered_at : (shouldMaster ? new Date().toISOString() : null);
+
+          const { error: upErr } = await supabase
+            .from("student_lesson_mastery")
+            .upsert({
+              student_id: session.user.id,
+              lesson_id: lessonId,
+              mastery_percent: newPercent,
+              sessions_count: newCount,
+              mastered_at: masteredAt,
+            }, { onConflict: "student_id,lesson_id" });
+
+          if (!upErr) {
+            setMastery({ mastery_percent: newPercent, sessions_count: newCount, mastered_at: masteredAt });
+            if (shouldMaster) {
+              setShowMasteryCelebration(true);
+              setTimeout(() => setShowMasteryCelebration(false), 6000);
+            }
+          }
+        }
       }
     }
     setSavingSession(false);
