@@ -462,94 +462,106 @@ const AssignmentResultsDashboard = ({ teacherId }: Props) => {
             );
           })()}
 
-          {detailLoading ? (
-            <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
-          ) : filteredStudents.length === 0 ? (
-            <div className="text-center py-8 text-sm text-muted-foreground">Žádní žáci pro tento filtr.</div>
-          ) : (
-            <div className="border border-border rounded-lg overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-xs">Žák</TableHead>
-                    <TableHead className="text-xs">Stav</TableHead>
-                    <TableHead className="text-xs text-center">Pokusů</TableHead>
-                    <TableHead className="text-xs text-center">Skóre</TableHead>
-                    <TableHead className="text-xs text-center">Porušení</TableHead>
-                    <TableHead className="text-xs">Poslední aktivita</TableHead>
-                    <TableHead className="text-xs text-right">Akce</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredStudents.map((s) => {
-
-                    const cfg = STATUS_CONFIG[s.status];
-                    const StatusIcon = cfg.icon;
-                    return (
-                      <TableRow key={s.studentId} className={s.leftTest ? "bg-destructive/5" : ""}>
-                        <TableCell className="text-sm">
-                          <div className="flex items-center gap-2">
-                            {s.leftTest && (
-                              <span title="Žák opustil test" aria-label="Žák opustil test">
-                                <ShieldAlert className="w-4 h-4 text-destructive shrink-0" />
-                              </span>
-                            )}
-                            <div>
-                              <span className="font-medium">{s.lastName} {s.firstName}</span>
-                              <span className="block text-xs text-muted-foreground">{s.email}</span>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={cfg.className + " text-[10px]"}>
-                            <StatusIcon className="w-3 h-3 mr-1" />
-                            {cfg.label}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-center text-sm">{s.attemptCount}</TableCell>
-                        <TableCell className="text-center text-sm font-medium">
-                          {s.bestScore !== null ? `${s.bestScore}/${s.maxScore || "?"}` : "–"}
-                        </TableCell>
-                        <TableCell className="text-center text-sm">
-                          {s.violationCount > 0 ? (
-                            <Badge variant="destructive" className="text-[10px]">{s.violationCount}</Badge>
-                          ) : (
-                            <span className="text-muted-foreground">–</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
-                          {s.lastActivity ? format(new Date(s.lastActivity), "d.M. HH:mm", { locale: cs }) : "–"}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            {s.status === "submitted" && (
-                              <AttemptQuickPreviewDialog
-                                assignmentId={selectedAssignmentId}
-                                studentId={s.studentId}
-                                studentName={`${s.firstName} ${s.lastName}`}
-                              />
-                            )}
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              asChild
-                              aria-label="Portfolio žáka"
-                              title="Portfolio žáka"
-                            >
-                              <Link to={`/portfolio/${s.studentId}`}>
-                                <FolderOpen className="w-4 h-4" />
-                              </Link>
-                            </Button>
-                          </div>
-                        </TableCell>
+          <Tabs defaultValue="by-student">
+            <TabsList>
+              <TabsTrigger value="by-student">Podle žáka</TabsTrigger>
+              <TabsTrigger value="by-question">Podle otázky</TabsTrigger>
+            </TabsList>
+            <TabsContent value="by-student" className="mt-4">
+              {detailLoading ? (
+                <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
+              ) : filteredStudents.length === 0 ? (
+                <div className="text-center py-8 text-sm text-muted-foreground">Žádní žáci pro tento filtr.</div>
+              ) : (
+                <div className="border border-border rounded-lg overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-xs">Žák</TableHead>
+                        <TableHead className="text-xs">Stav</TableHead>
+                        <TableHead className="text-xs text-center">Pokusů</TableHead>
+                        <TableHead className="text-xs text-center">Skóre</TableHead>
+                        <TableHead className="text-xs text-center">Porušení</TableHead>
+                        <TableHead className="text-xs">Poslední aktivita</TableHead>
+                        <TableHead className="text-xs text-right">Akce</TableHead>
                       </TableRow>
-                    );
-                  })}
+                    </TableHeader>
+                    <TableBody>
+                      {filteredStudents.map((s) => {
 
-                </TableBody>
-              </Table>
-            </div>
-          )}
+                        const cfg = STATUS_CONFIG[s.status];
+                        const StatusIcon = cfg.icon;
+                        return (
+                          <TableRow key={s.studentId} className={s.leftTest ? "bg-destructive/5" : ""}>
+                            <TableCell className="text-sm">
+                              <div className="flex items-center gap-2">
+                                {s.leftTest && (
+                                  <span title="Žák opustil test" aria-label="Žák opustil test">
+                                    <ShieldAlert className="w-4 h-4 text-destructive shrink-0" />
+                                  </span>
+                                )}
+                                <div>
+                                  <span className="font-medium">{s.lastName} {s.firstName}</span>
+                                  <span className="block text-xs text-muted-foreground">{s.email}</span>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge className={cfg.className + " text-[10px]"}>
+                                <StatusIcon className="w-3 h-3 mr-1" />
+                                {cfg.label}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-center text-sm">{s.attemptCount}</TableCell>
+                            <TableCell className="text-center text-sm font-medium">
+                              {s.bestScore !== null ? `${s.bestScore}/${s.maxScore || "?"}` : "–"}
+                            </TableCell>
+                            <TableCell className="text-center text-sm">
+                              {s.violationCount > 0 ? (
+                                <Badge variant="destructive" className="text-[10px]">{s.violationCount}</Badge>
+                              ) : (
+                                <span className="text-muted-foreground">–</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-xs text-muted-foreground">
+                              {s.lastActivity ? format(new Date(s.lastActivity), "d.M. HH:mm", { locale: cs }) : "–"}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-1">
+                                {s.status === "submitted" && (
+                                  <AttemptQuickPreviewDialog
+                                    assignmentId={selectedAssignmentId}
+                                    studentId={s.studentId}
+                                    studentName={`${s.firstName} ${s.lastName}`}
+                                  />
+                                )}
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  asChild
+                                  aria-label="Portfolio žáka"
+                                  title="Portfolio žáka"
+                                >
+                                  <Link to={`/portfolio/${s.studentId}`}>
+                                    <FolderOpen className="w-4 h-4" />
+                                  </Link>
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </TabsContent>
+            <TabsContent value="by-question" className="mt-4">
+              <PerQuestionAnalysis assignmentId={selectedAssignmentId} />
+            </TabsContent>
+          </Tabs>
+
         </div>
       )}
     </div>
