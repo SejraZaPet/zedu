@@ -10,8 +10,9 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import {
-  ArrowLeft, RotateCcw, CheckCircle2, XCircle, Sparkles, Trophy, Loader2,
+  ArrowLeft, RotateCcw, CheckCircle2, XCircle, Sparkles, Trophy, Loader2, Award,
 } from "lucide-react";
+import Confetti from "@/components/game/Confetti";
 
 type Question = {
   type: "open" | "short_answer" | "multiple_choice" | "true_false";
