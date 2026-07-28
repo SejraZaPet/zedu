@@ -7,7 +7,7 @@ export type PortfolioItemType =
   | "upload"
   | "achievement";
 
-export type PortfolioSourceType = "manual" | "worksheet" | "assignment" | "portfolio_task";
+export type PortfolioSourceType = "manual" | "worksheet" | "assignment" | "portfolio_task" | "creative_book";
 
 export interface PortfolioFile {
   id: string;

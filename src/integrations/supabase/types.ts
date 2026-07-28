@@ -3362,6 +3362,85 @@ export type Database = {
         }
         Relationships: []
       }
+      student_book_pages: {
+        Row: {
+          book_id: string
+          created_at: string
+          id: string
+          image_url: string | null
+          sort_order: number
+          text: string | null
+          updated_at: string
+        }
+        Insert: {
+          book_id: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          sort_order?: number
+          text?: string | null
+          updated_at?: string
+        }
+        Update: {
+          book_id?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          sort_order?: number
+          text?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_book_pages_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "student_books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_books: {
+        Row: {
+          cover_image_url: string | null
+          created_at: string
+          id: string
+          published: boolean
+          student_id: string
+          subject: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          cover_image_url?: string | null
+          created_at?: string
+          id?: string
+          published?: boolean
+          student_id: string
+          subject?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          cover_image_url?: string | null
+          created_at?: string
+          id?: string
+          published?: boolean
+          student_id?: string
+          subject?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_books_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_lesson_completions: {
         Row: {
           completed_at: string
