@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ClassBulkActions } from "@/components/teacher/ClassBulkActions";
 import { LeaderboardSettingsCard } from "@/components/teacher/LeaderboardSettingsCard";
+import QuickRecognitionCard from "@/components/teacher/QuickRecognitionCard";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   ArrowLeft,
   Pencil,
@@ -91,6 +93,7 @@ const TeacherClassDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const [loading, setLoading] = useState(true);
   const [cls, setCls] = useState<ClassRow | null>(null);
@@ -332,6 +335,21 @@ const TeacherClassDetail = () => {
             <CalendarPlus className="w-4 h-4 mr-2" /> Přidat hodinu do rozvrhu
           </Button>
         </div>
+
+        {/* Rychlé uznání */}
+        {id && user && (
+          <QuickRecognitionCard
+            classId={id}
+            teacherId={user.id}
+            students={members.filter((m) => m.status !== "pending").map((m) => ({
+              user_id: m.user_id,
+              first_name: m.first_name,
+              last_name: m.last_name,
+            }))}
+          />
+        )}
+
+
 
         {/* Cards grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

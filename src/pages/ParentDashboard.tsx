@@ -7,6 +7,7 @@ import SiteFooter from "@/components/SiteFooter";
 import ChildScheduleWidget from "@/components/parent/ChildScheduleWidget";
 import ChildProgressWidget from "@/components/parent/ChildProgressWidget";
 import ChildUpcomingAssignmentsWidget from "@/components/parent/ChildUpcomingAssignmentsWidget";
+import RecognitionWidget from "@/components/behavior/RecognitionWidget";
 import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -303,8 +304,17 @@ const ParentDashboard = () => {
                 )}
               />
             </div>
+            {students.map((s) => (
+              <RecognitionWidget
+                key={`rec-${s.id}`}
+                studentId={s.id}
+                studentName={`${s.first_name} ${s.last_name}`.trim() || "Dítě"}
+                title="Uznání od učitele"
+              />
+            ))}
           </div>
         )}
+
 
         {students.length === 0 ? (
           <div className="bg-card border border-border rounded-2xl p-12 text-center">

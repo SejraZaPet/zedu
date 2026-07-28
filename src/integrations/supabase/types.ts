@@ -942,6 +942,58 @@ export type Database = {
           },
         ]
       }
+      behavior_points: {
+        Row: {
+          category: string
+          class_id: string | null
+          created_at: string
+          id: string
+          note: string | null
+          student_id: string
+          teacher_id: string
+        }
+        Insert: {
+          category: string
+          class_id?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          student_id: string
+          teacher_id: string
+        }
+        Update: {
+          category?: string
+          class_id?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          student_id?: string
+          teacher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "behavior_points_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "behavior_points_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "behavior_points_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       class_leaderboard_baselines: {
         Row: {
           baseline_xp: number

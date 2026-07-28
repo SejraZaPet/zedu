@@ -9,6 +9,7 @@ import TodayWidget from "@/components/calendar/TodayWidget";
 import StudentProgressWidgets from "@/components/student/StudentProgressWidgets";
 import PlayerProfileWidget from "@/components/student/PlayerProfileWidget";
 import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
+import RecognitionWidget from "@/components/behavior/RecognitionWidget";
 
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -124,6 +125,14 @@ const StudentDashboard = () => {
         )}
 
         {user && <StudentProgressWidgets userId={user.id} />}
+
+        {user && (
+          <div className="mb-6">
+            <RecognitionWidget studentId={user.id} />
+          </div>
+        )}
+
+
 
         <div className="grid gap-6 md:grid-cols-2">
           {/* Profil */}
