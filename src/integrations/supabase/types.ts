@@ -287,6 +287,111 @@ export type Database = {
           },
         ]
       }
+      academy_pathway_certificates: {
+        Row: {
+          certificate_number: string
+          id: string
+          issued_at: string
+          pathway_id: string
+          teacher_id: string
+        }
+        Insert: {
+          certificate_number: string
+          id?: string
+          issued_at?: string
+          pathway_id: string
+          teacher_id: string
+        }
+        Update: {
+          certificate_number?: string
+          id?: string
+          issued_at?: string
+          pathway_id?: string
+          teacher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_pathway_certificates_pathway_id_fkey"
+            columns: ["pathway_id"]
+            isOneToOne: false
+            referencedRelation: "academy_pathways"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_pathway_certificates_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_pathway_courses: {
+        Row: {
+          course_id: string
+          created_at: string
+          id: string
+          pathway_id: string
+          sort_order: number
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          id?: string
+          pathway_id: string
+          sort_order?: number
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          id?: string
+          pathway_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_pathway_courses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "academy_courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_pathway_courses_pathway_id_fkey"
+            columns: ["pathway_id"]
+            isOneToOne: false
+            referencedRelation: "academy_pathways"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_pathways: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_published: boolean
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_published?: boolean
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_published?: boolean
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       articles: {
         Row: {
           category: string
@@ -5000,6 +5105,17 @@ export type Database = {
           course_audience: string
           course_title: string
           issued_at: string
+          recipient_name: string
+        }[]
+      }
+      verify_academy_pathway_certificate: {
+        Args: { _cert_number: string }
+        Returns: {
+          certificate_number: string
+          courses: Json
+          issued_at: string
+          pathway_description: string
+          pathway_title: string
           recipient_name: string
         }[]
       }
