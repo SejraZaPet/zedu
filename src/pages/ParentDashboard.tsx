@@ -304,8 +304,17 @@ const ParentDashboard = () => {
                 )}
               />
             </div>
+            {students.map((s) => (
+              <RecognitionWidget
+                key={`rec-${s.id}`}
+                studentId={s.id}
+                studentName={`${s.first_name} ${s.last_name}`.trim() || "Dítě"}
+                title="Uznání od učitele"
+              />
+            ))}
           </div>
         )}
+
 
         {students.length === 0 ? (
           <div className="bg-card border border-border rounded-2xl p-12 text-center">
