@@ -6,6 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import {
   ArrowLeft, GraduationCap, CheckCircle2, Circle, Award, Play, Download, FileBadge2,
@@ -22,12 +25,24 @@ interface Course {
   accreditation_number: string | null;
   audience: "teacher" | "student" | "both";
   issues_certificate: boolean;
+  requires_evidence: boolean;
   price: number | null;
   revenue_type: string | null;
   sort_order: number;
   moduleCount?: number;
   enrollment?: { id: string; completed_at: string | null } | null;
   completedCount?: number;
+}
+
+interface EvidenceSubmission {
+  id: string;
+  enrollment_id: string;
+  description: string;
+  file_url: string | null;
+  status: "pending" | "approved" | "rejected";
+  reviewer_comment: string | null;
+  submitted_at: string;
+  reviewed_at: string | null;
 }
 
 interface Module {
@@ -66,6 +81,86 @@ const renderContent = (content: string) => {
   return <div className="space-y-2">{out}</div>;
 };
 
+const statusMeta = (status: EvidenceSubmission["status"]) => {
+  if (status === "approved") return { label: "Schváleno 🎉", cls: "bg-primary/10 text-primary border-primary/30" };
+  if (status === "rejected") return { label: "Zamítnuto", cls: "bg-destructive/10 text-destructive border-destructive/30" };
+  return { label: "Čeká na posouzení", cls: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30" };
+};
+
+interface EvidencePanelProps {
+  evidence: EvidenceSubmission | null;
+  evidenceDesc: string;
+  setEvidenceDesc: (v: string) => void;
+  evidenceFile: File | null;
+  setEvidenceFile: (f: File | null) => void;
+  submitting: boolean;
+  onSubmit: () => void;
+}
+
+const EvidencePanel = ({ evidence, evidenceDesc, setEvidenceDesc, evidenceFile, setEvidenceFile, submitting, onSubmit }: EvidencePanelProps) => {
+  const showForm = !evidence || evidence.status === "rejected";
+  return (
+    <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+      <div className="flex items-center gap-2">
+        <FileBadge2 className="w-5 h-5 text-primary" />
+        <h3 className="font-heading font-semibold">Odevzdat důkaz z praxe</h3>
+        {evidence && (
+          <Badge variant="outline" className={statusMeta(evidence.status).cls}>{statusMeta(evidence.status).label}</Badge>
+        )}
+      </div>
+      <p className="text-sm text-muted-foreground">
+        Certifikát tohoto kurzu se vydává až po ověření, že jste poznatky uplatnil/a ve své výuce. Popište stručně, jak/kde a případně přiložte fotku nebo dokument z hodiny.
+      </p>
+
+      {evidence && evidence.status !== "rejected" && (
+        <div className="text-sm space-y-2">
+          <div className="p-3 rounded-lg bg-muted/50 whitespace-pre-wrap">{evidence.description}</div>
+          {evidence.status === "approved" && (
+            <p className="text-sm text-primary">Certifikát byl vydán – najdete ho v záložce Moje certifikáty.</p>
+          )}
+        </div>
+      )}
+
+      {evidence && evidence.status === "rejected" && evidence.reviewer_comment && (
+        <div className="p-3 rounded-lg border border-destructive/30 bg-destructive/5 text-sm">
+          <div className="font-medium mb-1">Komentář recenzenta:</div>
+          <div className="whitespace-pre-wrap">{evidence.reviewer_comment}</div>
+        </div>
+      )}
+
+      {showForm && (
+        <div className="space-y-2">
+          <div>
+            <Label htmlFor="ev-desc">Popis uplatnění v praxi</Label>
+            <Textarea
+              id="ev-desc"
+              rows={5}
+              value={evidenceDesc}
+              onChange={(e) => setEvidenceDesc(e.target.value)}
+              placeholder="Např. Použil/a jsem metodu XY v 6. ročníku při hodině literatury… žáci pracovali ve skupinách…"
+            />
+          </div>
+          <div>
+            <Label htmlFor="ev-file">Volitelná příloha (foto / PDF / DOCX)</Label>
+            <Input
+              id="ev-file"
+              type="file"
+              accept="image/*,.pdf,.doc,.docx"
+              onChange={(e) => setEvidenceFile(e.target.files?.[0] || null)}
+            />
+            {evidenceFile && <p className="text-xs text-muted-foreground mt-1">{evidenceFile.name}</p>}
+          </div>
+          <Button onClick={onSubmit} disabled={submitting}>
+            {submitting ? "Odesílám…" : evidence?.status === "rejected" ? "Odeslat znovu" : "Odeslat důkaz"}
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+
+
 interface AcademyViewProps {
   audience: AudienceScope;
   title?: string;
@@ -85,6 +180,12 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
 
   const [certificates, setCertificates] = useState<CertificateRow[]>([]);
   const [certLoading, setCertLoading] = useState(false);
+
+  // Evidence submission for current course
+  const [evidence, setEvidence] = useState<EvidenceSubmission | null>(null);
+  const [evidenceDesc, setEvidenceDesc] = useState("");
+  const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
+  const [evidenceSubmitting, setEvidenceSubmitting] = useState(false);
 
   const audienceValues = audience === "teacher" ? ["teacher", "both"] : audience === "parent" ? ["parent", "both"] : ["student", "both"];
 
@@ -175,13 +276,81 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
     setEnrollmentId(enroll!.id);
     setEnrollmentCompletedAt(enroll!.completed_at);
 
-    const [{ data: mods }, { data: comps }] = await Promise.all([
+    const [{ data: mods }, { data: comps }, { data: evi }] = await Promise.all([
       supabase.from("academy_modules").select("*").eq("course_id", courseId).order("sort_order", { ascending: true }),
       supabase.from("academy_module_completions").select("module_id").eq("enrollment_id", enroll!.id),
+      supabase.from("academy_evidence_submissions").select("*").eq("enrollment_id", enroll!.id).order("submitted_at", { ascending: false }).limit(1),
     ]);
     setModules((mods || []) as Module[]);
     setCompletedIds(new Set((comps || []).map((c: any) => c.module_id)));
+    setEvidence(((evi as any[]) || [])[0] || null);
+    setEvidenceDesc("");
+    setEvidenceFile(null);
     if (mods && mods.length > 0) setActiveModuleId(mods[0].id);
+  };
+
+  const reloadEvidence = useCallback(async () => {
+    if (!enrollmentId) return;
+    const { data } = await supabase
+      .from("academy_evidence_submissions")
+      .select("*")
+      .eq("enrollment_id", enrollmentId)
+      .order("submitted_at", { ascending: false })
+      .limit(1);
+    setEvidence(((data as any[]) || [])[0] || null);
+  }, [enrollmentId]);
+
+  const submitEvidence = async () => {
+    if (!enrollmentId || !user) return;
+    if (!evidenceDesc.trim()) {
+      toast.error("Popište, jak jste poznatky uplatnil/a v praxi.");
+      return;
+    }
+    setEvidenceSubmitting(true);
+    try {
+      let fileUrl: string | null = null;
+      if (evidenceFile) {
+        const ext = evidenceFile.name.split(".").pop() || "bin";
+        const path = `${user.id}/${enrollmentId}/${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from("academy-evidence")
+          .upload(path, evidenceFile, { upsert: false });
+        if (upErr) throw upErr;
+        fileUrl = path;
+      }
+
+      if (evidence && evidence.status === "rejected") {
+        // Re-submit: reset to pending and update
+        const { error } = await supabase
+          .from("academy_evidence_submissions")
+          .update({
+            description: evidenceDesc.trim(),
+            file_url: fileUrl ?? evidence.file_url,
+            status: "pending",
+            reviewer_comment: null,
+            reviewed_at: null,
+            reviewer_id: null,
+            submitted_at: new Date().toISOString(),
+          })
+          .eq("id", evidence.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("academy_evidence_submissions").insert({
+          enrollment_id: enrollmentId,
+          description: evidenceDesc.trim(),
+          file_url: fileUrl,
+        });
+        if (error) throw error;
+      }
+      toast.success("Důkaz odeslán – čeká na posouzení.");
+      setEvidenceDesc("");
+      setEvidenceFile(null);
+      await reloadEvidence();
+    } catch (e: any) {
+      toast.error("Odeslání selhalo", { description: e?.message });
+    } finally {
+      setEvidenceSubmitting(false);
+    }
   };
 
   const selectedCourse = useMemo(() => courses.find((c) => c.id === selectedCourseId) || null, [courses, selectedCourseId]);
@@ -221,9 +390,12 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
         const nowIso = new Date().toISOString();
         await supabase.from("academy_enrollments").update({ completed_at: nowIso }).eq("id", enrollmentId);
         setEnrollmentCompletedAt(nowIso);
-        toast.success("🎉 Kurz dokončen!");
-        // Trigger cert (server-side row was already created by DB trigger)
-        triggerCertificate(enrollmentId, !!selectedCourse.issues_certificate);
+        if (selectedCourse.requires_evidence && selectedCourse.issues_certificate) {
+          toast.success("🎉 Moduly hotové! Nyní odevzdejte důkaz z praxe pro získání certifikátu.");
+        } else {
+          toast.success("🎉 Kurz dokončen!");
+          triggerCertificate(enrollmentId, !!selectedCourse.issues_certificate);
+        }
       }
     }
   };
@@ -231,6 +403,7 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
   const backToList = () => {
     setSelectedCourseId(null); setModules([]); setCompletedIds(new Set());
     setEnrollmentId(null); setEnrollmentCompletedAt(null);
+    setEvidence(null); setEvidenceDesc(""); setEvidenceFile(null);
     fetchCourses(); fetchCertificates();
   };
 
@@ -360,10 +533,24 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
             {selectedCourse?.description && (<p className="text-sm text-muted-foreground mb-3">{selectedCourse.description}</p>)}
             <Progress value={progressPct} className="h-2" />
             <div className="text-xs text-muted-foreground mt-1">{completedIds.size}/{modules.length} modulů · {progressPct} %</div>
-            {enrollmentCompletedAt && (
+            {enrollmentCompletedAt && !(selectedCourse?.requires_evidence && selectedCourse?.issues_certificate) && (
               <div className="mt-3 p-3 rounded-lg bg-primary/10 border border-primary/30 text-sm flex items-center gap-2">
                 <Award className="w-5 h-5 text-primary" />
                 <span>🎉 Gratulujeme, kurz je dokončen!{selectedCourse?.issues_certificate ? " Certifikát najdete v záložce Moje certifikáty." : ""}</span>
+              </div>
+            )}
+
+            {enrollmentCompletedAt && selectedCourse?.requires_evidence && selectedCourse?.issues_certificate && (
+              <div className="mt-3">
+                <EvidencePanel
+                  evidence={evidence}
+                  evidenceDesc={evidenceDesc}
+                  setEvidenceDesc={setEvidenceDesc}
+                  evidenceFile={evidenceFile}
+                  setEvidenceFile={setEvidenceFile}
+                  submitting={evidenceSubmitting}
+                  onSubmit={submitEvidence}
+                />
               </div>
             )}
           </div>
