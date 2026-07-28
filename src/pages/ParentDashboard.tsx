@@ -8,6 +8,7 @@ import ChildScheduleWidget from "@/components/parent/ChildScheduleWidget";
 import ChildProgressWidget from "@/components/parent/ChildProgressWidget";
 import ChildUpcomingAssignmentsWidget from "@/components/parent/ChildUpcomingAssignmentsWidget";
 import RecognitionWidget from "@/components/behavior/RecognitionWidget";
+import ChildAlertsPanel from "@/components/alerts/ChildAlertsPanel";
 import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
