@@ -146,6 +146,7 @@ function PortfolioCard({
   const [aiBusy, setAiBusy] = useState(false);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [fileUrls, setFileUrls] = useState<Record<string, string | null>>({});
+  const [rubricRefreshKey, setRubricRefreshKey] = useState(0);
   const { user } = useAuth();
 
   useEffect(() => {
