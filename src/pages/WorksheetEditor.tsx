@@ -2779,6 +2779,15 @@ export default function WorksheetEditor() {
         onConfirm={handleAddLinkedLessons}
       />
 
+      <QuestionBankPickerDialog
+        open={bankPickerOpen}
+        onOpenChange={setBankPickerOpen}
+        worksheetSubject={spec?.header.subject ?? null}
+        onInsert={insertFromBank}
+      />
+
+
+
       {returnTo && id && (
         <div className="fixed bottom-4 right-4 z-40 bg-card border border-border rounded-xl shadow-lg p-3 flex items-center gap-2 text-sm">
           <span className="text-muted-foreground">Pokračovat zpět do úkolu:</span>
