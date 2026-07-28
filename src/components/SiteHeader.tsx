@@ -215,6 +215,10 @@ const SiteHeader = () => {
                         <BookMarked size={16} />
                         ŠVP k předmětům
                       </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/ucitel/rubriky")} className="gap-2 cursor-pointer">
+                        <ClipboardList size={16} />
+                        Rubriky hodnocení
+                      </DropdownMenuItem>
                     </>
                   )}
                   <DropdownMenuSeparator />
