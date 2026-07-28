@@ -458,7 +458,7 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
     setSelectedCourseId(null); setModules([]); setCompletedIds(new Set());
     setEnrollmentId(null); setEnrollmentCompletedAt(null);
     setEvidence(null); setEvidenceDesc(""); setEvidenceFile(null);
-    fetchCourses(); fetchCertificates();
+    fetchCourses(); fetchCertificates(); fetchPathways();
   };
 
   const activeModule = useMemo(() => modules.find((m) => m.id === activeModuleId) || null, [modules, activeModuleId]);
