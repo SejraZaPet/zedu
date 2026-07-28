@@ -163,6 +163,8 @@ import {
 import { downloadWorksheetPdf, buildWorksheetPdfBlobUrl } from "@/lib/worksheet-pdf-export";
 import WorksheetPlayer from "@/components/WorksheetPlayer";
 import LinkedLessonsDialog, { type LessonChoice } from "@/components/admin/LinkedLessonsDialog";
+import QuestionBankPickerDialog, { type QuestionBankItem } from "@/components/worksheet/QuestionBankPickerDialog";
+import { Library, BookmarkPlus } from "lucide-react";
 
 interface LinkedLessonRow {
   id: string; // worksheet_lessons.id
