@@ -11,12 +11,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { FileText, HelpCircle, MessageSquare, Cloud, DoorOpen, ArrowLeft, Loader2, Users2, SplitSquareHorizontal, Sparkles, Plus, Trash2 } from "lucide-react";
+import { FileText, HelpCircle, MessageSquare, Cloud, DoorOpen, ArrowLeft, Loader2, Users2, SplitSquareHorizontal, Sparkles, Plus, Trash2, KeyRound } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-type AddKind = "menu" | "text" | "mcq" | "wall" | "wordcloud" | "exit" | "teams" | "differentiated";
+type AddKind = "menu" | "text" | "mcq" | "wall" | "wordcloud" | "exit" | "teams" | "differentiated" | "escape";
 
 const EXIT_TICKET_DEFAULT_PROMPT =
   "Napiš jednu věc, kterou sis dnes odnesl/a, a jednu věc, která ti ještě není jasná.";
@@ -121,6 +121,26 @@ function buildDifferentiatedSlide(
   };
 }
 
+function buildEscapeSlide(
+  intro: string,
+  locks: { clue: string; code: string }[],
+  finalMessage: string,
+) {
+  return {
+    slideId: `live-${Date.now()}`,
+    type: "activity",
+    projector: { headline: "Úniková hra", body: "" },
+    device: { instructions: "Vyluští postupně všechny zámky." },
+    activitySpec: {
+      activityType: "escape",
+      intro: intro.trim(),
+      locks: locks.map((l) => ({ clue: l.clue.trim(), code: l.code.trim() })),
+      finalMessage: finalMessage.trim(),
+    },
+  };
+}
+
+
 export function AddSlideSheet({
   open,
   onOpenChange,
@@ -161,6 +181,15 @@ export function AddSlideSheet({
   ]);
   const [diffLoading, setDiffLoading] = useState(false);
 
+  // escape
+  const [escapeIntro, setEscapeIntro] = useState("");
+  const [escapeFinal, setEscapeFinal] = useState("");
+  const [escapeLocks, setEscapeLocks] = useState<{ clue: string; code: string }[]>([
+    { clue: "", code: "" },
+    { clue: "", code: "" },
+    { clue: "", code: "" },
+  ]);
+
   const reset = () => {
     setKind("menu");
     setTextHeadline("");
@@ -182,6 +211,13 @@ export function AddSlideSheet({
       { title: "", content: "" },
     ]);
     setDiffLoading(false);
+    setEscapeIntro("");
+    setEscapeFinal("");
+    setEscapeLocks([
+      { clue: "", code: "" },
+      { clue: "", code: "" },
+      { clue: "", code: "" },
+    ]);
   };
 
   const close = () => {
@@ -311,6 +347,20 @@ export function AddSlideSheet({
     appendAndJump(buildDifferentiatedSlide(diffTopic, tasks, diffCount));
   };
 
+  const submitEscape = () => {
+    const filled = escapeLocks.filter((l) => l.clue.trim() && l.code.trim());
+    if (filled.length < 3) {
+      toast.error("Vyplňte alespoň 3 zámky (hádanka + kód).");
+      return;
+    }
+    if (filled.length > 6) {
+      toast.error("Maximálně 6 zámků.");
+      return;
+    }
+    appendAndJump(buildEscapeSlide(escapeIntro, filled, escapeFinal));
+  };
+
+
 
   return (
     <Sheet
@@ -343,6 +393,7 @@ export function AddSlideSheet({
               {kind === "exit" && "Exit ticket"}
               {kind === "teams" && "Rozdělit do skupin"}
               {kind === "differentiated" && "Diferencovaná aktivita"}
+              {kind === "escape" && "Úniková hra"}
             </SheetTitle>
           </div>
           <SheetDescription>
@@ -446,6 +497,19 @@ export function AddSlideSheet({
                   <p className="font-medium">Diferencovaná aktivita</p>
                   <p className="text-xs text-muted-foreground">
                     Každá skupina dostane jiný úkol (volitelně s AI)
+                  </p>
+                </div>
+              </Button>
+              <Button
+                variant="outline"
+                className="justify-start h-auto py-3"
+                onClick={() => setKind("escape")}
+              >
+                <KeyRound className="w-5 h-5 mr-3 text-primary" />
+                <div className="text-left">
+                  <p className="font-medium">Úniková hra</p>
+                  <p className="text-xs text-muted-foreground">
+                    Série hádanek, které žáci luští postupně
                   </p>
                 </div>
               </Button>
@@ -768,6 +832,110 @@ export function AddSlideSheet({
                 disabled={busy || diffLoading}
                 className="w-full"
               >
+                {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Přidat a zobrazit
+              </Button>
+            </div>
+          )}
+
+          {kind === "escape" && (
+            <div className="space-y-4">
+              <p className="text-xs text-muted-foreground">
+                Digitální úniková hra: žáci luští 3–6 zámků postupně. Kód se porovnává
+                bez ohledu na velikost písmen a mezery. Postup běží lokálně, není skórován.
+              </p>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="escape-intro">Úvodní příběh / scénář (volitelné)</Label>
+                <Textarea
+                  id="escape-intro"
+                  rows={3}
+                  value={escapeIntro}
+                  onChange={(e) => setEscapeIntro(e.target.value)}
+                  placeholder="Např. Jste zavření v knihovně. Abyste unikli, musíte odemknout několik zámků…"
+                  disabled={busy}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Zámky ({escapeLocks.length})</Label>
+                  <div className="flex gap-1">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        setEscapeLocks((prev) =>
+                          prev.length < 6 ? [...prev, { clue: "", code: "" }] : prev
+                        )
+                      }
+                      disabled={busy || escapeLocks.length >= 6}
+                    >
+                      <Plus className="w-3.5 h-3.5 mr-1" />
+                      Přidat zámek
+                    </Button>
+                  </div>
+                </div>
+                {escapeLocks.map((lock, i) => (
+                  <div key={i} className="rounded-md border border-border p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        Zámek {i + 1}
+                      </span>
+                      {escapeLocks.length > 3 && (
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="h-6 w-6"
+                          onClick={() =>
+                            setEscapeLocks((prev) => prev.filter((_, idx) => idx !== i))
+                          }
+                          disabled={busy}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      )}
+                    </div>
+                    <Textarea
+                      rows={2}
+                      value={lock.clue}
+                      onChange={(e) => {
+                        const next = [...escapeLocks];
+                        next[i] = { ...next[i], clue: e.target.value };
+                        setEscapeLocks(next);
+                      }}
+                      placeholder="Hádanka / nápověda"
+                      disabled={busy}
+                    />
+                    <Input
+                      value={lock.code}
+                      onChange={(e) => {
+                        const next = [...escapeLocks];
+                        next[i] = { ...next[i], code: e.target.value };
+                        setEscapeLocks(next);
+                      }}
+                      placeholder="Kód k odemknutí (např. 42 nebo Praha)"
+                      disabled={busy}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="escape-final">Závěrečný vzkaz (volitelné)</Label>
+                <Textarea
+                  id="escape-final"
+                  rows={3}
+                  value={escapeFinal}
+                  onChange={(e) => setEscapeFinal(e.target.value)}
+                  placeholder="Např. Gratulujeme! Unikli jste."
+                  disabled={busy}
+                />
+              </div>
+
+              <Button onClick={submitEscape} disabled={busy} className="w-full">
                 {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Přidat a zobrazit
               </Button>
