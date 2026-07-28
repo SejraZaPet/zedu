@@ -17,6 +17,7 @@ import {
   Plus, ArrowLeft, Pencil, Trash2, GripVertical, Eye, EyeOff, FileText
 } from "lucide-react";
 import { emptyWorksheetSpec } from "@/lib/worksheet-defaults";
+import LessonCurriculumTopicsPicker from "@/components/teacher/LessonCurriculumTopicsPicker";
 
 interface Lesson {
   id: string;
@@ -246,6 +247,7 @@ const TeacherLessons = () => {
               <SheetTitle>Úprava: {editingLesson.title}</SheetTitle>
             </SheetHeader>
             <div className="mt-4 space-y-4">
+              <LessonCurriculumTopicsPicker lessonId={editingLesson.id} textbookId={textbookId} />
               <BlockEditor blocks={editBlocks} onChange={setEditBlocks} />
               <Button onClick={handleSaveBlocks} className="w-full">Uložit bloky</Button>
             </div>
