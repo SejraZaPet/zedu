@@ -10,8 +10,9 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import {
-  ArrowLeft, RotateCcw, CheckCircle2, XCircle, Sparkles, Trophy, Loader2,
+  ArrowLeft, RotateCcw, CheckCircle2, XCircle, Sparkles, Trophy, Loader2, Award,
 } from "lucide-react";
+import Confetti from "@/components/game/Confetti";
 
 type Question = {
   type: "open" | "short_answer" | "multiple_choice" | "true_false";
@@ -86,6 +87,8 @@ const StudentPractice = () => {
   const [startedAt, setStartedAt] = useState<number>(Date.now());
   const [savingSession, setSavingSession] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const [mastery, setMastery] = useState<{ mastery_percent: number; sessions_count: number; mastered_at: string | null } | null>(null);
+  const [showMasteryCelebration, setShowMasteryCelebration] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -167,6 +170,31 @@ const StudentPractice = () => {
     };
   }, [slug, lessonId, reloadKey]);
 
+  // Load mastery for this lesson
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!lessonId) {
+        setMastery(null);
+        return;
+      }
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const { data: row } = await supabase
+        .from("student_lesson_mastery")
+        .select("mastery_percent, sessions_count, mastered_at")
+        .eq("student_id", session.user.id)
+        .eq("lesson_id", lessonId)
+        .maybeSingle();
+      if (cancelled) return;
+      setMastery(row
+        ? { mastery_percent: Number(row.mastery_percent) || 0, sessions_count: row.sessions_count ?? 0, mastered_at: row.mastered_at }
+        : { mastery_percent: 0, sessions_count: 0, mastered_at: null });
+    })();
+    return () => { cancelled = true; };
+  }, [lessonId, reloadKey]);
+
+
   const allQuestions = useMemo(
     () => (data?.practice?.phases ?? []).flatMap((p) => p.questions),
     [data],
@@ -226,6 +254,59 @@ const StudentPractice = () => {
           title: "Hotovo!",
           description: `Tvůj výsledek byl uložen.`,
         });
+
+        // Update mastery for this lesson (weighted avg of last 3 session percents)
+        if (data.lesson?.id && totalScorable > 0) {
+          const lessonId = data.lesson.id;
+          const { data: recent } = await supabase
+            .from("student_practice_sessions")
+            .select("answers_json, score, created_at")
+            .eq("student_id", session.user.id)
+            .eq("lesson_id", lessonId)
+            .order("created_at", { ascending: false })
+            .limit(3);
+
+          const percents: number[] = [];
+          for (const r of recent ?? []) {
+            const p = (r.answers_json as any)?.percent;
+            if (typeof p === "number") percents.push(p);
+          }
+          // Weighted average: newest gets highest weight (3,2,1)
+          const weights = [3, 2, 1];
+          let ws = 0, wsum = 0;
+          percents.forEach((p, i) => { const w = weights[i] ?? 1; ws += p * w; wsum += w; });
+          const newPercent = wsum > 0 ? Math.round(ws / wsum) : percent;
+
+          const { data: existing } = await supabase
+            .from("student_lesson_mastery")
+            .select("id, sessions_count, mastered_at")
+            .eq("student_id", session.user.id)
+            .eq("lesson_id", lessonId)
+            .maybeSingle();
+
+          const newCount = (existing?.sessions_count ?? 0) + 1;
+          const wasMastered = !!existing?.mastered_at;
+          const shouldMaster = !wasMastered && newPercent >= 85 && newCount >= 2;
+          const masteredAt = wasMastered ? existing!.mastered_at : (shouldMaster ? new Date().toISOString() : null);
+
+          const { error: upErr } = await supabase
+            .from("student_lesson_mastery")
+            .upsert({
+              student_id: session.user.id,
+              lesson_id: lessonId,
+              mastery_percent: newPercent,
+              sessions_count: newCount,
+              mastered_at: masteredAt,
+            }, { onConflict: "student_id,lesson_id" });
+
+          if (!upErr) {
+            setMastery({ mastery_percent: newPercent, sessions_count: newCount, mastered_at: masteredAt });
+            if (shouldMaster) {
+              setShowMasteryCelebration(true);
+              setTimeout(() => setShowMasteryCelebration(false), 6000);
+            }
+          }
+        }
       }
     }
     setSavingSession(false);
@@ -273,7 +354,52 @@ const StudentPractice = () => {
               {data.lesson?.title && (
                 <p className="text-muted-foreground mt-1">Lekce: {data.lesson.title}</p>
               )}
+
+              {lessonId && mastery && (
+                <div className="mt-4">
+                  {mastery.mastered_at ? (
+                    <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-4 py-2">
+                      <Award className="w-5 h-5 text-emerald-600" />
+                      <span className="font-heading text-sm font-bold text-emerald-700">
+                        Zvládnuto! 🏆
+                      </span>
+                      <span className="text-xs text-emerald-700/70">
+                        ({Math.round(mastery.mastery_percent)} %)
+                      </span>
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                          Zvládnutí lekce
+                        </span>
+                        <span className="text-sm font-semibold">
+                          {Math.round(mastery.mastery_percent)} %
+                        </span>
+                      </div>
+                      <Progress value={mastery.mastery_percent} className="h-2" />
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
+
+            {showMasteryCelebration && (
+              <div className="relative">
+                <div className="fixed inset-0 pointer-events-none z-50">
+                  <Confetti count={90} />
+                </div>
+                <div className="mb-6 bg-gradient-to-br from-emerald-500/15 to-primary/10 border border-emerald-500/40 rounded-xl p-6 text-center animate-in fade-in zoom-in-95">
+                  <Award className="w-12 h-12 text-emerald-600 mx-auto mb-2" />
+                  <h2 className="font-heading text-2xl font-bold text-emerald-700">
+                    Skvělá práce! Lekci jsi právě zvládl/a! 🏆
+                  </h2>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Dosáhl/a jsi mastery úrovně. Můžeš pokračovat v procvičování nebo se pustit do další lekce.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {submitted && (
               <div className="mb-6 bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/30 rounded-xl p-6">
@@ -303,7 +429,10 @@ const StudentPractice = () => {
                 )}
                 <div className="flex gap-2 mt-4">
                   <Button onClick={handleRetry} className="gap-2" disabled={savingSession}>
-                    <RotateCcw className="w-4 h-4" /> Zkusit znovu
+                    <RotateCcw className="w-4 h-4" />
+                    {mastery?.mastered_at && mastery.mastery_percent >= 100
+                      ? "Zkusit znovu"
+                      : "Procvičit dál"}
                   </Button>
                   <Button variant="outline" onClick={() => navigate("/student/metody")}>
                     Zpět na metody
