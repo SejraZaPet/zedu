@@ -93,6 +93,7 @@ const TeacherClassDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const [loading, setLoading] = useState(true);
   const [cls, setCls] = useState<ClassRow | null>(null);
