@@ -1483,6 +1483,38 @@ export type Database = {
           },
         ]
       }
+      curriculum_topics: {
+        Row: {
+          created_at: string
+          curriculum_plan_id: string
+          id: string
+          sort_order: number
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          curriculum_plan_id: string
+          id?: string
+          sort_order?: number
+          title: string
+        }
+        Update: {
+          created_at?: string
+          curriculum_plan_id?: string
+          id?: string
+          sort_order?: number
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "curriculum_topics_curriculum_plan_id_fkey"
+            columns: ["curriculum_plan_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_curriculum_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       export_jobs: {
         Row: {
           attempt: number
@@ -1934,6 +1966,42 @@ export type Database = {
           tips?: string | null
         }
         Relationships: []
+      }
+      lesson_curriculum_coverage: {
+        Row: {
+          created_at: string
+          curriculum_topic_id: string
+          id: string
+          lesson_id: string
+        }
+        Insert: {
+          created_at?: string
+          curriculum_topic_id: string
+          id?: string
+          lesson_id: string
+        }
+        Update: {
+          created_at?: string
+          curriculum_topic_id?: string
+          id?: string
+          lesson_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_curriculum_coverage_curriculum_topic_id_fkey"
+            columns: ["curriculum_topic_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_topics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lesson_curriculum_coverage_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_textbook_lessons"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       lesson_method_links: {
         Row: {
