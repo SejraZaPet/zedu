@@ -2856,6 +2856,56 @@ export type Database = {
           },
         ]
       }
+      student_alerts: {
+        Row: {
+          alert_type: string
+          class_id: string | null
+          context: string | null
+          created_at: string
+          detail: string
+          id: string
+          resolved: boolean
+          resolved_at: string | null
+          resolved_by: string | null
+          student_id: string
+          teacher_id: string | null
+        }
+        Insert: {
+          alert_type: string
+          class_id?: string | null
+          context?: string | null
+          created_at?: string
+          detail: string
+          id?: string
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          student_id: string
+          teacher_id?: string | null
+        }
+        Update: {
+          alert_type?: string
+          class_id?: string | null
+          context?: string | null
+          created_at?: string
+          detail?: string
+          id?: string
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          student_id?: string
+          teacher_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_alerts_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_avatars: {
         Row: {
           avatar_slug: string
