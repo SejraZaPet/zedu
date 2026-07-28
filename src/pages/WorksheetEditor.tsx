@@ -774,7 +774,7 @@ export default function WorksheetEditor() {
             correct = ch[0] ?? "";
           }
         } else if (type === "true_false") {
-          correct = b.is_true ? "true" : "false";
+          correct = b.is_true ? "Pravda" : "Nepravda";
         } else if (type === "short_answer") {
           correct = b.correct_answer ?? "";
         }
