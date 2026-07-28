@@ -905,7 +905,13 @@ const LiveTeacherScreen = () => {
             <DifferentiatedSlideTeacher session={session} players={players} />
           )}
 
-          {currentSlide.type === "activity" && (currentSlide as any).activitySpec?.activityType !== "teams" && (currentSlide as any).activitySpec?.activityType !== "differentiated" && (
+          {currentSlide.type === "activity" && (currentSlide as any).activitySpec?.activityType === "escape" && (
+            <div className="mt-4">
+              <EscapeGameOverview slide={currentSlide} />
+            </div>
+          )}
+
+          {currentSlide.type === "activity" && (currentSlide as any).activitySpec?.activityType !== "teams" && (currentSlide as any).activitySpec?.activityType !== "differentiated" && (currentSlide as any).activitySpec?.activityType !== "escape" && (
             <div className="mt-4 space-y-3">
               <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
