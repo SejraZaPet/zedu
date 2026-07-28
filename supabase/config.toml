@@ -90,3 +90,6 @@ verify_jwt = false
 
 
 
+
+[functions.parse-curriculum-topics]
+verify_jwt = false

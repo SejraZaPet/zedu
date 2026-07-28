@@ -18,6 +18,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { BookMarked, FileText, Loader2, Pencil, Plus, Trash2, Upload, ExternalLink } from "lucide-react";
+import CurriculumTopicsSection from "@/components/teacher/CurriculumTopicsSection";
 
 interface CurriculumPlan {
   id: string;
@@ -151,7 +152,7 @@ export default function TeacherCurriculumPlans() {
                     </div>
                   )}
 
-                  <div className="mt-auto pt-1">
+                  <div className="pt-1">
                     <Button
                       variant={plan ? "outline" : "default"}
                       size="sm"
@@ -169,6 +170,15 @@ export default function TeacherCurriculumPlans() {
                       )}
                     </Button>
                   </div>
+
+                  {plan && user && (
+                    <CurriculumTopicsSection
+                      planId={plan.id}
+                      planContent={plan.content}
+                      teacherId={user.id}
+                      subject={row.label}
+                    />
+                  )}
                 </article>
               );
             })}
