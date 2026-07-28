@@ -251,6 +251,15 @@ const LessonPage = () => {
           onSaved={handleSaved}
         />
       )}
+
+      {/* ZedAI tutor – jen pro žáky (ne pro učitele/adminy) */}
+      {!isTeacherOrAdmin && lesson && (
+        <ZedAiTutorChat
+          question={`Lekce: ${lesson.title}\n\nPředmět: ${subjectId ?? ""}`}
+          subject={subjectId}
+          contextKey={lesson.id}
+        />
+      )}
     </div>
   );
 };
