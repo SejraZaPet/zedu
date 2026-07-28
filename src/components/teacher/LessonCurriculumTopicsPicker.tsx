@@ -15,8 +15,8 @@ import { BookMarked, Check, ChevronsUpDown, Loader2, X } from "lucide-react";
 
 interface Props {
   lessonId: string;
-  /** ID of the teacher_textbook containing this lesson — used to resolve the subject. */
-  textbookId: string;
+  /** Optional: ID of the teacher_textbook containing this lesson. If omitted, resolved from lesson row. */
+  textbookId?: string;
 }
 
 interface Topic {
