@@ -51,6 +51,7 @@ import ParentMessages from "./pages/ParentMessages";
 import TeacherParentMessages from "./pages/TeacherParentMessages";
 import GdprPage from "./pages/GdprPage";
 import LicencePage from "./pages/LicencePage";
+import VerifyCertificate from "./pages/VerifyCertificate";
 import TodoPage from "./pages/TodoPage";
 import StudentCalendar from "./pages/StudentCalendar";
 import StudentSubjectClass from "./pages/StudentSubjectClass";
