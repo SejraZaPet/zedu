@@ -138,6 +138,8 @@ function buildEscapeSlide(
       finalMessage: finalMessage.trim(),
     },
   };
+}
+
 
 export function AddSlideSheet({
   open,
