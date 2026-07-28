@@ -220,6 +220,30 @@ function PortfolioCard({
     setCommentText("");
   };
 
+  const suggestFeedback = async () => {
+    setAiBusy(true);
+    try {
+      const cj = item.content_json || {};
+      const { data, error } = await supabase.functions.invoke("suggest-grading-feedback", {
+        body: {
+          question: item.title || "",
+          studentAnswer: item.description || cj.answers || cj.student_answer || "",
+          score: cj.score ?? null,
+          maxScore: cj.max_score ?? null,
+        },
+      });
+      if (error) throw error;
+      const fb = (data as any)?.feedback;
+      if (!fb) throw new Error("Prázdný návrh");
+      setCommentText(fb);
+      toast.success("Návrh AI vložen – můžete ho upravit před odesláním.");
+    } catch (e: any) {
+      toast.error(e?.message || "Nepodařilo se vygenerovat návrh");
+    } finally {
+      setAiBusy(false);
+    }
+  };
+
   const sourceLabel = ({
     worksheet: "Z pracovního listu",
     assignment: "Z úkolu",
