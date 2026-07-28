@@ -27,9 +27,10 @@ import LandingPageManager from "@/components/admin/LandingPageManager";
 import AvatarItemsManager from "@/components/admin/AvatarItemsManager";
 import TextbookOverviewManager from "@/components/admin/TextbookOverviewManager";
 import AcademyCoursesManager from "@/components/admin/AcademyCoursesManager";
+import AcademyEvidenceReviewManager from "@/components/admin/AcademyEvidenceReviewManager";
 import SchoolLicensesManager from "@/components/admin/SchoolLicensesManager";
 import { Button } from "@/components/ui/button";
-import { BookOpen, LogOut, Home, GraduationCap, Settings, Users, School, BarChart3, LayoutDashboard, HelpCircle, ListTree, CircleHelp, Link2, Pencil, Video, Bell, Activity, FileText, Sparkles, Globe, Smile, Library, Award } from "lucide-react";
+import { BookOpen, LogOut, Home, GraduationCap, Settings, Users, School, BarChart3, LayoutDashboard, HelpCircle, ListTree, CircleHelp, Link2, Pencil, Video, Bell, Activity, FileText, Sparkles, Globe, Smile, Library, Award, FileBadge2 } from "lucide-react";
 
 const adminTabs = [
   { id: "dashboard", label: "Přehled", icon: LayoutDashboard },
@@ -39,6 +40,7 @@ const adminTabs = [
   { id: "users", label: "Uživatelé", icon: Users },
   { id: "textbook-overview", label: "Přehled učebnic", icon: Library },
   { id: "academy", label: "Akademie", icon: Award },
+  { id: "academy-evidence", label: "Posouzení důkazů", icon: FileBadge2 },
   { id: "templates", label: "Šablony", icon: Sparkles },
   { id: "landing", label: "Landing page", icon: Globe },
   { id: "avatars", label: "Avatary", icon: Smile },

@@ -28,6 +28,7 @@ interface Course {
   sort_order: number;
   audience: Audience;
   issues_certificate: boolean;
+  requires_evidence: boolean;
   price: number | null;
   revenue_type: RevenueType;
   creator_id: string | null;
@@ -102,7 +103,7 @@ const AcademyCoursesManager = () => {
   const openNewCourse = () => {
     setCourseForm({
       title: "", description: "", is_published: false, is_accredited: false,
-      audience: "teacher", issues_certificate: false, price: null,
+      audience: "teacher", issues_certificate: false, requires_evidence: false, price: null,
       revenue_type: null, creator_id: null, platform_commission_percent: null,
       sort_order: courses.length,
     });
@@ -122,6 +123,7 @@ const AcademyCoursesManager = () => {
       sort_order: courseForm.sort_order ?? 0,
       audience: (courseForm.audience || "teacher") as Audience,
       issues_certificate: !!courseForm.issues_certificate,
+      requires_evidence: !!courseForm.requires_evidence,
       price: courseForm.price != null && courseForm.price !== ("" as any) ? Number(courseForm.price) : null,
       revenue_type: courseForm.revenue_type || null,
       creator_id: courseForm.creator_id || null,
@@ -387,6 +389,21 @@ const AcademyCoursesManager = () => {
               <Switch checked={!!courseForm.issues_certificate} onCheckedChange={(v) => setCourseForm({ ...courseForm, issues_certificate: v })} />
               <Label>Vydává certifikát po dokončení</Label>
             </div>
+
+            {courseForm.issues_certificate && (
+              <div className="rounded-lg border border-border p-3 space-y-1">
+                <div className="flex items-center gap-3">
+                  <Switch
+                    checked={!!courseForm.requires_evidence}
+                    onCheckedChange={(v) => setCourseForm({ ...courseForm, requires_evidence: v })}
+                  />
+                  <Label>Vyžaduje důkaz z praxe</Label>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Pokud je zapnuté, certifikát se po dokončení modulů nevydá automaticky. Učitel odevzdá popis (a volitelně přílohu) z vlastní výuky, a certifikát se vydá až po schválení admin recenzentem.
+                </p>
+              </div>
+            )}
 
             <div className="border-t border-border pt-3 space-y-3">
               <p className="text-xs text-muted-foreground">Monetizace (zatím koncepčně – platby se ještě nevybírají).</p>

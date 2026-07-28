@@ -60,6 +60,7 @@ export type Database = {
           issues_certificate: boolean
           platform_commission_percent: number | null
           price: number | null
+          requires_evidence: boolean
           revenue_type: string | null
           sort_order: number
           title: string
@@ -78,6 +79,7 @@ export type Database = {
           issues_certificate?: boolean
           platform_commission_percent?: number | null
           price?: number | null
+          requires_evidence?: boolean
           revenue_type?: string | null
           sort_order?: number
           title: string
@@ -96,6 +98,7 @@ export type Database = {
           issues_certificate?: boolean
           platform_commission_percent?: number | null
           price?: number | null
+          requires_evidence?: boolean
           revenue_type?: string | null
           sort_order?: number
           title?: string
@@ -144,6 +147,63 @@ export type Database = {
           {
             foreignKeyName: "academy_enrollments_teacher_id_fkey"
             columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_evidence_submissions: {
+        Row: {
+          created_at: string
+          description: string
+          enrollment_id: string
+          file_url: string | null
+          id: string
+          reviewed_at: string | null
+          reviewer_comment: string | null
+          reviewer_id: string | null
+          status: string
+          submitted_at: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          enrollment_id: string
+          file_url?: string | null
+          id?: string
+          reviewed_at?: string | null
+          reviewer_comment?: string | null
+          reviewer_id?: string | null
+          status?: string
+          submitted_at?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          enrollment_id?: string
+          file_url?: string | null
+          id?: string
+          reviewed_at?: string | null
+          reviewer_comment?: string | null
+          reviewer_id?: string | null
+          status?: string
+          submitted_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_evidence_submissions_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "academy_enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_evidence_submissions_reviewer_id_fkey"
+            columns: ["reviewer_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
