@@ -17,6 +17,7 @@ import {
   Plus, ArrowLeft, Pencil, Trash2, GripVertical, Eye, EyeOff, FileText
 } from "lucide-react";
 import { emptyWorksheetSpec } from "@/lib/worksheet-defaults";
+import LessonCurriculumTopicsPicker from "@/components/teacher/LessonCurriculumTopicsPicker";
 
 interface Lesson {
   id: string;
