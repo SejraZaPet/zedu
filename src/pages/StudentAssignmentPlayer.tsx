@@ -599,6 +599,12 @@ const StudentAssignmentPlayer = () => {
           </>
         )}
       </main>
+      {assignment && !isReadOnly && (
+        <ZedAiTutorChat
+          question={`${assignment.title}${assignment.description ? `\n\n${assignment.description}` : ""}`}
+          contextKey={assignment.id}
+        />
+      )}
       <SiteFooter />
     </div>
   );
