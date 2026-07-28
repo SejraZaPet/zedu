@@ -39,14 +39,28 @@ const ClassAlertsPanel = ({ classId, studentIds }: Props) => {
     setLoading(true);
     let q = supabase
       .from("student_alerts" as any)
-      .select("id, student_id, alert_type, context, detail, created_at, resolved, student:profiles!student_alerts_student_id_fkey(first_name, last_name)")
+      .select("id, student_id, alert_type, context, detail, created_at, resolved")
       .order("created_at", { ascending: false })
       .limit(50);
     if (!showResolved) q = q.eq("resolved", false);
     if (classId) q = q.eq("class_id", classId);
     else if (studentIds && studentIds.length > 0) q = q.in("student_id", studentIds);
     const { data } = await q;
-    setAlerts((data as any) ?? []);
+    const rows = ((data as any) ?? []) as AlertRow[];
+
+    const ids = Array.from(new Set(rows.map((r) => r.student_id)));
+    if (ids.length > 0) {
+      const { data: profs } = await supabase
+        .from("profiles")
+        .select("id, first_name, last_name")
+        .in("id", ids);
+      const map = new Map((profs ?? []).map((p: any) => [p.id, p]));
+      rows.forEach((r) => {
+        const p = map.get(r.student_id);
+        r.student = p ? { first_name: p.first_name, last_name: p.last_name } : null;
+      });
+    }
+    setAlerts(rows);
     setLoading(false);
   };
 
