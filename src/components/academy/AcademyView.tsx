@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import {
-  ArrowLeft, GraduationCap, CheckCircle2, Circle, Award, Play, Download, FileBadge2,
+  ArrowLeft, GraduationCap, CheckCircle2, Circle, Award, Play, Download, FileBadge2, Share2,
 } from "lucide-react";
 
 type AudienceScope = "teacher" | "student" | "parent";
@@ -508,6 +508,21 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
                           Č. {c.certificate_number} · Vydáno {new Date(c.issued_at).toLocaleDateString("cs-CZ")}
                         </div>
                       </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={async () => {
+                          const url = `${window.location.origin}/overit/${encodeURIComponent(c.certificate_number)}`;
+                          try {
+                            await navigator.clipboard.writeText(url);
+                            toast.success("Odkaz zkopírován – můžete ho sdílet na LinkedIn nebo jinde.");
+                          } catch {
+                            window.prompt("Zkopírujte odkaz:", url);
+                          }
+                        }}
+                      >
+                        <Share2 className="w-4 h-4 mr-1" /> Sdílet
+                      </Button>
                       <Button size="sm" onClick={() => downloadCertificate(c)}>
                         <Download className="w-4 h-4 mr-1" /> Stáhnout PDF
                       </Button>

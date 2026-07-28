@@ -4993,6 +4993,16 @@ export type Database = {
         Args: { _join_token: string; _question_id: string }
         Returns: boolean
       }
+      verify_academy_certificate: {
+        Args: { _cert_number: string }
+        Returns: {
+          certificate_number: string
+          course_audience: string
+          course_title: string
+          issued_at: string
+          recipient_name: string
+        }[]
+      }
       verify_pin_login: {
         Args: { _pin: string; _username: string }
         Returns: Json
