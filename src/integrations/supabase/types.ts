@@ -2864,6 +2864,66 @@ export type Database = {
         }
         Relationships: []
       }
+      question_bank_items: {
+        Row: {
+          choices: Json | null
+          correct_answer: string | null
+          correct_index: number | null
+          created_at: string
+          curriculum_topic_id: string | null
+          id: string
+          is_true: boolean | null
+          question_text: string
+          question_type: string
+          subject: string | null
+          teacher_id: string
+          updated_at: string
+        }
+        Insert: {
+          choices?: Json | null
+          correct_answer?: string | null
+          correct_index?: number | null
+          created_at?: string
+          curriculum_topic_id?: string | null
+          id?: string
+          is_true?: boolean | null
+          question_text: string
+          question_type: string
+          subject?: string | null
+          teacher_id: string
+          updated_at?: string
+        }
+        Update: {
+          choices?: Json | null
+          correct_answer?: string | null
+          correct_index?: number | null
+          created_at?: string
+          curriculum_topic_id?: string | null
+          id?: string
+          is_true?: boolean | null
+          question_text?: string
+          question_type?: string
+          subject?: string | null
+          teacher_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_bank_items_curriculum_topic_id_fkey"
+            columns: ["curriculum_topic_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_topics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_bank_items_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rubric_criteria: {
         Row: {
           created_at: string
