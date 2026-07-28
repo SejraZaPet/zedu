@@ -14,6 +14,7 @@ import AttachmentsUploader from "@/components/assignments/AttachmentsUploader";
 import type { WorksheetSpec } from "@/lib/worksheet-spec";
 import { useLockdownMode } from "@/hooks/useLockdownMode";
 import ReadAloudButton from "@/components/a11y/ReadAloudButton";
+import ZedAiTutorChat from "@/components/ZedAiTutorChat";
 
 interface AssignmentData {
   id: string;
@@ -598,6 +599,12 @@ const StudentAssignmentPlayer = () => {
           </>
         )}
       </main>
+      {assignment && !isReadOnly && (
+        <ZedAiTutorChat
+          question={`${assignment.title}${assignment.description ? `\n\n${assignment.description}` : ""}`}
+          contextKey={assignment.id}
+        />
+      )}
       <SiteFooter />
     </div>
   );
