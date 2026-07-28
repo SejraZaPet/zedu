@@ -80,6 +80,9 @@ verify_jwt = false
 [functions.ask-zedai-tutor]
 verify_jwt = false
 
+[functions.suggest-grading-feedback]
+verify_jwt = false
+
 
 
 

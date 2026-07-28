@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/select";
 import {
   Award, Trophy, FileText, Lightbulb, Paperclip, MessageSquare,
-  Trash2, ExternalLink, Filter, Video, ClipboardList,
+  Trash2, ExternalLink, Filter, Video, ClipboardList, Sparkles, Loader2,
 } from "lucide-react";
 import {
   PortfolioItem, PortfolioComment, PortfolioFile, TYPE_LABEL,
@@ -142,6 +142,7 @@ function PortfolioCard({
   const [comments, setComments] = useState<PortfolioComment[]>([]);
   const [commentText, setCommentText] = useState("");
   const [busy, setBusy] = useState(false);
+  const [aiBusy, setAiBusy] = useState(false);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [fileUrls, setFileUrls] = useState<Record<string, string | null>>({});
   const { user } = useAuth();
@@ -217,6 +218,30 @@ function PortfolioCard({
     if (error) { toast.error("Komentář se nepodařilo přidat"); return; }
     setComments((c) => [...c, data as PortfolioComment]);
     setCommentText("");
+  };
+
+  const suggestFeedback = async () => {
+    setAiBusy(true);
+    try {
+      const cj = item.content_json || {};
+      const { data, error } = await supabase.functions.invoke("suggest-grading-feedback", {
+        body: {
+          question: item.title || "",
+          studentAnswer: item.description || cj.answers || cj.student_answer || "",
+          score: cj.score ?? null,
+          maxScore: cj.max_score ?? null,
+        },
+      });
+      if (error) throw error;
+      const fb = (data as any)?.feedback;
+      if (!fb) throw new Error("Prázdný návrh");
+      setCommentText(fb);
+      toast.success("Návrh AI vložen – můžete ho upravit před odesláním.");
+    } catch (e: any) {
+      toast.error(e?.message || "Nepodařilo se vygenerovat návrh");
+    } finally {
+      setAiBusy(false);
+    }
   };
 
   const sourceLabel = ({
@@ -318,16 +343,35 @@ function PortfolioCard({
                 </div>
               ))}
               {canComment && (
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Přidat komentář…"
+                <div className="space-y-2">
+                  <div className="flex justify-end">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={suggestFeedback}
+                      disabled={aiBusy}
+                      className="gap-1.5"
+                    >
+                      {aiBusy ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Sparkles className="w-3.5 h-3.5" />
+                      )}
+                      Navrhnout pomocí AI
+                    </Button>
+                  </div>
+                  <Textarea
+                    placeholder="Přidat komentář nebo zpětnou vazbu…"
                     value={commentText}
                     onChange={(e) => setCommentText(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") postComment(); }}
+                    rows={3}
                   />
-                  <Button size="sm" onClick={postComment} disabled={busy || !commentText.trim()}>
-                    Odeslat
-                  </Button>
+                  <div className="flex justify-end">
+                    <Button size="sm" onClick={postComment} disabled={busy || !commentText.trim()}>
+                      Odeslat
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
