@@ -77,6 +77,8 @@ import {
   ChevronsUpDown,
   Check,
   AlertTriangle,
+  Library,
+  BookmarkPlus,
 } from "lucide-react";
 import { usePdfExport } from "@/hooks/usePdfExport";
 import {
