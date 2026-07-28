@@ -42,14 +42,31 @@ export default function LessonCurriculumTopicsPicker({ lessonId, textbookId }: P
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
-      if (!user || !textbookId || !lessonId) return;
+      if (!user || !lessonId) return;
       setLoading(true);
       try {
-        // 1) Resolve subject of the lesson's textbook
+        // 1) Resolve subject of the lesson's textbook.
+        let tbId = textbookId;
+        if (!tbId) {
+          const { data: lessonRow } = await supabase
+            .from("teacher_textbook_lessons")
+            .select("textbook_id")
+            .eq("id", lessonId)
+            .maybeSingle();
+          tbId = (lessonRow as { textbook_id: string } | null)?.textbook_id ?? undefined;
+        }
+        if (!tbId) {
+          if (!cancelled) {
+            setTopics([]);
+            setSelectedIds(new Set());
+            setSubject(null);
+          }
+          return;
+        }
         const { data: tb } = await supabase
           .from("teacher_textbooks")
           .select("subject")
-          .eq("id", textbookId)
+          .eq("id", tbId)
           .maybeSingle();
         const subj = (tb as { subject: string } | null)?.subject ?? null;
         if (cancelled) return;
