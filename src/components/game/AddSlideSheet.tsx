@@ -347,6 +347,20 @@ export function AddSlideSheet({
     appendAndJump(buildDifferentiatedSlide(diffTopic, tasks, diffCount));
   };
 
+  const submitEscape = () => {
+    const filled = escapeLocks.filter((l) => l.clue.trim() && l.code.trim());
+    if (filled.length < 3) {
+      toast.error("Vyplňte alespoň 3 zámky (hádanka + kód).");
+      return;
+    }
+    if (filled.length > 6) {
+      toast.error("Maximálně 6 zámků.");
+      return;
+    }
+    appendAndJump(buildEscapeSlide(escapeIntro, filled, escapeFinal));
+  };
+
+
 
   return (
     <Sheet
