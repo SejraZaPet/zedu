@@ -219,6 +219,10 @@ const SiteHeader = () => {
                         <ClipboardList size={16} />
                         Rubriky hodnocení
                       </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/ucitel/banka-otazek")} className="gap-2 cursor-pointer">
+                        <Library size={16} />
+                        Banka otázek
+                      </DropdownMenuItem>
                     </>
                   )}
                   <DropdownMenuSeparator />
