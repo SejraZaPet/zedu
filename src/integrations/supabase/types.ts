@@ -1125,6 +1125,41 @@ export type Database = {
           },
         ]
       }
+      class_stories: {
+        Row: {
+          class_id: string
+          created_at: string
+          id: string
+          image_url: string | null
+          teacher_id: string
+          text: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          teacher_id: string
+          text?: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          teacher_id?: string
+          text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_stories_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       class_teachers: {
         Row: {
           class_id: string

@@ -9,6 +9,7 @@ import ChildProgressWidget from "@/components/parent/ChildProgressWidget";
 import ChildUpcomingAssignmentsWidget from "@/components/parent/ChildUpcomingAssignmentsWidget";
 import RecognitionWidget from "@/components/behavior/RecognitionWidget";
 import ChildAlertsPanel from "@/components/alerts/ChildAlertsPanel";
+import ParentClassStoriesFeed from "@/components/class-stories/ParentClassStoriesFeed";
 import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -314,6 +315,7 @@ const ParentDashboard = () => {
               />
             ))}
             <ChildAlertsPanel studentIds={students.map((s) => s.id)} />
+            <ParentClassStoriesFeed studentIds={students.map((s) => s.id)} />
           </div>
         )}
 

@@ -12,6 +12,7 @@ import { ClassBulkActions } from "@/components/teacher/ClassBulkActions";
 import { LeaderboardSettingsCard } from "@/components/teacher/LeaderboardSettingsCard";
 import QuickRecognitionCard from "@/components/teacher/QuickRecognitionCard";
 import ClassAlertsPanel from "@/components/alerts/ClassAlertsPanel";
+import ClassStoriesSection from "@/components/class-stories/ClassStoriesSection";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   ArrowLeft,
@@ -351,6 +352,8 @@ const TeacherClassDetail = () => {
         )}
 
         {id && <ClassAlertsPanel classId={id} />}
+
+        {id && user && <ClassStoriesSection classId={id} teacherId={user.id} />}
 
 
 
