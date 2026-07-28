@@ -393,6 +393,7 @@ export function AddSlideSheet({
               {kind === "exit" && "Exit ticket"}
               {kind === "teams" && "Rozdělit do skupin"}
               {kind === "differentiated" && "Diferencovaná aktivita"}
+              {kind === "escape" && "Úniková hra"}
             </SheetTitle>
           </div>
           <SheetDescription>
