@@ -170,6 +170,31 @@ const StudentPractice = () => {
     };
   }, [slug, lessonId, reloadKey]);
 
+  // Load mastery for this lesson
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!lessonId) {
+        setMastery(null);
+        return;
+      }
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const { data: row } = await supabase
+        .from("student_lesson_mastery")
+        .select("mastery_percent, sessions_count, mastered_at")
+        .eq("student_id", session.user.id)
+        .eq("lesson_id", lessonId)
+        .maybeSingle();
+      if (cancelled) return;
+      setMastery(row
+        ? { mastery_percent: Number(row.mastery_percent) || 0, sessions_count: row.sessions_count ?? 0, mastered_at: row.mastered_at }
+        : { mastery_percent: 0, sessions_count: 0, mastered_at: null });
+    })();
+    return () => { cancelled = true; };
+  }, [lessonId, reloadKey]);
+
+
   const allQuestions = useMemo(
     () => (data?.practice?.phases ?? []).flatMap((p) => p.questions),
     [data],
