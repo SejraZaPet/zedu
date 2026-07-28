@@ -37,6 +37,7 @@ import LiveTeacherScreen from "./pages/LiveTeacherScreen";
 import LiveProjectorScreen from "./pages/LiveProjectorScreen";
 import PresenterRemote from "./pages/PresenterRemote";
 import StudentPortfolio from "./pages/StudentPortfolio";
+import StudentBooks from "./pages/StudentBooks";
 import PortfolioView from "./pages/PortfolioView";
 import TeacherAssignments from "./pages/TeacherAssignments";
 import StudentAssignments from "./pages/StudentAssignments";
