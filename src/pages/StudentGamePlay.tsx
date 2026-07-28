@@ -7,6 +7,7 @@ import RaceTrack from "@/components/game/RaceTrack";
 import { ConnectionStatusBanner } from "@/components/game/ConnectionStatusBanner";
 import { TeamsSlideStudent } from "@/components/game/TeamsSlide";
 import { DifferentiatedSlideStudent } from "@/components/game/DifferentiatedSlide";
+import { EscapeGameStudent } from "@/components/game/EscapeGameSlide";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { serverTsToClientMs } from "@/lib/clock-sync";
