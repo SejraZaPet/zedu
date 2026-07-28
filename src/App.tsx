@@ -167,6 +167,7 @@ const App = () => (
             <Route path="/ucitel/predmet/:subjectId/trida/:classId" element={<ProtectedRoute><TeacherSubjectClass /></ProtectedRoute>} />
             <Route path="/ucitel/metody" element={<ProtectedRoute><TeacherMethods /></ProtectedRoute>} />
             <Route path="/ucitel/svp" element={<ProtectedRoute><TeacherCurriculumPlans /></ProtectedRoute>} />
+            <Route path="/ucitel/rubriky" element={<ProtectedRoute><TeacherRubrics /></ProtectedRoute>} />
 
             <Route path="/student/metody" element={<ProtectedRoute><StudentMethods /></ProtectedRoute>} />
             <Route path="/student/metody/:slug/procviceni" element={<ProtectedRoute><StudentPractice /></ProtectedRoute>} />
