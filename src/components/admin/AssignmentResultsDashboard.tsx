@@ -9,6 +9,8 @@ import { Progress } from "@/components/ui/progress";
 import { Loader2, Download, Users, Clock, CheckCircle2, AlertCircle, Minus, BarChart3, Filter, ShieldAlert, FolderOpen } from "lucide-react";
 import { Link } from "react-router-dom";
 import AttemptQuickPreviewDialog from "@/components/portfolio/AttemptQuickPreviewDialog";
+import PerQuestionAnalysis from "@/components/admin/PerQuestionAnalysis";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
