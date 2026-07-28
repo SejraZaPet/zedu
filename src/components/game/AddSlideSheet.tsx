@@ -121,6 +121,24 @@ function buildDifferentiatedSlide(
   };
 }
 
+function buildEscapeSlide(
+  intro: string,
+  locks: { clue: string; code: string }[],
+  finalMessage: string,
+) {
+  return {
+    slideId: `live-${Date.now()}`,
+    type: "activity",
+    projector: { headline: "Úniková hra", body: "" },
+    device: { instructions: "Vyluští postupně všechny zámky." },
+    activitySpec: {
+      activityType: "escape",
+      intro: intro.trim(),
+      locks: locks.map((l) => ({ clue: l.clue.trim(), code: l.code.trim() })),
+      finalMessage: finalMessage.trim(),
+    },
+  };
+
 export function AddSlideSheet({
   open,
   onOpenChange,
