@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/select";
 import {
   Award, Trophy, FileText, Lightbulb, Paperclip, MessageSquare,
-  Trash2, ExternalLink, Filter, Video, ClipboardList,
+  Trash2, ExternalLink, Filter, Video, ClipboardList, Sparkles, Loader2,
 } from "lucide-react";
 import {
   PortfolioItem, PortfolioComment, PortfolioFile, TYPE_LABEL,
