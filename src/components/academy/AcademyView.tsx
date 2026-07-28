@@ -181,6 +181,19 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
   const [certificates, setCertificates] = useState<CertificateRow[]>([]);
   const [certLoading, setCertLoading] = useState(false);
 
+  // Pathways (skládatelné kvalifikace)
+  interface PathwayItem {
+    id: string;
+    title: string;
+    description: string | null;
+    total: number;
+    completed: number;
+    certificate_number: string | null;
+  }
+  const [pathways, setPathways] = useState<PathwayItem[]>([]);
+  const [pathwaysLoading, setPathwaysLoading] = useState(false);
+
+
   // Evidence submission for current course
   const [evidence, setEvidence] = useState<EvidenceSubmission | null>(null);
   const [evidenceDesc, setEvidenceDesc] = useState("");
@@ -251,7 +264,48 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
     setCertLoading(false);
   }, [user, audience]);
 
-  useEffect(() => { fetchCourses(); fetchCertificates(); }, [fetchCourses, fetchCertificates]);
+  const fetchPathways = useCallback(async () => {
+    if (!user) { setPathways([]); return; }
+    setPathwaysLoading(true);
+    const [{ data: pRows }, { data: pcRows }, { data: certRows }, { data: pathCerts }] = await Promise.all([
+      (supabase as any).from("academy_pathways").select("id, title, description").eq("is_published", true),
+      (supabase as any).from("academy_pathway_courses").select("pathway_id, course_id, sort_order").order("sort_order"),
+      supabase
+        .from("academy_certificates")
+        .select("enrollment_id, academy_enrollments!inner(teacher_id, course_id)")
+        .eq("academy_enrollments.teacher_id", user.id),
+      (supabase as any).from("academy_pathway_certificates").select("pathway_id, certificate_number").eq("teacher_id", user.id),
+    ]);
+    const completedCourseIds = new Set<string>(
+      ((certRows as any[]) || []).map((r) => r.academy_enrollments?.course_id).filter(Boolean)
+    );
+    const certByPathway = new Map<string, string>();
+    ((pathCerts as any[]) || []).forEach((r) => certByPathway.set(r.pathway_id, r.certificate_number));
+    const byPathway = new Map<string, { total: number; completed: number }>();
+    ((pcRows as any[]) || []).forEach((r) => {
+      const bucket = byPathway.get(r.pathway_id) || { total: 0, completed: 0 };
+      bucket.total += 1;
+      if (completedCourseIds.has(r.course_id)) bucket.completed += 1;
+      byPathway.set(r.pathway_id, bucket);
+    });
+    setPathways(
+      ((pRows as any[]) || []).map((p) => {
+        const b = byPathway.get(p.id) || { total: 0, completed: 0 };
+        return {
+          id: p.id,
+          title: p.title,
+          description: p.description,
+          total: b.total,
+          completed: b.completed,
+          certificate_number: certByPathway.get(p.id) || null,
+        };
+      })
+    );
+    setPathwaysLoading(false);
+  }, [user]);
+
+  useEffect(() => { fetchCourses(); fetchCertificates(); fetchPathways(); }, [fetchCourses, fetchCertificates, fetchPathways]);
+
 
   const openCourse = async (courseId: string) => {
     if (!user) return;
@@ -404,7 +458,7 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
     setSelectedCourseId(null); setModules([]); setCompletedIds(new Set());
     setEnrollmentId(null); setEnrollmentCompletedAt(null);
     setEvidence(null); setEvidenceDesc(""); setEvidenceFile(null);
-    fetchCourses(); fetchCertificates();
+    fetchCourses(); fetchCertificates(); fetchPathways();
   };
 
   const activeModule = useMemo(() => modules.find((m) => m.id === activeModuleId) || null, [modules, activeModuleId]);
@@ -441,6 +495,9 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
           <Tabs defaultValue="courses">
             <TabsList>
               <TabsTrigger value="courses">Kurzy</TabsTrigger>
+              <TabsTrigger value="pathways">
+                <GraduationCap className="w-4 h-4 mr-1" /> Kvalifikace
+              </TabsTrigger>
               <TabsTrigger value="certificates">
                 <FileBadge2 className="w-4 h-4 mr-1" /> Moje certifikáty
                 {certificates.length > 0 && <Badge variant="secondary" className="ml-2">{certificates.length}</Badge>}
@@ -482,6 +539,57 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
                         <Button className="mt-auto" onClick={() => openCourse(c.id)}>
                           <Play className="w-4 h-4 mr-1" /> {c.enrollment ? "Pokračovat" : "Zahájit kurz"}
                         </Button>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="pathways" className="mt-4">
+              {pathwaysLoading ? (
+                <p className="text-muted-foreground">Načítání…</p>
+              ) : pathways.length === 0 ? (
+                <div className="p-8 border border-dashed border-border rounded-xl text-center">
+                  <GraduationCap className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
+                  <p className="text-sm text-muted-foreground">Zatím zde nejsou žádné kvalifikace. Kvalifikace je skládaná z několika kurzů — po dokončení všech získáte celkový certifikát.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {pathways.map((p) => {
+                    const pct = p.total > 0 ? Math.round((p.completed / p.total) * 100) : 0;
+                    const earned = !!p.certificate_number;
+                    return (
+                      <Card key={p.id} className="p-5 flex flex-col">
+                        <div className="flex items-start gap-2 mb-2 flex-wrap">
+                          <h3 className="font-heading text-lg font-semibold flex-1">{p.title}</h3>
+                          {earned && <Badge variant="secondary" className="gap-1"><Award className="w-3 h-3" /> Kvalifikace získána 🎓</Badge>}
+                        </div>
+                        {p.description && <p className="text-sm text-muted-foreground mb-3">{p.description}</p>}
+                        <Progress value={pct} className="h-2" />
+                        <div className="text-xs text-muted-foreground mt-1 mb-3">
+                          {p.completed}/{p.total} kurzů · {pct} %
+                        </div>
+                        {earned && (
+                          <div className="mt-auto flex flex-wrap items-center gap-2">
+                            <span className="text-xs font-mono text-muted-foreground">{p.certificate_number}</span>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={async () => {
+                                const url = `${window.location.origin}/overit/${encodeURIComponent(p.certificate_number!)}`;
+                                try {
+                                  await navigator.clipboard.writeText(url);
+                                  toast.success("Odkaz zkopírován.");
+                                } catch {
+                                  window.prompt("Zkopírujte odkaz:", url);
+                                }
+                              }}
+                            >
+                              <Share2 className="w-4 h-4 mr-1" /> Sdílet ověření
+                            </Button>
+                          </div>
+                        )}
                       </Card>
                     );
                   })}

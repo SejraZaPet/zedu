@@ -28,6 +28,7 @@ import AvatarItemsManager from "@/components/admin/AvatarItemsManager";
 import TextbookOverviewManager from "@/components/admin/TextbookOverviewManager";
 import AcademyCoursesManager from "@/components/admin/AcademyCoursesManager";
 import AcademyEvidenceReviewManager from "@/components/admin/AcademyEvidenceReviewManager";
+import AcademyPathwaysManager from "@/components/admin/AcademyPathwaysManager";
 import SchoolLicensesManager from "@/components/admin/SchoolLicensesManager";
 import { Button } from "@/components/ui/button";
 import { BookOpen, LogOut, Home, GraduationCap, Settings, Users, School, BarChart3, LayoutDashboard, HelpCircle, ListTree, CircleHelp, Link2, Pencil, Video, Bell, Activity, FileText, Sparkles, Globe, Smile, Library, Award, FileBadge2 } from "lucide-react";
@@ -40,6 +41,7 @@ const adminTabs = [
   { id: "users", label: "Uživatelé", icon: Users },
   { id: "textbook-overview", label: "Přehled učebnic", icon: Library },
   { id: "academy", label: "Akademie", icon: Award },
+  { id: "academy-pathways", label: "Kvalifikace", icon: GraduationCap },
   { id: "academy-evidence", label: "Posouzení důkazů", icon: FileBadge2 },
   { id: "templates", label: "Šablony", icon: Sparkles },
   { id: "landing", label: "Landing page", icon: Globe },
@@ -64,7 +66,7 @@ const teacherTabs = [
   { id: "help", label: "Nápověda", icon: HelpCircle },
 ] as const;
 
-type Tab = "dashboard" | "stats" | "textbooks" | "lessons" | "outline" | "mcq" | "matching" | "slide-edit" | "video-ai" | "subjects" | "users" | "classes" | "results" | "help" | "notifications" | "schools" | "licenses" | "audit" | "templates" | "landing" | "avatars" | "textbook-overview" | "academy" | "academy-evidence";
+type Tab = "dashboard" | "stats" | "textbooks" | "lessons" | "outline" | "mcq" | "matching" | "slide-edit" | "video-ai" | "subjects" | "users" | "classes" | "results" | "help" | "notifications" | "schools" | "licenses" | "audit" | "templates" | "landing" | "avatars" | "textbook-overview" | "academy" | "academy-pathways" | "academy-evidence";
 
 const Admin = () => {
   const { isAdmin, isTeacher, loading, logout } = useAdmin();
@@ -153,6 +155,7 @@ const Admin = () => {
         {activeTab === "avatars" && !isTeacher && <AvatarItemsManager />}
         {activeTab === "textbook-overview" && !isTeacher && <TextbookOverviewManager />}
         {activeTab === "academy" && !isTeacher && <AcademyCoursesManager />}
+        {activeTab === "academy-pathways" && !isTeacher && <AcademyPathwaysManager />}
         {activeTab === "academy-evidence" && !isTeacher && <AcademyEvidenceReviewManager />}
         {activeTab === "help" && <HelpGuidesManager />}
       </div>
