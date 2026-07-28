@@ -264,7 +264,48 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
     setCertLoading(false);
   }, [user, audience]);
 
-  useEffect(() => { fetchCourses(); fetchCertificates(); }, [fetchCourses, fetchCertificates]);
+  const fetchPathways = useCallback(async () => {
+    if (!user) { setPathways([]); return; }
+    setPathwaysLoading(true);
+    const [{ data: pRows }, { data: pcRows }, { data: certRows }, { data: pathCerts }] = await Promise.all([
+      (supabase as any).from("academy_pathways").select("id, title, description").eq("is_published", true),
+      (supabase as any).from("academy_pathway_courses").select("pathway_id, course_id, sort_order").order("sort_order"),
+      supabase
+        .from("academy_certificates")
+        .select("enrollment_id, academy_enrollments!inner(teacher_id, course_id)")
+        .eq("academy_enrollments.teacher_id", user.id),
+      (supabase as any).from("academy_pathway_certificates").select("pathway_id, certificate_number").eq("teacher_id", user.id),
+    ]);
+    const completedCourseIds = new Set<string>(
+      ((certRows as any[]) || []).map((r) => r.academy_enrollments?.course_id).filter(Boolean)
+    );
+    const certByPathway = new Map<string, string>();
+    ((pathCerts as any[]) || []).forEach((r) => certByPathway.set(r.pathway_id, r.certificate_number));
+    const byPathway = new Map<string, { total: number; completed: number }>();
+    ((pcRows as any[]) || []).forEach((r) => {
+      const bucket = byPathway.get(r.pathway_id) || { total: 0, completed: 0 };
+      bucket.total += 1;
+      if (completedCourseIds.has(r.course_id)) bucket.completed += 1;
+      byPathway.set(r.pathway_id, bucket);
+    });
+    setPathways(
+      ((pRows as any[]) || []).map((p) => {
+        const b = byPathway.get(p.id) || { total: 0, completed: 0 };
+        return {
+          id: p.id,
+          title: p.title,
+          description: p.description,
+          total: b.total,
+          completed: b.completed,
+          certificate_number: certByPathway.get(p.id) || null,
+        };
+      })
+    );
+    setPathwaysLoading(false);
+  }, [user]);
+
+  useEffect(() => { fetchCourses(); fetchCertificates(); fetchPathways(); }, [fetchCourses, fetchCertificates, fetchPathways]);
+
 
   const openCourse = async (courseId: string) => {
     if (!user) return;
