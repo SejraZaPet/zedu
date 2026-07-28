@@ -74,6 +74,9 @@ verify_jwt = false
 [functions.generate-differentiated-tasks]
 verify_jwt = false
 
+[functions.generate-content-from-material]
+verify_jwt = false
+
 
 
 
