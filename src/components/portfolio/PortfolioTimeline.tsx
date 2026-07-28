@@ -343,16 +343,35 @@ function PortfolioCard({
                 </div>
               ))}
               {canComment && (
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Přidat komentář…"
+                <div className="space-y-2">
+                  <div className="flex justify-end">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={suggestFeedback}
+                      disabled={aiBusy}
+                      className="gap-1.5"
+                    >
+                      {aiBusy ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Sparkles className="w-3.5 h-3.5" />
+                      )}
+                      Navrhnout pomocí AI
+                    </Button>
+                  </div>
+                  <Textarea
+                    placeholder="Přidat komentář nebo zpětnou vazbu…"
                     value={commentText}
                     onChange={(e) => setCommentText(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") postComment(); }}
+                    rows={3}
                   />
-                  <Button size="sm" onClick={postComment} disabled={busy || !commentText.trim()}>
-                    Odeslat
-                  </Button>
+                  <div className="flex justify-end">
+                    <Button size="sm" onClick={postComment} disabled={busy || !commentText.trim()}>
+                      Odeslat
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
