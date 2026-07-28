@@ -126,6 +126,14 @@ const StudentDashboard = () => {
 
         {user && <StudentProgressWidgets userId={user.id} />}
 
+        {user && (
+          <div className="mb-6">
+            <RecognitionWidget studentId={user.id} />
+          </div>
+        )}
+
+
+
         <div className="grid gap-6 md:grid-cols-2">
           {/* Profil */}
           <div className="bg-card border border-border rounded-xl p-6 flex flex-col">
