@@ -15,6 +15,7 @@ import { AdaptiveReviewDialog } from "@/components/game/AdaptiveReview";
 import { AddSlideSheet } from "@/components/game/AddSlideSheet";
 import { TeamsSlideTeacher } from "@/components/game/TeamsSlide";
 import { DifferentiatedSlideTeacher } from "@/components/game/DifferentiatedSlide";
+import { EscapeGameOverview } from "@/components/game/EscapeGameSlide";
 import { supabase } from "@/integrations/supabase/client";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
