@@ -350,6 +350,10 @@ const TeacherClassDetail = () => {
           />
         )}
 
+        {id && <ClassAlertsPanel classId={id} />}
+
+
+
 
 
         {/* Cards grid */}
