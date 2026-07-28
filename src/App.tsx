@@ -70,6 +70,7 @@ import TeacherSubjects from "./pages/TeacherSubjects";
 import TeacherMethods from "./pages/TeacherMethods";
 import TeacherCurriculumPlans from "./pages/TeacherCurriculumPlans";
 import TeacherRubrics from "./pages/TeacherRubrics";
+import TeacherQuestionBank from "./pages/TeacherQuestionBank";
 import StudentMethods from "./pages/StudentMethods";
 import StudentPractice from "./pages/StudentPractice";
 import SchoolAdmin from "./pages/SchoolAdmin";
