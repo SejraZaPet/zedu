@@ -353,6 +353,8 @@ const TeacherClassDetail = () => {
 
         {id && <ClassAlertsPanel classId={id} />}
 
+        {id && user && <ClassStoriesSection classId={id} teacherId={user.id} />}
+
 
 
 
