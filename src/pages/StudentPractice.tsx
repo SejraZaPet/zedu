@@ -429,7 +429,10 @@ const StudentPractice = () => {
                 )}
                 <div className="flex gap-2 mt-4">
                   <Button onClick={handleRetry} className="gap-2" disabled={savingSession}>
-                    <RotateCcw className="w-4 h-4" /> Zkusit znovu
+                    <RotateCcw className="w-4 h-4" />
+                    {mastery?.mastered_at && mastery.mastery_percent >= 100
+                      ? "Zkusit znovu"
+                      : "Procvičit dál"}
                   </Button>
                   <Button variant="outline" onClick={() => navigate("/student/metody")}>
                     Zpět na metody
