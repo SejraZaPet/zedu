@@ -407,7 +407,11 @@ const StudentGamePlay = () => {
             <DifferentiatedSlideStudent session={session} playerId={playerId} slide={currentSlideData} />
           )}
 
-          {isActivity && (currentSlideData as any).activitySpec?.activityType !== "teams" && (currentSlideData as any).activitySpec?.activityType !== "differentiated" && (
+          {isActivity && (currentSlideData as any).activitySpec?.activityType === "escape" && (
+            <EscapeGameStudent slide={currentSlideData} />
+          )}
+
+          {isActivity && (currentSlideData as any).activitySpec?.activityType !== "teams" && (currentSlideData as any).activitySpec?.activityType !== "differentiated" && (currentSlideData as any).activitySpec?.activityType !== "escape" && (
             <div className="px-3 sm:px-4 pb-4 sm:pb-6 mt-3 sm:mt-4">
               {(currentSlideData as any).activitySpec?.activityType === "wall" ? (
                 liveSettings?.wallPublished === true && liveSettings?.wallPublishedQuestion === qi ? (
