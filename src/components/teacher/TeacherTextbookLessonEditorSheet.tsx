@@ -288,11 +288,14 @@ const TeacherTextbookLessonEditorSheet = ({ lesson, open, onOpenChange, onSaved 
             </div>
 
             {draft.source === "teacher_textbook_lessons" && (
-              <LessonPlacementEditor
-                lessonId={draft.id}
-                placements={lessonPlacements}
-                onChange={setLessonPlacements}
-              />
+              <>
+                <LessonPlacementEditor
+                  lessonId={draft.id}
+                  placements={lessonPlacements}
+                  onChange={setLessonPlacements}
+                />
+                <LessonCurriculumTopicsPicker lessonId={draft.id} />
+              </>
             )}
 
             {draft.source === "textbook_lessons" && (
