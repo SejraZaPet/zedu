@@ -87,6 +87,8 @@ const StudentPractice = () => {
   const [startedAt, setStartedAt] = useState<number>(Date.now());
   const [savingSession, setSavingSession] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const [mastery, setMastery] = useState<{ mastery_percent: number; sessions_count: number; mastered_at: string | null } | null>(null);
+  const [showMasteryCelebration, setShowMasteryCelebration] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
