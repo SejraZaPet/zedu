@@ -354,7 +354,52 @@ const StudentPractice = () => {
               {data.lesson?.title && (
                 <p className="text-muted-foreground mt-1">Lekce: {data.lesson.title}</p>
               )}
+
+              {lessonId && mastery && (
+                <div className="mt-4">
+                  {mastery.mastered_at ? (
+                    <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-4 py-2">
+                      <Award className="w-5 h-5 text-emerald-600" />
+                      <span className="font-heading text-sm font-bold text-emerald-700">
+                        Zvládnuto! 🏆
+                      </span>
+                      <span className="text-xs text-emerald-700/70">
+                        ({Math.round(mastery.mastery_percent)} %)
+                      </span>
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                          Zvládnutí lekce
+                        </span>
+                        <span className="text-sm font-semibold">
+                          {Math.round(mastery.mastery_percent)} %
+                        </span>
+                      </div>
+                      <Progress value={mastery.mastery_percent} className="h-2" />
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
+
+            {showMasteryCelebration && (
+              <div className="relative">
+                <div className="fixed inset-0 pointer-events-none z-50">
+                  <Confetti count={90} />
+                </div>
+                <div className="mb-6 bg-gradient-to-br from-emerald-500/15 to-primary/10 border border-emerald-500/40 rounded-xl p-6 text-center animate-in fade-in zoom-in-95">
+                  <Award className="w-12 h-12 text-emerald-600 mx-auto mb-2" />
+                  <h2 className="font-heading text-2xl font-bold text-emerald-700">
+                    Skvělá práce! Lekci jsi právě zvládl/a! 🏆
+                  </h2>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Dosáhl/a jsi mastery úrovně. Můžeš pokračovat v procvičování nebo se pustit do další lekce.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {submitted && (
               <div className="mb-6 bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/30 rounded-xl p-6">
