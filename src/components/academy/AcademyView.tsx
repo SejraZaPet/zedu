@@ -441,6 +441,9 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
           <Tabs defaultValue="courses">
             <TabsList>
               <TabsTrigger value="courses">Kurzy</TabsTrigger>
+              <TabsTrigger value="pathways">
+                <GraduationCap className="w-4 h-4 mr-1" /> Kvalifikace
+              </TabsTrigger>
               <TabsTrigger value="certificates">
                 <FileBadge2 className="w-4 h-4 mr-1" /> Moje certifikáty
                 {certificates.length > 0 && <Badge variant="secondary" className="ml-2">{certificates.length}</Badge>}
