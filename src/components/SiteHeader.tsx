@@ -72,6 +72,7 @@ const SiteHeader = () => {
         { label: "Rozvrh", href: "/student/rozvrh", icon: CalendarDays },
         { label: "Studijní metody", href: "/student/metody", icon: Brain },
         { label: "Portfolio", href: "/student/portfolio", icon: FolderOpen },
+        { label: "Moje knihy", href: "/student/knihy", icon: BookMarked },
         { label: "Připojit se do hry", href: "/hra/pripojit", icon: Gamepad2 },
         { label: "Nápověda", href: "/napoveda", icon: HelpCircle },
       ];
