@@ -1850,6 +1850,38 @@ export type Database = {
         }
         Relationships: []
       }
+      grading_rubrics: {
+        Row: {
+          created_at: string
+          id: string
+          teacher_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          teacher_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          teacher_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grading_rubrics_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       help_guides: {
         Row: {
           blocks: Json
@@ -2771,6 +2803,168 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      rubric_criteria: {
+        Row: {
+          created_at: string
+          id: string
+          rubric_id: string
+          sort_order: number
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          rubric_id: string
+          sort_order?: number
+          title: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          rubric_id?: string
+          sort_order?: number
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rubric_criteria_rubric_id_fkey"
+            columns: ["rubric_id"]
+            isOneToOne: false
+            referencedRelation: "grading_rubrics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rubric_evaluation_scores: {
+        Row: {
+          created_at: string
+          criterion_id: string
+          evaluation_id: string
+          id: string
+          level_id: string
+        }
+        Insert: {
+          created_at?: string
+          criterion_id: string
+          evaluation_id: string
+          id?: string
+          level_id: string
+        }
+        Update: {
+          created_at?: string
+          criterion_id?: string
+          evaluation_id?: string
+          id?: string
+          level_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rubric_evaluation_scores_criterion_id_fkey"
+            columns: ["criterion_id"]
+            isOneToOne: false
+            referencedRelation: "rubric_criteria"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rubric_evaluation_scores_evaluation_id_fkey"
+            columns: ["evaluation_id"]
+            isOneToOne: false
+            referencedRelation: "rubric_evaluations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rubric_evaluation_scores_level_id_fkey"
+            columns: ["level_id"]
+            isOneToOne: false
+            referencedRelation: "rubric_levels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rubric_evaluations: {
+        Row: {
+          created_at: string
+          id: string
+          portfolio_item_id: string
+          rubric_id: string
+          teacher_id: string
+          total_points: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          portfolio_item_id: string
+          rubric_id: string
+          teacher_id: string
+          total_points?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          portfolio_item_id?: string
+          rubric_id?: string
+          teacher_id?: string
+          total_points?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rubric_evaluations_portfolio_item_id_fkey"
+            columns: ["portfolio_item_id"]
+            isOneToOne: false
+            referencedRelation: "student_portfolio_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rubric_evaluations_rubric_id_fkey"
+            columns: ["rubric_id"]
+            isOneToOne: false
+            referencedRelation: "grading_rubrics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rubric_evaluations_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rubric_levels: {
+        Row: {
+          created_at: string
+          criterion_id: string
+          id: string
+          label: string
+          points: number
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          criterion_id: string
+          id?: string
+          label: string
+          points?: number
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          criterion_id?: string
+          id?: string
+          label?: string
+          points?: number
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rubric_levels_criterion_id_fkey"
+            columns: ["criterion_id"]
+            isOneToOne: false
+            referencedRelation: "rubric_criteria"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       school_licenses: {
         Row: {

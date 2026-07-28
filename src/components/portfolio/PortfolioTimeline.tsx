@@ -18,6 +18,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import RubricEvaluator, { RubricEvaluationList } from "@/components/portfolio/RubricEvaluator";
 
 interface Props {
   items: PortfolioItem[];
@@ -145,6 +146,7 @@ function PortfolioCard({
   const [aiBusy, setAiBusy] = useState(false);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [fileUrls, setFileUrls] = useState<Record<string, string | null>>({});
+  const [rubricRefreshKey, setRubricRefreshKey] = useState(0);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -331,8 +333,9 @@ function PortfolioCard({
             )}
           </div>
 
-          {!item.synthetic && (comments.length > 0 || canComment) && (
-            <div className="border-t border-border pt-3 space-y-2">
+          {!item.synthetic && (
+            <div className="border-t border-border pt-3 space-y-3">
+              <RubricEvaluationList portfolioItemId={item.id} refreshKey={rubricRefreshKey} />
               {comments.map((c) => (
                 <div key={c.id} className="text-sm bg-muted/40 rounded p-2">
                   <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
@@ -344,6 +347,10 @@ function PortfolioCard({
               ))}
               {canComment && (
                 <div className="space-y-2">
+                  <RubricEvaluator
+                    portfolioItemId={item.id}
+                    onSaved={() => setRubricRefreshKey((k) => k + 1)}
+                  />
                   <div className="flex justify-end">
                     <Button
                       type="button"
