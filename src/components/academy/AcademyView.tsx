@@ -546,6 +546,57 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
               )}
             </TabsContent>
 
+            <TabsContent value="pathways" className="mt-4">
+              {pathwaysLoading ? (
+                <p className="text-muted-foreground">Načítání…</p>
+              ) : pathways.length === 0 ? (
+                <div className="p-8 border border-dashed border-border rounded-xl text-center">
+                  <GraduationCap className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
+                  <p className="text-sm text-muted-foreground">Zatím zde nejsou žádné kvalifikace. Kvalifikace je skládaná z několika kurzů — po dokončení všech získáte celkový certifikát.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {pathways.map((p) => {
+                    const pct = p.total > 0 ? Math.round((p.completed / p.total) * 100) : 0;
+                    const earned = !!p.certificate_number;
+                    return (
+                      <Card key={p.id} className="p-5 flex flex-col">
+                        <div className="flex items-start gap-2 mb-2 flex-wrap">
+                          <h3 className="font-heading text-lg font-semibold flex-1">{p.title}</h3>
+                          {earned && <Badge variant="secondary" className="gap-1"><Award className="w-3 h-3" /> Kvalifikace získána 🎓</Badge>}
+                        </div>
+                        {p.description && <p className="text-sm text-muted-foreground mb-3">{p.description}</p>}
+                        <Progress value={pct} className="h-2" />
+                        <div className="text-xs text-muted-foreground mt-1 mb-3">
+                          {p.completed}/{p.total} kurzů · {pct} %
+                        </div>
+                        {earned && (
+                          <div className="mt-auto flex flex-wrap items-center gap-2">
+                            <span className="text-xs font-mono text-muted-foreground">{p.certificate_number}</span>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={async () => {
+                                const url = `${window.location.origin}/overit/${encodeURIComponent(p.certificate_number!)}`;
+                                try {
+                                  await navigator.clipboard.writeText(url);
+                                  toast.success("Odkaz zkopírován.");
+                                } catch {
+                                  window.prompt("Zkopírujte odkaz:", url);
+                                }
+                              }}
+                            >
+                              <Share2 className="w-4 h-4 mr-1" /> Sdílet ověření
+                            </Button>
+                          </div>
+                        )}
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
+            </TabsContent>
+
             <TabsContent value="certificates" className="mt-4">
               {certLoading ? (
                 <p className="text-muted-foreground">Načítání…</p>
