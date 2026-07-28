@@ -142,6 +142,7 @@ function PortfolioCard({
   const [comments, setComments] = useState<PortfolioComment[]>([]);
   const [commentText, setCommentText] = useState("");
   const [busy, setBusy] = useState(false);
+  const [aiBusy, setAiBusy] = useState(false);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [fileUrls, setFileUrls] = useState<Record<string, string | null>>({});
   const { user } = useAuth();
