@@ -28,6 +28,7 @@ import AvatarItemsManager from "@/components/admin/AvatarItemsManager";
 import TextbookOverviewManager from "@/components/admin/TextbookOverviewManager";
 import AcademyCoursesManager from "@/components/admin/AcademyCoursesManager";
 import AcademyEvidenceReviewManager from "@/components/admin/AcademyEvidenceReviewManager";
+import AcademyPathwaysManager from "@/components/admin/AcademyPathwaysManager";
 import SchoolLicensesManager from "@/components/admin/SchoolLicensesManager";
 import { Button } from "@/components/ui/button";
 import { BookOpen, LogOut, Home, GraduationCap, Settings, Users, School, BarChart3, LayoutDashboard, HelpCircle, ListTree, CircleHelp, Link2, Pencil, Video, Bell, Activity, FileText, Sparkles, Globe, Smile, Library, Award, FileBadge2 } from "lucide-react";
