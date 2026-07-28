@@ -181,6 +181,15 @@ export function AddSlideSheet({
   ]);
   const [diffLoading, setDiffLoading] = useState(false);
 
+  // escape
+  const [escapeIntro, setEscapeIntro] = useState("");
+  const [escapeFinal, setEscapeFinal] = useState("");
+  const [escapeLocks, setEscapeLocks] = useState<{ clue: string; code: string }[]>([
+    { clue: "", code: "" },
+    { clue: "", code: "" },
+    { clue: "", code: "" },
+  ]);
+
   const reset = () => {
     setKind("menu");
     setTextHeadline("");
@@ -202,6 +211,13 @@ export function AddSlideSheet({
       { title: "", content: "" },
     ]);
     setDiffLoading(false);
+    setEscapeIntro("");
+    setEscapeFinal("");
+    setEscapeLocks([
+      { clue: "", code: "" },
+      { clue: "", code: "" },
+      { clue: "", code: "" },
+    ]);
   };
 
   const close = () => {
