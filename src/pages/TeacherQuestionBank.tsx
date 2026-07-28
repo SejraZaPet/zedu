@@ -411,10 +411,9 @@ function QuestionEditorDialog({
       payload.correct_answer = shortAnswer.trim() || null;
     }
 
-    const q = editing
-      ? supabase.from("question_bank_items").update(payload).eq("id", editing.id)
-      : supabase.from("question_bank_items").insert(payload);
-    const { error } = await q;
+    const { error } = editing
+      ? await supabase.from("question_bank_items").update(payload as never).eq("id", editing.id)
+      : await supabase.from("question_bank_items").insert(payload as never);
     setSaving(false);
     if (error) {
       toast({ title: "Chyba", description: error.message, variant: "destructive" });
