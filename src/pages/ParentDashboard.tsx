@@ -315,6 +315,7 @@ const ParentDashboard = () => {
               />
             ))}
             <ChildAlertsPanel studentIds={students.map((s) => s.id)} />
+            <ParentClassStoriesFeed studentIds={students.map((s) => s.id)} />
           </div>
         )}
 
