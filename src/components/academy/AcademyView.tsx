@@ -181,6 +181,19 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
   const [certificates, setCertificates] = useState<CertificateRow[]>([]);
   const [certLoading, setCertLoading] = useState(false);
 
+  // Pathways (skládatelné kvalifikace)
+  interface PathwayItem {
+    id: string;
+    title: string;
+    description: string | null;
+    total: number;
+    completed: number;
+    certificate_number: string | null;
+  }
+  const [pathways, setPathways] = useState<PathwayItem[]>([]);
+  const [pathwaysLoading, setPathwaysLoading] = useState(false);
+
+
   // Evidence submission for current course
   const [evidence, setEvidence] = useState<EvidenceSubmission | null>(null);
   const [evidenceDesc, setEvidenceDesc] = useState("");
