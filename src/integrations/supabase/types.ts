@@ -2879,6 +2879,51 @@ export type Database = {
           },
         ]
       }
+      student_lesson_mastery: {
+        Row: {
+          id: string
+          lesson_id: string
+          mastered_at: string | null
+          mastery_percent: number
+          sessions_count: number
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          lesson_id: string
+          mastered_at?: string | null
+          mastery_percent?: number
+          sessions_count?: number
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          lesson_id?: string
+          mastered_at?: string | null
+          mastery_percent?: number
+          sessions_count?: number
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_lesson_mastery_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "textbook_lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_lesson_mastery_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_portfolio_comments: {
         Row: {
           author_id: string
