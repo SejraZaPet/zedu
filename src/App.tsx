@@ -151,6 +151,7 @@ const App = () => (
             <Route path="/napoveda/:guideId" element={<HelpDetailPage />} />
             <Route path="/gdpr" element={<GdprPage />} />
             <Route path="/licence" element={<LicencePage />} />
+            <Route path="/overit/:certificateNumber" element={<VerifyCertificate />} />
 
             <Route path="/todo" element={<ProtectedRoute><TodoPage /></ProtectedRoute>} />
             <Route path="/student/kalendar" element={<ProtectedRoute><StudentCalendar /></ProtectedRoute>} />
