@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import {
-  ArrowLeft, GraduationCap, CheckCircle2, Circle, Award, Play, Download, FileBadge2,
+  ArrowLeft, GraduationCap, CheckCircle2, Circle, Award, Play, Download, FileBadge2, Share2,
 } from "lucide-react";
 
 type AudienceScope = "teacher" | "student" | "parent";
