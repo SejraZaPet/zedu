@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ClassBulkActions } from "@/components/teacher/ClassBulkActions";
 import { LeaderboardSettingsCard } from "@/components/teacher/LeaderboardSettingsCard";
+import QuickRecognitionCard from "@/components/teacher/QuickRecognitionCard";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   ArrowLeft,
   Pencil,
