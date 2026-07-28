@@ -40,13 +40,12 @@ export function EscapeGameStudent({ slide }: { slide: any }) {
   const currentLock = locks[step];
 
   // Reset when slide changes
-  useMemo(() => {
+  useEffect(() => {
     setStep(0);
     setAttempt("");
     setDone(false);
     setWrongPulse(false);
     setUnlockPulse(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slideId]);
 
   const tryUnlock = () => {
