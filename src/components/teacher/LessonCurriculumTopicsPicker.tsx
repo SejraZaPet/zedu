@@ -187,8 +187,10 @@ export default function LessonCurriculumTopicsPicker({ lessonId, textbookId }: P
         </p>
       ) : topics.length === 0 ? (
         <p className="text-xs text-muted-foreground">
-          Pro předmět <span className="font-medium">{subject}</span> zatím nemáte v ŠVP žádná
-          rozpoznaná témata. Doplňte je na stránce <span className="font-medium">Školní vzdělávací plán</span>.
+          Zatím nemáte témata ŠVP pro předmět <span className="font-medium">{subject}</span>.{" "}
+          <a href="/ucitel/svp" className="underline text-primary hover:opacity-80">
+            Doplnit v ŠVP
+          </a>
         </p>
       ) : (
         <>
