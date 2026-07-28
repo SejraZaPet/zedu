@@ -198,6 +198,15 @@ const LiveProjectorScreen = () => {
     );
   }
 
+  if ((currentSlide as any)?.activitySpec?.activityType === "escape") {
+    return (
+      <div className="relative">
+        <CloseButton />
+        <EscapeGameProjector slide={currentSlide} />
+      </div>
+    );
+  }
+
 
   return (
     <div className="relative">
