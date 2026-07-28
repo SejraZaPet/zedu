@@ -837,6 +837,110 @@ export function AddSlideSheet({
               </Button>
             </div>
           )}
+
+          {kind === "escape" && (
+            <div className="space-y-4">
+              <p className="text-xs text-muted-foreground">
+                Digitální úniková hra: žáci luští 3–6 zámků postupně. Kód se porovnává
+                bez ohledu na velikost písmen a mezery. Postup běží lokálně, není skórován.
+              </p>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="escape-intro">Úvodní příběh / scénář (volitelné)</Label>
+                <Textarea
+                  id="escape-intro"
+                  rows={3}
+                  value={escapeIntro}
+                  onChange={(e) => setEscapeIntro(e.target.value)}
+                  placeholder="Např. Jste zavření v knihovně. Abyste unikli, musíte odemknout několik zámků…"
+                  disabled={busy}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Zámky ({escapeLocks.length})</Label>
+                  <div className="flex gap-1">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        setEscapeLocks((prev) =>
+                          prev.length < 6 ? [...prev, { clue: "", code: "" }] : prev
+                        )
+                      }
+                      disabled={busy || escapeLocks.length >= 6}
+                    >
+                      <Plus className="w-3.5 h-3.5 mr-1" />
+                      Přidat zámek
+                    </Button>
+                  </div>
+                </div>
+                {escapeLocks.map((lock, i) => (
+                  <div key={i} className="rounded-md border border-border p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        Zámek {i + 1}
+                      </span>
+                      {escapeLocks.length > 3 && (
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="h-6 w-6"
+                          onClick={() =>
+                            setEscapeLocks((prev) => prev.filter((_, idx) => idx !== i))
+                          }
+                          disabled={busy}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      )}
+                    </div>
+                    <Textarea
+                      rows={2}
+                      value={lock.clue}
+                      onChange={(e) => {
+                        const next = [...escapeLocks];
+                        next[i] = { ...next[i], clue: e.target.value };
+                        setEscapeLocks(next);
+                      }}
+                      placeholder="Hádanka / nápověda"
+                      disabled={busy}
+                    />
+                    <Input
+                      value={lock.code}
+                      onChange={(e) => {
+                        const next = [...escapeLocks];
+                        next[i] = { ...next[i], code: e.target.value };
+                        setEscapeLocks(next);
+                      }}
+                      placeholder="Kód k odemknutí (např. 42 nebo Praha)"
+                      disabled={busy}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="escape-final">Závěrečný vzkaz (volitelné)</Label>
+                <Textarea
+                  id="escape-final"
+                  rows={3}
+                  value={escapeFinal}
+                  onChange={(e) => setEscapeFinal(e.target.value)}
+                  placeholder="Např. Gratulujeme! Unikli jste."
+                  disabled={busy}
+                />
+              </div>
+
+              <Button onClick={submitEscape} disabled={busy} className="w-full">
+                {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Přidat a zobrazit
+              </Button>
+            </div>
+          )}
         </div>
       </SheetContent>
     </Sheet>
