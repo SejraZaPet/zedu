@@ -11,6 +11,7 @@ import { LessonBlock } from "@/components/LessonBlockRenderer";
 import ReadAloudButton from "@/components/a11y/ReadAloudButton";
 import { Button } from "@/components/ui/button";
 import LessonEditorSheet from "@/components/LessonEditorSheet";
+import ZedAiTutorChat from "@/components/ZedAiTutorChat";
 import { useActivityTracking } from "@/hooks/useActivityTracking";
 
 // Extract plain readable text from lesson blocks for TTS.
