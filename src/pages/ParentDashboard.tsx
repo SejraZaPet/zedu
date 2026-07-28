@@ -313,6 +313,7 @@ const ParentDashboard = () => {
                 title="Uznání od učitele"
               />
             ))}
+            <ChildAlertsPanel studentIds={students.map((s) => s.id)} />
           </div>
         )}
 
