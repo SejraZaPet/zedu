@@ -219,7 +219,7 @@ function PortfolioCard({
         item_id: item.id,
         author_id: user.id,
         body: commentText.trim(),
-        ai_generated: aiSuggestedText !== null && commentText.trim() === aiSuggestedText,
+        ai_generated: aiSuggestedText !== null,
         ai_modified_at:
           aiSuggestedText !== null && commentText.trim() !== aiSuggestedText
             ? new Date().toISOString()

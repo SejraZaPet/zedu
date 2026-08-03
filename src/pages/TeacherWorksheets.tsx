@@ -293,6 +293,8 @@ export default function TeacherWorksheets() {
       worksheet_mode: row.worksheet_mode,
       spec: row.spec,
       status: "draft",
+      ai_generated: row.ai_generated ?? false,
+      ai_modified_at: row.ai_modified_at ?? null,
     } as any);
     if (error) {
       toast({ title: "Duplikace selhala", description: error.message, variant: "destructive" });
