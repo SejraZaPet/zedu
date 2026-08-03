@@ -434,6 +434,7 @@ export default function WorksheetEditor() {
         return;
       }
       const row = data as any;
+      setAiMeta({ aiGenerated: !!row.ai_generated, aiModifiedAt: row.ai_modified_at ?? null });
       let loaded: WorksheetSpec = row.spec && row.spec.version ? row.spec : emptyWorksheetSpec({
         title: row.title,
         subject: row.subject,
@@ -1882,6 +1883,7 @@ export default function WorksheetEditor() {
             }
             className="font-heading text-sm sm:text-base font-semibold border-0 shadow-none focus-visible:ring-1 min-w-0 flex-1 sm:flex-none sm:max-w-md"
           />
+          <AiContentBadge aiGenerated={aiMeta.aiGenerated} aiModifiedAt={aiMeta.aiModifiedAt} className="hidden sm:inline-flex" />
           <div className="ml-auto flex items-center gap-1 sm:gap-2">
             <Button
               variant="ghost"
