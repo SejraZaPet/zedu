@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import AiContentBadge from "@/components/ai/AiContentBadge";
 import SiteHeader from "@/components/SiteHeader";
 import { FolderOpen } from "lucide-react";
 import { MediaPickerDialog } from "@/components/media/MediaPickerDialog";
@@ -354,6 +355,10 @@ export default function WorksheetEditor() {
 
   const serverPdf = usePdfExport();
   const [spec, setSpec] = useState<WorksheetSpec | null>(null);
+  const [aiMeta, setAiMeta] = useState<{ aiGenerated: boolean; aiModifiedAt: string | null }>({
+    aiGenerated: false,
+    aiModifiedAt: null,
+  });
   const [status, setStatus] = useState<"draft" | "published" | "scheduled">("draft");
   const [scheduledAt, setScheduledAt] = useState<Date | null>(null);
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
