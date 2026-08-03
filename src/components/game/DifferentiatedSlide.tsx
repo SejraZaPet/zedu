@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { SplitSquareHorizontal, Shuffle, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import AiContentBadge from "@/components/ai/AiContentBadge";
 import {
   distributeRandomly,
   findPlayerTeam,
@@ -232,7 +233,10 @@ export function DifferentiatedSlideStudent({
 
       {task ? (
         <div className="rounded-2xl border-2 border-white/20 bg-white/10 backdrop-blur p-5 space-y-2">
-          <p className="text-xs uppercase tracking-widest text-white/60">Váš úkol</p>
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="text-xs uppercase tracking-widest text-white/60">Váš úkol</p>
+            <AiContentBadge aiGenerated className="bg-white/10 border-white/20 text-white/80" />
+          </div>
           <h3 className="text-xl md:text-2xl font-bold">{task.title}</h3>
           <p className="text-sm md:text-base text-white/90 whitespace-pre-wrap leading-relaxed">
             {task.content}

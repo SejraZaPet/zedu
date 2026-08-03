@@ -21,7 +21,15 @@ interface ZedAiTutorChatProps {
   className?: string;
 }
 
-const INITIAL_GREETING = "Ahoj! Jsem ZedAI. Neřeknu ti přímo odpověď – ale rád ti pomůžu, abys na ni přišel sám. Čeho se zadání týká, čemu nerozumíš?";
+/** Povinné odhalení AI podle EU AI Act (čl. 50) – vždy první zpráva konverzace. */
+const AI_DISCLOSURE =
+  "Ahoj, jsem ZedAI, umělá inteligence. Nejsem člověk – dávám ti nápovědy, abys na odpověď přišel/přišla sám/sama.";
+const INITIAL_GREETING = "Čeho se zadání týká, čemu nerozumíš?";
+
+const initialMessages = (): ChatMsg[] => [
+  { role: "assistant", content: AI_DISCLOSURE },
+  { role: "assistant", content: INITIAL_GREETING },
+];
 
 export default function ZedAiTutorChat({
   question,
@@ -30,16 +38,14 @@ export default function ZedAiTutorChat({
   className,
 }: ZedAiTutorChatProps) {
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<ChatMsg[]>([
-    { role: "assistant", content: INITIAL_GREETING },
-  ]);
+  const [messages, setMessages] = useState<ChatMsg[]>(initialMessages);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Reset conversation when context changes (e.g. student moves to next question).
   useEffect(() => {
-    setMessages([{ role: "assistant", content: INITIAL_GREETING }]);
+    setMessages(initialMessages());
     setInput("");
   }, [contextKey]);
 
@@ -61,8 +67,8 @@ export default function ZedAiTutorChat({
         body: {
           question,
           studentMessage: text,
-          // Neposílej úvodní pozdrav do historie.
-          conversationHistory: nextHistory.slice(1, -1),
+          // Neposílej úvodní odhalení AI ani pozdrav do historie.
+          conversationHistory: nextHistory.slice(2, -1),
           subject,
         },
       });

@@ -1650,6 +1650,8 @@ export type Database = {
       }
       curriculum_topics: {
         Row: {
+          ai_generated: boolean
+          ai_modified_at: string | null
           created_at: string
           curriculum_plan_id: string
           id: string
@@ -1657,6 +1659,8 @@ export type Database = {
           title: string
         }
         Insert: {
+          ai_generated?: boolean
+          ai_modified_at?: string | null
           created_at?: string
           curriculum_plan_id: string
           id?: string
@@ -1664,6 +1668,8 @@ export type Database = {
           title: string
         }
         Update: {
+          ai_generated?: boolean
+          ai_modified_at?: string | null
           created_at?: string
           curriculum_plan_id?: string
           id?: string
@@ -2382,6 +2388,8 @@ export type Database = {
       }
       lesson_plans: {
         Row: {
+          ai_generated: boolean
+          ai_modified_at: string | null
           anonymous: boolean
           copied_from_lesson_plan_id: string | null
           created_at: string
@@ -2397,6 +2405,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ai_generated?: boolean
+          ai_modified_at?: string | null
           anonymous?: boolean
           copied_from_lesson_plan_id?: string | null
           created_at?: string
@@ -2412,6 +2422,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ai_generated?: boolean
+          ai_modified_at?: string | null
           anonymous?: boolean
           copied_from_lesson_plan_id?: string | null
           created_at?: string
@@ -3629,6 +3641,8 @@ export type Database = {
       }
       student_portfolio_comments: {
         Row: {
+          ai_generated: boolean
+          ai_modified_at: string | null
           author_id: string
           body: string
           created_at: string
@@ -3637,6 +3651,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ai_generated?: boolean
+          ai_modified_at?: string | null
           author_id: string
           body: string
           created_at?: string
@@ -3645,6 +3661,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ai_generated?: boolean
+          ai_modified_at?: string | null
           author_id?: string
           body?: string
           created_at?: string
@@ -3785,6 +3803,8 @@ export type Database = {
       }
       student_practice_sessions: {
         Row: {
+          ai_generated: boolean
+          ai_modified_at: string | null
           answers_json: Json | null
           created_at: string
           duration_min: number | null
@@ -3795,6 +3815,8 @@ export type Database = {
           student_id: string
         }
         Insert: {
+          ai_generated?: boolean
+          ai_modified_at?: string | null
           answers_json?: Json | null
           created_at?: string
           duration_min?: number | null
@@ -3805,6 +3827,8 @@ export type Database = {
           student_id: string
         }
         Update: {
+          ai_generated?: boolean
+          ai_modified_at?: string | null
           answers_json?: Json | null
           created_at?: string
           duration_min?: number | null
@@ -4605,6 +4629,8 @@ export type Database = {
       }
       worksheets: {
         Row: {
+          ai_generated: boolean
+          ai_modified_at: string | null
           copied_from_worksheet_id: string | null
           created_at: string
           grade_band: string
@@ -4621,6 +4647,8 @@ export type Database = {
           worksheet_mode: string
         }
         Insert: {
+          ai_generated?: boolean
+          ai_modified_at?: string | null
           copied_from_worksheet_id?: string | null
           created_at?: string
           grade_band?: string
@@ -4637,6 +4665,8 @@ export type Database = {
           worksheet_mode?: string
         }
         Update: {
+          ai_generated?: boolean
+          ai_modified_at?: string | null
           copied_from_worksheet_id?: string | null
           created_at?: string
           grade_band?: string

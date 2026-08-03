@@ -19,6 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import RubricEvaluator, { RubricEvaluationList } from "@/components/portfolio/RubricEvaluator";
+import AiContentBadge from "@/components/ai/AiContentBadge";
 
 interface Props {
   items: PortfolioItem[];
@@ -141,6 +142,7 @@ function PortfolioCard({
 }) {
   const Icon = ICONS[item.type] || Award;
   const [comments, setComments] = useState<PortfolioComment[]>([]);
+  const [aiSuggestedText, setAiSuggestedText] = useState<string | null>(null);
   const [commentText, setCommentText] = useState("");
   const [busy, setBusy] = useState(false);
   const [aiBusy, setAiBusy] = useState(false);
@@ -213,13 +215,23 @@ function PortfolioCard({
     setBusy(true);
     const { data, error } = await supabase
       .from("student_portfolio_comments")
-      .insert({ item_id: item.id, author_id: user.id, body: commentText.trim() })
+      .insert({
+        item_id: item.id,
+        author_id: user.id,
+        body: commentText.trim(),
+        ai_generated: aiSuggestedText !== null && commentText.trim() === aiSuggestedText,
+        ai_modified_at:
+          aiSuggestedText !== null && commentText.trim() !== aiSuggestedText
+            ? new Date().toISOString()
+            : null,
+      } as any)
       .select()
       .single();
     setBusy(false);
     if (error) { toast.error("Komentář se nepodařilo přidat"); return; }
     setComments((c) => [...c, data as PortfolioComment]);
     setCommentText("");
+    setAiSuggestedText(null);
   };
 
   const suggestFeedback = async () => {
@@ -238,6 +250,7 @@ function PortfolioCard({
       const fb = (data as any)?.feedback;
       if (!fb) throw new Error("Prázdný návrh");
       setCommentText(fb);
+      setAiSuggestedText(fb);
       toast.success("Návrh AI vložen – můžete ho upravit před odesláním.");
     } catch (e: any) {
       toast.error(e?.message || "Nepodařilo se vygenerovat návrh");
@@ -341,6 +354,7 @@ function PortfolioCard({
                   <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
                     <MessageSquare className="w-3 h-3" />
                     {formatDate(c.created_at)}
+                    <AiContentBadge aiGenerated={c.ai_generated} aiModifiedAt={c.ai_modified_at} />
                   </div>
                   <p className="whitespace-pre-wrap">{c.body}</p>
                 </div>

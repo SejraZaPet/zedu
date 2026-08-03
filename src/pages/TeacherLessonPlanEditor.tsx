@@ -66,6 +66,7 @@ import { useTeacherClasses } from "@/hooks/useTeacherClasses";
 import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import AiContentBadge from "@/components/ai/AiContentBadge";
 import { loadSchedule, expandTeacherSchedule } from "@/lib/teacher-schedule-store";
 import { expandScheduleSlots, formatTime } from "@/lib/calendar-utils";
 import { savePhasePlan } from "@/lib/lesson-phase-plans";
@@ -161,6 +162,10 @@ export default function TeacherLessonPlanEditor() {
   const [aiInstructions, setAiInstructions] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [aiMeta, setAiMeta] = useState<{ aiGenerated: boolean; aiModifiedAt: string | null }>({
+    aiGenerated: false,
+    aiModifiedAt: null,
+  });
   const [planDbId, setPlanDbId] = useState<string | null>(
     id && id !== "novy" ? id : null,
   );
@@ -185,6 +190,10 @@ export default function TeacherLessonPlanEditor() {
         .maybeSingle();
       if (error || !data) return;
       setPlanDbId(data.id);
+      setAiMeta({
+        aiGenerated: !!(data as any).ai_generated,
+        aiModifiedAt: (data as any).ai_modified_at ?? null,
+      });
       setTitle(data.title || "Plán hodiny");
       const input = (data.input_data as any) || {};
       if (input.description) setDescription(input.description);
@@ -1013,7 +1022,10 @@ export default function TeacherLessonPlanEditor() {
         {/* Hlavička plánu */}
         <div className="bg-card border border-border rounded-xl p-5 mb-6 space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="plan-title">Název plánu</Label>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="plan-title">Název plánu</Label>
+              <AiContentBadge aiGenerated={aiMeta.aiGenerated} aiModifiedAt={aiMeta.aiModifiedAt} />
+            </div>
             <Input
               id="plan-title"
               value={title}

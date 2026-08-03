@@ -252,6 +252,7 @@ export default function FromMaterialView({ role }: Props) {
             grade_band: "",
             slides: slides as any,
             input_data: { source: "from-material", sourceFileName } as any,
+            ai_generated: true,
             shared_visibility: "private",
             anonymous: false,
           } as any)
@@ -278,6 +279,7 @@ export default function FromMaterialView({ role }: Props) {
             spec: spec as any,
             status: "draft",
             worksheet_mode: outputType === "worksheet" ? "classwork" : "revision",
+            ai_generated: true,
           } as any)
           .select("id")
           .single();

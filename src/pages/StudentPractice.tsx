@@ -13,6 +13,7 @@ import {
   ArrowLeft, RotateCcw, CheckCircle2, XCircle, Sparkles, Trophy, Loader2, Award,
 } from "lucide-react";
 import Confetti from "@/components/game/Confetti";
+import AiContentBadge from "@/components/ai/AiContentBadge";
 
 type Question = {
   type: "open" | "short_answer" | "multiple_choice" | "true_false";
@@ -234,6 +235,7 @@ const StudentPractice = () => {
         method_id: data.method.id,
         lesson_id: data.lesson?.id ?? null,
         duration_min: duration,
+        ai_generated: true,
         score: totalScorable > 0 ? score : null,
         answers_json: {
           answers,
@@ -350,7 +352,10 @@ const StudentPractice = () => {
                 <Sparkles className="w-4 h-4" />
                 <span className="text-xs font-medium uppercase tracking-wider">Procvičování</span>
               </div>
-              <h1 className="font-heading text-3xl font-bold">{data.method.name}</h1>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="font-heading text-3xl font-bold">{data.method.name}</h1>
+                <AiContentBadge aiGenerated />
+              </div>
               {data.lesson?.title && (
                 <p className="text-muted-foreground mt-1">Lekce: {data.lesson.title}</p>
               )}
