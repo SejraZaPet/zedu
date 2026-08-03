@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import AiContentBadge from "@/components/ai/AiContentBadge";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { Button } from "@/components/ui/button";
@@ -47,6 +48,8 @@ interface WorksheetRow {
   spec: any;
   updated_at: string;
   copied_from_worksheet_id?: string | null;
+  ai_generated?: boolean;
+  ai_modified_at?: string | null;
 }
 
 
@@ -390,7 +393,10 @@ export default function TeacherWorksheets() {
               return (
                 <div key={row.id} className="bg-card border border-border rounded-xl p-5 flex flex-col">
                   <div className="flex items-start justify-between gap-2 mb-2">
-                    <h3 className="font-heading text-lg font-semibold leading-tight">{row.title}</h3>
+                    <h3 className="font-heading text-lg font-semibold leading-tight">
+                      {row.title}{" "}
+                      <AiContentBadge aiGenerated={row.ai_generated} aiModifiedAt={row.ai_modified_at} />
+                    </h3>
                     <Badge variant={row.status === "published" ? "default" : "secondary"}>
                       {row.status === "published" ? "Publikováno" : "Koncept"}
                     </Badge>

@@ -36,6 +36,7 @@ import ReviewButton from "@/components/sharing/ReviewButton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import AiContentBadge from "@/components/ai/AiContentBadge";
 import { toast } from "@/hooks/use-toast";
 
 interface LinkedSlot {
@@ -53,6 +54,8 @@ interface PlanRow {
   updated_at: string;
   input_data: any;
   copied_from_lesson_plan_id?: string | null;
+  ai_generated?: boolean;
+  ai_modified_at?: string | null;
 }
 
 
@@ -186,7 +189,7 @@ export default function TeacherLessonPlans() {
     const [{ data: plans }, { data: tpls }] = await Promise.all([
       supabase
         .from("lesson_plans")
-        .select("id, title, subject, updated_at, input_data, copied_from_lesson_plan_id")
+        .select("id, title, subject, updated_at, input_data, copied_from_lesson_plan_id, ai_generated, ai_modified_at")
         .eq("teacher_id", user.id)
         .order("updated_at", { ascending: false }),
       supabase
@@ -306,6 +309,7 @@ export default function TeacherLessonPlans() {
           <div className="flex items-center gap-2 min-w-0 pr-8">
             <BookOpen className="w-4 h-4 text-primary shrink-0" />
             <span className="font-semibold text-sm truncate">{plan.title}</span>
+            <AiContentBadge aiGenerated={plan.ai_generated} aiModifiedAt={plan.ai_modified_at} />
           </div>
           {planSubjects(plan).length > 0 && (
             <p className="text-xs text-muted-foreground">
