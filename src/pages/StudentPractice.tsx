@@ -234,6 +234,7 @@ const StudentPractice = () => {
         method_id: data.method.id,
         lesson_id: data.lesson?.id ?? null,
         duration_min: duration,
+        ai_generated: true,
         score: totalScorable > 0 ? score : null,
         answers_json: {
           answers,

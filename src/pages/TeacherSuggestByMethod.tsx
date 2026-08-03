@@ -323,6 +323,7 @@ export default function TeacherSuggestByMethod() {
             generatedFromMethods: selectedMethodIds,
             aiSource: "suggest-lesson-from-methods",
           } as any,
+          ai_generated: true,
         })
         .select("id")
         .single();

@@ -35,12 +35,12 @@ export default function CurriculumTopicsSection({ planId, planContent, teacherId
     // Load topics
     const { data: t } = await supabase
       .from("curriculum_topics")
-      .select("id, title, sort_order")
+      .select("id, title, sort_order, ai_generated, ai_modified_at")
       .eq("curriculum_plan_id", planId)
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: true });
 
-    const topicRows = (t as { id: string; title: string; sort_order: number }[] | null) ?? [];
+    const topicRows = (t as { id: string; title: string; sort_order: number; ai_generated?: boolean; ai_modified_at?: string | null }[] | null) ?? [];
     const ids = topicRows.map((r) => r.id);
 
     // Load coverage counts for these topics — RLS ensures only owner's lessons visible
@@ -110,6 +110,7 @@ export default function CurriculumTopicsSection({ planId, planContent, teacherId
           curriculum_plan_id: planId,
           title: r.title,
           sort_order: startOrder + i,
+          ai_generated: true,
         })),
       );
       if (insErr) throw insErr;
@@ -235,6 +236,7 @@ export default function CurriculumTopicsSection({ planId, planContent, teacherId
                     ) : (
                       <>
                         <span className="flex-1 truncate">{t.title}</span>
+                        <AiContentBadge aiGenerated={(t as any).ai_generated} aiModifiedAt={(t as any).ai_modified_at} />
                         {covered ? (
                           <Badge
                             variant="outline"
