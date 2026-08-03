@@ -38,16 +38,14 @@ export default function ZedAiTutorChat({
   className,
 }: ZedAiTutorChatProps) {
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<ChatMsg[]>([
-    { role: "assistant", content: INITIAL_GREETING },
-  ]);
+  const [messages, setMessages] = useState<ChatMsg[]>(initialMessages);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Reset conversation when context changes (e.g. student moves to next question).
   useEffect(() => {
-    setMessages([{ role: "assistant", content: INITIAL_GREETING }]);
+    setMessages(initialMessages());
     setInput("");
   }, [contextKey]);
 
@@ -69,8 +67,8 @@ export default function ZedAiTutorChat({
         body: {
           question,
           studentMessage: text,
-          // Neposílej úvodní pozdrav do historie.
-          conversationHistory: nextHistory.slice(1, -1),
+          // Neposílej úvodní odhalení AI ani pozdrav do historie.
+          conversationHistory: nextHistory.slice(2, -1),
           subject,
         },
       });
