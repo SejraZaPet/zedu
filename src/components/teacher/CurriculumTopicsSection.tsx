@@ -6,12 +6,15 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "@/hooks/use-toast";
 import { Loader2, Plus, Sparkles, Trash2, Check, X, Pencil } from "lucide-react";
+import AiContentBadge from "@/components/ai/AiContentBadge";
 
 interface CurriculumTopic {
   id: string;
   title: string;
   sort_order: number;
   coverage_count: number;
+  ai_generated?: boolean;
+  ai_modified_at?: string | null;
 }
 
 interface Props {
