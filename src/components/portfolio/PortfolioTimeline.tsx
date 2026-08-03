@@ -19,6 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import RubricEvaluator, { RubricEvaluationList } from "@/components/portfolio/RubricEvaluator";
+import AiContentBadge from "@/components/ai/AiContentBadge";
 
 interface Props {
   items: PortfolioItem[];

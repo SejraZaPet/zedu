@@ -13,6 +13,7 @@ import {
   ArrowLeft, RotateCcw, CheckCircle2, XCircle, Sparkles, Trophy, Loader2, Award,
 } from "lucide-react";
 import Confetti from "@/components/game/Confetti";
+import AiContentBadge from "@/components/ai/AiContentBadge";
 
 type Question = {
   type: "open" | "short_answer" | "multiple_choice" | "true_false";

@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { SplitSquareHorizontal, Shuffle, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import AiContentBadge from "@/components/ai/AiContentBadge";
 import {
   distributeRandomly,
   findPlayerTeam,
