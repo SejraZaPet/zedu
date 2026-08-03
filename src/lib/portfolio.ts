@@ -43,6 +43,8 @@ export interface PortfolioComment {
   author_id: string;
   body: string;
   created_at: string;
+  ai_generated?: boolean;
+  ai_modified_at?: string | null;
 }
 
 export const TYPE_LABEL: Record<PortfolioItemType, string> = {

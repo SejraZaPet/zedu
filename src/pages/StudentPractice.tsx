@@ -351,7 +351,10 @@ const StudentPractice = () => {
                 <Sparkles className="w-4 h-4" />
                 <span className="text-xs font-medium uppercase tracking-wider">Procvičování</span>
               </div>
-              <h1 className="font-heading text-3xl font-bold">{data.method.name}</h1>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="font-heading text-3xl font-bold">{data.method.name}</h1>
+                <AiContentBadge aiGenerated />
+              </div>
               {data.lesson?.title && (
                 <p className="text-muted-foreground mt-1">Lekce: {data.lesson.title}</p>
               )}
