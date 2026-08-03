@@ -1,0 +1,4 @@
+DROP TRIGGER IF EXISTS trg_mark_ai_modified_worksheets ON public.worksheets;
+DROP TRIGGER IF EXISTS trg_mark_ai_modified_lesson_plans ON public.lesson_plans;
+DROP TRIGGER IF EXISTS trg_mark_ai_modified_curriculum_topics ON public.curriculum_topics;
+DROP TRIGGER IF EXISTS trg_mark_ai_modified_portfolio_comments ON public.student_portfolio_comments;
