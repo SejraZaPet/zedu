@@ -996,28 +996,34 @@ const BlockEditor = ({ blocks, onChange, toolbarActions }: Props) => {
       `}</style>
 
 
-      <div className="flex items-center justify-end gap-1 sticky top-0 z-40 bg-background/80 backdrop-blur-sm py-1 -mt-1 rounded-md">
+      <div className="flex items-center gap-1 flex-wrap sticky top-0 z-40 -mx-4 -mt-4 mb-1 px-4 py-2 bg-background/90 backdrop-blur-sm border-b border-border/60 shadow-sm rounded-t-[14px]">
         <Button
           size="sm"
-          variant="ghost"
-          className="h-7 gap-1.5"
+          variant="outline"
+          className="h-8 w-8 p-0"
           onClick={undo}
           disabled={!canUndo}
           title="Zpět (Ctrl/Cmd+Z)"
+          aria-label="Zpět"
         >
-          <Undo2 className="w-3.5 h-3.5" /> Zpět
+          <Undo2 className="w-4 h-4" />
         </Button>
         <Button
           size="sm"
-          variant="ghost"
-          className="h-7 gap-1.5"
+          variant="outline"
+          className="h-8 w-8 p-0"
           onClick={redo}
           disabled={!canRedo}
           title="Vpřed (Ctrl/Cmd+Shift+Z)"
+          aria-label="Vpřed"
         >
-          <Redo2 className="w-3.5 h-3.5" /> Vpřed
+          <Redo2 className="w-4 h-4" />
         </Button>
+        {toolbarActions && (
+          <div className="ml-auto flex items-center gap-2 flex-wrap justify-end">{toolbarActions}</div>
+        )}
       </div>
+
       {dragOver && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-primary/10 rounded-lg pointer-events-none">
           <p className="text-lg font-medium text-primary">📷 Pusťte obrázek sem</p>
