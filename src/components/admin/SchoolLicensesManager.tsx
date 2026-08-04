@@ -225,6 +225,8 @@ const EditDialog = ({ row, onClose, onSaved }: { row: SchoolRow | null; onClose:
   const [expiresAt, setExpiresAt] = useState<string>("");
   const [billing, setBilling] = useState<string>("none");
   const [notes, setNotes] = useState("");
+  const [trialDays, setTrialDays] = useState<string>("30");
+  const [contractYears, setContractYears] = useState<string>("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -238,6 +240,8 @@ const EditDialog = ({ row, onClose, onSaved }: { row: SchoolRow | null; onClose:
       setExpiresAt(l.expires_at ? l.expires_at.slice(0, 10) : "");
       setBilling(l.billing_cycle ?? "none");
       setNotes(l.admin_notes ?? "");
+      setTrialDays(l.trial_duration_days?.toString() ?? "30");
+      setContractYears(l.contract_years?.toString() ?? "");
     } else {
       setPlan("start");
       setStatus("trial");
@@ -247,6 +251,8 @@ const EditDialog = ({ row, onClose, onSaved }: { row: SchoolRow | null; onClose:
       setExpiresAt("");
       setBilling("none");
       setNotes("");
+      setTrialDays("30");
+      setContractYears("");
     }
   }, [row]);
 
@@ -269,6 +275,8 @@ const EditDialog = ({ row, onClose, onSaved }: { row: SchoolRow | null; onClose:
       expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
       billing_cycle: billing === "none" ? null : billing,
       admin_notes: notes.trim() || null,
+      trial_duration_days: trialDays.trim() === "" ? 30 : Number(trialDays),
+      contract_years: contractYears.trim() === "" ? null : Number(contractYears),
       updated_by: (await supabase.auth.getUser()).data.user?.id ?? null,
     };
     const q = row.license
