@@ -333,6 +333,24 @@ const EditDialog = ({ row, onClose, onSaved }: { row: SchoolRow | null; onClose:
               <Input type="number" value={seatsStudents} onChange={e => setSeatsStudents(e.target.value)} />
             </div>
           </div>
+          {status === "trial" && (
+            <div>
+              <Label>Délka zkušebního období (dní)</Label>
+              <Input type="number" min={1} value={trialDays} onChange={e => setTrialDays(e.target.value)} />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Použije se pro automatický výpočet expirace, pokud není datum vyplněné ručně.
+              </p>
+            </div>
+          )}
+          {status === "active" && (
+            <div>
+              <Label>Délka smlouvy (let)</Label>
+              <Input type="number" min={1} value={contractYears} onChange={e => setContractYears(e.target.value)} />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Použije se pro automatický výpočet expirace, pokud není datum vyplněné ručně.
+              </p>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Expirace</Label>
