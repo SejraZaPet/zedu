@@ -4333,6 +4333,76 @@ export type Database = {
           },
         ]
       }
+      teacher_game_templates: {
+        Row: {
+          activity_data: Json
+          created_at: string
+          curriculum_topic_id: string | null
+          default_game_mode: string
+          default_team_mode: string
+          description: string | null
+          id: string
+          purpose: string | null
+          subject: string | null
+          teacher_id: string
+          textbook_lesson_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          activity_data?: Json
+          created_at?: string
+          curriculum_topic_id?: string | null
+          default_game_mode?: string
+          default_team_mode?: string
+          description?: string | null
+          id?: string
+          purpose?: string | null
+          subject?: string | null
+          teacher_id: string
+          textbook_lesson_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          activity_data?: Json
+          created_at?: string
+          curriculum_topic_id?: string | null
+          default_game_mode?: string
+          default_team_mode?: string
+          description?: string | null
+          id?: string
+          purpose?: string | null
+          subject?: string | null
+          teacher_id?: string
+          textbook_lesson_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_game_templates_curriculum_topic_id_fkey"
+            columns: ["curriculum_topic_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_topics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_game_templates_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_game_templates_textbook_lesson_id_fkey"
+            columns: ["textbook_lesson_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_textbook_lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       teacher_lesson_completions: {
         Row: {
           completed_at: string
