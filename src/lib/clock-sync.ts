@@ -9,7 +9,8 @@
  * round-trip to approximate one-way latency.
  */
 
-import { supabase } from "@/integrations/supabase/client";
+
+
 
 let cachedOffset: number = 0;
 let lastSyncAt: number = 0;
