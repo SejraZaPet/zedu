@@ -588,7 +588,7 @@ const AddBlockMenu = ({ onPick }: { onPick: (type: Block["type"]) => void }) => 
 };
 
 
-const BlockEditor = ({ blocks, onChange }: Props) => {
+const BlockEditor = ({ blocks, onChange, toolbarActions }: Props) => {
   const normalizedBlocks = useMemo(() => normalizeBlocks(blocks), [blocks]);
 
   useEffect(() => {
