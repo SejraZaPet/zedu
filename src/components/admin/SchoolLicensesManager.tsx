@@ -49,7 +49,6 @@ const SchoolLicensesManager = () => {
         .from("crm_organizations")
         .select("id, name, type, region, status, linked_school_id")
         .in("status", ["zkusebni", "zakaznik"])
-        .is("linked_school_id", null)
         .order("name"),
     ]);
     if (schoolsRes.error) {
