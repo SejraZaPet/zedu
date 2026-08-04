@@ -1156,11 +1156,14 @@ const UsersManager = () => {
                         year: row.rocnik ? parseInt(String(row.rocnik)) : null,
                         field_of_study: row.trida || row.obor || "",
                         status: "approved" as any,
-                        login_password: password,
                         username: username,
                         student_code: studentCode,
-                        pin_code: role === "user" ? pinHash : null,
                       });
+
+                      await supabase.rpc("set_login_password", { _profile_id: userId, _password: password });
+                      if (role === "user") {
+                        await supabase.rpc("set_user_pin_for", { _profile_id: userId, _pin: pin });
+                      }
 
                       if (profileError) {
                         console.error("Profile upsert error:", profileError);
