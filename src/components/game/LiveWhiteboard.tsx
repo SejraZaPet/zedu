@@ -133,7 +133,7 @@ const renderStroke = (ctx: CanvasRenderingContext2D, s: Stroke, w: number, h: nu
   ctx.restore();
 };
 
-const LiveWhiteboard = ({ sessionId, data, readOnly = false, onClose, overlay = true, className, localOnly = false, simplified = false }: Props) => {
+const LiveWhiteboard = ({ sessionId, data, slideIndex, readOnly = false, onClose, overlay = true, className, localOnly = false, simplified = false }: Props) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const bottomCanvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
