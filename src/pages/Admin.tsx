@@ -33,7 +33,7 @@ import SchoolLicensesManager from "@/components/admin/SchoolLicensesManager";
 import CrmManager from "@/components/admin/CrmManager";
 import { useStaffPermissions } from "@/hooks/useStaffPermissions";
 import { Button } from "@/components/ui/button";
-import { BookOpen, LogOut, Home, GraduationCap, Settings, Users, School, BarChart3, LayoutDashboard, HelpCircle, ListTree, CircleHelp, Link2, Pencil, Video, Bell, Activity, FileText, Sparkles, Globe, Smile, Library, Award, FileBadge2, Contact } from "lucide-react";
+import { BookOpen, LogOut, Home, GraduationCap, Settings, Users, School, BarChart3, LayoutDashboard, HelpCircle, ListTree, CircleHelp, Link2, Pencil, Video, Bell, Activity, FileText, Sparkles, Globe, Smile, Library, Award, FileBadge2, Contact, ChevronDown } from "lucide-react";
 
 /** `module` = klíč oprávnění (null = viditelné vždy, "admin_only" = jen admin) */
 const adminTabs = [
@@ -238,7 +238,7 @@ const Admin = () => {
         )}
 
 
-        {activeTab === "dashboard" && <AdminDashboard onNavigate={(tab) => { setOpenGroupId(null); setActiveTab(tab as Tab); }} isTeacher={isTeacher} />}
+        {activeTab === "dashboard" && <AdminDashboard onNavigate={(tab) => { setOpenGroupId(null); setCollapsed(false); setActiveTab(tab as Tab); }} isTeacher={isTeacher} />}
         {activeTab === "stats" && !isTeacher && <SystemStats />}
         {activeTab === "textbooks" && isTeacher && <TeacherTextbooksManager />}
         {activeTab === "lessons" && isTeacher && <LessonsManager />}
