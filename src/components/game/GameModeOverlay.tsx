@@ -3,11 +3,14 @@ import type { GamePlayer, GameSession, Team } from "@/lib/game-types";
 import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
 
 import { getModeDef, getThemeDef, type GameMode } from "@/lib/game-modes";
+import { resolveGameMode } from "@/lib/game-slide-settings";
 import { Trophy, Flag, Skull } from "lucide-react";
 
 interface Props {
   session: GameSession;
   players: GamePlayer[];
+  /** Current slide — its `gameSettings` override the session-wide mode. */
+  slide?: any;
 }
 
 const RACE_BG: Record<string, string> = {
@@ -27,9 +30,9 @@ const STEAL_BG: Record<string, string> = {
   thief: "linear-gradient(180deg, #1f2937 0%, #0f172a 100%)",
 };
 
-export const GameModeOverlay = ({ session, players }: Props) => {
+export const GameModeOverlay = ({ session, players, slide }: Props) => {
   const settings = (session.settings as any) || {};
-  const mode = (settings.gameMode as GameMode) || "standard";
+  const mode = resolveGameMode(settings, slide) as GameMode;
   const themeId = settings.theme as string | undefined;
   const modeDef = getModeDef(mode);
   const themeDef = getThemeDef(mode, themeId);

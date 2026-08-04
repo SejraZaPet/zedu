@@ -9,6 +9,7 @@ import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
 import { GameModeOverlay } from "@/components/game/GameModeOverlay";
 import { getVisualTheme, playRecipe } from "@/lib/game-themes";
 import { cn } from "@/lib/utils";
+import { resolveGameMode } from "@/lib/game-slide-settings";
 
 interface Props {
   session: GameSession;
@@ -128,9 +129,9 @@ export const GameProjector = ({ session, players, responses, countdown, onShowRe
 
       <div className="flex-1 flex flex-col items-center justify-center p-6 md:p-12 gap-6">
         {/* Live mode visual (race / tower / steal) */}
-        {(session.settings as any)?.gameMode && (session.settings as any).gameMode !== "standard" && (
+        {resolveGameMode(session.settings, question) !== "standard" && (
           <div className="w-full max-w-4xl">
-            <GameModeOverlay session={session} players={players} />
+            <GameModeOverlay session={session} players={players} slide={question} />
           </div>
         )}
 
@@ -199,8 +200,8 @@ export const GameProjector = ({ session, players, responses, countdown, onShowRe
                     ))}
                   </div>
                 </div>
-              ) : (session.settings as any)?.gameMode && (session.settings as any).gameMode !== "standard" ? (
-                <GameModeOverlay session={session} players={players} />
+              ) : resolveGameMode(session.settings, question) !== "standard" ? (
+                <GameModeOverlay session={session} players={players} slide={question} />
               ) : (
                 <div className="bg-card border border-border rounded-2xl p-6">
                   <div className="flex items-center gap-2 mb-4">
