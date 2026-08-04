@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { PLAN_LABELS, PLAN_DEFAULTS, STATUS_LABELS, type LicensePlan, type LicenseStatus, type SchoolLicense, isExpired } from "@/lib/school-licenses";
+import { CRM_TYPES, statusMeta } from "@/lib/staff-modules";
 
 interface SchoolRow {
   id: string;
