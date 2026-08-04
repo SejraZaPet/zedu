@@ -5,9 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import UserStaffRoleSection from "./UserStaffRoleSection";
-import { UserCog, UserPlus, ShieldCheck } from "lucide-react";
+import { UserCog, UserPlus, ShieldCheck, Mail } from "lucide-react";
+
 
 interface TeamRow {
   id: string;
