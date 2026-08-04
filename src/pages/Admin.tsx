@@ -101,6 +101,29 @@ const Admin = () => {
     });
   }, [isTeacher, isRealAdmin, can]);
 
+  type TabItem = (typeof adminTabs)[number] | (typeof teacherTabs)[number];
+
+  /** Kategorie s alespoň jednou dostupnou podzáložkou */
+  const groups = useMemo(() => {
+    if (isTeacher) return [];
+    return adminGroups
+      .map((g) => ({
+        ...g,
+        items: g.tabs
+          .map((id) => (tabs as readonly TabItem[]).find((t) => t.id === id))
+          .filter(Boolean) as TabItem[],
+      }))
+      .filter((g) => g.items.length > 0);
+  }, [isTeacher, tabs]);
+
+  const activeGroupId = useMemo(
+    () => groups.find((g) => g.items.some((i) => i.id === activeTab))?.id ?? groups[0]?.id ?? null,
+    [groups, activeTab],
+  );
+  const [openGroupId, setOpenGroupId] = useState<string | null>(null);
+  const currentGroup = groups.find((g) => g.id === (openGroupId ?? activeGroupId)) ?? null;
+
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
