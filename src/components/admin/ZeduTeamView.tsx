@@ -260,37 +260,73 @@ const ZeduTeamView = () => {
           <DialogHeader>
             <DialogTitle>Přidat uživatele do týmu ZEdu</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
-            <Input
-              autoFocus
-              placeholder="Hledat podle e-mailu nebo jména…"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-            {query.trim().length < 2 ? (
-              <p className="text-xs text-muted-foreground">Zadejte alespoň 2 znaky.</p>
-            ) : searching ? (
-              <p className="text-xs text-muted-foreground">Hledám…</p>
-            ) : results.length === 0 ? (
-              <p className="text-xs text-muted-foreground">Nikdo nenalezen.</p>
-            ) : (
-              <ul className="divide-y divide-border rounded-md border border-border max-h-72 overflow-y-auto">
-                {results.map((u) => (
-                  <li key={u.id} className="flex items-center justify-between gap-3 p-2">
-                    <div>
-                      <div className="text-sm font-medium">{u.name}</div>
-                      <div className="text-xs text-muted-foreground">{u.email}</div>
-                    </div>
-                    <Button size="sm" variant="outline" disabled={adding} onClick={() => void addToTeam(u)}>
-                      Přidat
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+          <Tabs defaultValue="existing">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="existing">Hledat existujícího</TabsTrigger>
+              <TabsTrigger value="invite">Pozvat nového</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="existing" className="space-y-3 pt-3">
+              <Input
+                autoFocus
+                placeholder="Hledat podle e-mailu nebo jména…"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+              {query.trim().length < 2 ? (
+                <p className="text-xs text-muted-foreground">Zadejte alespoň 2 znaky.</p>
+              ) : searching ? (
+                <p className="text-xs text-muted-foreground">Hledám…</p>
+              ) : results.length === 0 ? (
+                <p className="text-xs text-muted-foreground">Nikdo nenalezen.</p>
+              ) : (
+                <ul className="divide-y divide-border rounded-md border border-border max-h-72 overflow-y-auto">
+                  {results.map((u) => (
+                    <li key={u.id} className="flex items-center justify-between gap-3 p-2">
+                      <div>
+                        <div className="text-sm font-medium">{u.name}</div>
+                        <div className="text-xs text-muted-foreground">{u.email}</div>
+                      </div>
+                      <Button size="sm" variant="outline" disabled={adding} onClick={() => void addToTeam(u)}>
+                        Přidat
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </TabsContent>
+
+            <TabsContent value="invite" className="space-y-3 pt-3">
+              <p className="text-xs text-muted-foreground">
+                Vytvoříme nový účet a odešleme pozvánkový e-mail s odkazem pro nastavení hesla.
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label htmlFor="invite-first">Jméno</Label>
+                  <Input id="invite-first" value={inviteFirst} onChange={(e) => setInviteFirst(e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="invite-last">Příjmení</Label>
+                  <Input id="invite-last" value={inviteLast} onChange={(e) => setInviteLast(e.target.value)} />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="invite-email">E-mail</Label>
+                <Input
+                  id="invite-email"
+                  type="email"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                />
+              </div>
+              <Button className="w-full" disabled={inviting} onClick={() => void inviteNew()}>
+                <Mail className="w-4 h-4 mr-1" /> {inviting ? "Odesílám…" : "Odeslat pozvánku"}
+              </Button>
+            </TabsContent>
+          </Tabs>
         </DialogContent>
       </Dialog>
+
 
       <Dialog open={!!editing} onOpenChange={(o) => { if (!o) { setEditing(null); void load(); } }}>
         <DialogContent className="max-w-xl">
