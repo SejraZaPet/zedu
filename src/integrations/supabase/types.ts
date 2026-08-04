@@ -3441,10 +3441,43 @@ export type Database = {
           },
         ]
       }
+      school_license_reminders: {
+        Row: {
+          created_at: string
+          id: string
+          license_id: string
+          sent_at: string
+          threshold_days: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          license_id: string
+          sent_at?: string
+          threshold_days: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          license_id?: string
+          sent_at?: string
+          threshold_days?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "school_license_reminders_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: false
+            referencedRelation: "school_licenses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       school_licenses: {
         Row: {
           admin_notes: string | null
           billing_cycle: string | null
+          contract_years: number | null
           created_at: string
           expires_at: string | null
           id: string
@@ -3454,12 +3487,14 @@ export type Database = {
           seats_teachers: number | null
           starts_at: string
           status: string
+          trial_duration_days: number
           updated_at: string
           updated_by: string | null
         }
         Insert: {
           admin_notes?: string | null
           billing_cycle?: string | null
+          contract_years?: number | null
           created_at?: string
           expires_at?: string | null
           id?: string
@@ -3469,12 +3504,14 @@ export type Database = {
           seats_teachers?: number | null
           starts_at?: string
           status?: string
+          trial_duration_days?: number
           updated_at?: string
           updated_by?: string | null
         }
         Update: {
           admin_notes?: string | null
           billing_cycle?: string | null
+          contract_years?: number | null
           created_at?: string
           expires_at?: string | null
           id?: string
@@ -3484,6 +3521,7 @@ export type Database = {
           seats_teachers?: number | null
           starts_at?: string
           status?: string
+          trial_duration_days?: number
           updated_at?: string
           updated_by?: string | null
         }
