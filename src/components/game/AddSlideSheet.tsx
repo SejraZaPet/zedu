@@ -16,7 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-type AddKind = "menu" | "text" | "mcq" | "wall" | "wordcloud" | "exit" | "teams" | "differentiated" | "escape";
+type AddKind = "menu" | "text" | "mcq" | "wall" | "wordcloud" | "exit" | "teams" | "differentiated" | "escape" | "library";
 
 const EXIT_TICKET_DEFAULT_PROMPT =
   "Napiš jednu věc, kterou sis dnes odnesl/a, a jednu věc, která ti ještě není jasná.";
@@ -24,9 +24,16 @@ const EXIT_TICKET_DEFAULT_PROMPT =
 interface AddSlideSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  sessionId: string;
+  /** Live session the slide is appended to. Omit when using `onAddSlides`. */
+  sessionId?: string;
   slides: any[];
+  /**
+   * When provided, built slides are handed over instead of being written to a
+   * live session (used by the game library editor / presentation editor).
+   */
+  onAddSlides?: (newSlides: any[]) => void | Promise<void>;
 }
+
 
 function buildTextSlide(headline: string, body: string) {
   return {
