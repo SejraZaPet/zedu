@@ -8,7 +8,7 @@ export const STAFF_MODULES: StaffModule[] = [
   { id: "crm", label: "CRM" },
   { id: "users", label: "Uživatelé" },
   { id: "schools", label: "Školy" },
-  { id: "school_licenses", label: "Školní licence" },
+  { id: "school_licenses", label: "Spolupracující organizace" },
   { id: "textbook_overview", label: "Přehled učebnic" },
   { id: "academy", label: "Akademie" },
   { id: "avatar_manager", label: "Avatary" },
