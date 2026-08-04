@@ -1,16 +1,19 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useStaffPermissions } from "@/hooks/useStaffPermissions";
 
 export const useAdmin = () => {
   const navigate = useNavigate();
   const { isLoggedIn, role, status, loading: authLoading, signOut } = useAuth();
+  const { loading: staffLoading, hasAnyPermission } = useStaffPermissions();
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isStaff, setIsStaff] = useState(false);
   const [isTeacher, setIsTeacher] = useState(false);
 
   useEffect(() => {
-    if (authLoading) return;
+    if (authLoading || staffLoading) return;
 
     if (!isLoggedIn) {
       navigate("/auth");
@@ -26,10 +29,21 @@ export const useAdmin = () => {
 
     if (role === "admin") {
       setIsAdmin(true);
+      setIsStaff(false);
       setIsTeacher(false);
       setLoading(false);
       return;
     }
+
+    // Zaměstnanci s přiznaným oprávněním mají přístup do administrace
+    if (hasAnyPermission) {
+      setIsAdmin(false);
+      setIsStaff(true);
+      setIsTeacher(false);
+      setLoading(false);
+      return;
+    }
+
 
     if (role === "school_admin") {
       navigate("/skola");
