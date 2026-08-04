@@ -234,9 +234,35 @@ export const PresentationEditorDialog = ({
 
             return (
               <div className="space-y-3">
-                {/* Visual toolbar */}
+                {/* 3. Unified slide tool panel (layout, blocks, font, theme, undo/redo) */}
                 <div className="flex flex-wrap items-center gap-2 p-2 bg-muted/30 rounded-lg border border-border">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 w-8 p-0"
+                    onClick={() => history?.undo()}
+                    disabled={!history?.canUndo}
+                    title="Zpět (Ctrl/Cmd+Z)"
+                    aria-label="Zpět"
+                  >
+                    <Undo2 className="w-3.5 h-3.5" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 w-8 p-0"
+                    onClick={() => history?.redo()}
+                    disabled={!history?.canRedo}
+                    title="Vpřed (Ctrl/Cmd+Shift+Z)"
+                    aria-label="Vpřed"
+                  >
+                    <Redo2 className="w-3.5 h-3.5" />
+                  </Button>
+
+                  <div className="h-6 w-px bg-border" />
+
                   <div className="flex items-center gap-2">
+
                     <Label className="text-xs whitespace-nowrap">Rozvržení:</Label>
                     <Select
                       value={(currentSlide.layout as SlideLayout) || "full"}
