@@ -237,11 +237,19 @@ export function AddSlideSheet({
     setTimeout(reset, 200);
   };
 
-  const appendAndJump = async (newSlide: any) => {
+  const appendMany = async (added: any[]) => {
+    if (added.length === 0) return;
     setBusy(true);
     try {
-      const newSlides = [...(slides || []), newSlide];
-      const newIndex = newSlides.length - 1;
+      if (onAddSlides) {
+        await onAddSlides(added);
+        toast.success(added.length > 1 ? "Slidy přidány." : "Slide přidán.");
+        close();
+        return;
+      }
+      if (!sessionId) throw new Error("Chybí session.");
+      const newSlides = [...(slides || []), ...added];
+      const newIndex = newSlides.length - added.length;
       const { error } = await supabase
         .from("game_sessions")
         .update({
@@ -260,6 +268,34 @@ export function AddSlideSheet({
       setBusy(false);
     }
   };
+
+  const appendAndJump = (newSlide: any) => appendMany([newSlide]);
+
+  const openLibrary = async () => {
+    setKind("library");
+    setTemplatesLoading(true);
+    try {
+      setTemplates(await fetchGameTemplates());
+    } catch (e: any) {
+      toast.error(e?.message || "Nepodařilo se načíst knihovnu her.");
+    } finally {
+      setTemplatesLoading(false);
+    }
+  };
+
+  const insertTemplate = (tpl: GameTemplate) => {
+    const tplSlides = Array.isArray(tpl.activity_data) ? tpl.activity_data : [];
+    if (tplSlides.length === 0) {
+      toast.error("Tato hra neobsahuje žádný obsah.");
+      return;
+    }
+    const stamped = tplSlides.map((s: any, i: number) => ({
+      ...s,
+      slideId: `lib-${Date.now()}-${i}`,
+    }));
+    appendMany(stamped);
+  };
+
 
   const submitText = () => {
     if (!textHeadline.trim()) {
