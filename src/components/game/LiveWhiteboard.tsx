@@ -149,7 +149,14 @@ const LiveWhiteboard = ({ sessionId, data, slideIndex, readOnly = false, onClose
   const [pendingStrokes, setPendingStrokes] = useState<Stroke[]>([]);
   const pendingPersistRef = useRef<Promise<void> | null>(null);
 
-  const remoteStrokes = data.strokes ?? [];
+  const remoteStrokes = useMemo(() => getSlideStrokes(data, slideIndex), [data, slideIndex]);
+
+  // Per-slide isolation: drop optimistic/redo state when the slide changes
+  useEffect(() => {
+    setPendingStrokes([]);
+    setRedoStack([]);
+  }, [slideIndex]);
+
   const strokes = useMemo(() => {
     if (localOnly) {
       // In local-only mode, keep pending strokes forever; render remote UNDER local
