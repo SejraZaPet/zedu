@@ -3481,6 +3481,8 @@ export type Database = {
           created_at: string
           expires_at: string | null
           id: string
+          is_paid: boolean
+          paid_at: string | null
           plan: string
           school_id: string
           seats_students: number | null
@@ -3498,6 +3500,8 @@ export type Database = {
           created_at?: string
           expires_at?: string | null
           id?: string
+          is_paid?: boolean
+          paid_at?: string | null
           plan?: string
           school_id: string
           seats_students?: number | null
@@ -3515,6 +3519,8 @@ export type Database = {
           created_at?: string
           expires_at?: string | null
           id?: string
+          is_paid?: boolean
+          paid_at?: string | null
           plan?: string
           school_id?: string
           seats_students?: number | null
