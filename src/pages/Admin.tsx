@@ -31,16 +31,14 @@ import AcademyEvidenceReviewManager from "@/components/admin/AcademyEvidenceRevi
 import AcademyPathwaysManager from "@/components/admin/AcademyPathwaysManager";
 import SchoolLicensesManager from "@/components/admin/SchoolLicensesManager";
 import CrmManager from "@/components/admin/CrmManager";
-import StaffManager from "@/components/admin/StaffManager";
 import { useStaffPermissions } from "@/hooks/useStaffPermissions";
 import { Button } from "@/components/ui/button";
-import { BookOpen, LogOut, Home, GraduationCap, Settings, Users, School, BarChart3, LayoutDashboard, HelpCircle, ListTree, CircleHelp, Link2, Pencil, Video, Bell, Activity, FileText, Sparkles, Globe, Smile, Library, Award, FileBadge2, Contact, UserCog } from "lucide-react";
+import { BookOpen, LogOut, Home, GraduationCap, Settings, Users, School, BarChart3, LayoutDashboard, HelpCircle, ListTree, CircleHelp, Link2, Pencil, Video, Bell, Activity, FileText, Sparkles, Globe, Smile, Library, Award, FileBadge2, Contact } from "lucide-react";
 
 /** `module` = klíč oprávnění (null = viditelné vždy, "admin_only" = jen admin) */
 const adminTabs = [
   { id: "dashboard", label: "Přehled", icon: LayoutDashboard, module: null },
   { id: "crm", label: "CRM", icon: Contact, module: "crm" },
-  { id: "staff", label: "Zaměstnanci", icon: UserCog, module: "admin_only" },
   { id: "stats", label: "Statistiky", icon: Activity, module: "stats" },
   { id: "schools", label: "Školy", icon: School, module: "schools" },
   { id: "licenses", label: "Spolupracující organizace", icon: Award, module: "school_licenses" },
@@ -72,17 +70,17 @@ const teacherTabs = [
   { id: "help", label: "Nápověda", icon: HelpCircle, module: null },
 ] as const;
 
-type Tab = "dashboard" | "stats" | "textbooks" | "lessons" | "outline" | "mcq" | "matching" | "slide-edit" | "video-ai" | "subjects" | "users" | "classes" | "results" | "help" | "notifications" | "schools" | "licenses" | "audit" | "templates" | "landing" | "avatars" | "textbook-overview" | "academy" | "academy-pathways" | "academy-evidence" | "crm" | "staff";
+type Tab = "dashboard" | "stats" | "textbooks" | "lessons" | "outline" | "mcq" | "matching" | "slide-edit" | "video-ai" | "subjects" | "users" | "classes" | "results" | "help" | "notifications" | "schools" | "licenses" | "audit" | "templates" | "landing" | "avatars" | "textbook-overview" | "academy" | "academy-pathways" | "academy-evidence" | "crm";
 
 /** Dvouúrovňová navigace administrace. `help` a `dashboard` řešíme mimo/uvnitř kategorií. */
 const adminGroups: { id: string; label: string; tabs: string[] }[] = [
   { id: "overview", label: "Přehled", tabs: ["dashboard", "stats"] },
-  { id: "sales", label: "Prodej a zákazníci", tabs: ["crm", "licenses"] },
-  { id: "people", label: "Lidé", tabs: ["users", "staff"] },
+  { id: "sales", label: "Prodej a zákazníci", tabs: ["crm", "licenses", "schools"] },
+  { id: "people", label: "Uživatelé", tabs: ["users"] },
   { id: "content", label: "Vzdělávací obsah", tabs: ["textbook-overview", "templates"] },
   { id: "academy", label: "ZEdu Akademie", tabs: ["academy", "academy-pathways", "academy-evidence"] },
   { id: "appearance", label: "Vzhled webu", tabs: ["landing", "avatars"] },
-  { id: "system", label: "Systém", tabs: ["schools", "notifications", "audit"] },
+  { id: "system", label: "Systém", tabs: ["notifications", "audit"] },
 ];
 
 const Admin = () => {
@@ -253,7 +251,6 @@ const Admin = () => {
         {activeTab === "academy-pathways" && !isTeacher && <AcademyPathwaysManager />}
         {activeTab === "academy-evidence" && !isTeacher && <AcademyEvidenceReviewManager />}
         {activeTab === "crm" && !isTeacher && <CrmManager />}
-        {activeTab === "staff" && isRealAdmin && <StaffManager />}
         {activeTab === "help" && <HelpGuidesManager />}
 
       </div>
