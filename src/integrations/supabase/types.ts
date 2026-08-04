@@ -5580,6 +5580,10 @@ export type Database = {
         }
         Returns: string
       }
+      set_game_whiteboard_slide_strokes: {
+        Args: { _session_id: string; _slide_index: number; _strokes: Json }
+        Returns: Json
+      }
       set_login_password: {
         Args: { _password: string; _profile_id: string }
         Returns: Json
@@ -5606,6 +5610,7 @@ export type Database = {
         Args: { p_student_id: string }
         Returns: undefined
       }
+      toggle_game_whiteboard: { Args: { _session_id: string }; Returns: Json }
       toggle_question_vote: {
         Args: { _join_token: string; _question_id: string }
         Returns: boolean
