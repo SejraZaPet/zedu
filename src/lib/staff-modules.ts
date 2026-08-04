@@ -24,6 +24,7 @@ export const CRM_STATUSES = [
   { value: "novy", label: "Nový", color: "hsl(var(--muted-foreground))" },
   { value: "kontaktovano", label: "Kontaktováno", color: "#63C7CF" },
   { value: "v_jednani", label: "V jednání", color: "#E9A23B" },
+  { value: "zkusebni", label: "Zkušební", color: "#F2C14E" },
   { value: "zakaznik", label: "Zákazník", color: "#2FA36B" },
   { value: "odmitnuto", label: "Odmítnuto", color: "#E4572E" },
   { value: "neaktivni", label: "Neaktivní", color: "#7C93A6" },
