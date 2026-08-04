@@ -132,11 +132,15 @@ const ProfilePage = () => {
 
       const profileRes = await supabase
         .from("profiles")
-        .select("*")
+        .select(
+          "first_name, last_name, email, school, field_of_study, year, status, created_at, parent_email, parent_email_notifications, username"
+        )
         .eq("id", user.id)
         .single();
 
-      data = profileRes.data;
+      const { data: pinSet } = await supabase.rpc("has_pin" as any, { _profile_id: user.id });
+
+      data = profileRes.data ? { ...(profileRes.data as any), pin_code: pinSet ? "set" : null } : null;
       error = profileRes.error;
 
       if (error) {

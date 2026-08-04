@@ -101,7 +101,7 @@ const LiveQuestionsSheet = ({
   players,
   anonymous = false,
 }: LiveQuestionsSheetProps) => {
-  const { questions, votes } = useLiveQuestions(sessionId);
+  const { questions, votes } = useLiveQuestions(sessionId, joinToken);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
 
