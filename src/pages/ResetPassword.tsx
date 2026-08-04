@@ -83,7 +83,7 @@ const ResetPassword = () => {
       const { data: sessionData } = await supabase.auth.getSession();
       const userId = sessionData.session?.user?.id;
       if (userId) {
-        await supabase.from("profiles").update({ login_password: password }).eq("id", userId);
+        await supabase.rpc("set_login_password", { _profile_id: userId, _password: password });
       }
       setDone(true);
       setTimeout(() => navigate("/auth"), 3000);
