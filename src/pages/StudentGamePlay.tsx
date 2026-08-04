@@ -21,7 +21,7 @@ import PollProjectorView from "@/components/activities/PollProjectorView";
 import WordCloudActivity from "@/components/activities/WordCloudActivity";
 import WordCloudView from "@/components/activities/WordCloudView";
 import QuizActivity from "@/components/activities/QuizActivity";
-import LiveWhiteboard, { WhiteboardData } from "@/components/game/LiveWhiteboard";
+import LiveWhiteboard, { WhiteboardData, getSlideStrokes } from "@/components/game/LiveWhiteboard";
 import { Lock, Pencil, Hand, ChevronLeft, ChevronRight, MessageCircleQuestion } from "lucide-react";
 import LiveQuestionsSheet from "@/components/game/LiveQuestionsSheet";
 import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
@@ -231,7 +231,7 @@ const StudentGamePlay = () => {
   const teacherQi = session.current_question_index;
   const studentQi = Math.max(0, Math.min(totalSlides - 1, myPlayer?.student_index ?? 0));
   const qi = pacingMode === "student" ? studentQi : teacherQi;
-  const whiteboard: WhiteboardData = ((session as any).whiteboard_data as WhiteboardData) ?? { strokes: [], visible: false };
+  const whiteboard: WhiteboardData = ((session as any).whiteboard_data as WhiteboardData) ?? { visible: false, strokesBySlide: {} };
   const currentSlideData = (session?.activity_data as any[])?.[qi];
   const isSlideFormat = currentSlideData && currentSlideData.projector !== undefined && !currentSlideData.question;
 
@@ -633,7 +633,7 @@ const StudentGamePlay = () => {
 
           {(() => {
             const allowSync = !!liveSettings?.allowStudentDrawSync;
-            const teacherBoardVisible = whiteboard.visible && whiteboard.strokes.length > 0;
+            const teacherBoardVisible = whiteboard.visible && getSlideStrokes(whiteboard, qi).length > 0;
             const showBoard = teacherBoardVisible || studentDrawMode;
             if (!showBoard && !allowSync && !teacherBoardVisible) {
               // still allow student to open their local scratch pad via button
@@ -662,6 +662,7 @@ const StudentGamePlay = () => {
                       stageH={900}
                       sessionId={sessionId || ""}
                       data={whiteboard}
+                      slideIndex={qi}
                       interactive={studentDrawMode}
                       localOnly={!allowSync}
                     />
@@ -736,6 +737,7 @@ const WhiteboardOverlay = ({
   stageH,
   sessionId,
   data,
+  slideIndex,
   interactive = false,
   localOnly = false,
 }: {
@@ -743,6 +745,7 @@ const WhiteboardOverlay = ({
   stageH: number;
   sessionId: string;
   data: WhiteboardData;
+  slideIndex: number;
   interactive?: boolean;
   localOnly?: boolean;
 }) => {
@@ -792,6 +795,7 @@ const WhiteboardOverlay = ({
         <LiveWhiteboard
           sessionId={sessionId}
           data={data}
+          slideIndex={slideIndex}
           readOnly={!interactive}
           overlay
           localOnly={localOnly}

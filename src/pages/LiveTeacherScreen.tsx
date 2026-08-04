@@ -24,7 +24,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import PollProjectorView from "@/components/activities/PollProjectorView";
 import WordCloudView from "@/components/activities/WordCloudView";
-import LiveWhiteboard, { WhiteboardData } from "@/components/game/LiveWhiteboard";
+import LiveWhiteboard, { WhiteboardData, normalizeWhiteboard } from "@/components/game/LiveWhiteboard";
 import RemoteControlButton from "@/components/live/RemoteControlButton";
 import { presenterRemoteChannelName } from "@/pages/PresenterRemote";
 import ProjectorSlideView from "@/components/live/ProjectorSlideView";
@@ -67,7 +67,7 @@ const LiveTeacherScreen = () => {
   const isFinished = session?.status === "finished";
   const settings = session?.settings as any;
   const gameCode = session?.game_code || "";
-  const whiteboard: WhiteboardData = ((session as any)?.whiteboard_data as WhiteboardData) ?? { strokes: [], visible: false };
+  const whiteboard: WhiteboardData = ((session as any)?.whiteboard_data as WhiteboardData) ?? { visible: false, strokesBySlide: {} };
   const whiteboardVisible = whiteboard.visible;
   const { unansweredCount } = useLiveQuestions(sessionId);
 
@@ -1271,6 +1271,7 @@ const LiveTeacherScreen = () => {
             <LiveWhiteboard
               sessionId={sessionId}
               data={whiteboard}
+              slideIndex={currentIndex}
               onClose={toggleWhiteboard}
             />
           )}

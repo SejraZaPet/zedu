@@ -174,7 +174,7 @@ const LiveProjectorScreen = () => {
     );
   }
 
-  const whiteboard: WhiteboardData = ((session as any).whiteboard_data as WhiteboardData) ?? { strokes: [], visible: false };
+  const whiteboard: WhiteboardData = ((session as any).whiteboard_data as WhiteboardData) ?? { visible: false, strokesBySlide: {} };
 
   const scrollTop = (session.settings as any)?.projectorScrollTop ?? 0;
   const showRaceTrack = !!(session.settings as any)?.showRaceTrack;
@@ -221,7 +221,7 @@ const LiveProjectorScreen = () => {
         gameCode={gameCode}
         scrollTop={scrollTop}
         overlayContent={whiteboard.visible && sessionId ? (
-          <LiveWhiteboard sessionId={sessionId} data={whiteboard} readOnly className="pointer-events-none" />
+          <LiveWhiteboard sessionId={sessionId} data={whiteboard} slideIndex={currentIndex} readOnly className="pointer-events-none" />
         ) : null}
       />
       {showRaceTrack && players.length > 0 && (
