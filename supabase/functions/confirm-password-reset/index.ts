@@ -73,11 +73,11 @@ Deno.serve(async (req) => {
       .eq("user_id", row.user_id)
       .is("used_at", null);
 
-    // Write-through mailbox: trg_sync_login_password trigger encrypts this into profile_credentials and nulls this column before commit
-    await admin
-      .from("profiles")
-      .update({ login_password: new_password })
-      .eq("id", row.user_id);
+    // Credentials live only in profile_credentials (encrypted); profiles no longer holds any password column
+    await admin.rpc("set_login_password", {
+      _profile_id: row.user_id,
+      _password: new_password,
+    });
 
     return json(200, { message: "Heslo bylo změněno." });
   } catch (e) {

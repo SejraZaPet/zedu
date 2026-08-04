@@ -18,7 +18,7 @@ import {
 import UserDetailDialog from "./UserDetailDialog";
 
 import { printLoginCards, type LoginCardData } from "@/lib/generate-login-cards";
-import bcrypt from "bcryptjs";
+
 import { sendWelcomeEmail } from "@/lib/send-email";
 import ExcelJS from "exceljs";
 import {
@@ -595,9 +595,10 @@ const UsersManager = () => {
                         if (error) {
                           toast({ title: "Chyba", description: error.message, variant: "destructive" });
                         } else {
-                          await supabase.from("profiles").update({
-                            login_password: newPassword
-                          }).eq("id", user.id);
+                          await supabase.rpc("set_login_password", {
+                            _profile_id: user.id,
+                            _password: newPassword,
+                          });
 
                           toast({
                             title: "Heslo změněno",
@@ -631,7 +632,7 @@ const UsersManager = () => {
                           toast({ title: "Chyba", description: error.message, variant: "destructive" });
                           return;
                         }
-                        await supabase.from("profiles").update({ login_password: newPassword }).eq("id", user.id);
+                        await supabase.rpc("set_login_password", { _profile_id: user.id, _password: newPassword });
                         logAudit("password_reset", "user", user.id, { method: "print_label" });
                         await fetchUsers();
                         printLoginCards([{
@@ -856,10 +857,11 @@ const UsersManager = () => {
                     field_of_study: "",
                     year: newUser.year ? parseInt(newUser.year) : null,
                     status: "approved" as any,
-                    login_password: password,
                     username: username,
                     student_code: studentCode,
                   });
+
+                  await supabase.rpc("set_login_password", { _profile_id: userId, _password: password });
 
                   await supabase.from("user_roles").upsert({
                     user_id: userId,
@@ -920,10 +922,11 @@ const UsersManager = () => {
                         field_of_study: "",
                         year: null,
                         status: "approved" as any,
-                        login_password: parentPassword,
                         username: parentUsername,
                         parent_email: parentEmail.trim() || null,
                       });
+
+                      await supabase.rpc("set_login_password", { _profile_id: parentUserId, _password: parentPassword });
 
                       await supabase.from("user_roles").upsert({
                         user_id: parentUserId,
@@ -1132,7 +1135,7 @@ const UsersManager = () => {
 
                       const studentCode = 'ZAK-' + Math.random().toString(36).slice(-4).toUpperCase();
                       const pin = String(Math.floor(1000 + Math.random() * 9000));
-                      const pinHash = await bcrypt.hash(pin, 10);
+                      
 
                       const { data: authData, error: authError } = await supabase.functions.invoke("create-user", {
                         body: { email, password, role }
@@ -1153,10 +1156,8 @@ const UsersManager = () => {
                         year: row.rocnik ? parseInt(String(row.rocnik)) : null,
                         field_of_study: row.trida || row.obor || "",
                         status: "approved" as any,
-                        login_password: password,
                         username: username,
                         student_code: studentCode,
-                        pin_code: role === "user" ? pinHash : null,
                       });
 
                       if (profileError) {
@@ -1164,6 +1165,12 @@ const UsersManager = () => {
                         errors.push(`${row.jmeno} ${row.prijmeni}: Chyba při ukládání profilu - ${profileError.message}`);
                         continue;
                       }
+
+                      await supabase.rpc("set_login_password", { _profile_id: userId, _password: password });
+                      if (role === "user") {
+                        await supabase.rpc("set_user_pin_for", { _profile_id: userId, _pin: pin });
+                      }
+
 
                       await supabase.from("user_roles").upsert({ user_id: userId, role: role as any }, { onConflict: "user_id,role", ignoreDuplicates: true });
 
@@ -1225,10 +1232,10 @@ const UsersManager = () => {
                                   last_name: `${row.jmeno} ${row.prijmeni}`,
                                   email: parentLogin,
                                   status: "approved" as any,
-                                  login_password: parentPassword,
                                   username: parentUsername,
                                   parent_email: parentEmailValue || null,
                                 });
+                                await supabase.rpc("set_login_password", { _profile_id: parentId, _password: parentPassword });
                                 await supabase.from("user_roles").upsert({ user_id: parentId, role: "rodic" as any }, { onConflict: "user_id,role", ignoreDuplicates: true });
                                 importedUsersList.push({
                                   firstName: "Rodič",
