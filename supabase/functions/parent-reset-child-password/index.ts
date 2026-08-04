@@ -64,10 +64,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    await supabaseAdmin
-      .from("profiles")
-      .update({ login_password: newPassword })
-      .eq("id", childId);
+    await supabaseAdmin.rpc("set_login_password", {
+      _profile_id: childId,
+      _password: newPassword,
+    });
 
     return new Response(JSON.stringify({ success: true, newPassword }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
