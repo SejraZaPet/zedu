@@ -700,6 +700,14 @@ const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryC
     updateUndoRedoState();
   }, [updateUndoRedoState]);
 
+  const historyCbRef = useRef(onHistoryChange);
+  historyCbRef.current = onHistoryChange;
+  useEffect(() => {
+    historyCbRef.current?.({ undo, redo, canUndo, canRedo });
+  }, [undo, redo, canUndo, canRedo]);
+
+
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const mod = e.ctrlKey || e.metaKey;
