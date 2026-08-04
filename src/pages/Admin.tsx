@@ -121,7 +121,10 @@ const Admin = () => {
     [groups, activeTab],
   );
   const [openGroupId, setOpenGroupId] = useState<string | null>(null);
-  const currentGroup = groups.find((g) => g.id === (openGroupId ?? activeGroupId)) ?? null;
+  const currentGroup =
+    activeTab === "help" && !openGroupId
+      ? null
+      : groups.find((g) => g.id === (openGroupId ?? activeGroupId)) ?? null;
 
 
   if (loading) {
