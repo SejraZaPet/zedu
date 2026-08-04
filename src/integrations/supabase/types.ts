@@ -1648,6 +1648,247 @@ export type Database = {
           },
         ]
       }
+      crm_contacts: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          is_primary: boolean
+          marketing_consent: boolean
+          name: string
+          notes: string | null
+          organization_id: string
+          phone: string | null
+          position: string | null
+          unsubscribed_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_primary?: boolean
+          marketing_consent?: boolean
+          name: string
+          notes?: string | null
+          organization_id: string
+          phone?: string | null
+          position?: string | null
+          unsubscribed_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_primary?: boolean
+          marketing_consent?: boolean
+          name?: string
+          notes?: string | null
+          organization_id?: string
+          phone?: string | null
+          position?: string | null
+          unsubscribed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_contacts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "crm_organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_interactions: {
+        Row: {
+          contact_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          next_step: string | null
+          next_step_date: string | null
+          occurred_at: string
+          organization_id: string
+          summary: string
+          type: string
+        }
+        Insert: {
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          next_step?: string | null
+          next_step_date?: string | null
+          occurred_at?: string
+          organization_id: string
+          summary: string
+          type?: string
+        }
+        Update: {
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          next_step?: string | null
+          next_step_date?: string | null
+          occurred_at?: string
+          organization_id?: string
+          summary?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_interactions_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_interactions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_interactions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "crm_organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_organization_tags: {
+        Row: {
+          created_at: string
+          id: string
+          organization_id: string
+          tag_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          organization_id: string
+          tag_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          organization_id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_organization_tags_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "crm_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_organization_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "crm_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_organizations: {
+        Row: {
+          address: string | null
+          created_at: string
+          created_by: string | null
+          ico: string | null
+          id: string
+          linked_school_id: string | null
+          name: string
+          notes: string | null
+          region: string | null
+          source: string | null
+          status: string
+          type: string
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          created_by?: string | null
+          ico?: string | null
+          id?: string
+          linked_school_id?: string | null
+          name: string
+          notes?: string | null
+          region?: string | null
+          source?: string | null
+          status?: string
+          type?: string
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          created_by?: string | null
+          ico?: string | null
+          id?: string
+          linked_school_id?: string | null
+          name?: string
+          notes?: string | null
+          region?: string | null
+          source?: string | null
+          status?: string
+          type?: string
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_organizations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_organizations_linked_school_id_fkey"
+            columns: ["linked_school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_organizations_linked_school_id_fkey"
+            columns: ["linked_school_id"]
+            isOneToOne: false
+            referencedRelation: "schools_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_tags: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       curriculum_topics: {
         Row: {
           ai_generated: boolean
@@ -3342,6 +3583,76 @@ export type Database = {
         }
         Relationships: []
       }
+      staff_members: {
+        Row: {
+          active: boolean
+          created_at: string
+          hired_at: string | null
+          id: string
+          position: string | null
+          profile_id: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          hired_at?: string | null
+          id?: string
+          position?: string | null
+          profile_id: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          hired_at?: string | null
+          id?: string
+          position?: string | null
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_members_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_permissions: {
+        Row: {
+          can_edit: boolean
+          can_view: boolean
+          created_at: string
+          id: string
+          module: string
+          staff_member_id: string
+        }
+        Insert: {
+          can_edit?: boolean
+          can_view?: boolean
+          created_at?: string
+          id?: string
+          module: string
+          staff_member_id: string
+        }
+        Update: {
+          can_edit?: boolean
+          can_view?: boolean
+          created_at?: string
+          id?: string
+          module?: string
+          staff_member_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_permissions_staff_member_id_fkey"
+            columns: ["staff_member_id"]
+            isOneToOne: false
+            referencedRelation: "staff_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_activity_results: {
         Row: {
           activity_index: number
@@ -5002,6 +5313,10 @@ export type Database = {
         Returns: boolean
       }
       has_login_credential: { Args: { _profile_id: string }; Returns: boolean }
+      has_staff_permission: {
+        Args: { _module: string; _need_edit?: boolean; _user_id: string }
+        Returns: boolean
+      }
       increment_player_score: {
         Args: { _player_id: string; _score_delta: number }
         Returns: undefined
