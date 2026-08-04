@@ -153,9 +153,13 @@ export function AddSlideSheet({
   onOpenChange,
   sessionId,
   slides,
+  onAddSlides,
 }: AddSlideSheetProps) {
   const [kind, setKind] = useState<AddKind>("menu");
   const [busy, setBusy] = useState(false);
+  const [templates, setTemplates] = useState<GameTemplate[]>([]);
+  const [templatesLoading, setTemplatesLoading] = useState(false);
+
 
   // text
   const [textHeadline, setTextHeadline] = useState("");
