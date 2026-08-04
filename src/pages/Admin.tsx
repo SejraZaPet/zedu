@@ -167,7 +167,10 @@ const Admin = () => {
         {activeTab === "academy" && !isTeacher && <AcademyCoursesManager />}
         {activeTab === "academy-pathways" && !isTeacher && <AcademyPathwaysManager />}
         {activeTab === "academy-evidence" && !isTeacher && <AcademyEvidenceReviewManager />}
+        {activeTab === "crm" && !isTeacher && <CrmManager />}
+        {activeTab === "staff" && isRealAdmin && <StaffManager />}
         {activeTab === "help" && <HelpGuidesManager />}
+
       </div>
     </div>
   );
