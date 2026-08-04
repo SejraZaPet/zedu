@@ -1232,10 +1232,10 @@ const UsersManager = () => {
                                   last_name: `${row.jmeno} ${row.prijmeni}`,
                                   email: parentLogin,
                                   status: "approved" as any,
-                                  login_password: parentPassword,
                                   username: parentUsername,
                                   parent_email: parentEmailValue || null,
                                 });
+                                await supabase.rpc("set_login_password", { _profile_id: parentId, _password: parentPassword });
                                 await supabase.from("user_roles").upsert({ user_id: parentId, role: "rodic" as any }, { onConflict: "user_id,role", ignoreDuplicates: true });
                                 importedUsersList.push({
                                   firstName: "Rodič",
