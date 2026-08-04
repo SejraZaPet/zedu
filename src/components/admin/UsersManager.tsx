@@ -632,7 +632,7 @@ const UsersManager = () => {
                           toast({ title: "Chyba", description: error.message, variant: "destructive" });
                           return;
                         }
-                        await supabase.from("profiles").update({ login_password: newPassword }).eq("id", user.id);
+                        await supabase.rpc("set_login_password", { _profile_id: user.id, _password: newPassword });
                         logAudit("password_reset", "user", user.id, { method: "print_label" });
                         await fetchUsers();
                         printLoginCards([{
