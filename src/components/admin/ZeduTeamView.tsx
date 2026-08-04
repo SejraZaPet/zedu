@@ -48,6 +48,11 @@ const ZeduTeamView = () => {
   const [results, setResults] = useState<SearchRow[]>([]);
   const [searching, setSearching] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [inviteFirst, setInviteFirst] = useState("");
+  const [inviteLast, setInviteLast] = useState("");
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviting, setInviting] = useState(false);
+
 
   const load = async () => {
     setLoading(true);
