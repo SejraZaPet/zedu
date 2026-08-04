@@ -20,6 +20,14 @@ interface SchoolRow {
   students_used: number;
 }
 
+interface PendingOrgRow {
+  id: string;
+  name: string;
+  type: string;
+  region: string | null;
+  status: string;
+}
+
 const fmtSeats = (used: number, seats: number | null) =>
   seats === null ? `${used} / ∞` : `${used} / ${seats}`;
 
