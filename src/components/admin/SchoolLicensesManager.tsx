@@ -78,6 +78,22 @@ const SchoolLicensesManager = () => {
 
   useEffect(() => { void load(); }, []);
 
+  const extend30 = async (r: SchoolRow) => {
+    if (!r.license) return;
+    const base = r.license.expires_at ? new Date(r.license.expires_at) : new Date();
+    const next = new Date(base.getTime() + 30 * 86400_000);
+    const { error } = await supabase
+      .from("school_licenses")
+      .update({ expires_at: next.toISOString() })
+      .eq("id", r.license.id);
+    if (error) {
+      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Prodlouženo", description: `Nová expirace: ${next.toLocaleDateString("cs-CZ")}` });
+    void load();
+  };
+
   return (
     <Card>
       <CardHeader>
