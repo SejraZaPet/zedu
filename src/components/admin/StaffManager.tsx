@@ -130,6 +130,10 @@ const StaffManager = () => {
           </div>
         </Card>
 
+        <StaffContactCard staff={detail} onSaved={(updated) => { setDetail(updated); load(); }} />
+
+
+
         <Card className="p-5">
           <h3 className="font-heading mb-3">Oprávnění k modulům</h3>
           <div className="grid grid-cols-[1fr_auto_auto] gap-y-2 gap-x-6 items-center text-sm">
