@@ -230,29 +230,22 @@ const LiveWhiteboard = ({ sessionId, data, slideIndex, readOnly = false, onClose
     }
   });
 
-  /** Writes strokes for the CURRENT slide only, merging with whatever is stored
-   *  for the other slides (read-modify-write so parallel writers never clobber). */
+  /** Atomically replaces strokes for the CURRENT slide only. The database
+   *  preserves visibility and every other slide, including during concurrent toggles. */
   const persistSlideStrokes = useCallback(async (next: Stroke[]) => {
     // Serialize writes to avoid out-of-order DB updates
     const prev = pendingPersistRef.current ?? Promise.resolve();
     const key = String(Math.max(0, slideIndex ?? 0));
     const p = prev.then(async () => {
-      let base: NormalizedWhiteboard = normalizeWhiteboard(data);
-      const { data: row } = await supabase
-        .from("game_sessions")
-        .select("whiteboard_data")
-        .eq("id", sessionId)
-        .maybeSingle();
-      if (row && (row as any).whiteboard_data) base = normalizeWhiteboard((row as any).whiteboard_data);
-      const strokesBySlide = { ...base.strokesBySlide, [key]: next };
-      await supabase
-        .from("game_sessions")
-        .update({ whiteboard_data: { visible: base.visible, strokesBySlide } as any })
-        .eq("id", sessionId);
+      await supabase.rpc("set_game_whiteboard_slide_strokes", {
+        _session_id: sessionId,
+        _slide_index: Number(key),
+        _strokes: next as any,
+      });
     });
     pendingPersistRef.current = p;
     return p;
-  }, [sessionId, slideIndex, data]);
+  }, [sessionId, slideIndex]);
 
   const commitStrokes = useCallback((next: Stroke[]) => {
     if (localOnly) {
