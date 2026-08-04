@@ -160,22 +160,70 @@ const Admin = () => {
       </header>
 
       <div className="container mx-auto max-w-5xl px-4 py-6">
-        <div className="flex gap-1 mb-6 border-b border-border overflow-x-auto">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as Tab)}
-              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                activeTab === tab.id
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <tab.icon className="w-4 h-4" />
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        {isTeacher ? (
+          <div className="flex gap-1 mb-6 border-b border-border overflow-x-auto">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as Tab)}
+                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                  activeTab === tab.id
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <tab.icon className="w-4 h-4" />
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="mb-6 space-y-2">
+            <div className="flex flex-wrap gap-1 border-b border-border">
+              {groups.map((g) => {
+                const isOpen = currentGroup?.id === g.id;
+                return (
+                  <button
+                    key={g.id}
+                    onClick={() => setOpenGroupId(g.id)}
+                    className={`px-3 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                      isOpen ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {g.label}
+                  </button>
+                );
+              })}
+              <button
+                onClick={() => { setOpenGroupId(null); setActiveTab("help"); }}
+                className={`ml-auto flex items-center gap-2 px-3 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === "help" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <HelpCircle className="w-4 h-4" /> Nápověda
+              </button>
+            </div>
+            {currentGroup && (
+              <div className="flex flex-wrap gap-1.5">
+                {currentGroup.items.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => { setOpenGroupId(currentGroup.id); setActiveTab(tab.id as Tab); }}
+                    className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                      activeTab === tab.id
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                    }`}
+                  >
+                    <tab.icon className="w-4 h-4" />
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
 
         {activeTab === "dashboard" && <AdminDashboard onNavigate={(tab) => setActiveTab(tab as Tab)} isTeacher={isTeacher} />}
         {activeTab === "stats" && !isTeacher && <SystemStats />}
