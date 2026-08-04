@@ -7,7 +7,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const TOKEN_EXPIRY_SEC = 900; // 15 minutes — refreshed on each reconnect
+// 8 hours — covers a full school day; sessions end when the teacher finishes them
+const TOKEN_EXPIRY_SEC = 8 * 60 * 60;
 
 function generateToken(): string {
   const bytes = new Uint8Array(32);
