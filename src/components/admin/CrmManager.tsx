@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useStaffPermissions } from "@/hooks/useStaffPermissions";
 import { useAuth } from "@/contexts/AuthContext";
@@ -64,7 +65,8 @@ const CrmManager = () => {
   const [regionFilter, setRegionFilter] = useState("all");
   const [tagFilter, setTagFilter] = useState<string[]>([]);
 
-  const [detailId, setDetailId] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
+  const [detailId, setDetailId] = useState<string | null>(searchParams.get("org"));
   const [bulkOpen, setBulkOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);

@@ -3586,24 +3586,33 @@ export type Database = {
           created_at: string
           hired_at: string | null
           id: string
+          phone: string | null
           position: string | null
+          private_email: string | null
           profile_id: string
+          work_email: string | null
         }
         Insert: {
           active?: boolean
           created_at?: string
           hired_at?: string | null
           id?: string
+          phone?: string | null
           position?: string | null
+          private_email?: string | null
           profile_id: string
+          work_email?: string | null
         }
         Update: {
           active?: boolean
           created_at?: string
           hired_at?: string | null
           id?: string
+          phone?: string | null
           position?: string | null
+          private_email?: string | null
           profile_id?: string
+          work_email?: string | null
         }
         Relationships: [
           {

@@ -43,7 +43,7 @@ const adminTabs = [
   { id: "staff", label: "Zaměstnanci", icon: UserCog, module: "admin_only" },
   { id: "stats", label: "Statistiky", icon: Activity, module: "stats" },
   { id: "schools", label: "Školy", icon: School, module: "schools" },
-  { id: "licenses", label: "Školní licence", icon: Award, module: "school_licenses" },
+  { id: "licenses", label: "Spolupracující organizace", icon: Award, module: "school_licenses" },
   { id: "users", label: "Uživatelé", icon: Users, module: "users" },
   { id: "textbook-overview", label: "Přehled učebnic", icon: Library, module: "textbook_overview" },
   { id: "academy", label: "Akademie", icon: Award, module: "academy" },
@@ -74,6 +74,17 @@ const teacherTabs = [
 
 type Tab = "dashboard" | "stats" | "textbooks" | "lessons" | "outline" | "mcq" | "matching" | "slide-edit" | "video-ai" | "subjects" | "users" | "classes" | "results" | "help" | "notifications" | "schools" | "licenses" | "audit" | "templates" | "landing" | "avatars" | "textbook-overview" | "academy" | "academy-pathways" | "academy-evidence" | "crm" | "staff";
 
+/** Dvouúrovňová navigace administrace. `help` a `dashboard` řešíme mimo/uvnitř kategorií. */
+const adminGroups: { id: string; label: string; tabs: string[] }[] = [
+  { id: "overview", label: "Přehled", tabs: ["dashboard", "stats"] },
+  { id: "sales", label: "Prodej a zákazníci", tabs: ["crm", "licenses"] },
+  { id: "people", label: "Lidé", tabs: ["users", "staff"] },
+  { id: "content", label: "Vzdělávací obsah", tabs: ["textbook-overview", "templates"] },
+  { id: "academy", label: "ZEdu Akademie", tabs: ["academy", "academy-pathways", "academy-evidence"] },
+  { id: "appearance", label: "Vzhled webu", tabs: ["landing", "avatars"] },
+  { id: "system", label: "Systém", tabs: ["schools", "notifications", "audit"] },
+];
+
 const Admin = () => {
   const { isAdmin, isStaff, isTeacher, loading, logout } = useAdmin();
   const { can, isAdmin: isRealAdmin } = useStaffPermissions();
@@ -89,6 +100,32 @@ const Admin = () => {
       return can(t.module);
     });
   }, [isTeacher, isRealAdmin, can]);
+
+  type TabItem = (typeof adminTabs)[number] | (typeof teacherTabs)[number];
+
+  /** Kategorie s alespoň jednou dostupnou podzáložkou */
+  const groups = useMemo(() => {
+    if (isTeacher) return [];
+    return adminGroups
+      .map((g) => ({
+        ...g,
+        items: g.tabs
+          .map((id) => (tabs as readonly TabItem[]).find((t) => t.id === id))
+          .filter(Boolean) as TabItem[],
+      }))
+      .filter((g) => g.items.length > 0);
+  }, [isTeacher, tabs]);
+
+  const activeGroupId = useMemo(
+    () => groups.find((g) => g.items.some((i) => i.id === activeTab))?.id ?? groups[0]?.id ?? null,
+    [groups, activeTab],
+  );
+  const [openGroupId, setOpenGroupId] = useState<string | null>(null);
+  const currentGroup =
+    activeTab === "help" && !openGroupId
+      ? null
+      : groups.find((g) => g.id === (openGroupId ?? activeGroupId)) ?? null;
+
 
   if (loading) {
     return (
@@ -126,24 +163,72 @@ const Admin = () => {
       </header>
 
       <div className="container mx-auto max-w-5xl px-4 py-6">
-        <div className="flex gap-1 mb-6 border-b border-border overflow-x-auto">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as Tab)}
-              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                activeTab === tab.id
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <tab.icon className="w-4 h-4" />
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        {isTeacher ? (
+          <div className="flex gap-1 mb-6 border-b border-border overflow-x-auto">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as Tab)}
+                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                  activeTab === tab.id
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <tab.icon className="w-4 h-4" />
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="mb-6 space-y-2">
+            <div className="flex flex-wrap gap-1 border-b border-border">
+              {groups.map((g) => {
+                const isOpen = currentGroup?.id === g.id;
+                return (
+                  <button
+                    key={g.id}
+                    onClick={() => setOpenGroupId(g.id)}
+                    className={`px-3 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                      isOpen ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {g.label}
+                  </button>
+                );
+              })}
+              <button
+                onClick={() => { setOpenGroupId(null); setActiveTab("help"); }}
+                className={`ml-auto flex items-center gap-2 px-3 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === "help" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <HelpCircle className="w-4 h-4" /> Nápověda
+              </button>
+            </div>
+            {currentGroup && (
+              <div className="flex flex-wrap gap-1.5">
+                {currentGroup.items.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => { setOpenGroupId(currentGroup.id); setActiveTab(tab.id as Tab); }}
+                    className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                      activeTab === tab.id
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                    }`}
+                  >
+                    <tab.icon className="w-4 h-4" />
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
-        {activeTab === "dashboard" && <AdminDashboard onNavigate={(tab) => setActiveTab(tab as Tab)} isTeacher={isTeacher} />}
+
+        {activeTab === "dashboard" && <AdminDashboard onNavigate={(tab) => { setOpenGroupId(null); setActiveTab(tab as Tab); }} isTeacher={isTeacher} />}
         {activeTab === "stats" && !isTeacher && <SystemStats />}
         {activeTab === "textbooks" && isTeacher && <TeacherTextbooksManager />}
         {activeTab === "lessons" && isTeacher && <LessonsManager />}

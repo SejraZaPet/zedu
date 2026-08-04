@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { PLAN_LABELS, PLAN_DEFAULTS, STATUS_LABELS, type LicensePlan, type LicenseStatus, type SchoolLicense, isExpired } from "@/lib/school-licenses";
+import { CRM_TYPES, statusMeta } from "@/lib/staff-modules";
 
 interface SchoolRow {
   id: string;
@@ -20,21 +21,36 @@ interface SchoolRow {
   students_used: number;
 }
 
+interface PendingOrgRow {
+  id: string;
+  name: string;
+  type: string;
+  region: string | null;
+  status: string;
+}
+
 const fmtSeats = (used: number, seats: number | null) =>
   seats === null ? `${used} / ∞` : `${used} / ${seats}`;
 
 const SchoolLicensesManager = () => {
   const { toast } = useToast();
   const [rows, setRows] = useState<SchoolRow[]>([]);
+  const [pending, setPending] = useState<PendingOrgRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<SchoolRow | null>(null);
 
   const load = async () => {
     setLoading(true);
-    const [schoolsRes, licRes, usageRes] = await Promise.all([
+    const [schoolsRes, licRes, usageRes, orgsRes] = await Promise.all([
       supabase.from("schools").select("id, name").order("name"),
       supabase.from("school_licenses").select("*"),
       supabase.rpc("school_license_usage_all"),
+      supabase
+        .from("crm_organizations")
+        .select("id, name, type, region, status, linked_school_id")
+        .in("status", ["zkusebni", "zakaznik"])
+        .is("linked_school_id", null)
+        .order("name"),
     ]);
     if (schoolsRes.error) {
       toast({ title: "Chyba", description: schoolsRes.error.message, variant: "destructive" });
@@ -55,6 +71,7 @@ const SchoolLicensesManager = () => {
         students_used: useBy.get(s.id)?.s ?? 0,
       }))
     );
+    setPending((orgsRes.data as PendingOrgRow[]) ?? []);
     setLoading(false);
   };
 
@@ -63,7 +80,7 @@ const SchoolLicensesManager = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Školní licence</CardTitle>
+        <CardTitle>Spolupracující organizace</CardTitle>
       </CardHeader>
       <CardContent>
         {loading ? (
@@ -114,6 +131,31 @@ const SchoolLicensesManager = () => {
                   </TableRow>
                 );
               })}
+              {pending.map((o) => (
+                <TableRow key={`org-${o.id}`} className="bg-muted/30">
+                  <TableCell className="font-medium">
+                    {o.name}
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      {CRM_TYPES.find((t) => t.value === o.type)?.label ?? o.type}
+                      {o.region ? ` · ${o.region}` : ""}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" style={{ borderColor: statusMeta(o.status).color, color: statusMeta(o.status).color }}>
+                      {statusMeta(o.status).label}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">—</TableCell>
+                  <TableCell className="text-muted-foreground">—</TableCell>
+                  <TableCell><Badge variant="secondary">Čeká na propojení</Badge></TableCell>
+                  <TableCell className="text-muted-foreground">—</TableCell>
+                  <TableCell className="text-right">
+                    <Button size="sm" variant="ghost" asChild>
+                      <a href={`/admin?tab=crm&org=${o.id}`}>CRM detail</a>
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
         )}

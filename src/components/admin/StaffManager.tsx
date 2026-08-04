@@ -17,6 +17,9 @@ interface StaffRow {
   position: string | null;
   active: boolean;
   hired_at: string | null;
+  private_email: string | null;
+  work_email: string | null;
+  phone: string | null;
   profile?: { first_name: string | null; last_name: string | null; email: string | null } | null;
 }
 
@@ -42,7 +45,7 @@ const StaffManager = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("staff_members")
-      .select("id, profile_id, position, active, hired_at, profile:profiles!staff_members_profile_id_fkey(first_name, last_name, email)")
+      .select("id, profile_id, position, active, hired_at, private_email, work_email, phone, profile:profiles!staff_members_profile_id_fkey(first_name, last_name, email)")
       .order("created_at", { ascending: false });
     if (error) toast({ title: "Nepodařilo se načíst zaměstnance", description: error.message, variant: "destructive" });
     setStaff((data as unknown as StaffRow[]) ?? []);
@@ -127,6 +130,10 @@ const StaffManager = () => {
           </div>
         </Card>
 
+        <StaffContactCard staff={detail} onSaved={(updated) => { setDetail(updated); load(); }} />
+
+
+
         <Card className="p-5">
           <h3 className="font-heading mb-3">Oprávnění k modulům</h3>
           <div className="grid grid-cols-[1fr_auto_auto] gap-y-2 gap-x-6 items-center text-sm">
@@ -202,6 +209,66 @@ const StaffManager = () => {
         </DialogContent>
       </Dialog>
     </div>
+  );
+};
+
+const StaffContactCard = ({ staff, onSaved }: { staff: StaffRow; onSaved: (s: StaffRow) => void }) => {
+  const [position, setPosition] = useState(staff.position ?? "");
+  const [privateEmail, setPrivateEmail] = useState(staff.private_email ?? "");
+  const [workEmail, setWorkEmail] = useState(staff.work_email ?? "");
+  const [phone, setPhone] = useState(staff.phone ?? "");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setPosition(staff.position ?? "");
+    setPrivateEmail(staff.private_email ?? "");
+    setWorkEmail(staff.work_email ?? "");
+    setPhone(staff.phone ?? "");
+  }, [staff.id]);
+
+  const save = async () => {
+    setSaving(true);
+    const payload = {
+      position: position.trim() || null,
+      private_email: privateEmail.trim() || null,
+      work_email: workEmail.trim() || null,
+      phone: phone.trim() || null,
+    };
+    const { error } = await supabase.from("staff_members").update(payload).eq("id", staff.id);
+    setSaving(false);
+    if (error) {
+      toast({ title: "Uložení se nepodařilo", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Kontaktní údaje uloženy" });
+    onSaved({ ...staff, ...payload });
+  };
+
+  return (
+    <Card className="p-5 space-y-3">
+      <h3 className="font-heading">Kontaktní údaje</h3>
+      <div className="grid gap-3 md:grid-cols-2">
+        <div>
+          <Label>Pozice</Label>
+          <Input value={position} onChange={(e) => setPosition(e.target.value)} placeholder="Obchodník, Podpora…" />
+        </div>
+        <div>
+          <Label>Telefon</Label>
+          <Input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+420 …" />
+        </div>
+        <div>
+          <Label>Pracovní e-mail</Label>
+          <Input type="email" value={workEmail} onChange={(e) => setWorkEmail(e.target.value)} />
+        </div>
+        <div>
+          <Label>Soukromý e-mail</Label>
+          <Input type="email" value={privateEmail} onChange={(e) => setPrivateEmail(e.target.value)} />
+        </div>
+      </div>
+      <div>
+        <Button size="sm" onClick={save} disabled={saving}>{saving ? "Ukládám…" : "Uložit"}</Button>
+      </div>
+    </Card>
   );
 };
 
