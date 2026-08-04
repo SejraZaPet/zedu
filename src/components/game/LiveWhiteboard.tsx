@@ -230,18 +230,29 @@ const LiveWhiteboard = ({ sessionId, data, slideIndex, readOnly = false, onClose
     }
   });
 
-  const persist = useCallback(async (next: WhiteboardData) => {
+  /** Writes strokes for the CURRENT slide only, merging with whatever is stored
+   *  for the other slides (read-modify-write so parallel writers never clobber). */
+  const persistSlideStrokes = useCallback(async (next: Stroke[]) => {
     // Serialize writes to avoid out-of-order DB updates
     const prev = pendingPersistRef.current ?? Promise.resolve();
+    const key = String(Math.max(0, slideIndex ?? 0));
     const p = prev.then(async () => {
+      let base: NormalizedWhiteboard = normalizeWhiteboard(data);
+      const { data: row } = await supabase
+        .from("game_sessions")
+        .select("whiteboard_data")
+        .eq("id", sessionId)
+        .maybeSingle();
+      if (row && (row as any).whiteboard_data) base = normalizeWhiteboard((row as any).whiteboard_data);
+      const strokesBySlide = { ...base.strokesBySlide, [key]: next };
       await supabase
         .from("game_sessions")
-        .update({ whiteboard_data: next as any })
+        .update({ whiteboard_data: { visible: base.visible, strokesBySlide } as any })
         .eq("id", sessionId);
     });
     pendingPersistRef.current = p;
     return p;
-  }, [sessionId]);
+  }, [sessionId, slideIndex, data]);
 
   const commitStrokes = useCallback((next: Stroke[]) => {
     if (localOnly) {
@@ -250,8 +261,8 @@ const LiveWhiteboard = ({ sessionId, data, slideIndex, readOnly = false, onClose
       setPendingStrokes(next.filter((s) => !remoteIds.has(s.id)));
       return;
     }
-    persist({ strokes: next, visible: data.visible });
-  }, [persist, data.visible, localOnly, remoteStrokes]);
+    persistSlideStrokes(next);
+  }, [persistSlideStrokes, localOnly, remoteStrokes]);
 
   const getRelative = (e: PointerEvent | React.PointerEvent): [number, number] => {
     // Měříme přímo z canvas elementu, ne z obalového containeru — na mobilech
