@@ -18,8 +18,37 @@ export interface Stroke {
 }
 
 export interface WhiteboardData {
-  strokes: Stroke[];
   visible: boolean;
+  /** strokes keyed by slide index (as string) */
+  strokesBySlide?: Record<string, Stroke[]>;
+  /** @deprecated legacy flat format — migrated on read to slide "0" */
+  strokes?: Stroke[];
+}
+
+export interface NormalizedWhiteboard {
+  visible: boolean;
+  strokesBySlide: Record<string, Stroke[]>;
+}
+
+/** Accepts both the new per-slide format and the legacy flat `{ strokes, visible }`. */
+export function normalizeWhiteboard(raw: any): NormalizedWhiteboard {
+  const visible = !!raw?.visible;
+  const bySlide = raw?.strokesBySlide;
+  if (bySlide && typeof bySlide === "object" && !Array.isArray(bySlide)) {
+    const out: Record<string, Stroke[]> = {};
+    for (const [k, v] of Object.entries(bySlide)) if (Array.isArray(v)) out[k] = v as Stroke[];
+    return { visible, strokesBySlide: out };
+  }
+  if (Array.isArray(raw?.strokes) && raw.strokes.length > 0) {
+    // legacy: treat as belonging to the first slide
+    return { visible, strokesBySlide: { "0": raw.strokes as Stroke[] } };
+  }
+  return { visible, strokesBySlide: {} };
+}
+
+export function getSlideStrokes(raw: any, slideIndex: number): Stroke[] {
+  const key = String(Math.max(0, slideIndex ?? 0));
+  return normalizeWhiteboard(raw).strokesBySlide[key] ?? [];
 }
 
 const COLORS = ["#000000", "#ef4444", "#3b82f6", "#22c55e", "#f97316", "#a855f7", "#ffffff", "#facc15"];
