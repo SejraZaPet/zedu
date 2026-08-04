@@ -136,11 +136,22 @@ const MENU_GROUPS: { key: CategoryKey; label: string; types: string[]; accent?: 
 const MENU_AI_BADGE = new Set(["activity", "summary"]);
 const CARD_AI_BADGE = new Set(["activity"]);
 
+export interface BlockEditorHistory {
+  undo: () => void;
+  redo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
+}
+
 interface Props {
   blocks: Block[];
   onChange: (blocks: Block[]) => void;
   /** Optional actions rendered on the right side of the sticky toolbar. */
   toolbarActions?: React.ReactNode;
+  /** Hide the internal sticky toolbar (undo/redo rendered elsewhere). */
+  hideToolbar?: boolean;
+  /** Exposes undo/redo controls so they can be rendered in an external toolbar. */
+  onHistoryChange?: (history: BlockEditorHistory) => void;
 }
 
 
