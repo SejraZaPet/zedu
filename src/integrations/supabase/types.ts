@@ -3087,17 +3087,20 @@ export type Database = {
       }
       profile_credentials: {
         Row: {
-          encrypted_password: string
+          encrypted_password: string | null
+          pin_hash: string | null
           profile_id: string
           updated_at: string
         }
         Insert: {
-          encrypted_password: string
+          encrypted_password?: string | null
+          pin_hash?: string | null
           profile_id: string
           updated_at?: string
         }
         Update: {
-          encrypted_password?: string
+          encrypted_password?: string | null
+          pin_hash?: string | null
           profile_id?: string
           updated_at?: string
         }
@@ -3120,10 +3123,8 @@ export type Database = {
           first_name: string
           id: string
           last_name: string
-          login_password: string | null
           parent_email: string | null
           parent_email_notifications: boolean
-          pin_code: string | null
           school: string
           school_id: string | null
           status: Database["public"]["Enums"]["account_status"]
@@ -3140,10 +3141,8 @@ export type Database = {
           first_name?: string
           id: string
           last_name?: string
-          login_password?: string | null
           parent_email?: string | null
           parent_email_notifications?: boolean
-          pin_code?: string | null
           school?: string
           school_id?: string | null
           status?: Database["public"]["Enums"]["account_status"]
@@ -3160,10 +3159,8 @@ export type Database = {
           first_name?: string
           id?: string
           last_name?: string
-          login_password?: string | null
           parent_email?: string | null
           parent_email_notifications?: boolean
-          pin_code?: string | null
           school?: string
           school_id?: string | null
           status?: Database["public"]["Enums"]["account_status"]
@@ -5202,6 +5199,10 @@ export type Database = {
         Returns: boolean
       }
       can_access_textbooks: { Args: { _user_id: string }; Returns: boolean }
+      can_manage_credentials: {
+        Args: { _profile_id: string }
+        Returns: boolean
+      }
       cancel_notification: { Args: { _broadcast_id: string }; Returns: boolean }
       claim_export_job: {
         Args: { _worker_id: string }
@@ -5448,6 +5449,10 @@ export type Database = {
         }
         Returns: string
       }
+      set_login_password: {
+        Args: { _password: string; _profile_id: string }
+        Returns: Json
+      }
       set_question_answered: {
         Args: { _answered: boolean; _question_id: string }
         Returns: undefined
@@ -5457,6 +5462,10 @@ export type Database = {
         Returns: undefined
       }
       set_user_pin: { Args: { _pin: string }; Returns: Json }
+      set_user_pin_for: {
+        Args: { _pin: string; _profile_id: string }
+        Returns: Json
+      }
       strip_correct_flags: { Args: { _data: Json }; Returns: Json }
       submit_live_question: {
         Args: { _join_token: string; _text: string }
