@@ -100,11 +100,18 @@ const LiveTeacherScreen = () => {
 
   const toggleWhiteboard = useCallback(async () => {
     if (!sessionId) return;
+    // Read-modify-write: hiding/showing must NEVER touch strokesBySlide
+    const { data: row } = await supabase
+      .from("game_sessions")
+      .select("whiteboard_data")
+      .eq("id", sessionId)
+      .maybeSingle();
+    const cur = normalizeWhiteboard((row as any)?.whiteboard_data ?? whiteboard);
     await supabase
       .from("game_sessions")
-      .update({ whiteboard_data: { ...whiteboard, visible: !whiteboardVisible } as any })
+      .update({ whiteboard_data: { visible: !cur.visible, strokesBySlide: cur.strokesBySlide } as any })
       .eq("id", sessionId);
-  }, [sessionId, whiteboard, whiteboardVisible]);
+  }, [sessionId, whiteboard]);
 
   const handleProjectorScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
