@@ -17,6 +17,9 @@ interface StaffRow {
   position: string | null;
   active: boolean;
   hired_at: string | null;
+  private_email: string | null;
+  work_email: string | null;
+  phone: string | null;
   profile?: { first_name: string | null; last_name: string | null; email: string | null } | null;
 }
 
