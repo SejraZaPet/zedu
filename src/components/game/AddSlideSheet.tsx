@@ -442,12 +442,15 @@ export function AddSlideSheet({
               {kind === "teams" && "Rozdělit do skupin"}
               {kind === "differentiated" && "Diferencovaná aktivita"}
               {kind === "escape" && "Úniková hra"}
+              {kind === "library" && "Vložit z knihovny her"}
             </SheetTitle>
           </div>
           <SheetDescription>
-            Slide bude přidán na konec živé prezentace a okamžitě zobrazen žákům.
-            Původní lekce zůstane beze změny.
+            {onAddSlides
+              ? "Slide bude přidán do obsahu, který právě sestavujete."
+              : "Slide bude přidán na konec živé prezentace a okamžitě zobrazen žákům. Původní lekce zůstane beze změny."}
           </SheetDescription>
+
         </SheetHeader>
 
         <div className="mt-6 space-y-4">
