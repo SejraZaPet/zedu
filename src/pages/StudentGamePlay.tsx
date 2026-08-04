@@ -1,3 +1,4 @@
+import { resolveGameMode } from "@/lib/game-slide-settings";
 import { useParams } from "react-router-dom";
 import { useGameSession } from "@/hooks/useGameSession";
 import { GameLobby } from "@/components/game/GameLobby";
@@ -136,8 +137,9 @@ const StudentGamePlay = () => {
     setAnswered((prev) => new Set(prev).add(localQi));
     setLastResult({ correct: data.correct, score: data.score });
 
-    // Mode-specific micro-feedback for tower / steal.
-    const mode = settings.gameMode;
+    // Mode-specific micro-feedback for tower / steal (per-slide override wins).
+    const currentSlide = ((session.activity_data as any[]) || [])[localQi];
+    const mode = resolveGameMode(settings, currentSlide);
     if (mode === "tower" && data.correct) {
       setModeFeedback({ text: "+🧱 Kostka!", tone: "good" });
       setTimeout(() => setModeFeedback(null), 1400);

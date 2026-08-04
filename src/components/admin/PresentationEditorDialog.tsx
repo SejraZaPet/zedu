@@ -14,6 +14,7 @@ import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SLIDE_GAME_MODES } from "@/lib/game-slide-settings";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import BlockEditor from "@/components/admin/BlockEditor";
 import SlideCanvas, { SLIDE_LAYOUTS, type SlideLayout } from "@/components/admin/SlideCanvas";
@@ -432,6 +433,73 @@ export const PresentationEditorDialog = ({
                     </div>
                   )}
                 </div>
+
+                {currentSlide?.type === "activity" && (
+                  <div className="pt-3 mt-1 border-t border-border space-y-2">
+                    <div>
+                      <Label className="text-xs">Herní režim tohoto slidu</Label>
+                      <p className="text-[11px] text-muted-foreground">
+                        Platí jen pro tento slide, nezávisle na zbytku prezentace.
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => updateSlide({ gameSettings: undefined })}
+                        className={`rounded-lg border-2 px-2 py-1.5 text-xs font-medium transition-colors ${
+                          !(currentSlide as any).gameSettings
+                            ? "border-primary bg-primary/10 text-foreground"
+                            : "border-border text-muted-foreground hover:bg-muted/50"
+                        }`}
+                      >
+                        Jako celá prezentace
+                      </button>
+                      {SLIDE_GAME_MODES.map((m) => {
+                        const active = (currentSlide as any).gameSettings?.mode === m.id;
+                        return (
+                          <button
+                            key={m.id}
+                            type="button"
+                            onClick={() => updateSlide({
+                              gameSettings: {
+                                mode: m.id,
+                                teamMode: (currentSlide as any).gameSettings?.teamMode ?? "none",
+                              },
+                            })}
+                            title={m.hint}
+                            className={`rounded-lg border-2 px-2 py-1.5 text-xs font-medium transition-colors ${
+                              active
+                                ? "border-primary bg-primary/10 text-foreground"
+                                : "border-border text-muted-foreground hover:bg-muted/50"
+                            }`}
+                          >
+                            {m.emoji} {m.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {(currentSlide as any).gameSettings && (
+                      <div className="flex items-center gap-2">
+                        <Label className="text-xs whitespace-nowrap">Týmy:</Label>
+                        <Select
+                          value={(currentSlide as any).gameSettings?.teamMode || "none"}
+                          onValueChange={(v) => updateSlide({
+                            gameSettings: { ...(currentSlide as any).gameSettings, teamMode: v },
+                          })}
+                        >
+                          <SelectTrigger className="h-8 w-40 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Bez týmů</SelectItem>
+                            <SelectItem value="random">Náhodné týmy</SelectItem>
+                            <SelectItem value="manual">Ruční týmy</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+
 
                 {currentSlide?.type === "activity" && (currentSlide as any).activitySpec?.activityType === "wall" && (
                   <div className="space-y-3 pt-2 border-t border-border">

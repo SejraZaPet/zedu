@@ -11,12 +11,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { FileText, HelpCircle, MessageSquare, Cloud, DoorOpen, ArrowLeft, Loader2, Users2, SplitSquareHorizontal, Sparkles, Plus, Trash2, KeyRound } from "lucide-react";
+import { FileText, HelpCircle, MessageSquare, Cloud, DoorOpen, ArrowLeft, Loader2, Users2, SplitSquareHorizontal, Sparkles, Plus, Trash2, KeyRound, Library } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { fetchGameTemplates, purposeLabel, type GameTemplate } from "@/lib/game-templates";
 
-type AddKind = "menu" | "text" | "mcq" | "wall" | "wordcloud" | "exit" | "teams" | "differentiated" | "escape";
+type AddKind = "menu" | "text" | "mcq" | "wall" | "wordcloud" | "exit" | "teams" | "differentiated" | "escape" | "library";
 
 const EXIT_TICKET_DEFAULT_PROMPT =
   "Napiš jednu věc, kterou sis dnes odnesl/a, a jednu věc, která ti ještě není jasná.";
@@ -24,9 +25,16 @@ const EXIT_TICKET_DEFAULT_PROMPT =
 interface AddSlideSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  sessionId: string;
+  /** Live session the slide is appended to. Omit when using `onAddSlides`. */
+  sessionId?: string;
   slides: any[];
+  /**
+   * When provided, built slides are handed over instead of being written to a
+   * live session (used by the game library editor / presentation editor).
+   */
+  onAddSlides?: (newSlides: any[]) => void | Promise<void>;
 }
+
 
 function buildTextSlide(headline: string, body: string) {
   return {
@@ -146,9 +154,13 @@ export function AddSlideSheet({
   onOpenChange,
   sessionId,
   slides,
+  onAddSlides,
 }: AddSlideSheetProps) {
   const [kind, setKind] = useState<AddKind>("menu");
   const [busy, setBusy] = useState(false);
+  const [templates, setTemplates] = useState<GameTemplate[]>([]);
+  const [templatesLoading, setTemplatesLoading] = useState(false);
+
 
   // text
   const [textHeadline, setTextHeadline] = useState("");
@@ -225,11 +237,19 @@ export function AddSlideSheet({
     setTimeout(reset, 200);
   };
 
-  const appendAndJump = async (newSlide: any) => {
+  const appendMany = async (added: any[]) => {
+    if (added.length === 0) return;
     setBusy(true);
     try {
-      const newSlides = [...(slides || []), newSlide];
-      const newIndex = newSlides.length - 1;
+      if (onAddSlides) {
+        await onAddSlides(added);
+        toast.success(added.length > 1 ? "Slidy přidány." : "Slide přidán.");
+        close();
+        return;
+      }
+      if (!sessionId) throw new Error("Chybí session.");
+      const newSlides = [...(slides || []), ...added];
+      const newIndex = newSlides.length - added.length;
       const { error } = await supabase
         .from("game_sessions")
         .update({
@@ -248,6 +268,34 @@ export function AddSlideSheet({
       setBusy(false);
     }
   };
+
+  const appendAndJump = (newSlide: any) => appendMany([newSlide]);
+
+  const openLibrary = async () => {
+    setKind("library");
+    setTemplatesLoading(true);
+    try {
+      setTemplates(await fetchGameTemplates());
+    } catch (e: any) {
+      toast.error(e?.message || "Nepodařilo se načíst knihovnu her.");
+    } finally {
+      setTemplatesLoading(false);
+    }
+  };
+
+  const insertTemplate = (tpl: GameTemplate) => {
+    const tplSlides = Array.isArray(tpl.activity_data) ? tpl.activity_data : [];
+    if (tplSlides.length === 0) {
+      toast.error("Tato hra neobsahuje žádný obsah.");
+      return;
+    }
+    const stamped = tplSlides.map((s: any, i: number) => ({
+      ...s,
+      slideId: `lib-${Date.now()}-${i}`,
+    }));
+    appendMany(stamped);
+  };
+
 
   const submitText = () => {
     if (!textHeadline.trim()) {
@@ -394,12 +442,15 @@ export function AddSlideSheet({
               {kind === "teams" && "Rozdělit do skupin"}
               {kind === "differentiated" && "Diferencovaná aktivita"}
               {kind === "escape" && "Úniková hra"}
+              {kind === "library" && "Vložit z knihovny her"}
             </SheetTitle>
           </div>
           <SheetDescription>
-            Slide bude přidán na konec živé prezentace a okamžitě zobrazen žákům.
-            Původní lekce zůstane beze změny.
+            {onAddSlides
+              ? "Slide bude přidán do obsahu, který právě sestavujete."
+              : "Slide bude přidán na konec živé prezentace a okamžitě zobrazen žákům. Původní lekce zůstane beze změny."}
           </SheetDescription>
+
         </SheetHeader>
 
         <div className="mt-6 space-y-4">
@@ -513,8 +564,54 @@ export function AddSlideSheet({
                   </p>
                 </div>
               </Button>
+              <Button
+                variant="outline"
+                className="justify-start h-auto py-3"
+                onClick={openLibrary}
+              >
+                <Library className="w-5 h-5 mr-3 text-primary" />
+                <div className="text-left">
+                  <p className="font-medium">Vložit z knihovny her</p>
+                  <p className="text-xs text-muted-foreground">
+                    Použij hotovou hru nebo aktivitu z „Moje hry"
+                  </p>
+                </div>
+              </Button>
             </div>
           )}
+
+          {kind === "library" && (
+            <div className="space-y-2">
+              {templatesLoading ? (
+                <p className="text-sm text-muted-foreground flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" /> Načítání knihovny…
+                </p>
+              ) : templates.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  V knihovně zatím nemáte žádnou hru. Vytvořte ji v sekci „Moje hry".
+                </p>
+              ) : (
+                templates.map((tpl) => (
+                  <Button
+                    key={tpl.id}
+                    variant="outline"
+                    className="justify-start h-auto py-3 w-full"
+                    disabled={busy}
+                    onClick={() => insertTemplate(tpl)}
+                  >
+                    <div className="text-left">
+                      <p className="font-medium">{tpl.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {purposeLabel(tpl.purpose)} ·{" "}
+                        {Array.isArray(tpl.activity_data) ? tpl.activity_data.length : 0} slidů
+                      </p>
+                    </div>
+                  </Button>
+                ))
+              )}
+            </div>
+          )}
+
 
 
           {kind === "text" && (

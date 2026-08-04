@@ -13,6 +13,7 @@ import StudentProgressGrid from "@/components/game/StudentProgressGrid";
 import SessionExports from "@/components/live/SessionExports";
 import { AdaptiveReviewDialog } from "@/components/game/AdaptiveReview";
 import { AddSlideSheet } from "@/components/game/AddSlideSheet";
+import { isMixedPresentation } from "@/lib/game-slide-settings";
 import { TeamsSlideTeacher } from "@/components/game/TeamsSlide";
 import { DifferentiatedSlideTeacher } from "@/components/game/DifferentiatedSlide";
 import { EscapeGameOverview } from "@/components/game/EscapeGameSlide";
@@ -307,9 +308,16 @@ const LiveTeacherScreen = () => {
       }
       startGame();
     };
+    // Mixed presentation (výklad + aktivity): no mandatory game-mode picker.
+    // Session defaults to 'standard' without teams; individual activity slides
+    // can override via slide.gameSettings.
+    const mixed = isMixedPresentation(slides);
+
     return (
       <>
+        {!mixed && (
         <div className="fixed top-3 left-3 right-3 sm:right-auto z-40 max-w-md rounded-xl border border-border bg-card/95 backdrop-blur p-3 shadow-lg space-y-3 max-h-[92vh] overflow-y-auto">
+
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
               Herní režim
@@ -430,6 +438,8 @@ const LiveTeacherScreen = () => {
             )}
           </div>
         </div>
+        )}
+
         <GameLobby session={session} players={players} onStart={wrappedStart} isTeacher />
       </>
     );

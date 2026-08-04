@@ -121,12 +121,18 @@ serve(async (req) => {
     let stolenFrom: string | null = null;
     let stolenFromNickname: string | null = null;
 
-    if (gameMode === "race") {
+    // Per-slide game settings (slide.gameSettings) override the session mode for
+    // THIS slide only. "race" is session-only and never a per-slide override.
+    const slideMode = (question as any)?.gameSettings?.mode as string | undefined;
+    const effectiveMode =
+      slideMode && slideMode !== "race" && gameMode !== "race" ? slideMode : gameMode;
+
+    if (effectiveMode === "race") {
       // Time-to-Climb: flat 10 points per correct answer.
       score = 10;
-    } else if (gameMode === "tower") {
+    } else if (effectiveMode === "tower") {
       score = isCorrect ? 1 : 0;
-    } else if (gameMode === "steal") {
+    } else if (effectiveMode === "steal") {
       if (isCorrect) {
         const { data: opponents } = await adminClient
           .from("game_players")
@@ -136,7 +142,8 @@ serve(async (req) => {
 
         // Team-mode: exclude opponents on the attacker's team so a player
         // can't steal from their own teammates.
-        const teamModeKind = settings?.teamModeKind ?? "none";
+        const teamModeKind =
+          (question as any)?.gameSettings?.teamMode ?? settings?.teamModeKind ?? "none";
         const teamsArr = ((session as any).teams?.teams ?? []) as Array<{ id: string; members: string[] }>;
         let candidatePool = opponents || [];
         if (teamModeKind !== "none" && teamsArr.length > 0) {
@@ -171,7 +178,8 @@ serve(async (req) => {
       session_id: session.id,
       player_id: player.id,
       question_index: qi,
-      answer: { index: answerIndex, stolenFrom, gameMode },
+      answer: { index: answerIndex, stolenFrom, gameMode: effectiveMode },
+
       is_correct: isCorrect,
       response_time_ms: Math.round(elapsed),
       score,
