@@ -139,7 +139,10 @@ const CARD_AI_BADGE = new Set(["activity"]);
 interface Props {
   blocks: Block[];
   onChange: (blocks: Block[]) => void;
+  /** Optional actions rendered on the right side of the sticky toolbar. */
+  toolbarActions?: React.ReactNode;
 }
+
 
 
 const BlockRenderer = React.memo(({ block, onChange }: { block: Block; onChange: (props: Record<string, any>) => void }) => {
