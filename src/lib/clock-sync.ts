@@ -9,7 +9,8 @@
  * round-trip to approximate one-way latency.
  */
 
-import { supabase } from "@/integrations/supabase/client";
+
+
 
 let cachedOffset: number = 0;
 let lastSyncAt: number = 0;
@@ -27,16 +28,12 @@ export async function syncClock(force = false): Promise<number> {
 
   try {
     const t0 = Date.now();
-    const { data, error } = await supabase.rpc("is_admin"); // lightweight RPC
-    const t1 = Date.now();
 
-    if (error) {
-      console.warn("[clock-sync] RPC failed, keeping cached offset", error.message);
-      return cachedOffset;
-    }
+    // Server time comes from the REST endpoint's `Date` response header.
+    // Deliberately no RPC call here — guest/anonymous players (live sessions
+    // joined with a nickname only) have no privileges on project functions and
+    // would get a 401.
 
-    // We can't easily get server time from rpc, so use the Date header
-    // from a raw fetch instead.
     const res = await fetch(
       `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/?select=1`,
       {
