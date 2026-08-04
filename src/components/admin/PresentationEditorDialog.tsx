@@ -123,18 +123,49 @@ export const PresentationEditorDialog = ({
   return (
     <>
       <Dialog open={!!presentationLesson && pendingSlides.length > 0} onOpenChange={(open) => { if (!open) onClose(); }}>
-        <DialogContent className="max-w-7xl max-h-[92vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 flex-wrap">
-              <span>Upravit prezentaci – {presentationLesson?.title}</span>
-              <Badge variant={hasSavedPresentation ? "default" : "secondary"} className="text-xs">
-                {hasSavedPresentation ? "Uložená prezentace" : "Nová prezentace"}
-              </Badge>
-            </DialogTitle>
+        <DialogContent className="max-w-7xl max-h-[92vh] overflow-y-auto p-0">
+          {/* 1. STICKY HEADER – always visible actions */}
+          <DialogHeader className="sticky top-0 z-50 bg-muted/60 backdrop-blur-sm border-b border-border shadow-sm px-5 py-3 space-y-0">
+            <div className="flex items-center gap-3 flex-wrap">
+              <DialogTitle className="flex items-center gap-2 flex-wrap text-base">
+                <span>Upravit prezentaci – {presentationLesson?.title}</span>
+                <Badge variant={hasSavedPresentation ? "default" : "secondary"} className="text-xs">
+                  {hasSavedPresentation ? "Uložená prezentace" : "Nová prezentace"}
+                </Badge>
+              </DialogTitle>
+              <div className="ml-auto flex items-center gap-2 flex-wrap justify-end">
+                <Button size="sm" variant="ghost" className="h-9" onClick={onClose}>
+                  Zrušit
+                </Button>
+                {onSave && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5 h-9"
+                    onClick={async () => {
+                      await onSave(pendingSlides);
+                      toast({ title: "Prezentace uložena", description: "Změny byly uloženy k lekci." });
+                    }}
+                  >
+                    <Save className="w-4 h-4" />
+                    Uložit
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  onClick={() => onLaunch(pendingSlides)}
+                  className="gap-1.5 h-9 bg-gradient-brand text-white border-0 hover:opacity-90"
+                >
+                  <Monitor className="w-4 h-4" />
+                  Spustit prezentaci
+                </Button>
+              </div>
+            </div>
           </DialogHeader>
 
-          {/* Slide thumbnails */}
-          <div className="flex gap-2 overflow-x-auto pb-2 mb-2">
+          <div className="px-5 pb-5 space-y-4">
+          {/* 2. Slide thumbnails */}
+          <div className="flex gap-2 overflow-x-auto pb-1">
             {pendingSlides.map((slide, i) => (
               <button
                 key={i}
@@ -154,117 +185,10 @@ export const PresentationEditorDialog = ({
             ))}
           </div>
 
-          <div className="flex gap-2 mb-4 flex-wrap">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button size="sm" variant="outline" className="gap-1">
-                  <Plus className="w-3.5 h-3.5" /> Přidat slide <ChevronDown className="w-3.5 h-3.5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => {
-                  const newSlide = {
-                    slideId: `slide-custom-${Date.now()}`,
-                    type: "explain",
-                    projector: { headline: "", body: "" },
-                    device: { instructions: "Sledujte výklad." },
-                    teacherNotes: "",
-                    blocks: [],
-                  };
-                  const updated = [...pendingSlides];
-                  updated.splice(editingSlideIndex + 1, 0, newSlide);
-                  setPendingSlides(updated);
-                  setEditingSlideIndex(editingSlideIndex + 1);
-                }}>
-                  📖 Výkladový slide
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => {
-                  const newSlide = {
-                    slideId: `slide-activity-${Date.now()}`,
-                    type: "activity",
-                    projector: { headline: "Aktivita", body: "" },
-                    device: { instructions: "Splňte aktivitu na svém zařízení." },
-                    teacherNotes: "",
-                    blocks: [],
-                    activitySpec: { activityType: "true_false", question: "", statements: [] },
-                  };
-                  const updated = [...pendingSlides];
-                  updated.splice(editingSlideIndex + 1, 0, newSlide);
-                  setPendingSlides(updated);
-                  setEditingSlideIndex(editingSlideIndex + 1);
-                }}>
-                  ✏️ Aktivita (pravda/nepravda)
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => {
-                  const newSlide = {
-                    slideId: `slide-wall-${Date.now()}`,
-                    type: "activity",
-                    projector: { headline: "Zeď odpovědí", body: "" },
-                    device: { instructions: "Napište svou odpověď." },
-                    teacherNotes: "",
-                    blocks: [],
-                    activitySpec: { activityType: "wall", question: "", anonymous: false },
-                  };
-                  const updated = [...pendingSlides];
-                  updated.splice(editingSlideIndex + 1, 0, newSlide);
-                  setPendingSlides(updated);
-                  setEditingSlideIndex(editingSlideIndex + 1);
-                }}>
-                  🧱 Zeď (odpovědi žáků)
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => {
-                  const newSlide = {
-                    slideId: `slide-quiz-${Date.now()}`,
-                    type: "activity",
-                    projector: { headline: "Kvíz", body: "" },
-                    device: { instructions: "Vyberte správnou odpověď." },
-                    teacherNotes: "",
-                    blocks: [],
-                    activitySpec: { activityType: "quiz", question: "", options: [], correctIndex: 0 },
-                  };
-                  const updated = [...pendingSlides];
-                  updated.splice(editingSlideIndex + 1, 0, newSlide);
-                  setPendingSlides(updated);
-                  setEditingSlideIndex(editingSlideIndex + 1);
-                }}>
-                  ❓ Kvíz (výběr odpovědi)
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => {
-                  const newSlide = {
-                    slideId: `slide-poll-${Date.now()}`,
-                    type: "activity",
-                    projector: { headline: "Hlasování", body: "" },
-                    device: { instructions: "Vyberte svou odpověď." },
-                    teacherNotes: "",
-                    blocks: [],
-                    activitySpec: { activityType: "poll", question: "", options: [] },
-                  };
-                  const updated = [...pendingSlides];
-                  updated.splice(editingSlideIndex + 1, 0, newSlide);
-                  setPendingSlides(updated);
-                  setEditingSlideIndex(editingSlideIndex + 1);
-                }}>
-                  📊 Hlasování / Mentimetr
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => {
-                  const newSlide = {
-                    slideId: `slide-activity-${Date.now()}`,
-                    type: "activity",
-                    projector: { headline: "Aktivita", body: "" },
-                    device: { instructions: "Splňte aktivitu na svém zařízení." },
-                    teacherNotes: "",
-                    blocks: [],
-                    activitySpec: { activityType: "flashcards", question: "", cards: [] },
-                  };
-                  const updated = [...pendingSlides];
-                  updated.splice(editingSlideIndex + 1, 0, newSlide);
-                  setPendingSlides(updated);
-                  setEditingSlideIndex(editingSlideIndex + 1);
-                }}>
-                  ➕ Další aktivita…
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+          <div className="flex gap-2 flex-wrap pb-3 border-b border-border">
+            <Button size="sm" variant="outline" className="gap-1" onClick={() => setAddSlideOpen(true)}>
+              <Plus className="w-3.5 h-3.5" /> Přidat slide
+            </Button>
             {pendingSlides.length > 1 && (
               <Button size="sm" variant="outline" className="gap-1 text-destructive" onClick={() => {
                 const updated = pendingSlides.filter((_, i) => i !== editingSlideIndex);
@@ -275,6 +199,7 @@ export const PresentationEditorDialog = ({
               </Button>
             )}
           </div>
+
 
           {currentSlide && (() => {
             const updateSlide = (patch: any) => {
