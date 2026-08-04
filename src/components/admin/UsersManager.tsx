@@ -1160,16 +1160,17 @@ const UsersManager = () => {
                         student_code: studentCode,
                       });
 
-                      await supabase.rpc("set_login_password", { _profile_id: userId, _password: password });
-                      if (role === "user") {
-                        await supabase.rpc("set_user_pin_for", { _profile_id: userId, _pin: pin });
-                      }
-
                       if (profileError) {
                         console.error("Profile upsert error:", profileError);
                         errors.push(`${row.jmeno} ${row.prijmeni}: Chyba při ukládání profilu - ${profileError.message}`);
                         continue;
                       }
+
+                      await supabase.rpc("set_login_password", { _profile_id: userId, _password: password });
+                      if (role === "user") {
+                        await supabase.rpc("set_user_pin_for", { _profile_id: userId, _pin: pin });
+                      }
+
 
                       await supabase.from("user_roles").upsert({ user_id: userId, role: role as any }, { onConflict: "user_id,role", ignoreDuplicates: true });
 
