@@ -30,6 +30,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Trash2, Save, Pencil } from "lucide-react";
+import { useStaffPermissions } from "@/hooks/useStaffPermissions";
+import UserStaffRoleSection from "./UserStaffRoleSection";
 
 interface UserProfile {
   id: string;
@@ -53,6 +55,7 @@ interface Props {
 
 const UserDetailDialog = ({ user, open, onOpenChange, onUpdated }: Props) => {
   const { toast } = useToast();
+  const { isAdmin: isRealAdmin } = useStaffPermissions();
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [lastSignIn, setLastSignIn] = useState<string | null>(null);
@@ -317,6 +320,8 @@ const UserDetailDialog = ({ user, open, onOpenChange, onUpdated }: Props) => {
               </Select>
             </div>
           </div>
+
+          {isRealAdmin && <UserStaffRoleSection userId={user.id} />}
 
           <div className="border-t border-border pt-3 space-y-1">
             <div className="flex justify-between text-sm">
