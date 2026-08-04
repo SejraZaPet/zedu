@@ -88,9 +88,11 @@ const SchoolLicensesManager = () => {
           <p className="text-muted-foreground">Načítání…</p>
         ) : (
           <Tabs defaultValue="schools">
-            <TabsList className="mb-4">
+            <TabsList className="mb-4 h-auto flex-wrap justify-start">
               <TabsTrigger value="schools">Školy s licencí ({rows.length})</TabsTrigger>
-              <TabsTrigger value="crm">Zkušební / zákazníci z CRM ({pending.length})</TabsTrigger>
+              <TabsTrigger value="crm" className="h-auto whitespace-normal text-left">
+                Nové/CRM organizace ve fázi zkušební nebo zákazník ({pending.length})
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="schools">

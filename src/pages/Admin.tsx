@@ -19,7 +19,6 @@ import ClassesManager from "@/components/admin/ClassesManager";
 import ClassResultsManager from "@/components/admin/ClassResultsManager";
 import AdminDashboard from "@/components/admin/AdminDashboard";
 import NotificationsManager from "@/components/admin/NotificationsManager";
-import SchoolsManager from "@/components/admin/SchoolsManager";
 import SystemStats from "@/components/admin/SystemStats";
 import AuditLogViewer from "@/components/admin/AuditLogViewer";
 import TextbookTemplatesManager from "@/components/admin/TextbookTemplatesManager";
@@ -40,7 +39,6 @@ const adminTabs = [
   { id: "dashboard", label: "Přehled", icon: LayoutDashboard, module: null },
   { id: "crm", label: "CRM", icon: Contact, module: "crm" },
   { id: "stats", label: "Statistiky", icon: Activity, module: "stats" },
-  { id: "schools", label: "Školy", icon: School, module: "schools" },
   { id: "licenses", label: "Spolupracující organizace", icon: Award, module: "school_licenses" },
   { id: "users", label: "Uživatelé", icon: Users, module: "users" },
   { id: "textbook-overview", label: "Přehled učebnic", icon: Library, module: "textbook_overview" },
@@ -70,13 +68,12 @@ const teacherTabs = [
   { id: "help", label: "Nápověda", icon: HelpCircle, module: null },
 ] as const;
 
-type Tab = "dashboard" | "stats" | "textbooks" | "lessons" | "outline" | "mcq" | "matching" | "slide-edit" | "video-ai" | "subjects" | "users" | "classes" | "results" | "help" | "notifications" | "schools" | "licenses" | "audit" | "templates" | "landing" | "avatars" | "textbook-overview" | "academy" | "academy-pathways" | "academy-evidence" | "crm";
+type Tab = "dashboard" | "stats" | "textbooks" | "lessons" | "outline" | "mcq" | "matching" | "slide-edit" | "video-ai" | "subjects" | "users" | "classes" | "results" | "help" | "notifications" | "licenses" | "audit" | "templates" | "landing" | "avatars" | "textbook-overview" | "academy" | "academy-pathways" | "academy-evidence" | "crm";
 
 /** Dvouúrovňová navigace administrace. `help` a `dashboard` řešíme mimo/uvnitř kategorií. */
 const adminGroups: { id: string; label: string; tabs: string[] }[] = [
   { id: "overview", label: "Přehled", tabs: ["dashboard", "stats"] },
-  { id: "sales", label: "Prodej a zákazníci", tabs: ["crm", "licenses", "schools"] },
-  { id: "people", label: "Uživatelé", tabs: ["users"] },
+  { id: "sales", label: "Prodej a zákazníci", tabs: ["crm", "licenses"] },
   { id: "content", label: "Vzdělávací obsah", tabs: ["textbook-overview", "templates"] },
   { id: "academy", label: "ZEdu Akademie", tabs: ["academy", "academy-pathways", "academy-evidence"] },
   { id: "appearance", label: "Vzhled webu", tabs: ["landing", "avatars"] },
@@ -113,6 +110,10 @@ const Admin = () => {
       }))
       .filter((g) => g.items.length > 0);
   }, [isTeacher, tabs]);
+  const usersTab = useMemo(
+    () => (tabs as readonly TabItem[]).find((tab) => tab.id === "users") ?? null,
+    [tabs],
+  );
 
   const activeGroupId = useMemo(
     () => groups.find((g) => g.items.some((i) => i.id === activeTab))?.id ?? groups[0]?.id ?? null,
@@ -121,7 +122,7 @@ const Admin = () => {
   const [openGroupId, setOpenGroupId] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState(false);
   const currentGroup =
-    collapsed || (activeTab === "help" && !openGroupId)
+    collapsed || ((activeTab === "help" || activeTab === "users") && !openGroupId)
       ? null
       : groups.find((g) => g.id === (openGroupId ?? activeGroupId)) ?? null;
 
@@ -207,6 +208,16 @@ const Admin = () => {
                   </button>
                 );
               })}
+              {usersTab && (
+                <button
+                  onClick={() => { setOpenGroupId(null); setCollapsed(true); setActiveTab("users"); }}
+                  className={`flex items-center gap-2 px-3 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                    activeTab === "users" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Users className="w-4 h-4" /> Uživatelé
+                </button>
+              )}
               <button
                 onClick={() => { setOpenGroupId(null); setCollapsed(true); setActiveTab("help"); }}
                 className={`ml-auto flex items-center gap-2 px-3 py-2.5 text-sm font-medium border-b-2 transition-colors ${
@@ -252,7 +263,6 @@ const Admin = () => {
         {activeTab === "classes" && isTeacher && <ClassesManager />}
         {activeTab === "results" && isTeacher && <ClassResultsManager />}
         {activeTab === "notifications" && !isTeacher && <NotificationsManager />}
-        {activeTab === "schools" && !isTeacher && <SchoolsManager />}
         {activeTab === "licenses" && !isTeacher && <SchoolLicensesManager />}
         {activeTab === "audit" && !isTeacher && <AuditLogViewer />}
         {activeTab === "templates" && !isTeacher && <TextbookTemplatesManager />}
