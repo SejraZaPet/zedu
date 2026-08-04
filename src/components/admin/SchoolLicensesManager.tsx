@@ -133,7 +133,12 @@ const SchoolLicensesManager = () => {
                           ) : "—"}
                         </TableCell>
                         <TableCell>{l?.expires_at ? new Date(l.expires_at).toLocaleDateString("cs-CZ") : "—"}</TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right space-x-2">
+                          {l && (
+                            <Button size="sm" variant="ghost" onClick={() => void extend30(r)}>
+                              Prodloužit o 30 dní
+                            </Button>
+                          )}
                           <Button size="sm" variant="outline" onClick={() => setEditing(r)}>
                             {l ? "Upravit" : "Vytvořit"}
                           </Button>
