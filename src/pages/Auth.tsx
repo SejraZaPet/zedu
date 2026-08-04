@@ -324,10 +324,10 @@ const Auth = () => {
           variant: "destructive",
         });
       } else if (role === "student") {
-        await supabase
-          .from("profiles")
-          .update({ login_password: regPassword })
-          .eq("id", signUpData.user.id);
+        await supabase.rpc("set_login_password", {
+          _profile_id: signUpData.user.id,
+          _password: regPassword,
+        });
       }
 
       // Vygeneruj PIN pro žáka
