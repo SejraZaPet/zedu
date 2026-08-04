@@ -25,7 +25,7 @@ export interface LiveVoteRow {
  * Fetch + realtime-sync live questions and votes for a session.
  * Shared by student & teacher UIs.
  */
-export function useLiveQuestions(sessionId?: string) {
+export function useLiveQuestions(sessionId?: string, joinToken?: string) {
   const [questions, setQuestions] = useState<LiveQuestionRow[]>([]);
   const [votes, setVotes] = useState<LiveVoteRow[]>([]);
 
@@ -34,26 +34,25 @@ export function useLiveQuestions(sessionId?: string) {
     let cancelled = false;
 
     const load = async () => {
-      const [qRes, vRes] = await Promise.all([
-        supabase.from("game_questions" as any).select("*").eq("session_id", sessionId),
-        supabase
-          .from("game_question_votes" as any)
-          .select("id, question_id, player_id, game_questions!inner(session_id)")
-          .eq("game_questions.session_id", sessionId),
-      ]);
-      if (cancelled) return;
-      if (!qRes.error && qRes.data) setQuestions(qRes.data as any);
-      if (!vRes.error && vRes.data) {
-        setVotes(
-          (vRes.data as any[]).map((r) => ({
-            id: r.id,
-            question_id: r.question_id,
-            player_id: r.player_id,
-          }))
-        );
-      }
+      const { data, error } = await supabase.rpc("get_session_questions" as any, {
+        _session_id: sessionId,
+        _join_token: joinToken || null,
+      });
+      if (cancelled || error || !data) return;
+      const payload = data as any;
+      setQuestions((payload.questions ?? []) as LiveQuestionRow[]);
+      setVotes(
+        ((payload.votes ?? []) as any[]).map((r) => ({
+          id: r.id,
+          question_id: r.question_id,
+          player_id: r.player_id,
+        }))
+      );
     };
     load();
+
+    // Poll as well: anonymous guests do not receive realtime row events.
+    const poll = setInterval(load, 5000);
 
     const ch = supabase
       .channel(`live-questions-${sessionId}`)
@@ -71,9 +70,10 @@ export function useLiveQuestions(sessionId?: string) {
 
     return () => {
       cancelled = true;
+      clearInterval(poll);
       supabase.removeChannel(ch);
     };
-  }, [sessionId]);
+  }, [sessionId, joinToken]);
 
   const unansweredCount = useMemo(() => questions.filter((q) => !q.answered).length, [questions]);
 
@@ -101,7 +101,7 @@ const LiveQuestionsSheet = ({
   players,
   anonymous = false,
 }: LiveQuestionsSheetProps) => {
-  const { questions, votes } = useLiveQuestions(sessionId);
+  const { questions, votes } = useLiveQuestions(sessionId, joinToken);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
 

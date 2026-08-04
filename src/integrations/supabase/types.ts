@@ -5248,6 +5248,24 @@ export type Database = {
       get_follower_count: { Args: { _creator_id: string }; Returns: number }
       get_internal_secret: { Args: { _name: string }; Returns: string }
       get_login_password: { Args: { _profile_id: string }; Returns: string }
+      get_player_session: {
+        Args: { _join_token?: string; _session_id: string }
+        Returns: {
+          activity_data_safe: Json
+          created_at: string
+          current_question_index: number
+          game_code: string
+          id: string
+          question_started_at: string
+          settings: Json
+          status: string
+          teacher_id: string
+          teams: Json
+          title: string
+          updated_at: string
+          whiteboard_data: Json
+        }[]
+      }
       get_public_content_usage_counts: {
         Args: {
           _lesson_plan_ids: string[]
@@ -5303,6 +5321,10 @@ export type Database = {
           total_lessons: number
         }[]
       }
+      get_session_questions: {
+        Args: { _join_token?: string; _session_id: string }
+        Returns: Json
+      }
       get_user_school_id: { Args: { _user_id: string }; Returns: string }
       grant_avatar_item_by_teacher: {
         Args: { p_item_slug: string; p_student_id: string }
@@ -5313,6 +5335,7 @@ export type Database = {
         Returns: boolean
       }
       has_login_credential: { Args: { _profile_id: string }; Returns: boolean }
+      has_pin: { Args: { _profile_id?: string }; Returns: boolean }
       has_staff_permission: {
         Args: { _module: string; _need_edit?: boolean; _user_id: string }
         Returns: boolean
@@ -5333,6 +5356,10 @@ export type Database = {
       }
       is_enrolled_in_textbook: {
         Args: { _student_id: string; _textbook_id: string }
+        Returns: boolean
+      }
+      is_game_session_participant: {
+        Args: { _join_token?: string; _session_id: string }
         Returns: boolean
       }
       is_parent_of_student: {
