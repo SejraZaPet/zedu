@@ -1015,6 +1015,7 @@ const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryC
       `}</style>
 
 
+      {!hideToolbar && (
       <div className="flex items-center gap-1 flex-wrap sticky top-0 z-40 -mx-4 -mt-4 mb-1 px-4 py-2 bg-background/90 backdrop-blur-sm border-b border-border/60 shadow-sm rounded-t-[14px]">
         <Button
           size="sm"
@@ -1042,6 +1043,7 @@ const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryC
           <div className="ml-auto flex items-center gap-2 flex-wrap justify-end">{toolbarActions}</div>
         )}
       </div>
+      )}
 
       {dragOver && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-primary/10 rounded-lg pointer-events-none">
