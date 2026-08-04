@@ -34,15 +34,22 @@ const fmtSeats = (used: number, seats: number | null) =>
 const SchoolLicensesManager = () => {
   const { toast } = useToast();
   const [rows, setRows] = useState<SchoolRow[]>([]);
+  const [pending, setPending] = useState<PendingOrgRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<SchoolRow | null>(null);
 
   const load = async () => {
     setLoading(true);
-    const [schoolsRes, licRes, usageRes] = await Promise.all([
+    const [schoolsRes, licRes, usageRes, orgsRes] = await Promise.all([
       supabase.from("schools").select("id, name").order("name"),
       supabase.from("school_licenses").select("*"),
       supabase.rpc("school_license_usage_all"),
+      supabase
+        .from("crm_organizations")
+        .select("id, name, type, region, status, linked_school_id")
+        .in("status", ["zkusebni", "zakaznik"])
+        .is("linked_school_id", null)
+        .order("name"),
     ]);
     if (schoolsRes.error) {
       toast({ title: "Chyba", description: schoolsRes.error.message, variant: "destructive" });
@@ -63,6 +70,7 @@ const SchoolLicensesManager = () => {
         students_used: useBy.get(s.id)?.s ?? 0,
       }))
     );
+    setPending((orgsRes.data as PendingOrgRow[]) ?? []);
     setLoading(false);
   };
 
@@ -71,7 +79,7 @@ const SchoolLicensesManager = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Školní licence</CardTitle>
+        <CardTitle>Spolupracující organizace</CardTitle>
       </CardHeader>
       <CardContent>
         {loading ? (
