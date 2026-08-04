@@ -43,7 +43,7 @@ const adminTabs = [
   { id: "staff", label: "Zaměstnanci", icon: UserCog, module: "admin_only" },
   { id: "stats", label: "Statistiky", icon: Activity, module: "stats" },
   { id: "schools", label: "Školy", icon: School, module: "schools" },
-  { id: "licenses", label: "Školní licence", icon: Award, module: "school_licenses" },
+  { id: "licenses", label: "Spolupracující organizace", icon: Award, module: "school_licenses" },
   { id: "users", label: "Uživatelé", icon: Users, module: "users" },
   { id: "textbook-overview", label: "Přehled učebnic", icon: Library, module: "textbook_overview" },
   { id: "academy", label: "Akademie", icon: Award, module: "academy" },
