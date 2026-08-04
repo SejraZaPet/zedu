@@ -85,78 +85,105 @@ const SchoolLicensesManager = () => {
         {loading ? (
           <p className="text-muted-foreground">Načítání…</p>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Škola</TableHead>
-                <TableHead>Balíček</TableHead>
-                <TableHead>Učitelé</TableHead>
-                <TableHead>Žáci</TableHead>
-                <TableHead>Stav</TableHead>
-                <TableHead>Expirace</TableHead>
-                <TableHead className="text-right">Akce</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((r) => {
-                const l = r.license;
-                const over =
-                  l &&
-                  ((l.seats_teachers !== null && r.teachers_used > l.seats_teachers) ||
-                    (l.seats_students !== null && r.students_used > l.seats_students));
-                return (
-                  <TableRow key={r.id}>
-                    <TableCell className="font-medium">{r.name}</TableCell>
-                    <TableCell>{l ? PLAN_LABELS[l.plan] : <span className="text-muted-foreground">Bez licence</span>}</TableCell>
-                    <TableCell className={over ? "text-destructive" : ""}>
-                      {l ? fmtSeats(r.teachers_used, l.seats_teachers) : r.teachers_used}
-                    </TableCell>
-                    <TableCell className={over ? "text-destructive" : ""}>
-                      {l ? fmtSeats(r.students_used, l.seats_students) : r.students_used}
-                    </TableCell>
-                    <TableCell>
-                      {l ? (
-                        <Badge variant={isExpired(l) ? "destructive" : l.status === "active" ? "default" : "secondary"}>
-                          {STATUS_LABELS[l.status]}
-                        </Badge>
-                      ) : "—"}
-                    </TableCell>
-                    <TableCell>{l?.expires_at ? new Date(l.expires_at).toLocaleDateString("cs-CZ") : "—"}</TableCell>
-                    <TableCell className="text-right">
-                      <Button size="sm" variant="outline" onClick={() => setEditing(r)}>
-                        {l ? "Upravit" : "Vytvořit"}
-                      </Button>
-                    </TableCell>
+          <Tabs defaultValue="schools">
+            <TabsList className="mb-4">
+              <TabsTrigger value="schools">Školy s licencí ({rows.length})</TabsTrigger>
+              <TabsTrigger value="crm">Zkušební / zákazníci z CRM ({pending.length})</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="schools">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Škola</TableHead>
+                    <TableHead>Balíček</TableHead>
+                    <TableHead>Učitelé</TableHead>
+                    <TableHead>Žáci</TableHead>
+                    <TableHead>Stav</TableHead>
+                    <TableHead>Expirace</TableHead>
+                    <TableHead className="text-right">Akce</TableHead>
                   </TableRow>
-                );
-              })}
-              {pending.map((o) => (
-                <TableRow key={`org-${o.id}`} className="bg-muted/30">
-                  <TableCell className="font-medium">
-                    {o.name}
-                    <span className="ml-2 text-xs text-muted-foreground">
-                      {CRM_TYPES.find((t) => t.value === o.type)?.label ?? o.type}
-                      {o.region ? ` · ${o.region}` : ""}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" style={{ borderColor: statusMeta(o.status).color, color: statusMeta(o.status).color }}>
-                      {statusMeta(o.status).label}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">—</TableCell>
-                  <TableCell className="text-muted-foreground">—</TableCell>
-                  <TableCell><Badge variant="secondary">Čeká na propojení</Badge></TableCell>
-                  <TableCell className="text-muted-foreground">—</TableCell>
-                  <TableCell className="text-right">
-                    <Button size="sm" variant="ghost" asChild>
-                      <a href={`/admin?tab=crm&org=${o.id}`}>CRM detail</a>
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                </TableHeader>
+                <TableBody>
+                  {rows.map((r) => {
+                    const l = r.license;
+                    const over =
+                      l &&
+                      ((l.seats_teachers !== null && r.teachers_used > l.seats_teachers) ||
+                        (l.seats_students !== null && r.students_used > l.seats_students));
+                    return (
+                      <TableRow key={r.id}>
+                        <TableCell className="font-medium">{r.name}</TableCell>
+                        <TableCell>{l ? PLAN_LABELS[l.plan] : <span className="text-muted-foreground">Bez licence</span>}</TableCell>
+                        <TableCell className={over ? "text-destructive" : ""}>
+                          {l ? fmtSeats(r.teachers_used, l.seats_teachers) : r.teachers_used}
+                        </TableCell>
+                        <TableCell className={over ? "text-destructive" : ""}>
+                          {l ? fmtSeats(r.students_used, l.seats_students) : r.students_used}
+                        </TableCell>
+                        <TableCell>
+                          {l ? (
+                            <Badge variant={isExpired(l) ? "destructive" : l.status === "active" ? "default" : "secondary"}>
+                              {STATUS_LABELS[l.status]}
+                            </Badge>
+                          ) : "—"}
+                        </TableCell>
+                        <TableCell>{l?.expires_at ? new Date(l.expires_at).toLocaleDateString("cs-CZ") : "—"}</TableCell>
+                        <TableCell className="text-right">
+                          <Button size="sm" variant="outline" onClick={() => setEditing(r)}>
+                            {l ? "Upravit" : "Vytvořit"}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </TabsContent>
+
+            <TabsContent value="crm">
+              {pending.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Žádné organizace ve stavu zkušební nebo zákazník.</p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Organizace</TableHead>
+                      <TableHead>Typ</TableHead>
+                      <TableHead>Region</TableHead>
+                      <TableHead>Stav v CRM</TableHead>
+                      <TableHead>Napojení na účet</TableHead>
+                      <TableHead className="text-right">Akce</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {pending.map((o) => (
+                      <TableRow key={o.id}>
+                        <TableCell className="font-medium">{o.name}</TableCell>
+                        <TableCell>{CRM_TYPES.find((t) => t.value === o.type)?.label ?? o.type}</TableCell>
+                        <TableCell>{o.region || "—"}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" style={{ borderColor: statusMeta(o.status).color, color: statusMeta(o.status).color }}>
+                            {statusMeta(o.status).label}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {o.linked_school_id
+                            ? <Badge variant="default">Propojeno se školou</Badge>
+                            : <Badge variant="secondary">Čeká na propojení</Badge>}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button size="sm" variant="ghost" asChild>
+                            <a href={`/admin?tab=crm&org=${o.id}`}>CRM detail</a>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </TabsContent>
+          </Tabs>
         )}
         <EditDialog row={editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); void load(); }} />
       </CardContent>
