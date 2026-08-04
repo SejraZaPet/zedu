@@ -57,6 +57,8 @@ const WIDTHS = [3, 6, 12];
 interface Props {
   sessionId: string;
   data: WhiteboardData;
+  /** index of the slide these strokes belong to (whiteboard is per-slide) */
+  slideIndex: number;
   readOnly?: boolean;
   onClose?: () => void;
   /** when true, renders a transparent overlay covering its parent */
