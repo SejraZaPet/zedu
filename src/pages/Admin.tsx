@@ -74,6 +74,17 @@ const teacherTabs = [
 
 type Tab = "dashboard" | "stats" | "textbooks" | "lessons" | "outline" | "mcq" | "matching" | "slide-edit" | "video-ai" | "subjects" | "users" | "classes" | "results" | "help" | "notifications" | "schools" | "licenses" | "audit" | "templates" | "landing" | "avatars" | "textbook-overview" | "academy" | "academy-pathways" | "academy-evidence" | "crm" | "staff";
 
+/** Dvouúrovňová navigace administrace. `help` a `dashboard` řešíme mimo/uvnitř kategorií. */
+const adminGroups: { id: string; label: string; tabs: string[] }[] = [
+  { id: "overview", label: "Přehled", tabs: ["dashboard", "stats"] },
+  { id: "sales", label: "Prodej a zákazníci", tabs: ["crm", "licenses"] },
+  { id: "people", label: "Lidé", tabs: ["users", "staff"] },
+  { id: "content", label: "Vzdělávací obsah", tabs: ["textbook-overview", "templates"] },
+  { id: "academy", label: "ZEdu Akademie", tabs: ["academy", "academy-pathways", "academy-evidence"] },
+  { id: "appearance", label: "Vzhled webu", tabs: ["landing", "avatars"] },
+  { id: "system", label: "Systém", tabs: ["schools", "notifications", "audit"] },
+];
+
 const Admin = () => {
   const { isAdmin, isStaff, isTeacher, loading, logout } = useAdmin();
   const { can, isAdmin: isRealAdmin } = useStaffPermissions();
