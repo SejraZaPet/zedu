@@ -45,7 +45,7 @@ const StaffManager = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("staff_members")
-      .select("id, profile_id, position, active, hired_at, profile:profiles!staff_members_profile_id_fkey(first_name, last_name, email)")
+      .select("id, profile_id, position, active, hired_at, private_email, work_email, phone, profile:profiles!staff_members_profile_id_fkey(first_name, last_name, email)")
       .order("created_at", { ascending: false });
     if (error) toast({ title: "Nepodařilo se načíst zaměstnance", description: error.message, variant: "destructive" });
     setStaff((data as unknown as StaffRow[]) ?? []);
