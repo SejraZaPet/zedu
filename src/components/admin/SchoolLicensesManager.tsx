@@ -130,6 +130,31 @@ const SchoolLicensesManager = () => {
                   </TableRow>
                 );
               })}
+              {pending.map((o) => (
+                <TableRow key={`org-${o.id}`} className="bg-muted/30">
+                  <TableCell className="font-medium">
+                    {o.name}
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      {CRM_TYPES.find((t) => t.value === o.type)?.label ?? o.type}
+                      {o.region ? ` · ${o.region}` : ""}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" style={{ borderColor: statusMeta(o.status).color, color: statusMeta(o.status).color }}>
+                      {statusMeta(o.status).label}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">—</TableCell>
+                  <TableCell className="text-muted-foreground">—</TableCell>
+                  <TableCell><Badge variant="secondary">Čeká na propojení</Badge></TableCell>
+                  <TableCell className="text-muted-foreground">—</TableCell>
+                  <TableCell className="text-right">
+                    <Button size="sm" variant="ghost" asChild>
+                      <a href={`/admin?tab=crm&org=${o.id}`}>CRM detail</a>
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
         )}
