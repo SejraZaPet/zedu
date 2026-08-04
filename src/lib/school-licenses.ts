@@ -35,6 +35,8 @@ export interface SchoolLicense {
   admin_notes: string | null;
   trial_duration_days: number | null;
   contract_years: number | null;
+  is_paid: boolean;
+  paid_at: string | null;
   updated_at: string;
 }
 

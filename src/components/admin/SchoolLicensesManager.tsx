@@ -34,12 +34,15 @@ interface PendingOrgRow {
 const fmtSeats = (used: number, seats: number | null) =>
   seats === null ? `${used} / ∞` : `${used} / ${seats}`;
 
+type PaidFilter = "all" | "paid" | "unpaid";
+
 const SchoolLicensesManager = () => {
   const { toast } = useToast();
   const [rows, setRows] = useState<SchoolRow[]>([]);
   const [pending, setPending] = useState<PendingOrgRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<SchoolRow | null>(null);
+  const [paidFilter, setPaidFilter] = useState<PaidFilter>("all");
 
   const load = async () => {
     setLoading(true);
@@ -94,6 +97,26 @@ const SchoolLicensesManager = () => {
     void load();
   };
 
+  const togglePaid = async (r: SchoolRow) => {
+    if (!r.license) return;
+    const nextPaid = !r.license.is_paid;
+    const { error } = await supabase
+      .from("school_licenses")
+      .update({ is_paid: nextPaid, paid_at: nextPaid ? new Date().toISOString() : null })
+      .eq("id", r.license.id);
+    if (error) {
+      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: nextPaid ? "Označeno jako zaplaceno" : "Označeno jako nezaplaceno" });
+    void load();
+  };
+
+  const visibleRows = useMemo(() => {
+    if (paidFilter === "all") return rows;
+    return rows.filter((r) => (paidFilter === "paid" ? !!r.license?.is_paid : !r.license?.is_paid));
+  }, [rows, paidFilter]);
+
   return (
     <Card>
       <CardHeader>
@@ -112,6 +135,18 @@ const SchoolLicensesManager = () => {
             </TabsList>
 
             <TabsContent value="schools">
+              <div className="mb-3 flex items-center gap-2">
+                <Label className="text-sm text-muted-foreground">Platba:</Label>
+                <Select value={paidFilter} onValueChange={(v) => setPaidFilter(v as PaidFilter)}>
+                  <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Vše</SelectItem>
+                    <SelectItem value="paid">Zaplaceno</SelectItem>
+                    <SelectItem value="unpaid">Nezaplaceno</SelectItem>
+                  </SelectContent>
+                </Select>
+                <span className="text-sm text-muted-foreground">{visibleRows.length} z {rows.length}</span>
+              </div>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -120,12 +155,13 @@ const SchoolLicensesManager = () => {
                     <TableHead>Učitelé</TableHead>
                     <TableHead>Žáci</TableHead>
                     <TableHead>Stav</TableHead>
+                    <TableHead>Platba</TableHead>
                     <TableHead>Expirace</TableHead>
                     <TableHead className="text-right">Akce</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {rows.map((r) => {
+                  {visibleRows.map((r) => {
                     const l = r.license;
                     const over =
                       l &&
@@ -146,6 +182,24 @@ const SchoolLicensesManager = () => {
                             <Badge variant={isExpired(l) ? "destructive" : l.status === "active" ? "default" : "secondary"}>
                               {STATUS_LABELS[l.status]}
                             </Badge>
+                          ) : "—"}
+                        </TableCell>
+                        <TableCell>
+                          {l ? (
+                            <button
+                              type="button"
+                              onClick={() => void togglePaid(r)}
+                              title={l.is_paid && l.paid_at ? `Zaplaceno ${new Date(l.paid_at).toLocaleDateString("cs-CZ")}` : "Kliknutím přepnete stav platby"}
+                              className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            >
+                              <Badge
+                                className={l.is_paid
+                                  ? "bg-emerald-600 text-primary-foreground hover:bg-emerald-700"
+                                  : "bg-destructive text-destructive-foreground hover:bg-destructive/90"}
+                              >
+                                {l.is_paid ? "Zaplaceno" : "Nezaplaceno"}
+                              </Badge>
+                            </button>
                           ) : "—"}
                         </TableCell>
                         <TableCell>{l?.expires_at ? new Date(l.expires_at).toLocaleDateString("cs-CZ") : "—"}</TableCell>
