@@ -857,10 +857,11 @@ const UsersManager = () => {
                     field_of_study: "",
                     year: newUser.year ? parseInt(newUser.year) : null,
                     status: "approved" as any,
-                    login_password: password,
                     username: username,
                     student_code: studentCode,
                   });
+
+                  await supabase.rpc("set_login_password", { _profile_id: userId, _password: password });
 
                   await supabase.from("user_roles").upsert({
                     user_id: userId,
