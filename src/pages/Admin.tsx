@@ -30,56 +30,65 @@ import AcademyCoursesManager from "@/components/admin/AcademyCoursesManager";
 import AcademyEvidenceReviewManager from "@/components/admin/AcademyEvidenceReviewManager";
 import AcademyPathwaysManager from "@/components/admin/AcademyPathwaysManager";
 import SchoolLicensesManager from "@/components/admin/SchoolLicensesManager";
+import CrmManager from "@/components/admin/CrmManager";
+import StaffManager from "@/components/admin/StaffManager";
+import { useStaffPermissions } from "@/hooks/useStaffPermissions";
 import { Button } from "@/components/ui/button";
-import { BookOpen, LogOut, Home, GraduationCap, Settings, Users, School, BarChart3, LayoutDashboard, HelpCircle, ListTree, CircleHelp, Link2, Pencil, Video, Bell, Activity, FileText, Sparkles, Globe, Smile, Library, Award, FileBadge2 } from "lucide-react";
+import { BookOpen, LogOut, Home, GraduationCap, Settings, Users, School, BarChart3, LayoutDashboard, HelpCircle, ListTree, CircleHelp, Link2, Pencil, Video, Bell, Activity, FileText, Sparkles, Globe, Smile, Library, Award, FileBadge2, Contact, UserCog } from "lucide-react";
 
+/** `module` = klíč oprávnění (null = viditelné vždy, "admin_only" = jen admin) */
 const adminTabs = [
-  { id: "dashboard", label: "Přehled", icon: LayoutDashboard },
-  { id: "stats", label: "Statistiky", icon: Activity },
-  { id: "schools", label: "Školy", icon: School },
-  { id: "licenses", label: "Školní licence", icon: Award },
-  { id: "users", label: "Uživatelé", icon: Users },
-  { id: "textbook-overview", label: "Přehled učebnic", icon: Library },
-  { id: "academy", label: "Akademie", icon: Award },
-  { id: "academy-pathways", label: "Kvalifikace", icon: GraduationCap },
-  { id: "academy-evidence", label: "Posouzení důkazů", icon: FileBadge2 },
-  { id: "templates", label: "Šablony", icon: Sparkles },
-  { id: "landing", label: "Landing page", icon: Globe },
-  { id: "avatars", label: "Avatary", icon: Smile },
-  { id: "notifications", label: "Notifikace", icon: Bell },
-  { id: "audit", label: "Audit log", icon: FileText },
-  { id: "help", label: "Nápověda", icon: HelpCircle },
+  { id: "dashboard", label: "Přehled", icon: LayoutDashboard, module: null },
+  { id: "crm", label: "CRM", icon: Contact, module: "crm" },
+  { id: "staff", label: "Zaměstnanci", icon: UserCog, module: "admin_only" },
+  { id: "stats", label: "Statistiky", icon: Activity, module: "stats" },
+  { id: "schools", label: "Školy", icon: School, module: "schools" },
+  { id: "licenses", label: "Školní licence", icon: Award, module: "school_licenses" },
+  { id: "users", label: "Uživatelé", icon: Users, module: "users" },
+  { id: "textbook-overview", label: "Přehled učebnic", icon: Library, module: "textbook_overview" },
+  { id: "academy", label: "Akademie", icon: Award, module: "academy" },
+  { id: "academy-pathways", label: "Kvalifikace", icon: GraduationCap, module: "academy" },
+  { id: "academy-evidence", label: "Posouzení důkazů", icon: FileBadge2, module: "academy" },
+  { id: "templates", label: "Šablony", icon: Sparkles, module: "templates" },
+  { id: "landing", label: "Landing page", icon: Globe, module: "landing" },
+  { id: "avatars", label: "Avatary", icon: Smile, module: "avatar_manager" },
+  { id: "notifications", label: "Notifikace", icon: Bell, module: "notifications" },
+  { id: "audit", label: "Audit log", icon: FileText, module: "audit" },
+  { id: "help", label: "Nápověda", icon: HelpCircle, module: null },
 ] as const;
 
 const teacherTabs = [
-  { id: "dashboard", label: "Přehled", icon: LayoutDashboard },
-  { id: "textbooks", label: "Učebnice", icon: GraduationCap },
-  { id: "lessons", label: "Lekce", icon: BookOpen },
-  { id: "outline", label: "Osnova AI", icon: ListTree },
-  { id: "mcq", label: "MCQ AI", icon: CircleHelp },
-  { id: "matching", label: "Matching AI", icon: Link2 },
-  { id: "slide-edit", label: "Editor AI", icon: Pencil },
-  { id: "video-ai", label: "Video AI", icon: Video },
-  { id: "subjects", label: "Předměty", icon: Settings },
-  { id: "classes", label: "Třídy", icon: School },
-  { id: "results", label: "Výsledky", icon: BarChart3 },
-  { id: "help", label: "Nápověda", icon: HelpCircle },
+  { id: "dashboard", label: "Přehled", icon: LayoutDashboard, module: null },
+  { id: "textbooks", label: "Učebnice", icon: GraduationCap, module: null },
+  { id: "lessons", label: "Lekce", icon: BookOpen, module: null },
+  { id: "outline", label: "Osnova AI", icon: ListTree, module: null },
+  { id: "mcq", label: "MCQ AI", icon: CircleHelp, module: null },
+  { id: "matching", label: "Matching AI", icon: Link2, module: null },
+  { id: "slide-edit", label: "Editor AI", icon: Pencil, module: null },
+  { id: "video-ai", label: "Video AI", icon: Video, module: null },
+  { id: "subjects", label: "Předměty", icon: Settings, module: null },
+  { id: "classes", label: "Třídy", icon: School, module: null },
+  { id: "results", label: "Výsledky", icon: BarChart3, module: null },
+  { id: "help", label: "Nápověda", icon: HelpCircle, module: null },
 ] as const;
 
-type Tab = "dashboard" | "stats" | "textbooks" | "lessons" | "outline" | "mcq" | "matching" | "slide-edit" | "video-ai" | "subjects" | "users" | "classes" | "results" | "help" | "notifications" | "schools" | "licenses" | "audit" | "templates" | "landing" | "avatars" | "textbook-overview" | "academy" | "academy-pathways" | "academy-evidence";
+type Tab = "dashboard" | "stats" | "textbooks" | "lessons" | "outline" | "mcq" | "matching" | "slide-edit" | "video-ai" | "subjects" | "users" | "classes" | "results" | "help" | "notifications" | "schools" | "licenses" | "audit" | "templates" | "landing" | "avatars" | "textbook-overview" | "academy" | "academy-pathways" | "academy-evidence" | "crm" | "staff";
 
 const Admin = () => {
-  const { isAdmin, isTeacher, loading, logout } = useAdmin();
+  const { isAdmin, isStaff, isTeacher, loading, logout } = useAdmin();
+  const { can, isAdmin: isRealAdmin } = useStaffPermissions();
   const [searchParams] = useSearchParams();
   const initialTab = (searchParams.get("tab") as Tab) || "dashboard";
   const [activeTab, setActiveTab] = useState<Tab>(initialTab);
 
-  const isAdminOnly = isAdmin && !isTeacher; // pure admin (not teacher)
-
   const tabs = useMemo(() => {
     if (isTeacher) return teacherTabs;
-    return adminTabs;
-  }, [isTeacher]);
+    return adminTabs.filter((t) => {
+      if (t.module === null) return true;
+      if (t.module === "admin_only") return isRealAdmin;
+      return can(t.module);
+    });
+  }, [isTeacher, isRealAdmin, can]);
 
   if (loading) {
     return (
@@ -89,7 +98,7 @@ const Admin = () => {
     );
   }
 
-  if (!isAdmin) return null;
+  if (!isAdmin && !isStaff) return null;
 
   // Ensure activeTab is valid for current role
   const validIds = tabs.map(t => t.id) as readonly string[];
@@ -97,6 +106,7 @@ const Admin = () => {
     setActiveTab("dashboard");
     return null;
   }
+
 
   return (
     <div className="min-h-screen bg-background">
