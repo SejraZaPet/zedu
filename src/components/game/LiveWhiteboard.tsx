@@ -18,8 +18,37 @@ export interface Stroke {
 }
 
 export interface WhiteboardData {
-  strokes: Stroke[];
   visible: boolean;
+  /** strokes keyed by slide index (as string) */
+  strokesBySlide?: Record<string, Stroke[]>;
+  /** @deprecated legacy flat format — migrated on read to slide "0" */
+  strokes?: Stroke[];
+}
+
+export interface NormalizedWhiteboard {
+  visible: boolean;
+  strokesBySlide: Record<string, Stroke[]>;
+}
+
+/** Accepts both the new per-slide format and the legacy flat `{ strokes, visible }`. */
+export function normalizeWhiteboard(raw: any): NormalizedWhiteboard {
+  const visible = !!raw?.visible;
+  const bySlide = raw?.strokesBySlide;
+  if (bySlide && typeof bySlide === "object" && !Array.isArray(bySlide)) {
+    const out: Record<string, Stroke[]> = {};
+    for (const [k, v] of Object.entries(bySlide)) if (Array.isArray(v)) out[k] = v as Stroke[];
+    return { visible, strokesBySlide: out };
+  }
+  if (Array.isArray(raw?.strokes) && raw.strokes.length > 0) {
+    // legacy: treat as belonging to the first slide
+    return { visible, strokesBySlide: { "0": raw.strokes as Stroke[] } };
+  }
+  return { visible, strokesBySlide: {} };
+}
+
+export function getSlideStrokes(raw: any, slideIndex: number): Stroke[] {
+  const key = String(Math.max(0, slideIndex ?? 0));
+  return normalizeWhiteboard(raw).strokesBySlide[key] ?? [];
 }
 
 const COLORS = ["#000000", "#ef4444", "#3b82f6", "#22c55e", "#f97316", "#a855f7", "#ffffff", "#facc15"];
@@ -28,6 +57,8 @@ const WIDTHS = [3, 6, 12];
 interface Props {
   sessionId: string;
   data: WhiteboardData;
+  /** index of the slide these strokes belong to (whiteboard is per-slide) */
+  slideIndex: number;
   readOnly?: boolean;
   onClose?: () => void;
   /** when true, renders a transparent overlay covering its parent */
@@ -102,7 +133,7 @@ const renderStroke = (ctx: CanvasRenderingContext2D, s: Stroke, w: number, h: nu
   ctx.restore();
 };
 
-const LiveWhiteboard = ({ sessionId, data, readOnly = false, onClose, overlay = true, className, localOnly = false, simplified = false }: Props) => {
+const LiveWhiteboard = ({ sessionId, data, slideIndex, readOnly = false, onClose, overlay = true, className, localOnly = false, simplified = false }: Props) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const bottomCanvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -118,7 +149,14 @@ const LiveWhiteboard = ({ sessionId, data, readOnly = false, onClose, overlay = 
   const [pendingStrokes, setPendingStrokes] = useState<Stroke[]>([]);
   const pendingPersistRef = useRef<Promise<void> | null>(null);
 
-  const remoteStrokes = data.strokes ?? [];
+  const remoteStrokes = useMemo(() => getSlideStrokes(data, slideIndex), [data, slideIndex]);
+
+  // Per-slide isolation: drop optimistic/redo state when the slide changes
+  useEffect(() => {
+    setPendingStrokes([]);
+    setRedoStack([]);
+  }, [slideIndex]);
+
   const strokes = useMemo(() => {
     if (localOnly) {
       // In local-only mode, keep pending strokes forever; render remote UNDER local
@@ -192,18 +230,29 @@ const LiveWhiteboard = ({ sessionId, data, readOnly = false, onClose, overlay = 
     }
   });
 
-  const persist = useCallback(async (next: WhiteboardData) => {
+  /** Writes strokes for the CURRENT slide only, merging with whatever is stored
+   *  for the other slides (read-modify-write so parallel writers never clobber). */
+  const persistSlideStrokes = useCallback(async (next: Stroke[]) => {
     // Serialize writes to avoid out-of-order DB updates
     const prev = pendingPersistRef.current ?? Promise.resolve();
+    const key = String(Math.max(0, slideIndex ?? 0));
     const p = prev.then(async () => {
+      let base: NormalizedWhiteboard = normalizeWhiteboard(data);
+      const { data: row } = await supabase
+        .from("game_sessions")
+        .select("whiteboard_data")
+        .eq("id", sessionId)
+        .maybeSingle();
+      if (row && (row as any).whiteboard_data) base = normalizeWhiteboard((row as any).whiteboard_data);
+      const strokesBySlide = { ...base.strokesBySlide, [key]: next };
       await supabase
         .from("game_sessions")
-        .update({ whiteboard_data: next as any })
+        .update({ whiteboard_data: { visible: base.visible, strokesBySlide } as any })
         .eq("id", sessionId);
     });
     pendingPersistRef.current = p;
     return p;
-  }, [sessionId]);
+  }, [sessionId, slideIndex, data]);
 
   const commitStrokes = useCallback((next: Stroke[]) => {
     if (localOnly) {
@@ -212,8 +261,8 @@ const LiveWhiteboard = ({ sessionId, data, readOnly = false, onClose, overlay = 
       setPendingStrokes(next.filter((s) => !remoteIds.has(s.id)));
       return;
     }
-    persist({ strokes: next, visible: data.visible });
-  }, [persist, data.visible, localOnly, remoteStrokes]);
+    persistSlideStrokes(next);
+  }, [persistSlideStrokes, localOnly, remoteStrokes]);
 
   const getRelative = (e: PointerEvent | React.PointerEvent): [number, number] => {
     // Měříme přímo z canvas elementu, ne z obalového containeru — na mobilech
@@ -318,7 +367,7 @@ const LiveWhiteboard = ({ sessionId, data, readOnly = false, onClose, overlay = 
       setPendingStrokes([]);
       return;
     }
-    if (strokes.length && !window.confirm("Vymazat celou tabuli?")) return;
+    if (strokes.length && !window.confirm("Vymazat kresby na tomto slidu?")) return;
     setRedoStack([]);
     commitStrokes([]);
   };

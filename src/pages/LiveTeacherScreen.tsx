@@ -24,7 +24,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import PollProjectorView from "@/components/activities/PollProjectorView";
 import WordCloudView from "@/components/activities/WordCloudView";
-import LiveWhiteboard, { WhiteboardData } from "@/components/game/LiveWhiteboard";
+import LiveWhiteboard, { WhiteboardData, normalizeWhiteboard } from "@/components/game/LiveWhiteboard";
 import RemoteControlButton from "@/components/live/RemoteControlButton";
 import { presenterRemoteChannelName } from "@/pages/PresenterRemote";
 import ProjectorSlideView from "@/components/live/ProjectorSlideView";
@@ -67,7 +67,7 @@ const LiveTeacherScreen = () => {
   const isFinished = session?.status === "finished";
   const settings = session?.settings as any;
   const gameCode = session?.game_code || "";
-  const whiteboard: WhiteboardData = ((session as any)?.whiteboard_data as WhiteboardData) ?? { strokes: [], visible: false };
+  const whiteboard: WhiteboardData = ((session as any)?.whiteboard_data as WhiteboardData) ?? { visible: false, strokesBySlide: {} };
   const whiteboardVisible = whiteboard.visible;
   const { unansweredCount } = useLiveQuestions(sessionId);
 
@@ -100,11 +100,18 @@ const LiveTeacherScreen = () => {
 
   const toggleWhiteboard = useCallback(async () => {
     if (!sessionId) return;
+    // Read-modify-write: hiding/showing must NEVER touch strokesBySlide
+    const { data: row } = await supabase
+      .from("game_sessions")
+      .select("whiteboard_data")
+      .eq("id", sessionId)
+      .maybeSingle();
+    const cur = normalizeWhiteboard((row as any)?.whiteboard_data ?? whiteboard);
     await supabase
       .from("game_sessions")
-      .update({ whiteboard_data: { ...whiteboard, visible: !whiteboardVisible } as any })
+      .update({ whiteboard_data: { visible: !cur.visible, strokesBySlide: cur.strokesBySlide } as any })
       .eq("id", sessionId);
-  }, [sessionId, whiteboard, whiteboardVisible]);
+  }, [sessionId, whiteboard]);
 
   const handleProjectorScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
@@ -1264,6 +1271,7 @@ const LiveTeacherScreen = () => {
             <LiveWhiteboard
               sessionId={sessionId}
               data={whiteboard}
+              slideIndex={currentIndex}
               onClose={toggleWhiteboard}
             />
           )}
