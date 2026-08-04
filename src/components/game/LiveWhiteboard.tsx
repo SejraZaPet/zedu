@@ -367,7 +367,7 @@ const LiveWhiteboard = ({ sessionId, data, slideIndex, readOnly = false, onClose
       setPendingStrokes([]);
       return;
     }
-    if (strokes.length && !window.confirm("Vymazat celou tabuli?")) return;
+    if (strokes.length && !window.confirm("Vymazat kresby na tomto slidu?")) return;
     setRedoStack([]);
     commitStrokes([]);
   };
