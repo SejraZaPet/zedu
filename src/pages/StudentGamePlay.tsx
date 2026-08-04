@@ -250,25 +250,14 @@ const StudentGamePlay = () => {
     return <GameLeaderboardFinal session={session} players={players} responses={responses} highlightPlayerId={playerId} />;
   }
 
-  const pacingMode = (session.settings as any)?.pacingMode === "student" ? "student" : "teacher";
   const anonymousAnswers = !!(session.settings as any)?.anonymousAnswers;
   const anonymousLabelMap = anonymousAnswers ? buildAnonymousLabelMap(players as GamePlayer[]) : undefined;
-  const totalSlides = (session?.activity_data as any[])?.length ?? 0;
   const teacherQi = session.current_question_index;
   const studentQi = Math.max(0, Math.min(totalSlides - 1, myPlayer?.student_index ?? 0));
   const qi = pacingMode === "student" ? studentQi : teacherQi;
   const whiteboard: WhiteboardData = ((session as any).whiteboard_data as WhiteboardData) ?? { visible: false, strokesBySlide: {} };
   const currentSlideData = (session?.activity_data as any[])?.[qi];
   const isSlideFormat = currentSlideData && currentSlideData.projector !== undefined && !currentSlideData.question;
-
-  // Initialize student_index once when entering student-paced mode without a value
-  useEffect(() => {
-    if (pacingMode !== "student") return;
-    if (!joinToken) return;
-    if (myPlayer && (myPlayer.student_index === null || myPlayer.student_index === undefined)) {
-      supabase.rpc("set_student_index" as any, { _join_token: joinToken, _index: 0 });
-    }
-  }, [pacingMode, joinToken, myPlayer?.id, myPlayer?.student_index]);
 
   const setMyStudentIndex = async (next: number) => {
     if (!joinToken) return;
@@ -285,17 +274,10 @@ const StudentGamePlay = () => {
   };
 
   // ---- Race mode (Time-to-Climb) student-side overlay ----
-  const raceSettings = (session.settings as any) || {};
-  const isRaceMode = raceSettings.gameMode === "race";
+  const raceSettings = settingsAny;
   const raceStartedAtMs = raceSettings.raceStartedAt ? new Date(raceSettings.raceStartedAt).getTime() : null;
   const raceDurationSec = Number(raceSettings.raceDurationSec) || 180;
 
-  const [nowTick, setNowTick] = useState<number>(() => Date.now());
-  useEffect(() => {
-    if (!isRaceMode) return;
-    const id = setInterval(() => setNowTick(Date.now()), 500);
-    return () => clearInterval(id);
-  }, [isRaceMode]);
 
   if (isRaceMode) {
     const remainingSec = raceStartedAtMs
