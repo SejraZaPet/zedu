@@ -14,6 +14,7 @@ import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SLIDE_GAME_MODES } from "@/lib/game-slide-settings";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import BlockEditor from "@/components/admin/BlockEditor";
 import SlideCanvas, { SLIDE_LAYOUTS, type SlideLayout } from "@/components/admin/SlideCanvas";
