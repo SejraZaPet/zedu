@@ -100,3 +100,6 @@ verify_jwt = false
 [functions.crm-unsubscribe]
 verify_jwt = false
 
+[functions.check-license-expiring-daily]
+verify_jwt = false
+
