@@ -65,7 +65,8 @@ const CrmManager = () => {
   const [regionFilter, setRegionFilter] = useState("all");
   const [tagFilter, setTagFilter] = useState<string[]>([]);
 
-  const [detailId, setDetailId] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
+  const [detailId, setDetailId] = useState<string | null>(searchParams.get("org"));
   const [bulkOpen, setBulkOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
