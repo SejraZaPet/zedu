@@ -212,4 +212,64 @@ const StaffManager = () => {
   );
 };
 
+const StaffContactCard = ({ staff, onSaved }: { staff: StaffRow; onSaved: (s: StaffRow) => void }) => {
+  const [position, setPosition] = useState(staff.position ?? "");
+  const [privateEmail, setPrivateEmail] = useState(staff.private_email ?? "");
+  const [workEmail, setWorkEmail] = useState(staff.work_email ?? "");
+  const [phone, setPhone] = useState(staff.phone ?? "");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setPosition(staff.position ?? "");
+    setPrivateEmail(staff.private_email ?? "");
+    setWorkEmail(staff.work_email ?? "");
+    setPhone(staff.phone ?? "");
+  }, [staff.id]);
+
+  const save = async () => {
+    setSaving(true);
+    const payload = {
+      position: position.trim() || null,
+      private_email: privateEmail.trim() || null,
+      work_email: workEmail.trim() || null,
+      phone: phone.trim() || null,
+    };
+    const { error } = await supabase.from("staff_members").update(payload).eq("id", staff.id);
+    setSaving(false);
+    if (error) {
+      toast({ title: "Uložení se nepodařilo", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Kontaktní údaje uloženy" });
+    onSaved({ ...staff, ...payload });
+  };
+
+  return (
+    <Card className="p-5 space-y-3">
+      <h3 className="font-heading">Kontaktní údaje</h3>
+      <div className="grid gap-3 md:grid-cols-2">
+        <div>
+          <Label>Pozice</Label>
+          <Input value={position} onChange={(e) => setPosition(e.target.value)} placeholder="Obchodník, Podpora…" />
+        </div>
+        <div>
+          <Label>Telefon</Label>
+          <Input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+420 …" />
+        </div>
+        <div>
+          <Label>Pracovní e-mail</Label>
+          <Input type="email" value={workEmail} onChange={(e) => setWorkEmail(e.target.value)} />
+        </div>
+        <div>
+          <Label>Soukromý e-mail</Label>
+          <Input type="email" value={privateEmail} onChange={(e) => setPrivateEmail(e.target.value)} />
+        </div>
+      </div>
+      <div>
+        <Button size="sm" onClick={save} disabled={saving}>{saving ? "Ukládám…" : "Uložit"}</Button>
+      </div>
+    </Card>
+  );
+};
+
 export default StaffManager;
