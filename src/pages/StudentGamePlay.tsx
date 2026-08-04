@@ -633,7 +633,9 @@ const StudentGamePlay = () => {
 
           {(() => {
             const allowSync = !!liveSettings?.allowStudentDrawSync;
-            const teacherBoardVisible = whiteboard.visible && getSlideStrokes(whiteboard, qi).length > 0;
+            // `visible` is the teacher's own local panel state — students always see
+            // existing strokes for the current slide whenever any exist.
+            const teacherBoardVisible = getSlideStrokes(whiteboard, qi).length > 0;
             const showBoard = teacherBoardVisible || studentDrawMode;
             if (!showBoard && !allowSync && !teacherBoardVisible) {
               // still allow student to open their local scratch pad via button

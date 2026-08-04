@@ -5,7 +5,7 @@ import { BookOpen, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import WallProjectorView from "@/components/activities/WallProjectorView";
 import { AdaptiveReviewProjector } from "@/components/game/AdaptiveReview";
-import LiveWhiteboard, { WhiteboardData } from "@/components/game/LiveWhiteboard";
+import LiveWhiteboard, { WhiteboardData, getSlideStrokes } from "@/components/game/LiveWhiteboard";
 import { LessonBlock } from "@/components/LessonBlockRenderer";
 import ProjectorSlideView from "@/components/live/ProjectorSlideView";
 import { TeamsSlideProjector } from "@/components/game/TeamsSlide";
@@ -220,7 +220,7 @@ const LiveProjectorScreen = () => {
         players={players}
         gameCode={gameCode}
         scrollTop={scrollTop}
-        overlayContent={whiteboard.visible && sessionId ? (
+        overlayContent={sessionId && getSlideStrokes(whiteboard, currentIndex).length > 0 ? (
           <LiveWhiteboard sessionId={sessionId} data={whiteboard} slideIndex={currentIndex} readOnly className="pointer-events-none" />
         ) : null}
       />
