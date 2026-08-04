@@ -458,8 +458,8 @@ export const PresentationEditorDialog = ({
                   </div>
                 )}
 
-                {/* Advanced editor (collapsible) */}
-                <Collapsible className="border border-border rounded-lg">
+                {/* 6. Advanced editor (collapsible, no action buttons inside) */}
+                <Collapsible className="border border-border rounded-lg mt-1">
                   <CollapsibleTrigger className="w-full flex items-center justify-between px-3 py-2 text-xs text-muted-foreground hover:bg-muted/40 transition-colors">
                     <span className="flex items-center gap-1.5">
                       <Settings2 className="w-3.5 h-3.5" />
@@ -472,31 +472,8 @@ export const PresentationEditorDialog = ({
                       <BlockEditor
                         blocks={blocks}
                         onChange={(b) => setBlocks(b)}
-                        toolbarActions={
-                          <>
-                            {onSave && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={async () => {
-                                  await onSave(pendingSlides);
-                                  toast({ title: "Prezentace uložena", description: "Změny byly uloženy k lekci." });
-                                }}
-                                className="gap-1.5 h-8"
-                              >
-                                <Save className="w-4 h-4" />
-                                Uložit
-                              </Button>
-                            )}
-                            <Button size="sm" variant="ghost" className="h-8" onClick={onClose}>
-                              Zrušit
-                            </Button>
-                            <Button size="sm" onClick={() => onLaunch(pendingSlides)} className="gap-1.5 h-8">
-                              <Monitor className="w-4 h-4" />
-                              Spustit prezentaci
-                            </Button>
-                          </>
-                        }
+                        hideToolbar
+                        onHistoryChange={setHistory}
                       />
                     </div>
                   </CollapsibleContent>
@@ -504,9 +481,21 @@ export const PresentationEditorDialog = ({
               </div>
             );
           })()}
+          </div>
 
+          <AddSlideSheet
+            open={addSlideOpen}
+            onOpenChange={setAddSlideOpen}
+            slides={pendingSlides}
+            onAddSlides={(newSlides) => {
+              const updated = [...pendingSlides, ...newSlides];
+              setPendingSlides(updated);
+              setEditingSlideIndex(pendingSlides.length);
+            }}
+          />
         </DialogContent>
       </Dialog>
+
 
       <Dialog open={!!existingSession} onOpenChange={(open) => { if (!open) onCloseExisting(); }}>
         <DialogContent className="max-w-sm">
