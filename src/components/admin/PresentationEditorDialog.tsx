@@ -98,6 +98,8 @@ export const PresentationEditorDialog = ({
 }: Props) => {
   const { toast } = useToast();
   const [darkPreview, setDarkPreview] = useState(true);
+  const [addSlideOpen, setAddSlideOpen] = useState(false);
+  const [history, setHistory] = useState<BlockEditorHistory | null>(null);
   const currentSlide = pendingSlides[editingSlideIndex];
 
   // Migrate legacy slides: if a slide has projector.body text but no blocks,
