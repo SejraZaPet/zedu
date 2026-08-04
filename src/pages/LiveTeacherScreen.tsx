@@ -24,7 +24,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import PollProjectorView from "@/components/activities/PollProjectorView";
 import WordCloudView from "@/components/activities/WordCloudView";
-import LiveWhiteboard, { WhiteboardData, normalizeWhiteboard } from "@/components/game/LiveWhiteboard";
+import LiveWhiteboard, { WhiteboardData } from "@/components/game/LiveWhiteboard";
 import RemoteControlButton from "@/components/live/RemoteControlButton";
 import { presenterRemoteChannelName } from "@/pages/PresenterRemote";
 import ProjectorSlideView from "@/components/live/ProjectorSlideView";
@@ -100,18 +100,9 @@ const LiveTeacherScreen = () => {
 
   const toggleWhiteboard = useCallback(async () => {
     if (!sessionId) return;
-    // Read-modify-write: hiding/showing must NEVER touch strokesBySlide
-    const { data: row } = await supabase
-      .from("game_sessions")
-      .select("whiteboard_data")
-      .eq("id", sessionId)
-      .maybeSingle();
-    const cur = normalizeWhiteboard((row as any)?.whiteboard_data ?? whiteboard);
-    await supabase
-      .from("game_sessions")
-      .update({ whiteboard_data: { visible: !cur.visible, strokesBySlide: cur.strokesBySlide } as any })
-      .eq("id", sessionId);
-  }, [sessionId, whiteboard]);
+    // Atomic backend toggle changes `visible` only and preserves all slide strokes.
+    await supabase.rpc("toggle_game_whiteboard", { _session_id: sessionId });
+  }, [sessionId]);
 
   const handleProjectorScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
