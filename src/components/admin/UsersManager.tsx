@@ -595,9 +595,10 @@ const UsersManager = () => {
                         if (error) {
                           toast({ title: "Chyba", description: error.message, variant: "destructive" });
                         } else {
-                          await supabase.from("profiles").update({
-                            login_password: newPassword
-                          }).eq("id", user.id);
+                          await supabase.rpc("set_login_password", {
+                            _profile_id: user.id,
+                            _password: newPassword,
+                          });
 
                           toast({
                             title: "Heslo změněno",
