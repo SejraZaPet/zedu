@@ -922,10 +922,11 @@ const UsersManager = () => {
                         field_of_study: "",
                         year: null,
                         status: "approved" as any,
-                        login_password: parentPassword,
                         username: parentUsername,
                         parent_email: parentEmail.trim() || null,
                       });
+
+                      await supabase.rpc("set_login_password", { _profile_id: parentUserId, _password: parentPassword });
 
                       await supabase.from("user_roles").upsert({
                         user_id: parentUserId,
