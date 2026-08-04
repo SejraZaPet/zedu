@@ -228,7 +228,7 @@ const Admin = () => {
         )}
 
 
-        {activeTab === "dashboard" && <AdminDashboard onNavigate={(tab) => setActiveTab(tab as Tab)} isTeacher={isTeacher} />}
+        {activeTab === "dashboard" && <AdminDashboard onNavigate={(tab) => { setOpenGroupId(null); setActiveTab(tab as Tab); }} isTeacher={isTeacher} />}
         {activeTab === "stats" && !isTeacher && <SystemStats />}
         {activeTab === "textbooks" && isTeacher && <TeacherTextbooksManager />}
         {activeTab === "lessons" && isTeacher && <LessonsManager />}
