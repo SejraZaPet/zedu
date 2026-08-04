@@ -5,7 +5,9 @@ import { GameLobby } from "@/components/game/GameLobby";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Monitor, Smartphone, StickyNote, ChevronLeft, ChevronRight, Users, StopCircle, ArrowLeft, Brain, Plus, Pencil, BarChart3, MessageCircleQuestion, Eye, LayoutGrid } from "lucide-react";
+import { Monitor, Smartphone, StickyNote, ChevronLeft, ChevronRight, Users, StopCircle, ArrowLeft, Brain, Plus, Pencil, BarChart3, MessageCircleQuestion, Eye, LayoutGrid, Settings, Wrench } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import LiveQuestionsSheet, { useLiveQuestions } from "@/components/game/LiveQuestionsSheet";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -481,137 +483,177 @@ const LiveTeacherScreen = () => {
             </p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <Badge variant="outline">Slide {currentIndex + 1} / {slides.length}</Badge>
-          <Button
-            size="sm"
-            variant="outline"
-            className="gap-1.5"
-            onClick={() => window.open(`/live/projektor/${sessionId}`, '_blank')}
-          >
-            <Monitor className="w-4 h-4" />
-            Projektor
-          </Button>
-          {sessionId && <RemoteControlButton sessionId={sessionId} />}
-          <Button
-            size="sm"
-            variant={whiteboardVisible ? "default" : "outline"}
-            className="gap-1.5"
-            onClick={toggleWhiteboard}
-            title="Živá tabule"
-          >
-            <Pencil className="w-4 h-4" />
-            {whiteboardVisible ? "Skrýt tabuli" : "Tabule"}
-          </Button>
-          <label className="flex items-center gap-2 rounded-md border border-border bg-background px-2.5 py-1.5 text-xs">
-            <Switch
-              checked={!!settings?.allowStudentDrawSync}
-              onCheckedChange={async (checked) => {
-                if (!sessionId) return;
-                await supabase
-                  .from("game_sessions")
-                  .update({ settings: { ...(settings || {}), allowStudentDrawSync: checked } })
-                  .eq("id", sessionId);
-              }}
-              aria-label="Povolit kreslení žáků do streamu"
-            />
-            <span className="whitespace-nowrap">Kreslení žáků do streamu</span>
-          </label>
-          <label className="flex items-center gap-2 rounded-md border border-border bg-background px-2.5 py-1.5 text-xs">
-            <Switch
-              checked={!!settings?.anonymousAnswers}
-              onCheckedChange={async (checked) => {
-                if (!sessionId) return;
-                await supabase
-                  .from("game_sessions")
-                  .update({ settings: { ...(settings || {}), anonymousAnswers: checked } })
-                  .eq("id", sessionId);
-              }}
-              aria-label="Anonymní odpovědi na projektoru"
-            />
-            <span className="whitespace-nowrap">Anonymní odpovědi</span>
-          </label>
-          <label className="flex items-center gap-2 rounded-md border border-border bg-background px-2.5 py-1.5 text-xs">
-            <Switch
-              checked={settings?.pacingMode === "student"}
-              onCheckedChange={async (checked) => {
-                if (!sessionId) return;
-                await supabase
-                  .from("game_sessions")
-                  .update({
-                    settings: { ...(settings || {}), pacingMode: checked ? "student" : "teacher" },
-                  })
-                  .eq("id", sessionId);
-              }}
-              aria-label="Vlastní tempo žáka"
-            />
-            <span className="whitespace-nowrap">
-              Tempo: {settings?.pacingMode === "student" ? "vlastní tempo" : "učitelem"}
-            </span>
-          </label>
-          <label className="flex items-center gap-2 rounded-md border border-border bg-background px-2.5 py-1.5 text-xs">
-            <Switch
-              checked={!!settings?.showRaceTrack}
-              onCheckedChange={async (checked) => {
-                if (!sessionId) return;
-                await supabase
-                  .from("game_sessions")
-                  .update({ settings: { ...(settings || {}), showRaceTrack: checked } })
-                  .eq("id", sessionId);
-              }}
-              aria-label="Zobrazit závodní dráhu na projektoru"
-            />
-            <span className="whitespace-nowrap">Závodní dráha</span>
-          </label>
-          <Button
-            size="sm"
-            variant="outline"
-            className="gap-1.5"
-            onClick={() => setAdaptiveOpen(true)}
-            title="Zobrazit otázky s nízkou úspěšností"
-          >
-            <Brain className="w-4 h-4" />
-            Adaptivní závěr
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="gap-1.5 relative"
-            onClick={() => setResultsPanelOpen(true)}
-            title="Výsledky celé prezentace"
-          >
-            <BarChart3 className="w-4 h-4" />
-            Výsledky třídy
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="gap-1.5"
-            onClick={() => setProgressGridOpen(true)}
-            title="Mřížka postupu žáků"
-          >
-            <LayoutGrid className="w-4 h-4" />
-            Přehled třídy
-          </Button>
-          <Button
-            size="sm"
-            variant={unansweredCount > 0 ? "default" : "outline"}
-            className="gap-1.5 relative"
-            onClick={() => setQuestionsOpen(true)}
-            title="Živé dotazy od žáků"
-          >
-            <MessageCircleQuestion className="w-4 h-4" />
-            Dotazy
-            {unansweredCount > 0 && (
-              <span className="ml-1 inline-flex items-center justify-center rounded-full bg-amber-500 text-white text-[10px] font-bold min-w-[18px] h-[18px] px-1">
-                {unansweredCount}
-              </span>
-            )}
-          </Button>
+
+          {/* Zobrazení */}
+          <TooltipProvider delayDuration={200}>
+            <div className="flex items-center gap-1">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    className="h-9 w-9"
+                    aria-label="Projektor"
+                    onClick={() => window.open(`/live/projektor/${sessionId}`, '_blank')}
+                  >
+                    <Monitor className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Projektor</TooltipContent>
+              </Tooltip>
+              {sessionId && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span><RemoteControlButton sessionId={sessionId} iconOnly /></span>
+                  </TooltipTrigger>
+                  <TooltipContent>Ovládání z mobilu</TooltipContent>
+                </Tooltip>
+              )}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant={whiteboardVisible ? "default" : "outline"}
+                    className="h-9 w-9"
+                    onClick={toggleWhiteboard}
+                    aria-label={whiteboardVisible ? "Skrýt tabuli" : "Tabule"}
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{whiteboardVisible ? "Skrýt tabuli" : "Živá tabule"}</TooltipContent>
+              </Tooltip>
+            </div>
+          </TooltipProvider>
+
+          {/* Nastavení */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button size="sm" variant="outline" className="gap-1.5">
+                <Settings className="w-4 h-4" />
+                Nastavení
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-72 space-y-3">
+              <p className="text-sm font-semibold">Nastavení prezentace</p>
+              <label className="flex items-center justify-between gap-3 text-sm">
+                <span>Kreslení žáků do streamu</span>
+                <Switch
+                  checked={!!settings?.allowStudentDrawSync}
+                  onCheckedChange={async (checked) => {
+                    if (!sessionId) return;
+                    await supabase
+                      .from("game_sessions")
+                      .update({ settings: { ...(settings || {}), allowStudentDrawSync: checked } })
+                      .eq("id", sessionId);
+                  }}
+                  aria-label="Povolit kreslení žáků do streamu"
+                />
+              </label>
+              <label className="flex items-center justify-between gap-3 text-sm">
+                <span>Anonymní odpovědi</span>
+                <Switch
+                  checked={!!settings?.anonymousAnswers}
+                  onCheckedChange={async (checked) => {
+                    if (!sessionId) return;
+                    await supabase
+                      .from("game_sessions")
+                      .update({ settings: { ...(settings || {}), anonymousAnswers: checked } })
+                      .eq("id", sessionId);
+                  }}
+                  aria-label="Anonymní odpovědi na projektoru"
+                />
+              </label>
+              <label className="flex items-center justify-between gap-3 text-sm">
+                <span>Tempo: {settings?.pacingMode === "student" ? "vlastní tempo" : "učitelem"}</span>
+                <Switch
+                  checked={settings?.pacingMode === "student"}
+                  onCheckedChange={async (checked) => {
+                    if (!sessionId) return;
+                    await supabase
+                      .from("game_sessions")
+                      .update({
+                        settings: { ...(settings || {}), pacingMode: checked ? "student" : "teacher" },
+                      })
+                      .eq("id", sessionId);
+                  }}
+                  aria-label="Vlastní tempo žáka"
+                />
+              </label>
+              <label className="flex items-center justify-between gap-3 text-sm">
+                <span>Závodní dráha</span>
+                <Switch
+                  checked={!!settings?.showRaceTrack}
+                  onCheckedChange={async (checked) => {
+                    if (!sessionId) return;
+                    await supabase
+                      .from("game_sessions")
+                      .update({ settings: { ...(settings || {}), showRaceTrack: checked } })
+                      .eq("id", sessionId);
+                  }}
+                  aria-label="Zobrazit závodní dráhu na projektoru"
+                />
+              </label>
+            </PopoverContent>
+          </Popover>
+
+          {/* Nástroje */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button size="sm" variant="outline" className="gap-1.5 relative">
+                <Wrench className="w-4 h-4" />
+                Nástroje
+                {unansweredCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 inline-flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold min-w-[18px] h-[18px] px-1">
+                    {unansweredCount}
+                  </span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-60 p-1">
+              <button
+                type="button"
+                className="w-full flex items-center gap-2 rounded-sm px-2 py-2 text-sm hover:bg-accent"
+                onClick={() => setAdaptiveOpen(true)}
+              >
+                <Brain className="w-4 h-4" /> Adaptivní závěr
+              </button>
+              <button
+                type="button"
+                className="w-full flex items-center gap-2 rounded-sm px-2 py-2 text-sm hover:bg-accent"
+                onClick={() => setResultsPanelOpen(true)}
+              >
+                <BarChart3 className="w-4 h-4" /> Výsledky třídy
+              </button>
+              <button
+                type="button"
+                className="w-full flex items-center gap-2 rounded-sm px-2 py-2 text-sm hover:bg-accent"
+                onClick={() => setProgressGridOpen(true)}
+              >
+                <LayoutGrid className="w-4 h-4" /> Přehled třídy
+              </button>
+              <button
+                type="button"
+                className="w-full flex items-center gap-2 rounded-sm px-2 py-2 text-sm hover:bg-accent"
+                onClick={() => setQuestionsOpen(true)}
+              >
+                <MessageCircleQuestion className="w-4 h-4" /> Dotazy
+                {unansweredCount > 0 && (
+                  <span className="ml-auto inline-flex items-center justify-center rounded-full bg-amber-500 text-white text-[10px] font-bold min-w-[18px] h-[18px] px-1">
+                    {unansweredCount}
+                  </span>
+                )}
+              </button>
+            </PopoverContent>
+          </Popover>
+
           <Button size="sm" variant="destructive" onClick={endGame}>
             <StopCircle className="w-4 h-4 mr-1" /> Ukončit
           </Button>
         </div>
+
       </div>
 
       {sessionId && (
