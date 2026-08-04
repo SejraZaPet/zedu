@@ -41,7 +41,7 @@ const StudentGamePlay = () => {
   }, [sessionId]);
 
   const [fetchAttempts, setFetchAttempts] = useState(0);
-  const { session, players, responses, loading, connectionStatus, reconnect } = useGameSession(sessionId, fetchAttempts);
+  const { session, players, responses, loading, connectionStatus, reconnect } = useGameSession(sessionId, fetchAttempts, joinToken);
   const { user } = useAuth();
 
   const myPlayer = players.find((p) => p.id === playerId);
@@ -55,15 +55,15 @@ const StudentGamePlay = () => {
   useEffect(() => {
     if (!sessionId) return;
     const interval = setInterval(async () => {
-      const { data } = await supabase
-        .from("game_sessions")
-        .select("settings")
-        .eq("id", sessionId)
-        .single();
-      if (data) setLiveSettings(data.settings || {});
+      const { data } = await supabase.rpc("get_player_session" as any, {
+        _session_id: sessionId,
+        _join_token: joinToken || null,
+      });
+      const row = Array.isArray(data) ? (data as any[])[0] : (data as any);
+      if (row) setLiveSettings(row.settings || {});
     }, 1000);
     return () => clearInterval(interval);
-  }, [sessionId]);
+  }, [sessionId, joinToken]);
 
   useEffect(() => {
     if (!loading && session && session.status === "lobby" && fetchAttempts < 20) {

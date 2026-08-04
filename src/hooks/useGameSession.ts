@@ -84,7 +84,7 @@ export function useGameSession(sessionId: string | undefined, refetchTrigger?: n
     if (playersRes.data) setPlayers(playersRes.data as GamePlayer[]);
     if (responsesRes.data) setResponses(responsesRes.data as GameResponse[]);
     setLoading(false);
-  }, [sessionId]);
+  }, [sessionId, joinToken]);
 
   // Subscribe to realtime with reconnect logic
   const subscribe = useCallback(() => {
