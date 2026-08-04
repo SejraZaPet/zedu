@@ -63,12 +63,13 @@ export const useAdmin = () => {
 
     // Everyone else (user) goes to student dashboard
     navigate("/student");
-  }, [authLoading, isLoggedIn, role, status, navigate, signOut]);
+  }, [authLoading, staffLoading, hasAnyPermission, isLoggedIn, role, status, navigate, signOut]);
 
   const logout = async () => {
     await signOut();
     navigate("/");
   };
 
-  return { isAdmin, isTeacher, role, loading, logout };
+  return { isAdmin, isStaff, isTeacher, role, loading, logout };
+
 };
