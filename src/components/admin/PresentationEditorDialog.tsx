@@ -479,6 +479,31 @@ export const PresentationEditorDialog = ({
                       <BlockEditor
                         blocks={blocks}
                         onChange={(b) => setBlocks(b)}
+                        toolbarActions={
+                          <>
+                            {onSave && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={async () => {
+                                  await onSave(pendingSlides);
+                                  toast({ title: "Prezentace uložena", description: "Změny byly uloženy k lekci." });
+                                }}
+                                className="gap-1.5 h-8"
+                              >
+                                <Save className="w-4 h-4" />
+                                Uložit
+                              </Button>
+                            )}
+                            <Button size="sm" variant="ghost" className="h-8" onClick={onClose}>
+                              Zrušit
+                            </Button>
+                            <Button size="sm" onClick={() => onLaunch(pendingSlides)} className="gap-1.5 h-8">
+                              <Monitor className="w-4 h-4" />
+                              Spustit prezentaci
+                            </Button>
+                          </>
+                        }
                       />
                     </div>
                   </CollapsibleContent>
@@ -487,26 +512,6 @@ export const PresentationEditorDialog = ({
             );
           })()}
 
-          <DialogFooter className="gap-2 mt-4">
-            {onSave && (
-              <Button
-                variant="outline"
-                onClick={async () => {
-                  await onSave(pendingSlides);
-                  toast({ title: "Prezentace uložena", description: "Změny byly uloženy k lekci." });
-                }}
-                className="gap-2"
-              >
-                <Save className="w-4 h-4" />
-                Uložit
-              </Button>
-            )}
-            <Button variant="outline" onClick={onClose}>Zrušit</Button>
-            <Button onClick={() => onLaunch(pendingSlides)} className="gap-2">
-              <Monitor className="w-4 h-4" />
-              Spustit prezentaci
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
 
