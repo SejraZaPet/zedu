@@ -13,7 +13,7 @@ function backoffDelay(attempt: number): number {
   return Math.min(BASE_DELAY_MS * Math.pow(2, attempt), 128_000);
 }
 
-export function useGameSession(sessionId: string | undefined, refetchTrigger?: number) {
+export function useGameSession(sessionId: string | undefined, refetchTrigger?: number, joinToken?: string) {
   const [session, setSession] = useState<GameSession | null>(null);
   const [players, setPlayers] = useState<GamePlayer[]>([]);
   const [responses, setResponses] = useState<GameResponse[]>([]);
@@ -36,15 +36,20 @@ export function useGameSession(sessionId: string | undefined, refetchTrigger?: n
     }
 
     const [sessionRes, playersRes, responsesRes] = await Promise.all([
-      supabase.from("game_sessions_player_view" as any).select("*").eq("id", sessionId).single(),
+      supabase.rpc("get_player_session" as any, {
+        _session_id: sessionId,
+        _join_token: joinToken || null,
+      }),
       supabase.from("game_players_public").select("*").eq("session_id", sessionId).order("total_score", { ascending: false }),
       supabase.from("game_responses").select("*").eq("session_id", sessionId),
     ]);
 
     if (!mountedRef.current) return;
 
-    if (sessionRes.data) {
-      const row = sessionRes.data as any;
+    const sessionRow = Array.isArray(sessionRes.data) ? (sessionRes.data as any[])[0] : (sessionRes.data as any);
+
+    if (sessionRow) {
+      const row = sessionRow as any;
       let activityData: any = (row.activity_data_safe as any) ?? [];
 
       // If current user is the session owner, fetch unsanitized activity_data
