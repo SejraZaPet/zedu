@@ -437,6 +437,8 @@ const LiveTeacherScreen = () => {
             )}
           </div>
         </div>
+        )}
+
         <GameLobby session={session} players={players} onStart={wrappedStart} isTeacher />
       </>
     );
