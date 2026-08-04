@@ -136,11 +136,22 @@ const MENU_GROUPS: { key: CategoryKey; label: string; types: string[]; accent?: 
 const MENU_AI_BADGE = new Set(["activity", "summary"]);
 const CARD_AI_BADGE = new Set(["activity"]);
 
+export interface BlockEditorHistory {
+  undo: () => void;
+  redo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
+}
+
 interface Props {
   blocks: Block[];
   onChange: (blocks: Block[]) => void;
   /** Optional actions rendered on the right side of the sticky toolbar. */
   toolbarActions?: React.ReactNode;
+  /** Hide the internal sticky toolbar (undo/redo rendered elsewhere). */
+  hideToolbar?: boolean;
+  /** Exposes undo/redo controls so they can be rendered in an external toolbar. */
+  onHistoryChange?: (history: BlockEditorHistory) => void;
 }
 
 
@@ -588,7 +599,7 @@ const AddBlockMenu = ({ onPick }: { onPick: (type: Block["type"]) => void }) => 
 };
 
 
-const BlockEditor = ({ blocks, onChange, toolbarActions }: Props) => {
+const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryChange }: Props) => {
   const normalizedBlocks = useMemo(() => normalizeBlocks(blocks), [blocks]);
 
   useEffect(() => {
@@ -688,6 +699,14 @@ const BlockEditor = ({ blocks, onChange, toolbarActions }: Props) => {
     onChangeRef.current(historyRef.current[indexRef.current]);
     updateUndoRedoState();
   }, [updateUndoRedoState]);
+
+  const historyCbRef = useRef(onHistoryChange);
+  historyCbRef.current = onHistoryChange;
+  useEffect(() => {
+    historyCbRef.current?.({ undo, redo, canUndo, canRedo });
+  }, [undo, redo, canUndo, canRedo]);
+
+
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -996,6 +1015,7 @@ const BlockEditor = ({ blocks, onChange, toolbarActions }: Props) => {
       `}</style>
 
 
+      {!hideToolbar && (
       <div className="flex items-center gap-1 flex-wrap sticky top-0 z-40 -mx-4 -mt-4 mb-1 px-4 py-2 bg-background/90 backdrop-blur-sm border-b border-border/60 shadow-sm rounded-t-[14px]">
         <Button
           size="sm"
@@ -1023,6 +1043,7 @@ const BlockEditor = ({ blocks, onChange, toolbarActions }: Props) => {
           <div className="ml-auto flex items-center gap-2 flex-wrap justify-end">{toolbarActions}</div>
         )}
       </div>
+      )}
 
       {dragOver && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-primary/10 rounded-lg pointer-events-none">
