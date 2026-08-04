@@ -34,12 +34,15 @@ interface PendingOrgRow {
 const fmtSeats = (used: number, seats: number | null) =>
   seats === null ? `${used} / ∞` : `${used} / ${seats}`;
 
+type PaidFilter = "all" | "paid" | "unpaid";
+
 const SchoolLicensesManager = () => {
   const { toast } = useToast();
   const [rows, setRows] = useState<SchoolRow[]>([]);
   const [pending, setPending] = useState<PendingOrgRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<SchoolRow | null>(null);
+  const [paidFilter, setPaidFilter] = useState<PaidFilter>("all");
 
   const load = async () => {
     setLoading(true);
