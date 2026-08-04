@@ -128,6 +128,8 @@ const UsersManager = () => {
   const { toast } = useToast();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [view, setView] = useState<"orgs" | "team">("orgs");
+
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterSchool, setFilterSchool] = useState<string>("all");
