@@ -135,6 +135,37 @@ const ZeduTeamView = () => {
     setEditing({ profile_id: u.id, name: u.name });
   };
 
+  const inviteNew = async () => {
+    const first = inviteFirst.trim();
+    const last = inviteLast.trim();
+    const email = inviteEmail.trim();
+    if (!first || !last || !email) {
+      toast({ title: "Vyplňte jméno, příjmení a e-mail", variant: "destructive" });
+      return;
+    }
+    setInviting(true);
+    const { data, error } = await supabase.functions.invoke("invite-team-member", {
+      body: { email, firstName: first, lastName: last },
+    });
+    setInviting(false);
+    if (error || (data as any)?.error) {
+      toast({
+        title: "Pozvánku nelze odeslat",
+        description: (data as any)?.error ?? error?.message,
+        variant: "destructive",
+      });
+      return;
+    }
+    toast({ title: "Pozvánka odeslána", description: `E-mail byl odeslán na ${email}.` });
+    setAddOpen(false);
+    setInviteFirst("");
+    setInviteLast("");
+    setInviteEmail("");
+    await load();
+    setEditing({ profile_id: (data as any).profile_id, name: `${first} ${last}` });
+  };
+
+
   if (loading) return <p className="text-muted-foreground p-4">Načítání týmu…</p>;
 
   return (
