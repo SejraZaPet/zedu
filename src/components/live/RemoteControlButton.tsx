@@ -6,7 +6,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription,
 } from "@/components/ui/dialog";
 
-export default function RemoteControlButton({ sessionId }: { sessionId: string }) {
+export default function RemoteControlButton({ sessionId, iconOnly = false }: { sessionId: string; iconOnly?: boolean }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const url = `${window.location.origin}/prezentace/ovladani/${sessionId}`;
@@ -22,10 +22,17 @@ export default function RemoteControlButton({ sessionId }: { sessionId: string }
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" variant="outline" className="gap-1.5" title="Ovládání z mobilu">
-          <Smartphone className="w-4 h-4" /> Ovládání z mobilu
+        <Button
+          size={iconOnly ? "icon" : "sm"}
+          variant="outline"
+          className={iconOnly ? "h-9 w-9" : "gap-1.5"}
+          title="Ovládání z mobilu"
+          aria-label="Ovládání z mobilu"
+        >
+          <Smartphone className="w-4 h-4" /> {!iconOnly && "Ovládání z mobilu"}
         </Button>
       </DialogTrigger>
+
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle>Ovládání z mobilu</DialogTitle>
