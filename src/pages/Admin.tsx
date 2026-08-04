@@ -196,17 +196,19 @@ const Admin = () => {
                 return (
                   <button
                     key={g.id}
-                    onClick={() => setOpenGroupId(g.id)}
-                    className={`px-3 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                    onClick={() => toggleGroup(g.id)}
+                    aria-expanded={isOpen}
+                    className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium border-b-2 transition-colors ${
                       isOpen ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
                     }`}
                   >
                     {g.label}
+                    <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isOpen ? "" : "-rotate-90"}`} />
                   </button>
                 );
               })}
               <button
-                onClick={() => { setOpenGroupId(null); setActiveTab("help"); }}
+                onClick={() => { setOpenGroupId(null); setCollapsed(true); setActiveTab("help"); }}
                 className={`ml-auto flex items-center gap-2 px-3 py-2.5 text-sm font-medium border-b-2 transition-colors ${
                   activeTab === "help" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
                 }`}
@@ -219,7 +221,7 @@ const Admin = () => {
                 {currentGroup.items.map((tab) => (
                   <button
                     key={tab.id}
-                    onClick={() => { setOpenGroupId(currentGroup.id); setActiveTab(tab.id as Tab); }}
+                    onClick={() => { setCollapsed(false); setOpenGroupId(currentGroup.id); setActiveTab(tab.id as Tab); }}
                     className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                       activeTab === tab.id
                         ? "bg-primary/10 text-primary"
