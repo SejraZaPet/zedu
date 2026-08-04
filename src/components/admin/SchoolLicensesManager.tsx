@@ -97,6 +97,26 @@ const SchoolLicensesManager = () => {
     void load();
   };
 
+  const togglePaid = async (r: SchoolRow) => {
+    if (!r.license) return;
+    const nextPaid = !r.license.is_paid;
+    const { error } = await supabase
+      .from("school_licenses")
+      .update({ is_paid: nextPaid, paid_at: nextPaid ? new Date().toISOString() : null })
+      .eq("id", r.license.id);
+    if (error) {
+      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: nextPaid ? "Označeno jako zaplaceno" : "Označeno jako nezaplaceno" });
+    void load();
+  };
+
+  const visibleRows = useMemo(() => {
+    if (paidFilter === "all") return rows;
+    return rows.filter((r) => (paidFilter === "paid" ? !!r.license?.is_paid : !r.license?.is_paid));
+  }, [rows, paidFilter]);
+
   return (
     <Card>
       <CardHeader>
