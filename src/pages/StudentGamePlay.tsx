@@ -1,3 +1,4 @@
+import { resolveGameMode } from "@/lib/game-slide-settings";
 import { useParams } from "react-router-dom";
 import { useGameSession } from "@/hooks/useGameSession";
 import { GameLobby } from "@/components/game/GameLobby";
