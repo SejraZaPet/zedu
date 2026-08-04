@@ -119,10 +119,20 @@ const Admin = () => {
     [groups, activeTab],
   );
   const [openGroupId, setOpenGroupId] = useState<string | null>(null);
+  const [collapsed, setCollapsed] = useState(false);
   const currentGroup =
-    activeTab === "help" && !openGroupId
+    collapsed || (activeTab === "help" && !openGroupId)
       ? null
       : groups.find((g) => g.id === (openGroupId ?? activeGroupId)) ?? null;
+
+  const toggleGroup = (id: string) => {
+    if (currentGroup?.id === id) {
+      setCollapsed(true);
+      return;
+    }
+    setCollapsed(false);
+    setOpenGroupId(id);
+  };
 
 
   if (loading) {
