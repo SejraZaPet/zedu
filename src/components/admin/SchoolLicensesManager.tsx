@@ -78,6 +78,22 @@ const SchoolLicensesManager = () => {
 
   useEffect(() => { void load(); }, []);
 
+  const extend30 = async (r: SchoolRow) => {
+    if (!r.license) return;
+    const base = r.license.expires_at ? new Date(r.license.expires_at) : new Date();
+    const next = new Date(base.getTime() + 30 * 86400_000);
+    const { error } = await supabase
+      .from("school_licenses")
+      .update({ expires_at: next.toISOString() })
+      .eq("id", r.license.id);
+    if (error) {
+      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Prodlouženo", description: `Nová expirace: ${next.toLocaleDateString("cs-CZ")}` });
+    void load();
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -133,7 +149,12 @@ const SchoolLicensesManager = () => {
                           ) : "—"}
                         </TableCell>
                         <TableCell>{l?.expires_at ? new Date(l.expires_at).toLocaleDateString("cs-CZ") : "—"}</TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right space-x-2">
+                          {l && (
+                            <Button size="sm" variant="ghost" onClick={() => void extend30(r)}>
+                              Prodloužit o 30 dní
+                            </Button>
+                          )}
                           <Button size="sm" variant="outline" onClick={() => setEditing(r)}>
                             {l ? "Upravit" : "Vytvořit"}
                           </Button>
@@ -204,6 +225,8 @@ const EditDialog = ({ row, onClose, onSaved }: { row: SchoolRow | null; onClose:
   const [expiresAt, setExpiresAt] = useState<string>("");
   const [billing, setBilling] = useState<string>("none");
   const [notes, setNotes] = useState("");
+  const [trialDays, setTrialDays] = useState<string>("30");
+  const [contractYears, setContractYears] = useState<string>("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -217,6 +240,8 @@ const EditDialog = ({ row, onClose, onSaved }: { row: SchoolRow | null; onClose:
       setExpiresAt(l.expires_at ? l.expires_at.slice(0, 10) : "");
       setBilling(l.billing_cycle ?? "none");
       setNotes(l.admin_notes ?? "");
+      setTrialDays(l.trial_duration_days?.toString() ?? "30");
+      setContractYears(l.contract_years?.toString() ?? "");
     } else {
       setPlan("start");
       setStatus("trial");
@@ -226,6 +251,8 @@ const EditDialog = ({ row, onClose, onSaved }: { row: SchoolRow | null; onClose:
       setExpiresAt("");
       setBilling("none");
       setNotes("");
+      setTrialDays("30");
+      setContractYears("");
     }
   }, [row]);
 
@@ -248,6 +275,8 @@ const EditDialog = ({ row, onClose, onSaved }: { row: SchoolRow | null; onClose:
       expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
       billing_cycle: billing === "none" ? null : billing,
       admin_notes: notes.trim() || null,
+      trial_duration_days: trialDays.trim() === "" ? 30 : Number(trialDays),
+      contract_years: contractYears.trim() === "" ? null : Number(contractYears),
       updated_by: (await supabase.auth.getUser()).data.user?.id ?? null,
     };
     const q = row.license
@@ -304,6 +333,24 @@ const EditDialog = ({ row, onClose, onSaved }: { row: SchoolRow | null; onClose:
               <Input type="number" value={seatsStudents} onChange={e => setSeatsStudents(e.target.value)} />
             </div>
           </div>
+          {status === "trial" && (
+            <div>
+              <Label>Délka zkušebního období (dní)</Label>
+              <Input type="number" min={1} value={trialDays} onChange={e => setTrialDays(e.target.value)} />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Použije se pro automatický výpočet expirace, pokud není datum vyplněné ručně.
+              </p>
+            </div>
+          )}
+          {status === "active" && (
+            <div>
+              <Label>Délka smlouvy (let)</Label>
+              <Input type="number" min={1} value={contractYears} onChange={e => setContractYears(e.target.value)} />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Použije se pro automatický výpočet expirace, pokud není datum vyplněné ručně.
+              </p>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Expirace</Label>

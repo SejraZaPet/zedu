@@ -33,6 +33,8 @@ export interface SchoolLicense {
   status: LicenseStatus;
   billing_cycle: "monthly" | "yearly" | null;
   admin_notes: string | null;
+  trial_duration_days: number | null;
+  contract_years: number | null;
   updated_at: string;
 }
 
