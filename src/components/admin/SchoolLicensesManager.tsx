@@ -90,7 +90,7 @@ const SchoolLicensesManager = () => {
           <Tabs defaultValue="schools">
             <TabsList className="mb-4">
               <TabsTrigger value="schools">Školy s licencí ({rows.length})</TabsTrigger>
-              <TabsTrigger value="crm">Zkušební / zákazníci z CRM ({pending.length})</TabsTrigger>
+              <TabsTrigger value="crm">Nové/CRM organizace ve fázi zkušební nebo zákazník ({pending.length})</TabsTrigger>
             </TabsList>
 
             <TabsContent value="schools">

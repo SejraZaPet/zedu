@@ -131,7 +131,7 @@ const UserStaffRoleSection = ({ userId }: Props) => {
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <UserCog className="w-4 h-4 text-muted-foreground" />
-          <span className="text-sm font-medium">Pracovní role (interní pracovník)</span>
+          <span className="text-sm font-medium">Nastavit pracovní roli</span>
         </div>
         <Switch
           checked={!!staff?.active}
