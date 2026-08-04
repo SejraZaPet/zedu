@@ -116,17 +116,23 @@ export const StudentGameQuestion = ({
 
       {/* Answers */}
       <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3 p-4">
-        {question.answers.map((answer, i) => (
+        {(Array.isArray(question.answers) ? question.answers : []).map((answer, i) => (
           <button
             key={i}
             onClick={() => onAnswer(i)}
             className={`${ANSWER_COLORS[i % 4]} rounded-2xl p-6 flex items-center gap-4 transition-transform active:scale-95 min-h-[80px]`}
           >
             <span className="text-2xl text-white/80">{ANSWER_ICONS[i % 4]}</span>
-            <span className="text-lg font-semibold text-white text-left">{answer.text}</span>
+            <span className="text-lg font-semibold text-white text-left">{answer?.text}</span>
           </button>
         ))}
+        {!Array.isArray(question.answers) || question.answers.length === 0 ? (
+          <p className="col-span-full text-center text-muted-foreground">
+            Čekej na učitele – tento snímek nemá odpovědi k výběru.
+          </p>
+        ) : null}
       </div>
+
     </div>
   );
 };
