@@ -13,6 +13,7 @@ import StudentProgressGrid from "@/components/game/StudentProgressGrid";
 import SessionExports from "@/components/live/SessionExports";
 import { AdaptiveReviewDialog } from "@/components/game/AdaptiveReview";
 import { AddSlideSheet } from "@/components/game/AddSlideSheet";
+import { isMixedPresentation } from "@/lib/game-slide-settings";
 import { TeamsSlideTeacher } from "@/components/game/TeamsSlide";
 import { DifferentiatedSlideTeacher } from "@/components/game/DifferentiatedSlide";
 import { EscapeGameOverview } from "@/components/game/EscapeGameSlide";
