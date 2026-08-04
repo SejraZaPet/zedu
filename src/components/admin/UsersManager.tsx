@@ -231,10 +231,40 @@ const UsersManager = () => {
 
   if (loading) return <div className="text-muted-foreground p-4">Načítání uživatelů...</div>;
 
+  const viewSwitcher = (
+    <div className="inline-flex rounded-md border border-border p-1 bg-muted/30">
+      {([
+        { id: "orgs" as const, label: "Uživatelé organizací" },
+        { id: "team" as const, label: "Tým ZEdu" },
+      ]).map((v) => (
+        <button
+          key={v.id}
+          onClick={() => setView(v.id)}
+          className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${
+            view === v.id ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          {v.label}
+        </button>
+      ))}
+    </div>
+  );
+
+  if (view === "team") {
+    return (
+      <div className="space-y-4">
+        {viewSwitcher}
+        <ZeduTeamView />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
+      {viewSwitcher}
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
+
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
