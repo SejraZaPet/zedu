@@ -19,6 +19,7 @@ import {
   searchTeachers,
   type ShareTargetKind,
 } from "@/lib/content-shares";
+import SchoolSalesStatusNotice from "@/components/school/SchoolSalesStatusNotice";
 
 interface Props {
   open: boolean;
@@ -131,6 +132,8 @@ export default function ShareContentDialog({
             {targetTitle ? `„${targetTitle}"` : "Vyberte, jak chcete obsah nabídnout."}
           </DialogDescription>
         </DialogHeader>
+
+        <SchoolSalesStatusNotice />
 
         <div className="space-y-5">
           <RadioGroup
