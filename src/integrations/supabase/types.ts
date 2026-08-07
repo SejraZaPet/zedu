@@ -5743,6 +5743,15 @@ export type Database = {
           monthly_downloads: number
         }[]
       }
+      my_school_sale_settings: {
+        Args: never
+        Returns: {
+          allows_teacher_creators: boolean
+          creator_payout_recipient: string
+          school_id: string
+          school_name: string
+        }[]
+      }
       notify_deadline_soon: { Args: never; Returns: undefined }
       owns_textbook: {
         Args: { _teacher_id: string; _textbook_id: string }
