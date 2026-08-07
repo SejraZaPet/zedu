@@ -16,37 +16,18 @@ const SchoolSalesStatusNotice = () => {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data: auth } = await supabase.auth.getUser();
-      const uid = auth.user?.id;
-      if (!uid) {
-        if (!cancelled) setState({ kind: "none" });
-        return;
-      }
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("school_id")
-        .eq("id", uid)
-        .maybeSingle();
+      const { data, error } = await supabase.rpc("my_school_sale_settings");
       if (cancelled) return;
-      if (!profile?.school_id) {
-        setState({ kind: "none" });
-        return;
-      }
-      const { data: school } = await supabase
-        .from("schools")
-        .select("name, allows_teacher_creators, creator_payout_recipient")
-        .eq("id", profile.school_id)
-        .maybeSingle();
-      if (cancelled) return;
-      if (!school) {
+      const row = Array.isArray(data) ? data[0] : null;
+      if (error || !row) {
         setState({ kind: "none" });
         return;
       }
       setState({
         kind: "school",
-        name: school.name,
-        allows: !!school.allows_teacher_creators,
-        recipient: (school.creator_payout_recipient as "teacher" | "school") ?? "school",
+        name: row.school_name,
+        allows: !!row.allows_teacher_creators,
+        recipient: (row.creator_payout_recipient as "teacher" | "school") ?? "school",
       });
     })();
     return () => {
