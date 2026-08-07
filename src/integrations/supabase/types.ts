@@ -1612,6 +1612,39 @@ export type Database = {
           },
         ]
       }
+      creator_earnings: {
+        Row: {
+          amount: number
+          calculated_at: string
+          creator_id: string
+          id: string
+          paid_out: boolean
+          paid_out_at: string | null
+          period_month: string
+          source_type: string
+        }
+        Insert: {
+          amount?: number
+          calculated_at?: string
+          creator_id: string
+          id?: string
+          paid_out?: boolean
+          paid_out_at?: string | null
+          period_month: string
+          source_type: string
+        }
+        Update: {
+          amount?: number
+          calculated_at?: string
+          creator_id?: string
+          id?: string
+          paid_out?: boolean
+          paid_out_at?: string | null
+          period_month?: string
+          source_type?: string
+        }
+        Relationships: []
+      }
       creator_follows: {
         Row: {
           created_at: string
@@ -2632,12 +2665,15 @@ export type Database = {
           ai_generated: boolean
           ai_modified_at: string | null
           anonymous: boolean
+          commission_rate_locked: number | null
           copied_from_lesson_plan_id: string | null
           created_at: string
           grade_band: string
           id: string
           input_data: Json
+          is_for_sale: boolean
           lesson_id: string | null
+          price: number | null
           shared_visibility: string
           slides: Json
           subject: string
@@ -2649,12 +2685,15 @@ export type Database = {
           ai_generated?: boolean
           ai_modified_at?: string | null
           anonymous?: boolean
+          commission_rate_locked?: number | null
           copied_from_lesson_plan_id?: string | null
           created_at?: string
           grade_band?: string
           id?: string
           input_data?: Json
+          is_for_sale?: boolean
           lesson_id?: string | null
+          price?: number | null
           shared_visibility?: string
           slides?: Json
           subject?: string
@@ -2666,12 +2705,15 @@ export type Database = {
           ai_generated?: boolean
           ai_modified_at?: string | null
           anonymous?: boolean
+          commission_rate_locked?: number | null
           copied_from_lesson_plan_id?: string | null
           created_at?: string
           grade_band?: string
           id?: string
           input_data?: Json
+          is_for_sale?: boolean
           lesson_id?: string | null
+          price?: number | null
           shared_visibility?: string
           slides?: Json
           subject?: string
@@ -2841,6 +2883,119 @@ export type Database = {
           success?: boolean
         }
         Relationships: []
+      }
+      marketplace_settings: {
+        Row: {
+          created_at: string
+          current_phase: string
+          founding_commission_percent: number
+          founding_lock_years: number
+          founding_threshold_type: string
+          founding_threshold_value: number
+          id: string
+          standard_commission_percent: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          current_phase?: string
+          founding_commission_percent?: number
+          founding_lock_years?: number
+          founding_threshold_type?: string
+          founding_threshold_value?: number
+          id?: string
+          standard_commission_percent?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          current_phase?: string
+          founding_commission_percent?: number
+          founding_lock_years?: number
+          founding_threshold_type?: string
+          founding_threshold_value?: number
+          id?: string
+          standard_commission_percent?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      marketplace_subscriptions: {
+        Row: {
+          amount_paid: number
+          created_at: string
+          expires_at: string | null
+          id: string
+          starts_at: string
+          status: string
+          subscriber_id: string
+          subscriber_type: string
+          updated_at: string
+        }
+        Insert: {
+          amount_paid?: number
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          starts_at?: string
+          status?: string
+          subscriber_id: string
+          subscriber_type?: string
+          updated_at?: string
+        }
+        Update: {
+          amount_paid?: number
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          starts_at?: string
+          status?: string
+          subscriber_id?: string
+          subscriber_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      marketplace_usage_events: {
+        Row: {
+          content_id: string
+          content_type: string
+          creator_id: string
+          event_type: string
+          id: string
+          occurred_at: string
+          subscription_id: string
+          weight: number
+        }
+        Insert: {
+          content_id: string
+          content_type: string
+          creator_id: string
+          event_type: string
+          id?: string
+          occurred_at?: string
+          subscription_id: string
+          weight?: number
+        }
+        Update: {
+          content_id?: string
+          content_type?: string
+          creator_id?: string
+          event_type?: string
+          id?: string
+          occurred_at?: string
+          subscription_id?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_usage_events_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notification_broadcasts: {
         Row: {
@@ -4575,14 +4730,17 @@ export type Database = {
         Row: {
           access_code: string
           archived: boolean
+          commission_rate_locked: number | null
           copied_from_textbook_id: string | null
           created_at: string
           description: string
           difficulty_level: string | null
           grade_level: string[] | null
           id: string
+          is_for_sale: boolean
           language: string
           order_index: number
+          price: number | null
           school_type: string[] | null
           subject: string
           teacher_id: string
@@ -4593,14 +4751,17 @@ export type Database = {
         Insert: {
           access_code: string
           archived?: boolean
+          commission_rate_locked?: number | null
           copied_from_textbook_id?: string | null
           created_at?: string
           description?: string
           difficulty_level?: string | null
           grade_level?: string[] | null
           id?: string
+          is_for_sale?: boolean
           language?: string
           order_index?: number
+          price?: number | null
           school_type?: string[] | null
           subject?: string
           teacher_id: string
@@ -4611,14 +4772,17 @@ export type Database = {
         Update: {
           access_code?: string
           archived?: boolean
+          commission_rate_locked?: number | null
           copied_from_textbook_id?: string | null
           created_at?: string
           description?: string
           difficulty_level?: string | null
           grade_level?: string[] | null
           id?: string
+          is_for_sale?: boolean
           language?: string
           order_index?: number
+          price?: number | null
           school_type?: string[] | null
           subject?: string
           teacher_id?: string
@@ -5062,10 +5226,13 @@ export type Database = {
         Row: {
           ai_generated: boolean
           ai_modified_at: string | null
+          commission_rate_locked: number | null
           copied_from_worksheet_id: string | null
           created_at: string
           grade_band: string
           id: string
+          is_for_sale: boolean
+          price: number | null
           scheduled_publish_at: string | null
           source_lesson_id: string | null
           source_lesson_type: string | null
@@ -5080,10 +5247,13 @@ export type Database = {
         Insert: {
           ai_generated?: boolean
           ai_modified_at?: string | null
+          commission_rate_locked?: number | null
           copied_from_worksheet_id?: string | null
           created_at?: string
           grade_band?: string
           id?: string
+          is_for_sale?: boolean
+          price?: number | null
           scheduled_publish_at?: string | null
           source_lesson_id?: string | null
           source_lesson_type?: string | null
@@ -5098,10 +5268,13 @@ export type Database = {
         Update: {
           ai_generated?: boolean
           ai_modified_at?: string | null
+          commission_rate_locked?: number | null
           copied_from_worksheet_id?: string | null
           created_at?: string
           grade_band?: string
           id?: string
+          is_for_sale?: boolean
+          price?: number | null
           scheduled_publish_at?: string | null
           source_lesson_id?: string | null
           source_lesson_type?: string | null
@@ -5317,6 +5490,14 @@ export type Database = {
         Args: { _amount: number; _student: string }
         Returns: undefined
       }
+      calculate_all_subscription_shares: {
+        Args: { _period_month: string }
+        Returns: number
+      }
+      calculate_subscription_shares: {
+        Args: { _period_month: string; _subscription_id: string }
+        Returns: number
+      }
       can_access_realtime_topic: {
         Args: { _topic: string; _uid: string }
         Returns: boolean
@@ -5353,6 +5534,15 @@ export type Database = {
         }
       }
       clear_player_hand: { Args: { _player_id: string }; Returns: undefined }
+      creator_usage_summary: {
+        Args: { _period_month?: string }
+        Returns: {
+          content_type: string
+          event_type: string
+          events_count: number
+          weight_total: number
+        }[]
+      }
       dispatch_scheduled_notifications: { Args: never; Returns: number }
       enroll_by_textbook_code: {
         Args: { _code: string; _student_id: string }
@@ -5523,6 +5713,16 @@ export type Database = {
         Args: { _code: string; _user_id: string }
         Returns: string
       }
+      marketplace_current_commission: { Args: never; Returns: number }
+      marketplace_phase_metrics: {
+        Args: never
+        Returns: {
+          active_schools: number
+          active_subscriptions: number
+          items_for_sale: number
+          monthly_downloads: number
+        }[]
+      }
       notify_deadline_soon: { Args: never; Returns: undefined }
       owns_textbook: {
         Args: { _teacher_id: string; _textbook_id: string }
@@ -5535,6 +5735,16 @@ export type Database = {
         Returns: undefined
       }
       reap_stale_export_jobs: { Args: never; Returns: number }
+      record_marketplace_usage: {
+        Args: {
+          _content_id: string
+          _content_type: string
+          _creator_id: string
+          _event_type: string
+          _subscription_id: string
+        }
+        Returns: string
+      }
       regenerate_school_registration_code: {
         Args: { _school_id: string }
         Returns: string
