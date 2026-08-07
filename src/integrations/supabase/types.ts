@@ -1620,6 +1620,8 @@ export type Database = {
           id: string
           paid_out: boolean
           paid_out_at: string | null
+          payout_recipient_id: string | null
+          payout_recipient_type: string | null
           period_month: string
           source_type: string
         }
@@ -1630,6 +1632,8 @@ export type Database = {
           id?: string
           paid_out?: boolean
           paid_out_at?: string | null
+          payout_recipient_id?: string | null
+          payout_recipient_type?: string | null
           period_month: string
           source_type: string
         }
@@ -1640,6 +1644,8 @@ export type Database = {
           id?: string
           paid_out?: boolean
           paid_out_at?: string | null
+          payout_recipient_id?: string | null
+          payout_recipient_type?: string | null
           period_month?: string
           source_type?: string
         }
@@ -3712,8 +3718,10 @@ export type Database = {
       }
       schools: {
         Row: {
+          allows_teacher_creators: boolean
           created_at: string
           created_by: string | null
+          creator_payout_recipient: string
           custom_logo_url: string | null
           custom_primary_color: string | null
           custom_welcome_text: string | null
@@ -3724,8 +3732,10 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          allows_teacher_creators?: boolean
           created_at?: string
           created_by?: string | null
+          creator_payout_recipient?: string
           custom_logo_url?: string | null
           custom_primary_color?: string | null
           custom_welcome_text?: string | null
@@ -3736,8 +3746,10 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          allows_teacher_creators?: boolean
           created_at?: string
           created_by?: string | null
+          creator_payout_recipient?: string
           custom_logo_url?: string | null
           custom_primary_color?: string | null
           custom_welcome_text?: string | null
@@ -5503,6 +5515,7 @@ export type Database = {
         Returns: boolean
       }
       can_access_textbooks: { Args: { _user_id: string }; Returns: boolean }
+      can_creator_sell: { Args: { _creator_id: string }; Returns: boolean }
       can_manage_credentials: {
         Args: { _profile_id: string }
         Returns: boolean
@@ -5534,6 +5547,13 @@ export type Database = {
         }
       }
       clear_player_hand: { Args: { _player_id: string }; Returns: undefined }
+      creator_payout_target: {
+        Args: { _creator_id: string }
+        Returns: {
+          recipient_id: string
+          recipient_type: string
+        }[]
+      }
       creator_usage_summary: {
         Args: { _period_month?: string }
         Returns: {
@@ -5721,6 +5741,15 @@ export type Database = {
           active_subscriptions: number
           items_for_sale: number
           monthly_downloads: number
+        }[]
+      }
+      my_school_sale_settings: {
+        Args: never
+        Returns: {
+          allows_teacher_creators: boolean
+          creator_payout_recipient: string
+          school_id: string
+          school_name: string
         }[]
       }
       notify_deadline_soon: { Args: never; Returns: undefined }
