@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Sheet,
   SheetContent,
@@ -11,13 +12,30 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { FileText, HelpCircle, MessageSquare, Cloud, DoorOpen, ArrowLeft, Loader2, Users2, SplitSquareHorizontal, Sparkles, Plus, Trash2, KeyRound, Library } from "lucide-react";
+import { FileText, HelpCircle, MessageSquare, Cloud, DoorOpen, ArrowLeft, Loader2, Users2, SplitSquareHorizontal, Sparkles, Plus, Trash2, KeyRound, Library, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { fetchGameTemplates, purposeLabel, type GameTemplate } from "@/lib/game-templates";
 
-type AddKind = "menu" | "text" | "mcq" | "wall" | "wordcloud" | "exit" | "teams" | "differentiated" | "escape" | "library";
+type AddKind = "menu" | "text" | "mcq" | "wall" | "wordcloud" | "exit" | "teams" | "differentiated" | "escape" | "library" | "zedstart";
+
+const ZEDSTART_TAGLINE = "Krátká aktivita na rozproudění myšlení";
+
+const ZEDSTART_CATEGORY_LABELS: Record<string, string> = {
+  vizualni: "Vizuální",
+  verbalni: "Verbální",
+  pohybova: "Pohybová",
+  tymova: "Týmová",
+  jina: "Jiná",
+};
+
+interface ZedStartPrompt {
+  id: string;
+  category: string | null;
+  prompt_text: string;
+  suggested_duration_minutes: number;
+}
 
 const EXIT_TICKET_DEFAULT_PROMPT =
   "Napiš jednu věc, kterou sis dnes odnesl/a, a jednu věc, která ti ještě není jasná.";
@@ -156,7 +174,10 @@ export function AddSlideSheet({
   slides,
   onAddSlides,
 }: AddSlideSheetProps) {
+  const navigate = useNavigate();
   const [kind, setKind] = useState<AddKind>("menu");
+  const [zsPrompts, setZsPrompts] = useState<ZedStartPrompt[]>([]);
+  const [zsLoading, setZsLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [templates, setTemplates] = useState<GameTemplate[]>([]);
   const [templatesLoading, setTemplatesLoading] = useState(false);
@@ -296,6 +317,47 @@ export function AddSlideSheet({
     appendMany(stamped);
   };
 
+
+  const fetchZedStartPrompts = async (): Promise<ZedStartPrompt[]> => {
+    const { data, error } = await supabase
+      .from("zedstart_prompts")
+      .select("id, category, prompt_text, suggested_duration_minutes")
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    return (data as ZedStartPrompt[]) ?? [];
+  };
+
+  const insertZedStart = (prompt: ZedStartPrompt) =>
+    appendAndJump(buildWallSlide(prompt.prompt_text, true));
+
+  const startZedStartRandom = async () => {
+    setZsLoading(true);
+    try {
+      const list = await fetchZedStartPrompts();
+      setZsPrompts(list);
+      if (list.length === 0) {
+        setKind("zedstart");
+        return;
+      }
+      insertZedStart(list[Math.floor(Math.random() * list.length)]);
+    } catch (e: any) {
+      toast.error(e?.message || "Nepodařilo se načíst ZedStart aktivity.");
+    } finally {
+      setZsLoading(false);
+    }
+  };
+
+  const openZedStartPicker = async () => {
+    setKind("zedstart");
+    setZsLoading(true);
+    try {
+      setZsPrompts(await fetchZedStartPrompts());
+    } catch (e: any) {
+      toast.error(e?.message || "Nepodařilo se načíst ZedStart aktivity.");
+    } finally {
+      setZsLoading(false);
+    }
+  };
 
   const submitText = () => {
     if (!textHeadline.trim()) {
@@ -443,6 +505,7 @@ export function AddSlideSheet({
               {kind === "differentiated" && "Diferencovaná aktivita"}
               {kind === "escape" && "Úniková hra"}
               {kind === "library" && "Vložit z knihovny her"}
+              {kind === "zedstart" && "ZedStart"}
             </SheetTitle>
           </div>
           <SheetDescription>
@@ -567,6 +630,31 @@ export function AddSlideSheet({
               <Button
                 variant="outline"
                 className="justify-start h-auto py-3"
+                disabled={busy || zsLoading}
+                onClick={startZedStartRandom}
+              >
+                {zsLoading ? (
+                  <Loader2 className="w-5 h-5 mr-3 animate-spin text-primary" />
+                ) : (
+                  <Zap className="w-5 h-5 mr-3 text-primary" />
+                )}
+                <div className="text-left">
+                  <p className="font-medium">ZedStart</p>
+                  <p className="text-xs text-muted-foreground">{ZEDSTART_TAGLINE}</p>
+                </div>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="justify-start -mt-1 text-xs text-muted-foreground"
+                disabled={busy || zsLoading}
+                onClick={openZedStartPicker}
+              >
+                Vybrat konkrétní ZedStart…
+              </Button>
+              <Button
+                variant="outline"
+                className="justify-start h-auto py-3"
                 onClick={openLibrary}
               >
                 <Library className="w-5 h-5 mr-3 text-primary" />
@@ -613,6 +701,51 @@ export function AddSlideSheet({
           )}
 
 
+
+          {kind === "zedstart" && (
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">{ZEDSTART_TAGLINE}</p>
+              {zsLoading ? (
+                <p className="text-sm text-muted-foreground flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" /> Načítání aktivit…
+                </p>
+              ) : zsPrompts.length === 0 ? (
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Zatím nemáte žádné ZedStart aktivity – přidejte je na /ucitel/zedstart.
+                  </p>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => {
+                      close();
+                      navigate("/ucitel/zedstart");
+                    }}
+                  >
+                    Přejít na ZedStart
+                  </Button>
+                </div>
+              ) : (
+                zsPrompts.map((p) => (
+                  <Button
+                    key={p.id}
+                    variant="outline"
+                    className="justify-start h-auto py-3 w-full whitespace-normal"
+                    disabled={busy}
+                    onClick={() => insertZedStart(p)}
+                  >
+                    <div className="text-left">
+                      <p className="font-medium">{p.prompt_text}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {ZEDSTART_CATEGORY_LABELS[p.category ?? "jina"] ?? "Jiná"} ·{" "}
+                        {p.suggested_duration_minutes} min
+                      </p>
+                    </div>
+                  </Button>
+                ))
+              )}
+            </div>
+          )}
 
           {kind === "text" && (
             <div className="space-y-3">
