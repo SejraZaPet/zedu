@@ -264,8 +264,8 @@ const TeacherZedStart = () => {
               Uložit
             </Button>
           </DialogFooter>
-        </DialogFooter>
         </DialogContent>
+
       </Dialog>
     </div>
   );
