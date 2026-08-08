@@ -73,6 +73,7 @@ import TeacherMethods from "./pages/TeacherMethods";
 import TeacherCurriculumPlans from "./pages/TeacherCurriculumPlans";
 import TeacherRubrics from "./pages/TeacherRubrics";
 import TeacherQuestionBank from "./pages/TeacherQuestionBank";
+import TeacherZedStart from "./pages/TeacherZedStart";
 import StudentMethods from "./pages/StudentMethods";
 import StudentPractice from "./pages/StudentPractice";
 import SchoolAdmin from "./pages/SchoolAdmin";
