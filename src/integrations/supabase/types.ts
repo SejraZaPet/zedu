@@ -5308,6 +5308,41 @@ export type Database = {
           },
         ]
       }
+      zedstart_prompts: {
+        Row: {
+          category: string | null
+          created_at: string
+          id: string
+          prompt_text: string
+          suggested_duration_minutes: number
+          teacher_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          prompt_text: string
+          suggested_duration_minutes?: number
+          teacher_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          prompt_text?: string
+          suggested_duration_minutes?: number
+          teacher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "zedstart_prompts_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       game_players_public: {
