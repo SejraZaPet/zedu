@@ -1086,9 +1086,19 @@ const StaffEventDialog = ({
           end_time: endDate ? endDate.toISOString() : null,
           color,
           all_day: allDay,
+          location: location.trim() || null,
           reminder_minutes: reminders.length ? reminders : null,
         })
         .eq("id", editing.id);
+      if (!error) {
+        // Synchronizace pozvaných: smazat odebrané, přidat nové
+        await supabase.from("staff_event_attendees").delete().eq("event_id", editing.id);
+        if (invited.length) {
+          await supabase.from("staff_event_attendees").insert(
+            invited.map((pid) => ({ event_id: editing.id, profile_id: pid })),
+          );
+        }
+      }
       setSaving(false);
       if (error) {
         toast({ title: "Změny nelze uložit", description: error.message, variant: "destructive" });
@@ -1099,6 +1109,7 @@ const StaffEventDialog = ({
       onCreated();
       return;
     }
+
 
     let instances = 1;
     let groupId: string | null = null;
