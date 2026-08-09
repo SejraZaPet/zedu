@@ -106,4 +106,8 @@ verify_jwt = false
 [functions.staff-calendar-feed]
 verify_jwt = false
 
+[functions.staff-event-reminders]
+verify_jwt = false
+
+
 

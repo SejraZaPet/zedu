@@ -7,6 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import ColorSwatchPicker from "./ColorSwatchPicker";
+import { DEFAULT_STAFF_COLOR } from "@/lib/staff-colors";
+
 
 export const TASK_PRIORITIES = [
   { value: "low", label: "Nízká" },
@@ -38,6 +41,7 @@ const StaffTaskDialog = ({ open, onOpenChange, assignedTo, assignedBy, assigneeN
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [priority, setPriority] = useState<string>("normal");
+  const [color, setColor] = useState<string>(DEFAULT_STAFF_COLOR);
   const [saving, setSaving] = useState(false);
 
   const reset = () => {
@@ -45,6 +49,7 @@ const StaffTaskDialog = ({ open, onOpenChange, assignedTo, assignedBy, assigneeN
     setDescription("");
     setDueDate("");
     setPriority("normal");
+    setColor(DEFAULT_STAFF_COLOR);
   };
 
   const save = async () => {
@@ -61,8 +66,10 @@ const StaffTaskDialog = ({ open, onOpenChange, assignedTo, assignedBy, assigneeN
       assigned_by: assignedBy,
       due_date: dueDate || null,
       priority,
+      color,
       status: "todo",
     });
+
     setSaving(false);
     if (error) {
       toast({ title: "Úkol nelze uložit", description: error.message, variant: "destructive" });
@@ -108,6 +115,8 @@ const StaffTaskDialog = ({ open, onOpenChange, assignedTo, assignedBy, assigneeN
               </Select>
             </div>
           </div>
+          <ColorSwatchPicker value={color} onChange={setColor} />
+
           <Button className="w-full" disabled={saving} onClick={() => void save()}>
             {saving ? "Ukládám…" : "Vytvořit úkol"}
           </Button>
