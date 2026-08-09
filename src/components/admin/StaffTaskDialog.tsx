@@ -41,6 +41,7 @@ const StaffTaskDialog = ({ open, onOpenChange, assignedTo, assignedBy, assigneeN
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [priority, setPriority] = useState<string>("normal");
+  const [color, setColor] = useState<string>(DEFAULT_STAFF_COLOR);
   const [saving, setSaving] = useState(false);
 
   const reset = () => {
@@ -48,6 +49,7 @@ const StaffTaskDialog = ({ open, onOpenChange, assignedTo, assignedBy, assigneeN
     setDescription("");
     setDueDate("");
     setPriority("normal");
+    setColor(DEFAULT_STAFF_COLOR);
   };
 
   const save = async () => {
@@ -64,8 +66,10 @@ const StaffTaskDialog = ({ open, onOpenChange, assignedTo, assignedBy, assigneeN
       assigned_by: assignedBy,
       due_date: dueDate || null,
       priority,
+      color,
       status: "todo",
     });
+
     setSaving(false);
     if (error) {
       toast({ title: "Úkol nelze uložit", description: error.message, variant: "destructive" });
