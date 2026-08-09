@@ -275,9 +275,10 @@ const Admin = () => {
 
 
         {activeTab === "dashboard" && <AdminDashboard onNavigate={(tab) => { setOpenGroupId(null); setCollapsed(false); setActiveTab(tab as Tab); }} isTeacher={isTeacher} />}
-        {activeTab === "my-panel" && !isTeacher && (
+        {activeTab === "my-panel" && (
           <MyStaffPanel onNavigate={(tab) => { setOpenGroupId(null); setCollapsed(false); setActiveTab(tab as Tab); }} />
         )}
+
 
         {activeTab === "stats" && !isTeacher && <SystemStats />}
         {activeTab === "textbooks" && isTeacher && <TeacherTextbooksManager />}
