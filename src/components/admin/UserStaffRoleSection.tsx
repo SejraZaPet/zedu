@@ -191,6 +191,31 @@ const UserStaffRoleSection = ({ userId }: Props) => {
         />
       </div>
 
+      <div className="rounded-md border border-border p-3 space-y-2">
+        <Label className="text-sm font-medium">Pedagogická role</Label>
+        <p className="text-xs text-muted-foreground">
+          Určuje, zda má zaměstnanec navíc učitelský přístup. Interní pracovník je vždy směrován do administrace („Můj panel“).
+        </p>
+        <RadioGroup
+          value={pedRole}
+          onValueChange={(v) => void savePedRole(v as PedRole)}
+          disabled={loading || savingPed}
+          className="gap-2"
+        >
+          {([
+            ["none", "Žádná (čistě administrativní)"],
+            ["teacher", "Učitel"],
+            ["lektor", "Lektor"],
+          ] as [PedRole, string][]).map(([value, label]) => (
+            <div key={value} className="flex items-center gap-2">
+              <RadioGroupItem value={value} id={`ped-${userId}-${value}`} />
+              <Label htmlFor={`ped-${userId}-${value}`} className="text-sm font-normal">{label}</Label>
+            </div>
+          ))}
+        </RadioGroup>
+      </div>
+
+
       {loading ? (
         <p className="text-xs text-muted-foreground">Načítání…</p>
       ) : staff?.active ? (
