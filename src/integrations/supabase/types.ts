@@ -3835,6 +3835,7 @@ export type Database = {
       staff_members: {
         Row: {
           active: boolean
+          calendar_feed_token: string | null
           created_at: string
           hired_at: string | null
           id: string
@@ -3847,6 +3848,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          calendar_feed_token?: string | null
           created_at?: string
           hired_at?: string | null
           id?: string
@@ -3859,6 +3861,7 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          calendar_feed_token?: string | null
           created_at?: string
           hired_at?: string | null
           id?: string
