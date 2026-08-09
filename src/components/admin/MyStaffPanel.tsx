@@ -1145,6 +1145,7 @@ const StaffEventDialog = ({
         created_by: user.id,
         color,
         all_day: allDay,
+        location: location.trim() || null,
         recurrence_rule: recurrence === "none" ? null : recurrence,
         recurrence_group_id: groupId,
         reminder_minutes: reminders.length ? reminders : null,
@@ -1152,7 +1153,15 @@ const StaffEventDialog = ({
     });
 
     setSaving(true);
-    const { error } = await supabase.from("staff_calendar_events").insert(rows);
+    const { data: created, error } = await supabase
+      .from("staff_calendar_events")
+      .insert(rows)
+      .select("id");
+    if (!error && invited.length && created?.length) {
+      await supabase.from("staff_event_attendees").insert(
+        created.flatMap((ev: any) => invited.map((pid) => ({ event_id: ev.id, profile_id: pid }))),
+      );
+    }
     setSaving(false);
     if (error) {
       toast({ title: "Událost nelze uložit", description: error.message, variant: "destructive" });
@@ -1163,6 +1172,7 @@ const StaffEventDialog = ({
     onOpenChange(false);
     onCreated();
   };
+
 
   return (
     <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) reset(); }}>
