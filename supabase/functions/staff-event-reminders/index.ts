@@ -13,7 +13,9 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   const secret = await getInternalSecret("cron_internal_secret");
-  if (!secret || req.headers.get("X-Internal-Secret") !== secret) {
+  const provided = req.headers.get("X-Cron-Secret") ?? req.headers.get("X-Internal-Secret");
+  if (!secret || provided !== secret) {
+
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
