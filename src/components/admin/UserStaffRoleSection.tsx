@@ -6,8 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { STAFF_MODULES } from "@/lib/staff-modules";
 import { UserCog } from "lucide-react";
+
+type PedRole = "none" | "teacher" | "lektor";
 
 interface StaffMember {
   id: string;
@@ -40,6 +43,48 @@ const UserStaffRoleSection = ({ userId }: Props) => {
   const [workEmail, setWorkEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [saving, setSaving] = useState(false);
+  const [pedRole, setPedRole] = useState<PedRole>("none");
+  const [savingPed, setSavingPed] = useState(false);
+
+  const loadPedRole = async (profileId: string) => {
+    const { data } = await supabase.from("user_roles").select("role").eq("user_id", profileId);
+    const roles = (data ?? []).map((r) => r.role as string);
+    setPedRole(roles.includes("teacher") ? "teacher" : roles.includes("lektor") ? "lektor" : "none");
+  };
+
+  const savePedRole = async (value: PedRole) => {
+    setSavingPed(true);
+    const prev = pedRole;
+    setPedRole(value);
+    // Odebereme jen pedagogické role, ostatní (admin, rodic, …) necháváme.
+    const { error: delError } = await supabase
+      .from("user_roles")
+      .delete()
+      .eq("user_id", userId)
+      .in("role", ["teacher", "lektor"]);
+    if (delError) {
+      setPedRole(prev);
+      setSavingPed(false);
+      toast({ title: "Uložení pedagogické role selhalo", description: delError.message, variant: "destructive" });
+      return;
+    }
+    if (value !== "none") {
+      const { error } = await supabase.from("user_roles").insert({ user_id: userId, role: value });
+      if (error) {
+        setSavingPed(false);
+        await loadPedRole(userId);
+        toast({ title: "Uložení pedagogické role selhalo", description: error.message, variant: "destructive" });
+        return;
+      }
+    }
+    setSavingPed(false);
+    toast({
+      title:
+        value === "none"
+          ? "Pedagogická role odebrána (čistě administrativní účet)"
+          : `Pedagogická role nastavena: ${value === "teacher" ? "Učitel" : "Lektor"}`,
+    });
+  };
 
   const loadPerms = async (staffId: string) => {
     const { data } = await supabase
@@ -70,6 +115,7 @@ const UserStaffRoleSection = ({ userId }: Props) => {
       setPhone(s?.phone ?? "");
       setPerms({});
       if (s) await loadPerms(s.id);
+      await loadPedRole(userId);
       if (!cancelled) setLoading(false);
     };
     void load();
@@ -144,6 +190,31 @@ const UserStaffRoleSection = ({ userId }: Props) => {
           aria-label="Interní pracovník"
         />
       </div>
+
+      <div className="rounded-md border border-border p-3 space-y-2">
+        <Label className="text-sm font-medium">Pedagogická role</Label>
+        <p className="text-xs text-muted-foreground">
+          Určuje, zda má zaměstnanec navíc učitelský přístup. Interní pracovník je vždy směrován do administrace („Můj panel“).
+        </p>
+        <RadioGroup
+          value={pedRole}
+          onValueChange={(v) => void savePedRole(v as PedRole)}
+          disabled={loading || savingPed}
+          className="gap-2"
+        >
+          {([
+            ["none", "Žádná (čistě administrativní)"],
+            ["teacher", "Učitel"],
+            ["lektor", "Lektor"],
+          ] as [PedRole, string][]).map(([value, label]) => (
+            <div key={value} className="flex items-center gap-2">
+              <RadioGroupItem value={value} id={`ped-${userId}-${value}`} />
+              <Label htmlFor={`ped-${userId}-${value}`} className="text-sm font-normal">{label}</Label>
+            </div>
+          ))}
+        </RadioGroup>
+      </div>
+
 
       {loading ? (
         <p className="text-xs text-muted-foreground">Načítání…</p>

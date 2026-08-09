@@ -52,6 +52,14 @@ const SiteHeader = () => {
         { label: "Nápověda", href: "/napoveda", icon: HelpCircle },
       ];
     }
+    // Interní zaměstnanec má přednost před pedagogickou rolí — patří do administrace.
+    if (isLoggedIn && isStaff) {
+      return [
+        { label: "Můj panel", href: "/admin", icon: LayoutDashboard },
+        { label: "Profil", href: "/profil", icon: User },
+        { label: "Nápověda", href: "/napoveda", icon: HelpCircle },
+      ];
+    }
     if (userRole === "teacher" || userRole === "lektor") {
       return [
         { label: "Přehled", href: "/ucitel", icon: LayoutDashboard },
@@ -63,13 +71,6 @@ const SiteHeader = () => {
     if (userRole === "rodic") {
       return [
         { label: "Přehled", href: "/rodic", icon: LayoutDashboard },
-        { label: "Profil", href: "/profil", icon: User },
-        { label: "Nápověda", href: "/napoveda", icon: HelpCircle },
-      ];
-    }
-    if (isLoggedIn && isStaff) {
-      return [
-        { label: "Můj panel", href: "/admin", icon: LayoutDashboard },
         { label: "Profil", href: "/profil", icon: User },
         { label: "Nápověda", href: "/napoveda", icon: HelpCircle },
       ];
