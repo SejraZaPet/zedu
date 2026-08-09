@@ -13,6 +13,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import { useSchoolBranding } from "@/hooks/useSchoolBranding";
+import { useStaffPermissions } from "@/hooks/useStaffPermissions";
 
 interface NavItem {
   label: string;
