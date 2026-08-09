@@ -297,6 +297,8 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
                       {t.assigned_by === user?.id ? "vlastní úkol" : `zadal ${names[t.assigned_by] ?? "—"}`}
                     </p>
                   </div>
+                  </div>
+
                   <div className="flex items-center gap-2">
                     <Select value={t.status} onValueChange={(v) => void setStatus(t, v)}>
                       <SelectTrigger className="h-9 w-[140px]"><SelectValue /></SelectTrigger>
