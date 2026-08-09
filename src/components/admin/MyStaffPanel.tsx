@@ -110,12 +110,13 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
     const [{ data: taskData }, { data: eventData }] = await Promise.all([
       supabase
         .from("staff_tasks")
-        .select("id, title, description, due_date, status, priority, assigned_by, assigned_to")
+        .select("id, title, description, due_date, status, priority, assigned_by, assigned_to, color")
         .eq("assigned_to", user.id)
         .order("created_at", { ascending: false }),
       supabase
         .from("staff_calendar_events")
-        .select("id, title, description, start_time, end_time, created_by")
+        .select("id, title, description, start_time, end_time, created_by, color, all_day, recurrence_rule, recurrence_group_id, reminder_minutes")
+
         .order("start_time", { ascending: true }),
     ]);
     setTasks((taskData ?? []) as TaskRow[]);
