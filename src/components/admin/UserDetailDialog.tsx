@@ -328,6 +328,17 @@ const UserDetailDialog = ({ user, open, onOpenChange, onUpdated }: Props) => {
 
           {isRealAdmin && <UserStaffRoleSection userId={user.id} />}
 
+          {canUseCrm && isEducator && (
+            <>
+              <UserInteractionsSection relatedUserId={user.id} canEdit={can("crm", true)} />
+              <div className="border-t border-border pt-3">
+                <RelatedTasksCard userId={user.id} canEdit={can("crm", true)} bare />
+              </div>
+            </>
+          )}
+
+
+
           <div className="border-t border-border pt-3 space-y-1">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Registrace:</span>
