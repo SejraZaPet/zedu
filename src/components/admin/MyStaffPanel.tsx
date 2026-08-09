@@ -408,6 +408,24 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
         />
       )}
       <StaffEventDialog open={eventOpen} onOpenChange={setEventOpen} onCreated={() => void load()} />
+      <CalendarBrowserDialog
+        open={calendarOpen}
+        onOpenChange={setCalendarOpen}
+        eventsByDay={eventsByDay}
+        initialDay={selectedDate}
+        onPickDay={(key) => {
+          setSelectedDate(key);
+          const picked = new Date(`${key}T00:00:00`);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const mondayNow = new Date(today);
+          mondayNow.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+          const mondayPicked = new Date(picked);
+          mondayPicked.setDate(picked.getDate() - ((picked.getDay() + 6) % 7));
+          setWeekOffset(Math.round((mondayPicked.getTime() - mondayNow.getTime()) / (7 * 86400000)));
+          setCalendarOpen(false);
+        }}
+      />
       <CalendarFeedDialog open={feedOpen} onOpenChange={setFeedOpen} />
     </div>
   );
