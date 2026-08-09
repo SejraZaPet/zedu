@@ -17,15 +17,16 @@ interface Props {
 }
 
 const roleHome = (role: string | null | undefined, isStaff = false): string => {
+  if (role === "admin") return "/admin";
+  if (role === "school_admin") return "/skola";
+  // Interní zaměstnanec má přednost před pedagogickou rolí.
+  if (isStaff) return "/admin";
   switch (role) {
-    case "admin": return "/admin";
-    case "school_admin": return "/skola";
     case "teacher": return "/ucitel";
     case "lektor": return "/ucitel";
     case "rodic": return "/rodic";
-    // Interní zaměstnanec bez pedagogické role patří do administrace.
-    case "user": return isStaff ? "/admin" : "/student";
-    default: return isStaff ? "/admin" : "/";
+    case "user": return "/student";
+    default: return "/";
   }
 };
 
