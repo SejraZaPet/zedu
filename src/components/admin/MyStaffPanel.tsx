@@ -151,6 +151,35 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
   const upcoming = events.filter((e) => new Date(e.end_time ?? e.start_time) >= new Date());
   const past = events.filter((e) => new Date(e.end_time ?? e.start_time) < new Date()).reverse();
 
+  /** Události seskupené podle dne (lokální YYYY-MM-DD). */
+  const eventsByDay = useMemo(() => {
+    const map: Record<string, EventRow[]> = {};
+    events.forEach((e) => {
+      const key = dayKey(new Date(e.start_time));
+      (map[key] ??= []).push(e);
+    });
+    return map;
+  }, [events]);
+
+  /** 6×7 mřížka dnů začínající pondělkem. */
+  const monthGrid = useMemo(() => {
+    const first = new Date(monthCursor.getFullYear(), monthCursor.getMonth(), 1);
+    const offset = (first.getDay() + 6) % 7;
+    const start = new Date(first);
+    start.setDate(first.getDate() - offset);
+    return Array.from({ length: 42 }, (_, i) => {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      return d;
+    });
+  }, [monthCursor]);
+
+  const shiftMonth = (delta: number) => {
+    setSelectedDay(null);
+    setMonthCursor((c) => new Date(c.getFullYear(), c.getMonth() + delta, 1));
+  };
+
+
   const deleteEvent = async (id: string) => {
     const { error } = await supabase.from("staff_calendar_events").delete().eq("id", id);
     if (error) {
