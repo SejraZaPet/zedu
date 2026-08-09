@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -9,7 +10,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import UserStaffRoleSection from "./UserStaffRoleSection";
-import { UserCog, UserPlus, ShieldCheck, Mail } from "lucide-react";
+import StaffTaskDialog from "./StaffTaskDialog";
+import { UserCog, UserPlus, ShieldCheck, Mail, ClipboardList } from "lucide-react";
+
 
 
 interface TeamRow {
@@ -38,10 +41,13 @@ const fullName = (p: any) => `${p?.first_name ?? ""} ${p?.last_name ?? ""}`.trim
 
 /** Přehled interního týmu ZEdu (admini + uživatelé se záznamem ve staff_members). */
 const ZeduTeamView = () => {
+  const { user } = useAuth();
   const [rows, setRows] = useState<TeamRow[]>([]);
   const [admins, setAdmins] = useState<AdminRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<{ profile_id: string; name: string } | null>(null);
+  const [taskFor, setTaskFor] = useState<{ profile_id: string; name: string } | null>(null);
+
 
   const [addOpen, setAddOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -188,6 +194,7 @@ const ZeduTeamView = () => {
                 <TableRow>
                   <TableHead>Jméno</TableHead>
                   <TableHead>Přístup</TableHead>
+                  <TableHead className="text-right">Akce</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -202,7 +209,13 @@ const ZeduTeamView = () => {
                         <ShieldCheck className="w-3 h-3 mr-1" /> Plný přístup
                       </Badge>
                     </TableCell>
+                    <TableCell className="text-right">
+                      <Button size="sm" variant="outline" onClick={() => setTaskFor({ profile_id: a.profile_id, name: a.name })}>
+                        <ClipboardList className="w-4 h-4 mr-1" /> Přiřadit úkol
+                      </Button>
+                    </TableCell>
                   </TableRow>
+
                 ))}
               </TableBody>
             </Table>
@@ -242,11 +255,15 @@ const ZeduTeamView = () => {
                         {r.active ? "Aktivní" : "Neaktivní"}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right space-x-2">
+                      <Button size="sm" variant="outline" onClick={() => setTaskFor({ profile_id: r.profile_id, name: r.name })}>
+                        <ClipboardList className="w-4 h-4 mr-1" /> Přiřadit úkol
+                      </Button>
                       <Button size="sm" variant="outline" onClick={() => setEditing({ profile_id: r.profile_id, name: r.name })}>
                         <UserCog className="w-4 h-4 mr-1" /> Upravit roli a oprávnění
                       </Button>
                     </TableCell>
+
                   </TableRow>
                 ))}
               </TableBody>
@@ -336,7 +353,18 @@ const ZeduTeamView = () => {
           {editing && <UserStaffRoleSection userId={editing.profile_id} />}
         </DialogContent>
       </Dialog>
+
+      {user && taskFor && (
+        <StaffTaskDialog
+          open={!!taskFor}
+          onOpenChange={(o) => { if (!o) setTaskFor(null); }}
+          assignedTo={taskFor.profile_id}
+          assignedBy={user.id}
+          assigneeName={taskFor.name}
+        />
+      )}
     </div>
+
   );
 };
 
