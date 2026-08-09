@@ -6,7 +6,7 @@ import { useStaffPermissions } from "@/hooks/useStaffPermissions";
 export const useAdmin = () => {
   const navigate = useNavigate();
   const { isLoggedIn, role, status, loading: authLoading, signOut } = useAuth();
-  const { loading: staffLoading, hasAnyPermission } = useStaffPermissions();
+  const { loading: staffLoading, hasAnyPermission, isStaff: isStaffMember } = useStaffPermissions();
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isStaff, setIsStaff] = useState(false);
