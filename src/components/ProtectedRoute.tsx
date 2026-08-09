@@ -156,7 +156,7 @@ const ProtectedRoute = ({ children, allowedRoles }: Props) => {
   if (allowedRoles && allowedRoles.length > 0 && state === "ok") {
     const effective = (role as AppRole | null) ?? null;
     if (!effective || !allowedRoles.includes(effective)) {
-      return <Navigate to={roleHome(effective)} replace />;
+      return <Navigate to={roleHome(effective, isStaff)} replace />;
     }
   }
 
