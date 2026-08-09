@@ -51,8 +51,13 @@ interface Props {
   allowPickAssignee?: boolean;
   /** Existující úkol → formulář se přepne do režimu editace */
   editing?: EditableTask | null;
+  /** Vazba na CRM organizaci (klienta) – uloží se u nového úkolu */
+  relatedOrganizationId?: string | null;
+  /** Vazba na konkrétního uživatele (učitele/lektora) – uloží se u nového úkolu */
+  relatedUserId?: string | null;
   onCreated?: () => void;
 }
+
 
 type Member = { id: string; name: string };
 type SubItem = { id: string; title: string; is_done: boolean; sort_order: number };
