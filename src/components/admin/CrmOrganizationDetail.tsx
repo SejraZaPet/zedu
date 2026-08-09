@@ -41,7 +41,23 @@ interface Interaction {
   next_step: string | null;
   next_step_date: string | null;
   contact_id: string | null;
+  created_by: string | null;
 }
+
+interface Author {
+  name: string;
+  initials: string;
+}
+
+/** Záložní zkratka z celého jména: "Kristýna Herinková" → "KH" */
+const autoInitials = (name: string) =>
+  name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? "")
+    .join("") || "—";
+
 
 const emptyContact = {
   name: "",
