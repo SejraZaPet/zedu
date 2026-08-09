@@ -508,12 +508,18 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
           onCreated={() => void load()}
         />
       )}
-      <StaffEventDialog open={eventOpen} onOpenChange={setEventOpen} onCreated={() => void load()} />
+      <StaffEventDialog
+        open={eventOpen}
+        editing={editEvent}
+        onOpenChange={(o) => { setEventOpen(o); if (!o) setEditEvent(null); }}
+        onCreated={() => void load()}
+      />
       <CalendarBrowserDialog
         open={calendarOpen}
         onOpenChange={setCalendarOpen}
         eventsByDay={eventsByDay}
         initialDay={selectedDate}
+        onEditEvent={(ev) => { setCalendarOpen(false); setEditEvent(ev); setEventOpen(true); }}
         onPickDay={(key) => {
           setSelectedDate(key);
           const picked = new Date(`${key}T00:00:00`);
@@ -527,6 +533,7 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
           setCalendarOpen(false);
         }}
       />
+
       <CalendarFeedDialog open={feedOpen} onOpenChange={setFeedOpen} />
 
       {/* Mazání opakované události — jedna instance, nebo celá série */}
