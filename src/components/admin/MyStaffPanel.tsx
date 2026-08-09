@@ -521,6 +521,35 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
         }}
       />
       <CalendarFeedDialog open={feedOpen} onOpenChange={setFeedOpen} />
+
+      {/* Mazání opakované události — jedna instance, nebo celá série */}
+      <Dialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Smazat opakovanou událost</DialogTitle>
+            <DialogDescription>
+              Událost „{deleteTarget?.title}“ je součástí opakované série. Smazat jen tuto instanci, nebo celou sérii?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-col gap-2 sm:flex-col">
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => deleteTarget && void deleteEvent(deleteTarget, "one")}
+            >
+              Smazat jen tuto instanci
+            </Button>
+            <Button
+              variant="destructive"
+              className="w-full"
+              onClick={() => deleteTarget && void deleteEvent(deleteTarget, "series")}
+            >
+              Smazat celou sérii
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 };
