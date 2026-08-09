@@ -615,14 +615,15 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
       {user && (
         <StaffTaskDialog
           open={taskOpen}
-          onOpenChange={setTaskOpen}
+          onOpenChange={(o) => { setTaskOpen(o); if (!o) setEditTask(null); }}
           assignedTo={user.id}
           assignedBy={user.id}
           allowPickAssignee
-
+          editing={editTask}
           onCreated={() => void load()}
         />
       )}
+
       <StaffEventDialog
         open={eventOpen}
         editing={editEvent}
