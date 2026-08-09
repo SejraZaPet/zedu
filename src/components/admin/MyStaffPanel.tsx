@@ -17,7 +17,7 @@ import ColorSwatchPicker from "./ColorSwatchPicker";
 import { DEFAULT_STAFF_COLOR, RECURRENCE_OPTIONS, REMINDER_OPTIONS } from "@/lib/staff-colors";
 
 import StaffTaskDialog, { TASK_PRIORITIES, TASK_STATUSES } from "./StaffTaskDialog";
-import { CalendarPlus, CalendarDays, CheckCircle2, ListChecks, Plus, Trash2, ArrowRight, ChevronLeft, ChevronRight, Rss, Copy, StickyNote, Sparkles, Bell, Repeat } from "lucide-react";
+import { CalendarPlus, CalendarDays, CheckCircle2, ListChecks, Plus, Trash2, ArrowRight, ChevronLeft, ChevronRight, Rss, Copy, StickyNote, Sparkles, Bell, Repeat, MapPin, Users } from "lucide-react";
 
 
 interface TaskRow {
