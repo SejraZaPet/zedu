@@ -271,8 +271,15 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
             <ul className="divide-y divide-border">
               {visibleTasks.map((t) => (
                 <li key={t.id} className="flex flex-wrap items-start justify-between gap-3 py-3">
+                  <div className="flex min-w-0 items-start gap-3">
+                    <span
+                      aria-hidden
+                      className="mt-1 h-8 w-1.5 shrink-0 rounded-full"
+                      style={{ backgroundColor: t.color || "hsl(var(--muted))" }}
+                    />
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
+
                       <span className={`font-medium ${t.status === "done" ? "line-through text-muted-foreground" : ""}`}>
                         {t.title}
                       </span>
