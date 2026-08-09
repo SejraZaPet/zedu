@@ -996,13 +996,23 @@ const StaffEventDialog = ({
   const [recurrence, setRecurrence] = useState<string>("none");
   const [recurrenceUntil, setRecurrenceUntil] = useState("");
   const [reminders, setReminders] = useState<number[]>([]);
+  const [location, setLocation] = useState("");
+  const [team, setTeam] = useState<TeamMember[]>([]);
+  const [invited, setInvited] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
   const reset = () => {
     setTitle(""); setDescription(""); setStart(""); setEnd("");
     setAllDay(false); setAllDayDate(""); setColor(DEFAULT_STAFF_COLOR);
     setRecurrence("none"); setRecurrenceUntil(""); setReminders([]);
+    setLocation(""); setInvited([]);
   };
+
+  /** Interní tým pro výběr účastníků */
+  useEffect(() => {
+    if (!open || team.length) return;
+    void (async () => setTeam(await fetchTeamMembers()))();
+  }, [open, team.length]);
 
   /** Předvyplnění při editaci existující události */
   useEffect(() => {
@@ -1018,7 +1028,16 @@ const StaffEventDialog = ({
     setRecurrence("none");
     setRecurrenceUntil("");
     setReminders(editing.reminder_minutes ?? []);
+    setLocation(editing.location ?? "");
+    void (async () => {
+      const { data } = await supabase
+        .from("staff_event_attendees")
+        .select("profile_id")
+        .eq("event_id", editing.id);
+      setInvited((data ?? []).map((a: any) => a.profile_id));
+    })();
   }, [open, editing]);
+
 
 
   const addStep = (d: Date, i: number) => {
