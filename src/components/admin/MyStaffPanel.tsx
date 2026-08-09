@@ -1213,7 +1213,41 @@ const StaffEventDialog = ({
             </div>
           )}
 
+          <div className="space-y-1">
+            <Label htmlFor="ev-location">Místo (nepovinné)</Label>
+            <Input
+              id="ev-location"
+              value={location}
+              placeholder="Např. zasedačka, Google Meet…"
+              onChange={(e) => setLocation(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Pozvat kolegy</Label>
+            {team.length === 0 ? (
+              <p className="text-xs text-muted-foreground">Žádní další interní pracovníci.</p>
+            ) : (
+              <div className="max-h-40 space-y-1 overflow-y-auto rounded-md border border-border p-2">
+                {team.map((m) => (
+                  <div key={m.id} className="flex items-center gap-2">
+                    <Checkbox
+                      id={`att-${m.id}`}
+                      checked={invited.includes(m.id)}
+                      onCheckedChange={(c) =>
+                        setInvited((prev) => (c === true ? [...prev, m.id] : prev.filter((x) => x !== m.id)))
+                      }
+                    />
+                    <Label htmlFor={`att-${m.id}`} className="cursor-pointer font-normal">{m.name}</Label>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           <ColorSwatchPicker value={color} onChange={setColor} />
+
+
 
           <div className={`grid grid-cols-2 gap-3 ${editing ? "hidden" : ""}`}>
 
