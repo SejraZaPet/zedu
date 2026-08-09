@@ -299,7 +299,9 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
         <CardContent className="space-y-4">
           {/* Denní agenda */}
           {dayEvents.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Žádné události na dnešek.</p>
+            <p className="text-sm text-muted-foreground">
+              {selectedDate === dayKey(new Date()) ? "Žádné události na dnešek." : "Žádné události v tento den."}
+            </p>
           ) : (
             <ul className="divide-y divide-border">
               {dayEvents.map((e) => (
