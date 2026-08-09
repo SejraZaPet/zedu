@@ -426,10 +426,20 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
                     <span className="opacity-80">{WEEKDAYS[i]}</span>
                     <span className="text-sm font-semibold">{d.getDate()}</span>
                     {count > 0 ? (
-                      <Badge variant={isSel ? "secondary" : "default"} className="h-4 px-1 text-[10px]">{count}</Badge>
+                      <span className="flex h-4 items-center gap-1">
+                        {(eventsByDay[key] ?? []).slice(0, 3).map((e) => (
+                          <span
+                            key={e.id}
+                            className="h-1.5 w-1.5 rounded-full"
+                            style={{ backgroundColor: e.color || "currentColor" }}
+                          />
+                        ))}
+                        <span className="text-[10px] opacity-80">{count}</span>
+                      </span>
                     ) : (
                       <span className="h-4" />
                     )}
+
                   </button>
                 );
               })}
