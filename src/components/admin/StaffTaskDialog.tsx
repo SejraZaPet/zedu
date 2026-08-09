@@ -108,7 +108,7 @@ const StaffTaskDialog = ({ open, onOpenChange, assignedTo, assignedBy, assigneeN
     const { error } = await supabase.from("staff_tasks").insert({
       title: t,
       description: description.trim() || null,
-      assigned_to: assignedTo,
+      assigned_to: target || assignedTo,
       assigned_by: assignedBy,
       due_date: dueDate || null,
       priority,
