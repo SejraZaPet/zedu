@@ -251,7 +251,10 @@ const StaffTaskDialog = ({
         priority,
         color,
         status: "todo",
+        related_organization_id: relatedOrganizationId ?? null,
+        related_user_id: relatedUserId ?? null,
       })
+
       .select("id")
       .single();
 
