@@ -915,6 +915,32 @@ const StaffEventDialog = ({
       endDate = end ? new Date(end) : null;
     }
 
+    /** Editace: aktualizujeme jen tuhle instanci, série zůstává */
+    if (editing) {
+      setSaving(true);
+      const { error } = await supabase
+        .from("staff_calendar_events")
+        .update({
+          title: t,
+          description: description.trim() || null,
+          start_time: startDate.toISOString(),
+          end_time: endDate ? endDate.toISOString() : null,
+          color,
+          all_day: allDay,
+          reminder_minutes: reminders.length ? reminders : null,
+        })
+        .eq("id", editing.id);
+      setSaving(false);
+      if (error) {
+        toast({ title: "Změny nelze uložit", description: error.message, variant: "destructive" });
+        return;
+      }
+      toast({ title: "Událost upravena" });
+      onOpenChange(false);
+      onCreated();
+      return;
+    }
+
     let instances = 1;
     let groupId: string | null = null;
     if (recurrence !== "none") {
