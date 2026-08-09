@@ -136,6 +136,40 @@ const StaffTaskDialog = ({ open, onOpenChange, assignedTo, assignedBy, assigneeN
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
+          {allowPickAssignee && (
+            <div className="space-y-1">
+              <Label>Přiřadit komu</Label>
+              <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" role="combobox" aria-expanded={pickerOpen} className="w-full justify-between font-normal">
+                    {targetName}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Hledat člena týmu…" />
+                    <CommandList>
+                      <CommandEmpty>Nikdo nenalezen.</CommandEmpty>
+                      <CommandGroup>
+                        {members.map((m) => (
+                          <CommandItem
+                            key={m.id}
+                            value={m.name}
+                            onSelect={() => { setTarget(m.id); setPickerOpen(false); }}
+                          >
+                            <Check className={`mr-2 h-4 w-4 ${target === m.id ? "opacity-100" : "opacity-0"}`} />
+                            {m.name}{m.id === assignedBy ? " (já)" : ""}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            </div>
+          )}
+
           <div className="space-y-1">
             <Label htmlFor="task-title">Název</Label>
             <Input id="task-title" autoFocus value={title} onChange={(e) => setTitle(e.target.value)} />
