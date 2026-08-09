@@ -35,8 +35,8 @@ export const useAdmin = () => {
       return;
     }
 
-    // Zaměstnanci s přiznaným oprávněním mají přístup do administrace
-    if (hasAnyPermission) {
+    // Zaměstnanci (i bez přiznaných modulů) mají přístup do administrace — Můj panel
+    if (hasAnyPermission || isStaffMember) {
       setIsAdmin(false);
       setIsStaff(true);
       setIsTeacher(false);
