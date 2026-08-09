@@ -6,8 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { STAFF_MODULES } from "@/lib/staff-modules";
 import { UserCog } from "lucide-react";
+
+type PedRole = "none" | "teacher" | "lektor";
 
 interface StaffMember {
   id: string;
