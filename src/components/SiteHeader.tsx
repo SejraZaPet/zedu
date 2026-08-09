@@ -75,13 +75,6 @@ const SiteHeader = () => {
         { label: "Nápověda", href: "/napoveda", icon: HelpCircle },
       ];
     }
-    if (isLoggedIn && isStaff) {
-      return [
-        { label: "Můj panel", href: "/admin", icon: LayoutDashboard },
-        { label: "Profil", href: "/profil", icon: User },
-        { label: "Nápověda", href: "/napoveda", icon: HelpCircle },
-      ];
-    }
     if (isLoggedIn) {
       return [
         { label: "Přehled", href: "/student", icon: LayoutDashboard },
