@@ -12,6 +12,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Checkbox } from "@/components/ui/checkbox";
 import { Check, ChevronsUpDown, Plus, Trash2 } from "lucide-react";
 import ColorSwatchPicker from "./ColorSwatchPicker";
+import { useAuth } from "@/contexts/AuthContext";
 import { DEFAULT_STAFF_COLOR } from "@/lib/staff-colors";
 
 export const TASK_PRIORITIES = [
@@ -36,6 +37,8 @@ export interface EditableTask {
   status: string;
   color: string | null;
   assigned_to: string;
+  /** Zadavatel – rozhoduje o právech na editaci zadání */
+  assigned_by?: string;
 }
 
 interface Props {
@@ -55,6 +58,8 @@ interface Props {
   relatedOrganizationId?: string | null;
   /** Vazba na konkrétního uživatele (učitele/lektora) – uloží se u nového úkolu */
   relatedUserId?: string | null;
+  /** Jméno zadavatele – zobrazí se v poznámce pro řešitele bez práv na editaci */
+  assignerName?: string;
   onCreated?: () => void;
 }
 
@@ -73,8 +78,18 @@ const StaffTaskDialog = ({
   editing,
   relatedOrganizationId,
   relatedUserId,
+  assignerName,
   onCreated,
 }: Props) => {
+  const { realRole } = useAuth();
+  const isAdmin = realRole === "admin";
+  /** Řešitel, který není zadavatelem ani adminem → smí měnit jen stav a zaškrtávat checklist. */
+  const readOnlyBrief =
+    !!editing &&
+    !isAdmin &&
+    editing.assigned_to === assignedBy &&
+    !!editing.assigned_by &&
+    editing.assigned_by !== assignedBy;
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -216,9 +231,9 @@ const StaffTaskDialog = ({
     setSaving(true);
 
     if (editing) {
-      const { error } = await supabase
-        .from("staff_tasks")
-        .update({
+      const patch = readOnlyBrief
+        ? { status, completed_at: status === "done" ? new Date().toISOString() : null }
+        : {
           title: t,
           description: description.trim() || null,
           assigned_to: target || editing.assigned_to,
@@ -227,7 +242,10 @@ const StaffTaskDialog = ({
           status,
           color,
           completed_at: status === "done" ? new Date().toISOString() : null,
-        })
+        };
+      const { error } = await supabase
+        .from("staff_tasks")
+        .update(patch)
         .eq("id", editing.id);
       setSaving(false);
       if (error) {
@@ -289,12 +307,17 @@ const StaffTaskDialog = ({
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
+          {readOnlyBrief && (
+            <p className="rounded-md border border-border bg-muted/50 p-2 text-xs text-muted-foreground">
+              Zadání může upravit jen zadavatel{assignerName ? ` ${assignerName}` : ""}. Vy můžete měnit stav úkolu a zaškrtávat body checklistu.
+            </p>
+          )}
           {(allowPickAssignee || editing) && (
             <div className="space-y-1">
               <Label>Přiřadit komu</Label>
               <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" role="combobox" aria-expanded={pickerOpen} className="w-full justify-between font-normal">
+                  <Button variant="outline" role="combobox" disabled={readOnlyBrief} aria-expanded={pickerOpen} className="w-full justify-between font-normal">
                     {targetName}
                     <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
                   </Button>
@@ -325,20 +348,20 @@ const StaffTaskDialog = ({
 
           <div className="space-y-1">
             <Label htmlFor="task-title">Název</Label>
-            <Input id="task-title" autoFocus value={title} onChange={(e) => setTitle(e.target.value)} />
+            <Input id="task-title" autoFocus={!readOnlyBrief} disabled={readOnlyBrief} value={title} onChange={(e) => setTitle(e.target.value)} />
           </div>
           <div className="space-y-1">
             <Label htmlFor="task-desc">Popis</Label>
-            <Textarea id="task-desc" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
+            <Textarea id="task-desc" rows={3} disabled={readOnlyBrief} value={description} onChange={(e) => setDescription(e.target.value)} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label htmlFor="task-due">Termín</Label>
-              <Input id="task-due" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+              <Input id="task-due" type="date" disabled={readOnlyBrief} value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
             </div>
             <div className="space-y-1">
               <Label>Priorita</Label>
-              <Select value={priority} onValueChange={setPriority}>
+              <Select value={priority} onValueChange={setPriority} disabled={readOnlyBrief}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {TASK_PRIORITIES.map((p) => (
@@ -363,7 +386,14 @@ const StaffTaskDialog = ({
             </div>
           )}
 
-          <ColorSwatchPicker value={color} onChange={setColor} />
+          {readOnlyBrief ? (
+            <div className="flex items-center gap-2">
+              <Label>Barva</Label>
+              <span className="h-4 w-4 rounded-full border border-border" style={{ backgroundColor: color }} aria-hidden />
+            </div>
+          ) : (
+            <ColorSwatchPicker value={color} onChange={setColor} />
+          )}
 
           <div className="space-y-2">
             <Label>Checklist</Label>
@@ -384,14 +414,16 @@ const StaffTaskDialog = ({
                     >
                       {s.title}
                     </Label>
-                    <Button size="icon" variant="ghost" aria-label="Smazat podúkol" onClick={() => void removeSubItem(s)}>
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                    {!readOnlyBrief && (
+                      <Button size="icon" variant="ghost" aria-label="Smazat podúkol" onClick={() => void removeSubItem(s)}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
                   </li>
                 ))}
               </ul>
             )}
-            <div className="flex items-center gap-2">
+            <div className={`flex items-center gap-2 ${readOnlyBrief ? "hidden" : ""}`}>
               <Input
                 value={newSub}
                 placeholder="Nový bod checklistu…"
@@ -410,7 +442,7 @@ const StaffTaskDialog = ({
           </div>
 
           <Button className="w-full" disabled={saving} onClick={() => void save()}>
-            {saving ? "Ukládám…" : editing ? "Uložit změny" : "Vytvořit úkol"}
+            {saving ? "Ukládám…" : readOnlyBrief ? "Uložit stav" : editing ? "Uložit změny" : "Vytvořit úkol"}
           </Button>
         </div>
       </DialogContent>
