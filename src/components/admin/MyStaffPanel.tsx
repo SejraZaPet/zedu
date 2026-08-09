@@ -270,55 +270,146 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
       </Card>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0">
+        <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 space-y-0">
           <CardTitle className="text-base">Pracovní kalendář</CardTitle>
-          <Button size="sm" variant="outline" onClick={() => setEventOpen(true)}>
-            <CalendarPlus className="w-4 h-4 mr-1" /> Přidat událost
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <ToggleGroup
+              type="single"
+              value={calView}
+              onValueChange={(v) => v && setCalView(v as "list" | "month")}
+              className="rounded-md border border-border"
+            >
+              <ToggleGroupItem value="list" className="h-9 px-3 text-sm">Seznam</ToggleGroupItem>
+              <ToggleGroupItem value="month" className="h-9 px-3 text-sm">Měsíc</ToggleGroupItem>
+            </ToggleGroup>
+            <Button size="sm" variant="outline" onClick={() => setFeedOpen(true)}>
+              <Rss className="w-4 h-4 mr-1" /> Odebírat v kalendáři
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setEventOpen(true)}>
+              <CalendarPlus className="w-4 h-4 mr-1" /> Přidat událost
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium text-muted-foreground">Nejbližší</h4>
-            {upcoming.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Žádné naplánované události.</p>
-            ) : (
-              <ul className="divide-y divide-border">
-                {upcoming.map((e) => (
-                  <li key={e.id} className="flex items-start justify-between gap-3 py-2">
-                    <div className="min-w-0">
-                      <div className="font-medium">{e.title}</div>
-                      <p className="text-xs text-muted-foreground">
-                        {fmtDateTime(e.start_time)}
-                        {e.end_time ? ` – ${fmtDateTime(e.end_time)}` : ""} · {names[e.created_by] ?? "—"}
-                      </p>
-                      {e.description && (
-                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{e.description}</p>
+          {calView === "month" ? (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Button size="sm" variant="ghost" onClick={() => shiftMonth(-1)} aria-label="Předchozí měsíc">
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <span className="text-sm font-medium capitalize">
+                  {monthCursor.toLocaleDateString("cs-CZ", { month: "long", year: "numeric" })}
+                </span>
+                <Button size="sm" variant="ghost" onClick={() => shiftMonth(1)} aria-label="Další měsíc">
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+              <div className="grid grid-cols-7 gap-1 text-center text-xs text-muted-foreground">
+                {WEEKDAYS.map((d) => <div key={d} className="py-1">{d}</div>)}
+              </div>
+              <div className="grid grid-cols-7 gap-1">
+                {monthGrid.map((d) => {
+                  const key = dayKey(d);
+                  const count = eventsByDay[key]?.length ?? 0;
+                  const inMonth = d.getMonth() === monthCursor.getMonth();
+                  const isToday = key === dayKey(new Date());
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setSelectedDay(count ? key : null)}
+                      aria-label={`${d.getDate()}. ${d.getMonth() + 1}. — ${count} událostí`}
+                      className={`flex h-14 flex-col items-center justify-center rounded-md border text-sm transition-colors ${
+                        selectedDay === key ? "border-primary bg-primary/10" : "border-border hover:bg-accent"
+                      } ${inMonth ? "" : "opacity-40"} ${isToday ? "font-bold" : ""}`}
+                    >
+                      <span>{d.getDate()}</span>
+                      {count > 0 && (
+                        <span className="mt-1 flex items-center gap-1">
+                          <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                          <span className="text-[10px] text-muted-foreground">{count}</span>
+                        </span>
                       )}
-                    </div>
-                    {(isAdmin || e.created_by === user?.id) && (
-                      <Button size="sm" variant="ghost" onClick={() => void deleteEvent(e.id)} aria-label="Smazat událost">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-          {past.length > 0 && (
-            <div className="space-y-2">
-              <h4 className="text-sm font-medium text-muted-foreground">Proběhlé</h4>
-              <ul className="divide-y divide-border">
-                {past.slice(0, 5).map((e) => (
-                  <li key={e.id} className="py-2 text-sm text-muted-foreground">
-                    {fmtDateTime(e.start_time)} · {e.title}
-                  </li>
-                ))}
-              </ul>
+                    </button>
+                  );
+                })}
+              </div>
+              {selectedDay && (
+                <div className="space-y-2 rounded-md border border-border p-3">
+                  <h4 className="text-sm font-medium">
+                    Události {fmtDate(selectedDay)}
+                  </h4>
+                  <ul className="divide-y divide-border">
+                    {(eventsByDay[selectedDay] ?? []).map((e) => (
+                      <li key={e.id} className="flex items-start justify-between gap-3 py-2">
+                        <div className="min-w-0">
+                          <div className="font-medium">{e.title}</div>
+                          <p className="text-xs text-muted-foreground">
+                            {fmtDateTime(e.start_time)}
+                            {e.end_time ? ` – ${fmtDateTime(e.end_time)}` : ""} · {names[e.created_by] ?? "—"}
+                          </p>
+                          {e.description && (
+                            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{e.description}</p>
+                          )}
+                        </div>
+                        {(isAdmin || e.created_by === user?.id) && (
+                          <Button size="sm" variant="ghost" onClick={() => void deleteEvent(e.id)} aria-label="Smazat událost">
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
+          ) : (
+            <>
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium text-muted-foreground">Nejbližší</h4>
+                {upcoming.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Žádné naplánované události.</p>
+                ) : (
+                  <ul className="divide-y divide-border">
+                    {upcoming.map((e) => (
+                      <li key={e.id} className="flex items-start justify-between gap-3 py-2">
+                        <div className="min-w-0">
+                          <div className="font-medium">{e.title}</div>
+                          <p className="text-xs text-muted-foreground">
+                            {fmtDateTime(e.start_time)}
+                            {e.end_time ? ` – ${fmtDateTime(e.end_time)}` : ""} · {names[e.created_by] ?? "—"}
+                          </p>
+                          {e.description && (
+                            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{e.description}</p>
+                          )}
+                        </div>
+                        {(isAdmin || e.created_by === user?.id) && (
+                          <Button size="sm" variant="ghost" onClick={() => void deleteEvent(e.id)} aria-label="Smazat událost">
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              {past.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium text-muted-foreground">Proběhlé</h4>
+                  <ul className="divide-y divide-border">
+                    {past.slice(0, 5).map((e) => (
+                      <li key={e.id} className="py-2 text-sm text-muted-foreground">
+                        {fmtDateTime(e.start_time)} · {e.title}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
+
 
       <Card>
         <CardHeader>
