@@ -115,6 +115,8 @@ const StaffTaskDialog = ({ open, onOpenChange, assignedTo, assignedBy, assigneeN
               </Select>
             </div>
           </div>
+          <ColorSwatchPicker value={color} onChange={setColor} />
+
           <Button className="w-full" disabled={saving} onClick={() => void save()}>
             {saving ? "Ukládám…" : "Vytvořit úkol"}
           </Button>
