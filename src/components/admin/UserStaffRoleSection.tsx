@@ -115,6 +115,7 @@ const UserStaffRoleSection = ({ userId }: Props) => {
       setPhone(s?.phone ?? "");
       setPerms({});
       if (s) await loadPerms(s.id);
+      await loadPedRole(userId);
       if (!cancelled) setLoading(false);
     };
     void load();
