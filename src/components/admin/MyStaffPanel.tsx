@@ -715,10 +715,19 @@ const CalendarBrowserDialog = ({
               ) : (
                 <ul className="space-y-1 text-sm">
                   {(eventsByDay[activeDay] ?? []).map((e) => (
-                    <li key={e.id}>
-                      <span className="tabular-nums text-muted-foreground">{fmtTime(e.start_time)}</span> · {e.title}
+                    <li key={e.id} className="flex items-center gap-2">
+                      <span
+                        aria-hidden
+                        className="h-2 w-2 shrink-0 rounded-full"
+                        style={{ backgroundColor: e.color || "hsl(var(--primary))" }}
+                      />
+                      <span className="tabular-nums text-muted-foreground">
+                        {e.all_day ? "Celý den" : fmtTime(e.start_time)}
+                      </span>
+                      <span>· {e.title}</span>
                     </li>
                   ))}
+
                 </ul>
               )}
             </div>
