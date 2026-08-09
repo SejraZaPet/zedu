@@ -20,6 +20,7 @@ import {
   statusMeta,
 } from "@/lib/staff-modules";
 import type { CrmOrganization, CrmTag } from "./CrmManager";
+import RelatedTasksCard from "./RelatedTasksCard";
 
 interface Contact {
   id: string;
