@@ -93,14 +93,19 @@ const Auth = () => {
 
     if (authRole === "admin") {
       navigate(safeRedirect || "/admin", { replace: true });
+    } else if (authRole === "school_admin") {
+      navigate(safeRedirect || "/skola", { replace: true });
     } else if (authRole === "teacher" || authRole === "lektor") {
       navigate(safeRedirect || "/ucitel", { replace: true });
     } else if (authRole === "rodic") {
       navigate(safeRedirect || "/rodic", { replace: true });
     } else {
-      navigate(safeRedirect || "/student", { replace: true });
+      // Interní zaměstnanec bez učitelské/žákovské role patří do administrace,
+      // ne na žákovský přehled. Počkáme, než se načte info o staff záznamu.
+      if (staffLoading) return;
+      navigate(safeRedirect || (isStaff ? "/admin" : "/student"), { replace: true });
     }
-  }, [authLoading, isLoggedIn, authRole, navigate, redirectTo]);
+  }, [authLoading, isLoggedIn, authRole, navigate, redirectTo, staffLoading, isStaff]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
