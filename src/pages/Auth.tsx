@@ -9,6 +9,7 @@ import { Lock, UserPlus, LogIn, GraduationCap, BookOpenText, KeyRound, CheckCirc
 import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useSchoolBranding } from "@/hooks/useSchoolBranding";
+import { useStaffPermissions } from "@/hooks/useStaffPermissions";
 
 type Role = "student" | "teacher" | "lektor" | "rodic";
 
