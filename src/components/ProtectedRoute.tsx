@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { useAuth } from "@/contexts/AuthContext";
+import { useStaffPermissions } from "@/hooks/useStaffPermissions";
 
 type AppRole = "admin" | "school_admin" | "teacher" | "lektor" | "rodic" | "user";
 
@@ -15,15 +16,16 @@ interface Props {
   allowedRoles?: AppRole[];
 }
 
-const roleHome = (role: string | null | undefined): string => {
+const roleHome = (role: string | null | undefined, isStaff = false): string => {
   switch (role) {
     case "admin": return "/admin";
     case "school_admin": return "/skola";
     case "teacher": return "/ucitel";
     case "lektor": return "/ucitel";
     case "rodic": return "/rodic";
-    case "user": return "/student";
-    default: return "/";
+    // Interní zaměstnanec bez pedagogické role patří do administrace.
+    case "user": return isStaff ? "/admin" : "/student";
+    default: return isStaff ? "/admin" : "/";
   }
 };
 
@@ -31,6 +33,7 @@ const ProtectedRoute = ({ children, allowedRoles }: Props) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isLoggedIn, user, role, status, loading: authLoading } = useAuth();
+  const { isStaff } = useStaffPermissions();
   const [state, setState] = useState<"loading" | "ok" | "pending" | "blocked">("loading");
 
   useEffect(() => {
@@ -153,7 +156,7 @@ const ProtectedRoute = ({ children, allowedRoles }: Props) => {
   if (allowedRoles && allowedRoles.length > 0 && state === "ok") {
     const effective = (role as AppRole | null) ?? null;
     if (!effective || !allowedRoles.includes(effective)) {
-      return <Navigate to={roleHome(effective)} replace />;
+      return <Navigate to={roleHome(effective, isStaff)} replace />;
     }
   }
 

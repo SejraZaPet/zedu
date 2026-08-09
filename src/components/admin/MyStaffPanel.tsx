@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import StaffTaskDialog, { TASK_PRIORITIES, TASK_STATUSES } from "./StaffTaskDialog";
-import { CalendarPlus, CalendarDays, CheckCircle2, ListChecks, Plus, Trash2, ArrowRight, ChevronLeft, ChevronRight, Rss, Copy, StickyNote } from "lucide-react";
+import { CalendarPlus, CalendarDays, CheckCircle2, ListChecks, Plus, Trash2, ArrowRight, ChevronLeft, ChevronRight, Rss, Copy, StickyNote, Sparkles } from "lucide-react";
 
 
 interface TaskRow {
@@ -379,7 +379,7 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
         <CardHeader>
           <CardTitle className="text-base">Rychlé odkazy</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
           {quickLinks.length === 0 ? (
             <p className="text-sm text-muted-foreground">Zatím nemáte přiřazený žádný modul administrace.</p>
           ) : (
@@ -397,7 +397,21 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
               ))}
             </div>
           )}
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            <Button
+              variant="outline"
+              className="justify-between"
+              onClick={() => window.location.assign("/avatar")}
+            >
+              <span className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4" />
+                Upravit avatara
+              </span>
+              <ArrowRight className="w-4 h-4" />
+            </Button>
+          </div>
         </CardContent>
+
       </Card>
 
       {user && (

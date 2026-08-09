@@ -16,6 +16,7 @@ import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
 import PushNotificationsCard from "@/components/profile/PushNotificationsCard";
 import { useAccessibilitySettings } from "@/hooks/useAccessibilitySettings";
+import { useStaffPermissions } from "@/hooks/useStaffPermissions";
 
 const statusLabels: Record<string, string> = {
   pending: "Čeká na schválení",
@@ -48,6 +49,7 @@ const ProfilePage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, isLoggedIn, role, loading: authLoading } = useAuth();
+  const { isStaff } = useStaffPermissions();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -381,6 +383,8 @@ const ProfilePage = () => {
                   ? "/ucitel"
                   : role === "rodic"
                   ? "/rodic"
+                  : isStaff
+                  ? "/admin"
                   : "/student";
               navigate(home);
             }}
@@ -430,6 +434,27 @@ const ProfilePage = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Avatar – dostupné všem rolím */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-primary" />
+              Můj avatar
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col sm:flex-row sm:items-center gap-4">
+            {user && <ProfileAvatarBubble userId={user.id} size={64} crop="head" />}
+            <p className="text-sm text-muted-foreground flex-1">
+              Upravte si vzhled svého avatara, který se zobrazuje u vašeho profilu.
+            </p>
+            <Button variant="outline" onClick={() => navigate("/avatar")}>
+              Upravit avatara
+            </Button>
+          </CardContent>
+        </Card>
+
+
 
         {/* Game profile (students) */}
         {role === "user" && gameProfile && (() => {

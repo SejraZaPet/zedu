@@ -13,6 +13,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import { useSchoolBranding } from "@/hooks/useSchoolBranding";
+import { useStaffPermissions } from "@/hooks/useStaffPermissions";
 
 interface NavItem {
   label: string;
@@ -24,6 +25,7 @@ const SiteHeader = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const { isLoggedIn, role: userRole, signOut } = useAuth();
+  const { isStaff } = useStaffPermissions();
   const { branding } = useSchoolBranding();
   const navigate = useNavigate();
   const location = useLocation();
@@ -61,6 +63,13 @@ const SiteHeader = () => {
     if (userRole === "rodic") {
       return [
         { label: "Přehled", href: "/rodic", icon: LayoutDashboard },
+        { label: "Profil", href: "/profil", icon: User },
+        { label: "Nápověda", href: "/napoveda", icon: HelpCircle },
+      ];
+    }
+    if (isLoggedIn && isStaff) {
+      return [
+        { label: "Můj panel", href: "/admin", icon: LayoutDashboard },
         { label: "Profil", href: "/profil", icon: User },
         { label: "Nápověda", href: "/napoveda", icon: HelpCircle },
       ];

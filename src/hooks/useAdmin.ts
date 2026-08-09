@@ -6,7 +6,7 @@ import { useStaffPermissions } from "@/hooks/useStaffPermissions";
 export const useAdmin = () => {
   const navigate = useNavigate();
   const { isLoggedIn, role, status, loading: authLoading, signOut } = useAuth();
-  const { loading: staffLoading, hasAnyPermission } = useStaffPermissions();
+  const { loading: staffLoading, hasAnyPermission, isStaff: isStaffMember } = useStaffPermissions();
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isStaff, setIsStaff] = useState(false);
@@ -35,8 +35,8 @@ export const useAdmin = () => {
       return;
     }
 
-    // Zaměstnanci s přiznaným oprávněním mají přístup do administrace
-    if (hasAnyPermission) {
+    // Zaměstnanci (i bez přiznaných modulů) mají přístup do administrace — Můj panel
+    if (hasAnyPermission || isStaffMember) {
       setIsAdmin(false);
       setIsStaff(true);
       setIsTeacher(false);
@@ -63,7 +63,7 @@ export const useAdmin = () => {
 
     // Everyone else (user) goes to student dashboard
     navigate("/student");
-  }, [authLoading, staffLoading, hasAnyPermission, isLoggedIn, role, status, navigate, signOut]);
+  }, [authLoading, staffLoading, hasAnyPermission, isStaffMember, isLoggedIn, role, status, navigate, signOut]);
 
   const logout = async () => {
     await signOut();
