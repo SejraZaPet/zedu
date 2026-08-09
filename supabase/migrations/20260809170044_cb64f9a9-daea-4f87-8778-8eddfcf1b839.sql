@@ -1,0 +1,2 @@
+ALTER TABLE public.staff_members ADD COLUMN IF NOT EXISTS initials text;
+ALTER TABLE public.staff_members ADD CONSTRAINT staff_members_initials_len CHECK (initials IS NULL OR char_length(initials) <= 4);

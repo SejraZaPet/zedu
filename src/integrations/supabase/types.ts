@@ -3797,6 +3797,7 @@ export type Database = {
           created_at: string
           hired_at: string | null
           id: string
+          initials: string | null
           phone: string | null
           position: string | null
           private_email: string | null
@@ -3808,6 +3809,7 @@ export type Database = {
           created_at?: string
           hired_at?: string | null
           id?: string
+          initials?: string | null
           phone?: string | null
           position?: string | null
           private_email?: string | null
@@ -3819,6 +3821,7 @@ export type Database = {
           created_at?: string
           hired_at?: string | null
           id?: string
+          initials?: string | null
           phone?: string | null
           position?: string | null
           private_email?: string | null
