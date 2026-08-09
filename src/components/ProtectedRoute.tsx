@@ -15,15 +15,16 @@ interface Props {
   allowedRoles?: AppRole[];
 }
 
-const roleHome = (role: string | null | undefined): string => {
+const roleHome = (role: string | null | undefined, isStaff = false): string => {
   switch (role) {
     case "admin": return "/admin";
     case "school_admin": return "/skola";
     case "teacher": return "/ucitel";
     case "lektor": return "/ucitel";
     case "rodic": return "/rodic";
-    case "user": return "/student";
-    default: return "/";
+    // Interní zaměstnanec bez pedagogické role patří do administrace.
+    case "user": return isStaff ? "/admin" : "/student";
+    default: return isStaff ? "/admin" : "/";
   }
 };
 
