@@ -627,7 +627,8 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
       <StaffEventDialog
         open={eventOpen}
         editing={editEvent}
-        onOpenChange={(o) => { setEventOpen(o); if (!o) setEditEvent(null); }}
+        defaultDate={eventDefaultDate}
+        onOpenChange={(o) => { setEventOpen(o); if (!o) { setEditEvent(null); setEventDefaultDate(undefined); } }}
         onCreated={() => void load()}
       />
       <CalendarBrowserDialog
@@ -635,7 +636,9 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
         onOpenChange={setCalendarOpen}
         eventsByDay={eventsByDay}
         initialDay={selectedDate}
+        onAddEvent={(day) => { setEditEvent(null); setEventDefaultDate(day); setEventOpen(true); }}
         onEditEvent={(ev) => { setCalendarOpen(false); setEditEvent(ev); setEventOpen(true); }}
+
         onPickDay={(key) => {
           setSelectedDate(key);
           const picked = new Date(`${key}T00:00:00`);
