@@ -1047,7 +1047,7 @@ const StaffEventDialog = ({
         .eq("event_id", editing.id);
       setInvited((data ?? []).map((a: any) => a.profile_id));
     })();
-  }, [open, editing]);
+  }, [open, editing, defaultDate]);
 
 
 
