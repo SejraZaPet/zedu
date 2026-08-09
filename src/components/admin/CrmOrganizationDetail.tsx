@@ -41,7 +41,23 @@ interface Interaction {
   next_step: string | null;
   next_step_date: string | null;
   contact_id: string | null;
+  created_by: string | null;
 }
+
+interface Author {
+  name: string;
+  initials: string;
+}
+
+/** Záložní zkratka z celého jména: "Kristýna Herinková" → "KH" */
+const autoInitials = (name: string) =>
+  name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? "")
+    .join("") || "—";
+
 
 const emptyContact = {
   name: "",
@@ -86,6 +102,24 @@ const CrmOrganizationDetail = ({ organizationId, tags, canEdit, onBack }: Props)
   const [contactForm, setContactForm] = useState(emptyContact);
   const [interactionOpen, setInteractionOpen] = useState(false);
   const [interactionForm, setInteractionForm] = useState(emptyInteraction);
+  const [authors, setAuthors] = useState<Record<string, Author>>({});
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+
+  const loadAuthors = async (ids: string[]) => {
+    if (ids.length === 0) { setAuthors({}); return; }
+    const [{ data: profiles }, { data: staff }] = await Promise.all([
+      supabase.from("profiles").select("id, first_name, last_name").in("id", ids),
+      supabase.from("staff_members").select("profile_id, initials").in("profile_id", ids),
+    ]);
+    const initialsById = new Map((staff ?? []).map((s: any) => [s.profile_id, s.initials]));
+    const map: Record<string, Author> = {};
+    (profiles ?? []).forEach((p: any) => {
+      const name = `${p.first_name ?? ""} ${p.last_name ?? ""}`.trim() || "Neznámý autor";
+      const manual = (initialsById.get(p.id) ?? "")?.trim();
+      map[p.id] = { name, initials: manual || autoInitials(name) };
+    });
+    setAuthors(map);
+  };
 
   const load = async () => {
     setLoading(true);
@@ -98,11 +132,14 @@ const CrmOrganizationDetail = ({ organizationId, tags, canEdit, onBack }: Props)
     ]);
     setOrg((orgRes.data as CrmOrganization) ?? null);
     setContacts((contactRes.data as Contact[]) ?? []);
-    setInteractions((interRes.data as Interaction[]) ?? []);
+    const inter = (interRes.data as Interaction[]) ?? [];
+    setInteractions(inter);
+    void loadAuthors(Array.from(new Set(inter.map((i) => i.created_by).filter(Boolean) as string[])));
     setAssignedTagIds((tagRes.data ?? []).map((t) => t.tag_id));
     setSchools((schoolRes.data as { id: string; name: string }[]) ?? []);
     setLoading(false);
   };
+
 
   useEffect(() => {
     load();
@@ -360,34 +397,54 @@ const CrmOrganizationDetail = ({ organizationId, tags, canEdit, onBack }: Props)
         {interactions.length === 0 ? (
           <p className="text-sm text-muted-foreground">Zatím žádná komunikace.</p>
         ) : (
-          <ol className="space-y-3">
+          <ol className="divide-y divide-border rounded-md border border-border">
             {interactions.map((i) => {
               const Icon = typeIcon(i.type);
+              const author = i.created_by ? authors[i.created_by] : undefined;
+              const shortcut = author?.initials ?? "—";
+              const isOpen = !!expanded[i.id];
+              const date = new Date(i.occurred_at);
+              const contact = contacts.find((c) => c.id === i.contact_id);
               return (
-                <li key={i.id} className="flex gap-3">
-                  <div className="mt-0.5 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                    <Icon className="w-4 h-4 text-primary" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(i.occurred_at).toLocaleDateString("cs-CZ")} ·{" "}
-                      {CRM_INTERACTION_TYPES.find((t) => t.value === i.type)?.label ?? i.type}
-                      {i.contact_id && contacts.find((c) => c.id === i.contact_id)
-                        ? ` · ${contacts.find((c) => c.id === i.contact_id)!.name}`
-                        : ""}
-                    </p>
-                    <p className="text-sm whitespace-pre-wrap">{i.summary}</p>
-                    {i.next_step && (
-                      <p className="text-xs mt-1 text-muted-foreground">
-                        Další krok: {i.next_step}
-                        {i.next_step_date ? ` (${new Date(i.next_step_date).toLocaleDateString("cs-CZ")})` : ""}
+                <li key={i.id}>
+                  <button
+                    type="button"
+                    onClick={() => setExpanded((e) => ({ ...e, [i.id]: !e[i.id] }))}
+                    aria-expanded={isOpen}
+                    title={`${author?.name ?? "Neznámý autor"} · ${date.toLocaleString("cs-CZ")}`}
+                    className="w-full text-left flex items-baseline gap-2 px-3 py-1.5 text-sm hover:bg-muted/50 transition-colors"
+                  >
+                    <span className="text-muted-foreground tabular-nums shrink-0">
+                      {date.toLocaleDateString("cs-CZ")}
+                    </span>
+                    <span className="text-muted-foreground shrink-0">·</span>
+                    <span className="font-medium shrink-0">{shortcut}:</span>
+                    <span className={isOpen ? "whitespace-pre-wrap" : "truncate"}>{i.summary}</span>
+                  </button>
+                  {isOpen && (
+                    <div className="px-3 pb-2 pt-0 text-xs text-muted-foreground space-y-1">
+                      <p className="flex items-center gap-1.5">
+                        <Icon className="w-3.5 h-3.5" />
+                        {CRM_INTERACTION_TYPES.find((t) => t.value === i.type)?.label ?? i.type}
+                        {" · "}
+                        {author?.name ?? "Neznámý autor"}
+                        {" · "}
+                        {date.toLocaleString("cs-CZ")}
+                        {contact ? ` · ${contact.name}` : ""}
                       </p>
-                    )}
-                  </div>
+                      {i.next_step && (
+                        <p>
+                          Další krok: {i.next_step}
+                          {i.next_step_date ? ` (${new Date(i.next_step_date).toLocaleDateString("cs-CZ")})` : ""}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </li>
               );
             })}
           </ol>
+
         )}
       </Card>
 
