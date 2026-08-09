@@ -353,7 +353,18 @@ const ZeduTeamView = () => {
           {editing && <UserStaffRoleSection userId={editing.profile_id} />}
         </DialogContent>
       </Dialog>
+
+      {user && taskFor && (
+        <StaffTaskDialog
+          open={!!taskFor}
+          onOpenChange={(o) => { if (!o) setTaskFor(null); }}
+          assignedTo={taskFor.profile_id}
+          assignedBy={user.id}
+          assigneeName={taskFor.name}
+        />
+      )}
     </div>
+
   );
 };
 
