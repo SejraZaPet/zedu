@@ -103,3 +103,7 @@ verify_jwt = false
 [functions.check-license-expiring-daily]
 verify_jwt = false
 
+[functions.staff-calendar-feed]
+verify_jwt = false
+
+

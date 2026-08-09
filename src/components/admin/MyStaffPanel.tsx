@@ -10,10 +10,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import StaffTaskDialog, { TASK_PRIORITIES, TASK_STATUSES } from "./StaffTaskDialog";
-import { CalendarPlus, CheckCircle2, ListChecks, Plus, Trash2, ArrowRight } from "lucide-react";
+import { CalendarPlus, CheckCircle2, ListChecks, Plus, Trash2, ArrowRight, ChevronLeft, ChevronRight, Rss, Copy } from "lucide-react";
+
 
 interface TaskRow {
   id: string;
@@ -54,8 +56,15 @@ const MODULE_TAB: Record<string, string> = {
 
 const priorityLabel = (v: string) => TASK_PRIORITIES.find((p) => p.value === v)?.label ?? v;
 
+/** Lokální klíč dne YYYY-MM-DD (bez posunu časovou zónou). */
+const dayKey = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+const WEEKDAYS = ["Po", "Út", "St", "Čt", "Pá", "So", "Ne"];
+
 const fmtDate = (iso: string) =>
   new Date(iso).toLocaleDateString("cs-CZ", { day: "2-digit", month: "2-digit", year: "numeric" });
+
 
 const fmtDateTime = (iso: string) =>
   new Date(iso).toLocaleString("cs-CZ", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -74,7 +83,15 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
   const [statusFilter, setStatusFilter] = useState<string>("open");
   const [taskOpen, setTaskOpen] = useState(false);
   const [eventOpen, setEventOpen] = useState(false);
+  const [calView, setCalView] = useState<"list" | "month">("list");
+  const [monthCursor, setMonthCursor] = useState(() => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), 1);
+  });
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [feedOpen, setFeedOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -140,6 +157,35 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
 
   const upcoming = events.filter((e) => new Date(e.end_time ?? e.start_time) >= new Date());
   const past = events.filter((e) => new Date(e.end_time ?? e.start_time) < new Date()).reverse();
+
+  /** Události seskupené podle dne (lokální YYYY-MM-DD). */
+  const eventsByDay = useMemo(() => {
+    const map: Record<string, EventRow[]> = {};
+    events.forEach((e) => {
+      const key = dayKey(new Date(e.start_time));
+      (map[key] ??= []).push(e);
+    });
+    return map;
+  }, [events]);
+
+  /** 6×7 mřížka dnů začínající pondělkem. */
+  const monthGrid = useMemo(() => {
+    const first = new Date(monthCursor.getFullYear(), monthCursor.getMonth(), 1);
+    const offset = (first.getDay() + 6) % 7;
+    const start = new Date(first);
+    start.setDate(first.getDate() - offset);
+    return Array.from({ length: 42 }, (_, i) => {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      return d;
+    });
+  }, [monthCursor]);
+
+  const shiftMonth = (delta: number) => {
+    setSelectedDay(null);
+    setMonthCursor((c) => new Date(c.getFullYear(), c.getMonth() + delta, 1));
+  };
+
 
   const deleteEvent = async (id: string) => {
     const { error } = await supabase.from("staff_calendar_events").delete().eq("id", id);
@@ -224,55 +270,146 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
       </Card>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0">
+        <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 space-y-0">
           <CardTitle className="text-base">Pracovní kalendář</CardTitle>
-          <Button size="sm" variant="outline" onClick={() => setEventOpen(true)}>
-            <CalendarPlus className="w-4 h-4 mr-1" /> Přidat událost
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <ToggleGroup
+              type="single"
+              value={calView}
+              onValueChange={(v) => v && setCalView(v as "list" | "month")}
+              className="rounded-md border border-border"
+            >
+              <ToggleGroupItem value="list" className="h-9 px-3 text-sm">Seznam</ToggleGroupItem>
+              <ToggleGroupItem value="month" className="h-9 px-3 text-sm">Měsíc</ToggleGroupItem>
+            </ToggleGroup>
+            <Button size="sm" variant="outline" onClick={() => setFeedOpen(true)}>
+              <Rss className="w-4 h-4 mr-1" /> Odebírat v kalendáři
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setEventOpen(true)}>
+              <CalendarPlus className="w-4 h-4 mr-1" /> Přidat událost
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium text-muted-foreground">Nejbližší</h4>
-            {upcoming.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Žádné naplánované události.</p>
-            ) : (
-              <ul className="divide-y divide-border">
-                {upcoming.map((e) => (
-                  <li key={e.id} className="flex items-start justify-between gap-3 py-2">
-                    <div className="min-w-0">
-                      <div className="font-medium">{e.title}</div>
-                      <p className="text-xs text-muted-foreground">
-                        {fmtDateTime(e.start_time)}
-                        {e.end_time ? ` – ${fmtDateTime(e.end_time)}` : ""} · {names[e.created_by] ?? "—"}
-                      </p>
-                      {e.description && (
-                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{e.description}</p>
+          {calView === "month" ? (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Button size="sm" variant="ghost" onClick={() => shiftMonth(-1)} aria-label="Předchozí měsíc">
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <span className="text-sm font-medium capitalize">
+                  {monthCursor.toLocaleDateString("cs-CZ", { month: "long", year: "numeric" })}
+                </span>
+                <Button size="sm" variant="ghost" onClick={() => shiftMonth(1)} aria-label="Další měsíc">
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+              <div className="grid grid-cols-7 gap-1 text-center text-xs text-muted-foreground">
+                {WEEKDAYS.map((d) => <div key={d} className="py-1">{d}</div>)}
+              </div>
+              <div className="grid grid-cols-7 gap-1">
+                {monthGrid.map((d) => {
+                  const key = dayKey(d);
+                  const count = eventsByDay[key]?.length ?? 0;
+                  const inMonth = d.getMonth() === monthCursor.getMonth();
+                  const isToday = key === dayKey(new Date());
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setSelectedDay(count ? key : null)}
+                      aria-label={`${d.getDate()}. ${d.getMonth() + 1}. — ${count} událostí`}
+                      className={`flex h-14 flex-col items-center justify-center rounded-md border text-sm transition-colors ${
+                        selectedDay === key ? "border-primary bg-primary/10" : "border-border hover:bg-accent"
+                      } ${inMonth ? "" : "opacity-40"} ${isToday ? "font-bold" : ""}`}
+                    >
+                      <span>{d.getDate()}</span>
+                      {count > 0 && (
+                        <span className="mt-1 flex items-center gap-1">
+                          <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                          <span className="text-[10px] text-muted-foreground">{count}</span>
+                        </span>
                       )}
-                    </div>
-                    {(isAdmin || e.created_by === user?.id) && (
-                      <Button size="sm" variant="ghost" onClick={() => void deleteEvent(e.id)} aria-label="Smazat událost">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-          {past.length > 0 && (
-            <div className="space-y-2">
-              <h4 className="text-sm font-medium text-muted-foreground">Proběhlé</h4>
-              <ul className="divide-y divide-border">
-                {past.slice(0, 5).map((e) => (
-                  <li key={e.id} className="py-2 text-sm text-muted-foreground">
-                    {fmtDateTime(e.start_time)} · {e.title}
-                  </li>
-                ))}
-              </ul>
+                    </button>
+                  );
+                })}
+              </div>
+              {selectedDay && (
+                <div className="space-y-2 rounded-md border border-border p-3">
+                  <h4 className="text-sm font-medium">
+                    Události {fmtDate(selectedDay)}
+                  </h4>
+                  <ul className="divide-y divide-border">
+                    {(eventsByDay[selectedDay] ?? []).map((e) => (
+                      <li key={e.id} className="flex items-start justify-between gap-3 py-2">
+                        <div className="min-w-0">
+                          <div className="font-medium">{e.title}</div>
+                          <p className="text-xs text-muted-foreground">
+                            {fmtDateTime(e.start_time)}
+                            {e.end_time ? ` – ${fmtDateTime(e.end_time)}` : ""} · {names[e.created_by] ?? "—"}
+                          </p>
+                          {e.description && (
+                            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{e.description}</p>
+                          )}
+                        </div>
+                        {(isAdmin || e.created_by === user?.id) && (
+                          <Button size="sm" variant="ghost" onClick={() => void deleteEvent(e.id)} aria-label="Smazat událost">
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
+          ) : (
+            <>
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium text-muted-foreground">Nejbližší</h4>
+                {upcoming.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Žádné naplánované události.</p>
+                ) : (
+                  <ul className="divide-y divide-border">
+                    {upcoming.map((e) => (
+                      <li key={e.id} className="flex items-start justify-between gap-3 py-2">
+                        <div className="min-w-0">
+                          <div className="font-medium">{e.title}</div>
+                          <p className="text-xs text-muted-foreground">
+                            {fmtDateTime(e.start_time)}
+                            {e.end_time ? ` – ${fmtDateTime(e.end_time)}` : ""} · {names[e.created_by] ?? "—"}
+                          </p>
+                          {e.description && (
+                            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{e.description}</p>
+                          )}
+                        </div>
+                        {(isAdmin || e.created_by === user?.id) && (
+                          <Button size="sm" variant="ghost" onClick={() => void deleteEvent(e.id)} aria-label="Smazat událost">
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              {past.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium text-muted-foreground">Proběhlé</h4>
+                  <ul className="divide-y divide-border">
+                    {past.slice(0, 5).map((e) => (
+                      <li key={e.id} className="py-2 text-sm text-muted-foreground">
+                        {fmtDateTime(e.start_time)} · {e.title}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
+
 
       <Card>
         <CardHeader>
@@ -309,9 +446,83 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
         />
       )}
       <StaffEventDialog open={eventOpen} onOpenChange={setEventOpen} onCreated={() => void load()} />
+      <CalendarFeedDialog open={feedOpen} onOpenChange={setFeedOpen} />
     </div>
   );
 };
+
+/** Jednosměrný odběr pracovního kalendáře přes iCal (.ics) feed. */
+const CalendarFeedDialog = ({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+}) => {
+  const [url, setUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!open || url || loading) return;
+    setLoading(true);
+    void (async () => {
+      const { data, error } = await supabase.functions.invoke("staff-calendar-feed", { method: "POST" });
+      setLoading(false);
+      if (error || !(data as any)?.url) {
+        toast({
+          title: "Odkaz nelze vytvořit",
+          description: error?.message ?? "Zkuste to prosím znovu.",
+          variant: "destructive",
+        });
+        return;
+      }
+      setUrl((data as any).url as string);
+    })();
+  }, [open, url, loading]);
+
+  const copy = async () => {
+    if (!url) return;
+    try {
+      await navigator.clipboard.writeText(url);
+      toast({ title: "Odkaz zkopírován" });
+    } catch {
+      toast({ title: "Kopírování nelze provést", description: "Zkopírujte odkaz ručně.", variant: "destructive" });
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Odebírat pracovní kalendář</DialogTitle>
+          <DialogDescription>
+            Tento odkaz vložte do Google Calendar (Přidat kalendář → Ze zdroje URL) nebo Apple Calendar
+            (Soubor → Nový odběr kalendáře).
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          {loading && !url ? (
+            <p className="text-sm text-muted-foreground">Připravuji odkaz…</p>
+          ) : url ? (
+            <div className="flex items-center gap-2">
+              <Input readOnly value={url} onFocus={(e) => e.currentTarget.select()} className="font-mono text-xs" />
+              <Button size="icon" variant="outline" onClick={() => void copy()} aria-label="Kopírovat odkaz">
+                <Copy className="w-4 h-4" />
+              </Button>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">Odkaz se nepodařilo připravit.</p>
+          )}
+          <p className="text-xs text-muted-foreground">
+            Odběr je <strong>jednosměrný</strong> (ZEdu → váš kalendář). Úpravy provedené v Google nebo Apple
+            Calendar se do aplikace nepropíšou. Odkaz je osobní a tajný — nesdílejte ho.
+          </p>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 
 const StaffEventDialog = ({
   open,

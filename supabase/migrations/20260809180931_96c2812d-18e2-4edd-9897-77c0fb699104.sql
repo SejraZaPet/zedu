@@ -1,0 +1,2 @@
+ALTER TABLE public.staff_members ADD COLUMN IF NOT EXISTS calendar_feed_token text;
+CREATE UNIQUE INDEX IF NOT EXISTS staff_members_calendar_feed_token_key ON public.staff_members (calendar_feed_token) WHERE calendar_feed_token IS NOT NULL;
