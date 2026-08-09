@@ -878,12 +878,18 @@ const CalendarBrowserDialog = ({
               })}
             </div>
             <div className="space-y-2 rounded-md border border-border p-3">
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <h4 className="text-sm font-medium">Události {fmtDate(activeDay)}</h4>
-                <Button size="sm" variant="outline" onClick={() => onPickDay(activeDay)}>
-                  Otevřít v denním přehledu
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" onClick={() => onAddEvent(activeDay)}>
+                    <CalendarPlus className="mr-1 h-4 w-4" /> Přidat událost
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => onPickDay(activeDay)}>
+                    Otevřít v denním přehledu
+                  </Button>
+                </div>
               </div>
+
               {(eventsByDay[activeDay] ?? []).length === 0 ? (
                 <p className="text-sm text-muted-foreground">Žádné události.</p>
               ) : (
