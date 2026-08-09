@@ -505,6 +505,8 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
           onOpenChange={setTaskOpen}
           assignedTo={user.id}
           assignedBy={user.id}
+          allowPickAssignee
+
           onCreated={() => void load()}
         />
       )}
