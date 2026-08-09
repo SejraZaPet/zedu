@@ -1035,7 +1035,8 @@ const StaffEventDialog = ({
 
           <ColorSwatchPicker value={color} onChange={setColor} />
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className={`grid grid-cols-2 gap-3 ${editing ? "hidden" : ""}`}>
+
             <div className="space-y-1">
               <Label>Opakování</Label>
               <Select value={recurrence} onValueChange={setRecurrence}>
