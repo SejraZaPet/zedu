@@ -125,6 +125,7 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
   const [taskOpen, setTaskOpen] = useState(false);
   const [editTask, setEditTask] = useState<TaskRow | null>(null);
   const [eventOpen, setEventOpen] = useState(false);
+  const [eventDefaultDate, setEventDefaultDate] = useState<string | undefined>(undefined);
   const [selectedDate, setSelectedDate] = useState(() => dayKey(new Date()));
   const [weekOffset, setWeekOffset] = useState(0);
   const [calendarOpen, setCalendarOpen] = useState(false);
