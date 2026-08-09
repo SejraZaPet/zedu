@@ -95,17 +95,26 @@ const Auth = () => {
 
     if (authRole === "admin") {
       navigate(safeRedirect || "/admin", { replace: true });
-    } else if (authRole === "school_admin") {
+      return;
+    }
+    if (authRole === "school_admin") {
       navigate(safeRedirect || "/skola", { replace: true });
-    } else if (authRole === "teacher" || authRole === "lektor") {
+      return;
+    }
+
+    // Interní zaměstnanec má PŘEDNOST před pedagogickou rolí — patří do administrace.
+    if (staffLoading) return;
+    if (isStaff) {
+      navigate(safeRedirect || "/admin", { replace: true });
+      return;
+    }
+
+    if (authRole === "teacher" || authRole === "lektor") {
       navigate(safeRedirect || "/ucitel", { replace: true });
     } else if (authRole === "rodic") {
       navigate(safeRedirect || "/rodic", { replace: true });
     } else {
-      // Interní zaměstnanec bez učitelské/žákovské role patří do administrace,
-      // ne na žákovský přehled. Počkáme, než se načte info o staff záznamu.
-      if (staffLoading) return;
-      navigate(safeRedirect || (isStaff ? "/admin" : "/student"), { replace: true });
+      navigate(safeRedirect || "/student", { replace: true });
     }
   }, [authLoading, isLoggedIn, authRole, navigate, redirectTo, staffLoading, isStaff]);
 
