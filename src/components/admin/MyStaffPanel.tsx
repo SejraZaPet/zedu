@@ -17,7 +17,7 @@ import ColorSwatchPicker from "./ColorSwatchPicker";
 import { DEFAULT_STAFF_COLOR, RECURRENCE_OPTIONS, REMINDER_OPTIONS } from "@/lib/staff-colors";
 
 import StaffTaskDialog, { TASK_PRIORITIES, TASK_STATUSES } from "./StaffTaskDialog";
-import { CalendarPlus, CalendarDays, CheckCircle2, ListChecks, Plus, Trash2, ArrowRight, ChevronLeft, ChevronRight, Rss, Copy, StickyNote, Sparkles, Bell, Repeat } from "lucide-react";
+import { CalendarPlus, CalendarDays, CheckCircle2, ListChecks, Plus, Trash2, ArrowRight, ChevronLeft, ChevronRight, Rss, Copy, StickyNote, Sparkles, Bell, Repeat, MapPin, Users } from "lucide-react";
 
 
 interface TaskRow {
@@ -41,10 +41,36 @@ interface EventRow {
   created_by: string;
   color: string | null;
   all_day: boolean;
+  location: string | null;
   recurrence_rule: string | null;
   recurrence_group_id: string | null;
   reminder_minutes: number[] | null;
 }
+
+/** Interní pracovník pro výběr účastníků/adresátů */
+type TeamMember = { id: string; name: string };
+
+/** Načte interní tým (aktivní staff + admini) s jmény z profilů. */
+const fetchTeamMembers = async (): Promise<TeamMember[]> => {
+  const [{ data: staff }, { data: adminRoles }] = await Promise.all([
+    supabase.from("staff_members").select("profile_id").eq("active", true),
+    supabase.from("user_roles").select("user_id").eq("role", "admin"),
+  ]);
+  const ids = Array.from(new Set([
+    ...(staff ?? []).map((s: any) => s.profile_id),
+    ...(adminRoles ?? []).map((r: any) => r.user_id),
+  ])).filter(Boolean);
+  if (!ids.length) return [];
+  const { data: profiles } = await supabase
+    .from("profiles").select("id, first_name, last_name, email").in("id", ids);
+  return (profiles ?? [])
+    .map((p: any) => ({
+      id: p.id,
+      name: [p.first_name, p.last_name].filter(Boolean).join(" ") || p.email || "Bez jména",
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name, "cs"));
+};
+
 
 
 /** Moduly oprávnění → záložka administrace */
@@ -94,13 +120,18 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
   const [events, setEvents] = useState<EventRow[]>([]);
   const [names, setNames] = useState<Record<string, string>>({});
   const [statusFilter, setStatusFilter] = useState<string>("open");
+  const [scopeFilter, setScopeFilter] = useState<string>("mine");
+  const [sortBy, setSortBy] = useState<string>("due");
   const [taskOpen, setTaskOpen] = useState(false);
+  const [editTask, setEditTask] = useState<TaskRow | null>(null);
   const [eventOpen, setEventOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(() => dayKey(new Date()));
   const [weekOffset, setWeekOffset] = useState(0);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<EventRow | null>(null);
   const [editEvent, setEditEvent] = useState<EventRow | null>(null);
+  const [attendees, setAttendees] = useState<Record<string, string[]>>({});
+  const [subCounts, setSubCounts] = useState<Record<string, { done: number; total: number }>>({});
 
 
   
@@ -115,21 +146,43 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
       supabase
         .from("staff_tasks")
         .select("id, title, description, due_date, status, priority, assigned_by, assigned_to, color")
-        .eq("assigned_to", user.id)
+        .or(`assigned_to.eq.${user.id},assigned_by.eq.${user.id}`)
         .order("created_at", { ascending: false }),
       supabase
         .from("staff_calendar_events")
-        .select("id, title, description, start_time, end_time, created_by, color, all_day, recurrence_rule, recurrence_group_id, reminder_minutes")
+        .select("id, title, description, start_time, end_time, created_by, color, all_day, location, recurrence_rule, recurrence_group_id, reminder_minutes")
 
         .order("start_time", { ascending: true }),
     ]);
     setTasks((taskData ?? []) as TaskRow[]);
     setEvents((eventData ?? []) as EventRow[]);
 
+    const eventIds = (eventData ?? []).map((e: any) => e.id);
+    const taskIds = (taskData ?? []).map((t: any) => t.id);
+    const [{ data: attendeeRows }, { data: subRows }] = await Promise.all([
+      eventIds.length
+        ? supabase.from("staff_event_attendees").select("event_id, profile_id").in("event_id", eventIds)
+        : Promise.resolve({ data: [] as any[] }),
+      taskIds.length
+        ? supabase.from("staff_task_subitems").select("task_id, is_done").in("task_id", taskIds)
+        : Promise.resolve({ data: [] as any[] }),
+    ]);
+    const attMap: Record<string, string[]> = {};
+    (attendeeRows ?? []).forEach((a: any) => { (attMap[a.event_id] ??= []).push(a.profile_id); });
+    setAttendees(attMap);
+    const subMap: Record<string, { done: number; total: number }> = {};
+    (subRows ?? []).forEach((s: any) => {
+      const c = (subMap[s.task_id] ??= { done: 0, total: 0 });
+      c.total += 1;
+      if (s.is_done) c.done += 1;
+    });
+    setSubCounts(subMap);
+
     const ids = Array.from(
       new Set([
-        ...(taskData ?? []).map((t: any) => t.assigned_by),
+        ...(taskData ?? []).flatMap((t: any) => [t.assigned_by, t.assigned_to]),
         ...(eventData ?? []).map((e: any) => e.created_by),
+        ...(attendeeRows ?? []).map((a: any) => a.profile_id),
       ]),
     ).filter(Boolean);
     if (ids.length) {
@@ -149,10 +202,24 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
   useEffect(() => { void load(); }, [load]);
 
   const visibleTasks = useMemo(() => {
-    if (statusFilter === "all") return tasks;
-    if (statusFilter === "open") return tasks.filter((t) => t.status !== "done");
-    return tasks.filter((t) => t.status === statusFilter);
-  }, [tasks, statusFilter]);
+    let list = tasks;
+    if (scopeFilter === "mine") list = list.filter((t) => t.assigned_to === user?.id);
+    else if (scopeFilter === "delegated") list = list.filter((t) => t.assigned_by === user?.id && t.assigned_to !== user?.id);
+
+    if (statusFilter === "open") list = list.filter((t) => t.status !== "done");
+    else if (statusFilter !== "all") list = list.filter((t) => t.status === statusFilter);
+
+    const prioRank: Record<string, number> = { high: 0, normal: 1, low: 2 };
+    const sorted = [...list];
+    if (sortBy === "due") {
+      sorted.sort((a, b) => (a.due_date ?? "9999").localeCompare(b.due_date ?? "9999"));
+    } else if (sortBy === "priority") {
+      sorted.sort((a, b) => (prioRank[a.priority] ?? 1) - (prioRank[b.priority] ?? 1));
+    }
+    // "created" = výchozí řazení z dotazu (nejnovější první)
+    return sorted;
+  }, [tasks, statusFilter, scopeFilter, sortBy, user?.id]);
+
 
   const quickLinks = useMemo(() => {
     const allowed = STAFF_MODULES.filter((m) => (isAdmin ? true : permissions[m.id]?.can_view));
@@ -246,13 +313,29 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0">
+        <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 space-y-0">
           <CardTitle className="flex items-center gap-2 text-base">
             <ListChecks className="w-4 h-4" /> Moje úkoly
           </CardTitle>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Select value={scopeFilter} onValueChange={setScopeFilter}>
+              <SelectTrigger className="h-9 w-[190px]" aria-label="Zobrazit"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="mine">Moje úkoly</SelectItem>
+                <SelectItem value="delegated">Úkoly, co jsem zadal(a)</SelectItem>
+                <SelectItem value="all">Vše, na co mám přístup</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="h-9 w-[160px]" aria-label="Řadit podle"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="due">Podle termínu</SelectItem>
+                <SelectItem value="priority">Podle priority</SelectItem>
+                <SelectItem value="created">Podle vytvoření</SelectItem>
+              </SelectContent>
+            </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="h-9 w-[150px]"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-9 w-[150px]" aria-label="Stav"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="open">Nevyřešené</SelectItem>
                 <SelectItem value="all">Všechny</SelectItem>
@@ -261,7 +344,7 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
                 ))}
               </SelectContent>
             </Select>
-            <Button size="sm" onClick={() => setTaskOpen(true)}>
+            <Button size="sm" onClick={() => { setEditTask(null); setTaskOpen(true); }}>
               <Plus className="w-4 h-4 mr-1" /> Nový úkol
             </Button>
           </div>
@@ -279,8 +362,12 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
                       className="mt-1 h-8 w-1.5 shrink-0 rounded-full"
                       style={{ backgroundColor: t.color || "hsl(var(--muted))" }}
                     />
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => { setEditTask(t); setTaskOpen(true); }}
+                    className="min-w-0 flex-1 rounded-md px-1 text-left hover:bg-accent/60"
+                  >
+                    <div className="flex flex-wrap items-center gap-2">
 
                       <span className={`font-medium ${t.status === "done" ? "line-through text-muted-foreground" : ""}`}>
                         {t.title}
@@ -290,16 +377,27 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
                           {priorityLabel(t.priority)}
                         </Badge>
                       )}
+                      {subCounts[t.id] && (
+                        <Badge variant="outline" className="gap-1">
+                          <ListChecks className="w-3 h-3" />
+                          {subCounts[t.id].done}/{subCounts[t.id].total}
+                        </Badge>
+                      )}
                     </div>
                     {t.description && (
                       <p className="text-sm text-muted-foreground whitespace-pre-wrap">{t.description}</p>
                     )}
                     <p className="text-xs text-muted-foreground">
                       {t.due_date ? `Termín ${fmtDate(t.due_date)} · ` : ""}
-                      {t.assigned_by === user?.id ? "vlastní úkol" : `zadal ${names[t.assigned_by] ?? "—"}`}
+                      {t.assigned_to !== user?.id
+                        ? `pro ${names[t.assigned_to] ?? "—"}`
+                        : t.assigned_by === user?.id
+                          ? "vlastní úkol"
+                          : `zadal ${names[t.assigned_by] ?? "—"}`}
                     </p>
+                  </button>
                   </div>
-                  </div>
+
 
                   <div className="flex items-center gap-2">
                     <Select value={t.status} onValueChange={(v) => void setStatus(t, v)}>
@@ -390,8 +488,23 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
                     {e.description && (
                       <p className="text-sm text-muted-foreground whitespace-pre-wrap">{e.description}</p>
                     )}
+                    {e.location && (
+                      <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <MapPin className="w-3 h-3" /> {e.location}
+                      </p>
+                    )}
+                    {!!attendees[e.id]?.length && (
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {attendees[e.id].map((pid) => (
+                          <Badge key={pid} variant="secondary" className="gap-1 text-[10px]">
+                            <Users className="w-3 h-3" /> {names[pid] ?? "—"}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
                     <p className="text-xs text-muted-foreground">{names[e.created_by] ?? "—"}</p>
                   </button>
+
 
                   {(isAdmin || e.created_by === user?.id) && (
                     <Button size="sm" variant="ghost" onClick={() => requestDelete(e)} aria-label="Smazat událost">
@@ -502,14 +615,15 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
       {user && (
         <StaffTaskDialog
           open={taskOpen}
-          onOpenChange={setTaskOpen}
+          onOpenChange={(o) => { setTaskOpen(o); if (!o) setEditTask(null); }}
           assignedTo={user.id}
           assignedBy={user.id}
           allowPickAssignee
-
+          editing={editTask}
           onCreated={() => void load()}
         />
       )}
+
       <StaffEventDialog
         open={eventOpen}
         editing={editEvent}
@@ -882,13 +996,23 @@ const StaffEventDialog = ({
   const [recurrence, setRecurrence] = useState<string>("none");
   const [recurrenceUntil, setRecurrenceUntil] = useState("");
   const [reminders, setReminders] = useState<number[]>([]);
+  const [location, setLocation] = useState("");
+  const [team, setTeam] = useState<TeamMember[]>([]);
+  const [invited, setInvited] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
   const reset = () => {
     setTitle(""); setDescription(""); setStart(""); setEnd("");
     setAllDay(false); setAllDayDate(""); setColor(DEFAULT_STAFF_COLOR);
     setRecurrence("none"); setRecurrenceUntil(""); setReminders([]);
+    setLocation(""); setInvited([]);
   };
+
+  /** Interní tým pro výběr účastníků */
+  useEffect(() => {
+    if (!open || team.length) return;
+    void (async () => setTeam(await fetchTeamMembers()))();
+  }, [open, team.length]);
 
   /** Předvyplnění při editaci existující události */
   useEffect(() => {
@@ -904,7 +1028,16 @@ const StaffEventDialog = ({
     setRecurrence("none");
     setRecurrenceUntil("");
     setReminders(editing.reminder_minutes ?? []);
+    setLocation(editing.location ?? "");
+    void (async () => {
+      const { data } = await supabase
+        .from("staff_event_attendees")
+        .select("profile_id")
+        .eq("event_id", editing.id);
+      setInvited((data ?? []).map((a: any) => a.profile_id));
+    })();
   }, [open, editing]);
+
 
 
   const addStep = (d: Date, i: number) => {
@@ -953,9 +1086,19 @@ const StaffEventDialog = ({
           end_time: endDate ? endDate.toISOString() : null,
           color,
           all_day: allDay,
+          location: location.trim() || null,
           reminder_minutes: reminders.length ? reminders : null,
         })
         .eq("id", editing.id);
+      if (!error) {
+        // Synchronizace pozvaných: smazat odebrané, přidat nové
+        await supabase.from("staff_event_attendees").delete().eq("event_id", editing.id);
+        if (invited.length) {
+          await supabase.from("staff_event_attendees").insert(
+            invited.map((pid) => ({ event_id: editing.id, profile_id: pid })),
+          );
+        }
+      }
       setSaving(false);
       if (error) {
         toast({ title: "Změny nelze uložit", description: error.message, variant: "destructive" });
@@ -966,6 +1109,7 @@ const StaffEventDialog = ({
       onCreated();
       return;
     }
+
 
     let instances = 1;
     let groupId: string | null = null;
@@ -1001,6 +1145,7 @@ const StaffEventDialog = ({
         created_by: user.id,
         color,
         all_day: allDay,
+        location: location.trim() || null,
         recurrence_rule: recurrence === "none" ? null : recurrence,
         recurrence_group_id: groupId,
         reminder_minutes: reminders.length ? reminders : null,
@@ -1008,7 +1153,15 @@ const StaffEventDialog = ({
     });
 
     setSaving(true);
-    const { error } = await supabase.from("staff_calendar_events").insert(rows);
+    const { data: created, error } = await supabase
+      .from("staff_calendar_events")
+      .insert(rows)
+      .select("id");
+    if (!error && invited.length && created?.length) {
+      await supabase.from("staff_event_attendees").insert(
+        created.flatMap((ev: any) => invited.map((pid) => ({ event_id: ev.id, profile_id: pid }))),
+      );
+    }
     setSaving(false);
     if (error) {
       toast({ title: "Událost nelze uložit", description: error.message, variant: "destructive" });
@@ -1019,6 +1172,7 @@ const StaffEventDialog = ({
     onOpenChange(false);
     onCreated();
   };
+
 
   return (
     <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) reset(); }}>
@@ -1059,7 +1213,41 @@ const StaffEventDialog = ({
             </div>
           )}
 
+          <div className="space-y-1">
+            <Label htmlFor="ev-location">Místo (nepovinné)</Label>
+            <Input
+              id="ev-location"
+              value={location}
+              placeholder="Např. zasedačka, Google Meet…"
+              onChange={(e) => setLocation(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Pozvat kolegy</Label>
+            {team.length === 0 ? (
+              <p className="text-xs text-muted-foreground">Žádní další interní pracovníci.</p>
+            ) : (
+              <div className="max-h-40 space-y-1 overflow-y-auto rounded-md border border-border p-2">
+                {team.map((m) => (
+                  <div key={m.id} className="flex items-center gap-2">
+                    <Checkbox
+                      id={`att-${m.id}`}
+                      checked={invited.includes(m.id)}
+                      onCheckedChange={(c) =>
+                        setInvited((prev) => (c === true ? [...prev, m.id] : prev.filter((x) => x !== m.id)))
+                      }
+                    />
+                    <Label htmlFor={`att-${m.id}`} className="cursor-pointer font-normal">{m.name}</Label>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           <ColorSwatchPicker value={color} onChange={setColor} />
+
+
 
           <div className={`grid grid-cols-2 gap-3 ${editing ? "hidden" : ""}`}>
 

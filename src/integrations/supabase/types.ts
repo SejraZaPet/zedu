@@ -3800,6 +3800,7 @@ export type Database = {
           description: string | null
           end_time: string | null
           id: string
+          location: string | null
           recurrence_group_id: string | null
           recurrence_rule: string | null
           reminder_minutes: number[] | null
@@ -3815,6 +3816,7 @@ export type Database = {
           description?: string | null
           end_time?: string | null
           id?: string
+          location?: string | null
           recurrence_group_id?: string | null
           recurrence_rule?: string | null
           reminder_minutes?: number[] | null
@@ -3830,6 +3832,7 @@ export type Database = {
           description?: string | null
           end_time?: string | null
           id?: string
+          location?: string | null
           recurrence_group_id?: string | null
           recurrence_rule?: string | null
           reminder_minutes?: number[] | null
@@ -3876,6 +3879,42 @@ export type Database = {
           {
             foreignKeyName: "staff_calendar_notes_author_id_fkey"
             columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_event_attendees: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          profile_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          profile_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_event_attendees_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "staff_calendar_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_event_attendees_profile_id_fkey"
+            columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -3992,6 +4031,44 @@ export type Database = {
             columns: ["staff_member_id"]
             isOneToOne: false
             referencedRelation: "staff_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_task_subitems: {
+        Row: {
+          created_at: string
+          id: string
+          is_done: boolean
+          sort_order: number
+          task_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_done?: boolean
+          sort_order?: number
+          task_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_done?: boolean
+          sort_order?: number
+          task_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_task_subitems_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "staff_tasks"
             referencedColumns: ["id"]
           },
         ]
