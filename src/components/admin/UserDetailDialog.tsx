@@ -57,7 +57,10 @@ interface Props {
 
 const UserDetailDialog = ({ user, open, onOpenChange, onUpdated }: Props) => {
   const { toast } = useToast();
-  const { isAdmin: isRealAdmin } = useStaffPermissions();
+  const { isAdmin: isRealAdmin, can } = useStaffPermissions();
+  /** Poznámky a jednání jsou jen pro pracovníky s oprávněním na modul CRM. */
+  const canUseCrm = can("crm");
+  const isEducator = user?.role === "teacher" || user?.role === "lektor";
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [lastSignIn, setLastSignIn] = useState<string | null>(null);
