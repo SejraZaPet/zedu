@@ -151,9 +151,20 @@ const UserStaffRoleSection = ({ userId }: Props) => {
               <Input className="mt-1" placeholder="Obchodník, Podpora…" value={position} onChange={(e) => setPosition(e.target.value)} />
             </div>
             <div>
+              <Label>Zkratka</Label>
+              <Input
+                className="mt-1"
+                maxLength={4}
+                placeholder="např. KH"
+                value={initials}
+                onChange={(e) => setInitials(e.target.value.toUpperCase().slice(0, 4))}
+              />
+            </div>
+            <div>
               <Label>Telefon</Label>
               <Input className="mt-1" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
             </div>
+
             <div>
               <Label>Pracovní e-mail</Label>
               <Input className="mt-1" type="email" value={workEmail} onChange={(e) => setWorkEmail(e.target.value)} />
