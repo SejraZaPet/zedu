@@ -1,0 +1,1 @@
+DELETE FROM public.user_roles WHERE user_id = 'dd62bfb0-be30-46dc-8e5b-2c807cb09f60' AND role IN ('teacher','lektor');
