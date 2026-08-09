@@ -371,7 +371,11 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
                       </>
                     )}
                   </div>
-                  <div className="min-w-0 flex-1">
+                  <button
+                    type="button"
+                    onClick={() => { setEditEvent(e); setEventOpen(true); }}
+                    className="min-w-0 flex-1 rounded-md px-1 text-left hover:bg-accent/60"
+                  >
                     <div className="flex flex-wrap items-center gap-2 font-medium">
                       {e.title}
                       {e.recurrence_group_id && (
@@ -385,7 +389,8 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
                       <p className="text-sm text-muted-foreground whitespace-pre-wrap">{e.description}</p>
                     )}
                     <p className="text-xs text-muted-foreground">{names[e.created_by] ?? "—"}</p>
-                  </div>
+                  </button>
+
                   {(isAdmin || e.created_by === user?.id) && (
                     <Button size="sm" variant="ghost" onClick={() => requestDelete(e)} aria-label="Smazat událost">
                       <Trash2 className="w-4 h-4" />
