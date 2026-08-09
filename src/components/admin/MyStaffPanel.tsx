@@ -488,8 +488,23 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
                     {e.description && (
                       <p className="text-sm text-muted-foreground whitespace-pre-wrap">{e.description}</p>
                     )}
+                    {e.location && (
+                      <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <MapPin className="w-3 h-3" /> {e.location}
+                      </p>
+                    )}
+                    {!!attendees[e.id]?.length && (
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {attendees[e.id].map((pid) => (
+                          <Badge key={pid} variant="secondary" className="gap-1 text-[10px]">
+                            <Users className="w-3 h-3" /> {names[pid] ?? "—"}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
                     <p className="text-xs text-muted-foreground">{names[e.created_by] ?? "—"}</p>
                   </button>
+
 
                   {(isAdmin || e.created_by === user?.id) && (
                     <Button size="sm" variant="ghost" onClick={() => requestDelete(e)} aria-label="Smazat událost">
