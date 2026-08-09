@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useAuth } from "@/contexts/AuthContext";
@@ -31,17 +31,20 @@ import AcademyPathwaysManager from "@/components/admin/AcademyPathwaysManager";
 import SchoolLicensesManager from "@/components/admin/SchoolLicensesManager";
 import CrmManager from "@/components/admin/CrmManager";
 import MarketplaceEconomicsManager from "@/components/admin/MarketplaceEconomicsManager";
+import MyStaffPanel from "@/components/admin/MyStaffPanel";
 import { useStaffPermissions } from "@/hooks/useStaffPermissions";
 import { Button } from "@/components/ui/button";
-import { BookOpen, LogOut, Home, GraduationCap, Settings, Users, School, BarChart3, LayoutDashboard, HelpCircle, ListTree, CircleHelp, Link2, Pencil, Video, Bell, Activity, FileText, Sparkles, Globe, Smile, Library, Award, FileBadge2, Contact, ChevronDown, Coins } from "lucide-react";
+import { BookOpen, LogOut, Home, GraduationCap, Settings, Users, School, BarChart3, LayoutDashboard, HelpCircle, ListTree, CircleHelp, Link2, Pencil, Video, Bell, Activity, FileText, Sparkles, Globe, Smile, Library, Award, FileBadge2, Contact, ChevronDown, Coins, UserSquare2 } from "lucide-react";
 
 /** `module` = klíč oprávnění (null = viditelné vždy, "admin_only" = jen admin) */
 const adminTabs = [
   { id: "dashboard", label: "Přehled", icon: LayoutDashboard, module: null },
+  { id: "my-panel", label: "Můj panel", icon: UserSquare2, module: null },
   { id: "crm", label: "CRM", icon: Contact, module: "crm" },
   { id: "stats", label: "Statistiky", icon: Activity, module: "stats" },
   { id: "licenses", label: "Spolupracující organizace", icon: Award, module: "school_licenses" },
   { id: "market-economics", label: "Ekonomika ZEduMarket", icon: Coins, module: "billing" },
+
   { id: "users", label: "Uživatelé", icon: Users, module: "users" },
   { id: "textbook-overview", label: "Přehled učebnic", icon: Library, module: "textbook_overview" },
   { id: "academy", label: "Akademie", icon: Award, module: "academy" },
@@ -70,7 +73,7 @@ const teacherTabs = [
   { id: "help", label: "Nápověda", icon: HelpCircle, module: null },
 ] as const;
 
-type Tab = "dashboard" | "stats" | "textbooks" | "lessons" | "outline" | "mcq" | "matching" | "slide-edit" | "video-ai" | "subjects" | "users" | "classes" | "results" | "help" | "notifications" | "licenses" | "audit" | "templates" | "landing" | "avatars" | "textbook-overview" | "academy" | "academy-pathways" | "academy-evidence" | "crm" | "market-economics";
+type Tab = "dashboard" | "my-panel" | "stats" | "textbooks" | "lessons" | "outline" | "mcq" | "matching" | "slide-edit" | "video-ai" | "subjects" | "users" | "classes" | "results" | "help" | "notifications" | "licenses" | "audit" | "templates" | "landing" | "avatars" | "textbook-overview" | "academy" | "academy-pathways" | "academy-evidence" | "crm" | "market-economics";
 
 /** Dvouúrovňová navigace administrace. `help` a `dashboard` řešíme mimo/uvnitř kategorií. */
 const adminGroups: { id: string; label: string; tabs: string[] }[] = [
@@ -84,10 +87,20 @@ const adminGroups: { id: string; label: string; tabs: string[] }[] = [
 
 const Admin = () => {
   const { isAdmin, isStaff, isTeacher, loading, logout } = useAdmin();
-  const { can, isAdmin: isRealAdmin } = useStaffPermissions();
+  const { can, isAdmin: isRealAdmin, loading: permsLoading, hasAnyPermission } = useStaffPermissions();
   const [searchParams] = useSearchParams();
-  const initialTab = (searchParams.get("tab") as Tab) || "dashboard";
+  const tabParam = searchParams.get("tab") as Tab | null;
+  const initialTab = tabParam || "dashboard";
   const [activeTab, setActiveTab] = useState<Tab>(initialTab);
+
+  /** Členové týmu bez admin práv startují na svém osobním panelu */
+  const [defaultApplied, setDefaultApplied] = useState(false);
+  useEffect(() => {
+    if (defaultApplied || permsLoading || isTeacher || tabParam) return;
+    setDefaultApplied(true);
+    if (!isRealAdmin && hasAnyPermission) setActiveTab("my-panel");
+  }, [defaultApplied, permsLoading, isTeacher, tabParam, isRealAdmin, hasAnyPermission]);
+
 
   const tabs = useMemo(() => {
     if (isTeacher) return teacherTabs;
@@ -124,9 +137,10 @@ const Admin = () => {
   const [openGroupId, setOpenGroupId] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState(false);
   const currentGroup =
-    collapsed || ((activeTab === "help" || activeTab === "users") && !openGroupId)
+    collapsed || ((activeTab === "help" || activeTab === "users" || activeTab === "my-panel") && !openGroupId)
       ? null
       : groups.find((g) => g.id === (openGroupId ?? activeGroupId)) ?? null;
+
 
   const toggleGroup = (id: string) => {
     if (currentGroup?.id === id) {
@@ -194,6 +208,15 @@ const Admin = () => {
         ) : (
           <div className="mb-6 space-y-2">
             <div className="flex flex-wrap gap-1 border-b border-border">
+              <button
+                onClick={() => { setOpenGroupId(null); setCollapsed(true); setActiveTab("my-panel"); }}
+                className={`flex items-center gap-2 px-3 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === "my-panel" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <UserSquare2 className="w-4 h-4" /> Můj panel
+              </button>
+
               {groups.map((g) => {
                 const isOpen = currentGroup?.id === g.id;
                 return (
@@ -252,6 +275,10 @@ const Admin = () => {
 
 
         {activeTab === "dashboard" && <AdminDashboard onNavigate={(tab) => { setOpenGroupId(null); setCollapsed(false); setActiveTab(tab as Tab); }} isTeacher={isTeacher} />}
+        {activeTab === "my-panel" && !isTeacher && (
+          <MyStaffPanel onNavigate={(tab) => { setOpenGroupId(null); setCollapsed(false); setActiveTab(tab as Tab); }} />
+        )}
+
         {activeTab === "stats" && !isTeacher && <SystemStats />}
         {activeTab === "textbooks" && isTeacher && <TeacherTextbooksManager />}
         {activeTab === "lessons" && isTeacher && <LessonsManager />}

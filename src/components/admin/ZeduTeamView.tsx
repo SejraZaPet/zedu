@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -9,7 +10,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import UserStaffRoleSection from "./UserStaffRoleSection";
-import { UserCog, UserPlus, ShieldCheck, Mail } from "lucide-react";
+import StaffTaskDialog from "./StaffTaskDialog";
+import { UserCog, UserPlus, ShieldCheck, Mail, ClipboardList } from "lucide-react";
+
 
 
 interface TeamRow {
@@ -38,10 +41,13 @@ const fullName = (p: any) => `${p?.first_name ?? ""} ${p?.last_name ?? ""}`.trim
 
 /** Přehled interního týmu ZEdu (admini + uživatelé se záznamem ve staff_members). */
 const ZeduTeamView = () => {
+  const { user } = useAuth();
   const [rows, setRows] = useState<TeamRow[]>([]);
   const [admins, setAdmins] = useState<AdminRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<{ profile_id: string; name: string } | null>(null);
+  const [taskFor, setTaskFor] = useState<{ profile_id: string; name: string } | null>(null);
+
 
   const [addOpen, setAddOpen] = useState(false);
   const [query, setQuery] = useState("");
