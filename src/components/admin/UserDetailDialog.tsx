@@ -32,6 +32,8 @@ import {
 import { Trash2, Save, Pencil } from "lucide-react";
 import { useStaffPermissions } from "@/hooks/useStaffPermissions";
 import UserStaffRoleSection from "./UserStaffRoleSection";
+import UserInteractionsSection from "./UserInteractionsSection";
+import RelatedTasksCard from "./RelatedTasksCard";
 
 interface UserProfile {
   id: string;
