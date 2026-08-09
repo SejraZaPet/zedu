@@ -621,6 +621,7 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
           assignedBy={user.id}
           allowPickAssignee
           editing={editTask}
+          assignerName={editTask ? names[editTask.assigned_by] : undefined}
           onCreated={() => void load()}
         />
       )}
