@@ -1746,7 +1746,8 @@ export type Database = {
           next_step: string | null
           next_step_date: string | null
           occurred_at: string
-          organization_id: string
+          organization_id: string | null
+          related_user_id: string | null
           summary: string
           type: string
         }
@@ -1758,7 +1759,8 @@ export type Database = {
           next_step?: string | null
           next_step_date?: string | null
           occurred_at?: string
-          organization_id: string
+          organization_id?: string | null
+          related_user_id?: string | null
           summary: string
           type?: string
         }
@@ -1770,7 +1772,8 @@ export type Database = {
           next_step?: string | null
           next_step_date?: string | null
           occurred_at?: string
-          organization_id?: string
+          organization_id?: string | null
+          related_user_id?: string | null
           summary?: string
           type?: string
         }
@@ -1794,6 +1797,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "crm_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_interactions_related_user_id_fkey"
+            columns: ["related_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -4084,6 +4094,8 @@ export type Database = {
           due_date: string | null
           id: string
           priority: string
+          related_organization_id: string | null
+          related_user_id: string | null
           status: string
           title: string
           updated_at: string
@@ -4098,6 +4110,8 @@ export type Database = {
           due_date?: string | null
           id?: string
           priority?: string
+          related_organization_id?: string | null
+          related_user_id?: string | null
           status?: string
           title: string
           updated_at?: string
@@ -4112,6 +4126,8 @@ export type Database = {
           due_date?: string | null
           id?: string
           priority?: string
+          related_organization_id?: string | null
+          related_user_id?: string | null
           status?: string
           title?: string
           updated_at?: string
@@ -4127,6 +4143,20 @@ export type Database = {
           {
             foreignKeyName: "staff_tasks_assigned_to_fkey"
             columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_tasks_related_organization_id_fkey"
+            columns: ["related_organization_id"]
+            isOneToOne: false
+            referencedRelation: "crm_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_tasks_related_user_id_fkey"
+            columns: ["related_user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]

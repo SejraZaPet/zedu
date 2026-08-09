@@ -125,6 +125,7 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
   const [taskOpen, setTaskOpen] = useState(false);
   const [editTask, setEditTask] = useState<TaskRow | null>(null);
   const [eventOpen, setEventOpen] = useState(false);
+  const [eventDefaultDate, setEventDefaultDate] = useState<string | undefined>(undefined);
   const [selectedDate, setSelectedDate] = useState(() => dayKey(new Date()));
   const [weekOffset, setWeekOffset] = useState(0);
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -627,7 +628,8 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
       <StaffEventDialog
         open={eventOpen}
         editing={editEvent}
-        onOpenChange={(o) => { setEventOpen(o); if (!o) setEditEvent(null); }}
+        defaultDate={eventDefaultDate}
+        onOpenChange={(o) => { setEventOpen(o); if (!o) { setEditEvent(null); setEventDefaultDate(undefined); } }}
         onCreated={() => void load()}
       />
       <CalendarBrowserDialog
@@ -635,7 +637,9 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
         onOpenChange={setCalendarOpen}
         eventsByDay={eventsByDay}
         initialDay={selectedDate}
+        onAddEvent={(day) => { setEditEvent(null); setEventDefaultDate(day); setEventOpen(true); }}
         onEditEvent={(ev) => { setCalendarOpen(false); setEditEvent(ev); setEventOpen(true); }}
+
         onPickDay={(key) => {
           setSelectedDate(key);
           const picked = new Date(`${key}T00:00:00`);
@@ -692,6 +696,7 @@ const CalendarBrowserDialog = ({
   initialDay,
   onPickDay,
   onEditEvent,
+  onAddEvent,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
@@ -699,6 +704,8 @@ const CalendarBrowserDialog = ({
   initialDay: string;
   onPickDay: (key: string) => void;
   onEditEvent: (ev: EventRow) => void;
+  /** Nová událost s předvyplněným dnem (aktuálně vybraný den v mřížce) */
+  onAddEvent: (day: string) => void;
 
 }) => {
   const { user } = useAuth();
@@ -710,6 +717,8 @@ const CalendarBrowserDialog = ({
   const [note, setNote] = useState("");
   const [noteLoading, setNoteLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  /** Dny zobrazeného měsíce, které mají osobní poznámku */
+  const [noteDays, setNoteDays] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!open) return;
@@ -736,6 +745,33 @@ const CalendarBrowserDialog = ({
     return () => { cancelled = true; };
   }, [open, user?.id, activeDay]);
 
+  /** Všechny poznámky uživatele pro zobrazený měsíc (kvůli indikátorům v mřížce) */
+  useEffect(() => {
+    if (!open || !user) return;
+    let cancelled = false;
+    const from = new Date(monthCursor.getFullYear(), monthCursor.getMonth(), 1);
+    from.setDate(from.getDate() - 7);
+    const to = new Date(monthCursor.getFullYear(), monthCursor.getMonth() + 1, 1);
+    to.setDate(to.getDate() + 14);
+    void (async () => {
+      const { data } = await supabase
+        .from("staff_calendar_notes")
+        .select("note_date, content")
+        .eq("author_id", user.id)
+        .gte("note_date", dayKey(from))
+        .lte("note_date", dayKey(to));
+      if (cancelled) return;
+      setNoteDays(
+        new Set(
+          (data ?? [])
+            .filter((n: any) => (n.content ?? "").trim().length > 0)
+            .map((n: any) => String(n.note_date).slice(0, 10)),
+        ),
+      );
+    })();
+    return () => { cancelled = true; };
+  }, [open, user?.id, monthCursor, saving]);
+
   const grid = useMemo(() => {
     const first = new Date(monthCursor.getFullYear(), monthCursor.getMonth(), 1);
     const offset = (first.getDay() + 6) % 7;
@@ -747,6 +783,7 @@ const CalendarBrowserDialog = ({
       return d;
     });
   }, [monthCursor]);
+
 
   const saveNote = async () => {
     if (!user) return;
@@ -804,6 +841,7 @@ const CalendarBrowserDialog = ({
               {grid.map((d) => {
                 const key = dayKey(d);
                 const count = eventsByDay[key]?.length ?? 0;
+                const hasNote = noteDays.has(key);
                 const inMonth = d.getMonth() === monthCursor.getMonth();
                 const isToday = key === dayKey(new Date());
                 return (
@@ -812,11 +850,17 @@ const CalendarBrowserDialog = ({
                       type="button"
                       onClick={() => setActiveDay(key)}
                       onDoubleClick={() => onPickDay(key)}
-                      aria-label={`${d.getDate()}. ${d.getMonth() + 1}. — ${count} událostí`}
-                      className={`flex h-14 flex-col items-center justify-center rounded-md border text-sm transition-colors ${
+                      aria-label={`${d.getDate()}. ${d.getMonth() + 1}. — ${count} událostí${hasNote ? ", osobní poznámka" : ""}`}
+                      className={`relative flex h-14 flex-col items-center justify-center rounded-md border text-sm transition-colors ${
                         activeDay === key ? "border-primary bg-primary/10" : "border-border hover:bg-accent"
                       } ${inMonth ? "" : "opacity-40"} ${isToday ? "font-bold" : ""}`}
                     >
+                      {hasNote && (
+                        <StickyNote
+                          aria-hidden
+                          className="absolute right-1 top-1 h-3 w-3 text-[hsl(var(--accent-foreground))] opacity-80"
+                        />
+                      )}
                       <span>{d.getDate()}</span>
                       {count > 0 && (
                         <span className="mt-1 flex items-center gap-1">
@@ -833,16 +877,23 @@ const CalendarBrowserDialog = ({
 
                     </button>
                   </div>
+
                 );
               })}
             </div>
             <div className="space-y-2 rounded-md border border-border p-3">
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <h4 className="text-sm font-medium">Události {fmtDate(activeDay)}</h4>
-                <Button size="sm" variant="outline" onClick={() => onPickDay(activeDay)}>
-                  Otevřít v denním přehledu
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" onClick={() => onAddEvent(activeDay)}>
+                    <CalendarPlus className="mr-1 h-4 w-4" /> Přidat událost
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => onPickDay(activeDay)}>
+                    Otevřít v denním přehledu
+                  </Button>
+                </div>
               </div>
+
               {(eventsByDay[activeDay] ?? []).length === 0 ? (
                 <p className="text-sm text-muted-foreground">Žádné události.</p>
               ) : (
@@ -979,12 +1030,16 @@ const StaffEventDialog = ({
   onOpenChange,
   onCreated,
   editing,
+  defaultDate,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   onCreated: () => void;
   editing?: EventRow | null;
+  /** Výchozí den (YYYY-MM-DD) pro novou událost */
+  defaultDate?: string;
 }) => {
+
   const { user } = useAuth();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -1017,7 +1072,14 @@ const StaffEventDialog = ({
   /** Předvyplnění při editaci existující události */
   useEffect(() => {
     if (!open) return;
-    if (!editing) { reset(); return; }
+    if (!editing) {
+      reset();
+      if (defaultDate) {
+        setAllDayDate(defaultDate);
+        setStart(`${defaultDate}T09:00`);
+      }
+      return;
+    }
     setTitle(editing.title);
     setDescription(editing.description ?? "");
     setColor(editing.color || DEFAULT_STAFF_COLOR);
@@ -1036,7 +1098,7 @@ const StaffEventDialog = ({
         .eq("event_id", editing.id);
       setInvited((data ?? []).map((a: any) => a.profile_id));
     })();
-  }, [open, editing]);
+  }, [open, editing, defaultDate]);
 
 
 

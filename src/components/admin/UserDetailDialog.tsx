@@ -32,6 +32,8 @@ import {
 import { Trash2, Save, Pencil } from "lucide-react";
 import { useStaffPermissions } from "@/hooks/useStaffPermissions";
 import UserStaffRoleSection from "./UserStaffRoleSection";
+import UserInteractionsSection from "./UserInteractionsSection";
+import RelatedTasksCard from "./RelatedTasksCard";
 
 interface UserProfile {
   id: string;
@@ -55,7 +57,10 @@ interface Props {
 
 const UserDetailDialog = ({ user, open, onOpenChange, onUpdated }: Props) => {
   const { toast } = useToast();
-  const { isAdmin: isRealAdmin } = useStaffPermissions();
+  const { isAdmin: isRealAdmin, can } = useStaffPermissions();
+  /** Poznámky a jednání jsou jen pro pracovníky s oprávněním na modul CRM. */
+  const canUseCrm = can("crm");
+  const isEducator = user?.role === "teacher" || user?.role === "lektor";
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [lastSignIn, setLastSignIn] = useState<string | null>(null);
@@ -322,6 +327,17 @@ const UserDetailDialog = ({ user, open, onOpenChange, onUpdated }: Props) => {
           </div>
 
           {isRealAdmin && <UserStaffRoleSection userId={user.id} />}
+
+          {canUseCrm && isEducator && (
+            <>
+              <UserInteractionsSection relatedUserId={user.id} canEdit={can("crm", true)} />
+              <div className="border-t border-border pt-3">
+                <RelatedTasksCard userId={user.id} canEdit={can("crm", true)} bare />
+              </div>
+            </>
+          )}
+
+
 
           <div className="border-t border-border pt-3 space-y-1">
             <div className="flex justify-between text-sm">

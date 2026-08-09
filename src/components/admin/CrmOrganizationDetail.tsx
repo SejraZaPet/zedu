@@ -20,6 +20,7 @@ import {
   statusMeta,
 } from "@/lib/staff-modules";
 import type { CrmOrganization, CrmTag } from "./CrmManager";
+import RelatedTasksCard from "./RelatedTasksCard";
 
 interface Contact {
   id: string;
@@ -447,6 +448,9 @@ const CrmOrganizationDetail = ({ organizationId, tags, canEdit, onBack }: Props)
 
         )}
       </Card>
+
+      <RelatedTasksCard organizationId={organizationId} canEdit={canEdit} />
+
 
       <Dialog open={contactOpen} onOpenChange={setContactOpen}>
         <DialogContent className="max-w-lg">
