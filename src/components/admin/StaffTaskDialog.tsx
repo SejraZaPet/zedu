@@ -71,8 +71,11 @@ const StaffTaskDialog = ({
   assigneeName,
   allowPickAssignee,
   editing,
+  relatedOrganizationId,
+  relatedUserId,
   onCreated,
 }: Props) => {
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
