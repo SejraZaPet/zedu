@@ -41,10 +41,36 @@ interface EventRow {
   created_by: string;
   color: string | null;
   all_day: boolean;
+  location: string | null;
   recurrence_rule: string | null;
   recurrence_group_id: string | null;
   reminder_minutes: number[] | null;
 }
+
+/** Interní pracovník pro výběr účastníků/adresátů */
+type TeamMember = { id: string; name: string };
+
+/** Načte interní tým (aktivní staff + admini) s jmény z profilů. */
+const fetchTeamMembers = async (): Promise<TeamMember[]> => {
+  const [{ data: staff }, { data: adminRoles }] = await Promise.all([
+    supabase.from("staff_members").select("profile_id").eq("active", true),
+    supabase.from("user_roles").select("user_id").eq("role", "admin"),
+  ]);
+  const ids = Array.from(new Set([
+    ...(staff ?? []).map((s: any) => s.profile_id),
+    ...(adminRoles ?? []).map((r: any) => r.user_id),
+  ])).filter(Boolean);
+  if (!ids.length) return [];
+  const { data: profiles } = await supabase
+    .from("profiles").select("id, first_name, last_name, email").in("id", ids);
+  return (profiles ?? [])
+    .map((p: any) => ({
+      id: p.id,
+      name: [p.first_name, p.last_name].filter(Boolean).join(" ") || p.email || "Bez jména",
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name, "cs"));
+};
+
 
 
 /** Moduly oprávnění → záložka administrace */
