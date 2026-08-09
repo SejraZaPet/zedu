@@ -827,14 +827,23 @@ const CalendarFeedDialog = ({
 };
 
 
+/** Lokální hodnota pro <input type="datetime-local"> */
+const toLocalInput = (iso: string) => {
+  const d = new Date(iso);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+};
+
 const StaffEventDialog = ({
   open,
   onOpenChange,
   onCreated,
+  editing,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   onCreated: () => void;
+  editing?: EventRow | null;
 }) => {
   const { user } = useAuth();
   const [title, setTitle] = useState("");
@@ -854,6 +863,23 @@ const StaffEventDialog = ({
     setAllDay(false); setAllDayDate(""); setColor(DEFAULT_STAFF_COLOR);
     setRecurrence("none"); setRecurrenceUntil(""); setReminders([]);
   };
+
+  /** Předvyplnění při editaci existující události */
+  useEffect(() => {
+    if (!open) return;
+    if (!editing) { reset(); return; }
+    setTitle(editing.title);
+    setDescription(editing.description ?? "");
+    setColor(editing.color || DEFAULT_STAFF_COLOR);
+    setAllDay(!!editing.all_day);
+    setAllDayDate(dayKey(new Date(editing.start_time)));
+    setStart(toLocalInput(editing.start_time));
+    setEnd(editing.end_time ? toLocalInput(editing.end_time) : "");
+    setRecurrence("none");
+    setRecurrenceUntil("");
+    setReminders(editing.reminder_minutes ?? []);
+  }, [open, editing]);
+
 
   const addStep = (d: Date, i: number) => {
     const n = new Date(d);
