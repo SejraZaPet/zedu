@@ -35,6 +35,7 @@ const UserStaffRoleSection = ({ userId }: Props) => {
   const [staff, setStaff] = useState<StaffMember | null>(null);
   const [perms, setPerms] = useState<Record<string, PermRow>>({});
   const [position, setPosition] = useState("");
+  const [initials, setInitials] = useState("");
   const [privateEmail, setPrivateEmail] = useState("");
   const [workEmail, setWorkEmail] = useState("");
   const [phone, setPhone] = useState("");
