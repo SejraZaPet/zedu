@@ -1021,7 +1021,14 @@ const StaffEventDialog = ({
   /** Předvyplnění při editaci existující události */
   useEffect(() => {
     if (!open) return;
-    if (!editing) { reset(); return; }
+    if (!editing) {
+      reset();
+      if (defaultDate) {
+        setAllDayDate(defaultDate);
+        setStart(`${defaultDate}T09:00`);
+      }
+      return;
+    }
     setTitle(editing.title);
     setDescription(editing.description ?? "");
     setColor(editing.color || DEFAULT_STAFF_COLOR);
