@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { useAuth } from "@/contexts/AuthContext";
+import { useStaffPermissions } from "@/hooks/useStaffPermissions";
 
 type AppRole = "admin" | "school_admin" | "teacher" | "lektor" | "rodic" | "user";
 
