@@ -3793,31 +3793,46 @@ export type Database = {
       }
       staff_calendar_events: {
         Row: {
+          all_day: boolean
+          color: string | null
           created_at: string
           created_by: string
           description: string | null
           end_time: string | null
           id: string
+          recurrence_group_id: string | null
+          recurrence_rule: string | null
+          reminder_minutes: number[] | null
           start_time: string
           title: string
           updated_at: string
         }
         Insert: {
+          all_day?: boolean
+          color?: string | null
           created_at?: string
           created_by: string
           description?: string | null
           end_time?: string | null
           id?: string
+          recurrence_group_id?: string | null
+          recurrence_rule?: string | null
+          reminder_minutes?: number[] | null
           start_time: string
           title: string
           updated_at?: string
         }
         Update: {
+          all_day?: boolean
+          color?: string | null
           created_at?: string
           created_by?: string
           description?: string | null
           end_time?: string | null
           id?: string
+          recurrence_group_id?: string | null
+          recurrence_rule?: string | null
+          reminder_minutes?: number[] | null
           start_time?: string
           title?: string
           updated_at?: string
@@ -3863,6 +3878,35 @@ export type Database = {
             columns: ["author_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_event_reminder_log: {
+        Row: {
+          event_id: string
+          id: string
+          minutes_before: number
+          sent_at: string
+        }
+        Insert: {
+          event_id: string
+          id?: string
+          minutes_before: number
+          sent_at?: string
+        }
+        Update: {
+          event_id?: string
+          id?: string
+          minutes_before?: number
+          sent_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_event_reminder_log_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "staff_calendar_events"
             referencedColumns: ["id"]
           },
         ]
@@ -3956,6 +4000,7 @@ export type Database = {
         Row: {
           assigned_by: string
           assigned_to: string
+          color: string | null
           completed_at: string | null
           created_at: string
           description: string | null
@@ -3969,6 +4014,7 @@ export type Database = {
         Insert: {
           assigned_by: string
           assigned_to: string
+          color?: string | null
           completed_at?: string | null
           created_at?: string
           description?: string | null
@@ -3982,6 +4028,7 @@ export type Database = {
         Update: {
           assigned_by?: string
           assigned_to?: string
+          color?: string | null
           completed_at?: string | null
           created_at?: string
           description?: string | null
