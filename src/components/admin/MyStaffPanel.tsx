@@ -353,27 +353,47 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
           ) : (
             <ul className="divide-y divide-border">
               {dayEvents.map((e) => (
-                <li key={e.id} className="flex items-start gap-4 py-3">
+                <li key={e.id} className="flex items-start gap-3 py-3">
+                  <span
+                    aria-hidden
+                    className="mt-1 h-9 w-1.5 shrink-0 rounded-full"
+                    style={{ backgroundColor: e.color || "hsl(var(--primary))" }}
+                  />
                   <div className="w-20 shrink-0 text-sm font-medium tabular-nums">
-                    {fmtTime(e.start_time)}
-                    {e.end_time && (
-                      <div className="text-xs font-normal text-muted-foreground">{fmtTime(e.end_time)}</div>
+                    {e.all_day ? (
+                      <Badge variant="secondary" className="text-[10px]">Celý den</Badge>
+                    ) : (
+                      <>
+                        {fmtTime(e.start_time)}
+                        {e.end_time && (
+                          <div className="text-xs font-normal text-muted-foreground">{fmtTime(e.end_time)}</div>
+                        )}
+                      </>
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="font-medium">{e.title}</div>
+                    <div className="flex flex-wrap items-center gap-2 font-medium">
+                      {e.title}
+                      {e.recurrence_group_id && (
+                        <Repeat className="w-3.5 h-3.5 text-muted-foreground" aria-label="Opakovaná událost" />
+                      )}
+                      {!!e.reminder_minutes?.length && (
+                        <Bell className="w-3.5 h-3.5 text-muted-foreground" aria-label="Má upozornění" />
+                      )}
+                    </div>
                     {e.description && (
                       <p className="text-sm text-muted-foreground whitespace-pre-wrap">{e.description}</p>
                     )}
                     <p className="text-xs text-muted-foreground">{names[e.created_by] ?? "—"}</p>
                   </div>
                   {(isAdmin || e.created_by === user?.id) && (
-                    <Button size="sm" variant="ghost" onClick={() => void deleteEvent(e.id)} aria-label="Smazat událost">
+                    <Button size="sm" variant="ghost" onClick={() => requestDelete(e)} aria-label="Smazat událost">
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   )}
                 </li>
               ))}
+
             </ul>
           )}
 
