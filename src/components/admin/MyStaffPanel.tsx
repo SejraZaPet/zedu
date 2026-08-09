@@ -979,12 +979,16 @@ const StaffEventDialog = ({
   onOpenChange,
   onCreated,
   editing,
+  defaultDate,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   onCreated: () => void;
   editing?: EventRow | null;
+  /** Výchozí den (YYYY-MM-DD) pro novou událost */
+  defaultDate?: string;
 }) => {
+
   const { user } = useAuth();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
