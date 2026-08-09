@@ -210,14 +210,32 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
 
 
 
-  const deleteEvent = async (id: string) => {
-    const { error } = await supabase.from("staff_calendar_events").delete().eq("id", id);
+  const deleteEvent = async (ev: EventRow, scope: "one" | "series" = "one") => {
+    const query = supabase.from("staff_calendar_events").delete();
+    const { error } =
+      scope === "series" && ev.recurrence_group_id
+        ? await query.eq("recurrence_group_id", ev.recurrence_group_id)
+        : await query.eq("id", ev.id);
     if (error) {
       toast({ title: "Událost nelze smazat", description: error.message, variant: "destructive" });
       return;
     }
-    setEvents((prev) => prev.filter((e) => e.id !== id));
+    setEvents((prev) =>
+      scope === "series" && ev.recurrence_group_id
+        ? prev.filter((e) => e.recurrence_group_id !== ev.recurrence_group_id)
+        : prev.filter((e) => e.id !== ev.id),
+    );
+    setDeleteTarget(null);
   };
+
+  const requestDelete = (ev: EventRow) => {
+    if (ev.recurrence_group_id) {
+      setDeleteTarget(ev);
+      return;
+    }
+    void deleteEvent(ev, "one");
+  };
+
 
   if (loading) return <p className="text-muted-foreground p-4">Načítání panelu…</p>;
 
