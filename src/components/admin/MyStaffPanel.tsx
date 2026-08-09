@@ -837,6 +837,7 @@ const CalendarBrowserDialog = ({
               {grid.map((d) => {
                 const key = dayKey(d);
                 const count = eventsByDay[key]?.length ?? 0;
+                const hasNote = noteDays.has(key);
                 const inMonth = d.getMonth() === monthCursor.getMonth();
                 const isToday = key === dayKey(new Date());
                 return (
@@ -845,11 +846,17 @@ const CalendarBrowserDialog = ({
                       type="button"
                       onClick={() => setActiveDay(key)}
                       onDoubleClick={() => onPickDay(key)}
-                      aria-label={`${d.getDate()}. ${d.getMonth() + 1}. — ${count} událostí`}
-                      className={`flex h-14 flex-col items-center justify-center rounded-md border text-sm transition-colors ${
+                      aria-label={`${d.getDate()}. ${d.getMonth() + 1}. — ${count} událostí${hasNote ? ", osobní poznámka" : ""}`}
+                      className={`relative flex h-14 flex-col items-center justify-center rounded-md border text-sm transition-colors ${
                         activeDay === key ? "border-primary bg-primary/10" : "border-border hover:bg-accent"
                       } ${inMonth ? "" : "opacity-40"} ${isToday ? "font-bold" : ""}`}
                     >
+                      {hasNote && (
+                        <StickyNote
+                          aria-hidden
+                          className="absolute right-1 top-1 h-3 w-3 text-[hsl(var(--accent-foreground))] opacity-80"
+                        />
+                      )}
                       <span>{d.getDate()}</span>
                       {count > 0 && (
                         <span className="mt-1 flex items-center gap-1">
@@ -866,6 +873,7 @@ const CalendarBrowserDialog = ({
 
                     </button>
                   </div>
+
                 );
               })}
             </div>
