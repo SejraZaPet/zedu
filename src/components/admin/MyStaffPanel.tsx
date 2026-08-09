@@ -100,6 +100,8 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
   const [weekOffset, setWeekOffset] = useState(0);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<EventRow | null>(null);
+  const [editEvent, setEditEvent] = useState<EventRow | null>(null);
+
 
   
   const [feedOpen, setFeedOpen] = useState(false);
