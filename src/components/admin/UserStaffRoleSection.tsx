@@ -12,6 +12,7 @@ import { UserCog } from "lucide-react";
 interface StaffMember {
   id: string;
   position: string | null;
+  initials: string | null;
   active: boolean;
   private_email: string | null;
   work_email: string | null;
