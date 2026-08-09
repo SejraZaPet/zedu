@@ -449,6 +449,9 @@ const CrmOrganizationDetail = ({ organizationId, tags, canEdit, onBack }: Props)
         )}
       </Card>
 
+      <RelatedTasksCard organizationId={organizationId} canEdit={canEdit} />
+
+
       <Dialog open={contactOpen} onOpenChange={setContactOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>{editingContact ? "Upravit kontakt" : "Nový kontakt"}</DialogTitle></DialogHeader>
