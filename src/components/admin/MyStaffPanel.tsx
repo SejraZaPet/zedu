@@ -998,7 +998,7 @@ const StaffEventDialog = ({
     <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) reset(); }}>
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Nová událost v pracovním kalendáři</DialogTitle>
+          <DialogTitle>{editing ? "Upravit událost" : "Nová událost v pracovním kalendáři"}</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
           <div className="space-y-1">
