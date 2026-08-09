@@ -10,11 +10,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import ColorSwatchPicker from "./ColorSwatchPicker";
+import { DEFAULT_STAFF_COLOR, RECURRENCE_OPTIONS, REMINDER_OPTIONS } from "@/lib/staff-colors";
 
 import StaffTaskDialog, { TASK_PRIORITIES, TASK_STATUSES } from "./StaffTaskDialog";
-import { CalendarPlus, CalendarDays, CheckCircle2, ListChecks, Plus, Trash2, ArrowRight, ChevronLeft, ChevronRight, Rss, Copy, StickyNote, Sparkles } from "lucide-react";
+import { CalendarPlus, CalendarDays, CheckCircle2, ListChecks, Plus, Trash2, ArrowRight, ChevronLeft, ChevronRight, Rss, Copy, StickyNote, Sparkles, Bell, Repeat } from "lucide-react";
 
 
 interface TaskRow {
@@ -26,6 +29,7 @@ interface TaskRow {
   priority: string;
   assigned_by: string;
   assigned_to: string;
+  color: string | null;
 }
 
 interface EventRow {
@@ -35,7 +39,13 @@ interface EventRow {
   start_time: string;
   end_time: string | null;
   created_by: string;
+  color: string | null;
+  all_day: boolean;
+  recurrence_rule: string | null;
+  recurrence_group_id: string | null;
+  reminder_minutes: number[] | null;
 }
+
 
 /** Moduly oprávnění → záložka administrace */
 const MODULE_TAB: Record<string, string> = {
