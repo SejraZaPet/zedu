@@ -36,17 +36,57 @@ interface Props {
   assignedBy: string;
   /** Jméno adresáta – zobrazí se v titulku, pokud jde o jiného člověka */
   assigneeName?: string;
+  /** Umožní vybrat adresáta z týmu (výchozí: pevně `assignedTo`) */
+  allowPickAssignee?: boolean;
   onCreated?: () => void;
 }
 
+type Member = { id: string; name: string };
+
 /** Formulář pro vytvoření pracovního úkolu (vlastního i přiřazeného kolegovi). */
-const StaffTaskDialog = ({ open, onOpenChange, assignedTo, assignedBy, assigneeName, onCreated }: Props) => {
+const StaffTaskDialog = ({ open, onOpenChange, assignedTo, assignedBy, assigneeName, allowPickAssignee, onCreated }: Props) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [priority, setPriority] = useState<string>("normal");
   const [color, setColor] = useState<string>(DEFAULT_STAFF_COLOR);
   const [saving, setSaving] = useState(false);
+  const [target, setTarget] = useState(assignedTo);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  useEffect(() => { if (open) setTarget(assignedTo); }, [open, assignedTo]);
+
+  /** Seznam interního týmu (staff + admini) pro výběr adresáta */
+  useEffect(() => {
+    if (!open || !allowPickAssignee || members.length) return;
+    void (async () => {
+      const [{ data: staff }, { data: adminRoles }] = await Promise.all([
+        supabase.from("staff_members").select("profile_id").eq("active", true),
+        supabase.from("user_roles").select("user_id").eq("role", "admin"),
+      ]);
+      const ids = Array.from(new Set([
+        ...(staff ?? []).map((s: any) => s.profile_id),
+        ...(adminRoles ?? []).map((r: any) => r.user_id),
+      ]));
+      if (!ids.length) return;
+      const { data: profiles } = await supabase
+        .from("profiles").select("id, first_name, last_name, email").in("id", ids);
+      setMembers(
+        (profiles ?? [])
+          .map((p: any) => ({
+            id: p.id,
+            name: [p.first_name, p.last_name].filter(Boolean).join(" ") || p.email || "Bez jména",
+          }))
+          .sort((a, b) => a.name.localeCompare(b.name, "cs")),
+      );
+    })();
+  }, [open, allowPickAssignee, members.length]);
+
+  const targetName = useMemo(
+    () => members.find((m) => m.id === target)?.name ?? (target === assignedBy ? "Já" : assigneeName ?? "Vyberte osobu"),
+    [members, target, assignedBy, assigneeName],
+  );
 
   const reset = () => {
     setTitle("");
@@ -54,7 +94,9 @@ const StaffTaskDialog = ({ open, onOpenChange, assignedTo, assignedBy, assigneeN
     setDueDate("");
     setPriority("normal");
     setColor(DEFAULT_STAFF_COLOR);
+    setTarget(assignedTo);
   };
+
 
   const save = async () => {
     const t = title.trim();
