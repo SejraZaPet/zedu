@@ -692,6 +692,7 @@ const CalendarBrowserDialog = ({
   initialDay,
   onPickDay,
   onEditEvent,
+  onAddEvent,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
@@ -699,6 +700,8 @@ const CalendarBrowserDialog = ({
   initialDay: string;
   onPickDay: (key: string) => void;
   onEditEvent: (ev: EventRow) => void;
+  /** Nová událost s předvyplněným dnem (aktuálně vybraný den v mřížce) */
+  onAddEvent: (day: string) => void;
 
 }) => {
   const { user } = useAuth();
@@ -710,6 +713,8 @@ const CalendarBrowserDialog = ({
   const [note, setNote] = useState("");
   const [noteLoading, setNoteLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  /** Dny zobrazeného měsíce, které mají osobní poznámku */
+  const [noteDays, setNoteDays] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!open) return;
@@ -736,6 +741,33 @@ const CalendarBrowserDialog = ({
     return () => { cancelled = true; };
   }, [open, user?.id, activeDay]);
 
+  /** Všechny poznámky uživatele pro zobrazený měsíc (kvůli indikátorům v mřížce) */
+  useEffect(() => {
+    if (!open || !user) return;
+    let cancelled = false;
+    const from = new Date(monthCursor.getFullYear(), monthCursor.getMonth(), 1);
+    from.setDate(from.getDate() - 7);
+    const to = new Date(monthCursor.getFullYear(), monthCursor.getMonth() + 1, 1);
+    to.setDate(to.getDate() + 14);
+    void (async () => {
+      const { data } = await supabase
+        .from("staff_calendar_notes")
+        .select("note_date, content")
+        .eq("author_id", user.id)
+        .gte("note_date", dayKey(from))
+        .lte("note_date", dayKey(to));
+      if (cancelled) return;
+      setNoteDays(
+        new Set(
+          (data ?? [])
+            .filter((n: any) => (n.content ?? "").trim().length > 0)
+            .map((n: any) => String(n.note_date).slice(0, 10)),
+        ),
+      );
+    })();
+    return () => { cancelled = true; };
+  }, [open, user?.id, monthCursor, saving]);
+
   const grid = useMemo(() => {
     const first = new Date(monthCursor.getFullYear(), monthCursor.getMonth(), 1);
     const offset = (first.getDay() + 6) % 7;
@@ -747,6 +779,7 @@ const CalendarBrowserDialog = ({
       return d;
     });
   }, [monthCursor]);
+
 
   const saveNote = async () => {
     if (!user) return;
