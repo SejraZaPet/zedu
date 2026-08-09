@@ -841,37 +841,110 @@ const StaffEventDialog = ({
   const [description, setDescription] = useState("");
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
+  const [allDay, setAllDay] = useState(false);
+  const [allDayDate, setAllDayDate] = useState("");
+  const [color, setColor] = useState<string>(DEFAULT_STAFF_COLOR);
+  const [recurrence, setRecurrence] = useState<string>("none");
+  const [recurrenceUntil, setRecurrenceUntil] = useState("");
+  const [reminders, setReminders] = useState<number[]>([]);
   const [saving, setSaving] = useState(false);
+
+  const reset = () => {
+    setTitle(""); setDescription(""); setStart(""); setEnd("");
+    setAllDay(false); setAllDayDate(""); setColor(DEFAULT_STAFF_COLOR);
+    setRecurrence("none"); setRecurrenceUntil(""); setReminders([]);
+  };
+
+  const addStep = (d: Date, i: number) => {
+    const n = new Date(d);
+    if (recurrence === "daily") n.setDate(n.getDate() + i);
+    else if (recurrence === "weekly") n.setDate(n.getDate() + 7 * i);
+    else if (recurrence === "monthly") n.setMonth(n.getMonth() + i);
+    return n;
+  };
 
   const save = async () => {
     if (!user) return;
     const t = title.trim();
-    if (!t || !start) {
-      toast({ title: "Vyplňte název a začátek", variant: "destructive" });
+    if (!t) {
+      toast({ title: "Vyplňte název", variant: "destructive" });
       return;
     }
-    setSaving(true);
-    const { error } = await supabase.from("staff_calendar_events").insert({
-      title: t,
-      description: description.trim() || null,
-      start_time: new Date(start).toISOString(),
-      end_time: end ? new Date(end).toISOString() : null,
-      created_by: user.id,
+    let startDate: Date;
+    let endDate: Date | null;
+    if (allDay) {
+      if (!allDayDate) {
+        toast({ title: "Vyberte datum", variant: "destructive" });
+        return;
+      }
+      startDate = new Date(`${allDayDate}T00:00:00`);
+      endDate = new Date(startDate);
+      endDate.setDate(endDate.getDate() + 1);
+    } else {
+      if (!start) {
+        toast({ title: "Vyplňte začátek", variant: "destructive" });
+        return;
+      }
+      startDate = new Date(start);
+      endDate = end ? new Date(end) : null;
+    }
+
+    let instances = 1;
+    let groupId: string | null = null;
+    if (recurrence !== "none") {
+      if (!recurrenceUntil) {
+        toast({ title: "Zadejte datum konce opakování", variant: "destructive" });
+        return;
+      }
+      const until = new Date(`${recurrenceUntil}T23:59:59`);
+      const maxUntil = new Date(startDate);
+      maxUntil.setFullYear(maxUntil.getFullYear() + 1);
+      if (until > maxUntil) {
+        toast({ title: "Opakování lze naplánovat max. rok dopředu", variant: "destructive" });
+        return;
+      }
+      instances = 0;
+      while (instances < 400 && addStep(startDate, instances) <= until) instances++;
+      if (instances === 0) {
+        toast({ title: "Datum konce je před začátkem", variant: "destructive" });
+        return;
+      }
+      groupId = crypto.randomUUID();
+    }
+
+    const durationMs = endDate ? endDate.getTime() - startDate.getTime() : null;
+    const rows = Array.from({ length: instances }, (_, i) => {
+      const s = addStep(startDate, i);
+      return {
+        title: t,
+        description: description.trim() || null,
+        start_time: s.toISOString(),
+        end_time: durationMs !== null ? new Date(s.getTime() + durationMs).toISOString() : null,
+        created_by: user.id,
+        color,
+        all_day: allDay,
+        recurrence_rule: recurrence === "none" ? null : recurrence,
+        recurrence_group_id: groupId,
+        reminder_minutes: reminders.length ? reminders : null,
+      };
     });
+
+    setSaving(true);
+    const { error } = await supabase.from("staff_calendar_events").insert(rows);
     setSaving(false);
     if (error) {
       toast({ title: "Událost nelze uložit", description: error.message, variant: "destructive" });
       return;
     }
-    toast({ title: "Událost přidána" });
-    setTitle(""); setDescription(""); setStart(""); setEnd("");
+    toast({ title: instances > 1 ? `Přidáno ${instances} událostí` : "Událost přidána" });
+    reset();
     onOpenChange(false);
     onCreated();
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+    <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) reset(); }}>
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Nová událost v pracovním kalendáři</DialogTitle>
         </DialogHeader>
@@ -884,16 +957,95 @@ const StaffEventDialog = ({
             <Label htmlFor="ev-desc">Popis</Label>
             <Textarea id="ev-desc" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
           </div>
+
+          <div className="flex items-center gap-2">
+            <Checkbox id="ev-allday" checked={allDay} onCheckedChange={(c) => setAllDay(c === true)} />
+            <Label htmlFor="ev-allday" className="cursor-pointer">Celý den</Label>
+          </div>
+
+          {allDay ? (
+            <div className="space-y-1">
+              <Label htmlFor="ev-date">Datum</Label>
+              <Input id="ev-date" type="date" value={allDayDate} onChange={(e) => setAllDayDate(e.target.value)} />
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label htmlFor="ev-start">Začátek</Label>
+                <Input id="ev-start" type="datetime-local" value={start} onChange={(e) => setStart(e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="ev-end">Konec</Label>
+                <Input id="ev-end" type="datetime-local" value={end} onChange={(e) => setEnd(e.target.value)} />
+              </div>
+            </div>
+          )}
+
+          <ColorSwatchPicker value={color} onChange={setColor} />
+
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <Label htmlFor="ev-start">Začátek</Label>
-              <Input id="ev-start" type="datetime-local" value={start} onChange={(e) => setStart(e.target.value)} />
+              <Label>Opakování</Label>
+              <Select value={recurrence} onValueChange={setRecurrence}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {RECURRENCE_OPTIONS.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <div className="space-y-1">
-              <Label htmlFor="ev-end">Konec</Label>
-              <Input id="ev-end" type="datetime-local" value={end} onChange={(e) => setEnd(e.target.value)} />
-            </div>
+            {recurrence !== "none" && (
+              <div className="space-y-1">
+                <Label htmlFor="ev-until">Do kdy</Label>
+                <Input
+                  id="ev-until"
+                  type="date"
+                  value={recurrenceUntil}
+                  onChange={(e) => setRecurrenceUntil(e.target.value)}
+                />
+              </div>
+            )}
           </div>
+
+          <div className="space-y-2">
+            <Label>Upozornění</Label>
+            {reminders.map((r, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <Select
+                  value={String(r)}
+                  onValueChange={(v) =>
+                    setReminders((prev) => prev.map((x, j) => (j === i ? Number(v) : x)))
+                  }
+                >
+                  <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {REMINDER_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={String(o.value)}>{o.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  aria-label="Odebrat upozornění"
+                  onClick={() => setReminders((prev) => prev.filter((_, j) => j !== i))}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+            ))}
+            {reminders.length < 3 && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setReminders((prev) => [...prev, 15])}
+              >
+                <Plus className="w-4 h-4 mr-1" /> Přidat upozornění
+              </Button>
+            )}
+          </div>
+
           <Button className="w-full" disabled={saving} onClick={() => void save()}>
             {saving ? "Ukládám…" : "Přidat událost"}
           </Button>
@@ -902,5 +1054,6 @@ const StaffEventDialog = ({
     </Dialog>
   );
 };
+
 
 export default MyStaffPanel;
