@@ -381,6 +381,8 @@ const ProfilePage = () => {
                   ? "/ucitel"
                   : role === "rodic"
                   ? "/rodic"
+                  : isStaff
+                  ? "/admin"
                   : "/student";
               navigate(home);
             }}
