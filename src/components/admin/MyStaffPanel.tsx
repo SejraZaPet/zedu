@@ -687,10 +687,17 @@ const CalendarBrowserDialog = ({
                       <span>{d.getDate()}</span>
                       {count > 0 && (
                         <span className="mt-1 flex items-center gap-1">
-                          <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                          {(eventsByDay[key] ?? []).slice(0, 3).map((e) => (
+                            <span
+                              key={e.id}
+                              className="h-1.5 w-1.5 rounded-full"
+                              style={{ backgroundColor: e.color || "hsl(var(--primary))" }}
+                            />
+                          ))}
                           <span className="text-[10px] text-muted-foreground">{count}</span>
                         </span>
                       )}
+
                     </button>
                   </div>
                 );
