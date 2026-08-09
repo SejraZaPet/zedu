@@ -48,6 +48,7 @@ const ProfilePage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, isLoggedIn, role, loading: authLoading } = useAuth();
+  const { isStaff } = useStaffPermissions();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
