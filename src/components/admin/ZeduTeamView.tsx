@@ -248,11 +248,15 @@ const ZeduTeamView = () => {
                         {r.active ? "Aktivní" : "Neaktivní"}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right space-x-2">
+                      <Button size="sm" variant="outline" onClick={() => setTaskFor({ profile_id: r.profile_id, name: r.name })}>
+                        <ClipboardList className="w-4 h-4 mr-1" /> Přiřadit úkol
+                      </Button>
                       <Button size="sm" variant="outline" onClick={() => setEditing({ profile_id: r.profile_id, name: r.name })}>
                         <UserCog className="w-4 h-4 mr-1" /> Upravit roli a oprávnění
                       </Button>
                     </TableCell>
+
                   </TableRow>
                 ))}
               </TableBody>
