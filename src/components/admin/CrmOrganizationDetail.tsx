@@ -102,6 +102,24 @@ const CrmOrganizationDetail = ({ organizationId, tags, canEdit, onBack }: Props)
   const [contactForm, setContactForm] = useState(emptyContact);
   const [interactionOpen, setInteractionOpen] = useState(false);
   const [interactionForm, setInteractionForm] = useState(emptyInteraction);
+  const [authors, setAuthors] = useState<Record<string, Author>>({});
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+
+  const loadAuthors = async (ids: string[]) => {
+    if (ids.length === 0) { setAuthors({}); return; }
+    const [{ data: profiles }, { data: staff }] = await Promise.all([
+      supabase.from("profiles").select("id, first_name, last_name").in("id", ids),
+      supabase.from("staff_members").select("profile_id, initials").in("profile_id", ids),
+    ]);
+    const initialsById = new Map((staff ?? []).map((s: any) => [s.profile_id, s.initials]));
+    const map: Record<string, Author> = {};
+    (profiles ?? []).forEach((p: any) => {
+      const name = `${p.first_name ?? ""} ${p.last_name ?? ""}`.trim() || "Neznámý autor";
+      const manual = (initialsById.get(p.id) ?? "")?.trim();
+      map[p.id] = { name, initials: manual || autoInitials(name) };
+    });
+    setAuthors(map);
+  };
 
   const load = async () => {
     setLoading(true);
@@ -114,11 +132,14 @@ const CrmOrganizationDetail = ({ organizationId, tags, canEdit, onBack }: Props)
     ]);
     setOrg((orgRes.data as CrmOrganization) ?? null);
     setContacts((contactRes.data as Contact[]) ?? []);
-    setInteractions((interRes.data as Interaction[]) ?? []);
+    const inter = (interRes.data as Interaction[]) ?? [];
+    setInteractions(inter);
+    void loadAuthors(Array.from(new Set(inter.map((i) => i.created_by).filter(Boolean) as string[])));
     setAssignedTagIds((tagRes.data ?? []).map((t) => t.tag_id));
     setSchools((schoolRes.data as { id: string; name: string }[]) ?? []);
     setLoading(false);
   };
+
 
   useEffect(() => {
     load();
