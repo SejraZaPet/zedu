@@ -153,9 +153,6 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
     setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, status } : t)));
   };
 
-  const upcoming = events.filter((e) => new Date(e.end_time ?? e.start_time) >= new Date());
-  const past = events.filter((e) => new Date(e.end_time ?? e.start_time) < new Date()).reverse();
-
   /** Události seskupené podle dne (lokální YYYY-MM-DD). */
   const eventsByDay = useMemo(() => {
     const map: Record<string, EventRow[]> = {};
@@ -163,26 +160,32 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
       const key = dayKey(new Date(e.start_time));
       (map[key] ??= []).push(e);
     });
+    Object.values(map).forEach((list) =>
+      list.sort((a, b) => a.start_time.localeCompare(b.start_time)),
+    );
     return map;
   }, [events]);
 
-  /** 6×7 mřížka dnů začínající pondělkem. */
-  const monthGrid = useMemo(() => {
-    const first = new Date(monthCursor.getFullYear(), monthCursor.getMonth(), 1);
-    const offset = (first.getDay() + 6) % 7;
-    const start = new Date(first);
-    start.setDate(first.getDate() - offset);
-    return Array.from({ length: 42 }, (_, i) => {
-      const d = new Date(start);
-      d.setDate(start.getDate() + i);
-      return d;
-    });
-  }, [monthCursor]);
+  /** Pondělí zobrazeného týdne podle posunu. */
+  const weekStart = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() - ((d.getDay() + 6) % 7) + weekOffset * 7);
+    return d;
+  }, [weekOffset]);
 
-  const shiftMonth = (delta: number) => {
-    setSelectedDay(null);
-    setMonthCursor((c) => new Date(c.getFullYear(), c.getMonth() + delta, 1));
-  };
+  const weekDays = useMemo(
+    () =>
+      Array.from({ length: 7 }, (_, i) => {
+        const d = new Date(weekStart);
+        d.setDate(weekStart.getDate() + i);
+        return d;
+      }),
+    [weekStart],
+  );
+
+  const dayEvents = eventsByDay[selectedDate] ?? [];
+
 
 
   const deleteEvent = async (id: string) => {
