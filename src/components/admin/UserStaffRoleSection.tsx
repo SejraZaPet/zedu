@@ -43,6 +43,48 @@ const UserStaffRoleSection = ({ userId }: Props) => {
   const [workEmail, setWorkEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [saving, setSaving] = useState(false);
+  const [pedRole, setPedRole] = useState<PedRole>("none");
+  const [savingPed, setSavingPed] = useState(false);
+
+  const loadPedRole = async (profileId: string) => {
+    const { data } = await supabase.from("user_roles").select("role").eq("user_id", profileId);
+    const roles = (data ?? []).map((r) => r.role as string);
+    setPedRole(roles.includes("teacher") ? "teacher" : roles.includes("lektor") ? "lektor" : "none");
+  };
+
+  const savePedRole = async (value: PedRole) => {
+    setSavingPed(true);
+    const prev = pedRole;
+    setPedRole(value);
+    // Odebereme jen pedagogické role, ostatní (admin, rodic, …) necháváme.
+    const { error: delError } = await supabase
+      .from("user_roles")
+      .delete()
+      .eq("user_id", userId)
+      .in("role", ["teacher", "lektor"]);
+    if (delError) {
+      setPedRole(prev);
+      setSavingPed(false);
+      toast({ title: "Uložení pedagogické role selhalo", description: delError.message, variant: "destructive" });
+      return;
+    }
+    if (value !== "none") {
+      const { error } = await supabase.from("user_roles").insert({ user_id: userId, role: value });
+      if (error) {
+        setSavingPed(false);
+        await loadPedRole(userId);
+        toast({ title: "Uložení pedagogické role selhalo", description: error.message, variant: "destructive" });
+        return;
+      }
+    }
+    setSavingPed(false);
+    toast({
+      title:
+        value === "none"
+          ? "Pedagogická role odebrána (čistě administrativní účet)"
+          : `Pedagogická role nastavena: ${value === "teacher" ? "Učitel" : "Lektor"}`,
+    });
+  };
 
   const loadPerms = async (staffId: string) => {
     const { data } = await supabase
