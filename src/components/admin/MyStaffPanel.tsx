@@ -76,7 +76,15 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
   const [statusFilter, setStatusFilter] = useState<string>("open");
   const [taskOpen, setTaskOpen] = useState(false);
   const [eventOpen, setEventOpen] = useState(false);
+  const [calView, setCalView] = useState<"list" | "month">("list");
+  const [monthCursor, setMonthCursor] = useState(() => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), 1);
+  });
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [feedOpen, setFeedOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+
 
   const load = useCallback(async () => {
     if (!user) return;
