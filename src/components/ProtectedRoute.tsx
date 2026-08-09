@@ -32,6 +32,7 @@ const ProtectedRoute = ({ children, allowedRoles }: Props) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isLoggedIn, user, role, status, loading: authLoading } = useAuth();
+  const { isStaff } = useStaffPermissions();
   const [state, setState] = useState<"loading" | "ok" | "pending" | "blocked">("loading");
 
   useEffect(() => {
