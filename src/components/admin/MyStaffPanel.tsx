@@ -313,13 +313,29 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0">
+        <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 space-y-0">
           <CardTitle className="flex items-center gap-2 text-base">
             <ListChecks className="w-4 h-4" /> Moje úkoly
           </CardTitle>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Select value={scopeFilter} onValueChange={setScopeFilter}>
+              <SelectTrigger className="h-9 w-[190px]" aria-label="Zobrazit"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="mine">Moje úkoly</SelectItem>
+                <SelectItem value="delegated">Úkoly, co jsem zadal(a)</SelectItem>
+                <SelectItem value="all">Vše, na co mám přístup</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="h-9 w-[160px]" aria-label="Řadit podle"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="due">Podle termínu</SelectItem>
+                <SelectItem value="priority">Podle priority</SelectItem>
+                <SelectItem value="created">Podle vytvoření</SelectItem>
+              </SelectContent>
+            </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="h-9 w-[150px]"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-9 w-[150px]" aria-label="Stav"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="open">Nevyřešené</SelectItem>
                 <SelectItem value="all">Všechny</SelectItem>
@@ -328,7 +344,7 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
                 ))}
               </SelectContent>
             </Select>
-            <Button size="sm" onClick={() => setTaskOpen(true)}>
+            <Button size="sm" onClick={() => { setEditTask(null); setTaskOpen(true); }}>
               <Plus className="w-4 h-4 mr-1" /> Nový úkol
             </Button>
           </div>
@@ -346,8 +362,12 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
                       className="mt-1 h-8 w-1.5 shrink-0 rounded-full"
                       style={{ backgroundColor: t.color || "hsl(var(--muted))" }}
                     />
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => { setEditTask(t); setTaskOpen(true); }}
+                    className="min-w-0 flex-1 rounded-md px-1 text-left hover:bg-accent/60"
+                  >
+                    <div className="flex flex-wrap items-center gap-2">
 
                       <span className={`font-medium ${t.status === "done" ? "line-through text-muted-foreground" : ""}`}>
                         {t.title}
@@ -357,16 +377,27 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
                           {priorityLabel(t.priority)}
                         </Badge>
                       )}
+                      {subCounts[t.id] && (
+                        <Badge variant="outline" className="gap-1">
+                          <ListChecks className="w-3 h-3" />
+                          {subCounts[t.id].done}/{subCounts[t.id].total}
+                        </Badge>
+                      )}
                     </div>
                     {t.description && (
                       <p className="text-sm text-muted-foreground whitespace-pre-wrap">{t.description}</p>
                     )}
                     <p className="text-xs text-muted-foreground">
                       {t.due_date ? `Termín ${fmtDate(t.due_date)} · ` : ""}
-                      {t.assigned_by === user?.id ? "vlastní úkol" : `zadal ${names[t.assigned_by] ?? "—"}`}
+                      {t.assigned_to !== user?.id
+                        ? `pro ${names[t.assigned_to] ?? "—"}`
+                        : t.assigned_by === user?.id
+                          ? "vlastní úkol"
+                          : `zadal ${names[t.assigned_by] ?? "—"}`}
                     </p>
+                  </button>
                   </div>
-                  </div>
+
 
                   <div className="flex items-center gap-2">
                     <Select value={t.status} onValueChange={(v) => void setStatus(t, v)}>
