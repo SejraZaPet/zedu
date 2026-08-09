@@ -194,6 +194,7 @@ const ZeduTeamView = () => {
                 <TableRow>
                   <TableHead>Jméno</TableHead>
                   <TableHead>Přístup</TableHead>
+                  <TableHead className="text-right">Akce</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -208,7 +209,13 @@ const ZeduTeamView = () => {
                         <ShieldCheck className="w-3 h-3 mr-1" /> Plný přístup
                       </Badge>
                     </TableCell>
+                    <TableCell className="text-right">
+                      <Button size="sm" variant="outline" onClick={() => setTaskFor({ profile_id: a.profile_id, name: a.name })}>
+                        <ClipboardList className="w-4 h-4 mr-1" /> Přiřadit úkol
+                      </Button>
+                    </TableCell>
                   </TableRow>
+
                 ))}
               </TableBody>
             </Table>
