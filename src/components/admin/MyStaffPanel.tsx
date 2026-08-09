@@ -100,6 +100,8 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
   const [weekOffset, setWeekOffset] = useState(0);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<EventRow | null>(null);
+  const [editEvent, setEditEvent] = useState<EventRow | null>(null);
+
 
   
   const [feedOpen, setFeedOpen] = useState(false);
@@ -371,7 +373,11 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
                       </>
                     )}
                   </div>
-                  <div className="min-w-0 flex-1">
+                  <button
+                    type="button"
+                    onClick={() => { setEditEvent(e); setEventOpen(true); }}
+                    className="min-w-0 flex-1 rounded-md px-1 text-left hover:bg-accent/60"
+                  >
                     <div className="flex flex-wrap items-center gap-2 font-medium">
                       {e.title}
                       {e.recurrence_group_id && (
@@ -385,7 +391,8 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
                       <p className="text-sm text-muted-foreground whitespace-pre-wrap">{e.description}</p>
                     )}
                     <p className="text-xs text-muted-foreground">{names[e.created_by] ?? "—"}</p>
-                  </div>
+                  </button>
+
                   {(isAdmin || e.created_by === user?.id) && (
                     <Button size="sm" variant="ghost" onClick={() => requestDelete(e)} aria-label="Smazat událost">
                       <Trash2 className="w-4 h-4" />
@@ -498,15 +505,23 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
           onOpenChange={setTaskOpen}
           assignedTo={user.id}
           assignedBy={user.id}
+          allowPickAssignee
+
           onCreated={() => void load()}
         />
       )}
-      <StaffEventDialog open={eventOpen} onOpenChange={setEventOpen} onCreated={() => void load()} />
+      <StaffEventDialog
+        open={eventOpen}
+        editing={editEvent}
+        onOpenChange={(o) => { setEventOpen(o); if (!o) setEditEvent(null); }}
+        onCreated={() => void load()}
+      />
       <CalendarBrowserDialog
         open={calendarOpen}
         onOpenChange={setCalendarOpen}
         eventsByDay={eventsByDay}
         initialDay={selectedDate}
+        onEditEvent={(ev) => { setCalendarOpen(false); setEditEvent(ev); setEventOpen(true); }}
         onPickDay={(key) => {
           setSelectedDate(key);
           const picked = new Date(`${key}T00:00:00`);
@@ -520,6 +535,7 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
           setCalendarOpen(false);
         }}
       />
+
       <CalendarFeedDialog open={feedOpen} onOpenChange={setFeedOpen} />
 
       {/* Mazání opakované události — jedna instance, nebo celá série */}
@@ -561,12 +577,15 @@ const CalendarBrowserDialog = ({
   eventsByDay,
   initialDay,
   onPickDay,
+  onEditEvent,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   eventsByDay: Record<string, EventRow[]>;
   initialDay: string;
   onPickDay: (key: string) => void;
+  onEditEvent: (ev: EventRow) => void;
+
 }) => {
   const { user } = useAuth();
   const [monthCursor, setMonthCursor] = useState(() => {
@@ -715,18 +734,25 @@ const CalendarBrowserDialog = ({
               ) : (
                 <ul className="space-y-1 text-sm">
                   {(eventsByDay[activeDay] ?? []).map((e) => (
-                    <li key={e.id} className="flex items-center gap-2">
-                      <span
-                        aria-hidden
-                        className="h-2 w-2 shrink-0 rounded-full"
-                        style={{ backgroundColor: e.color || "hsl(var(--primary))" }}
-                      />
-                      <span className="tabular-nums text-muted-foreground">
-                        {e.all_day ? "Celý den" : fmtTime(e.start_time)}
-                      </span>
-                      <span>· {e.title}</span>
+                    <li key={e.id}>
+                      <button
+                        type="button"
+                        onClick={() => onEditEvent(e)}
+                        className="flex w-full items-center gap-2 rounded-md px-1 py-0.5 text-left hover:bg-accent"
+                      >
+                        <span
+                          aria-hidden
+                          className="h-2 w-2 shrink-0 rounded-full"
+                          style={{ backgroundColor: e.color || "hsl(var(--primary))" }}
+                        />
+                        <span className="tabular-nums text-muted-foreground">
+                          {e.all_day ? "Celý den" : fmtTime(e.start_time)}
+                        </span>
+                        <span>· {e.title}</span>
+                      </button>
                     </li>
                   ))}
+
 
                 </ul>
               )}
@@ -827,14 +853,23 @@ const CalendarFeedDialog = ({
 };
 
 
+/** Lokální hodnota pro <input type="datetime-local"> */
+const toLocalInput = (iso: string) => {
+  const d = new Date(iso);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+};
+
 const StaffEventDialog = ({
   open,
   onOpenChange,
   onCreated,
+  editing,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   onCreated: () => void;
+  editing?: EventRow | null;
 }) => {
   const { user } = useAuth();
   const [title, setTitle] = useState("");
@@ -854,6 +889,23 @@ const StaffEventDialog = ({
     setAllDay(false); setAllDayDate(""); setColor(DEFAULT_STAFF_COLOR);
     setRecurrence("none"); setRecurrenceUntil(""); setReminders([]);
   };
+
+  /** Předvyplnění při editaci existující události */
+  useEffect(() => {
+    if (!open) return;
+    if (!editing) { reset(); return; }
+    setTitle(editing.title);
+    setDescription(editing.description ?? "");
+    setColor(editing.color || DEFAULT_STAFF_COLOR);
+    setAllDay(!!editing.all_day);
+    setAllDayDate(dayKey(new Date(editing.start_time)));
+    setStart(toLocalInput(editing.start_time));
+    setEnd(editing.end_time ? toLocalInput(editing.end_time) : "");
+    setRecurrence("none");
+    setRecurrenceUntil("");
+    setReminders(editing.reminder_minutes ?? []);
+  }, [open, editing]);
+
 
   const addStep = (d: Date, i: number) => {
     const n = new Date(d);
@@ -887,6 +939,32 @@ const StaffEventDialog = ({
       }
       startDate = new Date(start);
       endDate = end ? new Date(end) : null;
+    }
+
+    /** Editace: aktualizujeme jen tuhle instanci, série zůstává */
+    if (editing) {
+      setSaving(true);
+      const { error } = await supabase
+        .from("staff_calendar_events")
+        .update({
+          title: t,
+          description: description.trim() || null,
+          start_time: startDate.toISOString(),
+          end_time: endDate ? endDate.toISOString() : null,
+          color,
+          all_day: allDay,
+          reminder_minutes: reminders.length ? reminders : null,
+        })
+        .eq("id", editing.id);
+      setSaving(false);
+      if (error) {
+        toast({ title: "Změny nelze uložit", description: error.message, variant: "destructive" });
+        return;
+      }
+      toast({ title: "Událost upravena" });
+      onOpenChange(false);
+      onCreated();
+      return;
     }
 
     let instances = 1;
@@ -946,7 +1024,7 @@ const StaffEventDialog = ({
     <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) reset(); }}>
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Nová událost v pracovním kalendáři</DialogTitle>
+          <DialogTitle>{editing ? "Upravit událost" : "Nová událost v pracovním kalendáři"}</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
           <div className="space-y-1">
@@ -983,7 +1061,8 @@ const StaffEventDialog = ({
 
           <ColorSwatchPicker value={color} onChange={setColor} />
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className={`grid grid-cols-2 gap-3 ${editing ? "hidden" : ""}`}>
+
             <div className="space-y-1">
               <Label>Opakování</Label>
               <Select value={recurrence} onValueChange={setRecurrence}>
@@ -1047,8 +1126,9 @@ const StaffEventDialog = ({
           </div>
 
           <Button className="w-full" disabled={saving} onClick={() => void save()}>
-            {saving ? "Ukládám…" : "Přidat událost"}
+            {saving ? "Ukládám…" : editing ? "Uložit změny" : "Přidat událost"}
           </Button>
+
         </div>
       </DialogContent>
     </Dialog>
