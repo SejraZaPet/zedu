@@ -1099,8 +1099,9 @@ const StaffEventDialog = ({
           </div>
 
           <Button className="w-full" disabled={saving} onClick={() => void save()}>
-            {saving ? "Ukládám…" : "Přidat událost"}
+            {saving ? "Ukládám…" : editing ? "Uložit změny" : "Přidat událost"}
           </Button>
+
         </div>
       </DialogContent>
     </Dialog>
