@@ -174,9 +174,17 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
       const key = dayKey(new Date(e.start_time));
       (map[key] ??= []).push(e);
     });
+    // Celodenní události vždy nahoře, pak časované podle času začátku.
     Object.values(map).forEach((list) =>
-      list.sort((a, b) => a.start_time.localeCompare(b.start_time)),
+      list.sort((a, b) =>
+        a.all_day === b.all_day
+          ? a.start_time.localeCompare(b.start_time)
+          : a.all_day
+            ? -1
+            : 1,
+      ),
     );
+
     return map;
   }, [events]);
 
