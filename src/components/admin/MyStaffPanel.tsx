@@ -120,13 +120,18 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
   const [events, setEvents] = useState<EventRow[]>([]);
   const [names, setNames] = useState<Record<string, string>>({});
   const [statusFilter, setStatusFilter] = useState<string>("open");
+  const [scopeFilter, setScopeFilter] = useState<string>("mine");
+  const [sortBy, setSortBy] = useState<string>("due");
   const [taskOpen, setTaskOpen] = useState(false);
+  const [editTask, setEditTask] = useState<TaskRow | null>(null);
   const [eventOpen, setEventOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(() => dayKey(new Date()));
   const [weekOffset, setWeekOffset] = useState(0);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<EventRow | null>(null);
   const [editEvent, setEditEvent] = useState<EventRow | null>(null);
+  const [attendees, setAttendees] = useState<Record<string, string[]>>({});
+  const [subCounts, setSubCounts] = useState<Record<string, { done: number; total: number }>>({});
 
 
   
@@ -141,21 +146,43 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
       supabase
         .from("staff_tasks")
         .select("id, title, description, due_date, status, priority, assigned_by, assigned_to, color")
-        .eq("assigned_to", user.id)
+        .or(`assigned_to.eq.${user.id},assigned_by.eq.${user.id}`)
         .order("created_at", { ascending: false }),
       supabase
         .from("staff_calendar_events")
-        .select("id, title, description, start_time, end_time, created_by, color, all_day, recurrence_rule, recurrence_group_id, reminder_minutes")
+        .select("id, title, description, start_time, end_time, created_by, color, all_day, location, recurrence_rule, recurrence_group_id, reminder_minutes")
 
         .order("start_time", { ascending: true }),
     ]);
     setTasks((taskData ?? []) as TaskRow[]);
     setEvents((eventData ?? []) as EventRow[]);
 
+    const eventIds = (eventData ?? []).map((e: any) => e.id);
+    const taskIds = (taskData ?? []).map((t: any) => t.id);
+    const [{ data: attendeeRows }, { data: subRows }] = await Promise.all([
+      eventIds.length
+        ? supabase.from("staff_event_attendees").select("event_id, profile_id").in("event_id", eventIds)
+        : Promise.resolve({ data: [] as any[] }),
+      taskIds.length
+        ? supabase.from("staff_task_subitems").select("task_id, is_done").in("task_id", taskIds)
+        : Promise.resolve({ data: [] as any[] }),
+    ]);
+    const attMap: Record<string, string[]> = {};
+    (attendeeRows ?? []).forEach((a: any) => { (attMap[a.event_id] ??= []).push(a.profile_id); });
+    setAttendees(attMap);
+    const subMap: Record<string, { done: number; total: number }> = {};
+    (subRows ?? []).forEach((s: any) => {
+      const c = (subMap[s.task_id] ??= { done: 0, total: 0 });
+      c.total += 1;
+      if (s.is_done) c.done += 1;
+    });
+    setSubCounts(subMap);
+
     const ids = Array.from(
       new Set([
-        ...(taskData ?? []).map((t: any) => t.assigned_by),
+        ...(taskData ?? []).flatMap((t: any) => [t.assigned_by, t.assigned_to]),
         ...(eventData ?? []).map((e: any) => e.created_by),
+        ...(attendeeRows ?? []).map((a: any) => a.profile_id),
       ]),
     ).filter(Boolean);
     if (ids.length) {
@@ -175,10 +202,24 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
   useEffect(() => { void load(); }, [load]);
 
   const visibleTasks = useMemo(() => {
-    if (statusFilter === "all") return tasks;
-    if (statusFilter === "open") return tasks.filter((t) => t.status !== "done");
-    return tasks.filter((t) => t.status === statusFilter);
-  }, [tasks, statusFilter]);
+    let list = tasks;
+    if (scopeFilter === "mine") list = list.filter((t) => t.assigned_to === user?.id);
+    else if (scopeFilter === "delegated") list = list.filter((t) => t.assigned_by === user?.id && t.assigned_to !== user?.id);
+
+    if (statusFilter === "open") list = list.filter((t) => t.status !== "done");
+    else if (statusFilter !== "all") list = list.filter((t) => t.status === statusFilter);
+
+    const prioRank: Record<string, number> = { high: 0, normal: 1, low: 2 };
+    const sorted = [...list];
+    if (sortBy === "due") {
+      sorted.sort((a, b) => (a.due_date ?? "9999").localeCompare(b.due_date ?? "9999"));
+    } else if (sortBy === "priority") {
+      sorted.sort((a, b) => (prioRank[a.priority] ?? 1) - (prioRank[b.priority] ?? 1));
+    }
+    // "created" = výchozí řazení z dotazu (nejnovější první)
+    return sorted;
+  }, [tasks, statusFilter, scopeFilter, sortBy, user?.id]);
+
 
   const quickLinks = useMemo(() => {
     const allowed = STAFF_MODULES.filter((m) => (isAdmin ? true : permissions[m.id]?.can_view));
