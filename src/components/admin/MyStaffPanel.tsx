@@ -575,12 +575,15 @@ const CalendarBrowserDialog = ({
   eventsByDay,
   initialDay,
   onPickDay,
+  onEditEvent,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   eventsByDay: Record<string, EventRow[]>;
   initialDay: string;
   onPickDay: (key: string) => void;
+  onEditEvent: (ev: EventRow) => void;
+
 }) => {
   const { user } = useAuth();
   const [monthCursor, setMonthCursor] = useState(() => {
