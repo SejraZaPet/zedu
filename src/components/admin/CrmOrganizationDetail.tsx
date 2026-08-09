@@ -397,34 +397,54 @@ const CrmOrganizationDetail = ({ organizationId, tags, canEdit, onBack }: Props)
         {interactions.length === 0 ? (
           <p className="text-sm text-muted-foreground">Zatím žádná komunikace.</p>
         ) : (
-          <ol className="space-y-3">
+          <ol className="divide-y divide-border rounded-md border border-border">
             {interactions.map((i) => {
               const Icon = typeIcon(i.type);
+              const author = i.created_by ? authors[i.created_by] : undefined;
+              const shortcut = author?.initials ?? "—";
+              const isOpen = !!expanded[i.id];
+              const date = new Date(i.occurred_at);
+              const contact = contacts.find((c) => c.id === i.contact_id);
               return (
-                <li key={i.id} className="flex gap-3">
-                  <div className="mt-0.5 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                    <Icon className="w-4 h-4 text-primary" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(i.occurred_at).toLocaleDateString("cs-CZ")} ·{" "}
-                      {CRM_INTERACTION_TYPES.find((t) => t.value === i.type)?.label ?? i.type}
-                      {i.contact_id && contacts.find((c) => c.id === i.contact_id)
-                        ? ` · ${contacts.find((c) => c.id === i.contact_id)!.name}`
-                        : ""}
-                    </p>
-                    <p className="text-sm whitespace-pre-wrap">{i.summary}</p>
-                    {i.next_step && (
-                      <p className="text-xs mt-1 text-muted-foreground">
-                        Další krok: {i.next_step}
-                        {i.next_step_date ? ` (${new Date(i.next_step_date).toLocaleDateString("cs-CZ")})` : ""}
+                <li key={i.id}>
+                  <button
+                    type="button"
+                    onClick={() => setExpanded((e) => ({ ...e, [i.id]: !e[i.id] }))}
+                    aria-expanded={isOpen}
+                    title={`${author?.name ?? "Neznámý autor"} · ${date.toLocaleString("cs-CZ")}`}
+                    className="w-full text-left flex items-baseline gap-2 px-3 py-1.5 text-sm hover:bg-muted/50 transition-colors"
+                  >
+                    <span className="text-muted-foreground tabular-nums shrink-0">
+                      {date.toLocaleDateString("cs-CZ")}
+                    </span>
+                    <span className="text-muted-foreground shrink-0">·</span>
+                    <span className="font-medium shrink-0">{shortcut}:</span>
+                    <span className={isOpen ? "whitespace-pre-wrap" : "truncate"}>{i.summary}</span>
+                  </button>
+                  {isOpen && (
+                    <div className="px-3 pb-2 pt-0 text-xs text-muted-foreground space-y-1">
+                      <p className="flex items-center gap-1.5">
+                        <Icon className="w-3.5 h-3.5" />
+                        {CRM_INTERACTION_TYPES.find((t) => t.value === i.type)?.label ?? i.type}
+                        {" · "}
+                        {author?.name ?? "Neznámý autor"}
+                        {" · "}
+                        {date.toLocaleString("cs-CZ")}
+                        {contact ? ` · ${contact.name}` : ""}
                       </p>
-                    )}
-                  </div>
+                      {i.next_step && (
+                        <p>
+                          Další krok: {i.next_step}
+                          {i.next_step_date ? ` (${new Date(i.next_step_date).toLocaleDateString("cs-CZ")})` : ""}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </li>
               );
             })}
           </ol>
+
         )}
       </Card>
 
