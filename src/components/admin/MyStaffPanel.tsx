@@ -12,9 +12,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+
 import StaffTaskDialog, { TASK_PRIORITIES, TASK_STATUSES } from "./StaffTaskDialog";
-import { CalendarPlus, CheckCircle2, ListChecks, Plus, Trash2, ArrowRight, ChevronLeft, ChevronRight, Rss, Copy } from "lucide-react";
+import { CalendarPlus, CalendarDays, CheckCircle2, ListChecks, Plus, Trash2, ArrowRight, ChevronLeft, ChevronRight, Rss, Copy, StickyNote } from "lucide-react";
 
 
 interface TaskRow {
@@ -65,6 +65,9 @@ const WEEKDAYS = ["Po", "Út", "St", "Čt", "Pá", "So", "Ne"];
 const fmtDate = (iso: string) =>
   new Date(iso).toLocaleDateString("cs-CZ", { day: "2-digit", month: "2-digit", year: "numeric" });
 
+const fmtTime = (iso: string) =>
+  new Date(iso).toLocaleTimeString("cs-CZ", { hour: "2-digit", minute: "2-digit" });
+
 
 const fmtDateTime = (iso: string) =>
   new Date(iso).toLocaleString("cs-CZ", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -83,12 +86,10 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
   const [statusFilter, setStatusFilter] = useState<string>("open");
   const [taskOpen, setTaskOpen] = useState(false);
   const [eventOpen, setEventOpen] = useState(false);
-  const [calView, setCalView] = useState<"list" | "month">("list");
-  const [monthCursor, setMonthCursor] = useState(() => {
-    const d = new Date();
-    return new Date(d.getFullYear(), d.getMonth(), 1);
-  });
-  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState(() => dayKey(new Date()));
+  const [weekOffset, setWeekOffset] = useState(0);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  
   const [feedOpen, setFeedOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -155,9 +156,6 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
     setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, status } : t)));
   };
 
-  const upcoming = events.filter((e) => new Date(e.end_time ?? e.start_time) >= new Date());
-  const past = events.filter((e) => new Date(e.end_time ?? e.start_time) < new Date()).reverse();
-
   /** Události seskupené podle dne (lokální YYYY-MM-DD). */
   const eventsByDay = useMemo(() => {
     const map: Record<string, EventRow[]> = {};
@@ -165,26 +163,32 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
       const key = dayKey(new Date(e.start_time));
       (map[key] ??= []).push(e);
     });
+    Object.values(map).forEach((list) =>
+      list.sort((a, b) => a.start_time.localeCompare(b.start_time)),
+    );
     return map;
   }, [events]);
 
-  /** 6×7 mřížka dnů začínající pondělkem. */
-  const monthGrid = useMemo(() => {
-    const first = new Date(monthCursor.getFullYear(), monthCursor.getMonth(), 1);
-    const offset = (first.getDay() + 6) % 7;
-    const start = new Date(first);
-    start.setDate(first.getDate() - offset);
-    return Array.from({ length: 42 }, (_, i) => {
-      const d = new Date(start);
-      d.setDate(start.getDate() + i);
-      return d;
-    });
-  }, [monthCursor]);
+  /** Pondělí zobrazeného týdne podle posunu. */
+  const weekStart = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() - ((d.getDay() + 6) % 7) + weekOffset * 7);
+    return d;
+  }, [weekOffset]);
 
-  const shiftMonth = (delta: number) => {
-    setSelectedDay(null);
-    setMonthCursor((c) => new Date(c.getFullYear(), c.getMonth() + delta, 1));
-  };
+  const weekDays = useMemo(
+    () =>
+      Array.from({ length: 7 }, (_, i) => {
+        const d = new Date(weekStart);
+        d.setDate(weekStart.getDate() + i);
+        return d;
+      }),
+    [weekStart],
+  );
+
+  const dayEvents = eventsByDay[selectedDate] ?? [];
+
 
 
   const deleteEvent = async (id: string) => {
@@ -271,17 +275,19 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
 
       <Card>
         <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 space-y-0">
-          <CardTitle className="text-base">Pracovní kalendář</CardTitle>
+          <div>
+            <CardTitle className="text-base">Pracovní kalendář</CardTitle>
+            <p className="text-sm text-muted-foreground capitalize">
+              {selectedDate === dayKey(new Date()) ? "Dnes · " : ""}
+              {new Date(`${selectedDate}T00:00:00`).toLocaleDateString("cs-CZ", {
+                weekday: "long", day: "numeric", month: "long", year: "numeric",
+              })}
+            </p>
+          </div>
           <div className="flex flex-wrap items-center gap-2">
-            <ToggleGroup
-              type="single"
-              value={calView}
-              onValueChange={(v) => v && setCalView(v as "list" | "month")}
-              className="rounded-md border border-border"
-            >
-              <ToggleGroupItem value="list" className="h-9 px-3 text-sm">Seznam</ToggleGroupItem>
-              <ToggleGroupItem value="month" className="h-9 px-3 text-sm">Měsíc</ToggleGroupItem>
-            </ToggleGroup>
+            <Button size="sm" variant="outline" onClick={() => setCalendarOpen(true)}>
+              <CalendarDays className="w-4 h-4 mr-1" /> Otevřít kalendář
+            </Button>
             <Button size="sm" variant="outline" onClick={() => setFeedOpen(true)}>
               <Rss className="w-4 h-4 mr-1" /> Odebírat v kalendáři
             </Button>
@@ -291,124 +297,82 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {calView === "month" ? (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Button size="sm" variant="ghost" onClick={() => shiftMonth(-1)} aria-label="Předchozí měsíc">
-                  <ChevronLeft className="w-4 h-4" />
-                </Button>
-                <span className="text-sm font-medium capitalize">
-                  {monthCursor.toLocaleDateString("cs-CZ", { month: "long", year: "numeric" })}
-                </span>
-                <Button size="sm" variant="ghost" onClick={() => shiftMonth(1)} aria-label="Další měsíc">
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-              </div>
-              <div className="grid grid-cols-7 gap-1 text-center text-xs text-muted-foreground">
-                {WEEKDAYS.map((d) => <div key={d} className="py-1">{d}</div>)}
-              </div>
-              <div className="grid grid-cols-7 gap-1">
-                {monthGrid.map((d) => {
-                  const key = dayKey(d);
-                  const count = eventsByDay[key]?.length ?? 0;
-                  const inMonth = d.getMonth() === monthCursor.getMonth();
-                  const isToday = key === dayKey(new Date());
-                  return (
-                    <button
-                      key={key}
-                      type="button"
-                      onClick={() => setSelectedDay(count ? key : null)}
-                      aria-label={`${d.getDate()}. ${d.getMonth() + 1}. — ${count} událostí`}
-                      className={`flex h-14 flex-col items-center justify-center rounded-md border text-sm transition-colors ${
-                        selectedDay === key ? "border-primary bg-primary/10" : "border-border hover:bg-accent"
-                      } ${inMonth ? "" : "opacity-40"} ${isToday ? "font-bold" : ""}`}
-                    >
-                      <span>{d.getDate()}</span>
-                      {count > 0 && (
-                        <span className="mt-1 flex items-center gap-1">
-                          <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                          <span className="text-[10px] text-muted-foreground">{count}</span>
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-              {selectedDay && (
-                <div className="space-y-2 rounded-md border border-border p-3">
-                  <h4 className="text-sm font-medium">
-                    Události {fmtDate(selectedDay)}
-                  </h4>
-                  <ul className="divide-y divide-border">
-                    {(eventsByDay[selectedDay] ?? []).map((e) => (
-                      <li key={e.id} className="flex items-start justify-between gap-3 py-2">
-                        <div className="min-w-0">
-                          <div className="font-medium">{e.title}</div>
-                          <p className="text-xs text-muted-foreground">
-                            {fmtDateTime(e.start_time)}
-                            {e.end_time ? ` – ${fmtDateTime(e.end_time)}` : ""} · {names[e.created_by] ?? "—"}
-                          </p>
-                          {e.description && (
-                            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{e.description}</p>
-                          )}
-                        </div>
-                        {(isAdmin || e.created_by === user?.id) && (
-                          <Button size="sm" variant="ghost" onClick={() => void deleteEvent(e.id)} aria-label="Smazat událost">
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
+          {/* Denní agenda */}
+          {dayEvents.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              {selectedDate === dayKey(new Date()) ? "Žádné události na dnešek." : "Žádné události v tento den."}
+            </p>
           ) : (
-            <>
-              <div className="space-y-2">
-                <h4 className="text-sm font-medium text-muted-foreground">Nejbližší</h4>
-                {upcoming.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Žádné naplánované události.</p>
-                ) : (
-                  <ul className="divide-y divide-border">
-                    {upcoming.map((e) => (
-                      <li key={e.id} className="flex items-start justify-between gap-3 py-2">
-                        <div className="min-w-0">
-                          <div className="font-medium">{e.title}</div>
-                          <p className="text-xs text-muted-foreground">
-                            {fmtDateTime(e.start_time)}
-                            {e.end_time ? ` – ${fmtDateTime(e.end_time)}` : ""} · {names[e.created_by] ?? "—"}
-                          </p>
-                          {e.description && (
-                            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{e.description}</p>
-                          )}
-                        </div>
-                        {(isAdmin || e.created_by === user?.id) && (
-                          <Button size="sm" variant="ghost" onClick={() => void deleteEvent(e.id)} aria-label="Smazat událost">
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-              {past.length > 0 && (
-                <div className="space-y-2">
-                  <h4 className="text-sm font-medium text-muted-foreground">Proběhlé</h4>
-                  <ul className="divide-y divide-border">
-                    {past.slice(0, 5).map((e) => (
-                      <li key={e.id} className="py-2 text-sm text-muted-foreground">
-                        {fmtDateTime(e.start_time)} · {e.title}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </>
+            <ul className="divide-y divide-border">
+              {dayEvents.map((e) => (
+                <li key={e.id} className="flex items-start gap-4 py-3">
+                  <div className="w-20 shrink-0 text-sm font-medium tabular-nums">
+                    {fmtTime(e.start_time)}
+                    {e.end_time && (
+                      <div className="text-xs font-normal text-muted-foreground">{fmtTime(e.end_time)}</div>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium">{e.title}</div>
+                    {e.description && (
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">{e.description}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground">{names[e.created_by] ?? "—"}</p>
+                  </div>
+                  {(isAdmin || e.created_by === user?.id) && (
+                    <Button size="sm" variant="ghost" onClick={() => void deleteEvent(e.id)} aria-label="Smazat událost">
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
+                </li>
+              ))}
+            </ul>
           )}
+
+          {/* Týdenní pruh */}
+          <div className="flex items-center gap-2">
+            <Button size="icon" variant="ghost" onClick={() => setWeekOffset((o) => o - 1)} aria-label="Předchozí týden">
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+            <div className="grid flex-1 grid-cols-7 gap-1">
+              {weekDays.map((d, i) => {
+                const key = dayKey(d);
+                const count = eventsByDay[key]?.length ?? 0;
+                const isToday = key === dayKey(new Date());
+                const isSel = key === selectedDate;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setSelectedDate(key)}
+                    aria-label={`${WEEKDAYS[i]} ${d.getDate()}. ${d.getMonth() + 1}. — ${count} událostí`}
+                    aria-current={isSel ? "date" : undefined}
+                    className={`flex flex-col items-center gap-0.5 rounded-md border py-2 text-xs transition-colors ${
+                      isSel
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : isToday
+                          ? "border-primary bg-primary/10"
+                          : "border-border hover:bg-accent"
+                    }`}
+                  >
+                    <span className="opacity-80">{WEEKDAYS[i]}</span>
+                    <span className="text-sm font-semibold">{d.getDate()}</span>
+                    {count > 0 ? (
+                      <Badge variant={isSel ? "secondary" : "default"} className="h-4 px-1 text-[10px]">{count}</Badge>
+                    ) : (
+                      <span className="h-4" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            <Button size="icon" variant="ghost" onClick={() => setWeekOffset((o) => o + 1)} aria-label="Další týden">
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
         </CardContent>
       </Card>
+
 
 
       <Card>
@@ -446,8 +410,210 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
         />
       )}
       <StaffEventDialog open={eventOpen} onOpenChange={setEventOpen} onCreated={() => void load()} />
+      <CalendarBrowserDialog
+        open={calendarOpen}
+        onOpenChange={setCalendarOpen}
+        eventsByDay={eventsByDay}
+        initialDay={selectedDate}
+        onPickDay={(key) => {
+          setSelectedDate(key);
+          const picked = new Date(`${key}T00:00:00`);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const mondayNow = new Date(today);
+          mondayNow.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+          const mondayPicked = new Date(picked);
+          mondayPicked.setDate(picked.getDate() - ((picked.getDay() + 6) % 7));
+          setWeekOffset(Math.round((mondayPicked.getTime() - mondayNow.getTime()) / (7 * 86400000)));
+          setCalendarOpen(false);
+        }}
+      />
       <CalendarFeedDialog open={feedOpen} onOpenChange={setFeedOpen} />
     </div>
+  );
+};
+
+/** Měsíční mřížka sdílených událostí + osobní poznámky k vybranému dni. */
+const CalendarBrowserDialog = ({
+  open,
+  onOpenChange,
+  eventsByDay,
+  initialDay,
+  onPickDay,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  eventsByDay: Record<string, EventRow[]>;
+  initialDay: string;
+  onPickDay: (key: string) => void;
+}) => {
+  const { user } = useAuth();
+  const [monthCursor, setMonthCursor] = useState(() => {
+    const d = new Date(`${initialDay}T00:00:00`);
+    return new Date(d.getFullYear(), d.getMonth(), 1);
+  });
+  const [activeDay, setActiveDay] = useState(initialDay);
+  const [note, setNote] = useState("");
+  const [noteLoading, setNoteLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    setActiveDay(initialDay);
+    const d = new Date(`${initialDay}T00:00:00`);
+    setMonthCursor(new Date(d.getFullYear(), d.getMonth(), 1));
+  }, [open, initialDay]);
+
+  useEffect(() => {
+    if (!open || !user) return;
+    let cancelled = false;
+    setNoteLoading(true);
+    void (async () => {
+      const { data } = await supabase
+        .from("staff_calendar_notes")
+        .select("content")
+        .eq("author_id", user.id)
+        .eq("note_date", activeDay)
+        .maybeSingle();
+      if (cancelled) return;
+      setNote((data as any)?.content ?? "");
+      setNoteLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [open, user?.id, activeDay]);
+
+  const grid = useMemo(() => {
+    const first = new Date(monthCursor.getFullYear(), monthCursor.getMonth(), 1);
+    const offset = (first.getDay() + 6) % 7;
+    const start = new Date(first);
+    start.setDate(first.getDate() - offset);
+    return Array.from({ length: 42 }, (_, i) => {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      return d;
+    });
+  }, [monthCursor]);
+
+  const saveNote = async () => {
+    if (!user) return;
+    setSaving(true);
+    const { error } = await supabase
+      .from("staff_calendar_notes")
+      .upsert(
+        { author_id: user.id, note_date: activeDay, content: note },
+        { onConflict: "author_id,note_date" },
+      );
+    setSaving(false);
+    if (error) {
+      toast({ title: "Poznámku nelze uložit", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Poznámka uložena" });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-3xl">
+        <DialogHeader>
+          <DialogTitle>Kalendář</DialogTitle>
+          <DialogDescription>
+            Kliknutím na den ho otevřete v denním přehledu. Poznámky jsou osobní, jen pro vás.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-6 md:grid-cols-[2fr_1fr]">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Button
+                size="icon"
+                variant="ghost"
+                aria-label="Předchozí měsíc"
+                onClick={() => setMonthCursor((c) => new Date(c.getFullYear(), c.getMonth() - 1, 1))}
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <span className="text-sm font-medium capitalize">
+                {monthCursor.toLocaleDateString("cs-CZ", { month: "long", year: "numeric" })}
+              </span>
+              <Button
+                size="icon"
+                variant="ghost"
+                aria-label="Další měsíc"
+                onClick={() => setMonthCursor((c) => new Date(c.getFullYear(), c.getMonth() + 1, 1))}
+              >
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+            <div className="grid grid-cols-7 gap-1 text-center text-xs text-muted-foreground">
+              {WEEKDAYS.map((d) => <div key={d} className="py-1">{d}</div>)}
+            </div>
+            <div className="grid grid-cols-7 gap-1">
+              {grid.map((d) => {
+                const key = dayKey(d);
+                const count = eventsByDay[key]?.length ?? 0;
+                const inMonth = d.getMonth() === monthCursor.getMonth();
+                const isToday = key === dayKey(new Date());
+                return (
+                  <div key={key} className="flex flex-col">
+                    <button
+                      type="button"
+                      onClick={() => setActiveDay(key)}
+                      onDoubleClick={() => onPickDay(key)}
+                      aria-label={`${d.getDate()}. ${d.getMonth() + 1}. — ${count} událostí`}
+                      className={`flex h-14 flex-col items-center justify-center rounded-md border text-sm transition-colors ${
+                        activeDay === key ? "border-primary bg-primary/10" : "border-border hover:bg-accent"
+                      } ${inMonth ? "" : "opacity-40"} ${isToday ? "font-bold" : ""}`}
+                    >
+                      <span>{d.getDate()}</span>
+                      {count > 0 && (
+                        <span className="mt-1 flex items-center gap-1">
+                          <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                          <span className="text-[10px] text-muted-foreground">{count}</span>
+                        </span>
+                      )}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="space-y-2 rounded-md border border-border p-3">
+              <div className="flex items-center justify-between gap-2">
+                <h4 className="text-sm font-medium">Události {fmtDate(activeDay)}</h4>
+                <Button size="sm" variant="outline" onClick={() => onPickDay(activeDay)}>
+                  Otevřít v denním přehledu
+                </Button>
+              </div>
+              {(eventsByDay[activeDay] ?? []).length === 0 ? (
+                <p className="text-sm text-muted-foreground">Žádné události.</p>
+              ) : (
+                <ul className="space-y-1 text-sm">
+                  {(eventsByDay[activeDay] ?? []).map((e) => (
+                    <li key={e.id}>
+                      <span className="tabular-nums text-muted-foreground">{fmtTime(e.start_time)}</span> · {e.title}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+          <div className="space-y-2">
+            <h4 className="flex items-center gap-2 text-sm font-medium">
+              <StickyNote className="w-4 h-4" /> Poznámky · {fmtDate(activeDay)}
+            </h4>
+            <Textarea
+              rows={10}
+              value={note}
+              disabled={noteLoading}
+              placeholder={noteLoading ? "Načítám…" : "Rychlá osobní poznámka k tomuto dni…"}
+              onChange={(e) => setNote(e.target.value)}
+            />
+            <Button size="sm" className="w-full" disabled={saving || noteLoading} onClick={() => void saveNote()}>
+              {saving ? "Ukládám…" : "Uložit poznámku"}
+            </Button>
+            <p className="text-xs text-muted-foreground">Poznámky vidíte jen vy, na rozdíl od sdílených událostí.</p>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 
