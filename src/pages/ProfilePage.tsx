@@ -593,32 +593,33 @@ const ProfilePage = () => {
 
 
 
-        {/* Editable fields */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Studijní údaje</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {role !== "lektor" && (
+        {/* Editable fields (students only) */}
+        {role === "user" && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Studijní údaje</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div>
                 <Label htmlFor="school">Škola</Label>
                 <Input id="school" value={school} onChange={(e) => setSchool(e.target.value)} />
               </div>
-            )}
-            <div>
-              <Label htmlFor="field">Obor</Label>
-              <Input id="field" value={fieldOfStudy} onChange={(e) => setFieldOfStudy(e.target.value)} />
-            </div>
-            <div>
-              <Label htmlFor="year">Ročník</Label>
-              <Input id="year" type="number" min={1} max={9} value={year} onChange={(e) => setYear(e.target.value)} />
-            </div>
-            <Button onClick={handleSaveProfile} disabled={saving} className="gap-2">
-              <Save className="w-4 h-4" />
-              {saving ? "Ukládání..." : "Uložit změny"}
-            </Button>
-          </CardContent>
-        </Card>
+              <div>
+                <Label htmlFor="field">Obor</Label>
+                <Input id="field" value={fieldOfStudy} onChange={(e) => setFieldOfStudy(e.target.value)} />
+              </div>
+              <div>
+                <Label htmlFor="year">Ročník</Label>
+                <Input id="year" type="number" min={1} max={9} value={year} onChange={(e) => setYear(e.target.value)} />
+              </div>
+              <Button onClick={handleSaveProfile} disabled={saving} className="gap-2">
+                <Save className="w-4 h-4" />
+                {saving ? "Ukládání..." : "Uložit změny"}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
 
 
 
