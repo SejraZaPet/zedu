@@ -446,9 +446,83 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
         />
       )}
       <StaffEventDialog open={eventOpen} onOpenChange={setEventOpen} onCreated={() => void load()} />
+      <CalendarFeedDialog open={feedOpen} onOpenChange={setFeedOpen} />
     </div>
   );
 };
+
+/** Jednosměrný odběr pracovního kalendáře přes iCal (.ics) feed. */
+const CalendarFeedDialog = ({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+}) => {
+  const [url, setUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!open || url || loading) return;
+    setLoading(true);
+    void (async () => {
+      const { data, error } = await supabase.functions.invoke("staff-calendar-feed", { method: "POST" });
+      setLoading(false);
+      if (error || !(data as any)?.url) {
+        toast({
+          title: "Odkaz nelze vytvořit",
+          description: error?.message ?? "Zkuste to prosím znovu.",
+          variant: "destructive",
+        });
+        return;
+      }
+      setUrl((data as any).url as string);
+    })();
+  }, [open, url, loading]);
+
+  const copy = async () => {
+    if (!url) return;
+    try {
+      await navigator.clipboard.writeText(url);
+      toast({ title: "Odkaz zkopírován" });
+    } catch {
+      toast({ title: "Kopírování nelze provést", description: "Zkopírujte odkaz ručně.", variant: "destructive" });
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Odebírat pracovní kalendář</DialogTitle>
+          <DialogDescription>
+            Tento odkaz vložte do Google Calendar (Přidat kalendář → Ze zdroje URL) nebo Apple Calendar
+            (Soubor → Nový odběr kalendáře).
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          {loading && !url ? (
+            <p className="text-sm text-muted-foreground">Připravuji odkaz…</p>
+          ) : url ? (
+            <div className="flex items-center gap-2">
+              <Input readOnly value={url} onFocus={(e) => e.currentTarget.select()} className="font-mono text-xs" />
+              <Button size="icon" variant="outline" onClick={() => void copy()} aria-label="Kopírovat odkaz">
+                <Copy className="w-4 h-4" />
+              </Button>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">Odkaz se nepodařilo připravit.</p>
+          )}
+          <p className="text-xs text-muted-foreground">
+            Odběr je <strong>jednosměrný</strong> (ZEdu → váš kalendář). Úpravy provedené v Google nebo Apple
+            Calendar se do aplikace nepropíšou. Odkaz je osobní a tajný — nesdílejte ho.
+          </p>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 
 const StaffEventDialog = ({
   open,
