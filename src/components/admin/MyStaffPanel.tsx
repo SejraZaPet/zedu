@@ -732,18 +732,25 @@ const CalendarBrowserDialog = ({
               ) : (
                 <ul className="space-y-1 text-sm">
                   {(eventsByDay[activeDay] ?? []).map((e) => (
-                    <li key={e.id} className="flex items-center gap-2">
-                      <span
-                        aria-hidden
-                        className="h-2 w-2 shrink-0 rounded-full"
-                        style={{ backgroundColor: e.color || "hsl(var(--primary))" }}
-                      />
-                      <span className="tabular-nums text-muted-foreground">
-                        {e.all_day ? "Celý den" : fmtTime(e.start_time)}
-                      </span>
-                      <span>· {e.title}</span>
+                    <li key={e.id}>
+                      <button
+                        type="button"
+                        onClick={() => onEditEvent(e)}
+                        className="flex w-full items-center gap-2 rounded-md px-1 py-0.5 text-left hover:bg-accent"
+                      >
+                        <span
+                          aria-hidden
+                          className="h-2 w-2 shrink-0 rounded-full"
+                          style={{ backgroundColor: e.color || "hsl(var(--primary))" }}
+                        />
+                        <span className="tabular-nums text-muted-foreground">
+                          {e.all_day ? "Celý den" : fmtTime(e.start_time)}
+                        </span>
+                        <span>· {e.title}</span>
+                      </button>
                     </li>
                   ))}
+
 
                 </ul>
               )}
