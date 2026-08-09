@@ -57,13 +57,14 @@ const UserStaffRoleSection = ({ userId }: Props) => {
       setLoading(true);
       const { data } = await supabase
         .from("staff_members")
-        .select("id, position, active, private_email, work_email, phone")
+        .select("id, position, initials, active, private_email, work_email, phone")
         .eq("profile_id", userId)
         .maybeSingle();
       if (cancelled) return;
       const s = (data as StaffMember | null) ?? null;
       setStaff(s);
       setPosition(s?.position ?? "");
+      setInitials(s?.initials ?? "");
       setPrivateEmail(s?.private_email ?? "");
       setWorkEmail(s?.work_email ?? "");
       setPhone(s?.phone ?? "");
@@ -85,7 +86,7 @@ const UserStaffRoleSection = ({ userId }: Props) => {
       const { data, error } = await supabase
         .from("staff_members")
         .insert({ profile_id: userId, position: position.trim() || null, active: true })
-        .select("id, position, active, private_email, work_email, phone")
+        .select("id, position, initials, active, private_email, work_email, phone")
         .maybeSingle();
       if (error) toast({ title: "Nepodařilo se vytvořit pracovní roli", description: error.message, variant: "destructive" });
       else setStaff((data as StaffMember) ?? null);
@@ -98,6 +99,7 @@ const UserStaffRoleSection = ({ userId }: Props) => {
     setSaving(true);
     const payload = {
       position: position.trim() || null,
+      initials: initials.trim().toUpperCase() || null,
       private_email: privateEmail.trim() || null,
       work_email: workEmail.trim() || null,
       phone: phone.trim() || null,
