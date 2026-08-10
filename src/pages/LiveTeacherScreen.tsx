@@ -34,7 +34,7 @@ import { GAME_MODES, getModeDef, type GameMode } from "@/lib/game-modes";
 import type { TeamMode } from "@/lib/game-types";
 import ZoomZoneSurface from "@/components/live/ZoomZoneSurface";
 import SlideCanvas from "@/components/admin/SlideCanvas";
-import { getZoomZones, isValidZoomRect, isZoomableSlide, type ZoomRect } from "@/lib/zoom-zones";
+import { getZoomZones, isValidZoomRect, isZoomableSlide, zoomStageStyle, type ZoomRect } from "@/lib/zoom-zones";
 
 interface SlideData {
   slideId: string;
@@ -969,6 +969,50 @@ const LiveTeacherScreen = () => {
       {currentSlide && (
         <div className="space-y-4">
           <Badge>{SLIDE_TYPE_LABELS[currentSlide.type] || currentSlide.type}</Badge>
+
+          {/* Živé přiblížení – náhled výřezu + kreslení */}
+          {zoomable && (drawZoomMode || activeZoom) && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                  <ZoomIn className="w-4 h-4" />
+                  {drawZoomMode ? "Tažením nakreslete výřez" : "Přiblížení aktivní"}
+                </span>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant={drawZoomMode ? "default" : "outline"}
+                    className="gap-1.5"
+                    onClick={() => setDrawZoomMode((v) => !v)}
+                  >
+                    <Crosshair className="w-3.5 h-3.5" />
+                    {drawZoomMode ? "Hotovo" : "Nakreslit výřez"}
+                  </Button>
+                  {activeZoom && (
+                    <Button size="sm" variant="secondary" className="gap-1.5" onClick={() => applyZoom(null)}>
+                      <ZoomOut className="w-3.5 h-3.5" /> Zpět na celý slide
+                    </Button>
+                  )}
+                </div>
+              </div>
+              <div className="relative">
+                <div className="overflow-hidden rounded-xl">
+                  <div style={drawZoomMode ? undefined : zoomStageStyle(activeZoom)}>
+                    <SlideCanvas slide={currentSlide} darkMode />
+                  </div>
+                </div>
+                <ZoomZoneSurface
+                  zones={drawZoomMode ? zoomZones : []}
+                  drawing={drawZoomMode}
+                  onDraw={(rect) => {
+                    applyZoom(rect);
+                    setDrawZoomMode(false);
+                  }}
+                  onZoneClick={(z) => applyZoom({ x: z.x, y: z.y, width: z.width, height: z.height })}
+                />
+              </div>
+            </div>
+          )}
 
           {/* Projector */}
           <div
