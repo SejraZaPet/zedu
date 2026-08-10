@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Monitor, Plus, Trash2, ChevronDown, Save, Sun, Moon, Type, List, Image as ImageIcon, Table as TableIcon, Settings2, Undo2, Redo2 } from "lucide-react";
+import { Monitor, Plus, Trash2, ChevronDown, Save, Sun, Moon, Type, List, Image as ImageIcon, Table as TableIcon, Settings2, Undo2, Redo2, ZoomIn } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -18,6 +18,8 @@ import SlideCanvas, { SLIDE_LAYOUTS, type SlideLayout } from "@/components/admin
 import { MediaPickerDialog } from "@/components/media/MediaPickerDialog";
 import { AddSlideSheet } from "@/components/game/AddSlideSheet";
 import { createDefaultBlock, type Block } from "@/lib/textbook-config";
+import ZoomZonesEditor from "@/components/admin/ZoomZonesEditor";
+import { isZoomableSlide, type ZoomZone } from "@/lib/zoom-zones";
 
 
 interface Props {
@@ -343,6 +345,26 @@ export const PresentationEditorDialog = ({
                 <p className="text-[11px] text-muted-foreground">
                   Klikněte na nadpis nebo text v náhledu a upravte jej. Při najetí na blok se zobrazí ovládání ↑ ↓ 🗑.
                 </p>
+
+                {/* Zóny přiblížení */}
+                {isZoomableSlide(currentSlide) && (
+                  <Collapsible className="border border-border rounded-lg mt-1">
+                    <CollapsibleTrigger className="w-full flex items-center justify-between px-3 py-2 text-xs text-muted-foreground hover:bg-muted/40 transition-colors">
+                      <span className="flex items-center gap-1.5">
+                        <ZoomIn className="w-3.5 h-3.5" />
+                        Zóny přiblížení ({(currentSlide.zoomZones || []).length})
+                      </span>
+                      <ChevronDown className="w-3.5 h-3.5" />
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="px-3 pb-3">
+                      <ZoomZonesEditor
+                        slide={currentSlide}
+                        darkMode={darkPreview}
+                        onChange={(zones: ZoomZone[]) => updateSlide({ zoomZones: zones })}
+                      />
+                    </CollapsibleContent>
+                  </Collapsible>
+                )}
 
                 {/* Instrukce + aktivita */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
