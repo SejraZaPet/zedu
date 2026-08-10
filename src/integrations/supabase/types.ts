@@ -5717,6 +5717,7 @@ export type Database = {
           title: string | null
           updated_at: string | null
           whiteboard_data: Json | null
+          zoom_state: Json | null
         }
         Insert: {
           activity_data_safe?: never
@@ -5732,6 +5733,7 @@ export type Database = {
           title?: string | null
           updated_at?: string | null
           whiteboard_data?: Json | null
+          zoom_state?: Json | null
         }
         Update: {
           activity_data_safe?: never
@@ -5747,6 +5749,7 @@ export type Database = {
           title?: string | null
           updated_at?: string | null
           whiteboard_data?: Json | null
+          zoom_state?: Json | null
         }
         Relationships: []
       }
