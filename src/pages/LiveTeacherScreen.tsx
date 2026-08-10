@@ -32,6 +32,8 @@ import { useSwipe } from "@/hooks/useSwipe";
 import { LessonBlock } from "@/components/LessonBlockRenderer";
 import { GAME_MODES, getModeDef, type GameMode } from "@/lib/game-modes";
 import type { TeamMode } from "@/lib/game-types";
+import ZoomZoneSurface from "@/components/live/ZoomZoneSurface";
+import { getZoomZones, isValidZoomRect, isZoomableSlide, type ZoomRect } from "@/lib/zoom-zones";
 
 interface SlideData {
   slideId: string;
@@ -70,6 +72,19 @@ const LiveTeacherScreen = () => {
   const whiteboard: WhiteboardData = ((session as any)?.whiteboard_data as WhiteboardData) ?? { visible: false, strokesBySlide: {} };
   const whiteboardVisible = whiteboard.visible;
   const { unansweredCount } = useLiveQuestions(sessionId);
+
+  // ---- Přiblížení (zoom do výřezu) ----
+  const [drawZoomMode, setDrawZoomMode] = useState(false);
+  const zoomable = isZoomableSlide(currentSlide);
+  const zoomZones = getZoomZones(currentSlide);
+  const rawZoom = (session as any)?.zoom_state;
+  const activeZoom: ZoomRect | null =
+    zoomable && isValidZoomRect(rawZoom) ? (rawZoom as ZoomRect) : null;
+
+  const applyZoom = useCallback(async (rect: ZoomRect | null) => {
+    if (!sessionId) return;
+    await supabase.from("game_sessions").update({ zoom_state: rect as any }).eq("id", sessionId);
+  }, [sessionId]);
 
   // Reveal step (progressive bullet reveal). Reset to 1 on slide change.
   const revealStep = typeof settings?.revealStep === "number" ? settings.revealStep : 999;
@@ -120,7 +135,9 @@ const LiveTeacherScreen = () => {
     if (!sessionId) return;
     supabase.from("game_sessions").update({
       settings: { ...(settings || {}), projectorScrollTop: 0, revealStep: 1 },
+      zoom_state: null,
     }).eq("id", sessionId);
+    setDrawZoomMode(false);
     if (projectorPreviewRef.current) {
       projectorPreviewRef.current.scrollTop = 0;
     }
@@ -1258,6 +1275,7 @@ const LiveTeacherScreen = () => {
           slides={slides}
           players={players}
           gameCode={gameCode}
+          zoom={activeZoom}
           overlayContent={(
             <LiveWhiteboard
               sessionId={sessionId}
