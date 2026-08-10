@@ -46,7 +46,7 @@ export function isValidZoomRect(rect: any): rect is ZoomRect {
 export function getZoomZones(slide: any): ZoomZone[] {
   const zones = slide?.zoomZones;
   if (!Array.isArray(zones)) return [];
-  return zones.filter((z: any) => isValidZoomRect(z) && typeof z?.id === "string") as ZoomZone[];
+  return (zones as any[]).filter((z) => typeof z?.id === "string" && isValidZoomRect(z)) as ZoomZone[];
 }
 
 /**
