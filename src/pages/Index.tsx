@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useStaffPermissions } from "@/hooks/useStaffPermissions";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   DndContext,
@@ -243,21 +244,25 @@ function LandingSections() {
 // Čistý zaměstnanec/admin (bez pedagogické či žákovské role) nemá na "/" co dělat —
 // pošleme ho do administrace (Můj panel / Přehled).
 function useStaffOnlyRedirect() {
-  const { isLoggedIn, user, loading } = useAuth();
+  const { isLoggedIn, user, loading, realRole } = useAuth();
+  const { isStaff, loading: staffLoading } = useStaffPermissions();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (loading || !isLoggedIn || !user) return;
+    if (loading || staffLoading || !isLoggedIn || !user) return;
     let cancelled = false;
     (async () => {
       const { data, error } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
       if (cancelled || error) return;
       const roles = (data ?? []).map((r) => r.role as string);
       const hasPedagogicalOrStudent = roles.some((r) => ["teacher", "lektor", "user", "rodic"].includes(r));
-      if (!hasPedagogicalOrStudent && roles.length > 0) navigate("/admin", { replace: true });
+      // Bez pedagogické/žákovské role patří zaměstnanci i admini do administrace —
+      // platí i pro uživatele, kteří nemají v user_roles ŽÁDNÝ záznam.
+      const belongsToAdmin = isStaff || realRole === "admin";
+      if (!hasPedagogicalOrStudent && belongsToAdmin) navigate("/admin", { replace: true });
     })();
     return () => { cancelled = true; };
-  }, [loading, isLoggedIn, user, navigate]);
+  }, [loading, staffLoading, isLoggedIn, user, navigate, isStaff, realRole]);
 }
 
 const Index = () => {
