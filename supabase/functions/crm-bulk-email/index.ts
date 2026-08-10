@@ -33,7 +33,13 @@ Deno.serve(async (req) => {
   });
   if (permError || !allowed) return json({ error: "Forbidden" }, 403);
 
-  let payload: { organizationIds?: unknown; tagFilter?: unknown; subject?: unknown; body?: unknown };
+  let payload: {
+    organizationIds?: unknown;
+    tagFilter?: unknown;
+    subject?: unknown;
+    body?: unknown;
+    contactCategory?: unknown;
+  };
   try {
     payload = await req.json();
   } catch {
@@ -66,13 +72,23 @@ Deno.serve(async (req) => {
 
   if (!organizationIds.length) return json({ sent: 0, failed: 0, recipients: 0 });
 
-  const { data: contacts, error: contactError } = await admin
+  const allowedCategories = ["vedeni", "ucitel", "jine"];
+  const contactCategory =
+    typeof payload.contactCategory === "string" && allowedCategories.includes(payload.contactCategory)
+      ? payload.contactCategory
+      : null;
+
+  let contactQuery = admin
     .from("crm_contacts")
     .select("id, name, email")
     .in("organization_id", organizationIds)
-    .eq("is_primary", true)
     .eq("marketing_consent", true)
     .is("unsubscribed_at", null);
+  // Bez kategorie posíláme jen hlavním kontaktům (dosavadní chování).
+  contactQuery = contactCategory
+    ? contactQuery.eq("contact_category", contactCategory)
+    : contactQuery.eq("is_primary", true);
+  const { data: contacts, error: contactError } = await contactQuery;
 
   if (contactError) return json({ error: "Failed to load contacts" }, 500);
 
