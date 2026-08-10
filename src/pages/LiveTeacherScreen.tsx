@@ -5,7 +5,7 @@ import { GameLobby } from "@/components/game/GameLobby";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Monitor, Smartphone, StickyNote, ChevronLeft, ChevronRight, Users, StopCircle, ArrowLeft, Brain, Plus, Pencil, BarChart3, MessageCircleQuestion, Eye, LayoutGrid, Settings, Wrench } from "lucide-react";
+import { Monitor, Smartphone, StickyNote, ChevronLeft, ChevronRight, Users, StopCircle, ArrowLeft, Brain, Plus, Pencil, BarChart3, MessageCircleQuestion, Eye, LayoutGrid, Settings, Wrench, ZoomIn, ZoomOut, Crosshair } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import LiveQuestionsSheet, { useLiveQuestions } from "@/components/game/LiveQuestionsSheet";
@@ -33,6 +33,7 @@ import { LessonBlock } from "@/components/LessonBlockRenderer";
 import { GAME_MODES, getModeDef, type GameMode } from "@/lib/game-modes";
 import type { TeamMode } from "@/lib/game-types";
 import ZoomZoneSurface from "@/components/live/ZoomZoneSurface";
+import SlideCanvas from "@/components/admin/SlideCanvas";
 import { getZoomZones, isValidZoomRect, isZoomableSlide, type ZoomRect } from "@/lib/zoom-zones";
 
 interface SlideData {
@@ -540,6 +541,68 @@ const LiveTeacherScreen = () => {
                 </TooltipTrigger>
                 <TooltipContent>{whiteboardVisible ? "Skrýt tabuli" : "Živá tabule"}</TooltipContent>
               </Tooltip>
+
+              {zoomable && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      size="icon"
+                      variant={activeZoom ? "default" : "outline"}
+                      className="h-9 w-9"
+                      aria-label="Přiblížit"
+                    >
+                      <ZoomIn className="w-4 h-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent align="end" className="w-80 space-y-3">
+                    <p className="text-sm font-semibold">Přiblížení</p>
+                    {zoomZones.length > 0 ? (
+                      <div className="space-y-1.5">
+                        {zoomZones.map((z, i) => {
+                          const isActive =
+                            !!activeZoom &&
+                            Math.abs(activeZoom.x - z.x) < 0.5 &&
+                            Math.abs(activeZoom.y - z.y) < 0.5 &&
+                            Math.abs(activeZoom.width - z.width) < 0.5;
+                          return (
+                            <button
+                              key={z.id}
+                              type="button"
+                              onClick={() => applyZoom({ x: z.x, y: z.y, width: z.width, height: z.height })}
+                              className={`w-full flex items-center gap-2 rounded-lg border-2 px-2 py-1.5 text-left text-xs transition-colors ${
+                                isActive ? "border-primary bg-primary/10" : "border-border hover:bg-muted/50"
+                              }`}
+                            >
+                              <span className="h-5 w-5 shrink-0 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
+                                {i + 1}
+                              </span>
+                              <span className="truncate">{z.label || `Zóna ${i + 1}`}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">
+                        Tento slide nemá uložené zóny přiblížení. Můžete nakreslit výřez přímo teď.
+                      </p>
+                    )}
+                    <Button
+                      size="sm"
+                      variant={drawZoomMode ? "default" : "outline"}
+                      className="w-full gap-1.5"
+                      onClick={() => setDrawZoomMode((v) => !v)}
+                    >
+                      <Crosshair className="w-4 h-4" />
+                      {drawZoomMode ? "Ukončit kreslení výřezu" : "Nakreslit výřez"}
+                    </Button>
+                    {activeZoom && (
+                      <Button size="sm" variant="secondary" className="w-full gap-1.5" onClick={() => applyZoom(null)}>
+                        <ZoomOut className="w-4 h-4" /> Zpět na celý slide
+                      </Button>
+                    )}
+                  </PopoverContent>
+                </Popover>
+              )}
             </div>
           </TooltipProvider>
 
