@@ -2281,6 +2281,7 @@ export type Database = {
           title: string
           updated_at: string
           whiteboard_data: Json
+          zoom_state: Json | null
         }
         Insert: {
           activity_data?: Json
@@ -2296,6 +2297,7 @@ export type Database = {
           title?: string
           updated_at?: string
           whiteboard_data?: Json
+          zoom_state?: Json | null
         }
         Update: {
           activity_data?: Json
@@ -2311,6 +2313,7 @@ export type Database = {
           title?: string
           updated_at?: string
           whiteboard_data?: Json
+          zoom_state?: Json | null
         }
         Relationships: []
       }
