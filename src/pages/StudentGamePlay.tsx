@@ -22,6 +22,7 @@ import WordCloudActivity from "@/components/activities/WordCloudActivity";
 import WordCloudView from "@/components/activities/WordCloudView";
 import QuizActivity from "@/components/activities/QuizActivity";
 import LiveWhiteboard, { WhiteboardData, getSlideStrokes } from "@/components/game/LiveWhiteboard";
+import { isValidZoomRect, isZoomableSlide, zoomStageStyle, type ZoomRect } from "@/lib/zoom-zones";
 import { Lock, Pencil, Hand, ChevronLeft, ChevronRight, MessageCircleQuestion } from "lucide-react";
 import LiveQuestionsSheet from "@/components/game/LiveQuestionsSheet";
 import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
@@ -257,6 +258,13 @@ const StudentGamePlay = () => {
   const qi = pacingMode === "student" ? studentQi : teacherQi;
   const whiteboard: WhiteboardData = ((session as any).whiteboard_data as WhiteboardData) ?? { visible: false, strokesBySlide: {} };
   const currentSlideData = (session?.activity_data as any[])?.[qi];
+  const rawZoom = (session as any).zoom_state;
+  // Zoom follows the teacher only on the slide they are presenting (and only for
+  // explanatory slides). Independent of whiteboard visibility.
+  const liveZoom: ZoomRect | null =
+    qi === teacherQi && isZoomableSlide(currentSlideData) && isValidZoomRect(rawZoom)
+      ? (rawZoom as ZoomRect)
+      : null;
   const isSlideFormat = currentSlideData && currentSlideData.projector !== undefined && !currentSlideData.question;
 
   const setMyStudentIndex = async (next: number) => {
@@ -381,7 +389,11 @@ const StudentGamePlay = () => {
 
           {/* Slide preview — stejný vizuál jako projekce, scalovaný do mobilní šířky */}
           <div className="px-3 pt-3">
-            <SlideCanvas slide={currentSlideData} darkMode />
+            <div className="overflow-hidden rounded-xl">
+              <div style={zoomStageStyle(liveZoom)}>
+                <SlideCanvas slide={currentSlideData} darkMode />
+              </div>
+            </div>
           </div>
 
           {/* Vlastní tempo — navigace mezi slidy */}
@@ -670,6 +682,7 @@ const StudentGamePlay = () => {
                     <WhiteboardOverlay
                       stageW={1600}
                       stageH={900}
+                      zoom={liveZoom}
                       sessionId={sessionId || ""}
                       data={whiteboard}
                       slideIndex={qi}
@@ -750,6 +763,7 @@ const WhiteboardOverlay = ({
   slideIndex,
   interactive = false,
   localOnly = false,
+  zoom = null,
 }: {
   stageW: number;
   stageH: number;
@@ -758,6 +772,7 @@ const WhiteboardOverlay = ({
   slideIndex: number;
   interactive?: boolean;
   localOnly?: boolean;
+  zoom?: ZoomRect | null;
 }) => {
   const frameRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
@@ -802,6 +817,8 @@ const WhiteboardOverlay = ({
           transform: `translate(-50%, -50%) scale(${scale})`,
         }}
       >
+        <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute inset-0" style={zoomStageStyle(zoom)}>
         <LiveWhiteboard
           sessionId={sessionId}
           data={data}
@@ -812,6 +829,8 @@ const WhiteboardOverlay = ({
           simplified
           className={interactive ? "" : "pointer-events-none"}
         />
+        </div>
+        </div>
       </div>
     </div>
   );

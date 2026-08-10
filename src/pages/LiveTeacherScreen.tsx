@@ -5,7 +5,7 @@ import { GameLobby } from "@/components/game/GameLobby";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Monitor, Smartphone, StickyNote, ChevronLeft, ChevronRight, Users, StopCircle, ArrowLeft, Brain, Plus, Pencil, BarChart3, MessageCircleQuestion, Eye, LayoutGrid, Settings, Wrench } from "lucide-react";
+import { Monitor, Smartphone, StickyNote, ChevronLeft, ChevronRight, Users, StopCircle, ArrowLeft, Brain, Plus, Pencil, BarChart3, MessageCircleQuestion, Eye, LayoutGrid, Settings, Wrench, ZoomIn, ZoomOut, Crosshair } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import LiveQuestionsSheet, { useLiveQuestions } from "@/components/game/LiveQuestionsSheet";
@@ -32,6 +32,9 @@ import { useSwipe } from "@/hooks/useSwipe";
 import { LessonBlock } from "@/components/LessonBlockRenderer";
 import { GAME_MODES, getModeDef, type GameMode } from "@/lib/game-modes";
 import type { TeamMode } from "@/lib/game-types";
+import ZoomZoneSurface from "@/components/live/ZoomZoneSurface";
+import SlideCanvas from "@/components/admin/SlideCanvas";
+import { getZoomZones, isValidZoomRect, isZoomableSlide, zoomStageStyle, type ZoomRect } from "@/lib/zoom-zones";
 
 interface SlideData {
   slideId: string;
@@ -70,6 +73,19 @@ const LiveTeacherScreen = () => {
   const whiteboard: WhiteboardData = ((session as any)?.whiteboard_data as WhiteboardData) ?? { visible: false, strokesBySlide: {} };
   const whiteboardVisible = whiteboard.visible;
   const { unansweredCount } = useLiveQuestions(sessionId);
+
+  // ---- Přiblížení (zoom do výřezu) ----
+  const [drawZoomMode, setDrawZoomMode] = useState(false);
+  const zoomable = isZoomableSlide(currentSlide);
+  const zoomZones = getZoomZones(currentSlide);
+  const rawZoom = (session as any)?.zoom_state;
+  const activeZoom: ZoomRect | null =
+    zoomable && isValidZoomRect(rawZoom) ? (rawZoom as ZoomRect) : null;
+
+  const applyZoom = useCallback(async (rect: ZoomRect | null) => {
+    if (!sessionId) return;
+    await supabase.from("game_sessions").update({ zoom_state: rect as any }).eq("id", sessionId);
+  }, [sessionId]);
 
   // Reveal step (progressive bullet reveal). Reset to 1 on slide change.
   const revealStep = typeof settings?.revealStep === "number" ? settings.revealStep : 999;
@@ -120,7 +136,9 @@ const LiveTeacherScreen = () => {
     if (!sessionId) return;
     supabase.from("game_sessions").update({
       settings: { ...(settings || {}), projectorScrollTop: 0, revealStep: 1 },
+      zoom_state: null,
     }).eq("id", sessionId);
+    setDrawZoomMode(false);
     if (projectorPreviewRef.current) {
       projectorPreviewRef.current.scrollTop = 0;
     }
@@ -523,6 +541,68 @@ const LiveTeacherScreen = () => {
                 </TooltipTrigger>
                 <TooltipContent>{whiteboardVisible ? "Skrýt tabuli" : "Živá tabule"}</TooltipContent>
               </Tooltip>
+
+              {zoomable && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      size="icon"
+                      variant={activeZoom ? "default" : "outline"}
+                      className="h-9 w-9"
+                      aria-label="Přiblížit"
+                    >
+                      <ZoomIn className="w-4 h-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent align="end" className="w-80 space-y-3">
+                    <p className="text-sm font-semibold">Přiblížení</p>
+                    {zoomZones.length > 0 ? (
+                      <div className="space-y-1.5">
+                        {zoomZones.map((z, i) => {
+                          const isActive =
+                            !!activeZoom &&
+                            Math.abs(activeZoom.x - z.x) < 0.5 &&
+                            Math.abs(activeZoom.y - z.y) < 0.5 &&
+                            Math.abs(activeZoom.width - z.width) < 0.5;
+                          return (
+                            <button
+                              key={z.id}
+                              type="button"
+                              onClick={() => applyZoom({ x: z.x, y: z.y, width: z.width, height: z.height })}
+                              className={`w-full flex items-center gap-2 rounded-lg border-2 px-2 py-1.5 text-left text-xs transition-colors ${
+                                isActive ? "border-primary bg-primary/10" : "border-border hover:bg-muted/50"
+                              }`}
+                            >
+                              <span className="h-5 w-5 shrink-0 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
+                                {i + 1}
+                              </span>
+                              <span className="truncate">{z.label || `Zóna ${i + 1}`}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">
+                        Tento slide nemá uložené zóny přiblížení. Můžete nakreslit výřez přímo teď.
+                      </p>
+                    )}
+                    <Button
+                      size="sm"
+                      variant={drawZoomMode ? "default" : "outline"}
+                      className="w-full gap-1.5"
+                      onClick={() => setDrawZoomMode((v) => !v)}
+                    >
+                      <Crosshair className="w-4 h-4" />
+                      {drawZoomMode ? "Ukončit kreslení výřezu" : "Nakreslit výřez"}
+                    </Button>
+                    {activeZoom && (
+                      <Button size="sm" variant="secondary" className="w-full gap-1.5" onClick={() => applyZoom(null)}>
+                        <ZoomOut className="w-4 h-4" /> Zpět na celý slide
+                      </Button>
+                    )}
+                  </PopoverContent>
+                </Popover>
+              )}
             </div>
           </TooltipProvider>
 
@@ -889,6 +969,50 @@ const LiveTeacherScreen = () => {
       {currentSlide && (
         <div className="space-y-4">
           <Badge>{SLIDE_TYPE_LABELS[currentSlide.type] || currentSlide.type}</Badge>
+
+          {/* Živé přiblížení – náhled výřezu + kreslení */}
+          {zoomable && (drawZoomMode || activeZoom) && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                  <ZoomIn className="w-4 h-4" />
+                  {drawZoomMode ? "Tažením nakreslete výřez" : "Přiblížení aktivní"}
+                </span>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant={drawZoomMode ? "default" : "outline"}
+                    className="gap-1.5"
+                    onClick={() => setDrawZoomMode((v) => !v)}
+                  >
+                    <Crosshair className="w-3.5 h-3.5" />
+                    {drawZoomMode ? "Hotovo" : "Nakreslit výřez"}
+                  </Button>
+                  {activeZoom && (
+                    <Button size="sm" variant="secondary" className="gap-1.5" onClick={() => applyZoom(null)}>
+                      <ZoomOut className="w-3.5 h-3.5" /> Zpět na celý slide
+                    </Button>
+                  )}
+                </div>
+              </div>
+              <div className="relative">
+                <div className="overflow-hidden rounded-xl">
+                  <div style={drawZoomMode ? undefined : zoomStageStyle(activeZoom)}>
+                    <SlideCanvas slide={currentSlide} darkMode />
+                  </div>
+                </div>
+                <ZoomZoneSurface
+                  zones={drawZoomMode ? zoomZones : []}
+                  drawing={drawZoomMode}
+                  onDraw={(rect) => {
+                    applyZoom(rect);
+                    setDrawZoomMode(false);
+                  }}
+                  onZoneClick={(z) => applyZoom({ x: z.x, y: z.y, width: z.width, height: z.height })}
+                />
+              </div>
+            </div>
+          )}
 
           {/* Projector */}
           <div
@@ -1258,6 +1382,7 @@ const LiveTeacherScreen = () => {
           slides={slides}
           players={players}
           gameCode={gameCode}
+          zoom={activeZoom}
           overlayContent={(
             <LiveWhiteboard
               sessionId={sessionId}

@@ -14,6 +14,7 @@ import { EscapeGameProjector } from "@/components/game/EscapeGameSlide";
 import RaceTrack from "@/components/game/RaceTrack";
 import { useEffect, useState } from "react";
 import { getClockOffset } from "@/lib/clock-sync";
+import { isValidZoomRect, isZoomableSlide, type ZoomRect } from "@/lib/zoom-zones";
 
 const LiveProjectorScreen = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -177,6 +178,9 @@ const LiveProjectorScreen = () => {
   const whiteboard: WhiteboardData = ((session as any).whiteboard_data as WhiteboardData) ?? { visible: false, strokesBySlide: {} };
 
   const scrollTop = (session.settings as any)?.projectorScrollTop ?? 0;
+  const rawZoom = (session as any).zoom_state;
+  const zoom: ZoomRect | null =
+    isZoomableSlide(currentSlide) && isValidZoomRect(rawZoom) ? (rawZoom as ZoomRect) : null;
   const showRaceTrack = !!(session.settings as any)?.showRaceTrack;
 
   // Standalone "teams" slide — fullscreen team layout
@@ -220,6 +224,7 @@ const LiveProjectorScreen = () => {
         players={players}
         gameCode={gameCode}
         scrollTop={scrollTop}
+        zoom={zoom}
         overlayContent={sessionId && getSlideStrokes(whiteboard, currentIndex).length > 0 ? (
           <LiveWhiteboard sessionId={sessionId} data={whiteboard} slideIndex={currentIndex} readOnly className="pointer-events-none" />
         ) : null}

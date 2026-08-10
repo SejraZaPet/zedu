@@ -1,0 +1,1 @@
+ALTER VIEW public.game_sessions_player_view SET (security_invoker = on);
