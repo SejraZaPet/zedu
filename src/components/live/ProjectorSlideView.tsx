@@ -4,6 +4,7 @@ import WallProjectorView from "@/components/activities/WallProjectorView";
 import WordCloudView from "@/components/activities/WordCloudView";
 import { SlideBody } from "@/components/admin/SlideCanvas";
 import { buildAnonymousLabelMap, type GamePlayer } from "@/lib/game-types";
+import { zoomStageStyle, type ZoomRect } from "@/lib/zoom-zones";
 
 const STAGE_WIDTH = 1600;
 const STAGE_HEIGHT = 900;
@@ -18,6 +19,8 @@ interface Props {
   gameCode: string;
   overlayContent?: ReactNode;
   scrollTop?: number;
+  /** Active zoom crop in % of the stage, or null for the full slide. */
+  zoom?: ZoomRect | null;
 }
 
 /**
@@ -25,7 +28,7 @@ interface Props {
  * Used by both LiveProjectorScreen and LiveTeacherScreen (under whiteboard overlay)
  * so that whiteboard strokes align identically in both views.
  */
-const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, slides, players, gameCode, overlayContent, scrollTop }: Props) => {
+const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, slides, players, gameCode, overlayContent, scrollTop, zoom }: Props) => {
   const progressPct = slides.length > 0 ? ((currentIndex + 1) / slides.length) * 100 : 0;
   const anonymousAnswers = !!(session?.settings as any)?.anonymousAnswers;
   const anonymousLabelMap = useMemo(
@@ -75,7 +78,8 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
             transform: `translate(-50%, -50%) scale(${scale})`,
           }}
         >
-          <div className="flex h-full flex-col overflow-hidden relative">
+          <div className="h-full w-full overflow-hidden">
+          <div className="flex h-full flex-col overflow-hidden relative" style={zoomStageStyle(zoom)}>
             <div className="h-2 bg-white/10 shrink-0">
               <div className="h-full bg-purple-400 transition-all duration-500" style={{ width: `${progressPct}%` }} />
             </div>
@@ -194,6 +198,7 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
             </div>
 
             {overlayContent}
+          </div>
           </div>
         </div>
       </div>
