@@ -5935,6 +5935,7 @@ export type Database = {
           title: string
           updated_at: string
           whiteboard_data: Json
+          zoom_state: Json
         }[]
       }
       get_public_content_usage_counts: {
