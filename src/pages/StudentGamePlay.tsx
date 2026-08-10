@@ -763,6 +763,7 @@ const WhiteboardOverlay = ({
   slideIndex,
   interactive = false,
   localOnly = false,
+  zoom = null,
 }: {
   stageW: number;
   stageH: number;
@@ -771,6 +772,7 @@ const WhiteboardOverlay = ({
   slideIndex: number;
   interactive?: boolean;
   localOnly?: boolean;
+  zoom?: ZoomRect | null;
 }) => {
   const frameRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
@@ -815,6 +817,8 @@ const WhiteboardOverlay = ({
           transform: `translate(-50%, -50%) scale(${scale})`,
         }}
       >
+        <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute inset-0" style={zoomStageStyle(zoom)}>
         <LiveWhiteboard
           sessionId={sessionId}
           data={data}
@@ -825,6 +829,8 @@ const WhiteboardOverlay = ({
           simplified
           className={interactive ? "" : "pointer-events-none"}
         />
+        </div>
+        </div>
       </div>
     </div>
   );
