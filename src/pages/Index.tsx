@@ -238,7 +238,28 @@ function LandingSections() {
   );
 }
 
+// Čistý zaměstnanec/admin (bez pedagogické či žákovské role) nemá na "/" co dělat —
+// pošleme ho do administrace (Můj panel / Přehled).
+function useStaffOnlyRedirect() {
+  const { isLoggedIn, user, loading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (loading || !isLoggedIn || !user) return;
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
+      if (cancelled || error) return;
+      const roles = (data ?? []).map((r) => r.role as string);
+      const hasPedagogicalOrStudent = roles.some((r) => ["teacher", "lektor", "user", "rodic"].includes(r));
+      if (!hasPedagogicalOrStudent && roles.length > 0) navigate("/admin", { replace: true });
+    })();
+    return () => { cancelled = true; };
+  }, [loading, isLoggedIn, user, navigate]);
+}
+
 const Index = () => {
+  useStaffOnlyRedirect();
   return (
     <LandingEditModeProvider>
       <div className="min-h-screen bg-background">
