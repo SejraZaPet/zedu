@@ -6,6 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+const AUDIENCES = [
+  { value: "all", label: "Všem (hlavní kontakty)" },
+  { value: "vedeni", label: "Jen vedení" },
+  { value: "ucitel", label: "Jen učitelům" },
+  { value: "jine", label: "Jen ostatním" },
+] as const;
 
 interface Props {
   open: boolean;
@@ -16,6 +24,7 @@ interface Props {
 const CrmBulkEmailDialog = ({ open, onOpenChange, organizationIds }: Props) => {
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
+  const [audience, setAudience] = useState<string>("all");
   const [recipientCount, setRecipientCount] = useState<number | null>(null);
   const [sending, setSending] = useState(false);
 
@@ -27,16 +36,17 @@ const CrmBulkEmailDialog = ({ open, onOpenChange, organizationIds }: Props) => {
       return;
     }
     (async () => {
-      const { count } = await supabase
+      let q = supabase
         .from("crm_contacts")
         .select("id", { count: "exact", head: true })
         .in("organization_id", organizationIds)
-        .eq("is_primary", true)
         .eq("marketing_consent", true)
         .is("unsubscribed_at", null);
+      q = audience === "all" ? q.eq("is_primary", true) : q.eq("contact_category", audience);
+      const { count } = await q;
       setRecipientCount(count ?? 0);
     })();
-  }, [open, organizationIds.join(",")]);
+  }, [open, audience, organizationIds.join(",")]);
 
   const send = async () => {
     if (!subject.trim() || !body.trim()) {
@@ -45,7 +55,12 @@ const CrmBulkEmailDialog = ({ open, onOpenChange, organizationIds }: Props) => {
     }
     setSending(true);
     const { data, error } = await supabase.functions.invoke("crm-bulk-email", {
-      body: { organizationIds, subject: subject.trim(), body: body.trim() },
+      body: {
+        organizationIds,
+        subject: subject.trim(),
+        body: body.trim(),
+        ...(audience === "all" ? {} : { contactCategory: audience }),
+      },
     });
     setSending(false);
     if (error) {
@@ -75,6 +90,15 @@ const CrmBulkEmailDialog = ({ open, onOpenChange, organizationIds }: Props) => {
             Příjemců s aktivním souhlasem:{" "}
             <span className="font-medium">{recipientCount === null ? "…" : recipientCount}</span>
           </p>
+          <div>
+            <Label>Komu poslat</Label>
+            <Select value={audience} onValueChange={setAudience}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {AUDIENCES.map((a) => <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
           <div>
             <Label>Předmět *</Label>
             <Input value={subject} onChange={(e) => setSubject(e.target.value)} />

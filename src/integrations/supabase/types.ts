@@ -1689,6 +1689,7 @@ export type Database = {
       }
       crm_contacts: {
         Row: {
+          contact_category: string
           created_at: string
           email: string | null
           id: string
@@ -1702,6 +1703,7 @@ export type Database = {
           unsubscribed_at: string | null
         }
         Insert: {
+          contact_category?: string
           created_at?: string
           email?: string | null
           id?: string
@@ -1715,6 +1717,7 @@ export type Database = {
           unsubscribed_at?: string | null
         }
         Update: {
+          contact_category?: string
           created_at?: string
           email?: string | null
           id?: string

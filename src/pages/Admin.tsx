@@ -29,6 +29,7 @@ import AcademyCoursesManager from "@/components/admin/AcademyCoursesManager";
 import AcademyEvidenceReviewManager from "@/components/admin/AcademyEvidenceReviewManager";
 import AcademyPathwaysManager from "@/components/admin/AcademyPathwaysManager";
 import SchoolLicensesManager from "@/components/admin/SchoolLicensesManager";
+import UnassignedTeachersManager from "@/components/admin/UnassignedTeachersManager";
 import CrmManager from "@/components/admin/CrmManager";
 import MarketplaceEconomicsManager from "@/components/admin/MarketplaceEconomicsManager";
 import MyStaffPanel from "@/components/admin/MyStaffPanel";
@@ -43,6 +44,7 @@ const adminTabs = [
   { id: "crm", label: "CRM", icon: Contact, module: "crm" },
   { id: "stats", label: "Statistiky", icon: Activity, module: "stats" },
   { id: "licenses", label: "Spolupracující organizace", icon: Award, module: "school_licenses" },
+  { id: "unassigned-teachers", label: "Nepřiřazení učitelé", icon: UserSquare2, module: "school_licenses" },
   { id: "market-economics", label: "Ekonomika ZEduMarket", icon: Coins, module: "billing" },
 
   { id: "users", label: "Uživatelé", icon: Users, module: "users" },
@@ -73,12 +75,12 @@ const teacherTabs = [
   { id: "help", label: "Nápověda", icon: HelpCircle, module: null },
 ] as const;
 
-type Tab = "dashboard" | "my-panel" | "stats" | "textbooks" | "lessons" | "outline" | "mcq" | "matching" | "slide-edit" | "video-ai" | "subjects" | "users" | "classes" | "results" | "help" | "notifications" | "licenses" | "audit" | "templates" | "landing" | "avatars" | "textbook-overview" | "academy" | "academy-pathways" | "academy-evidence" | "crm" | "market-economics";
+type Tab = "dashboard" | "my-panel" | "stats" | "textbooks" | "lessons" | "outline" | "mcq" | "matching" | "slide-edit" | "video-ai" | "subjects" | "users" | "classes" | "results" | "help" | "notifications" | "licenses" | "audit" | "templates" | "landing" | "avatars" | "textbook-overview" | "academy" | "academy-pathways" | "academy-evidence" | "crm" | "market-economics" | "unassigned-teachers";
 
 /** Dvouúrovňová navigace administrace. `help` a `dashboard` řešíme mimo/uvnitř kategorií. */
 const adminGroups: { id: string; label: string; tabs: string[] }[] = [
   { id: "overview", label: "Přehled", tabs: ["dashboard", "stats"] },
-  { id: "sales", label: "Prodej a zákazníci", tabs: ["crm", "licenses", "market-economics"] },
+  { id: "sales", label: "Prodej a zákazníci", tabs: ["crm", "licenses", "unassigned-teachers", "market-economics"] },
   { id: "content", label: "Vzdělávací obsah", tabs: ["textbook-overview", "templates"] },
   { id: "academy", label: "ZEdu Akademie", tabs: ["academy", "academy-pathways", "academy-evidence"] },
   { id: "appearance", label: "Vzhled webu", tabs: ["landing", "avatars"] },
@@ -294,6 +296,7 @@ const Admin = () => {
         {activeTab === "results" && isTeacher && <ClassResultsManager />}
         {activeTab === "notifications" && !isTeacher && <NotificationsManager />}
         {activeTab === "licenses" && !isTeacher && <SchoolLicensesManager />}
+        {activeTab === "unassigned-teachers" && !isTeacher && <UnassignedTeachersManager />}
         {activeTab === "audit" && !isTeacher && <AuditLogViewer />}
         {activeTab === "templates" && !isTeacher && <TextbookTemplatesManager />}
         {activeTab === "landing" && !isTeacher && <LandingPageManager />}
