@@ -21,6 +21,13 @@ import {
 } from "@/lib/staff-modules";
 import type { CrmOrganization, CrmTag } from "./CrmManager";
 import RelatedTasksCard from "./RelatedTasksCard";
+import SchoolTeachersCard from "./SchoolTeachersCard";
+
+export const CRM_CONTACT_CATEGORIES = [
+  { value: "vedeni", label: "Vedení" },
+  { value: "ucitel", label: "Učitel" },
+  { value: "jine", label: "Jiné" },
+] as const;
 
 interface Contact {
   id: string;
@@ -32,6 +39,7 @@ interface Contact {
   marketing_consent: boolean;
   unsubscribed_at: string | null;
   notes: string | null;
+  contact_category: string | null;
 }
 
 interface Interaction {
@@ -63,6 +71,7 @@ const autoInitials = (name: string) =>
 const emptyContact = {
   name: "",
   position: "",
+  contact_category: "jine",
   email: "",
   phone: "",
   is_primary: false,
@@ -175,6 +184,7 @@ const CrmOrganizationDetail = ({ organizationId, tags, canEdit, onBack }: Props)
       position: contactForm.position || null,
       email: contactForm.email || null,
       phone: contactForm.phone || null,
+      contact_category: contactForm.contact_category || "jine",
       is_primary: contactForm.is_primary,
       marketing_consent: contactForm.marketing_consent,
       notes: contactForm.notes || null,
@@ -221,6 +231,9 @@ const CrmOrganizationDetail = ({ organizationId, tags, canEdit, onBack }: Props)
     load();
   };
 
+  const isLinked = !!org?.linked_school_id;
+  const baseDisabled = !canEdit || isLinked;
+
   const meta = useMemo(() => statusMeta(org?.status ?? "novy"), [org?.status]);
 
   if (loading) return <p className="text-sm text-muted-foreground">Načítání…</p>;
@@ -236,6 +249,11 @@ const CrmOrganizationDetail = ({ organizationId, tags, canEdit, onBack }: Props)
         <div>
           <h2 className="font-heading text-xl">{org.name}</h2>
           <p className="text-sm text-muted-foreground">{CRM_TYPES.find((t) => t.value === org.type)?.label}</p>
+          {isLinked && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Propojeno se školou – základní údaje se upravují v sekci Spolupracující organizace.
+            </p>
+          )}
         </div>
 
         <div className="grid gap-3 md:grid-cols-3">
@@ -250,7 +268,7 @@ const CrmOrganizationDetail = ({ organizationId, tags, canEdit, onBack }: Props)
           </div>
           <div>
             <Label>Kraj</Label>
-            <Select value={org.region ?? ""} onValueChange={(v) => patchOrg({ region: v })} disabled={!canEdit}>
+            <Select value={org.region ?? ""} onValueChange={(v) => patchOrg({ region: v })} disabled={baseDisabled}>
               <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
               <SelectContent>
                 {CZ_REGIONS.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
@@ -268,15 +286,15 @@ const CrmOrganizationDetail = ({ organizationId, tags, canEdit, onBack }: Props)
           </div>
           <div>
             <Label>IČO</Label>
-            <Input defaultValue={org.ico ?? ""} disabled={!canEdit} onBlur={(e) => patchOrg({ ico: e.target.value || null })} />
+            <Input defaultValue={org.ico ?? ""} disabled={baseDisabled} onBlur={(e) => patchOrg({ ico: e.target.value || null })} />
           </div>
           <div>
             <Label>Web</Label>
-            <Input defaultValue={org.website ?? ""} disabled={!canEdit} onBlur={(e) => patchOrg({ website: e.target.value || null })} />
+            <Input defaultValue={org.website ?? ""} disabled={baseDisabled} onBlur={(e) => patchOrg({ website: e.target.value || null })} />
           </div>
           <div>
             <Label>Adresa</Label>
-            <Input defaultValue={org.address ?? ""} disabled={!canEdit} onBlur={(e) => patchOrg({ address: e.target.value || null })} />
+            <Input defaultValue={org.address ?? ""} disabled={baseDisabled} onBlur={(e) => patchOrg({ address: e.target.value || null })} />
           </div>
           <div className="md:col-span-3">
             <Label>Propojená škola v systému</Label>
@@ -350,7 +368,12 @@ const CrmOrganizationDetail = ({ organizationId, tags, canEdit, onBack }: Props)
                     {c.is_primary && <span className="ml-2 text-[11px] px-1.5 py-0.5 rounded bg-primary/10 text-primary">hlavní</span>}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {[c.position, c.email, c.phone].filter(Boolean).join(" · ") || "—"}
+                    {[
+                      CRM_CONTACT_CATEGORIES.find((k) => k.value === (c.contact_category ?? "jine"))?.label,
+                      c.position,
+                      c.email,
+                      c.phone,
+                    ].filter(Boolean).join(" · ")}
                   </p>
                   <p className="text-xs mt-0.5">
                     {c.unsubscribed_at
@@ -367,6 +390,7 @@ const CrmOrganizationDetail = ({ organizationId, tags, canEdit, onBack }: Props)
                       setContactForm({
                         name: c.name,
                         position: c.position ?? "",
+                        contact_category: c.contact_category ?? "jine",
                         email: c.email ?? "",
                         phone: c.phone ?? "",
                         is_primary: c.is_primary,
@@ -449,6 +473,8 @@ const CrmOrganizationDetail = ({ organizationId, tags, canEdit, onBack }: Props)
         )}
       </Card>
 
+      {org.linked_school_id && <SchoolTeachersCard schoolId={org.linked_school_id} />}
+
       <RelatedTasksCard organizationId={organizationId} canEdit={canEdit} />
 
 
@@ -464,6 +490,18 @@ const CrmOrganizationDetail = ({ organizationId, tags, canEdit, onBack }: Props)
               <div>
                 <Label>Pozice</Label>
                 <Input value={contactForm.position} onChange={(e) => setContactForm({ ...contactForm, position: e.target.value })} />
+              </div>
+              <div>
+                <Label>Kategorie kontaktu</Label>
+                <Select
+                  value={contactForm.contact_category}
+                  onValueChange={(v) => setContactForm({ ...contactForm, contact_category: v })}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {CRM_CONTACT_CATEGORIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label>Telefon</Label>
