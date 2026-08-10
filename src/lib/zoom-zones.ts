@@ -6,6 +6,8 @@
  * projector (1600x900 stage) and student phones.
  */
 
+import type { CSSProperties } from "react";
+
 export interface ZoomRect {
   x: number;
   y: number;
@@ -53,8 +55,8 @@ export function getZoomZones(slide: any): ZoomZone[] {
  * CSS transform that maps the given rect onto the full stage.
  * Apply to an element that fills the stage; parent must clip (overflow hidden).
  */
-export function zoomStageStyle(rect: ZoomRect | null | undefined): React.CSSProperties {
-  const base: React.CSSProperties = {
+export function zoomStageStyle(rect: ZoomRect | null | undefined): CSSProperties {
+  const base: CSSProperties = {
     transformOrigin: "0 0",
     transition: "transform 500ms cubic-bezier(0.4, 0, 0.2, 1)",
     willChange: "transform",
