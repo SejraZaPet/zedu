@@ -89,3 +89,16 @@ export function slideBackgroundOverride(slide: any): string | null {
   const color = slide?.backgroundOverride?.color;
   return typeof color === "string" && color ? color : null;
 }
+
+/** Paleta barev pozadí slidu nabízená v nastavení slidu. */
+export const SLIDE_BACKGROUND_COLORS = [
+  "#0F172A",
+  "#111111",
+  "#1F2937",
+  "#FFFFFF",
+  "#F8FAFC",
+  "#FEF3C7",
+  "#E0F2FE",
+  "#DCFCE7",
+  "#FCE7F3",
+];
