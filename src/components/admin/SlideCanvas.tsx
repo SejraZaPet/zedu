@@ -56,6 +56,7 @@ function EditableText({
   placeholder,
   multiline,
   html,
+  style,
 }: {
   value: string;
   onCommit: (v: string) => void;
@@ -64,6 +65,7 @@ function EditableText({
   placeholder?: string;
   multiline?: boolean;
   html?: boolean;
+  style?: React.CSSProperties;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const sanitizedValue = html ? DOMPurify.sanitize(value || "") : value || "";
@@ -80,10 +82,11 @@ function EditableText({
       html ? (
         <div
           className={className}
+          style={style}
           dangerouslySetInnerHTML={{ __html: sanitizedValue || (placeholder ? `<span class="opacity-40">${placeholder}</span>` : "") }}
         />
       ) : (
-        <div className={className} style={{ whiteSpace: multiline ? "pre-wrap" : undefined }}>
+        <div className={className} style={{ whiteSpace: multiline ? "pre-wrap" : undefined, ...style }}>
           {value || (placeholder ? <span className="opacity-40">{placeholder}</span> : null)}
         </div>
       )
@@ -96,6 +99,7 @@ function EditableText({
       contentEditable
       suppressContentEditableWarning
       data-placeholder={placeholder || ""}
+      style={style}
       onBlur={(e) => onCommit(html ? e.currentTarget.innerHTML : e.currentTarget.innerText)}
       onKeyDown={(e) => {
         if (!multiline && e.key === "Enter") {
@@ -389,7 +393,8 @@ export function SlideBody({
   onChangeHeroImage,
 }: BodyProps) {
   const theme = getPresentationTheme(themeId ?? slide?.themeId);
-  const isDark = themeId ?? slide?.themeId ? theme.isDark : darkMode;
+  const explicitTheme = themeId ?? slide?.themeId;
+  const isDark = explicitTheme ? theme.isDark : darkMode;
   const layout: SlideLayout = (slide?.layout as SlideLayout) || "full";
   const headline: string = slide?.projector?.headline || "";
   const fontScale = slide?.projector?.fontScale || 1;
