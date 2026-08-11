@@ -1221,9 +1221,14 @@ const LiveTeacherScreen = () => {
                         })
                       )}
                     </div>
+                    <AiClusterButton
+                      texts={wallResponses.map(r => String((r.answer as any)?.text || "").trim()).filter(Boolean)}
+                      question={(currentSlide as any).activitySpec?.question || currentSlide.title}
+                    />
                   </div>
                 );
               })()}
+
 
               {(currentSlide as any).activitySpec?.activityType === "poll" && (() => {
                 const pollPublished =
