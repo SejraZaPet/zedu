@@ -64,7 +64,7 @@ const AiClusterButton = ({ texts, question, label = "AI shrnutí odpovědí" }: 
 
       {clusters && (
         <div className="space-y-2 border border-border rounded-md p-3 bg-muted/30">
-          <AiContentBadge />
+          <AiContentBadge aiGenerated />
           {clusters.length === 0 ? (
             <p className="text-xs text-muted-foreground">AI nenašla žádné skupiny.</p>
           ) : (
