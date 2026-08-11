@@ -1325,9 +1325,18 @@ const LiveTeacherScreen = () => {
                         />
                       </div>
                     )}
+                    <AiClusterButton
+                      texts={responses
+                        .filter(r => r.question_index === currentIndex)
+                        .map(r => String((r.answer as any)?.text || "").trim())
+                        .filter(Boolean)}
+                      question={(currentSlide as any).activitySpec?.question}
+                      label="AI shrnutí pojmů"
+                    />
                   </div>
                 );
               })()}
+
             </div>
           )}
 
