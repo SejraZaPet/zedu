@@ -32,6 +32,7 @@ import { useSwipe } from "@/hooks/useSwipe";
 import { LessonBlock } from "@/components/LessonBlockRenderer";
 import { GAME_MODES, getModeDef, type GameMode } from "@/lib/game-modes";
 import type { TeamMode } from "@/lib/game-types";
+import AiClusterButton from "@/components/live/AiClusterButton";
 import ZoomZoneSurface from "@/components/live/ZoomZoneSurface";
 import SlideCanvas from "@/components/admin/SlideCanvas";
 import { getZoomZones, isValidZoomRect, isZoomableSlide, zoomStageStyle, type ZoomRect } from "@/lib/zoom-zones";
