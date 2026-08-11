@@ -17,6 +17,7 @@ import CrosswordActivity from "@/components/activities/CrosswordActivity";
 import WallActivity from "@/components/activities/WallActivity";
 import { LiveGameButton } from "@/components/game/LiveGameButton";
 import type { GameQuestion } from "@/lib/game-types";
+import { getSlideIcon } from "@/lib/slide-icons";
 const extractYouTubeId = (url: string): string | null => {
   if (!url) return null;
   const m = url.match(
@@ -82,7 +83,20 @@ export const LessonBlock = ({ block, blockIndex, onActivityComplete, isTeacher }
         </ul>
       );
     }
-    case "image":
+    case "image": {
+      const IconCmp = !p.url && p.icon ? getSlideIcon(p.icon) : null;
+      if (IconCmp) {
+        const iconSize = p.width === "small" ? 48 : p.width === "medium" ? 96 : 144;
+        return (
+          <figure className={p.alignment === "left" ? "text-left" : p.alignment === "right" ? "text-right" : "text-center"}>
+            <IconCmp
+              className="inline-block"
+              style={{ color: p.iconColor || "currentColor", width: iconSize, height: iconSize }}
+            />
+            {p.caption && <figcaption className="text-sm text-muted-foreground mt-2">{p.caption}</figcaption>}
+          </figure>
+        );
+      }
       return (
         <figure className={`${p.alignment === "center" ? "text-center" : p.alignment === "right" ? "text-right" : ""}`}>
           <img
@@ -93,6 +107,7 @@ export const LessonBlock = ({ block, blockIndex, onActivityComplete, isTeacher }
           {p.caption && <figcaption className="text-sm text-muted-foreground mt-2">{p.caption}</figcaption>}
         </figure>
       );
+    }
     case "image_text":
       return (
         <div className={`flex flex-col md:flex-row gap-6 ${p.imagePosition === "right" ? "md:flex-row-reverse" : ""}`}>
