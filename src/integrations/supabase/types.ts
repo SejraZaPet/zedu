@@ -2700,6 +2700,7 @@ export type Database = {
           slides: Json
           subject: string
           teacher_id: string
+          theme_id: string | null
           title: string
           updated_at: string
         }
@@ -2720,6 +2721,7 @@ export type Database = {
           slides?: Json
           subject?: string
           teacher_id: string
+          theme_id?: string | null
           title?: string
           updated_at?: string
         }
@@ -2740,6 +2742,7 @@ export type Database = {
           slides?: Json
           subject?: string
           teacher_id?: string
+          theme_id?: string | null
           title?: string
           updated_at?: string
         }
@@ -4989,6 +4992,7 @@ export type Database = {
           sort_order: number
           status: string
           textbook_id: string
+          theme_id: string | null
           title: string
           updated_at: string
         }
@@ -5003,6 +5007,7 @@ export type Database = {
           sort_order?: number
           status?: string
           textbook_id: string
+          theme_id?: string | null
           title: string
           updated_at?: string
         }
@@ -5017,6 +5022,7 @@ export type Database = {
           sort_order?: number
           status?: string
           textbook_id?: string
+          theme_id?: string | null
           title?: string
           updated_at?: string
         }
@@ -5213,6 +5219,7 @@ export type Database = {
           scheduled_publish_at: string | null
           sort_order: number
           status: string
+          theme_id: string | null
           title: string
           topic_id: string
           updated_at: string
@@ -5227,6 +5234,7 @@ export type Database = {
           scheduled_publish_at?: string | null
           sort_order?: number
           status?: string
+          theme_id?: string | null
           title: string
           topic_id: string
           updated_at?: string
@@ -5241,6 +5249,7 @@ export type Database = {
           scheduled_publish_at?: string | null
           sort_order?: number
           status?: string
+          theme_id?: string | null
           title?: string
           topic_id?: string
           updated_at?: string
