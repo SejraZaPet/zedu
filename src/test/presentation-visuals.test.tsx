@@ -61,7 +61,7 @@ describe("per-block typography a animace", () => {
   });
 
   it("vlastní pozadí slidu přepíše téma", () => {
-    const { container } = render(<SlideCanvasDefault slide={slide} themeId="minimal" />);
+    const { container } = render(<SlideCanvasDefault slide={slide} themeId="minimal" fit={false} />);
     expect(container.innerHTML).toContain("rgb(18, 52, 86)");
   });
 });
