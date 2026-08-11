@@ -55,6 +55,9 @@ const ImageBlock = ({ block, onChange }: Props) => {
         <MediaPickerDialog
           imageOnly
           onPick={(url) => onChange({ ...block.props, url })}
+          onPickPhotoMeta={({ alt }) => {
+            if (alt && !block.props.alt) onChange({ ...block.props, alt });
+          }}
           trigger={
             <Button size="sm" variant="outline">
               <FolderOpen className="w-4 h-4 mr-1" /> Z knihovny
@@ -77,6 +80,15 @@ const ImageBlock = ({ block, onChange }: Props) => {
           </div>
         );
       })()}
+      <div>
+        <Label className="text-xs">Alternativní text (pro čtečky obrazovky)</Label>
+        <Input
+          value={block.props.alt || ""}
+          onChange={(e) => onChange({ ...block.props, alt: e.target.value })}
+          placeholder="Krátký popis, co je na obrázku"
+          className="mt-1"
+        />
+      </div>
       <div className="flex gap-2">
         <div className="flex-1">
           <Label className="text-xs">Popisek</Label>
