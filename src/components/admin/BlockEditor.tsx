@@ -48,8 +48,14 @@ import {
   Sparkles as IconSparkles,
   ClipboardList as IconClipboard,
   Link2 as IconLink,
+  Square as IconSquare,
+  BarChart3 as IconBarChart,
+  Sigma as IconSigma,
+  Volume2 as IconVolume2,
+  Video as IconVideo,
   ArrowRightLeft,
   Loader2,
+
 } from "lucide-react";
 import {
   FORMAT_TARGETS,
@@ -80,6 +86,11 @@ import GalleryBlock from "./block-editors/GalleryBlock";
 import SummaryBlock from "./block-editors/SummaryBlock";
 import ActivityBlock from "./block-editors/ActivityBlock";
 import HierarchyBlock from "./block-editors/HierarchyBlock";
+import ShapeBlock from "./block-editors/ShapeBlock";
+import ChartBlock from "./block-editors/ChartBlock";
+import FormulaBlock from "./block-editors/FormulaBlock";
+import AudioBlock from "./block-editors/AudioBlock";
+import VideoBlock from "./block-editors/VideoBlock";
 
 // --- Categorization: card visuals (Step 1) ---
 type CategoryKey = "text" | "media" | "structure" | "interactive";
@@ -88,6 +99,8 @@ const CARD_CATEGORY: Record<string, CategoryKey> = {
   heading: "text", paragraph: "text", bullet_list: "text",
   quote: "text", callout: "text", summary: "text",
   image: "media", image_text: "media", gallery: "media", youtube: "media",
+  audio: "media", video: "media",
+  shape: "structure", chart: "structure", formula: "text",
   card_grid: "structure", table: "structure", two_column: "structure",
   hierarchy: "structure", accordion: "structure", divider: "structure",
   activity: "interactive", lesson_link: "interactive",
@@ -123,13 +136,18 @@ const BLOCK_ICON: Record<string, React.ComponentType<{ className?: string; style
   divider: IconMinus,
   activity: IconSparkles,
   lesson_link: IconLink,
+  shape: IconSquare,
+  chart: IconBarChart,
+  formula: IconSigma,
+  audio: IconVolume2,
+  video: IconVideo,
 };
 
 // --- Add-menu grouping (Step 2) ---
 const MENU_GROUPS: { key: CategoryKey; label: string; types: string[]; accent?: boolean }[] = [
-  { key: "text", label: "Text", types: ["heading", "paragraph", "bullet_list", "quote", "callout"] },
-  { key: "media", label: "Média", types: ["image", "image_text", "gallery", "youtube"] },
-  { key: "structure", label: "Struktura a rozložení", types: ["card_grid", "table", "two_column", "hierarchy", "accordion", "divider"] },
+  { key: "text", label: "Text", types: ["heading", "paragraph", "bullet_list", "quote", "callout", "formula"] },
+  { key: "media", label: "Média", types: ["image", "image_text", "gallery", "youtube", "video", "audio"] },
+  { key: "structure", label: "Struktura a rozložení", types: ["card_grid", "table", "two_column", "hierarchy", "accordion", "shape", "chart", "divider"] },
   { key: "interactive", label: "Interaktivní a AI", types: ["activity", "summary", "lesson_link"], accent: true },
 ];
 
@@ -176,6 +194,11 @@ const BlockRenderer = React.memo(({ block, onChange }: { block: Block; onChange:
     case "summary": return <SummaryBlock block={block} onChange={onChange} />;
     case "activity": return <ActivityBlock block={block} onChange={onChange} />;
     case "hierarchy": return <HierarchyBlock block={block} onChange={onChange} />;
+    case "shape": return <ShapeBlock block={block} onChange={onChange} />;
+    case "chart": return <ChartBlock block={block} onChange={onChange} />;
+    case "formula": return <FormulaBlock block={block} onChange={onChange} />;
+    case "audio": return <AudioBlock block={block} onChange={onChange} />;
+    case "video": return <VideoBlock block={block} onChange={onChange} />;
     default: return <p className="text-muted-foreground text-sm">Neznámý blok</p>;
   }
 });

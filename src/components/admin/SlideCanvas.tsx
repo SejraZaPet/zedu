@@ -1,5 +1,5 @@
-import { useRef, useState, useEffect } from "react";
-import { ArrowUp, ArrowDown, Trash2, ImageIcon } from "lucide-react";
+import { useRef, useState, useEffect, useCallback } from "react";
+import { ArrowUp, ArrowDown, Trash2, ImageIcon, GripVertical } from "lucide-react";
 import { LessonBlock } from "@/components/LessonBlockRenderer";
 import type { Block } from "@/lib/textbook-config";
 import { MediaPickerDialog } from "@/components/media/MediaPickerDialog";
@@ -44,6 +44,11 @@ interface BodyProps {
   onMoveBlock?: (blockId: string, dir: "up" | "down") => void;
   onDeleteBlock?: (blockId: string) => void;
   onChangeHeroImage?: (url: string) => void;
+  /** Přesun bloku přetažením: cílem je index v rámci celého slidu. */
+  onReorderBlock?: (blockId: string, toIndex: number) => void;
+  /** ID právě vybraného bloku (viditelný rámeček). */
+  selectedBlockId?: string | null;
+  onSelectBlock?: (blockId: string) => void;
 }
 
 interface CanvasProps extends BodyProps {
@@ -121,22 +126,47 @@ function BlockShell({
   editable,
   index,
   total,
+  blockId,
+  selected,
+  onSelect,
   onMove,
   onDelete,
+  onDragStart,
   children,
 }: {
   editable?: boolean;
   index: number;
   total: number;
+  blockId: string;
+  selected?: boolean;
+  onSelect?: () => void;
   onMove?: (dir: "up" | "down") => void;
   onDelete?: () => void;
+  onDragStart?: (e: React.PointerEvent) => void;
   children: React.ReactNode;
 }) {
   if (!editable) return <>{children}</>;
   return (
-    <div className="group relative rounded-lg hover:bg-white/5 transition-colors p-1 -m-1">
+    <div
+      data-slide-block-id={blockId}
+      onMouseDown={onSelect}
+      className={`group relative rounded-lg p-1 -m-1 transition-colors ${
+        selected ? "ring-2 ring-primary bg-white/10" : "ring-1 ring-transparent hover:bg-white/5"
+      }`}
+    >
       {children}
-      <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 bg-background/90 border border-border rounded-md shadow-sm p-0.5">
+      {onDragStart && (
+        <button
+          type="button"
+          onPointerDown={onDragStart}
+          title="Přetáhnout pro změnu pořadí"
+          aria-label="Přetáhnout blok"
+          className="absolute -left-7 top-1 cursor-grab touch-none rounded bg-background/90 p-1 opacity-0 shadow-sm transition-opacity group-hover:opacity-100"
+        >
+          <GripVertical className="h-3.5 w-3.5 text-foreground" />
+        </button>
+      )}
+      <div className={`absolute top-1 right-1 transition-opacity flex gap-1 bg-background/90 border border-border rounded-md shadow-sm p-0.5 ${selected ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}>
         <button
           type="button"
           disabled={index === 0}
@@ -165,6 +195,75 @@ function BlockShell({
         </button>
       </div>
     </div>
+  );
+}
+
+/** Obrázek na slidu s plynulou změnou velikosti tažením za pravý dolní roh. */
+function ResizableSlideImage({
+  block,
+  editable,
+  onChange,
+}: {
+  block: Block;
+  editable?: boolean;
+  onChange?: (patch: (b: Block) => Block) => void;
+}) {
+  const p = block.props || {};
+  const presetWidth = p.width === "small" ? 420 : p.width === "medium" ? 760 : 1200;
+  const width: number = Number(p.widthPx) > 0 ? Number(p.widthPx) : presetWidth;
+  const align = p.alignment || "center";
+  const wrapperAlign = align === "left" ? "mr-auto" : align === "right" ? "ml-auto" : "mx-auto";
+  const dragRef = useRef<{ startX: number; startW: number } | null>(null);
+
+  const onPointerMove = useCallback((e: PointerEvent) => {
+    const st = dragRef.current;
+    if (!st || !onChange) return;
+    const next = Math.max(120, Math.min(1500, st.startW + (e.clientX - st.startX)));
+    onChange((b) => ({ ...b, props: { ...b.props, widthPx: Math.round(next) } }));
+  }, [onChange]);
+
+  const stopDrag = useCallback(() => {
+    dragRef.current = null;
+    window.removeEventListener("pointermove", onPointerMove);
+    window.removeEventListener("pointerup", stopDrag);
+  }, [onPointerMove]);
+
+  return (
+    <figure className={`relative ${wrapperAlign}`} style={{ width }}>
+      <img
+        src={p.url}
+        alt={p.alt || p.caption || ""}
+        className="w-full rounded-[var(--slide-radius,0.75rem)] object-contain"
+        draggable={false}
+      />
+      {p.caption && <figcaption className="mt-2 text-center text-lg opacity-70">{p.caption}</figcaption>}
+      {editable && (
+        <span
+          role="slider"
+          aria-label="Změnit velikost obrázku"
+          aria-valuenow={width}
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+              e.preventDefault();
+              const delta = e.key === "ArrowRight" ? 40 : -40;
+              onChange?.((b) => ({
+                ...b,
+                props: { ...b.props, widthPx: Math.max(120, Math.min(1500, width + delta)) },
+              }));
+            }
+          }}
+          onPointerDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dragRef.current = { startX: e.clientX, startW: width };
+            window.addEventListener("pointermove", onPointerMove);
+            window.addEventListener("pointerup", stopDrag);
+          }}
+          className="absolute -bottom-2 -right-2 h-6 w-6 cursor-nwse-resize touch-none rounded-full border-2 border-primary bg-background shadow"
+        />
+      )}
+    </figure>
   );
 }
 
@@ -333,7 +432,22 @@ function EditableBlock({
     }
   }
 
-  // Fallback (image, table, accordion, etc.): use existing renderer
+  if (block.type === "image" && block.props?.url) {
+    return (
+      <div
+        className={asCard ? "bg-white/10 p-4 border border-white/15" : ""}
+        style={asCard ? { borderRadius: "var(--slide-radius, 0.75rem)" } : undefined}
+      >
+        <ResizableSlideImage
+          block={block}
+          editable={editable}
+          onChange={(patch) => update(patch)}
+        />
+      </div>
+    );
+  }
+
+  // Fallback (table, accordion, etc.): use existing renderer
   return (
     <div
       className={asCard ? "bg-white/10 p-4 border border-white/15" : ""}
@@ -399,6 +513,9 @@ export function SlideBody({
   onMoveBlock,
   onDeleteBlock,
   onChangeHeroImage,
+  onReorderBlock,
+  selectedBlockId,
+  onSelectBlock,
 }: BodyProps) {
   const theme = getPresentationTheme(themeId ?? slide?.themeId);
   const explicitTheme = themeId ?? slide?.themeId;
@@ -451,6 +568,26 @@ export function SlideBody({
     />
   );
 
+  const startDrag = (blockId: string) => (e: React.PointerEvent) => {
+    if (!onReorderBlock) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const move = (ev: PointerEvent) => {
+      const el = document.elementFromPoint(ev.clientX, ev.clientY) as HTMLElement | null;
+      const target = el?.closest("[data-slide-block-id]") as HTMLElement | null;
+      const overId = target?.getAttribute("data-slide-block-id");
+      if (!overId || overId === blockId) return;
+      const toIndex = blocks.findIndex((x) => x.id === overId);
+      if (toIndex >= 0) onReorderBlock(blockId, toIndex);
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+
   const renderBlock = (b: Block, sliceIndex: number, asCard?: boolean) => {
     const globalIndex = blocks.findIndex((x) => x.id === b.id);
     return (
@@ -459,6 +596,10 @@ export function SlideBody({
         editable={editable}
         index={globalIndex}
         total={blocks.length}
+        blockId={b.id}
+        selected={selectedBlockId === b.id}
+        onSelect={() => onSelectBlock?.(b.id)}
+        onDragStart={onReorderBlock ? startDrag(b.id) : undefined}
         onMove={(dir) => onMoveBlock?.(b.id, dir)}
         onDelete={() => onDeleteBlock?.(b.id)}
       >
@@ -589,7 +730,7 @@ const SlideCanvas = ({ fit = true, darkMode = true, themeId, ...rest }: CanvasPr
       : { background: "hsl(var(--background))", ...themeStageStyle(theme), backgroundImage: "none" as any };
 
   if (bgOverride) {
-    bgStyle = { ...bgStyle, background: bgOverride, backgroundImage: "none" as any };
+    bgStyle = { ...bgStyle, backgroundImage: "none" as any, background: bgOverride };
   }
 
   const body = <SlideBody darkMode={darkMode} themeId={effectiveThemeId} {...rest} />;

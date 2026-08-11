@@ -6,12 +6,15 @@ import Highlight from "@tiptap/extension-highlight";
 import { TextStyle } from "@tiptap/extension-text-style";
 import Color from "@tiptap/extension-color";
 import Placeholder from "@tiptap/extension-placeholder";
+import { Superscript } from "@tiptap/extension-superscript";
+import { Subscript } from "@tiptap/extension-subscript";
 import {
   Bold, Italic, Underline as UnderlineIcon, List, ListOrdered,
   Heading1, Heading2, Heading3, Heading4,
   AlignLeft, AlignCenter, AlignRight, Highlighter,
-  Palette, X,
+  Palette, X, Superscript as SuperscriptIcon, Subscript as SubscriptIcon,
 } from "lucide-react";
+import { SLIDE_HIGHLIGHT_COLORS } from "@/lib/slide-typography";
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
@@ -158,6 +161,71 @@ const ColorPicker = ({ editor, sz }: { editor: any; sz: string }) => {
   );
 };
 
+const HighlightPicker = ({ editor, sz }: { editor: any; sz: string }) => {
+  const [open, setOpen] = useState(false);
+  const current = editor.getAttributes("highlight").color as string | undefined;
+
+  const apply = (val: string | null) => {
+    if (val) editor.chain().focus().setHighlight({ color: val }).run();
+    else editor.chain().focus().unsetHighlight().run();
+    setOpen(false);
+  };
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          title="Zvýrazňovač (barva za textem)"
+          className={`relative rounded p-1 transition-colors ${
+            editor.isActive("highlight") ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+          }`}
+        >
+          <Highlighter className={sz} />
+          {current && (
+            <span className="absolute bottom-0 left-1/2 h-0.5 w-3 -translate-x-1/2 rounded-full" style={{ backgroundColor: current }} />
+          )}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-[200px] space-y-2 p-3">
+        <button
+          type="button"
+          onClick={() => apply(null)}
+          className="flex w-full items-center gap-2 rounded px-1.5 py-1 text-xs transition-colors hover:bg-muted"
+        >
+          <X className="h-3 w-3" />
+          <span>Bez zvýraznění</span>
+        </button>
+        <div className="flex flex-wrap gap-1">
+          {SLIDE_HIGHLIGHT_COLORS.map((c) => (
+            <button
+              key={c}
+              type="button"
+              title={c}
+              aria-label={`Zvýraznění ${c}`}
+              onClick={() => apply(c)}
+              className={`h-6 w-6 rounded border transition-all hover:scale-110 ${
+                current === c ? "ring-2 ring-primary ring-offset-1 ring-offset-background" : "border-border"
+              }`}
+              style={{ backgroundColor: c }}
+            />
+          ))}
+        </div>
+        <div className="flex items-center gap-2">
+          <input
+            type="color"
+            defaultValue={current || "#FEF08A"}
+            onChange={(e) => apply(e.target.value)}
+            className="h-6 w-9 cursor-pointer rounded border border-border bg-transparent p-0"
+            aria-label="Vlastní barva zvýraznění"
+          />
+          <span className="text-[11px] text-muted-foreground">Vlastní barva</span>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+};
+
 const MiniRichEditor = ({
   content,
   onChange,
@@ -174,10 +242,12 @@ const MiniRichEditor = ({
       StarterKit.configure({ heading: { levels: [1, 2, 3, 4] } }),
       Underline,
       TextAlign.configure({ types: ["heading", "paragraph"] }),
-      Highlight.configure({ multicolor: false }),
+      Highlight.configure({ multicolor: true }),
       TextStyle,
       Color,
       Placeholder.configure({ placeholder }),
+      Superscript,
+      Subscript,
     ],
     content,
     onUpdate: ({ editor: e }) => {
@@ -187,7 +257,7 @@ const MiniRichEditor = ({
     },
     editorProps: {
       attributes: {
-        class: `prose prose-invert prose-sm max-w-none focus:outline-none p-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_mark]:bg-primary/30 [&_mark]:text-foreground`,
+        class: `prose prose-invert prose-sm max-w-none focus:outline-none p-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_mark]:bg-primary/30 [&_mark]:text-foreground [&_sup]:align-super [&_sup]:text-[0.75em] [&_sub]:align-sub [&_sub]:text-[0.75em]`,
         style: `min-height:${minHeight}`,
       },
     },
@@ -220,8 +290,21 @@ const MiniRichEditor = ({
         <TB active={editor.isActive("underline")} onClick={() => editor.chain().focus().toggleUnderline().run()} title="Podtržení">
           <UnderlineIcon className={sz} />
         </TB>
-        <TB active={editor.isActive("highlight")} onClick={() => editor.chain().focus().toggleHighlight().run()} title="Zvýraznění">
-          <Highlighter className={sz} />
+        <HighlightPicker editor={editor} sz={sz} />
+
+        <TB
+          active={editor.isActive("superscript")}
+          onClick={() => editor.chain().focus().toggleSuperscript().run()}
+          title="Horní index (mocnina)"
+        >
+          <SuperscriptIcon className={sz} />
+        </TB>
+        <TB
+          active={editor.isActive("subscript")}
+          onClick={() => editor.chain().focus().toggleSubscript().run()}
+          title="Dolní index (chemický zápis)"
+        >
+          <SubscriptIcon className={sz} />
         </TB>
 
         {/* Text color */}

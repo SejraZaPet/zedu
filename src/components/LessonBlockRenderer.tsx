@@ -18,6 +18,9 @@ import WallActivity from "@/components/activities/WallActivity";
 import { LiveGameButton } from "@/components/game/LiveGameButton";
 import type { GameQuestion } from "@/lib/game-types";
 import { getSlideIcon } from "@/lib/slide-icons";
+import ShapeRenderer from "@/components/blocks/ShapeRenderer";
+import ChartRenderer from "@/components/blocks/ChartRenderer";
+import FormulaRenderer from "@/components/blocks/FormulaRenderer";
 const extractYouTubeId = (url: string): string | null => {
   if (!url) return null;
   const m = url.match(
@@ -28,10 +31,11 @@ const extractYouTubeId = (url: string): string | null => {
 
 const SafeHTML = ({ html, className }: { html: string; className?: string }) => (
   <div
-    className={className}
+    className={`[&_sup]:align-super [&_sup]:text-[0.7em] [&_sub]:align-sub [&_sub]:text-[0.7em] ${className || ""}`}
     dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(html) }}
   />
 );
+
 
 const CALLOUT_STYLES: Record<string, { icon: string; border: string; bg: string }> = {
   note: { icon: "📝", border: "border-muted-foreground/40", bg: "bg-muted/40" },
@@ -210,6 +214,39 @@ export const LessonBlock = ({ block, blockIndex, onActivityComplete, isTeacher }
             className="text-foreground text-sm leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-1 [&_mark]:bg-primary/30"
           />
         </div>
+      );
+    }
+    case "shape":
+      return (
+        <ShapeRenderer
+          shapeKind={p.shapeKind}
+          fillColor={p.fillColor}
+          strokeColor={p.strokeColor}
+          strokeWidth={p.strokeWidth}
+          height={Number(p.height) || 160}
+        />
+      );
+    case "chart":
+      return <ChartRenderer chartKind={p.chartKind} title={p.title} data={p.data} />;
+    case "formula":
+      return <FormulaRenderer latex={p.latex} className="text-center" />;
+    case "audio": {
+      if (!p.url) return null;
+      return (
+        <figure className="w-full">
+          <audio controls src={p.url} className="w-full" />
+          {p.caption && <figcaption className="mt-1 text-center text-sm opacity-70">{p.caption}</figcaption>}
+        </figure>
+      );
+    }
+    case "video": {
+      if (!p.url) return null;
+      const vw = p.width === "medium" ? "max-w-2xl mx-auto" : "w-full";
+      return (
+        <figure className={vw}>
+          <video controls src={p.url} className="w-full rounded-lg" />
+          {p.caption && <figcaption className="mt-1 text-center text-sm opacity-70">{p.caption}</figcaption>}
+        </figure>
       );
     }
     case "divider": {

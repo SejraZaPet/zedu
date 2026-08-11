@@ -72,7 +72,7 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
   const projectorTheme = getPresentationTheme((currentSlide as any)?.themeId);
   const projectorBgOverride = slideBackgroundOverride(currentSlide);
   const projectorStageStyle: CSSProperties = projectorBgOverride
-    ? { ...themeStageStyle(projectorTheme), background: projectorBgOverride, backgroundImage: "none" }
+    ? { ...themeStageStyle(projectorTheme), backgroundImage: "none", background: projectorBgOverride }
     : themeStageStyle(projectorTheme);
 
   return (

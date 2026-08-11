@@ -55,7 +55,21 @@ export interface SlideTextStyleProps {
   fontSize?: number | null;
   color?: string | null;
   fontFamily?: string | null;
+  /** Barva zvýraznění (pozadí za textem). */
+  highlightColor?: string | null;
 }
+
+/** Paleta barev zvýrazňovače. */
+export const SLIDE_HIGHLIGHT_COLORS = [
+  "#FEF08A",
+  "#FDE68A",
+  "#BBF7D0",
+  "#BFDBFE",
+  "#DDD6FE",
+  "#FBCFE8",
+  "#FECACA",
+  "#E2E8F0",
+];
 
 /** Inline styl textového bloku podle jeho props (prázdný objekt = dědí se). */
 export function slideTextStyle(props?: SlideTextStyleProps | null): React.CSSProperties {
@@ -67,6 +81,13 @@ export function slideTextStyle(props?: SlideTextStyleProps | null): React.CSSPro
   }
   if (props.color) style.color = props.color;
   if (props.fontFamily) style.fontFamily = props.fontFamily;
+  if (props.highlightColor) {
+    style.backgroundColor = props.highlightColor;
+    style.boxDecorationBreak = "clone" as any;
+    (style as any).WebkitBoxDecorationBreak = "clone";
+    style.borderRadius = "0.25rem";
+    style.padding = "0.05em 0.2em";
+  }
   return style;
 }
 
@@ -84,8 +105,12 @@ export function slideAnimationClass(animation?: string | null): string {
   }
 }
 
-/** Pozadí slidu: vlastní přepis má přednost před tématem. */
+/** Pozadí slidu: vlastní přepis (barva nebo obrázek) má přednost před tématem. */
 export function slideBackgroundOverride(slide: any): string | null {
+  const image = slide?.backgroundOverride?.image;
+  if (typeof image === "string" && image) {
+    return `#000 url("${image.replace(/"/g, "%22")}") center / cover no-repeat`;
+  }
   const color = slide?.backgroundOverride?.color;
   return typeof color === "string" && color ? color : null;
 }
