@@ -40,6 +40,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import ReviewButton from "@/components/sharing/ReviewButton";
+import CoursePathMap from "@/components/textbook/CoursePathMap";
 import { LANGUAGE_OPTIONS, DIFFICULTY_OPTIONS } from "@/lib/content-shares";
 
 
