@@ -16,6 +16,8 @@ interface TaskRow {
   priority: string;
   color: string | null;
   assigned_to: string;
+  related_organization_id: string | null;
+  related_user_id: string | null;
 }
 
 interface Props {
@@ -45,7 +47,7 @@ const RelatedTasksCard = ({ organizationId, userId, canEdit = true, bare }: Prop
     setLoading(true);
     let query = supabase
       .from("staff_tasks")
-      .select("id, title, description, due_date, status, priority, color, assigned_to")
+      .select("id, title, description, due_date, status, priority, color, assigned_to, related_organization_id, related_user_id")
       .order("due_date", { ascending: true, nullsFirst: false });
     query = organizationId
       ? query.eq("related_organization_id", organizationId)
