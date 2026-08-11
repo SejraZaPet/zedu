@@ -114,6 +114,7 @@ const CrmOrganizationDetail = ({ organizationId, tags, canEdit, onBack }: Props)
   const [interactionForm, setInteractionForm] = useState(emptyInteraction);
   const [authors, setAuthors] = useState<Record<string, Author>>({});
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [openContactId, setOpenContactId] = useState<string | null>(null);
 
   const loadAuthors = async (ids: string[]) => {
     if (ids.length === 0) { setAuthors({}); return; }
@@ -361,12 +362,18 @@ const CrmOrganizationDetail = ({ organizationId, tags, canEdit, onBack }: Props)
         ) : (
           <div className="space-y-2">
             {contacts.map((c) => (
-              <div key={c.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border p-3">
+              <div key={c.id} className="rounded-md border border-border p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="font-medium text-sm">
+                  <button
+                    type="button"
+                    onClick={() => setOpenContactId((prev) => (prev === c.id ? null : c.id))}
+                    aria-expanded={openContactId === c.id}
+                    className="text-left font-medium text-sm hover:underline"
+                  >
                     {c.name}
                     {c.is_primary && <span className="ml-2 text-[11px] px-1.5 py-0.5 rounded bg-primary/10 text-primary">hlavní</span>}
-                  </p>
+                  </button>
                   <p className="text-xs text-muted-foreground">
                     {[
                       CRM_CONTACT_CATEGORIES.find((k) => k.value === (c.contact_category ?? "jine"))?.label,
@@ -405,12 +412,61 @@ const CrmOrganizationDetail = ({ organizationId, tags, canEdit, onBack }: Props)
                   </div>
                 )}
               </div>
+              {openContactId === c.id && (
+                <div className="mt-3 space-y-2 border-t border-border pt-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <h4 className="text-sm font-medium">Poznámky k tomuto kontaktu</h4>
+                    {canEdit && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => { setInteractionForm({ ...emptyInteraction, contact_id: c.id }); setInteractionOpen(true); }}
+                      >
+                        <Plus className="mr-1 h-4 w-4" /> Přidat záznam
+                      </Button>
+                    )}
+                  </div>
+                  {(() => {
+                    const own = interactions.filter((i) => i.contact_id === c.id).slice(0, 5);
+                    if (own.length === 0) {
+                      return <p className="text-sm text-muted-foreground">Zatím žádné poznámky u tohoto kontaktu.</p>;
+                    }
+                    return (
+                      <ul className="divide-y divide-border rounded-md border border-border">
+                        {own.map((i) => (
+                          <li key={i.id} className="flex items-baseline gap-2 px-3 py-1.5 text-sm">
+                            <span className="shrink-0 tabular-nums text-muted-foreground">
+                              {new Date(i.occurred_at).toLocaleDateString("cs-CZ")}
+                            </span>
+                            <span className="shrink-0 text-muted-foreground">·</span>
+                            <span className="shrink-0 font-medium">
+                              {(i.created_by ? authors[i.created_by]?.initials : null) ?? "—"}:
+                            </span>
+                            <span className="truncate">{i.summary}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    );
+                  })()}
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="px-0"
+                    onClick={() => {
+                      document.getElementById("crm-timeline")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }}
+                  >
+                    Zobrazit celou historii organizace
+                  </Button>
+                </div>
+              )}
+              </div>
             ))}
           </div>
         )}
       </Card>
 
-      <Card className="p-5 space-y-3">
+      <Card id="crm-timeline" className="p-5 space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="font-heading">Časová osa komunikace</h3>
           {canEdit && (
@@ -443,7 +499,11 @@ const CrmOrganizationDetail = ({ organizationId, tags, canEdit, onBack }: Props)
                       {date.toLocaleDateString("cs-CZ")}
                     </span>
                     <span className="text-muted-foreground shrink-0">·</span>
-                    <span className="font-medium shrink-0">{shortcut}:</span>
+                    <span className="font-medium shrink-0">{shortcut}</span>
+                    {contact && (
+                      <span className="shrink-0 text-[hsl(var(--primary))]">[{contact.name}]</span>
+                    )}
+                    <span className="shrink-0 font-medium">:</span>
                     <span className={isOpen ? "whitespace-pre-wrap" : "truncate"}>{i.summary}</span>
                   </button>
                   {isOpen && (
