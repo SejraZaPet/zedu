@@ -917,7 +917,10 @@ const TeacherTextbooks = () => {
           const table = presentationLesson.source === "teacher_textbook_lessons"
             ? "teacher_textbook_lessons"
             : "textbook_lessons";
-          await supabase.from(table).update({ presentation_slides: slides } as any).eq("id", presentationLesson.id);
+          await supabase
+            .from(table)
+            .update({ presentation_slides: slides, theme_id: themeIdFromSlides(slides) } as any)
+            .eq("id", presentationLesson.id);
         }}
         existingSession={existingSession}
         onContinueExisting={() => {
