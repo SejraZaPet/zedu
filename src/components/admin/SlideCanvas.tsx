@@ -6,6 +6,11 @@ import { MediaPickerDialog } from "@/components/media/MediaPickerDialog";
 import DOMPurify from "dompurify";
 import { getPresentationTheme, themeStageStyle } from "@/lib/presentation-themes";
 import { getSlideIcon } from "@/lib/slide-icons";
+import {
+  slideAnimationClass,
+  slideBackgroundOverride,
+  slideTextStyle,
+} from "@/lib/slide-typography";
 
 export type SlideLayout =
   | "full"
@@ -188,6 +193,7 @@ function EditableBlock({
           value={value}
           placeholder="Napište text…"
           className="text-2xl leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-2 [&_strong]:font-semibold"
+          style={slideTextStyle(block.props)}
           onCommit={(v) => update((b) => ({ ...b, props: { ...b.props, text: v } }))}
         />
       </div>
@@ -207,6 +213,7 @@ function EditableBlock({
         value={value}
         placeholder="Nadpis…"
         className={`${cls} [&_strong]:font-semibold`}
+        style={slideTextStyle(block.props)}
         onCommit={(v) => update((b) => ({ ...b, props: { ...b.props, text: v } }))}
       />
     );
@@ -237,6 +244,7 @@ function EditableBlock({
             value={block.props.html}
             placeholder="Zadejte odrážky…"
             className="text-2xl leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mb-2"
+            style={slideTextStyle(block.props)}
             onCommit={(v) => update((b) => ({ ...b, props: { ...b.props, html: v } }))}
           />
         </div>
@@ -245,7 +253,7 @@ function EditableBlock({
     return (
       <div className={asCard ? "bg-white/10 rounded-[var(--slide-radius,0.75rem)] p-4 border border-white/15" : ""}>
         {revealToggle}
-        <ul className="space-y-2">
+        <ul className="space-y-2" style={slideTextStyle(block.props)}>
           {items.map((item, i) => (
             <li key={i} className="flex items-start gap-3 text-2xl">
               <span className="mt-1 flex-shrink-0" style={{ color: "var(--slide-primary, currentColor)" }}>•</span>
@@ -454,12 +462,18 @@ export function SlideBody({
         onMove={(dir) => onMoveBlock?.(b.id, dir)}
         onDelete={() => onDeleteBlock?.(b.id)}
       >
-        <EditableBlock
-          block={b}
-          editable={editable}
-          asCard={asCard}
-          onChange={(patch) => onChangeBlock?.(b.id, patch)}
-        />
+        {editable ? (
+          <EditableBlock
+            block={b}
+            editable
+            asCard={asCard}
+            onChange={(patch) => onChangeBlock?.(b.id, patch)}
+          />
+        ) : (
+          <div className={slideAnimationClass((b.props as any)?.animation)}>
+            <EditableBlock block={b} asCard={asCard} />
+          </div>
+        )}
       </BlockShell>
     );
   };
@@ -567,11 +581,16 @@ const SlideCanvas = ({ fit = true, darkMode = true, themeId, ...rest }: CanvasPr
 
   const effectiveThemeId = themeId ?? (rest as any).slide?.themeId;
   const theme = getPresentationTheme(effectiveThemeId);
-  const bgStyle: React.CSSProperties = effectiveThemeId
+  const bgOverride = slideBackgroundOverride((rest as any).slide);
+  let bgStyle: React.CSSProperties = effectiveThemeId
     ? themeStageStyle(theme)
     : darkMode
       ? { background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)", ...themeStageStyle(theme) }
       : { background: "hsl(var(--background))", ...themeStageStyle(theme), backgroundImage: "none" as any };
+
+  if (bgOverride) {
+    bgStyle = { ...bgStyle, background: bgOverride, backgroundImage: "none" as any };
+  }
 
   const body = <SlideBody darkMode={darkMode} themeId={effectiveThemeId} {...rest} />;
 
