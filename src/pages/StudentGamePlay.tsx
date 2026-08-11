@@ -391,7 +391,7 @@ const StudentGamePlay = () => {
           <div className="px-3 pt-3">
             <div className="overflow-hidden rounded-xl">
               <div style={zoomStageStyle(liveZoom)}>
-                <SlideCanvas slide={currentSlideData} themeId={(currentSlideData as any)?.themeId} darkMode />
+                <SlideCanvas key={qi} slide={currentSlideData} themeId={(currentSlideData as any)?.themeId} darkMode />
               </div>
             </div>
           </div>
