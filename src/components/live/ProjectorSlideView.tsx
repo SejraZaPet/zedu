@@ -3,6 +3,7 @@ import { BookOpen } from "lucide-react";
 import WallProjectorView from "@/components/activities/WallProjectorView";
 import WordCloudView from "@/components/activities/WordCloudView";
 import { SlideBody } from "@/components/admin/SlideCanvas";
+import { getPresentationTheme, themeStageStyle } from "@/lib/presentation-themes";
 import { buildAnonymousLabelMap, type GamePlayer } from "@/lib/game-types";
 import { zoomStageStyle, type ZoomRect } from "@/lib/zoom-zones";
 
@@ -67,8 +68,13 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
     };
   }, []);
 
+  const projectorTheme = getPresentationTheme((currentSlide as any)?.themeId);
+
   return (
-    <div className="relative min-h-screen overflow-hidden" style={{ background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)" }}>
+    <div
+      className={`relative min-h-screen overflow-hidden ${projectorTheme.isDark ? "" : "text-foreground"}`}
+      style={themeStageStyle(projectorTheme)}
+    >
       <div ref={frameRef} className="absolute inset-0 overflow-hidden">
         <div
           className="absolute left-1/2 top-1/2 origin-center text-white"
@@ -99,7 +105,7 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
 
               {currentSlide.blocks && currentSlide.blocks.length > 0 ? (
                 <div className="w-full flex-1 min-h-0">
-                  <SlideBody slide={currentSlide} darkMode revealStep={(session?.settings as any)?.revealStep} />
+                  <SlideBody slide={currentSlide} themeId={(currentSlide as any)?.themeId} darkMode revealStep={(session?.settings as any)?.revealStep} />
                 </div>
               ) : (
                 <>

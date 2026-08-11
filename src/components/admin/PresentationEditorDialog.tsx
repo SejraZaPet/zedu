@@ -20,6 +20,13 @@ import { AddSlideSheet } from "@/components/game/AddSlideSheet";
 import { createDefaultBlock, type Block } from "@/lib/textbook-config";
 import ZoomZonesEditor from "@/components/admin/ZoomZonesEditor";
 import { isZoomableSlide, type ZoomZone } from "@/lib/zoom-zones";
+import ThemeGalleryPopover from "@/components/admin/ThemeGalleryPopover";
+import StartFromTemplateDialog from "@/components/admin/StartFromTemplateDialog";
+import IconPickerDialog from "@/components/admin/IconPickerDialog";
+import { SlideBody } from "@/components/admin/SlideCanvas";
+import { STAGE_W, STAGE_H } from "@/components/admin/SlideCanvas";
+import { applyThemeToSlides, getPresentationTheme, themeIdFromSlides, themeStageStyle } from "@/lib/presentation-themes";
+import { LayoutTemplate, Shapes } from "lucide-react";
 
 
 interface Props {
@@ -100,7 +107,24 @@ export const PresentationEditorDialog = ({
   const [darkPreview, setDarkPreview] = useState(true);
   const [addSlideOpen, setAddSlideOpen] = useState(false);
   const [history, setHistory] = useState<BlockEditorHistory | null>(null);
+  const [templateOpen, setTemplateOpen] = useState(false);
   const currentSlide = pendingSlides[editingSlideIndex];
+  const themeId = themeIdFromSlides(pendingSlides);
+  const theme = getPresentationTheme(themeId);
+
+  const setThemeId = (next: string) => setPendingSlides(applyThemeToSlides(pendingSlides, next));
+
+  // Nová prázdná prezentace → nabídni startovní šablonu.
+  const isEmptyNewPresentation =
+    !hasSavedPresentation &&
+    pendingSlides.length === 1 &&
+    !(pendingSlides[0]?.blocks || []).length &&
+    !String(pendingSlides[0]?.projector?.body || "").trim();
+
+  useEffect(() => {
+    if (presentationLesson && isEmptyNewPresentation) setTemplateOpen(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [presentationLesson?.title]);
 
   // Migrate legacy slides: if a slide has projector.body text but no blocks,
   // seed a paragraph block so the text becomes inline-editable in the canvas.
@@ -166,23 +190,31 @@ export const PresentationEditorDialog = ({
           </DialogHeader>
 
           <div className="px-5 pb-5 space-y-4">
-          {/* 2. Slide thumbnails */}
+          {/* 2. Vizuální náhledy slidů */}
           <div className="flex gap-2 overflow-x-auto pb-1">
             {pendingSlides.map((slide, i) => (
               <button
-                key={i}
+                key={slide?.slideId || i}
                 onClick={() => setEditingSlideIndex(i)}
-                className={`flex-shrink-0 w-28 h-16 rounded-md border-2 p-1.5 text-left overflow-hidden transition-colors ${
-                  i === editingSlideIndex ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/50"
+                title={slide.projector?.headline || `Slide ${i + 1}`}
+                className={`relative flex-shrink-0 w-40 aspect-video rounded-md border-2 overflow-hidden transition-colors ${
+                  i === editingSlideIndex ? "border-primary ring-2 ring-primary/30" : "border-border hover:border-muted-foreground/50"
                 }`}
+                style={themeStageStyle(theme)}
               >
-                <div className="text-[8px] text-muted-foreground mb-0.5">Slide {i + 1}</div>
-                <div className="text-[9px] font-bold truncate leading-tight">
-                  {slide.projector?.headline || `Bez nadpisu`}
+                <div
+                  className="absolute left-0 top-0 origin-top-left pointer-events-none"
+                  style={{
+                    width: STAGE_W,
+                    height: STAGE_H,
+                    transform: `scale(${160 / STAGE_W})`,
+                  }}
+                >
+                  <SlideBody slide={slide} themeId={themeId} />
                 </div>
-                <div className="text-[8px] text-muted-foreground line-clamp-2 leading-tight">
-                  {slide.projector?.body?.slice(0, 60) || ""}
-                </div>
+                <span className="absolute bottom-1 left-1 rounded bg-background/85 px-1.5 py-0.5 text-[10px] font-semibold text-foreground">
+                  {i + 1}
+                </span>
               </button>
             ))}
           </div>
@@ -190,6 +222,9 @@ export const PresentationEditorDialog = ({
           <div className="flex gap-2 flex-wrap pb-3 border-b border-border">
             <Button size="sm" variant="outline" className="gap-1" onClick={() => setAddSlideOpen(true)}>
               <Plus className="w-3.5 h-3.5" /> Přidat slide
+            </Button>
+            <Button size="sm" variant="outline" className="gap-1" onClick={() => setTemplateOpen(true)}>
+              <LayoutTemplate className="w-3.5 h-3.5" /> Začít od šablony
             </Button>
             {pendingSlides.length > 1 && (
               <Button size="sm" variant="outline" className="gap-1 text-destructive" onClick={() => {
@@ -300,6 +335,19 @@ export const PresentationEditorDialog = ({
                       </Button>
                     }
                   />
+                  <IconPickerDialog
+                    themeId={themeId}
+                    onPick={({ name, color }) => {
+                      const newBlock = createDefaultBlock("image");
+                      newBlock.props = { ...newBlock.props, url: "", icon: name, iconColor: color, width: "medium" };
+                      setBlocks([...blocks, newBlock]);
+                    }}
+                    trigger={
+                      <Button size="sm" variant="outline" className="h-8 gap-1">
+                        <Shapes className="w-3.5 h-3.5" /> Ikona
+                      </Button>
+                    }
+                  />
                   <Button size="sm" variant="outline" className="h-8 gap-1" onClick={() => addBlock("table")}>
                     <TableIcon className="w-3.5 h-3.5" /> Tabulka
                   </Button>
@@ -320,6 +368,7 @@ export const PresentationEditorDialog = ({
                         {Math.round(((currentSlide.projector?.fontScale as number) || 1) * 100)}%
                       </span>
                     </div>
+                    <ThemeGalleryPopover themeId={themeId} onChange={setThemeId} />
                     <button
                       type="button"
                       onClick={() => setDarkPreview((v) => !v)}
@@ -334,6 +383,7 @@ export const PresentationEditorDialog = ({
                 {/* Visual slide canvas (click to edit) */}
                 <SlideCanvas
                   slide={currentSlide}
+                  themeId={themeId}
                   editable
                   darkMode={darkPreview}
                   onChangeHeadline={(v) => updateProjector({ headline: v })}
@@ -530,6 +580,15 @@ export const PresentationEditorDialog = ({
             );
           })()}
           </div>
+
+          <StartFromTemplateDialog
+            open={templateOpen}
+            onOpenChange={setTemplateOpen}
+            onPick={(slides) => {
+              setPendingSlides(applyThemeToSlides(slides, themeId));
+              setEditingSlideIndex(0);
+            }}
+          />
 
           <AddSlideSheet
             open={addSlideOpen}

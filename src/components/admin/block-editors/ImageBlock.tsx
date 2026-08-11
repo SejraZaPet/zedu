@@ -7,6 +7,9 @@ import { useState } from "react";
 import { Upload, FolderOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MediaPickerDialog } from "@/components/media/MediaPickerDialog";
+import IconPickerDialog from "@/components/admin/IconPickerDialog";
+import { getSlideIcon } from "@/lib/slide-icons";
+import { Shapes } from "lucide-react";
 
 interface Props {
   block: Block;
@@ -41,6 +44,14 @@ const ImageBlock = ({ block, onChange }: Props) => {
           <Upload className="w-4 h-4 mr-1" />{uploading ? "…" : "Nahrát"}
           <input type="file" accept="image/*" onChange={handleUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
         </Button>
+        <IconPickerDialog
+          onPick={({ name, color }) => onChange({ ...block.props, url: "", icon: name, iconColor: color })}
+          trigger={
+            <Button size="sm" variant="outline">
+              <Shapes className="w-4 h-4 mr-1" /> Vložit ikonu
+            </Button>
+          }
+        />
         <MediaPickerDialog
           imageOnly
           onPick={(url) => onChange({ ...block.props, url })}
@@ -54,6 +65,18 @@ const ImageBlock = ({ block, onChange }: Props) => {
       {block.props.url && (
         <img src={block.props.url} alt="" className="max-h-32 rounded border border-border object-cover" />
       )}
+      {!block.props.url && block.props.icon && (() => {
+        const IconCmp = getSlideIcon(block.props.icon);
+        return (
+          <div className="flex items-center gap-2 rounded border border-border p-2">
+            <IconCmp style={{ color: block.props.iconColor || "currentColor", width: 40, height: 40 }} />
+            <span className="text-xs text-muted-foreground">Ikona: {block.props.icon}</span>
+            <Button size="sm" variant="ghost" onClick={() => onChange({ ...block.props, icon: undefined, iconColor: undefined })}>
+              Odebrat
+            </Button>
+          </div>
+        );
+      })()}
       <div className="flex gap-2">
         <div className="flex-1">
           <Label className="text-xs">Popisek</Label>
