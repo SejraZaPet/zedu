@@ -23,6 +23,12 @@ interface EarnedBadge {
   earned_at: string;
 }
 
+interface CourseBadge {
+  textbook_id: string;
+  textbook_title: string;
+  earned_at: string;
+}
+
 const formatDate = (iso: string) =>
   new Date(iso).toLocaleDateString("cs-CZ", { day: "numeric", month: "numeric", year: "numeric" });
 
@@ -32,12 +38,13 @@ const PlayerProfileWidget = ({ userId, firstName, lastName }: Props) => {
   const [level, setLevel] = useState(1);
   const [streak, setStreak] = useState(0);
   const [badges, setBadges] = useState<EarnedBadge[]>([]);
+  const [courseBadges, setCourseBadges] = useState<CourseBadge[]>([]);
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
     if (!userId) return;
     (async () => {
-      const [{ data: xpRow }, { data: badgeRows }] = await Promise.all([
+      const [{ data: xpRow }, { data: badgeRows }, { data: courseRows }] = await Promise.all([
         supabase
           .from("student_xp")
           .select("total_xp, level, streak_days")
@@ -48,6 +55,11 @@ const PlayerProfileWidget = ({ userId, firstName, lastName }: Props) => {
           .select("badge_slug, earned_at")
           .eq("student_id", userId)
           .order("earned_at", { ascending: false }),
+        supabase
+          .from("student_course_badges")
+          .select("textbook_id, textbook_title, earned_at")
+          .eq("student_id", userId)
+          .order("earned_at", { ascending: false }),
       ]);
       if (xpRow) {
         setXp(xpRow.total_xp ?? 0);
@@ -55,6 +67,7 @@ const PlayerProfileWidget = ({ userId, firstName, lastName }: Props) => {
         setStreak(xpRow.streak_days ?? 0);
       }
       setBadges((badgeRows ?? []) as EarnedBadge[]);
+      setCourseBadges((courseRows ?? []) as CourseBadge[]);
     })();
   }, [userId]);
 
@@ -196,6 +209,28 @@ const PlayerProfileWidget = ({ userId, firstName, lastName }: Props) => {
             </div>
           )}
         </div>
+        {courseBadges.length > 0 && (
+          <div>
+            <h3 className="text-sm font-medium mb-2">Dokončené kurzy</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {courseBadges.map((cb) => (
+                <div
+                  key={cb.textbook_id}
+                  className="rounded-lg border border-primary/30 bg-gradient-to-br from-primary/10 to-transparent p-2.5 flex items-center gap-2"
+                  title={`Dokončil/a jsi všechny lekce v ${cb.textbook_title}.`}
+                >
+                  <div className="w-9 h-9 rounded-full bg-primary/15 flex items-center justify-center text-xl shrink-0">
+                    🏆
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs font-semibold truncate">{cb.textbook_title}</div>
+                    <div className="text-[10px] text-muted-foreground">{formatDate(cb.earned_at)}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
