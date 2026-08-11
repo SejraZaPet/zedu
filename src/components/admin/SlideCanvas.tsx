@@ -4,6 +4,8 @@ import { LessonBlock } from "@/components/LessonBlockRenderer";
 import type { Block } from "@/lib/textbook-config";
 import { MediaPickerDialog } from "@/components/media/MediaPickerDialog";
 import DOMPurify from "dompurify";
+import { getPresentationTheme, themeStageStyle } from "@/lib/presentation-themes";
+import { getSlideIcon } from "@/lib/slide-icons";
 
 export type SlideLayout =
   | "full"
@@ -27,6 +29,8 @@ export const STAGE_H = 900;
 
 interface BodyProps {
   slide: any;
+  /** Vizuální téma prezentace; když chybí, bere se ze slidu. */
+  themeId?: string;
   editable?: boolean;
   darkMode?: boolean;
   revealStep?: number;
@@ -172,7 +176,7 @@ function EditableBlock({
     const value = block.props?.text || "";
     const isHtml = /<[^>]+>/.test(value);
     return (
-      <div className={asCard ? "bg-white/10 rounded-xl p-4 border border-white/15" : ""}>
+      <div className={asCard ? "bg-white/10 rounded-[var(--slide-radius,0.75rem)] p-4 border border-white/15" : ""}>
         <EditableText
           editable={editable}
           multiline
@@ -220,7 +224,7 @@ function EditableBlock({
     ) : null;
     if (block.props?.html) {
       return (
-        <div className={asCard ? "bg-white/10 rounded-xl p-4 border border-white/15" : ""}>
+        <div className={asCard ? "bg-white/10 rounded-[var(--slide-radius,0.75rem)] p-4 border border-white/15" : ""}>
           {revealToggle}
           <EditableText
             editable={editable}
@@ -235,12 +239,12 @@ function EditableBlock({
       );
     }
     return (
-      <div className={asCard ? "bg-white/10 rounded-xl p-4 border border-white/15" : ""}>
+      <div className={asCard ? "bg-white/10 rounded-[var(--slide-radius,0.75rem)] p-4 border border-white/15" : ""}>
         {revealToggle}
         <ul className="space-y-2">
           {items.map((item, i) => (
             <li key={i} className="flex items-start gap-3 text-2xl">
-              <span className="text-purple-400 mt-1 flex-shrink-0">•</span>
+              <span className="mt-1 flex-shrink-0" style={{ color: "var(--slide-primary, currentColor)" }}>•</span>
               <div className="flex-1 flex items-center gap-2">
                 <EditableText
                   editable={editable}
@@ -290,9 +294,39 @@ function EditableBlock({
   }
 
 
+  if (block.type === "image" && block.props?.icon && !block.props?.url) {
+    const Icon = getSlideIcon(block.props.icon);
+    if (Icon) {
+      const align = block.props.alignment || "center";
+      const size = block.props.width === "small" ? 72 : block.props.width === "medium" ? 128 : 200;
+      return (
+        <div
+          className={asCard ? "bg-white/10 p-4 border border-white/15" : ""}
+          style={asCard ? { borderRadius: "var(--slide-radius, 0.75rem)" } : undefined}
+        >
+          <figure
+            className={align === "left" ? "text-left" : align === "right" ? "text-right" : "text-center"}
+          >
+            <Icon
+              style={{ color: block.props.iconColor || "var(--slide-primary, currentColor)", width: size, height: size }}
+              className="inline-block"
+              aria-hidden={!block.props.caption}
+            />
+            {block.props.caption && (
+              <figcaption className="text-lg opacity-70 mt-2">{block.props.caption}</figcaption>
+            )}
+          </figure>
+        </div>
+      );
+    }
+  }
+
   // Fallback (image, table, accordion, etc.): use existing renderer
   return (
-    <div className={asCard ? "bg-white/10 rounded-xl p-4 border border-white/15" : ""}>
+    <div
+      className={asCard ? "bg-white/10 p-4 border border-white/15" : ""}
+      style={asCard ? { borderRadius: "var(--slide-radius, 0.75rem)" } : undefined}
+    >
       <LessonBlock block={block} blockIndex={0} isTeacher={false} />
     </div>
   );
@@ -344,6 +378,7 @@ function HeroImageSlot({
 
 export function SlideBody({
   slide,
+  themeId,
   editable,
   darkMode = true,
   revealStep,
@@ -353,6 +388,8 @@ export function SlideBody({
   onDeleteBlock,
   onChangeHeroImage,
 }: BodyProps) {
+  const theme = getPresentationTheme(themeId ?? slide?.themeId);
+  const isDark = themeId ?? slide?.themeId ? theme.isDark : darkMode;
   const layout: SlideLayout = (slide?.layout as SlideLayout) || "full";
   const headline: string = slide?.projector?.headline || "";
   const fontScale = slide?.projector?.fontScale || 1;
@@ -381,7 +418,7 @@ export function SlideBody({
       })
     : rawBlocks;
 
-  const blockTextScope = darkMode
+  const blockTextScope = isDark
     ? "[&_*]:!text-white [&_h1]:!text-white [&_h2]:!text-white [&_h3]:!text-white [&_.bg-card]:!bg-white/10 [&_.bg-muted\\/40]:!bg-white/10 [&_.bg-muted\\/30]:!bg-white/10 [&_.border]:!border-white/20"
     : "";
 
@@ -390,9 +427,13 @@ export function SlideBody({
       editable={!!editable}
       value={headline}
       placeholder="Nadpis slidu"
-      className={`text-6xl font-bold leading-tight ${
-        darkMode ? "bg-clip-text text-transparent bg-gradient-to-r from-white to-purple-200" : ""
-      } ${layout === "title-only" ? "text-center text-7xl" : ""}`}
+      className={`text-6xl font-bold leading-tight ${layout === "title-only" ? "text-center text-7xl" : ""}`}
+      style={{
+        background: `linear-gradient(90deg, ${theme.primaryColor}, ${theme.secondaryColor})`,
+        WebkitBackgroundClip: "text",
+        backgroundClip: "text",
+        color: "transparent",
+      }}
       onCommit={(v) => onChangeHeadline?.(v)}
     />
   );
@@ -489,7 +530,7 @@ export function SlideBody({
   }
 
   return (
-    <div className={`flex h-full flex-col overflow-hidden ${darkMode ? "text-white" : "text-foreground"}`}>
+    <div className={`flex h-full flex-col overflow-hidden ${isDark ? "text-white" : "text-foreground"}`}>
       <div className="flex-1 flex flex-col items-center justify-start px-12 py-10 gap-6 min-h-0 overflow-y-auto">
         {body}
       </div>
@@ -499,7 +540,7 @@ export function SlideBody({
 
 /* ---------- Scaled canvas wrapper ---------- */
 
-const SlideCanvas = ({ fit = true, darkMode = true, ...rest }: CanvasProps) => {
+const SlideCanvas = ({ fit = true, darkMode = true, themeId, ...rest }: CanvasProps) => {
   const frameRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
 
@@ -519,11 +560,15 @@ const SlideCanvas = ({ fit = true, darkMode = true, ...rest }: CanvasProps) => {
     return () => ro.disconnect();
   }, [fit]);
 
-  const bgStyle = darkMode
-    ? { background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)" }
-    : { background: "hsl(var(--background))" };
+  const effectiveThemeId = themeId ?? (rest as any).slide?.themeId;
+  const theme = getPresentationTheme(effectiveThemeId);
+  const bgStyle: React.CSSProperties = effectiveThemeId
+    ? themeStageStyle(theme)
+    : darkMode
+      ? { background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)", ...themeStageStyle(theme) }
+      : { background: "hsl(var(--background))", ...themeStageStyle(theme), backgroundImage: "none" as any };
 
-  const body = <SlideBody darkMode={darkMode} {...rest} />;
+  const body = <SlideBody darkMode={darkMode} themeId={effectiveThemeId} {...rest} />;
 
   if (!fit) {
     return (
