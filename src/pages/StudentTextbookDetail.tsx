@@ -383,6 +383,20 @@ const StudentTextbookDetail = () => {
           )}
         </div>
 
+        {!loading && pathItems.length > 0 && (
+          <CoursePathMap
+            items={pathItems}
+            showProgress
+            description="Tvoje cesta učebnicí. Klikni na lekci a pokračuj tam, kde jsi skončil/a."
+            onSelect={(id) => {
+              const l = lessonById.get(id);
+              if (l) { setCompletedActivityIndices(new Set()); setSelectedLesson(l); }
+            }}
+          />
+        )}
+
+
+
         {loading ? (
           <p className="text-muted-foreground">Načítání...</p>
         ) : grades.length === 0 ? (
