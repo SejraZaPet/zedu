@@ -998,7 +998,7 @@ const LiveTeacherScreen = () => {
               <div className="relative">
                 <div className="overflow-hidden rounded-xl">
                   <div style={drawZoomMode ? undefined : zoomStageStyle(activeZoom)}>
-                    <SlideCanvas slide={currentSlide} darkMode />
+                    <SlideCanvas slide={currentSlide} themeId={(currentSlide as any)?.themeId} darkMode />
                   </div>
                 </div>
                 <ZoomZoneSurface

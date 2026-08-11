@@ -99,7 +99,7 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
 
               {currentSlide.blocks && currentSlide.blocks.length > 0 ? (
                 <div className="w-full flex-1 min-h-0">
-                  <SlideBody slide={currentSlide} darkMode revealStep={(session?.settings as any)?.revealStep} />
+                  <SlideBody slide={currentSlide} themeId={(currentSlide as any)?.themeId} darkMode revealStep={(session?.settings as any)?.revealStep} />
                 </div>
               ) : (
                 <>

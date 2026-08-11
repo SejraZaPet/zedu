@@ -11,6 +11,7 @@ import { useSubjects } from "@/hooks/useSubjects";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import PresentationEditorDialog from "@/components/admin/PresentationEditorDialog";
+import { themeIdFromSlides } from "@/lib/presentation-themes";
 import TextbookGradeGroups from "@/components/admin/TextbookGradeGroups";
 import TextbookList from "@/components/admin/TextbookList";
 import CreateTextbookDialog from "@/components/admin/CreateTextbookDialog";
@@ -826,7 +827,10 @@ const TeacherTextbooks = () => {
             const table = presentationLesson.source === "teacher_textbook_lessons"
               ? "teacher_textbook_lessons"
               : "textbook_lessons";
-            await supabase.from(table).update({ presentation_slides: slides } as any).eq("id", presentationLesson.id);
+            await supabase
+              .from(table)
+              .update({ presentation_slides: slides, theme_id: themeIdFromSlides(slides) } as any)
+              .eq("id", presentationLesson.id);
           }}
           existingSession={existingSession}
           onContinueExisting={() => {
