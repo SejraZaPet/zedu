@@ -33,6 +33,7 @@ import UnassignedTeachersManager from "@/components/admin/UnassignedTeachersMana
 import CrmManager from "@/components/admin/CrmManager";
 import MarketplaceEconomicsManager from "@/components/admin/MarketplaceEconomicsManager";
 import MyStaffPanel from "@/components/admin/MyStaffPanel";
+import StaffKnowledgeManager from "@/components/admin/StaffKnowledgeManager";
 import { useStaffPermissions } from "@/hooks/useStaffPermissions";
 import { Button } from "@/components/ui/button";
 import { BookOpen, LogOut, Home, GraduationCap, Settings, Users, School, BarChart3, LayoutDashboard, HelpCircle, ListTree, CircleHelp, Link2, Pencil, Video, Bell, Activity, FileText, Sparkles, Globe, Smile, Library, Award, FileBadge2, Contact, ChevronDown, Coins, UserSquare2 } from "lucide-react";
@@ -41,6 +42,7 @@ import { BookOpen, LogOut, Home, GraduationCap, Settings, Users, School, BarChar
 const adminTabs = [
   { id: "dashboard", label: "Přehled", icon: LayoutDashboard, module: null },
   { id: "my-panel", label: "Můj panel", icon: UserSquare2, module: null },
+  { id: "staff-academy", label: "Interní akademie", icon: BookOpen, module: null },
   { id: "crm", label: "CRM", icon: Contact, module: "crm" },
   { id: "stats", label: "Statistiky", icon: Activity, module: "stats" },
   { id: "licenses", label: "Spolupracující organizace", icon: Award, module: "school_licenses" },
@@ -75,7 +77,7 @@ const teacherTabs = [
   { id: "help", label: "Nápověda", icon: HelpCircle, module: null },
 ] as const;
 
-type Tab = "dashboard" | "my-panel" | "stats" | "textbooks" | "lessons" | "outline" | "mcq" | "matching" | "slide-edit" | "video-ai" | "subjects" | "users" | "classes" | "results" | "help" | "notifications" | "licenses" | "audit" | "templates" | "landing" | "avatars" | "textbook-overview" | "academy" | "academy-pathways" | "academy-evidence" | "crm" | "market-economics" | "unassigned-teachers";
+type Tab = "dashboard" | "my-panel" | "staff-academy" | "stats" | "textbooks" | "lessons" | "outline" | "mcq" | "matching" | "slide-edit" | "video-ai" | "subjects" | "users" | "classes" | "results" | "help" | "notifications" | "licenses" | "audit" | "templates" | "landing" | "avatars" | "textbook-overview" | "academy" | "academy-pathways" | "academy-evidence" | "crm" | "market-economics" | "unassigned-teachers";
 
 /** Dvouúrovňová navigace administrace. `help` a `dashboard` řešíme mimo/uvnitř kategorií. */
 const adminGroups: { id: string; label: string; tabs: string[] }[] = [
@@ -139,7 +141,7 @@ const Admin = () => {
   const [openGroupId, setOpenGroupId] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState(false);
   const currentGroup =
-    collapsed || ((activeTab === "help" || activeTab === "users" || activeTab === "my-panel") && !openGroupId)
+    collapsed || ((activeTab === "help" || activeTab === "users" || activeTab === "my-panel" || activeTab === "staff-academy") && !openGroupId)
       ? null
       : groups.find((g) => g.id === (openGroupId ?? activeGroupId)) ?? null;
 
@@ -282,6 +284,7 @@ const Admin = () => {
         )}
 
 
+        {activeTab === "staff-academy" && !isTeacher && <StaffKnowledgeManager />}
         {activeTab === "stats" && !isTeacher && <SystemStats />}
         {activeTab === "textbooks" && isTeacher && <TeacherTextbooksManager />}
         {activeTab === "lessons" && isTeacher && <LessonsManager />}
