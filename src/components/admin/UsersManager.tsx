@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { logAudit } from "@/lib/audit";
 import { Button } from "@/components/ui/button";
@@ -202,6 +203,19 @@ const UsersManager = () => {
   };
 
   useEffect(() => { fetchUsers(); }, []);
+
+  /** Proklik z jiné části administrace: /admin?tab=users&user=<id> otevře detail */
+  const [searchParams] = useSearchParams();
+  const deepLinkUserId = searchParams.get("user");
+  const openedDeepLink = useRef(false);
+  useEffect(() => {
+    if (!deepLinkUserId || openedDeepLink.current || users.length === 0) return;
+    const found = users.find((u) => u.id === deepLinkUserId);
+    if (!found) return;
+    openedDeepLink.current = true;
+    setSelectedUser(found);
+    setDetailOpen(true);
+  }, [deepLinkUserId, users]);
 
   // Derive unique filter options from data
   const schools = useMemo(() => [...new Set(users.map(u => u.school).filter(Boolean))].sort(), [users]);
