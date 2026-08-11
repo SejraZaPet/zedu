@@ -18,6 +18,7 @@ import SlideCanvas, { SLIDE_LAYOUTS, type SlideLayout } from "@/components/admin
 import { MediaPickerDialog } from "@/components/media/MediaPickerDialog";
 import { AddSlideSheet } from "@/components/game/AddSlideSheet";
 import { createDefaultBlock, type Block } from "@/lib/textbook-config";
+import { SLIDE_BACKGROUND_COLORS } from "@/lib/slide-typography";
 import ZoomZonesEditor from "@/components/admin/ZoomZonesEditor";
 import { isZoomableSlide, type ZoomZone } from "@/lib/zoom-zones";
 import ThemeGalleryPopover from "@/components/admin/ThemeGalleryPopover";
@@ -415,6 +416,46 @@ export const PresentationEditorDialog = ({
                     </CollapsibleContent>
                   </Collapsible>
                 )}
+
+                {/* Pozadí tohoto slidu */}
+                <div className="pt-2 border-t border-border space-y-2">
+                  <Label className="text-xs">Pozadí tohoto slidu</Label>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => updateSlide({ backgroundOverride: null })}
+                      className={`rounded-lg border-2 px-2 py-1 text-xs font-medium transition-colors ${
+                        !(currentSlide as any).backgroundOverride
+                          ? "border-primary bg-primary/10 text-foreground"
+                          : "border-border text-muted-foreground hover:bg-muted/50"
+                      }`}
+                    >
+                      Podle tématu prezentace
+                    </button>
+                    {SLIDE_BACKGROUND_COLORS.map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        title={c}
+                        aria-label={`Vlastní pozadí ${c}`}
+                        onClick={() => updateSlide({ backgroundOverride: { color: c } })}
+                        className={`h-7 w-7 rounded-full border-2 transition-transform ${
+                          (currentSlide as any).backgroundOverride?.color === c
+                            ? "border-primary scale-110"
+                            : "border-border"
+                        }`}
+                        style={{ background: c }}
+                      />
+                    ))}
+                    <input
+                      type="color"
+                      value={(currentSlide as any).backgroundOverride?.color || "#111111"}
+                      onChange={(e) => updateSlide({ backgroundOverride: { color: e.target.value } })}
+                      className="h-7 w-10 cursor-pointer rounded border border-border bg-transparent"
+                      aria-label="Vlastní barva pozadí slidu"
+                    />
+                  </div>
+                </div>
 
                 {/* Instrukce + aktivita */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">

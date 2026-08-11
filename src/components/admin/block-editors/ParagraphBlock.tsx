@@ -1,4 +1,5 @@
 import MiniRichEditor from "./MiniRichEditor";
+import BlockStyleControls from "./BlockStyleControls";
 import type { Block } from "@/lib/textbook-config";
 
 interface Props {
@@ -7,14 +8,17 @@ interface Props {
 }
 
 const ParagraphBlock = ({ block, onChange }: Props) => (
-  <MiniRichEditor
-    content={block.props.text || ""}
-    onChange={(html) => onChange({ ...block.props, text: html })}
-    placeholder="Odstavec textu…"
-    showHeadings={false}
-    showLists
-    showAlign
-  />
+  <div>
+    <MiniRichEditor
+      content={block.props.text || ""}
+      onChange={(html) => onChange({ ...block.props, text: html })}
+      placeholder="Odstavec textu…"
+      showHeadings={false}
+      showLists
+      showAlign
+    />
+    <BlockStyleControls block={block} onChange={onChange} />
+  </div>
 );
 
 export default ParagraphBlock;

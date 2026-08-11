@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&family=Lexend:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Inter:wght@400;600;700&family=Quicksand:wght@400;600;700&family=Source+Sans+3:wght@400;600;700&family=Playfair+Display:wght@400;600;700&family=Roboto+Slab:wght@400;600;700&family=Comic+Neue:wght@400;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -252,4 +253,24 @@ body.a11y-line-height main .whitespace-pre-wrap {
   .animate-game-idle-bounce,
   .animate-game-correct-jump,
   .animate-game-shake { animation: none !important; }
+}
+
+/* --- Animace vstupu bloků slidu (jen živá projekce, ne editor) --- */
+@keyframes slideAnimScale {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes slideAnimFromBottom {
+  from { opacity: 0; transform: translateY(48px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideAnimFromTop {
+  from { opacity: 0; transform: translateY(-48px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.slide-anim-scale { animation: slideAnimScale 0.45s ease-out both; }
+.slide-anim-from-bottom { animation: slideAnimFromBottom 0.45s ease-out both; }
+.slide-anim-from-top { animation: slideAnimFromTop 0.45s ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  .slide-anim-scale, .slide-anim-from-bottom, .slide-anim-from-top { animation: none; }
 }
