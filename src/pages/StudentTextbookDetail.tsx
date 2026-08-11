@@ -242,8 +242,20 @@ const StudentTextbookDetail = () => {
     if (!error) {
       setCompletedLessonIds(prev => new Set([...prev, lessonId]));
       toast({ title: "Lekce dokončena! ✓", description: "Pokrok byl uložen." });
+      if (textbookId) {
+        const { data: earned } = await supabase.rpc("check_course_completion", {
+          _textbook_id: textbookId,
+        });
+        if (earned) {
+          toast({
+            title: "🏆 Máš odznak za celý kurz!",
+            description: `Dokončil/a jsi všechny lekce v ${textbookTitle} a získal/a 100 XP.`,
+          });
+        }
+      }
     }
   };
+
 
   // Lesson detail view
   if (selectedLesson) {
