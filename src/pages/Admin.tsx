@@ -220,6 +220,16 @@ const Admin = () => {
               >
                 <UserSquare2 className="w-4 h-4" /> Můj panel
               </button>
+              <button
+                onClick={() => { setOpenGroupId(null); setCollapsed(true); setActiveTab("staff-academy"); }}
+                className={`flex items-center gap-2 px-3 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === "staff-academy" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <BookOpen className="w-4 h-4" /> Interní akademie
+              </button>
+
+
 
               {groups.map((g) => {
                 const isOpen = currentGroup?.id === g.id;
