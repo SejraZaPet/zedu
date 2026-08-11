@@ -345,6 +345,21 @@ const StudentTextbookDetail = () => {
     sum + g.topics.reduce((s, t) => s + t.lessons.filter(l => completedLessonIds.has(l.id)).length, 0), 0);
   const progressPercent = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
 
+  const pathItems: CoursePathItem[] = grades.flatMap((g) =>
+    g.topics.flatMap((t) =>
+      t.lessons.map((l) => ({
+        id: l.id,
+        title: l.title,
+        groupLabel: t.title !== "Lekce" ? t.title : undefined,
+        completed: completedLessonIds.has(l.id),
+      }))
+    )
+  );
+  const lessonById = new Map(
+    grades.flatMap((g) => g.topics.flatMap((t) => t.lessons.map((l) => [l.id, l] as const)))
+  );
+
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <SiteHeader />
