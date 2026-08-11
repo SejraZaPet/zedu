@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { BookOpen } from "lucide-react";
 import WallProjectorView from "@/components/activities/WallProjectorView";
 import WordCloudView from "@/components/activities/WordCloudView";
@@ -71,7 +71,7 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
 
   const projectorTheme = getPresentationTheme((currentSlide as any)?.themeId);
   const projectorBgOverride = slideBackgroundOverride(currentSlide);
-  const projectorStageStyle: React.CSSProperties = projectorBgOverride
+  const projectorStageStyle: CSSProperties = projectorBgOverride
     ? { ...themeStageStyle(projectorTheme), background: projectorBgOverride, backgroundImage: "none" }
     : themeStageStyle(projectorTheme);
 
