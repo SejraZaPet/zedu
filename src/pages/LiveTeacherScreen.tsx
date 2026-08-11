@@ -32,6 +32,7 @@ import { useSwipe } from "@/hooks/useSwipe";
 import { LessonBlock } from "@/components/LessonBlockRenderer";
 import { GAME_MODES, getModeDef, type GameMode } from "@/lib/game-modes";
 import type { TeamMode } from "@/lib/game-types";
+import AiClusterButton from "@/components/live/AiClusterButton";
 import ZoomZoneSurface from "@/components/live/ZoomZoneSurface";
 import SlideCanvas from "@/components/admin/SlideCanvas";
 import { getZoomZones, isValidZoomRect, isZoomableSlide, zoomStageStyle, type ZoomRect } from "@/lib/zoom-zones";
@@ -1221,9 +1222,14 @@ const LiveTeacherScreen = () => {
                         })
                       )}
                     </div>
+                    <AiClusterButton
+                      texts={wallResponses.map(r => String((r.answer as any)?.text || "").trim()).filter(Boolean)}
+                      question={(currentSlide as any).activitySpec?.question}
+                    />
                   </div>
                 );
               })()}
+
 
               {(currentSlide as any).activitySpec?.activityType === "poll" && (() => {
                 const pollPublished =
@@ -1319,9 +1325,18 @@ const LiveTeacherScreen = () => {
                         />
                       </div>
                     )}
+                    <AiClusterButton
+                      texts={responses
+                        .filter(r => r.question_index === currentIndex)
+                        .map(r => String((r.answer as any)?.text || "").trim())
+                        .filter(Boolean)}
+                      question={(currentSlide as any).activitySpec?.question}
+                      label="AI shrnutí pojmů"
+                    />
                   </div>
                 );
               })()}
+
             </div>
           )}
 

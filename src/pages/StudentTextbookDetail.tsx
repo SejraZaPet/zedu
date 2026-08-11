@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/accordion";
 import { ArrowLeft, BookOpen, GraduationCap, FolderOpen, CheckCircle2, Circle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import CoursePathMap, { type CoursePathItem } from "@/components/textbook/CoursePathMap";
+
 
 interface LessonData {
   id: string;
@@ -242,8 +244,20 @@ const StudentTextbookDetail = () => {
     if (!error) {
       setCompletedLessonIds(prev => new Set([...prev, lessonId]));
       toast({ title: "Lekce dokončena! ✓", description: "Pokrok byl uložen." });
+      if (textbookId) {
+        const { data: earned } = await supabase.rpc("check_course_completion", {
+          _textbook_id: textbookId,
+        });
+        if (earned) {
+          toast({
+            title: "🏆 Máš odznak za celý kurz!",
+            description: `Dokončil/a jsi všechny lekce v ${textbookTitle} a získal/a 100 XP.`,
+          });
+        }
+      }
     }
   };
+
 
   // Lesson detail view
   if (selectedLesson) {
@@ -331,6 +345,21 @@ const StudentTextbookDetail = () => {
     sum + g.topics.reduce((s, t) => s + t.lessons.filter(l => completedLessonIds.has(l.id)).length, 0), 0);
   const progressPercent = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
 
+  const pathItems: CoursePathItem[] = grades.flatMap((g) =>
+    g.topics.flatMap((t) =>
+      t.lessons.map((l) => ({
+        id: l.id,
+        title: l.title,
+        groupLabel: t.title !== "Lekce" ? t.title : undefined,
+        completed: completedLessonIds.has(l.id),
+      }))
+    )
+  );
+  const lessonById = new Map(
+    grades.flatMap((g) => g.topics.flatMap((t) => t.lessons.map((l) => [l.id, l] as const)))
+  );
+
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <SiteHeader />
@@ -353,6 +382,20 @@ const StudentTextbookDetail = () => {
             </div>
           )}
         </div>
+
+        {!loading && pathItems.length > 0 && (
+          <CoursePathMap
+            items={pathItems}
+            showProgress
+            description="Tvoje cesta učebnicí. Klikni na lekci a pokračuj tam, kde jsi skončil/a."
+            onSelect={(id) => {
+              const l = lessonById.get(id);
+              if (l) { setCompletedActivityIndices(new Set()); setSelectedLesson(l); }
+            }}
+          />
+        )}
+
+
 
         {loading ? (
           <p className="text-muted-foreground">Načítání...</p>

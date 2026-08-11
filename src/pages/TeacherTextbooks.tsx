@@ -40,6 +40,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import ReviewButton from "@/components/sharing/ReviewButton";
+import CoursePathMap from "@/components/textbook/CoursePathMap";
 import { LANGUAGE_OPTIONS, DIFFICULTY_OPTIONS } from "@/lib/content-shares";
 
 
@@ -532,7 +533,27 @@ const TeacherTextbooks = () => {
             </div>
           </div>
 
+          {/* Vizuální mapa lekcí */}
+          {!detailLoading && (
+            <CoursePathMap
+              title="Mapa lekcí"
+              description="Přehled pořadí lekcí, jak jimi žák projde. Kliknutím otevřete editor lekce."
+              items={gradeGroups.flatMap((g) =>
+                g.topics.flatMap((t) =>
+                  t.lessons.map((l) => ({ id: l.id, title: l.title, groupLabel: t.title }))
+                )
+              )}
+              onSelect={(id) => {
+                const lesson = gradeGroups
+                  .flatMap((g) => g.topics.flatMap((t) => t.lessons))
+                  .find((l) => l.id === id);
+                if (lesson) openLessonEditor(lesson);
+              }}
+            />
+          )}
+
           {/* Structure */}
+
           <div className="bg-card border border-border rounded-xl p-6 mb-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-heading text-lg font-semibold flex items-center gap-2">
