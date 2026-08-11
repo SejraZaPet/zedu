@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/accordion";
 import { ArrowLeft, BookOpen, GraduationCap, FolderOpen, CheckCircle2, Circle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import CoursePathMap, { type CoursePathItem } from "@/components/textbook/CoursePathMap";
+
 
 interface LessonData {
   id: string;
