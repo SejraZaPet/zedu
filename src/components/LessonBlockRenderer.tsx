@@ -105,7 +105,7 @@ export const LessonBlock = ({ block, blockIndex, onActivityComplete, isTeacher }
         <figure className={`${p.alignment === "center" ? "text-center" : p.alignment === "right" ? "text-right" : ""}`}>
           <img
             src={p.url}
-            alt={p.caption || ""}
+            alt={p.alt || p.caption || ""}
             className={`rounded-lg ${p.width === "full" ? "w-full" : p.width === "half" ? "w-1/2 inline-block" : "w-1/3 inline-block"}`}
           />
           {p.caption && <figcaption className="text-sm text-muted-foreground mt-2">{p.caption}</figcaption>}
