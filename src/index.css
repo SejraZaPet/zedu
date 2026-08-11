@@ -274,3 +274,18 @@ body.a11y-line-height main .whitespace-pre-wrap {
 @media (prefers-reduced-motion: reduce) {
   .slide-anim-scale, .slide-anim-from-bottom, .slide-anim-from-top { animation: none; }
 }
+
+/* --- Přechody mezi slidy (celá prezentace) --- */
+@keyframes slideTransFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slideTransPush {
+  from { opacity: 0.2; transform: translateX(6%); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.slide-trans-fade { animation: slideTransFade 0.35s ease-out both; }
+.slide-trans-push { animation: slideTransPush 0.4s cubic-bezier(.2,.7,.3,1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .slide-trans-fade, .slide-trans-push { animation: none; }
+}

@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Monitor, Plus, Trash2, ChevronDown, Save, Sun, Moon, Type, List, Image as ImageIcon, Table as TableIcon, Settings2, Undo2, Redo2, ZoomIn } from "lucide-react";
+import { Monitor, Plus, Trash2, ChevronDown, Save, Sun, Moon, Type, List, Image as ImageIcon, Table as TableIcon, Settings2, Undo2, Redo2, ZoomIn, Copy, FileDown, Heading as HeadingIcon, Quote as QuoteIcon, StickyNote, BarChart3, Sigma, Video as VideoIcon, Music, Loader2, Bookmark } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -28,6 +28,10 @@ import { SlideBody } from "@/components/admin/SlideCanvas";
 import { STAGE_W, STAGE_H } from "@/components/admin/SlideCanvas";
 import { applyThemeToSlides, getPresentationTheme, themeIdFromSlides, themeStageStyle } from "@/lib/presentation-themes";
 import { LayoutTemplate, Shapes } from "lucide-react";
+import { SLIDE_TRANSITIONS, transitionFromSlides, applyTransitionToSlides, type SlideTransition } from "@/lib/slide-transitions";
+import { exportSlidesToPdf } from "@/lib/presentation-pdf-export";
+import ShapePickerPopover from "@/components/admin/ShapePickerPopover";
+import AiBlockTextButton from "@/components/admin/AiBlockTextButton";
 
 
 interface Props {
@@ -109,11 +113,32 @@ export const PresentationEditorDialog = ({
   const [addSlideOpen, setAddSlideOpen] = useState(false);
   const [history, setHistory] = useState<BlockEditorHistory | null>(null);
   const [templateOpen, setTemplateOpen] = useState(false);
+  const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
+  const [exportingPdf, setExportingPdf] = useState(false);
   const currentSlide = pendingSlides[editingSlideIndex];
   const themeId = themeIdFromSlides(pendingSlides);
   const theme = getPresentationTheme(themeId);
 
   const setThemeId = (next: string) => setPendingSlides(applyThemeToSlides(pendingSlides, next));
+  const transition = transitionFromSlides(pendingSlides);
+  const setTransition = (next: SlideTransition) =>
+    setPendingSlides(applyTransitionToSlides(pendingSlides, next));
+
+  const handleExportPdf = async () => {
+    setExportingPdf(true);
+    try {
+      await exportSlidesToPdf(pendingSlides, themeId, presentationLesson?.title || "prezentace");
+      toast({ title: "PDF vytvořeno", description: "Prezentace byla stažena jako PDF." });
+    } catch (e: any) {
+      toast({
+        title: "Export do PDF se nepodařil",
+        description: e?.message ?? String(e),
+        variant: "destructive",
+      });
+    } finally {
+      setExportingPdf(false);
+    }
+  };
 
   // Nová prázdná prezentace → nabídni startovní šablonu.
   const isEmptyNewPresentation =
@@ -161,6 +186,27 @@ export const PresentationEditorDialog = ({
                 </Badge>
               </DialogTitle>
               <div className="ml-auto flex items-center gap-2 flex-wrap justify-end">
+                <div className="flex items-center gap-1.5">
+                  <Label className="text-xs whitespace-nowrap text-muted-foreground">Přechod</Label>
+                  <Select value={transition} onValueChange={(v) => setTransition(v as SlideTransition)}>
+                    <SelectTrigger className="h-9 w-[130px] text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {SLIDE_TRANSITIONS.map((t) => (
+                        <SelectItem key={t.value} value={t.value} title={t.hint}>{t.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-9 gap-1.5"
+                  onClick={handleExportPdf}
+                  disabled={exportingPdf}
+                >
+                  {exportingPdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
+                  PDF
+                </Button>
                 <Button size="sm" variant="ghost" className="h-9" onClick={onClose}>
                   Zrušit
                 </Button>
@@ -194,8 +240,15 @@ export const PresentationEditorDialog = ({
           {/* 2. Vizuální náhledy slidů */}
           <div className="flex gap-2 overflow-x-auto pb-1">
             {pendingSlides.map((slide, i) => (
+              <div key={slide?.slideId || i} className="flex flex-shrink-0 items-stretch gap-2">
+              {slide?.sectionTitle ? (
+                <div className="flex flex-col items-center justify-center border-l-2 border-primary pl-2">
+                  <span className="max-w-[90px] text-[10px] font-semibold uppercase leading-tight tracking-wide text-primary">
+                    {slide.sectionTitle}
+                  </span>
+                </div>
+              ) : null}
               <button
-                key={slide?.slideId || i}
                 onClick={() => setEditingSlideIndex(i)}
                 title={slide.projector?.headline || `Slide ${i + 1}`}
                 className={`relative flex-shrink-0 w-40 aspect-video rounded-md border-2 overflow-hidden transition-colors ${
@@ -217,6 +270,7 @@ export const PresentationEditorDialog = ({
                   {i + 1}
                 </span>
               </button>
+              </div>
             ))}
           </div>
 
@@ -226,6 +280,26 @@ export const PresentationEditorDialog = ({
             </Button>
             <Button size="sm" variant="outline" className="gap-1" onClick={() => setTemplateOpen(true)}>
               <LayoutTemplate className="w-3.5 h-3.5" /> Začít od šablony
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1"
+              onClick={() => {
+                const src = pendingSlides[editingSlideIndex];
+                if (!src) return;
+                const copy = JSON.parse(JSON.stringify(src));
+                copy.slideId = crypto.randomUUID();
+                if (Array.isArray(copy.blocks)) {
+                  copy.blocks = copy.blocks.map((b: any) => ({ ...b, id: crypto.randomUUID() }));
+                }
+                const updated = [...pendingSlides];
+                updated.splice(editingSlideIndex + 1, 0, copy);
+                setPendingSlides(updated);
+                setEditingSlideIndex(editingSlideIndex + 1);
+              }}
+            >
+              <Copy className="w-3.5 h-3.5" /> Duplikovat slide
             </Button>
             {pendingSlides.length > 1 && (
               <Button size="sm" variant="outline" className="gap-1 text-destructive" onClick={() => {
@@ -317,8 +391,17 @@ export const PresentationEditorDialog = ({
 
                   <div className="h-6 w-px bg-border" />
 
+                  <Button size="sm" variant="outline" className="h-8 gap-1" onClick={() => addBlock("heading")}>
+                    <HeadingIcon className="w-3.5 h-3.5" /> Nadpis
+                  </Button>
                   <Button size="sm" variant="outline" className="h-8 gap-1" onClick={() => addBlock("paragraph")}>
                     <Type className="w-3.5 h-3.5" /> Text
+                  </Button>
+                  <Button size="sm" variant="outline" className="h-8 gap-1" onClick={() => addBlock("callout")}>
+                    <StickyNote className="w-3.5 h-3.5" /> Zvýrazněný box
+                  </Button>
+                  <Button size="sm" variant="outline" className="h-8 gap-1" onClick={() => addBlock("quote")}>
+                    <QuoteIcon className="w-3.5 h-3.5" /> Citace
                   </Button>
                   <Button size="sm" variant="outline" className="h-8 gap-1" onClick={() => addBlock("bullet_list")}>
                     <List className="w-3.5 h-3.5" /> Odrážky
@@ -352,6 +435,37 @@ export const PresentationEditorDialog = ({
                   <Button size="sm" variant="outline" className="h-8 gap-1" onClick={() => addBlock("table")}>
                     <TableIcon className="w-3.5 h-3.5" /> Tabulka
                   </Button>
+                  <ShapePickerPopover
+                    onPick={(props) => {
+                      const newBlock = createDefaultBlock("shape");
+                      newBlock.props = { ...newBlock.props, ...props };
+                      setBlocks([...blocks, newBlock]);
+                    }}
+                  />
+                  <Button size="sm" variant="outline" className="h-8 gap-1" onClick={() => addBlock("chart")}>
+                    <BarChart3 className="w-3.5 h-3.5" /> Graf
+                  </Button>
+                  <Button size="sm" variant="outline" className="h-8 gap-1" onClick={() => addBlock("formula")}>
+                    <Sigma className="w-3.5 h-3.5" /> Rovnice
+                  </Button>
+                  <Button size="sm" variant="outline" className="h-8 gap-1" onClick={() => addBlock("video")}>
+                    <VideoIcon className="w-3.5 h-3.5" /> Video
+                  </Button>
+                  <Button size="sm" variant="outline" className="h-8 gap-1" onClick={() => addBlock("audio")}>
+                    <Music className="w-3.5 h-3.5" /> Zvuk
+                  </Button>
+                  <AiBlockTextButton
+                    block={blocks.find((b) => b.id === selectedBlockId) || null}
+                    headline={currentSlide.projector?.headline || ""}
+                    lessonTitle={presentationLesson?.title || ""}
+                    onAccept={(text) => {
+                      if (!selectedBlockId) return;
+                      updateBlock(selectedBlockId, (b: Block) => ({
+                        ...b,
+                        props: { ...b.props, text: b.type === "heading" ? text : `<p>${text}</p>` },
+                      }));
+                    }}
+                  />
 
                   <div className="ml-auto flex items-center gap-3">
                     <div className="flex items-center gap-2">
@@ -392,6 +506,8 @@ export const PresentationEditorDialog = ({
                   onMoveBlock={moveBlock}
                   onDeleteBlock={deleteBlock}
                   onChangeHeroImage={(url) => updateSlide({ heroImage: url })}
+                  selectedBlockId={selectedBlockId}
+                  onSelectBlock={setSelectedBlockId}
                 />
                 <p className="text-[11px] text-muted-foreground">
                   Klikněte na nadpis nebo text v náhledu a upravte jej. Při najetí na blok se zobrazí ovládání ↑ ↓ 🗑.
@@ -454,7 +570,49 @@ export const PresentationEditorDialog = ({
                       className="h-7 w-10 cursor-pointer rounded border border-border bg-transparent"
                       aria-label="Vlastní barva pozadí slidu"
                     />
+                    <MediaPickerDialog
+                      imageOnly
+                      onPick={(url) => updateSlide({ backgroundOverride: { image: url } })}
+                      trigger={
+                        <Button size="sm" variant="outline" className="h-7 gap-1 text-xs">
+                          <ImageIcon className="w-3.5 h-3.5" /> Obrázek pozadí
+                        </Button>
+                      }
+                    />
+                    {(currentSlide as any).backgroundOverride?.image && (
+                      <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                        <img
+                          src={(currentSlide as any).backgroundOverride.image}
+                          alt="Náhled pozadí slidu"
+                          className="h-7 w-12 rounded border border-border object-cover"
+                        />
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 px-2 text-xs"
+                          onClick={() => updateSlide({ backgroundOverride: null })}
+                        >
+                          Odebrat
+                        </Button>
+                      </span>
+                    )}
                   </div>
+                </div>
+
+                {/* Sekce prezentace */}
+                <div className="pt-2 border-t border-border">
+                  <Label className="text-xs flex items-center gap-1.5">
+                    <Bookmark className="w-3.5 h-3.5" /> Název sekce (nepovinné)
+                  </Label>
+                  <Input
+                    className="mt-1"
+                    value={(currentSlide as any).sectionTitle || ""}
+                    onChange={(e) => updateSlide({ sectionTitle: e.target.value || undefined })}
+                    placeholder="Např. Opakování – tímto slidem začíná nová sekce"
+                  />
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    Sekce se zobrazí jako oddělovač v pásu slidů. Nezobrazuje se žákům.
+                  </p>
                 </div>
 
                 {/* Instrukce + aktivita */}

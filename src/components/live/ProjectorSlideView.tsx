@@ -3,6 +3,7 @@ import { BookOpen } from "lucide-react";
 import WallProjectorView from "@/components/activities/WallProjectorView";
 import WordCloudView from "@/components/activities/WordCloudView";
 import { SlideBody } from "@/components/admin/SlideCanvas";
+import { slideTransitionClass } from "@/lib/slide-transitions";
 import { getPresentationTheme, themeStageStyle } from "@/lib/presentation-themes";
 import { slideBackgroundOverride } from "@/lib/slide-typography";
 import { buildAnonymousLabelMap, type GamePlayer } from "@/lib/game-types";
@@ -72,7 +73,7 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
   const projectorTheme = getPresentationTheme((currentSlide as any)?.themeId);
   const projectorBgOverride = slideBackgroundOverride(currentSlide);
   const projectorStageStyle: CSSProperties = projectorBgOverride
-    ? { ...themeStageStyle(projectorTheme), background: projectorBgOverride, backgroundImage: "none" }
+    ? { ...themeStageStyle(projectorTheme), backgroundImage: "none", background: projectorBgOverride }
     : themeStageStyle(projectorTheme);
 
   return (
@@ -101,7 +102,12 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
             </div>
 
             <div ref={scrollRef} className="flex-1 flex flex-col items-center justify-start px-6 py-4 gap-4 min-h-0 overflow-y-auto">
-              <div key={currentIndex} className="w-full flex-1 min-h-0 flex flex-col items-center gap-4 animate-fade-in">
+              <div
+                key={currentIndex}
+                className={`w-full flex-1 min-h-0 flex flex-col items-center gap-4 ${
+                  slideTransitionClass((currentSlide as any)?.transitionStyle) || "animate-fade-in"
+                }`}
+              >
               {currentSlide.type === "explain" && (
                 <div className="mb-2 inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-1.5 text-sm text-purple-300 shrink-0">
                   <BookOpen className="w-4 h-4" /> Výklad

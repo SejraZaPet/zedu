@@ -3,8 +3,9 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  SLIDE_ANIMATIONS, SLIDE_FONTS, SLIDE_FONT_SIZES, SLIDE_TEXT_COLORS,
+  SLIDE_ANIMATIONS, SLIDE_FONTS, SLIDE_FONT_SIZES, SLIDE_HIGHLIGHT_COLORS, SLIDE_TEXT_COLORS,
 } from "@/lib/slide-typography";
+
 import type { Block } from "@/lib/textbook-config";
 
 interface Props {
@@ -88,8 +89,41 @@ const BlockStyleControls = ({ block, onChange, showText = true }: Props) => {
               />
             </div>
           </div>
+
+          <div>
+            <Label className="text-[11px] text-muted-foreground">Zvýrazňovač</Label>
+            <div className="mt-1 flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => set({ highlightColor: null })}
+                title="Bez zvýraznění"
+                className={`h-6 rounded border px-1.5 text-[10px] ${!p.highlightColor ? "border-primary text-foreground" : "border-border text-muted-foreground"}`}
+              >
+                Bez
+              </button>
+              {SLIDE_HIGHLIGHT_COLORS.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => set({ highlightColor: c })}
+                  title={c}
+                  aria-label={`Zvýraznění ${c}`}
+                  className={`h-6 w-6 rounded-full border-2 transition-transform ${p.highlightColor === c ? "border-primary scale-110" : "border-border"}`}
+                  style={{ background: c }}
+                />
+              ))}
+              <input
+                type="color"
+                value={/^#/.test(p.highlightColor || "") ? p.highlightColor : "#FEF08A"}
+                onChange={(e) => set({ highlightColor: e.target.value })}
+                className="h-6 w-9 cursor-pointer rounded border border-border bg-transparent"
+                aria-label="Vlastní barva zvýraznění"
+              />
+            </div>
+          </div>
         </>
       )}
+
 
       <div>
         <Label className="text-[11px] text-muted-foreground">Animace vstupu</Label>
