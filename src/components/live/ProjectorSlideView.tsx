@@ -4,6 +4,7 @@ import WallProjectorView from "@/components/activities/WallProjectorView";
 import WordCloudView from "@/components/activities/WordCloudView";
 import { SlideBody } from "@/components/admin/SlideCanvas";
 import { getPresentationTheme, themeStageStyle } from "@/lib/presentation-themes";
+import { slideBackgroundOverride } from "@/lib/slide-typography";
 import { buildAnonymousLabelMap, type GamePlayer } from "@/lib/game-types";
 import { zoomStageStyle, type ZoomRect } from "@/lib/zoom-zones";
 
@@ -69,11 +70,15 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
   }, []);
 
   const projectorTheme = getPresentationTheme((currentSlide as any)?.themeId);
+  const projectorBgOverride = slideBackgroundOverride(currentSlide);
+  const projectorStageStyle: React.CSSProperties = projectorBgOverride
+    ? { ...themeStageStyle(projectorTheme), background: projectorBgOverride, backgroundImage: "none" }
+    : themeStageStyle(projectorTheme);
 
   return (
     <div
       className={`relative min-h-screen overflow-hidden ${projectorTheme.isDark ? "" : "text-foreground"}`}
-      style={themeStageStyle(projectorTheme)}
+      style={projectorStageStyle}
     >
       <div ref={frameRef} className="absolute inset-0 overflow-hidden">
         <div
