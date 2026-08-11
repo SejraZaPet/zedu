@@ -30,6 +30,8 @@ interface TaskRow {
   assigned_by: string;
   assigned_to: string;
   color: string | null;
+  related_organization_id: string | null;
+  related_user_id: string | null;
 }
 
 interface EventRow {
@@ -146,7 +148,7 @@ const MyStaffPanel = ({ onNavigate }: Props) => {
     const [{ data: taskData }, { data: eventData }] = await Promise.all([
       supabase
         .from("staff_tasks")
-        .select("id, title, description, due_date, status, priority, assigned_by, assigned_to, color")
+        .select("id, title, description, due_date, status, priority, assigned_by, assigned_to, color, related_organization_id, related_user_id")
         .or(`assigned_to.eq.${user.id},assigned_by.eq.${user.id}`)
         .order("created_at", { ascending: false }),
       supabase

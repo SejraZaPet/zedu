@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Check, ChevronsUpDown, Plus, Trash2 } from "lucide-react";
+import { Building2, Check, ChevronsUpDown, Plus, Trash2, User as UserIcon } from "lucide-react";
 import ColorSwatchPicker from "./ColorSwatchPicker";
 import { useAuth } from "@/contexts/AuthContext";
 import { DEFAULT_STAFF_COLOR } from "@/lib/staff-colors";
@@ -39,6 +39,10 @@ export interface EditableTask {
   assigned_to: string;
   /** Zadavatel – rozhoduje o právech na editaci zadání */
   assigned_by?: string;
+  /** Vazba na CRM organizaci (klienta) */
+  related_organization_id?: string | null;
+  /** Vazba na konkrétního uživatele (učitele/lektora) */
+  related_user_id?: string | null;
 }
 
 interface Props {
@@ -103,6 +107,8 @@ const StaffTaskDialog = ({
   const [pickerOpen, setPickerOpen] = useState(false);
   const [subItems, setSubItems] = useState<SubItem[]>([]);
   const [newSub, setNewSub] = useState("");
+  const [linkedOrgName, setLinkedOrgName] = useState<string | null>(null);
+  const [linkedUserName, setLinkedUserName] = useState<string | null>(null);
 
   const reset = useCallback(() => {
     setTitle("");
@@ -147,6 +153,27 @@ const StaffTaskDialog = ({
     if (!open || !editing) return;
     void loadSubItems(editing.id);
   }, [open, editing, loadSubItems]);
+
+  /** Názvy navázané organizace / osoby pro proklik z úkolu */
+  useEffect(() => {
+    if (!open || !editing) { setLinkedOrgName(null); setLinkedUserName(null); return; }
+    let active = true;
+    void (async () => {
+      if (editing.related_organization_id) {
+        const { data } = await supabase
+          .from("crm_organizations").select("name").eq("id", editing.related_organization_id).maybeSingle();
+        if (active) setLinkedOrgName((data as any)?.name ?? "Organizace");
+      } else if (active) setLinkedOrgName(null);
+      if (editing.related_user_id) {
+        const { data } = await supabase
+          .from("profiles").select("first_name, last_name, email").eq("id", editing.related_user_id).maybeSingle();
+        const p = data as any;
+        const name = p ? ([p.first_name, p.last_name].filter(Boolean).join(" ") || p.email || "Uživatel") : "Uživatel";
+        if (active) setLinkedUserName(name);
+      } else if (active) setLinkedUserName(null);
+    })();
+    return () => { active = false; };
+  }, [open, editing]);
 
   /** Seznam interního týmu (staff + admini) pro výběr adresáta */
   useEffect(() => {
@@ -307,6 +334,26 @@ const StaffTaskDialog = ({
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
+          {(linkedOrgName || linkedUserName) && (
+            <div className="flex flex-wrap gap-2">
+              {linkedOrgName && (
+                <a
+                  href={`/admin?tab=crm&org=${editing?.related_organization_id}`}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/50 px-2.5 py-1 text-xs text-foreground transition-colors hover:bg-muted"
+                >
+                  <Building2 className="h-3.5 w-3.5" /> {linkedOrgName}
+                </a>
+              )}
+              {linkedUserName && (
+                <a
+                  href={`/admin?tab=users&user=${editing?.related_user_id}`}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/50 px-2.5 py-1 text-xs text-foreground transition-colors hover:bg-muted"
+                >
+                  <UserIcon className="h-3.5 w-3.5" /> {linkedUserName}
+                </a>
+              )}
+            </div>
+          )}
           {readOnlyBrief && (
             <p className="rounded-md border border-border bg-muted/50 p-2 text-xs text-muted-foreground">
               Zadání může upravit jen zadavatel{assignerName ? ` ${assignerName}` : ""}. Vy můžete měnit stav úkolu a zaškrtávat body checklistu.
