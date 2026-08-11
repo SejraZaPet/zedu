@@ -4388,6 +4388,30 @@ export type Database = {
           },
         ]
       }
+      student_course_badges: {
+        Row: {
+          earned_at: string
+          id: string
+          student_id: string
+          textbook_id: string
+          textbook_title: string
+        }
+        Insert: {
+          earned_at?: string
+          id?: string
+          student_id: string
+          textbook_id: string
+          textbook_title?: string
+        }
+        Update: {
+          earned_at?: string
+          id?: string
+          student_id?: string
+          textbook_id?: string
+          textbook_title?: string
+        }
+        Relationships: []
+      }
       student_lesson_completions: {
         Row: {
           completed_at: string
@@ -5867,6 +5891,10 @@ export type Database = {
         Returns: boolean
       }
       cancel_notification: { Args: { _broadcast_id: string }; Returns: boolean }
+      check_course_completion: {
+        Args: { _textbook_id: string }
+        Returns: boolean
+      }
       claim_export_job: {
         Args: { _worker_id: string }
         Returns: {
