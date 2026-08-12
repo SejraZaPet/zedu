@@ -8,6 +8,7 @@ import { getPresentationTheme, themeStageStyle } from "@/lib/presentation-themes
 import { slideBackgroundOverride } from "@/lib/slide-typography";
 import { buildAnonymousLabelMap, type GamePlayer } from "@/lib/game-types";
 import { zoomStageStyle, type ZoomRect } from "@/lib/zoom-zones";
+import { gameBackgroundStyle } from "@/lib/game-backgrounds";
 
 const STAGE_WIDTH = 1600;
 const STAGE_HEIGHT = 900;
@@ -24,6 +25,8 @@ interface Props {
   scrollTop?: number;
   /** Active zoom crop in % of the stage, or null for the full slide. */
   zoom?: ZoomRect | null;
+  /** Volitelné herní pozadí (obrázek pod obsahem slidu). */
+  backgroundUrl?: string | null;
 }
 
 /**
@@ -31,7 +34,7 @@ interface Props {
  * Used by both LiveProjectorScreen and LiveTeacherScreen (under whiteboard overlay)
  * so that whiteboard strokes align identically in both views.
  */
-const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, slides, players, gameCode, overlayContent, scrollTop, zoom }: Props) => {
+const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, slides, players, gameCode, overlayContent, scrollTop, zoom, backgroundUrl }: Props) => {
   const progressPct = slides.length > 0 ? ((currentIndex + 1) / slides.length) * 100 : 0;
   const anonymousAnswers = !!(session?.settings as any)?.anonymousAnswers;
   const anonymousLabelMap = useMemo(
@@ -74,7 +77,9 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
   const projectorBgOverride = slideBackgroundOverride(currentSlide);
   const projectorStageStyle: CSSProperties = projectorBgOverride
     ? { ...themeStageStyle(projectorTheme), backgroundImage: "none", background: projectorBgOverride }
-    : themeStageStyle(projectorTheme);
+    : backgroundUrl
+      ? gameBackgroundStyle(backgroundUrl)
+      : themeStageStyle(projectorTheme);
 
   return (
     <div

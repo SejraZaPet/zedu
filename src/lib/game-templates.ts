@@ -1,3 +1,4 @@
+import { subjectKeyFromLabel } from "@/lib/game-backgrounds";
 import { supabase } from "@/integrations/supabase/client";
 import { DEFAULT_GAME_SETTINGS, generateGameCode, type TeamMode } from "@/lib/game-types";
 import { getModeDef, type GameMode } from "@/lib/game-modes";
@@ -68,6 +69,7 @@ export async function launchTemplateSession(template: GameTemplate): Promise<str
         teamModeKind: teamKind,
         teamMode: teamKind !== "none",
         teamCount: 2,
+        subjectKey: subjectKeyFromLabel(template.subject),
       } as any,
       status: "lobby",
       current_question_index: -1,

@@ -15,6 +15,7 @@ import RaceTrack from "@/components/game/RaceTrack";
 import { useEffect, useState } from "react";
 import { getClockOffset } from "@/lib/clock-sync";
 import { isValidZoomRect, isZoomableSlide, type ZoomRect } from "@/lib/zoom-zones";
+import { gameBackgroundStyle, sessionBackgroundUrl } from "@/lib/game-backgrounds";
 
 const LiveProjectorScreen = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -67,6 +68,7 @@ const LiveProjectorScreen = () => {
   const joinUrl = `${window.location.origin}/live/pripojit`;
 
   const settings = (session.settings as any) || {};
+  const backgroundUrl = sessionBackgroundUrl(settings);
   const isRaceMode = settings.gameMode === "race";
   const raceStartedAtMs = settings.raceStartedAt
     ? new Date(settings.raceStartedAt).getTime()
@@ -80,7 +82,7 @@ const LiveProjectorScreen = () => {
   // Lobby screen
   if (session.status === "lobby") {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-12 gap-8 text-white" style={{ background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)" }}>
+      <div className="min-h-screen flex flex-col items-center justify-center p-12 gap-8 text-white" style={gameBackgroundStyle(backgroundUrl)}>
         <CloseButton />
         <h1 className="text-6xl font-bold text-center">{session.title}</h1>
         <p className="text-2xl text-gray-300">Připojte se k prezentaci</p>
@@ -134,7 +136,7 @@ const LiveProjectorScreen = () => {
     return (
       <div
         className="min-h-screen flex flex-col p-6 md:p-10 gap-6 text-white"
-        style={{ background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)" }}
+        style={gameBackgroundStyle(backgroundUrl)}
       >
         <CloseButton />
         <div className="flex items-center justify-between gap-4">
@@ -169,7 +171,7 @@ const LiveProjectorScreen = () => {
   // No slide yet — keep projector gradient background instead of jarring white screen
   if (!currentSlide) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)" }}>
+      <div className="min-h-screen flex items-center justify-center" style={gameBackgroundStyle(backgroundUrl)}>
         <CloseButton />
       </div>
     );
@@ -225,6 +227,7 @@ const LiveProjectorScreen = () => {
         gameCode={gameCode}
         scrollTop={scrollTop}
         zoom={zoom}
+        backgroundUrl={backgroundUrl}
         overlayContent={sessionId && getSlideStrokes(whiteboard, currentIndex).length > 0 ? (
           <LiveWhiteboard sessionId={sessionId} data={whiteboard} slideIndex={currentIndex} readOnly className="pointer-events-none" />
         ) : null}

@@ -16,6 +16,8 @@ import SessionExports from "@/components/live/SessionExports";
 import { AdaptiveReviewDialog } from "@/components/game/AdaptiveReview";
 import { AddSlideSheet } from "@/components/game/AddSlideSheet";
 import { isMixedPresentation } from "@/lib/game-slide-settings";
+import GameBackgroundSelect from "@/components/game/GameBackgroundSelect";
+import { sessionBackgroundUrl } from "@/lib/game-backgrounds";
 import { TeamsSlideTeacher } from "@/components/game/TeamsSlide";
 import { DifferentiatedSlideTeacher } from "@/components/game/DifferentiatedSlide";
 import { EscapeGameOverview } from "@/components/game/EscapeGameSlide";
@@ -675,6 +677,17 @@ const LiveTeacherScreen = () => {
                   aria-label="Zobrazit závodní dráhu na projektoru"
                 />
               </label>
+              <GameBackgroundSelect
+                value={sessionBackgroundUrl(settings)}
+                subjectKey={settings?.subjectKey ?? null}
+                onChange={async (url) => {
+                  if (!sessionId) return;
+                  await supabase
+                    .from("game_sessions")
+                    .update({ settings: { ...(settings || {}), backgroundUrl: url } })
+                    .eq("id", sessionId);
+                }}
+              />
             </PopoverContent>
           </Popover>
 

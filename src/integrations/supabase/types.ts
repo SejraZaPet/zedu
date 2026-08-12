@@ -2038,6 +2038,42 @@ export type Database = {
           },
         ]
       }
+      game_backgrounds: {
+        Row: {
+          category: string
+          created_at: string
+          field_key: string | null
+          id: string
+          image_url: string
+          is_active: boolean
+          name: string
+          season_key: string | null
+          subject_key: string | null
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          field_key?: string | null
+          id?: string
+          image_url: string
+          is_active?: boolean
+          name: string
+          season_key?: string | null
+          subject_key?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          field_key?: string | null
+          id?: string
+          image_url?: string
+          is_active?: boolean
+          name?: string
+          season_key?: string | null
+          subject_key?: string | null
+        }
+        Relationships: []
+      }
       game_players: {
         Row: {
           created_at: string
