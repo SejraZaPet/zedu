@@ -24,6 +24,7 @@ import AuditLogViewer from "@/components/admin/AuditLogViewer";
 import TextbookTemplatesManager from "@/components/admin/TextbookTemplatesManager";
 import LandingPageManager from "@/components/admin/LandingPageManager";
 import AvatarItemsManager from "@/components/admin/AvatarItemsManager";
+import GameBackgroundsManager from "@/components/admin/GameBackgroundsManager";
 import TextbookOverviewManager from "@/components/admin/TextbookOverviewManager";
 import AcademyCoursesManager from "@/components/admin/AcademyCoursesManager";
 import AcademyEvidenceReviewManager from "@/components/admin/AcademyEvidenceReviewManager";
@@ -36,7 +37,7 @@ import MyStaffPanel from "@/components/admin/MyStaffPanel";
 import StaffKnowledgeManager from "@/components/admin/StaffKnowledgeManager";
 import { useStaffPermissions } from "@/hooks/useStaffPermissions";
 import { Button } from "@/components/ui/button";
-import { BookOpen, LogOut, Home, GraduationCap, Settings, Users, School, BarChart3, LayoutDashboard, HelpCircle, ListTree, CircleHelp, Link2, Pencil, Video, Bell, Activity, FileText, Sparkles, Globe, Smile, Library, Award, FileBadge2, Contact, ChevronDown, Coins, UserSquare2 } from "lucide-react";
+import { BookOpen, LogOut, Home, GraduationCap, Settings, Users, School, BarChart3, LayoutDashboard, HelpCircle, ListTree, CircleHelp, Link2, Pencil, Video, Bell, Activity, FileText, Sparkles, Globe, Smile, Library, Award, FileBadge2, Contact, ChevronDown, Coins, UserSquare2, Image as ImageIcon } from "lucide-react";
 
 /** `module` = klíč oprávnění (null = viditelné vždy, "admin_only" = jen admin) */
 const adminTabs = [
@@ -57,6 +58,7 @@ const adminTabs = [
   { id: "templates", label: "Šablony", icon: Sparkles, module: "templates" },
   { id: "landing", label: "Landing page", icon: Globe, module: "landing" },
   { id: "avatars", label: "Avatary", icon: Smile, module: "avatar_manager" },
+  { id: "game-backgrounds", label: "Herní pozadí", icon: ImageIcon, module: "avatar_manager" },
   { id: "notifications", label: "Notifikace", icon: Bell, module: "notifications" },
   { id: "audit", label: "Audit log", icon: FileText, module: "audit" },
   { id: "help", label: "Nápověda", icon: HelpCircle, module: null },
@@ -77,7 +79,7 @@ const teacherTabs = [
   { id: "help", label: "Nápověda", icon: HelpCircle, module: null },
 ] as const;
 
-type Tab = "dashboard" | "my-panel" | "staff-academy" | "stats" | "textbooks" | "lessons" | "outline" | "mcq" | "matching" | "slide-edit" | "video-ai" | "subjects" | "users" | "classes" | "results" | "help" | "notifications" | "licenses" | "audit" | "templates" | "landing" | "avatars" | "textbook-overview" | "academy" | "academy-pathways" | "academy-evidence" | "crm" | "market-economics" | "unassigned-teachers";
+type Tab = "dashboard" | "my-panel" | "staff-academy" | "stats" | "textbooks" | "lessons" | "outline" | "mcq" | "matching" | "slide-edit" | "video-ai" | "subjects" | "users" | "classes" | "results" | "help" | "notifications" | "licenses" | "audit" | "templates" | "landing" | "avatars" | "game-backgrounds" | "textbook-overview" | "academy" | "academy-pathways" | "academy-evidence" | "crm" | "market-economics" | "unassigned-teachers";
 
 /** Dvouúrovňová navigace administrace. `help` a `dashboard` řešíme mimo/uvnitř kategorií. */
 const adminGroups: { id: string; label: string; tabs: string[] }[] = [
@@ -85,7 +87,7 @@ const adminGroups: { id: string; label: string; tabs: string[] }[] = [
   { id: "sales", label: "Prodej a zákazníci", tabs: ["crm", "licenses", "unassigned-teachers", "market-economics"] },
   { id: "content", label: "Vzdělávací obsah", tabs: ["textbook-overview", "templates"] },
   { id: "academy", label: "ZEdu Akademie", tabs: ["academy", "academy-pathways", "academy-evidence"] },
-  { id: "appearance", label: "Vzhled webu", tabs: ["landing", "avatars"] },
+  { id: "appearance", label: "Vzhled webu", tabs: ["landing", "avatars", "game-backgrounds"] },
   { id: "system", label: "Systém", tabs: ["notifications", "audit"] },
 ];
 
@@ -314,6 +316,7 @@ const Admin = () => {
         {activeTab === "templates" && !isTeacher && <TextbookTemplatesManager />}
         {activeTab === "landing" && !isTeacher && <LandingPageManager />}
         {activeTab === "avatars" && !isTeacher && <AvatarItemsManager />}
+        {activeTab === "game-backgrounds" && !isTeacher && <GameBackgroundsManager />}
         {activeTab === "textbook-overview" && !isTeacher && <TextbookOverviewManager />}
         {activeTab === "academy" && !isTeacher && <AcademyCoursesManager />}
         {activeTab === "academy-pathways" && !isTeacher && <AcademyPathwaysManager />}
