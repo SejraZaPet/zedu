@@ -27,6 +27,7 @@ import { Lock, Pencil, Hand, ChevronLeft, ChevronRight, MessageCircleQuestion } 
 import LiveQuestionsSheet from "@/components/game/LiveQuestionsSheet";
 import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
 
+import { gameBackgroundStyle, sessionBackgroundUrl } from "@/lib/game-backgrounds";
 import { useAuth } from "@/contexts/AuthContext";
 import { findPlayerTeam, buildAnonymousLabelMap, type GamePlayer } from "@/lib/game-types";
 
@@ -178,6 +179,7 @@ const StudentGamePlay = () => {
   const pacingMode = settingsAny.pacingMode === "student" ? "student" : "teacher";
   const totalSlides = (session?.activity_data as any[])?.length ?? 0;
   const isRaceMode = settingsAny.gameMode === "race";
+  const gameBackgroundUrl = sessionBackgroundUrl(liveSettings) ?? sessionBackgroundUrl(settingsAny);
 
   // Initialize student_index once when entering student-paced mode without a value
   useEffect(() => {
@@ -299,7 +301,7 @@ const StudentGamePlay = () => {
       return (
         <div
           className="min-h-screen min-h-[100dvh] flex flex-col items-center justify-center gap-6 p-6 text-white"
-          style={{ background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)" }}
+          style={gameBackgroundStyle(gameBackgroundUrl)}
         >
           <p className="text-6xl">{finishedRace ? "🏁" : "⏰"}</p>
           <h1 className="text-3xl font-bold text-center">
@@ -347,7 +349,7 @@ const StudentGamePlay = () => {
         )}
         <div
           className="min-h-screen min-h-[100dvh] flex flex-col overflow-y-auto text-white"
-          style={{ background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)" }}
+          style={gameBackgroundStyle(gameBackgroundUrl)}
         >
           {/* Floating hand-raise toggle */}
           <button
@@ -440,7 +442,7 @@ const StudentGamePlay = () => {
                   <div
                     className="fixed inset-0 flex flex-col"
                     style={{
-                      background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)",
+                      ...gameBackgroundStyle(gameBackgroundUrl),
                       color: "white",
                       zIndex: 50,
                     }}
