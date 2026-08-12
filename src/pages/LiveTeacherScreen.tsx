@@ -679,6 +679,7 @@ const LiveTeacherScreen = () => {
               </label>
               <GameBackgroundSelect
                 value={sessionBackgroundUrl(settings)}
+                subjectKey={settings?.subjectKey ?? null}
                 onChange={async (url) => {
                   if (!sessionId) return;
                   await supabase

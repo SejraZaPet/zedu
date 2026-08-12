@@ -115,3 +115,30 @@ export const gameBackgroundStyle = (url?: string | null): CSSProperties => {
 /** Vytáhne URL pozadí z nastavení session */
 export const sessionBackgroundUrl = (settings: any): string | null =>
   typeof settings?.backgroundUrl === "string" && settings.backgroundUrl ? settings.backgroundUrl : null;
+
+/** Odvodí klíč předmětu z názvu předmětu (např. "Přírodopis" -> "prirodopis") */
+export const subjectKeyFromLabel = (label?: string | null): string | null => {
+  if (!label) return null;
+  const norm = label
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  const map: { match: string[]; key: string }[] = [
+    { match: ["matemat"], key: "matematika" },
+    { match: ["cesk", "cestin", "literat"], key: "cestina" },
+    { match: ["anglick", "englis"], key: "anglictina" },
+    { match: ["nemeck"], key: "nemcina" },
+    { match: ["fyzik"], key: "fyzika" },
+    { match: ["chemi"], key: "chemie" },
+    { match: ["prirodopis", "biolog"], key: "prirodopis" },
+    { match: ["dejepis", "histor"], key: "dejepis" },
+    { match: ["zemepis", "geograf"], key: "zemepis" },
+    { match: ["obcansk", "spolecensk"], key: "obcanska" },
+    { match: ["informat", "programov"], key: "informatika" },
+    { match: ["hudebn"], key: "hudebni" },
+    { match: ["vytvarn"], key: "vytvarna" },
+    { match: ["telesn"], key: "telesna" },
+    { match: ["ekonom", "ucetnic"], key: "ekonomie" },
+  ];
+  return map.find((m) => m.match.some((frag) => norm.includes(frag)))?.key ?? null;
+};
