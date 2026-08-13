@@ -110,11 +110,38 @@ Deno.serve(async (req) => {
       });
     }
 
+    const adminClient = () =>
+      createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      );
+
+    // --- Feedback on a logged answer ---
+    if (action === "feedback") {
+      const logId = String(body?.logId ?? "").trim();
+      const feedback = String(body?.feedback ?? "").trim();
+      if (!logId || (feedback !== "up" && feedback !== "down")) {
+        return new Response(JSON.stringify({ error: "Neplatná zpětná vazba." }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { error: fbErr } = await adminClient()
+        .from("website_chat_logs")
+        .update({ feedback })
+        .eq("id", logId);
+      if (fbErr) throw fbErr;
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // --- Chat ---
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const visitorMessage = String(body?.visitorMessage ?? "").trim().slice(0, 2000);
+    const sessionId = String(body?.sessionId ?? "").trim().slice(0, 100) || "unknown";
     if (!visitorMessage) {
       return new Response(JSON.stringify({ error: "Prázdná zpráva." }), {
         status: 400,
@@ -133,6 +160,23 @@ Deno.serve(async (req) => {
           .map((m: ChatMsg) => ({ role: m.role, content: String(m.content).slice(0, 2000) }))
       : [];
 
+    // Doplňkové znalosti spravované adminem – mají přednost před obecnými fakty.
+    const admin = adminClient();
+    let systemPrompt = SYSTEM_PROMPT;
+    const { data: faqs, error: faqErr } = await admin
+      .from("website_assistant_faq")
+      .select("question, answer")
+      .eq("is_active", true)
+      .order("created_at", { ascending: true })
+      .limit(200);
+    if (faqErr) console.error("faq load error:", faqErr);
+    if (faqs && faqs.length > 0) {
+      const block = faqs
+        .map((f: { question: string; answer: string }) => `Otázka: ${f.question}\nOdpověď: ${f.answer}`)
+        .join("\n\n");
+      systemPrompt += `\n\nDOPLŇKOVÉ ZNALOSTI (aktualizováno adminem) – tyto informace jsou nejaktuálnější a mají PŘEDNOST před obecnými fakty výše:\n${block}`;
+    }
+
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -142,12 +186,13 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         model: "google/gemini-3.6-flash",
         messages: [
-          { role: "system", content: SYSTEM_PROMPT },
+          { role: "system", content: systemPrompt },
           ...history,
           { role: "user", content: visitorMessage },
         ],
       }),
     });
+
 
     if (!resp.ok) {
       if (resp.status === 429)
