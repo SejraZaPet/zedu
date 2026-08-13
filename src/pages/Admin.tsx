@@ -33,11 +33,12 @@ import SchoolLicensesManager from "@/components/admin/SchoolLicensesManager";
 import UnassignedTeachersManager from "@/components/admin/UnassignedTeachersManager";
 import CrmManager from "@/components/admin/CrmManager";
 import MarketplaceEconomicsManager from "@/components/admin/MarketplaceEconomicsManager";
+import WebsiteAssistantManager from "@/components/admin/WebsiteAssistantManager";
 import MyStaffPanel from "@/components/admin/MyStaffPanel";
 import StaffKnowledgeManager from "@/components/admin/StaffKnowledgeManager";
 import { useStaffPermissions } from "@/hooks/useStaffPermissions";
 import { Button } from "@/components/ui/button";
-import { BookOpen, LogOut, Home, GraduationCap, Settings, Users, School, BarChart3, LayoutDashboard, HelpCircle, ListTree, CircleHelp, Link2, Pencil, Video, Bell, Activity, FileText, Sparkles, Globe, Smile, Library, Award, FileBadge2, Contact, ChevronDown, Coins, UserSquare2, Image as ImageIcon } from "lucide-react";
+import { BookOpen, LogOut, Home, GraduationCap, Settings, Users, School, BarChart3, LayoutDashboard, HelpCircle, ListTree, CircleHelp, Link2, Pencil, Video, Bell, Activity, FileText, Sparkles, Globe, Smile, Library, Award, FileBadge2, Contact, ChevronDown, Coins, UserSquare2, Image as ImageIcon, Bot } from "lucide-react";
 
 /** `module` = klíč oprávnění (null = viditelné vždy, "admin_only" = jen admin) */
 const adminTabs = [
@@ -60,6 +61,7 @@ const adminTabs = [
   { id: "avatars", label: "Avatary", icon: Smile, module: "avatar_manager" },
   { id: "game-backgrounds", label: "Herní pozadí", icon: ImageIcon, module: "avatar_manager" },
   { id: "notifications", label: "Notifikace", icon: Bell, module: "notifications" },
+  { id: "website-assistant", label: "ZedAI web", icon: Bot, module: "website_assistant" },
   { id: "audit", label: "Audit log", icon: FileText, module: "audit" },
   { id: "help", label: "Nápověda", icon: HelpCircle, module: null },
 ] as const;
@@ -79,7 +81,7 @@ const teacherTabs = [
   { id: "help", label: "Nápověda", icon: HelpCircle, module: null },
 ] as const;
 
-type Tab = "dashboard" | "my-panel" | "staff-academy" | "stats" | "textbooks" | "lessons" | "outline" | "mcq" | "matching" | "slide-edit" | "video-ai" | "subjects" | "users" | "classes" | "results" | "help" | "notifications" | "licenses" | "audit" | "templates" | "landing" | "avatars" | "game-backgrounds" | "textbook-overview" | "academy" | "academy-pathways" | "academy-evidence" | "crm" | "market-economics" | "unassigned-teachers";
+type Tab = "dashboard" | "my-panel" | "staff-academy" | "stats" | "textbooks" | "lessons" | "outline" | "mcq" | "matching" | "slide-edit" | "video-ai" | "subjects" | "users" | "classes" | "results" | "help" | "notifications" | "licenses" | "audit" | "templates" | "landing" | "avatars" | "game-backgrounds" | "textbook-overview" | "academy" | "academy-pathways" | "academy-evidence" | "crm" | "market-economics" | "unassigned-teachers" | "website-assistant";
 
 /** Dvouúrovňová navigace administrace. `help` a `dashboard` řešíme mimo/uvnitř kategorií. */
 const adminGroups: { id: string; label: string; tabs: string[] }[] = [
@@ -88,7 +90,7 @@ const adminGroups: { id: string; label: string; tabs: string[] }[] = [
   { id: "content", label: "Vzdělávací obsah", tabs: ["textbook-overview", "templates"] },
   { id: "academy", label: "ZEdu Akademie", tabs: ["academy", "academy-pathways", "academy-evidence"] },
   { id: "appearance", label: "Vzhled webu", tabs: ["landing", "avatars", "game-backgrounds"] },
-  { id: "system", label: "Systém", tabs: ["notifications", "audit"] },
+  { id: "system", label: "Systém", tabs: ["notifications", "website-assistant", "audit"] },
 ];
 
 const Admin = () => {
@@ -323,6 +325,7 @@ const Admin = () => {
         {activeTab === "academy-evidence" && !isTeacher && <AcademyEvidenceReviewManager />}
         {activeTab === "crm" && !isTeacher && <CrmManager />}
         {activeTab === "market-economics" && !isTeacher && <MarketplaceEconomicsManager />}
+        {activeTab === "website-assistant" && !isTeacher && <WebsiteAssistantManager />}
         {activeTab === "help" && <HelpGuidesManager />}
 
       </div>
