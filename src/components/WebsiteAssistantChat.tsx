@@ -169,7 +169,7 @@ export default function WebsiteAssistantChat({ className }: { className?: string
 
           <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
             {messages.map((m, i) => (
-              <div key={i} className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}>
+              <div key={i} className={cn("flex flex-col", m.role === "user" ? "items-end" : "items-start")}>
                 <div
                   className={cn(
                     "max-w-[85%] rounded-2xl px-3.5 py-2 text-sm whitespace-pre-wrap",
@@ -180,8 +180,37 @@ export default function WebsiteAssistantChat({ className }: { className?: string
                 >
                   {m.content}
                 </div>
+                {m.role === "assistant" && m.logId && (
+                  <div className="flex items-center gap-1 pl-1 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => sendFeedback(i, "up")}
+                      aria-label="Odpověď byla užitečná"
+                      aria-pressed={m.feedback === "up"}
+                      className={cn(
+                        "p-1 rounded-md transition-colors hover:bg-muted",
+                        m.feedback === "up" ? "text-primary" : "text-muted-foreground",
+                      )}
+                    >
+                      <ThumbsUp className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => sendFeedback(i, "down")}
+                      aria-label="Odpověď nebyla užitečná"
+                      aria-pressed={m.feedback === "down"}
+                      className={cn(
+                        "p-1 rounded-md transition-colors hover:bg-muted",
+                        m.feedback === "down" ? "text-destructive" : "text-muted-foreground",
+                      )}
+                    >
+                      <ThumbsDown className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
+
 
             {loading && (
               <div className="flex justify-start">
