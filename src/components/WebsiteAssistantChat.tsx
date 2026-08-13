@@ -5,12 +5,15 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MessageSquare, Send, Loader2, Bot, UserPlus, CheckCircle2 } from "lucide-react";
+import { MessageSquare, Send, Loader2, Bot, UserPlus, CheckCircle2, ThumbsUp, ThumbsDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ChatMsg {
   role: "user" | "assistant";
   content: string;
+  /** ID záznamu v logu konverzací – umožňuje odeslat zpětnou vazbu. */
+  logId?: string | null;
+  feedback?: "up" | "down" | null;
 }
 
 /** Povinné odhalení AI podle EU AI Act (čl. 50) – vždy první zpráva konverzace. */
@@ -26,6 +29,11 @@ const initialMessages = (): ChatMsg[] => [
   { role: "assistant", content: INITIAL_GREETING },
 ];
 
+const newSessionId = () =>
+  typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : `s-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
 export default function WebsiteAssistantChat({ className }: { className?: string }) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMsg[]>(initialMessages);
@@ -37,13 +45,30 @@ export default function WebsiteAssistantChat({ className }: { className?: string
   const [leadError, setLeadError] = useState<string | null>(null);
   const [lead, setLead] = useState({ name: "", email: "", organization: "", note: "", website: "" });
   const scrollRef = useRef<HTMLDivElement>(null);
+  /** Náhodné ID session – jen v paměti, nikam se neukládá. */
+  const sessionIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (open && !sessionIdRef.current) sessionIdRef.current = newSessionId();
+  }, [open]);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages, loading, showLead]);
 
+  const sendFeedback = async (index: number, feedback: "up" | "down") => {
+    const msg = messages[index];
+    if (!msg?.logId || msg.feedback === feedback) return;
+    setMessages((m) => m.map((x, i) => (i === index ? { ...x, feedback } : x)));
+    const { error } = await supabase.functions.invoke("website-assistant-chat", {
+      body: { action: "feedback", logId: msg.logId, feedback },
+    });
+    if (error) setMessages((m) => m.map((x, i) => (i === index ? { ...x, feedback: null } : x)));
+  };
+
   const sendText = async (text: string) => {
     if (!text.trim() || loading) return;
+    if (!sessionIdRef.current) sessionIdRef.current = newSessionId();
     const nextHistory: ChatMsg[] = [...messages, { role: "user", content: text }];
     setMessages(nextHistory);
     setInput("");
@@ -53,12 +78,14 @@ export default function WebsiteAssistantChat({ className }: { className?: string
         body: {
           action: "chat",
           visitorMessage: text,
+          sessionId: sessionIdRef.current,
           // Neposílej úvodní odhalení AI ani pozdrav.
-          conversationHistory: nextHistory.slice(2, -1),
+          conversationHistory: nextHistory.slice(2, -1).map((m) => ({ role: m.role, content: m.content })),
         },
       });
       if (error) throw error;
       const reply = (data as any)?.reply as string | undefined;
+      const logId = ((data as any)?.logId as string | undefined) ?? null;
       const errMsg = (data as any)?.error as string | undefined;
       setMessages((m) => [
         ...m,
@@ -68,6 +95,8 @@ export default function WebsiteAssistantChat({ className }: { className?: string
             errMsg ??
             reply ??
             "⚠️ Odpověď se nepodařilo získat. Zkuste to prosím znovu nebo nám nechte kontakt.",
+          logId: errMsg ? null : logId,
+          feedback: null,
         },
       ]);
     } catch (e: any) {
@@ -79,6 +108,7 @@ export default function WebsiteAssistantChat({ className }: { className?: string
       setLoading(false);
     }
   };
+
 
   const submitLead = async () => {
     if (leadLoading) return;
