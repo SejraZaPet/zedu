@@ -1,0 +1,1 @@
+delete from crm_contacts where organization_id = 'e3fa7729-71fe-4a08-ba32-2edff5a0d4b0'; delete from crm_organizations where id = 'e3fa7729-71fe-4a08-ba32-2edff5a0d4b0';
