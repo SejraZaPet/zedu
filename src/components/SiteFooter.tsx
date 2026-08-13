@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Mail } from "lucide-react";
+import { Mail, Settings } from "lucide-react";
 import logo from "@/assets/zedu-logo-new.png";
 import { useAuth } from "@/contexts/AuthContext";
 
