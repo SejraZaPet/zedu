@@ -25,7 +25,6 @@ import PodcastSection from "@/components/PodcastSection";
 import FinalCTA from "@/components/landing/FinalCTA";
 import LicensePlansSection from "@/components/LicensePlansSection";
 import SiteFooter from "@/components/SiteFooter";
-import AdminButton from "@/components/AdminButton";
 import { useLandingSections, useAllLandingSections, type LandingSectionRow, type LandingSectionType } from "@/hooks/useLandingSections";
 import { LandingEditModeProvider, useLandingEditMode } from "@/contexts/LandingEditModeContext";
 import AdminEditToggle from "@/components/landing-edit/AdminEditToggle";
@@ -276,7 +275,6 @@ const Index = () => {
           <LicensePlansSection />
         </main>
         <SiteFooter />
-        <AdminButton />
         <AdminEditToggle />
         <EditModeFloatingBar />
       </div>
