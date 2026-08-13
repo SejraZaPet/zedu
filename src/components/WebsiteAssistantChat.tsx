@@ -146,13 +146,68 @@ export default function WebsiteAssistantChat({ className }: { className?: string
         type="button"
         onClick={() => setOpen(true)}
         className={cn(
-          "fixed bottom-5 right-5 z-40 rounded-full shadow-lg h-14 pl-4 pr-5 gap-2 bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent,var(--primary)))]",
+          "fixed bottom-5 right-5 z-40 h-14 w-14 rounded-full shadow-lg p-0",
+          "bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent,var(--primary)))]",
+          "hover:brightness-110 hover:scale-105 transition-transform",
           className,
         )}
         aria-label="Zeptat se ZedAI na platformu ZEdu"
+        title="Zeptat se ZedAI"
       >
-        <MessageSquare className="w-5 h-5" />
-        <span className="font-semibold">Zeptat se ZedAI</span>
+        <span className="relative flex items-center justify-center w-full h-full">
+          {/* Zedíkova zjednodušená hlava – gumdrop tvar v brand gradientu */}
+          <svg
+            viewBox="0 0 48 48"
+            className="w-8 h-8"
+            aria-hidden="true"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <defs>
+              <linearGradient id="zedHeadGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#6EC6D9" />
+                <stop offset="100%" stopColor="#9B6CFF" />
+              </linearGradient>
+            </defs>
+            <path
+              d="M24 6C14 6 10 14 10 22C10 32 16 42 24 42C32 42 38 32 38 22C38 14 34 6 24 6Z"
+              fill="url(#zedHeadGrad)"
+            />
+            <circle cx="18" cy="20" r="2.5" fill="white" />
+            <circle cx="30" cy="20" r="2.5" fill="white" />
+            <path
+              d="M19 28C19 28 21 31 24 31C27 31 29 28 29 28"
+              stroke="white"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+            />
+            <path
+              d="M24 6C24 6 27 4 29 5C31 6 32 9 30 10"
+              fill="url(#zedHeadGrad)"
+            />
+            <path
+              d="M24 6C24 6 21 4 19 5C17 6 16 9 18 10"
+              fill="url(#zedHeadGrad)"
+            />
+          </svg>
+          {/* Odzásek „zeptej se“ v pravém horním rohu */}
+          <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center w-5 h-5 rounded-full bg-background border border-primary/30 text-primary shadow-sm">
+            <svg
+              viewBox="0 0 16 16"
+              className="w-3 h-3"
+              aria-hidden="true"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="8" cy="8" r="6" />
+              <path d="M6 6.5c0-.5.4-1 1-1h.9c.8 0 1.4.6 1.4 1.4 0 1.1-2.3 1.3-2.3 3" />
+              <path d="M8 11h.01" />
+            </svg>
+          </span>
+        </span>
       </Button>
 
       <Sheet open={open} onOpenChange={setOpen}>
