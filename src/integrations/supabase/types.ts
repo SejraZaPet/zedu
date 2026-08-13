@@ -5605,6 +5605,71 @@ export type Database = {
         }
         Relationships: []
       }
+      website_assistant_faq: {
+        Row: {
+          answer: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          question: string
+          updated_at: string
+        }
+        Insert: {
+          answer: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          question: string
+          updated_at?: string
+        }
+        Update: {
+          answer?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          question?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "website_assistant_faq_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      website_chat_logs: {
+        Row: {
+          answer: string
+          created_at: string
+          feedback: string | null
+          id: string
+          question: string
+          session_id: string
+        }
+        Insert: {
+          answer: string
+          created_at?: string
+          feedback?: string | null
+          id?: string
+          question: string
+          session_id: string
+        }
+        Update: {
+          answer?: string
+          created_at?: string
+          feedback?: string | null
+          id?: string
+          question?: string
+          session_id?: string
+        }
+        Relationships: []
+      }
       worksheet_lessons: {
         Row: {
           added_at: string
