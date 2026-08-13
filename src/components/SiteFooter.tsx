@@ -61,11 +61,21 @@ const SiteFooter = () => {
           </div>
         </div>
 
-        <div className="border-t border-border mt-10 pt-6 text-center">
+        <div className="border-t border-border mt-10 pt-6 flex flex-col items-center gap-2">
           <p className="text-xs text-muted-foreground">
             © {new Date().getFullYear()} Zedu. Všechna práva vyhrazena.
           </p>
+          <a
+            href="/auth"
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground/60 hover:text-primary transition-colors"
+            aria-label="Administrace"
+            title="Administrace"
+          >
+            <Settings className="w-3.5 h-3.5" />
+            Administrace
+          </a>
         </div>
+
       </div>
     </footer>
   );
