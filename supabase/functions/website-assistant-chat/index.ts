@@ -222,9 +222,20 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    return new Response(JSON.stringify({ reply }), {
+
+    let logId: string | null = null;
+    const { data: logRow, error: logErr } = await admin
+      .from("website_chat_logs")
+      .insert({ session_id: sessionId, question: visitorMessage, answer: reply })
+      .select("id")
+      .single();
+    if (logErr) console.error("website_chat_logs insert error:", logErr);
+    else logId = logRow?.id ?? null;
+
+    return new Response(JSON.stringify({ reply, logId }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+
   } catch (e) {
     console.error("website-assistant-chat error:", e);
     return new Response(
