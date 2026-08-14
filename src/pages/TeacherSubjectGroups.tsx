@@ -85,7 +85,12 @@ const TeacherSubjectGroups = () => {
     }
     const rows = (data as SubjectRow[]) ?? [];
     setSubjects(rows);
-    setSubjectId((prev) => prev || rows[0]?.id || "");
+    const initialFromQuery = searchParams.get("subjectId");
+    if (initialFromQuery && rows.some((r) => r.id === initialFromQuery)) {
+      setSubjectId(initialFromQuery);
+    } else {
+      setSubjectId((prev) => prev || rows[0]?.id || "");
+    }
   };
 
   const loadGroups = async () => {
