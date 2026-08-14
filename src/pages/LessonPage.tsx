@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Loader2, Pencil, List } from "lucide-react";
+import { ArrowLeft, Loader2, Pencil, List, NotebookPen } from "lucide-react";
+
 import { slugify } from "@/lib/slugify";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
