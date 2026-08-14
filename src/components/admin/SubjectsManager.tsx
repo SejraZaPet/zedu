@@ -230,7 +230,8 @@ const SubjectsManager = () => {
         const { data: existingCanonical } = await supabase
           .from("subjects")
           .select("id")
-          .ilike("name", form.label.trim())
+          .ilike("name", form.label.trim().replace(/[%_]/g, (m) => `\\${m}`))
+          .limit(1)
           .maybeSingle();
         if (existingCanonical) {
           toast.error("Předmět s tímto názvem již existuje.");
@@ -249,6 +250,7 @@ const SubjectsManager = () => {
 
         invalidateCatalog();
         toast.success("Předmět vytvořen a učebnice automaticky založena.");
+
       } else if (editing) {
         // Update subject
         const { error } = await supabase
