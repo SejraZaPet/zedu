@@ -12,6 +12,8 @@ import {
   Plus, Pencil, Trash2, Save, X, ArrowLeft, GripVertical, AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
+import { createSubject } from "@/lib/subjects-catalog";
+import { useInvalidateSubjectCatalog, useSubjectCatalog } from "@/hooks/useSubjectCatalog";
 
 // ──────────────────── Grade Editor ────────────────────
 const GradeEditor = ({
@@ -104,6 +106,8 @@ function generateCode(length = 6): string {
 const SubjectsManager = () => {
   const queryClient = useQueryClient();
   const { data: subjects = [], isLoading } = useSubjects(false);
+  const invalidateCatalog = useInvalidateSubjectCatalog();
+  const { subjects: canonicalSubjects } = useSubjectCatalog();
   const [editing, setEditing] = useState<SubjectRecord | null>(null);
   const [isNew, setIsNew] = useState(false);
   const [form, setForm] = useState<SubjectForm>(emptyForm);
@@ -173,7 +177,7 @@ const SubjectsManager = () => {
       .replace(/[^a-z0-9]+/g, "_")
       .replace(/^_|_$/g, "");
 
-  const autoCreateTextbook = async (subjectLabel: string, subjectSlug: string) => {
+  const autoCreateTextbook = async (subjectLabel: string, subjectSlug: string, subjectId?: string) => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
@@ -194,6 +198,7 @@ const SubjectsManager = () => {
       title: subjectLabel,
       description: `Učebnice předmětu ${subjectLabel}`,
       subject: subjectSlug,
+      subject_id: subjectId ?? null,
       teacher_id: session.user.id,
       access_code: generateCode(),
     } as any);
@@ -220,49 +225,29 @@ const SubjectsManager = () => {
 
     try {
       if (isNew) {
-        // Check slug uniqueness
-        const { data: existing } = await supabase
-          .from("textbook_subjects")
+        // NEW subjects are created ONLY in the canonical `subjects` catalog.
+        // The legacy `textbook_subjects` table is no longer written to.
+        const { data: existingCanonical } = await supabase
+          .from("subjects")
           .select("id")
-          .eq("slug", slug)
+          .ilike("name", form.label.trim())
           .maybeSingle();
-        if (existing) {
+        if (existingCanonical) {
           toast.error("Předmět s tímto názvem již existuje.");
           setSaving(false);
           return;
         }
 
-        const { data: newSubject, error } = await supabase
-          .from("textbook_subjects")
-          .insert({
-            slug,
-            label: form.label,
-            abbreviation: form.abbreviation,
-            description: form.description,
-            color: form.color,
-            active: form.active,
-            sort_order: subjects.length,
-          })
-          .select("id")
-          .single();
+        const created = await createSubject({
+          name: form.label.trim(),
+          color: form.color,
+          abbreviation: form.abbreviation || null,
+        });
 
-        if (error) throw error;
+        // Auto-create corresponding textbook (dual write: subject_id + slug)
+        await autoCreateTextbook(form.label, slug, created.id);
 
-        // Insert grades
-        if (form.grades.length > 0) {
-          await supabase.from("textbook_grades").insert(
-            form.grades.map((g, i) => ({
-              subject_id: newSubject.id,
-              grade_number: g.grade_number,
-              label: g.label,
-              sort_order: i,
-            }))
-          );
-        }
-
-        // Auto-create corresponding textbook
-        await autoCreateTextbook(form.label, slug);
-
+        invalidateCatalog();
         toast.success("Předmět vytvořen a učebnice automaticky založena.");
       } else if (editing) {
         // Update subject
@@ -441,6 +426,11 @@ const SubjectsManager = () => {
   }
 
   // ──────── List View ────────
+  const legacyNames = new Set(subjects.map((s) => s.label.trim().toLowerCase()));
+  const canonicalOnly = canonicalSubjects.filter(
+    (c) => !legacyNames.has(c.name.trim().toLowerCase()),
+  );
+
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
@@ -499,6 +489,31 @@ const SubjectsManager = () => {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {canonicalOnly.length > 0 && (
+        <div className="mt-8">
+          <h3 className="font-heading text-base mb-1">Nové předměty (katalog předmětů)</h3>
+          <p className="text-xs text-muted-foreground mb-3">
+            Předměty založené v novém katalogu. Používají se v rozvrhu, učebnicích, pracovních listech i skupinách.
+          </p>
+          <div className="space-y-2">
+            {canonicalOnly.map((s) => (
+              <div key={s.id} className="flex items-center gap-3 border border-border rounded-lg p-4 bg-card">
+                <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium text-sm">{s.name}</p>
+                    {s.abbreviation && (
+                      <Badge variant="outline" className="text-[10px]">{s.abbreviation}</Badge>
+                    )}
+                    <Badge variant="secondary" className="text-[10px]">Nový katalog</Badge>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

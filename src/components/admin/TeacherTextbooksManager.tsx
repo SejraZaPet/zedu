@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import LessonPreviewDialog from "./LessonPreviewDialog";
+import SubjectPicker from "@/components/subjects/SubjectPicker";
 import { useSubjects } from "@/hooks/useSubjects";
 import type { Block } from "@/lib/textbook-config";
 import {
@@ -67,7 +68,6 @@ const TeacherTextbooksManager = () => {
 
   // === New textbook dialog state ===
   const [createOpen, setCreateOpen] = useState(false);
-  const [newSubjectMode, setNewSubjectMode] = useState<"existing" | "custom">("existing");
   const [newSubjectId, setNewSubjectId] = useState<string>(""); // selected existing subject id
   const [newCustomSubject, setNewCustomSubject] = useState("");
   const [newTitle, setNewTitle] = useState("");
@@ -123,8 +123,7 @@ const TeacherTextbooksManager = () => {
       .replace(/^_|_$/g, "");
 
   const openCreateDialog = () => {
-    setNewSubjectMode("existing");
-    setNewSubjectId(subjects?.[0]?.id ?? "");
+    setNewSubjectId("");
     setNewCustomSubject("");
     setNewTitle("");
     setNewDescription("");
@@ -156,98 +155,37 @@ const TeacherTextbooksManager = () => {
 
     setCreatingTextbook(true);
     try {
-      let subjectSlug = "";
-      let subjectLabel = "";
+      const subjectLabel = newCustomSubject.trim();
+      if (!subjectLabel) {
+        toast({ title: "Chyba", description: "Vyberte předmět.", variant: "destructive" });
+        setCreatingTextbook(false);
+        return;
+      }
+      const subjectSlug = slugify(subjectLabel);
 
-      if (newSubjectMode === "existing") {
-        const sel = subjects?.find((s) => s.id === newSubjectId);
-        if (!sel) {
-          toast({ title: "Chyba", description: "Vyberte předmět.", variant: "destructive" });
-          setCreatingTextbook(false);
-          return;
-        }
-        subjectSlug = sel.slug;
-        subjectLabel = sel.label;
-
-        // Prevent duplicate textbook for same teacher+subject
-        const { data: existing } = await supabase
-          .from("teacher_textbooks")
-          .select("id")
-          .eq("teacher_id", session.user.id)
-          .eq("subject", subjectSlug)
-          .maybeSingle();
-        if (existing) {
-          toast({
-            title: "Učebnice již existuje",
-            description: `Pro předmět „${subjectLabel}" už máte vytvořenou učebnici.`,
-            variant: "destructive",
-          });
-          setCreatingTextbook(false);
-          return;
-        }
-      } else {
-        // Custom: create new textbook_subjects + grades
-        const label = newCustomSubject.trim();
-        if (!label) {
-          toast({ title: "Chyba", description: "Zadejte název vlastního předmětu.", variant: "destructive" });
-          setCreatingTextbook(false);
-          return;
-        }
-        if (newGrades.length === 0) {
-          toast({ title: "Chyba", description: "Přidejte alespoň jeden ročník.", variant: "destructive" });
-          setCreatingTextbook(false);
-          return;
-        }
-        subjectLabel = label;
-        subjectSlug = slugify(label);
-
-        // Check slug uniqueness
-        const { data: existingSubj } = await supabase
-          .from("textbook_subjects")
-          .select("id")
-          .eq("slug", subjectSlug)
-          .maybeSingle();
-
-        if (existingSubj) {
-          toast({
-            title: "Předmět existuje",
-            description: "Předmět s tímto názvem již existuje. Vyberte ho ze seznamu.",
-            variant: "destructive",
-          });
-          setCreatingTextbook(false);
-          return;
-        }
-
-        const { data: createdSubj, error: subjErr } = await supabase
-          .from("textbook_subjects")
-          .insert({
-            slug: subjectSlug,
-            label: subjectLabel,
-            abbreviation: "",
-            description: "",
-            color: DEFAULT_SUBJECT_COLOR,
-            active: true,
-            sort_order: subjects?.length ?? 0,
-          })
-          .select("id")
-          .single();
-        if (subjErr) throw subjErr;
-
-        await supabase.from("textbook_grades").insert(
-          newGrades.map((g, i) => ({
-            subject_id: createdSubj.id,
-            grade_number: g.grade_number,
-            label: g.label.trim() || `${g.grade_number}. ročník`,
-            sort_order: i,
-          })),
-        );
+      // Prevent duplicate textbook for same teacher+subject
+      const { data: existing } = await supabase
+        .from("teacher_textbooks")
+        .select("id")
+        .eq("teacher_id", session.user.id)
+        .eq("subject", subjectSlug)
+        .maybeSingle();
+      if (existing) {
+        toast({
+          title: "Učebnice již existuje",
+          description: `Pro předmět „${subjectLabel}" už máte vytvořenou učebnici.`,
+          variant: "destructive",
+        });
+        setCreatingTextbook(false);
+        return;
       }
 
-      // Insert teacher_textbooks
+      // Dual write: canonical subject_id + legacy text slug
       const { error: tbErr } = await supabase.from("teacher_textbooks").insert({
         title: (newTitle.trim() || subjectLabel),
         description: newDescription.trim() || `Učebnice předmětu ${subjectLabel}`,
         subject: subjectSlug,
+        subject_id: newSubjectId || null,
         teacher_id: session.user.id,
         access_code: generateAccessCode(),
       } as any);
@@ -255,6 +193,7 @@ const TeacherTextbooksManager = () => {
 
       toast({ title: "Učebnice vytvořena" });
       queryClient.invalidateQueries({ queryKey: ["textbook-subjects"] });
+      queryClient.invalidateQueries({ queryKey: ["subjects-catalog"] });
       setCreateOpen(false);
       fetchTextbooks();
     } catch (err: any) {
@@ -263,6 +202,7 @@ const TeacherTextbooksManager = () => {
       setCreatingTextbook(false);
     }
   };
+
 
   const fetchTextbooks = async () => {
     setLoading(true);
@@ -309,7 +249,21 @@ const TeacherTextbooksManager = () => {
     }
 
     const matchedSubject = subjects?.find(s => s.slug === subjectSlug);
-    const grades = matchedSubject?.grades ?? [];
+    // Fallback for subjects that live only in the canonical `subjects` catalog
+    // (no legacy `textbook_subjects` row => no grade rows): derive grades from
+    // existing topics, otherwise offer a generic 1.-9. year range.
+    const fallbackGradeNumbers = Array.from(
+      new Set((topics ?? []).map((t: any) => t.grade as number).filter((g) => !!g)),
+    ).sort((a, b) => a - b);
+    const grades = matchedSubject?.grades?.length
+      ? matchedSubject.grades
+      : (fallbackGradeNumbers.length ? fallbackGradeNumbers : [1, 2, 3, 4, 5, 6, 7, 8, 9]).map((n) => ({
+          id: `fallback-${n}`,
+          subject_id: "",
+          grade_number: n,
+          label: `${n}. ročník`,
+          sort_order: n,
+        }));
 
     const groups: GradeGroup[] = grades.map(g => {
       const gradeTopics = (topics ?? [])
@@ -919,106 +873,24 @@ const TeacherTextbooksManager = () => {
             <DialogTitle>Nová učebnice</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-2">
-            {/* Subject mode toggle */}
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant={newSubjectMode === "existing" ? "default" : "outline"}
-                onClick={() => setNewSubjectMode("existing")}
-                className="flex-1"
-                type="button"
-              >
-                Vybrat předmět
-              </Button>
-              <Button
-                size="sm"
-                variant={newSubjectMode === "custom" ? "default" : "outline"}
-                onClick={() => setNewSubjectMode("custom")}
-                className="flex-1"
-                type="button"
-              >
-                Vlastní předmět
-              </Button>
+            <div>
+              <Label>Předmět *</Label>
+              <div className="mt-1">
+                <SubjectPicker
+                  value={newSubjectId || null}
+                  textValue={newCustomSubject}
+                  onChange={({ subjectId, name }) => {
+                    setNewSubjectId(subjectId ?? "");
+                    setNewCustomSubject(name);
+                  }}
+                  placeholder="Vyberte nebo založte předmět…"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Nový předmět můžete založit rovnou zde — přidá se do katalogu předmětů.
+              </p>
             </div>
 
-            {newSubjectMode === "existing" ? (
-              <div>
-                <Label>Předmět *</Label>
-                <Select value={newSubjectId} onValueChange={setNewSubjectId}>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Vyberte předmět…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(subjects ?? []).map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {newSubjectId && (
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {subjects
-                      ?.find((s) => s.id === newSubjectId)
-                      ?.grades.map((g) => (
-                        <Badge key={g.id} variant="secondary" className="text-[10px]">
-                          {g.label}
-                        </Badge>
-                      ))}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <>
-                <div>
-                  <Label>Název vlastního předmětu *</Label>
-                  <Input
-                    value={newCustomSubject}
-                    onChange={(e) => setNewCustomSubject(e.target.value)}
-                    className="mt-1"
-                    placeholder="např. Robotika"
-                  />
-                </div>
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <Label>Ročníky *</Label>
-                    <Button size="sm" variant="ghost" type="button" onClick={addGradeRow} className="h-7 gap-1 text-xs">
-                      <Plus className="w-3 h-3" /> Přidat
-                    </Button>
-                  </div>
-                  <div className="space-y-2">
-                    {newGrades.map((g, i) => (
-                      <div key={i} className="flex items-center gap-2">
-                        <Input
-                          type="number"
-                          min={1}
-                          max={20}
-                          value={g.grade_number}
-                          onChange={(e) => updateGradeRow(i, { grade_number: parseInt(e.target.value, 10) || 1 })}
-                          className="w-20"
-                        />
-                        <Input
-                          value={g.label}
-                          onChange={(e) => updateGradeRow(i, { label: e.target.value })}
-                          placeholder={`${g.grade_number}. ročník`}
-                          className="flex-1"
-                        />
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          type="button"
-                          onClick={() => removeGradeRow(i)}
-                          className="h-9 w-9 shrink-0"
-                          disabled={newGrades.length <= 1}
-                        >
-                          <Trash2 className="w-4 h-4 text-destructive" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
 
             <div>
               <Label>Název učebnice</Label>
@@ -1048,9 +920,7 @@ const TeacherTextbooksManager = () => {
               <Button
                 onClick={handleCreateTextbook}
                 disabled={
-                  creatingTextbook ||
-                  (newSubjectMode === "existing" && !newSubjectId) ||
-                  (newSubjectMode === "custom" && !newCustomSubject.trim())
+                  creatingTextbook || !newCustomSubject.trim()
                 }
                 className="flex-1"
                 type="button"
