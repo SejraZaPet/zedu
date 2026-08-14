@@ -179,7 +179,7 @@ const SiteHeader = () => {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className={`gap-2 ${location.pathname === "/profil" || location.pathname === "/admin" ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-primary"}`}>
                     <User size={16} />
-                    Profil
+                    Menu
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
@@ -235,6 +235,10 @@ const SiteHeader = () => {
                       <DropdownMenuItem onClick={() => navigate("/ucitel/banka-otazek")} className="gap-2 cursor-pointer">
                         <Library size={16} />
                         Banka otázek
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/ucitel/predmety")} className="gap-2 cursor-pointer">
+                        <GraduationCap size={16} />
+                        Moje předměty
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => navigate("/ucitel/skupiny")} className="gap-2 cursor-pointer">
                         <Users size={16} />
