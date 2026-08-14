@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Menu, X, LogIn, LogOut, User, BookOpen, GraduationCap, LayoutDashboard, Users, BarChart3, HelpCircle, Layers, FolderOpen, Activity, TrendingUp, Gamepad2, Settings, CalendarDays, Brain, School, Image as ImageIcon, ShoppingBag, UserCheck, BookMarked, ClipboardList, Library, Zap } from "lucide-react";
+import { Menu, X, LogIn, LogOut, User, BookOpen, GraduationCap, LayoutDashboard, Users, BarChart3, HelpCircle, Layers, FolderOpen, Activity, TrendingUp, Gamepad2, Settings, CalendarDays, Brain, School, Image as ImageIcon, ShoppingBag, UserCheck, BookMarked, ClipboardList, Library, Zap, NotebookPen } from "lucide-react";
 import logo from "@/assets/zedu-logo-new.png";
 import { Button } from "@/components/ui/button";
 import {
@@ -65,6 +65,7 @@ const SiteHeader = () => {
         { label: "Přehled", href: "/ucitel", icon: LayoutDashboard },
         { label: "Kalendář", href: "/ucitel/rozvrh", icon: CalendarDays },
         { label: "Třídy", href: "/ucitel/tridy", icon: FolderOpen },
+        { label: "Můj sešit", href: "/ucitel/sesit", icon: NotebookPen },
         { label: "Nápověda", href: "/napoveda", icon: HelpCircle },
       ];
     }
@@ -83,6 +84,7 @@ const SiteHeader = () => {
         { label: "Studijní metody", href: "/student/metody", icon: Brain },
         { label: "Portfolio", href: "/student/portfolio", icon: FolderOpen },
         { label: "Moje knihy", href: "/student/knihy", icon: BookMarked },
+        { label: "Můj sešit", href: "/student/sesit", icon: NotebookPen },
         { label: "Připojit se do hry", href: "/hra/pripojit", icon: Gamepad2 },
         { label: "Nápověda", href: "/napoveda", icon: HelpCircle },
       ];
