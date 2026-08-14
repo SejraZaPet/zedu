@@ -783,32 +783,6 @@ const UsersManager = () => {
               />
             </div>
             <div>
-              <Label>Ročník</Label>
-              <Select value={newUser.year} onValueChange={(v) => setNewUser({ ...newUser, year: v })}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Vyberte ročník" />
-                </SelectTrigger>
-                <SelectContent>
-                  {[1,2,3,4,5,6,7,8,9].map(y => (
-                    <SelectItem key={y} value={String(y)}>{y}. ročník</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="is-adult"
-                checked={isAdult}
-                onCheckedChange={(v) => {
-                  setIsAdult(!!v);
-                  if (v) setCreateParentAccount(false);
-                }}
-              />
-              <Label htmlFor="is-adult" className="cursor-pointer">
-                Žák je zletilý (18+)
-              </Label>
-            </div>
-            <div>
               <Label>Role</Label>
               <Select value={newUser.role} onValueChange={(v) => setNewUser({ ...newUser, role: v })}>
                 <SelectTrigger className="mt-1">
@@ -822,6 +796,37 @@ const UsersManager = () => {
                 </SelectContent>
               </Select>
             </div>
+            {newUser.role === "user" && (
+              <>
+                <div>
+                  <Label>Ročník</Label>
+                  <Select value={newUser.year} onValueChange={(v) => setNewUser({ ...newUser, year: v })}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Vyberte ročník" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[1,2,3,4,5,6,7,8,9].map(y => (
+                        <SelectItem key={y} value={String(y)}>{y}. ročník</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="is-adult"
+                    checked={isAdult}
+                    onCheckedChange={(v) => {
+                      setIsAdult(!!v);
+                      if (v) setCreateParentAccount(false);
+                    }}
+                  />
+                  <Label htmlFor="is-adult" className="cursor-pointer">
+                    Žák je zletilý (18+)
+                  </Label>
+                </div>
+              </>
+            )}
+
             {newUser.role === "user" && !isAdult && (
               <div className="space-y-2 rounded-lg border border-border p-3 bg-muted/30">
                 <div className="flex items-center gap-2">
