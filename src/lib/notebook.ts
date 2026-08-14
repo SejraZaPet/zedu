@@ -388,19 +388,22 @@ export async function renderPageToCanvas(
     ctx.font = `${tb.italic ? "italic " : ""}${tb.bold ? "700 " : "400 "}${size}px system-ui, sans-serif`;
     ctx.textBaseline = "top";
     const maxW = tb.w * w;
-    let line = "";
     let y = tb.y * h;
-    for (const word of (tb.text || "").split(/\s+/)) {
-      const test = line ? `${line} ${word}` : word;
-      if (ctx.measureText(test).width > maxW && line) {
-        ctx.fillText(line, tb.x * w, y);
-        y += size * 1.25;
-        line = word;
-      } else {
-        line = test;
+    for (const paragraph of (tb.text || "").split(/\r?\n/)) {
+      let line = "";
+      for (const word of paragraph.split(/\s+/)) {
+        const test = line ? `${line} ${word}` : word;
+        if (ctx.measureText(test).width > maxW && line) {
+          ctx.fillText(line, tb.x * w, y);
+          y += size * 1.25;
+          line = word;
+        } else {
+          line = test;
+        }
       }
+      ctx.fillText(line, tb.x * w, y);
+      y += size * 1.25;
     }
-    if (line) ctx.fillText(line, tb.x * w, y);
     ctx.restore();
   }
 
