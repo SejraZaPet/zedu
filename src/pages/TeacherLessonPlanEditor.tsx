@@ -200,7 +200,7 @@ export default function TeacherLessonPlanEditor() {
       const input = (data.input_data as any) || {};
       if (input.description) setDescription(input.description);
       if (input.subject) setSubject(input.subject);
-      setSubjectId((row as any)?.subject_id ?? null);
+      setSubjectId((data as any).subject_id ?? null);
       if (input.linkedDate) setLinkedDate(input.linkedDate);
       if (input.linkedTime) setLinkedTime(input.linkedTime);
       if (input.textbookId) setTextbookId(input.textbookId);
