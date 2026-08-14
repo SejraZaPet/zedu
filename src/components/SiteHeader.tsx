@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Menu, X, LogIn, LogOut, User, BookOpen, GraduationCap, LayoutDashboard, Users, BarChart3, HelpCircle, Layers, FolderOpen, Activity, TrendingUp, Gamepad2, Settings, CalendarDays, Brain, School, Image as ImageIcon, ShoppingBag, UserCheck, BookMarked, ClipboardList, Library, Zap, NotebookPen } from "lucide-react";
+import { Menu, X, LogIn, LogOut, User, BookOpen, GraduationCap, LayoutDashboard, Users, BarChart3, HelpCircle, Layers, FolderOpen, Activity, TrendingUp, Gamepad2, Settings, CalendarDays, Brain, School, Image as ImageIcon, ShoppingBag, UserCheck, BookMarked, ClipboardList, Library, Zap, NotebookPen, Award } from "lucide-react";
 import logo from "@/assets/zedu-logo-new.png";
 import { Button } from "@/components/ui/button";
 import {
@@ -41,7 +41,14 @@ const TEACHER_EXTRA_ITEMS: TeacherExtraNavItem[] = [
   { label: "Moje předměty", href: "/ucitel/predmety", icon: GraduationCap },
   { label: "Skupiny předmětu", href: "/ucitel/skupiny", icon: Users },
   { label: "ZedStart", href: "/ucitel/zedstart", icon: Zap },
+  { label: "ZEdu Akademie", href: "/ucitel/akademie", icon: Award },
 ];
+
+const ACADEMY_BY_ROLE: Record<string, string> = {
+  user: "/student/akademie",
+  rodic: "/rodic/akademie",
+};
+
 
 const SiteHeader = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -234,6 +241,12 @@ const SiteHeader = () => {
                       <DropdownMenuSeparator />
                     </>
                   )}
+                  {ACADEMY_BY_ROLE[userRole ?? ""] && (
+                    <DropdownMenuItem onClick={() => navigate(ACADEMY_BY_ROLE[userRole ?? ""])} className="gap-2 cursor-pointer">
+                      <Award size={16} />
+                      ZEdu Akademie
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout} className="gap-2 cursor-pointer">
                     <LogOut size={16} />
@@ -299,6 +312,14 @@ const SiteHeader = () => {
                   </button>
                 );
               })
+            )}
+            {isLoggedIn && ACADEMY_BY_ROLE[userRole ?? ""] && (
+              <button
+                onClick={() => { setMenuOpen(false); navigate(ACADEMY_BY_ROLE[userRole ?? ""]); }}
+                className="flex items-center gap-3 px-3 py-3 rounded-lg text-base font-medium transition-colors text-left text-muted-foreground hover:text-primary hover:bg-muted/50"
+              >
+                <Award className="w-5 h-5" /> ZEdu Akademie
+              </button>
             )}
             <div className="border-t border-border mt-2 pt-2">
               {isLoggedIn ? (
