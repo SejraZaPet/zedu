@@ -11,14 +11,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import {
-  ArrowLeft, Copy, FileDown, FolderPlus, GripVertical, NotebookPen, Pencil, Plus, Trash2,
+  ArrowLeft, Copy, FileDown, FolderPlus, GripVertical, NotebookPen, Pencil, Plus, Trash2, Users,
 } from "lucide-react";
 import NotebookCanvas from "@/components/notebook/NotebookCanvas";
 import NotebookPageThumb from "@/components/notebook/NotebookPageThumb";
 import {
   BACKGROUND_LABELS, BackgroundStyle, COVER_COLORS, EMPTY_CONTENT, Notebook, NotebookPage,
-  NotebookPageContent, addPageToPortfolio, createNotebook, exportNotebookToPdf, loadNotebooks,
-  loadPages, normalizeContent, savePageContent,
+  NotebookPageContent, addPageToPortfolio, createNotebook, exportNotebookToPdf, loadClassStudentNames,
+  loadNotebooks, loadPages, normalizeContent, savePageContent, upsertClassRosterTextBox,
 } from "@/lib/notebook";
 import { cn } from "@/lib/utils";
 
@@ -26,6 +26,7 @@ export default function MyNotebook() {
   const { user, role } = useAuth();
   const [params, setParams] = useSearchParams();
   const lessonId = params.get("lekce");
+  const classId = params.get("trida");
   const lessonTitle = params.get("nazev");
 
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
@@ -98,6 +99,33 @@ export default function MyNotebook() {
       }
     })();
   }, [user, lessonId, lessonTitle, loading, notebooks, openNotebook, refresh]);
+
+  /* Propojení s třídou: ?trida=<id> → otevři existující nebo založ nový */
+  const handledClass = useRef(false);
+  useEffect(() => {
+    if (!user || !classId || loading || handledClass.current) return;
+    handledClass.current = true;
+    const existing = notebooks.find((n) => n.related_class_id === classId);
+    if (existing) {
+      openNotebook(existing);
+      return;
+    }
+    (async () => {
+      try {
+        const nb = await createNotebook({
+          ownerId: user.id,
+          title: lessonTitle ? `Poznámky: ${lessonTitle}` : "Poznámky ke třídě",
+          coverColor: COVER_COLORS[2],
+          relatedClassId: classId,
+        });
+        toast.success("Nový sešit propojený s třídou byl založen.");
+        await refresh();
+        openNotebook(nb);
+      } catch (e: any) {
+        toast.error(e.message || "Sešit se nepodařilo založit.");
+      }
+    })();
+  }, [user, classId, lessonTitle, loading, notebooks, openNotebook, refresh]);
 
   const activePage = pages[activeIndex] ?? null;
 
@@ -238,10 +266,33 @@ export default function MyNotebook() {
     }
   };
 
+  const insertClassNames = async () => {
+    if (!open?.related_class_id || !activePage) return;
+    setBusy(true);
+    try {
+      const names = await loadClassStudentNames(open.related_class_id);
+      if (names.length === 0) {
+        toast.error("Třída zatím nemá žádné žáky.");
+        return;
+      }
+      const next = upsertClassRosterTextBox(activePage.content, names);
+      setPages((prev) => prev.map((p, i) => (i === activeIndex ? { ...p, content: next } : p)));
+      await savePageContent(activePage.id, next);
+      toast.success(`Vloženo ${names.length} jmen.`);
+    } catch (e: any) {
+      toast.error(e.message || "Jména se nepodařilo vložit.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const backToList = () => {
     setOpen(null);
     setPages([]);
-    if (lessonId) { params.delete("lekce"); params.delete("nazev"); setParams(params, { replace: true }); }
+    if (lessonId || classId) {
+      params.delete("lekce"); params.delete("trida"); params.delete("nazev");
+      setParams(params, { replace: true });
+    }
     refresh();
   };
 
@@ -297,6 +348,9 @@ export default function MyNotebook() {
                       {nb.related_lesson_id && (
                         <p className="text-xs text-muted-foreground">Propojeno s lekcí</p>
                       )}
+                      {nb.related_class_id && (
+                        <p className="text-xs text-muted-foreground">Propojeno s třídou</p>
+                      )}
                     </CardHeader>
                     <CardContent className="flex flex-wrap gap-2">
                       <Button size="sm" onClick={() => openNotebook(nb)}>Otevřít</Button>
@@ -331,6 +385,11 @@ export default function MyNotebook() {
                 <Button variant="outline" size="sm" className="gap-1.5" disabled={busy} onClick={exportPdf}>
                   <FileDown className="h-4 w-4" /> Exportovat PDF
                 </Button>
+                {open.related_class_id && (
+                  <Button variant="outline" size="sm" className="gap-1.5" disabled={busy} onClick={insertClassNames}>
+                    <Users className="h-4 w-4" /> Vložit jména žáků třídy
+                  </Button>
+                )}
                 {isStudent && (
                   <Button variant="outline" size="sm" className="gap-1.5" disabled={busy} onClick={toPortfolio}>
                     <FolderPlus className="h-4 w-4" /> Přidat do portfolia
