@@ -1,0 +1,2 @@
+ALTER TABLE public.notebooks ADD COLUMN IF NOT EXISTS related_class_id uuid REFERENCES public.classes(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS notebooks_related_class_id_idx ON public.notebooks(related_class_id);

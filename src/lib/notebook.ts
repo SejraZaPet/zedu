@@ -23,6 +23,8 @@ export interface NotebookTextBox {
   fontSize: number; // px v prostoru stránky (NB_W x NB_H)
   bold?: boolean;
   italic?: boolean;
+  /** Speciální příznak — např. "class-roster" pro automaticky vložený seznam žáků. */
+  kind?: string;
 }
 
 export interface NotebookImage {
@@ -53,6 +55,7 @@ export interface Notebook {
   subject: string | null;
   cover_color: string | null;
   related_lesson_id: string | null;
+  related_class_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -223,7 +226,7 @@ export async function loadNotebooks(ownerId: string): Promise<Notebook[]> {
 
 export async function createNotebook(input: {
   ownerId: string; title: string; subject?: string | null;
-  coverColor?: string | null; relatedLessonId?: string | null;
+  coverColor?: string | null; relatedLessonId?: string | null; relatedClassId?: string | null;
 }): Promise<Notebook> {
   const { data, error } = await supabase
     .from("notebooks")
@@ -233,6 +236,7 @@ export async function createNotebook(input: {
       subject: input.subject ?? null,
       cover_color: input.coverColor ?? COVER_COLORS[0],
       related_lesson_id: input.relatedLessonId ?? null,
+      related_class_id: input.relatedClassId ?? null,
     })
     .select("*")
     .single();
@@ -258,6 +262,58 @@ export async function savePageContent(pageId: string, content: NotebookPageConte
     .update({ content: content as any })
     .eq("id", pageId);
   if (error) throw error;
+}
+
+/** Příznak textboxu se seznamem žáků třídy. */
+export const CLASS_ROSTER_KIND = "class-roster";
+
+/** Načte jména žáků třídy (abecedně) pro vložení do sešitu. */
+export async function loadClassStudentNames(classId: string): Promise<string[]> {
+  const { data: members, error } = await supabase
+    .from("class_members")
+    .select("user_id")
+    .eq("class_id", classId);
+  if (error) throw error;
+  const ids = (members ?? []).map((m: any) => m.user_id);
+  if (ids.length === 0) return [];
+  const { data: profs, error: pErr } = await supabase
+    .from("profiles")
+    .select("first_name, last_name")
+    .in("id", ids);
+  if (pErr) throw pErr;
+  return (profs ?? [])
+    .map((p: any) => `${p.last_name ?? ""} ${p.first_name ?? ""}`.trim())
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b, "cs"));
+}
+
+/** Vloží (nebo aktualizuje) textbox se seznamem žáků na stránce. */
+export function upsertClassRosterTextBox(
+  content: NotebookPageContent,
+  names: string[],
+): NotebookPageContent {
+  const text = names.join("\n");
+  const existing = content.textBoxes.find((t) => t.kind === CLASS_ROSTER_KIND);
+  if (existing) {
+    return {
+      ...content,
+      textBoxes: content.textBoxes.map((t) =>
+        t.kind === CLASS_ROSTER_KIND ? { ...t, text } : t,
+      ),
+    };
+  }
+  const box: NotebookTextBox = {
+    id: crypto.randomUUID(),
+    kind: CLASS_ROSTER_KIND,
+    x: 0.06,
+    y: 0.06,
+    w: 0.42,
+    h: Math.min(0.85, Math.max(0.12, (names.length * 34 + 24) / NB_H)),
+    text,
+    color: "#000000",
+    fontSize: 26,
+  };
+  return { ...content, textBoxes: [...content.textBoxes, box] };
 }
 
 /** Vyrenderuje stránku do canvasu (bílý podklad + obrázky + kresba + textboxy). */
@@ -332,19 +388,22 @@ export async function renderPageToCanvas(
     ctx.font = `${tb.italic ? "italic " : ""}${tb.bold ? "700 " : "400 "}${size}px system-ui, sans-serif`;
     ctx.textBaseline = "top";
     const maxW = tb.w * w;
-    let line = "";
     let y = tb.y * h;
-    for (const word of (tb.text || "").split(/\s+/)) {
-      const test = line ? `${line} ${word}` : word;
-      if (ctx.measureText(test).width > maxW && line) {
-        ctx.fillText(line, tb.x * w, y);
-        y += size * 1.25;
-        line = word;
-      } else {
-        line = test;
+    for (const paragraph of (tb.text || "").split(/\r?\n/)) {
+      let line = "";
+      for (const word of paragraph.split(/\s+/)) {
+        const test = line ? `${line} ${word}` : word;
+        if (ctx.measureText(test).width > maxW && line) {
+          ctx.fillText(line, tb.x * w, y);
+          y += size * 1.25;
+          line = word;
+        } else {
+          line = test;
+        }
       }
+      ctx.fillText(line, tb.x * w, y);
+      y += size * 1.25;
     }
-    if (line) ctx.fillText(line, tb.x * w, y);
     ctx.restore();
   }
 

@@ -3102,6 +3102,7 @@ export type Database = {
           created_at: string
           id: string
           owner_id: string
+          related_class_id: string | null
           related_lesson_id: string | null
           subject: string | null
           title: string
@@ -3112,6 +3113,7 @@ export type Database = {
           created_at?: string
           id?: string
           owner_id: string
+          related_class_id?: string | null
           related_lesson_id?: string | null
           subject?: string | null
           title: string
@@ -3122,6 +3124,7 @@ export type Database = {
           created_at?: string
           id?: string
           owner_id?: string
+          related_class_id?: string | null
           related_lesson_id?: string | null
           subject?: string | null
           title?: string
@@ -3133,6 +3136,13 @@ export type Database = {
             columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notebooks_related_class_id_fkey"
+            columns: ["related_class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
             referencedColumns: ["id"]
           },
           {
