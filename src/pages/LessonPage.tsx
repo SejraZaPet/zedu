@@ -67,6 +67,8 @@ const LessonPage = () => {
     topicSlug: string;
     lessonSlug: string;
   }>();
+  const navigate = useNavigate();
+
 
   const queryClient = useQueryClient();
   const [isAdmin, setIsAdmin] = useState(false);
