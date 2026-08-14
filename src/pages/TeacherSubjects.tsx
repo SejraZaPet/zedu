@@ -106,6 +106,21 @@ const TeacherSubjects = () => {
           </div>
         </div>
 
+        <div className="bg-card border border-border rounded-xl p-4 mb-8">
+          <p className="text-sm font-medium mb-1">Nový předmět</p>
+          <p className="text-xs text-muted-foreground mb-3">
+            Napište název předmětu a potvrďte „Založit předmět“. Poté ho můžete přiřadit
+            do rozvrhu, ke třídě nebo k učebnici.
+          </p>
+          <div className="max-w-sm">
+            <SubjectPicker
+              value={null}
+              placeholder="Vybrat nebo založit předmět…"
+              onChange={() => {}}
+            />
+          </div>
+        </div>
+
         {loading ? (
           <div className="text-muted-foreground">Načítání...</div>
         ) : entries.length === 0 ? (
@@ -117,6 +132,7 @@ const TeacherSubjects = () => {
               Otevřít rozvrh
             </Button>
           </div>
+
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {entries.map((e) => (
