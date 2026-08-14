@@ -471,100 +471,13 @@ const UsersManager = () => {
             type="file"
             accept=".csv,.xlsx,.xls"
             className="sr-only"
-            onChange={async (e) => {
+            onChange={(e) => {
               const file = e.target.files?.[0];
-              console.log("Soubor vybrán:", file?.name, file?.size, file?.type);
-              if (!file) return;
-              setImportFile(file);
-              setImportErrors([]);
-              setImportOpen(true);
-
-              try {
-                console.log("Začínám zpracování souboru...");
-                const keyMap: Record<string, string> = {
-                  "jmeno": "jmeno", "jméno": "jmeno", "krestni jmeno": "jmeno", "křestní jméno": "jmeno",
-                  "prijmeni": "prijmeni", "příjmení": "prijmeni",
-                  "e-mail": "email", "email": "email", "e-mail žáka": "email", "email zaka": "email",
-                  "e-mail_rodice": "email_rodice", "email_rodice": "email_rodice",
-                  "e-mail rodice": "email_rodice", "email rodice": "email_rodice",
-                  "e-mail rodiče": "email_rodice", "email rodiče": "email_rodice",
-                  "skola": "skola", "škola": "skola",
-                  "trida": "trida", "třída": "trida",
-                  "rocnik": "rocnik", "ročník": "rocnik",
-                  "role": "role",
-                  "zletily": "zletily", "zletilý": "zletily", "zletila": "zletily", "adult": "zletily",
-                  "poznamka": "poznamka", "poznámka": "poznamka",
-                };
-                const normHeader = (h: string) => h.trim().toLowerCase().replace(/\*/g, "").replace(/"/g, "").trim();
-
-                let rawRows: string[][] = [];
-                const name = (file.name || "").toLowerCase();
-                const isExcel = name.endsWith(".xlsx") || name.endsWith(".xls") ||
-                  file.type.includes("spreadsheet") || file.type.includes("excel");
-
-                if (isExcel) {
-                  const buf = await file.arrayBuffer();
-                  const wb = new ExcelJS.Workbook();
-                  await wb.xlsx.load(buf);
-                  const ws = wb.worksheets[0];
-                  rawRows = [];
-                  ws.eachRow({ includeEmpty: true }, (row) => {
-                    const values = row.values as any[];
-                    // ExcelJS row.values is 1-indexed (index 0 is empty)
-                    const cells = values.slice(1).map((c) => {
-                      if (c == null) return "";
-                      if (typeof c === "object") {
-                        if ("text" in c) return String((c as any).text ?? "");
-                        if ("result" in c) return String((c as any).result ?? "");
-                        if ("richText" in c) return (c as any).richText.map((r: any) => r.text).join("");
-                      }
-                      return String(c);
-                    });
-                    rawRows.push(cells);
-                  });
-                } else {
-                  const text = await file.text();
-                  const lines = text.split(/\r?\n/).filter(Boolean);
-                  rawRows = lines.map(line => line.split(",").map(v => v.trim().replace(/"/g, "")));
-                }
-
-                // Najdi řádek s hlavičkou (obsahuje jmeno+prijmeni)
-                let headerIdx = -1;
-                for (let i = 0; i < Math.min(rawRows.length, 10); i++) {
-                  const norm = rawRows[i].map(normHeader);
-                  if (norm.some(h => keyMap[h] === "jmeno") && norm.some(h => keyMap[h] === "prijmeni")) {
-                    headerIdx = i;
-                    break;
-                  }
-                }
-                if (headerIdx === -1) {
-                  throw new Error("V souboru nebyla nalezena hlavička se sloupci Jméno a Příjmení.");
-                }
-                const headers = rawRows[headerIdx].map(normHeader);
-
-                let rows = rawRows.slice(headerIdx + 1).map(values => {
-                  const obj: any = {};
-                  headers.forEach((h, i) => {
-                    const key = keyMap[h] || h;
-                    obj[key] = (values[i] ?? "").toString().trim();
-                  });
-                  return obj;
-                }).filter((r: any) =>
-                  r.jmeno && r.prijmeni &&
-                  !r.jmeno.toLowerCase().includes("křestní") &&
-                  !r.jmeno.toLowerCase().includes("krestni") &&
-                  !r.jmeno.toLowerCase().includes("vzorový") &&
-                  !r.jmeno.toLowerCase().includes("vzorovy")
-                );
-
-                console.log("Řádky:", rows.length, rows[0]);
-                setImportPreview(rows);
-              } catch (err: any) {
-                console.error("Chyba při zpracování souboru:", err);
-                setImportErrors([`Chyba při čtení souboru: ${err.message}`]);
-              }
+              e.target.value = "";
+              if (file) handleImportFileSelected(file, true);
             }}
           />
+
         </label>
       </div>
 
