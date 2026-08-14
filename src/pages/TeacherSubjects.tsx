@@ -6,6 +6,8 @@ import SiteFooter from "@/components/SiteFooter";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Library } from "lucide-react";
 import { useTeacherClasses } from "@/hooks/useTeacherClasses";
+import SubjectPicker from "@/components/subjects/SubjectPicker";
+
 
 const colorForLabel = (s: string) => {
   const palette = ["#6EC6D9", "#9B6CFF", "#F472B6", "#F87171", "#FB923C", "#FBBF24", "#34D399", "#60A5FA", "#A3A3A3"];
