@@ -35,6 +35,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
+import SubjectPicker from "@/components/subjects/SubjectPicker";
 
 type QType = "mcq" | "true_false" | "short_answer";
 
@@ -42,6 +43,7 @@ interface BankItem {
   id: string;
   teacher_id: string;
   subject: string | null;
+  subject_id?: string | null;
   curriculum_topic_id: string | null;
   question_type: QType;
   question_text: string;
@@ -343,6 +345,7 @@ function QuestionEditorDialog({
   const [qType, setQType] = useState<QType>("mcq");
   const [text, setText] = useState("");
   const [subject, setSubject] = useState<string>("__none");
+  const [subjectId, setSubjectId] = useState<string | null>(null);
   const [topicId, setTopicId] = useState<string>("__none");
   const [choices, setChoices] = useState<string[]>(["", "", "", ""]);
   const [correctIndex, setCorrectIndex] = useState<number>(0);
@@ -356,6 +359,7 @@ function QuestionEditorDialog({
       setQType(editing.question_type);
       setText(editing.question_text);
       setSubject(editing.subject ?? "__none");
+      setSubjectId((editing as any).subject_id ?? null);
       setTopicId(editing.curriculum_topic_id ?? "__none");
       setChoices(editing.choices ?? ["", "", "", ""]);
       setCorrectIndex(editing.correct_index ?? 0);
@@ -365,6 +369,7 @@ function QuestionEditorDialog({
       setQType("mcq");
       setText("");
       setSubject("__none");
+      setSubjectId(null);
       setTopicId("__none");
       setChoices(["", "", "", ""]);
       setCorrectIndex(0);
@@ -388,6 +393,7 @@ function QuestionEditorDialog({
     const payload: Record<string, unknown> = {
       teacher_id: user.id,
       subject: subject === "__none" ? null : subject,
+      subject_id: subjectId,
       curriculum_topic_id: topicId === "__none" ? null : topicId,
       question_type: qType,
       question_text: text.trim(),
@@ -447,25 +453,16 @@ function QuestionEditorDialog({
             </div>
             <div>
               <Label className="text-xs mb-1 block">Předmět</Label>
-              <Select
-                value={subject}
-                onValueChange={(v) => {
-                  setSubject(v);
+              <SubjectPicker
+                value={subjectId}
+                textValue={subject === "__none" ? "" : subject}
+                onChange={({ subjectId: id, name }) => {
+                  setSubjectId(id);
+                  setSubject(name || "__none");
                   setTopicId("__none");
                 }}
-              >
-                <SelectTrigger className="h-9">
-                  <SelectValue placeholder="Nevybráno" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none">Nevybráno</SelectItem>
-                  {subjects.map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {s}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder="Nevybráno"
+              />
             </div>
             <div>
               <Label className="text-xs mb-1 block">Téma ŠVP</Label>

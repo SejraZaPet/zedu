@@ -2,42 +2,44 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useSubjects } from "./useSubjects";
+import { useSubjectCatalog } from "./useSubjectCatalog";
 import { PREDEFINED_SUBJECTS } from "@/lib/predefined-subjects";
 import { useAuth } from "@/contexts/AuthContext";
 
 /**
  * A subject available to a teacher across the app.
- * Sources, in priority order:
- *  1. Teacher's own teacher_textbooks (each unique subject becomes an entry)
- *  2. Global textbook_subjects (active)
- *  3. PREDEFINED_SUBJECTS list (canonical names with no DB row)
+ *
+ * Primary source is now the canonical `subjects` catalog. The legacy sources
+ * are kept purely as a backward-compatible fallback so that older rows
+ * (teacher textbooks with a free-text subject, the legacy `textbook_subjects`
+ * catalog and the static predefined list) never disappear from pickers.
  *
  * The same `label` from any source is deduplicated (case-insensitive).
  */
 export interface TeacherSubject {
+  /** Canonical `subjects.id` when this subject exists in the new catalog */
+  id?: string;
   /** Display label (e.g. "Matematika") — always non-empty */
   label: string;
-  /** Optional short code (MAT, ČJ…) coming from textbook_subjects */
+  /** Optional short code (MAT, ČJ…) */
   abbreviation?: string;
-  /** Optional brand color from textbook_subjects */
+  /** Optional brand color */
   color?: string;
   /** Slug from textbook_subjects (if backed by one) */
   slug?: string;
   /** Where this subject originated */
-  source: "teacher_textbook" | "global_subject" | "predefined";
+  source: "subject" | "teacher_textbook" | "global_subject" | "predefined";
   /** Linkable textbook id (only for `teacher_textbook` source) */
   teacherTextbookId?: string;
 }
 
 /**
  * Returns the unified list of subjects the teacher can pick from
- * (their own textbooks + global subjects + predefined fallbacks).
- *
- * Use this everywhere a teacher needs to "choose a subject" so the same
- * source of truth drives the schedule, class scheduling and lesson editor.
+ * (canonical catalog first, then legacy fallbacks).
  */
 export const useTeacherSubjects = () => {
   const { user, loading: authLoading } = useAuth();
+  const { subjects: catalog, loading: loadingCatalog } = useSubjectCatalog();
   const { data: globalSubjects = [], isLoading: loadingGlobal } = useSubjects(true);
 
   const { data: teacherTextbooks = [], isLoading: loadingTeacher } = useQuery({
@@ -45,7 +47,7 @@ export const useTeacherSubjects = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("teacher_textbooks")
-        .select("id, title, subject")
+        .select("id, title, subject, subject_id")
         .order("title", { ascending: true });
       if (error) throw error;
       return data ?? [];
@@ -57,7 +59,30 @@ export const useTeacherSubjects = () => {
   const subjects = useMemo(() => {
     const seen = new Map<string, TeacherSubject>();
 
-    for (const tb of teacherTextbooks) {
+    // 1) canonical catalog — source of truth
+    for (const s of catalog) {
+      const label = (s.name || "").trim();
+      if (!label) continue;
+      const key = label.toLowerCase();
+      const matchedGlobal = globalSubjects.find(
+        (g) => g.label.trim().toLowerCase() === key,
+      );
+      const matchedTextbook = teacherTextbooks.find(
+        (tb: any) => tb.subject_id === s.id,
+      );
+      seen.set(key, {
+        id: s.id,
+        label,
+        abbreviation: s.abbreviation ?? matchedGlobal?.abbreviation,
+        color: s.color ?? matchedGlobal?.color,
+        slug: matchedGlobal?.slug ?? matchedTextbook?.subject ?? undefined,
+        source: "subject",
+        teacherTextbookId: matchedTextbook?.id,
+      });
+    }
+
+    // 2) legacy fallback: teacher's own textbooks not yet linked to a subject
+    for (const tb of teacherTextbooks as any[]) {
       const label = (tb.title || "").trim();
       if (!label) continue;
       const key = label.toLowerCase();
@@ -73,8 +98,9 @@ export const useTeacherSubjects = () => {
       });
     }
 
+    // 3) legacy fallback: old global catalog
     for (const g of globalSubjects) {
-      const key = g.label.toLowerCase();
+      const key = g.label.trim().toLowerCase();
       if (seen.has(key)) continue;
       seen.set(key, {
         label: g.label,
@@ -85,6 +111,7 @@ export const useTeacherSubjects = () => {
       });
     }
 
+    // 4) static fallback
     for (const name of PREDEFINED_SUBJECTS) {
       const key = name.toLowerCase();
       if (seen.has(key)) continue;
@@ -92,15 +119,19 @@ export const useTeacherSubjects = () => {
     }
 
     return Array.from(seen.values()).sort((a, b) => {
-      const order = { teacher_textbook: 0, global_subject: 1, predefined: 2 } as const;
+      const order = {
+        subject: 0,
+        teacher_textbook: 1,
+        global_subject: 2,
+        predefined: 3,
+      } as const;
       if (order[a.source] !== order[b.source]) return order[a.source] - order[b.source];
       return a.label.localeCompare(b.label, "cs");
     });
-  }, [teacherTextbooks, globalSubjects]);
+  }, [catalog, teacherTextbooks, globalSubjects]);
 
   return {
     subjects,
-    loading: loadingGlobal || loadingTeacher,
+    loading: loadingCatalog || loadingGlobal || loadingTeacher,
   };
 };
-

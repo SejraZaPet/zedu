@@ -67,7 +67,7 @@ const ChildScheduleWidget = ({ studentIds, studentNames }: Props) => {
       }
       const { data: rows } = await supabase
         .from("class_schedule_slots" as any)
-        .select("id, class_id, day_of_week, start_time, end_time, week_parity, subject_label, abbreviation, color")
+        .select("id, class_id, day_of_week, start_time, end_time, week_parity, subject_label, abbreviation, color, subjects(name)")
         .in("class_id", classIds)
         .order("day_of_week", { ascending: true })
         .order("start_time", { ascending: true });
@@ -198,7 +198,7 @@ const ChildScheduleWidget = ({ studentIds, studentNames }: Props) => {
                         {list.length > 0 ? (
                           <div className="w-full flex flex-col gap-0.5">
                             {list.map((slot) => {
-                              const subject = slot.subject_label || "—";
+                              const subject = (slot as any).subjects?.name || slot.subject_label || "—";
                               const color = slot.color || colorForSubject(subject);
                               const abbr = (slot.abbreviation || subject.slice(0, 3)).toUpperCase();
                               return (

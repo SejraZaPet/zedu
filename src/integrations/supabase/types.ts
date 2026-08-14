@@ -1232,6 +1232,7 @@ export type Database = {
           id: string
           room: string | null
           start_time: string
+          subject_id: string | null
           subject_label: string | null
           textbook_id: string | null
           textbook_type: string | null
@@ -1252,6 +1253,7 @@ export type Database = {
           id?: string
           room?: string | null
           start_time: string
+          subject_id?: string | null
           subject_label?: string | null
           textbook_id?: string | null
           textbook_type?: string | null
@@ -1272,6 +1274,7 @@ export type Database = {
           id?: string
           room?: string | null
           start_time?: string
+          subject_id?: string | null
           subject_label?: string | null
           textbook_id?: string | null
           textbook_type?: string | null
@@ -1286,6 +1289,13 @@ export type Database = {
             columns: ["class_id"]
             isOneToOne: false
             referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_schedule_slots_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
             referencedColumns: ["id"]
           },
         ]
@@ -2777,6 +2787,7 @@ export type Database = {
           shared_visibility: string
           slides: Json
           subject: string
+          subject_id: string | null
           teacher_id: string
           theme_id: string | null
           title: string
@@ -2798,6 +2809,7 @@ export type Database = {
           shared_visibility?: string
           slides?: Json
           subject?: string
+          subject_id?: string | null
           teacher_id: string
           theme_id?: string | null
           title?: string
@@ -2819,6 +2831,7 @@ export type Database = {
           shared_visibility?: string
           slides?: Json
           subject?: string
+          subject_id?: string | null
           teacher_id?: string
           theme_id?: string | null
           title?: string
@@ -2837,6 +2850,13 @@ export type Database = {
             columns: ["lesson_id"]
             isOneToOne: false
             referencedRelation: "textbook_lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lesson_plans_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
             referencedColumns: ["id"]
           },
         ]
@@ -3585,6 +3605,7 @@ export type Database = {
           question_text: string
           question_type: string
           subject: string | null
+          subject_id: string | null
           teacher_id: string
           updated_at: string
         }
@@ -3599,6 +3620,7 @@ export type Database = {
           question_text: string
           question_type: string
           subject?: string | null
+          subject_id?: string | null
           teacher_id: string
           updated_at?: string
         }
@@ -3613,6 +3635,7 @@ export type Database = {
           question_text?: string
           question_type?: string
           subject?: string | null
+          subject_id?: string | null
           teacher_id?: string
           updated_at?: string
         }
@@ -3622,6 +3645,13 @@ export type Database = {
             columns: ["curriculum_topic_id"]
             isOneToOne: false
             referencedRelation: "curriculum_topics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_bank_items_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
             referencedColumns: ["id"]
           },
           {
@@ -5432,6 +5462,7 @@ export type Database = {
           price: number | null
           school_type: string[] | null
           subject: string
+          subject_id: string | null
           teacher_id: string
           title: string
           updated_at: string
@@ -5453,6 +5484,7 @@ export type Database = {
           price?: number | null
           school_type?: string[] | null
           subject?: string
+          subject_id?: string | null
           teacher_id: string
           title: string
           updated_at?: string
@@ -5474,6 +5506,7 @@ export type Database = {
           price?: number | null
           school_type?: string[] | null
           subject?: string
+          subject_id?: string | null
           teacher_id?: string
           title?: string
           updated_at?: string
@@ -5493,6 +5526,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "textbook_marketplace_stats"
             referencedColumns: ["textbook_id"]
+          },
+          {
+            foreignKeyName: "teacher_textbooks_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "teacher_textbooks_teacher_id_fkey"
@@ -6007,6 +6047,7 @@ export type Database = {
           spec: Json
           status: string
           subject: string
+          subject_id: string | null
           teacher_id: string
           title: string
           updated_at: string
@@ -6028,6 +6069,7 @@ export type Database = {
           spec?: Json
           status?: string
           subject?: string
+          subject_id?: string | null
           teacher_id: string
           title?: string
           updated_at?: string
@@ -6049,6 +6091,7 @@ export type Database = {
           spec?: Json
           status?: string
           subject?: string
+          subject_id?: string | null
           teacher_id?: string
           title?: string
           updated_at?: string
@@ -6060,6 +6103,13 @@ export type Database = {
             columns: ["copied_from_worksheet_id"]
             isOneToOne: false
             referencedRelation: "worksheets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "worksheets_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
             referencedColumns: ["id"]
           },
         ]

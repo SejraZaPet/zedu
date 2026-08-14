@@ -91,6 +91,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
+import SubjectPicker from "@/components/subjects/SubjectPicker";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -376,6 +377,7 @@ export default function WorksheetEditor() {
   const [pdfExporting, setPdfExporting] = useState(false);
   const [showPrintTipDialog, setShowPrintTipDialog] = useState(false);
   const [dontShowPrintTipAgain, setDontShowPrintTipAgain] = useState(false);
+  const [subjectId, setSubjectId] = useState<string | null>(null);
   const [subjectComboOpen, setSubjectComboOpen] = useState(false);
   const [subjectSearch, setSubjectSearch] = useState("");
 
@@ -440,6 +442,7 @@ export default function WorksheetEditor() {
       }
       const row = data as any;
       setAiMeta({ aiGenerated: !!row.ai_generated, aiModifiedAt: row.ai_modified_at ?? null });
+      setSubjectId(row.subject_id ?? null);
       let loaded: WorksheetSpec = row.spec && row.spec.version ? row.spec : emptyWorksheetSpec({
         title: row.title,
         subject: row.subject,
@@ -606,6 +609,7 @@ export default function WorksheetEditor() {
     const payload = {
       title: spec.header.title,
       subject: spec.header.subject,
+      subject_id: subjectId,
       grade_band: spec.header.gradeBand,
       worksheet_mode: spec.header.worksheetMode,
       spec: spec as any,
@@ -822,6 +826,7 @@ export default function WorksheetEditor() {
     const payload: Record<string, unknown> = {
       teacher_id: user.id,
       subject: spec.header.subject ?? null,
+      subject_id: subjectId,
       curriculum_topic_id: null,
       question_type: type,
       question_text: selectedItem.prompt,
@@ -2082,164 +2087,17 @@ export default function WorksheetEditor() {
             <div className="grid sm:grid-cols-2 gap-3 mb-6 pb-6 border-b border-border">
               <div>
                 <Label className="text-xs">Předmět</Label>
-                {(() => {
-                  const subjects = subjectsList ?? [];
-                  const currentValue = spec.header.subject || "";
-                  const matchedSubject = subjects.find(
-                    (s) => s.slug === currentValue || s.label === currentValue,
-                  );
-                  const displayLabel = matchedSubject?.label || currentValue;
-                  const hasMatchInList =
-                    !subjectSearch ||
-                    subjects.some(
-                      (s) =>
-                        s.label.toLowerCase() === subjectSearch.toLowerCase() ||
-                        s.slug.toLowerCase() === subjectSearch.toLowerCase(),
-                    );
-                  const setSubject = (val: string) =>
-                    updateSpec((st) => ({
-                      ...st,
-                      header: { ...st.header, subject: val },
-                    }));
-                  return (
-                    <Popover open={subjectComboOpen} onOpenChange={setSubjectComboOpen}>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          role="combobox"
-                          aria-expanded={subjectComboOpen}
-                          className="w-full justify-between font-normal"
-                        >
-                          <span className="inline-flex items-center gap-2 truncate">
-                            {matchedSubject && (
-                              <span
-                                className="w-2 h-2 rounded-full shrink-0"
-                                style={{ backgroundColor: matchedSubject.color }}
-                              />
-                            )}
-                            <span className="truncate">
-                              {displayLabel || "Vyber nebo napiš předmět…"}
-                            </span>
-                          </span>
-                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent
-                        className="w-[var(--radix-popover-trigger-width)] p-0 bg-popover"
-                        align="start"
-                      >
-                        <Command>
-                          <CommandInput
-                            placeholder="Hledej nebo napiš předmět…"
-                            value={subjectSearch}
-                            onValueChange={setSubjectSearch}
-                          />
-                          {subjectSearch.trim() && (
-                            <div className="px-2 py-1.5 border-b">
-                              <Button
-                                size="sm"
-                                variant="secondary"
-                                className="w-full justify-start font-normal"
-                                onClick={() => {
-                                  setSubject(subjectSearch.trim());
-                                  setSubjectComboOpen(false);
-                                  setSubjectSearch("");
-                                }}
-                              >
-                                <Plus className="mr-2 h-4 w-4 shrink-0" />
-                                Použít vlastní: „{subjectSearch}"
-                              </Button>
-                            </div>
-                          )}
-                          <CommandList>
-                            <CommandEmpty>Žádný předmět nenalezen.</CommandEmpty>
-                            <CommandGroup heading="Katalog předmětů">
-                              <CommandItem
-                                value="__none__"
-                                onSelect={() => {
-                                  setSubject("");
-                                  setSubjectComboOpen(false);
-                                  setSubjectSearch("");
-                                }}
-                              >
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    !currentValue ? "opacity-100" : "opacity-0",
-                                  )}
-                                />
-                                — Nezadáno —
-                              </CommandItem>
-                              {subjects.map((s) => (
-                                <CommandItem
-                                  key={s.id}
-                                  value={s.label}
-                                  onSelect={() => {
-                                    setSubject(s.slug);
-                                    setSubjectComboOpen(false);
-                                    setSubjectSearch("");
-                                  }}
-                                >
-                                  <Check
-                                    className={cn(
-                                      "mr-2 h-4 w-4",
-                                      matchedSubject?.id === s.id ? "opacity-100" : "opacity-0",
-                                    )}
-                                  />
-                                  <span
-                                    className="w-2 h-2 rounded-full mr-2"
-                                    style={{ backgroundColor: s.color }}
-                                  />
-                                  {s.label}
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
-                            {(() => {
-                              const catalogLabels = new Set(
-                                subjects.map((s) => s.label.toLowerCase()),
-                              );
-                              const catalogSlugs = new Set(
-                                subjects.map((s) => s.slug.toLowerCase()),
-                              );
-                              const ownSubjects = (teacherSubjects ?? []).filter(
-                                (name) =>
-                                  !catalogLabels.has(name.toLowerCase()) &&
-                                  !catalogSlugs.has(name.toLowerCase()),
-                              );
-                              if (ownSubjects.length === 0) return null;
-                              return (
-                                <CommandGroup heading="Vaše učebnice">
-                                  {ownSubjects.map((name) => (
-                                    <CommandItem
-                                      key={`own-${name}`}
-                                      value={name}
-                                      onSelect={() => {
-                                        setSubject(name);
-                                        setSubjectComboOpen(false);
-                                        setSubjectSearch("");
-                                      }}
-                                    >
-                                      <Check
-                                        className={cn(
-                                          "mr-2 h-4 w-4",
-                                          currentValue.toLowerCase() === name.toLowerCase()
-                                            ? "opacity-100"
-                                            : "opacity-0",
-                                        )}
-                                      />
-                                      <FolderOpen className="mr-2 h-4 w-4 opacity-60 shrink-0" />
-                                      {name}
-                                    </CommandItem>
-                                  ))}
-                                </CommandGroup>
-                              );
-                            })()}
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
-                  );
-                })()}
+                <div className="mt-1">
+                  <SubjectPicker
+                    value={subjectId}
+                    textValue={spec.header.subject || ""}
+                    onChange={({ subjectId: id, name }) => {
+                      setSubjectId(id);
+                      updateSpec((st) => ({ ...st, header: { ...st.header, subject: name } }));
+                    }}
+                    placeholder="Vyber nebo založ předmět…"
+                  />
+                </div>
               </div>
               <div>
                 <Label className="text-xs">Ročník</Label>
