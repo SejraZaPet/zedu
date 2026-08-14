@@ -70,6 +70,7 @@ import TeacherSchedule from "./pages/TeacherSchedule";
 import TeacherMediaLibrary from "./pages/TeacherMediaLibrary";
 import TeacherSubjectClass from "./pages/TeacherSubjectClass";
 import TeacherSubjects from "./pages/TeacherSubjects";
+import TeacherSubjectGroups from "./pages/TeacherSubjectGroups";
 import TeacherMethods from "./pages/TeacherMethods";
 import TeacherCurriculumPlans from "./pages/TeacherCurriculumPlans";
 import TeacherRubrics from "./pages/TeacherRubrics";
@@ -180,6 +181,7 @@ const App = () => (
             <Route path="/ucitel/svp" element={<ProtectedRoute><TeacherCurriculumPlans /></ProtectedRoute>} />
             <Route path="/ucitel/rubriky" element={<ProtectedRoute><TeacherRubrics /></ProtectedRoute>} />
             <Route path="/ucitel/banka-otazek" element={<ProtectedRoute><TeacherQuestionBank /></ProtectedRoute>} />
+            <Route path="/ucitel/skupiny" element={<ProtectedRoute><TeacherSubjectGroups /></ProtectedRoute>} />
             <Route path="/ucitel/zedstart" element={<ProtectedRoute><TeacherZedStart /></ProtectedRoute>} />
 
             <Route path="/student/metody" element={<ProtectedRoute><StudentMethods /></ProtectedRoute>} />

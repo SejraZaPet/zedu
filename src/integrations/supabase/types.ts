@@ -1325,6 +1325,48 @@ export type Database = {
           },
         ]
       }
+      class_subjects: {
+        Row: {
+          archived: boolean
+          class_id: string
+          created_at: string
+          id: string
+          school_year: string
+          subject_id: string
+        }
+        Insert: {
+          archived?: boolean
+          class_id: string
+          created_at?: string
+          id?: string
+          school_year?: string
+          subject_id: string
+        }
+        Update: {
+          archived?: boolean
+          class_id?: string
+          created_at?: string
+          id?: string
+          school_year?: string
+          subject_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_subjects_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_subjects_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       class_teachers: {
         Row: {
           class_id: string
@@ -4955,6 +4997,142 @@ export type Database = {
         }
         Relationships: []
       }
+      subject_group_members: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          student_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          student_id: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subject_group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "subject_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subject_group_members_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subject_groups: {
+        Row: {
+          archived: boolean
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+          school_year: string
+          subject_id: string
+        }
+        Insert: {
+          archived?: boolean
+          created_at?: string
+          created_by: string
+          id?: string
+          name: string
+          school_year?: string
+          subject_id: string
+        }
+        Update: {
+          archived?: boolean
+          created_at?: string
+          created_by?: string
+          id?: string
+          name?: string
+          school_year?: string
+          subject_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subject_groups_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subject_groups_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subjects: {
+        Row: {
+          abbreviation: string | null
+          color: string
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          school_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          abbreviation?: string | null
+          color?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          school_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          abbreviation?: string | null
+          color?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          school_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subjects_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subjects_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subjects_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       teacher_curriculum_plans: {
         Row: {
           content: string | null
@@ -5464,6 +5642,7 @@ export type Database = {
           active: boolean | null
           color: string | null
           created_at: string | null
+          created_by: string | null
           description: string | null
           id: string
           label: string
@@ -5476,6 +5655,7 @@ export type Database = {
           active?: boolean | null
           color?: string | null
           created_at?: string | null
+          created_by?: string | null
           description?: string | null
           id?: string
           label: string
@@ -5488,6 +5668,7 @@ export type Database = {
           active?: boolean | null
           color?: string | null
           created_at?: string | null
+          created_by?: string | null
           description?: string | null
           id?: string
           label?: string
@@ -5495,7 +5676,15 @@ export type Database = {
           sort_order?: number | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "textbook_subjects_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       textbook_templates: {
         Row: {
@@ -6365,6 +6554,10 @@ export type Database = {
       }
       notify_deadline_soon: { Args: never; Returns: undefined }
       owns_notebook: { Args: { _notebook_id: string }; Returns: boolean }
+      owns_subject_group: {
+        Args: { _group_id: string; _user_id: string }
+        Returns: boolean
+      }
       owns_textbook: {
         Args: { _teacher_id: string; _textbook_id: string }
         Returns: boolean

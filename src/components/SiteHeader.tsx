@@ -236,6 +236,10 @@ const SiteHeader = () => {
                         <Library size={16} />
                         Banka otázek
                       </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/ucitel/skupiny")} className="gap-2 cursor-pointer">
+                        <Users size={16} />
+                        Skupiny předmětu
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => navigate("/ucitel/zedstart")} className="gap-2 cursor-pointer">
                         <Zap size={16} />
                         ZedStart
