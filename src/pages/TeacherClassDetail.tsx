@@ -135,7 +135,10 @@ const TeacherClassDetail = () => {
       await Promise.all([
         supabase.from("classes").select("*").eq("id", id).maybeSingle(),
         supabase.from("class_members").select("user_id").eq("class_id", id),
-        supabase.from("class_schedule_slots").select("*").eq("class_id", id),
+        supabase
+          .from("class_schedule_slots")
+          .select("*, subjects(name, color, abbreviation)")
+          .eq("class_id", id),
         supabase.from("class_textbooks").select("textbook_id, textbook_type").eq("class_id", id),
         supabase.from("assignments").select("id,title,status,deadline,worksheet_id,created_at").eq("class_id", id).order("created_at", { ascending: false }),
         supabase
@@ -445,7 +448,11 @@ const TeacherClassDetail = () => {
             <CardContent className="space-y-1 max-h-72 overflow-auto">
               {textbooks.length === 0 && <p className="text-sm text-muted-foreground">Žádné propojené učebnice.</p>}
               {textbooks.map((t) => {
-                const slot = schedule.find((s) => (s.subject_label ?? "").toLowerCase() === (t.subject ?? "").toLowerCase());
+                const slot = schedule.find(
+                  (s) =>
+                    (((s as any).subjects?.name ?? s.subject_label ?? "") as string).toLowerCase() ===
+                    (t.subject ?? "").toLowerCase(),
+                );
                 return (
                   <div key={t.id} className="flex items-center justify-between text-sm py-1.5 border-b border-border/50 last:border-0">
                     <div className="flex items-center gap-2">
@@ -495,7 +502,9 @@ const TeacherClassDetail = () => {
                           className="rounded p-1.5 text-[11px] border border-border"
                           style={{ background: s.color ? `${s.color}20` : undefined, borderLeft: s.color ? `3px solid ${s.color}` : undefined }}
                         >
-                          <div className="font-semibold truncate">{s.abbreviation || s.subject_label}</div>
+                          <div className="font-semibold truncate">
+                            {s.abbreviation || (s as any).subjects?.name || s.subject_label}
+                          </div>
                           <div className="text-muted-foreground">{s.start_time.slice(0, 5)}</div>
                           {s.room && <div className="text-muted-foreground truncate">{s.room}</div>}
                         </div>

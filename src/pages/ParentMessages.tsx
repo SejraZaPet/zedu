@@ -106,14 +106,15 @@ const ParentMessages = () => {
 
       const { data: slots } = await supabase
         .from("class_schedule_slots")
-        .select("class_id, subject_label")
+        .select("class_id, subject_label, subjects(name)")
         .in("class_id", classIds);
 
       const subjectsByClass: Record<string, Set<string>> = {};
       (slots ?? []).forEach((s: any) => {
-        if (!s.subject_label) return;
+        const canonicalName = ((s as any).subjects?.name ?? "").trim();
+        if (!canonicalName && !s.subject_label) return;
         subjectsByClass[s.class_id] ??= new Set();
-        subjectsByClass[s.class_id].add(s.subject_label);
+        subjectsByClass[s.class_id].add(canonicalName || (s.subject_label as string));
       });
 
       const teacherIds = Array.from(new Set((ct ?? []).map((c: any) => c.user_id)));
