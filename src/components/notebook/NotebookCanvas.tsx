@@ -439,7 +439,7 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
         <div
           ref={stageRef}
           className="relative w-full overflow-hidden rounded-lg border bg-white shadow-sm touch-none"
-          style={{ aspectRatio: `${NB_W} / ${NB_H}`, ...backgroundCss(backgroundStyle, 0.8) }}
+          style={{ aspectRatio: `${NB_W} / ${NB_H}`, containerType: "inline-size", ...backgroundCss(backgroundStyle, 0.8) }}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={finishStroke}
