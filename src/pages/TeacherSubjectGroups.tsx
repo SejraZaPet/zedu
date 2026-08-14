@@ -19,6 +19,8 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { useTeacherClasses } from "@/hooks/useTeacherClasses";
+import SubjectPicker from "@/components/subjects/SubjectPicker";
+
 import { ArrowLeft, Plus, Trash2, Users, Archive, Loader2, Search, Link2 } from "lucide-react";
 
 interface SubjectRow { id: string; name: string; color: string | null; abbreviation: string | null }
@@ -344,14 +346,14 @@ const TeacherSubjectGroups = () => {
           <div className="flex items-end gap-3">
             <div>
               <Label className="text-xs text-muted-foreground">Předmět</Label>
-              <Select value={subjectId} onValueChange={setSubjectId}>
-                <SelectTrigger className="w-[240px]"><SelectValue placeholder="Vyberte předmět" /></SelectTrigger>
-                <SelectContent>
-                  {subjects.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SubjectPicker
+                value={subjectId || null}
+                className="w-[240px]"
+                onChange={async ({ subjectId: id }) => {
+                  await loadSubjects();
+                  if (id) setSubjectId(id);
+                }}
+              />
             </div>
             <label className="flex items-center gap-2 text-sm pb-2 cursor-pointer">
               <Checkbox checked={showArchived} onCheckedChange={(v) => setShowArchived(!!v)} />
@@ -364,9 +366,10 @@ const TeacherSubjectGroups = () => {
           <p className="text-muted-foreground">Načítání…</p>
         ) : !subjects.length ? (
           <Card><CardContent className="py-10 text-center text-muted-foreground">
-            Zatím nemáte žádné předměty. Vytvořte předmět v sekci Předměty.
+            Zatím nemáte žádné předměty. Založte si ho výše v poli „Předmět“ — napište název a potvrďte „Založit předmět“.
           </CardContent></Card>
         ) : (
+
           <Tabs defaultValue="groups">
             <TabsList className="mb-4">
               <TabsTrigger value="groups" className="gap-2"><Users size={15} /> Skupiny ({visibleGroups.length})</TabsTrigger>
