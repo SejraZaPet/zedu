@@ -41,7 +41,14 @@ const TEACHER_EXTRA_ITEMS: TeacherExtraNavItem[] = [
   { label: "Moje předměty", href: "/ucitel/predmety", icon: GraduationCap },
   { label: "Skupiny předmětu", href: "/ucitel/skupiny", icon: Users },
   { label: "ZedStart", href: "/ucitel/zedstart", icon: Zap },
+  { label: "ZEdu Akademie", href: "/ucitel/akademie", icon: Award },
 ];
+
+const ACADEMY_BY_ROLE: Record<string, string> = {
+  user: "/student/akademie",
+  rodic: "/rodic/akademie",
+};
+
 
 const SiteHeader = () => {
   const [isScrolled, setIsScrolled] = useState(false);
