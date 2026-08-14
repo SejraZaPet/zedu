@@ -64,6 +64,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { useTeacherClasses } from "@/hooks/useTeacherClasses";
 import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
+import SubjectPicker from "@/components/subjects/SubjectPicker";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import AiContentBadge from "@/components/ai/AiContentBadge";
@@ -151,6 +152,7 @@ export default function TeacherLessonPlanEditor() {
   const [description, setDescription] = useState("");
   const [phases, setPhases] = useState<PhasesState>(emptyPhases);
   const [subject, setSubject] = useState<string>(searchParams.get("subject") ?? "");
+  const [subjectId, setSubjectId] = useState<string | null>(null);
   const [linkedDate, setLinkedDate] = useState<string>(searchParams.get("date") ?? "");
   const [linkedTime, setLinkedTime] = useState<string>(
     searchParams.get("start")
@@ -198,6 +200,7 @@ export default function TeacherLessonPlanEditor() {
       const input = (data.input_data as any) || {};
       if (input.description) setDescription(input.description);
       if (input.subject) setSubject(input.subject);
+      setSubjectId((row as any)?.subject_id ?? null);
       if (input.linkedDate) setLinkedDate(input.linkedDate);
       if (input.linkedTime) setLinkedTime(input.linkedTime);
       if (input.textbookId) setTextbookId(input.textbookId);
@@ -884,6 +887,7 @@ export default function TeacherLessonPlanEditor() {
         teacher_id: user.id,
         title,
         subject: subject || aggSubjects[0] || "",
+        subject_id: subjectId,
         grade_band: "",
         slides: [],
         input_data: {
@@ -1037,33 +1041,17 @@ export default function TeacherLessonPlanEditor() {
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="plan-subject">Předmět</Label>
-              <Select
-                value={subject || undefined}
-                onValueChange={(v) => {
-                  setSubject(v);
+              <SubjectPicker
+                value={subjectId}
+                textValue={subject}
+                onChange={({ subjectId: id, name }) => {
+                  setSubjectId(id);
+                  setSubject(name);
                   setLinkedDate("");
                   setLinkedTime("");
                 }}
-              >
-                <SelectTrigger id="plan-subject">
-                  <SelectValue
-                    placeholder={
-                      filteredSubjects.length
-                        ? "Vyber předmět…"
-                        : classId
-                          ? "Tato třída nemá v rozvrhu žádný předmět"
-                          : "Vyber předmět z učebnic / rozvrhu…"
-                    }
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {filteredSubjects.map((s) => (
-                    <SelectItem key={`${s.source}-${s.label}`} value={s.label}>
-                      {s.abbreviation ? `${s.abbreviation} · ${s.label}` : s.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder="Vyber nebo založ předmět…"
+              />
             </div>
 
             <div className="space-y-1.5">
