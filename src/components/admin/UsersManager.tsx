@@ -1260,7 +1260,13 @@ const UsersManager = () => {
                     try {
                       const sanitizeStr = (s: string) => (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
 
-                      const role = row.role === "ucitel" ? "teacher" : row.role === "rodic" ? "rodic" : row.role === "teacher" || row.role === "lektor" ? row.role : "user";
+                      const resolvedRole = resolveImportRole(row.role);
+                      if (!resolvedRole) {
+                        errors.push(`Řádek ${row.__rowNum} (${row.jmeno} ${row.prijmeni}): neznámá role „${row.role}“, přeskočeno.`);
+                        continue;
+                      }
+                      const role = resolvedRole;
+
                       const email = row.email || generateStudentEmail(row.jmeno, row.prijmeni, usedEmails, role);
 
                       usedEmails.push(email);
