@@ -1,7 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
-import { useStaffPermissions } from "@/hooks/useStaffPermissions";
+import { useMemo, useState } from "react";
+
 import { useQueryClient } from "@tanstack/react-query";
 import {
   DndContext,
