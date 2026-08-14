@@ -26,7 +26,7 @@ describe("import role mapping", () => {
   });
 
   it("parses CSV and flags unknown role", async () => {
-    const file = new File([csv], "users.csv", { type: "text/csv" });
+    const file = { name: "users.csv", type: "text/csv", text: async () => csv } as unknown as File;
     const rows = await parseImportFile(file);
     expect(rows.length).toBe(7);
     expect(rows.map(r => resolveImportRole(r.role))).toEqual([
