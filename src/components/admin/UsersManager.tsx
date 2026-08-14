@@ -338,7 +338,7 @@ const UsersManager = () => {
         )}
         <Button onClick={() => setAddUserOpen(true)} className="gap-2">
           <UserPlus className="w-4 h-4" />
-          Přidat žáka
+          Přidat uživatele
         </Button>
         <label className="inline-flex items-center gap-2 cursor-pointer px-4 py-2 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground text-sm font-medium transition-colors">
           <Upload className="w-4 h-4" />
@@ -738,7 +738,7 @@ const UsersManager = () => {
       <Dialog open={addUserOpen} onOpenChange={setAddUserOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Přidat nového žáka</DialogTitle>
+            <DialogTitle>Přidat nového uživatele</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
@@ -818,7 +818,7 @@ const UsersManager = () => {
                   <SelectItem value="user">Žák</SelectItem>
                   <SelectItem value="teacher">Učitel</SelectItem>
                   <SelectItem value="lektor">Lektor</SelectItem>
-                  <SelectItem value="parent">Rodič</SelectItem>
+                  <SelectItem value="rodic">Rodič</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -917,8 +917,15 @@ const UsersManager = () => {
                   }, { onConflict: "user_id,role", ignoreDuplicates: true });
 
                   if (email && !email.includes("@zedu-student.cz") && !email.includes("@zedu-lektor.cz") && !email.includes("@zedu-rodic.cz")) {
+                    const notifyEmailFailure = (detail?: unknown) => {
+                      console.warn("Email se nepodařilo odeslat:", detail);
+                      toast({
+                        title: "Uvítací e-mail se nepodařilo odeslat",
+                        description: `Účet byl vytvořen, ale e-mail na ${email} neodešel. Předejte prosím přihlašovací údaje jinak – např. vytištěnou přihlašovací kartou.`,
+                        variant: "destructive",
+                      });
+                    };
                     try {
-                      console.log("Odesílám uvítací email na:", email);
                       const emailResult = await sendWelcomeEmail({
                         to: email,
                         firstName: newUser.first_name,
@@ -928,9 +935,9 @@ const UsersManager = () => {
                         role: newUser.role,
                         username: username,
                       });
-                      console.log("Email výsledek:", emailResult);
+                      if ((emailResult as any)?.error) notifyEmailFailure((emailResult as any).error);
                     } catch (emailErr) {
-                      console.warn("Email se nepodařilo odeslat:", emailErr);
+                      notifyEmailFailure(emailErr);
                     }
                   }
 
