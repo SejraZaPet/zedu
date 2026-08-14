@@ -1127,6 +1127,7 @@ export default function TeacherSchedule() {
             .update({
               class_id: value.classId ?? editingClassSlot.class_id,
               subject_label: value.subject,
+              subject_id: value.subjectId ?? null,
               abbreviation: value.abbreviation || null,
               color: value.color || null,
               room: value.room,

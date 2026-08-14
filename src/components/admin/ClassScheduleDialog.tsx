@@ -138,6 +138,7 @@ const ClassScheduleDialog = ({ classId, className, open, onOpenChange }: Props) 
     const basePayload = {
       class_id: classId,
       subject_label: value.subject,
+      subject_id: value.subjectId ?? null,
       abbreviation: value.abbreviation || null,
       color: value.color || null,
       room: value.room,
