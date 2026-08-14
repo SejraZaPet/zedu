@@ -1012,9 +1012,10 @@ const UsersManager = () => {
                   }
 
                   toast({
-                    title: "Žák přidán",
+                    title: `${roleLabels[newUser.role] || "Uživatel"} přidán`,
                     description: `Účet pro ${newUser.first_name} ${newUser.last_name} byl vytvořen. ${!newUser.email ? `Přihlašovací email: ${email}` : ""}`
                   });
+
 
                   printLoginCards(printCards);
 
