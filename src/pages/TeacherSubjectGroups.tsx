@@ -19,6 +19,8 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { useTeacherClasses } from "@/hooks/useTeacherClasses";
+import SubjectPicker from "@/components/subjects/SubjectPicker";
+
 import { ArrowLeft, Plus, Trash2, Users, Archive, Loader2, Search, Link2 } from "lucide-react";
 
 interface SubjectRow { id: string; name: string; color: string | null; abbreviation: string | null }
