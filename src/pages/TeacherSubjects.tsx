@@ -38,7 +38,7 @@ const TeacherSubjects = () => {
     }
     supabase
       .from("class_schedule_slots")
-      .select("class_id, subject_label, abbreviation, color, room")
+      .select("class_id, subject_label, abbreviation, color, room, subject_id, subjects(name, color, abbreviation)")
       .in("class_id", classes.map((c) => c.id))
       .then(({ data }) => {
         setSlots(data ?? []);
@@ -50,18 +50,24 @@ const TeacherSubjects = () => {
     const classMap = new Map(classes.map((c) => [c.id, c.name]));
     const seen = new Map<string, SubjectClassEntry>();
     for (const s of slots) {
-      const label = (s.subject_label || "").trim();
+      // Prefer the canonical catalog name (subject_id join), fall back to the
+      // legacy free-text label so older rows never disappear.
+      const canonical = (s as any).subjects as
+        | { name?: string; color?: string | null; abbreviation?: string | null }
+        | null
+        | undefined;
+      const label = (canonical?.name || s.subject_label || "").trim();
       if (!label) continue;
       const key = `${s.class_id}::${label.toLowerCase()}`;
       if (seen.has(key)) continue;
       const className = classMap.get(s.class_id) || "";
-      const abbr = (s.abbreviation || label.slice(0, 3)).toUpperCase();
+      const abbr = (canonical?.abbreviation || s.abbreviation || label.slice(0, 3)).toUpperCase();
       seen.set(key, {
         classId: s.class_id,
         className,
         subjectLabel: label,
         abbreviation: abbr,
-        color: s.color || colorForLabel(label),
+        color: canonical?.color || s.color || colorForLabel(label),
         room: s.room || "",
       });
     }
