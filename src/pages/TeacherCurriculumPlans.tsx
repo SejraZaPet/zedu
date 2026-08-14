@@ -64,15 +64,15 @@ export default function TeacherCurriculumPlans() {
     return map;
   }, [plans]);
 
-  // Merge: teacher subjects + subjects that already have a plan but aren't in the list
+  // Předměty učitele (vlastní + použité u jeho tříd) + ty, ke kterým už ŠVP existuje
   const subjectRows = useMemo(() => {
     const seen = new Set<string>();
     const rows: { label: string }[] = [];
     for (const s of subjects) {
-      const k = s.label.toLowerCase();
+      const k = s.name.toLowerCase();
       if (seen.has(k)) continue;
       seen.add(k);
-      rows.push({ label: s.label });
+      rows.push({ label: s.name });
     }
     for (const p of plans) {
       const k = p.subject.toLowerCase();
@@ -82,6 +82,21 @@ export default function TeacherCurriculumPlans() {
     }
     return rows.sort((a, b) => a.label.localeCompare(b.label, "cs"));
   }, [subjects, plans]);
+
+  const picker = (
+    <SubjectPicker
+      value={null}
+      onChange={({ name }) => {
+        void refetchSubjects();
+        const existing = plans.find(
+          (p) => p.subject.toLowerCase() === name.trim().toLowerCase(),
+        ) ?? null;
+        setEditing({ subject: name.trim(), plan: existing });
+      }}
+      placeholder="Vybrat nebo vytvořit předmět"
+      className="max-w-sm"
+    />
+  );
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -95,7 +110,7 @@ export default function TeacherCurriculumPlans() {
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Ukládejte si k jednotlivým předmětům svůj ŠVP – jako vložený text nebo nahraný soubor (PDF/DOCX).
-            Vidíte ho pouze vy.
+            Nabízíme jen předměty, které sami používáte. Vidíte ho pouze vy.
           </p>
         </div>
 
@@ -104,11 +119,20 @@ export default function TeacherCurriculumPlans() {
             <Loader2 className="w-5 h-5 animate-spin mr-2" /> Načítání…
           </div>
         ) : subjectRows.length === 0 ? (
-          <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
-            Zatím nemáte žádné předměty. Nejprve si vytvořte učebnici nebo přidejte předmět v katalogu.
+          <div className="rounded-xl border border-dashed p-8 text-center space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Zatím nemáte žádný vlastní předmět. Vyberte nebo si založte předmět – pak se tu
+              objeví i pro ŠVP. Předměty spravujete také v sekci{" "}
+              <Link to="/ucitel/skupiny" className="text-primary hover:underline">
+                Předměty a skupiny
+              </Link>
+              .
+            </p>
+            <div className="flex justify-center">{picker}</div>
           </div>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
+
             {subjectRows.map((row) => {
               const plan = planBySubject.get(row.label.toLowerCase()) ?? null;
               return (
