@@ -125,6 +125,130 @@ function generateStudentEmail(
   return `${first}.${last}.${Date.now()}${domain}`;
 }
 
+type ImportRole = "teacher" | "lektor" | "rodic" | "user";
+
+const IMPORT_ROLE_LABELS: Record<ImportRole, string> = {
+  teacher: "Učitel",
+  lektor: "Lektor",
+  rodic: "Rodič",
+  user: "Žák",
+};
+
+const normalizeRoleValue = (raw: unknown): string =>
+  String(raw ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+
+const ROLE_ALIASES: Record<string, ImportRole> = {
+  "": "user",
+  ucitel: "teacher",
+  ucitelka: "teacher",
+  teacher: "teacher",
+  lektor: "lektor",
+  lektorka: "lektor",
+  rodic: "rodic",
+  parent: "rodic",
+  zak: "user",
+  zakyne: "user",
+  student: "user",
+  studentka: "user",
+  user: "user",
+  ziak: "user",
+};
+
+/** Vyhodnotí roli z importovaného řádku. null = neznámá hodnota (řádek se přeskočí). */
+export function resolveImportRole(raw: unknown): ImportRole | null {
+  return ROLE_ALIASES[normalizeRoleValue(raw)] ?? null;
+}
+
+const IMPORT_KEY_MAP: Record<string, string> = {
+  "jmeno": "jmeno", "jméno": "jmeno", "krestni jmeno": "jmeno", "křestní jméno": "jmeno",
+  "prijmeni": "prijmeni", "příjmení": "prijmeni",
+  "e-mail": "email", "email": "email", "e-mail žáka": "email", "email zaka": "email",
+  "e-mail_rodice": "email_rodice", "email_rodice": "email_rodice",
+  "e-mail rodice": "email_rodice", "email rodice": "email_rodice",
+  "e-mail rodiče": "email_rodice", "email rodiče": "email_rodice",
+  "skola": "skola", "škola": "skola",
+  "trida": "trida", "třída": "trida",
+  "rocnik": "rocnik", "ročník": "rocnik",
+  "role": "role",
+  "zletily": "zletily", "zletilý": "zletily", "zletila": "zletily", "adult": "zletily",
+  "poznamka": "poznamka", "poznámka": "poznamka",
+};
+
+const normImportHeader = (h: string) =>
+  h.trim().toLowerCase().replace(/\*/g, "").replace(/"/g, "").trim();
+
+/** Jediná společná logika parsování importního souboru (Excel i CSV). */
+export async function parseImportFile(file: File): Promise<any[]> {
+  let rawRows: string[][] = [];
+  const name = (file.name || "").toLowerCase();
+  const isExcel =
+    name.endsWith(".xlsx") || name.endsWith(".xls") ||
+    file.type.includes("spreadsheet") || file.type.includes("excel");
+
+  if (isExcel) {
+    const buf = await file.arrayBuffer();
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(buf);
+    const ws = wb.worksheets[0];
+    ws.eachRow({ includeEmpty: true }, (row) => {
+      const values = row.values as any[];
+      // ExcelJS row.values je 1-indexované (index 0 je prázdný)
+      const cells = values.slice(1).map((c) => {
+        if (c == null) return "";
+        if (typeof c === "object") {
+          if ("text" in c) return String((c as any).text ?? "");
+          if ("result" in c) return String((c as any).result ?? "");
+          if ("richText" in c) return (c as any).richText.map((r: any) => r.text).join("");
+        }
+        return String(c);
+      });
+      rawRows.push(cells);
+    });
+  } else {
+    const text = await file.text();
+    const lines = text.split(/\r?\n/).filter(Boolean);
+    rawRows = lines.map((line) => line.split(",").map((v) => v.trim().replace(/"/g, "")));
+  }
+
+  // Najdi řádek s hlavičkou (obsahuje jmeno+prijmeni)
+  let headerIdx = -1;
+  for (let i = 0; i < Math.min(rawRows.length, 10); i++) {
+    const norm = rawRows[i].map(normImportHeader);
+    if (norm.some((h) => IMPORT_KEY_MAP[h] === "jmeno") && norm.some((h) => IMPORT_KEY_MAP[h] === "prijmeni")) {
+      headerIdx = i;
+      break;
+    }
+  }
+  if (headerIdx === -1) {
+    throw new Error("V souboru nebyla nalezena hlavička se sloupci Jméno a Příjmení.");
+  }
+  const headers = rawRows[headerIdx].map(normImportHeader);
+
+  return rawRows
+    .slice(headerIdx + 1)
+    .map((values, idx) => {
+      const obj: any = { __rowNum: headerIdx + 2 + idx };
+      headers.forEach((h, i) => {
+        const key = IMPORT_KEY_MAP[h] || h;
+        obj[key] = (values[i] ?? "").toString().trim();
+      });
+      return obj;
+    })
+    .filter((r: any) =>
+      r.jmeno && r.prijmeni &&
+      !r.jmeno.toLowerCase().includes("křestní") &&
+      !r.jmeno.toLowerCase().includes("krestni") &&
+      !r.jmeno.toLowerCase().includes("vzorový") &&
+      !r.jmeno.toLowerCase().includes("vzorovy")
+    );
+}
+
+
+
 const UsersManager = () => {
   const { toast } = useToast();
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -162,6 +286,26 @@ const UsersManager = () => {
   const [importErrors, setImportErrors] = useState<string[]>([]);
   const [importedUsers, setImportedUsers] = useState<LoginCardData[]>([]);
   const [parentLinkMap, setParentLinkMap] = useState<Map<string, string>>(new Map());
+
+  /** Společné zpracování vybraného souboru (Excel i CSV) pro obě nahrávací cesty. */
+  const handleImportFileSelected = async (file: File, openDialog = false) => {
+    setImportFile(file);
+    setImportErrors([]);
+    if (openDialog) setImportOpen(true);
+    try {
+      const rows = await parseImportFile(file);
+      const roleErrors = rows
+        .filter((r) => resolveImportRole(r.role) === null)
+        .map((r) => `Řádek ${r.__rowNum} (${r.jmeno} ${r.prijmeni}): neznámá role „${r.role}“ – řádek bude přeskočen.`);
+      setImportErrors(roleErrors);
+      setImportPreview(rows);
+    } catch (err: any) {
+      console.error("Chyba při zpracování souboru:", err);
+      setImportErrors([`Chyba při čtení souboru: ${err.message}`]);
+    }
+  };
+
+
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -347,100 +491,13 @@ const UsersManager = () => {
             type="file"
             accept=".csv,.xlsx,.xls"
             className="sr-only"
-            onChange={async (e) => {
+            onChange={(e) => {
               const file = e.target.files?.[0];
-              console.log("Soubor vybrán:", file?.name, file?.size, file?.type);
-              if (!file) return;
-              setImportFile(file);
-              setImportErrors([]);
-              setImportOpen(true);
-
-              try {
-                console.log("Začínám zpracování souboru...");
-                const keyMap: Record<string, string> = {
-                  "jmeno": "jmeno", "jméno": "jmeno", "krestni jmeno": "jmeno", "křestní jméno": "jmeno",
-                  "prijmeni": "prijmeni", "příjmení": "prijmeni",
-                  "e-mail": "email", "email": "email", "e-mail žáka": "email", "email zaka": "email",
-                  "e-mail_rodice": "email_rodice", "email_rodice": "email_rodice",
-                  "e-mail rodice": "email_rodice", "email rodice": "email_rodice",
-                  "e-mail rodiče": "email_rodice", "email rodiče": "email_rodice",
-                  "skola": "skola", "škola": "skola",
-                  "trida": "trida", "třída": "trida",
-                  "rocnik": "rocnik", "ročník": "rocnik",
-                  "role": "role",
-                  "zletily": "zletily", "zletilý": "zletily", "zletila": "zletily", "adult": "zletily",
-                  "poznamka": "poznamka", "poznámka": "poznamka",
-                };
-                const normHeader = (h: string) => h.trim().toLowerCase().replace(/\*/g, "").replace(/"/g, "").trim();
-
-                let rawRows: string[][] = [];
-                const name = (file.name || "").toLowerCase();
-                const isExcel = name.endsWith(".xlsx") || name.endsWith(".xls") ||
-                  file.type.includes("spreadsheet") || file.type.includes("excel");
-
-                if (isExcel) {
-                  const buf = await file.arrayBuffer();
-                  const wb = new ExcelJS.Workbook();
-                  await wb.xlsx.load(buf);
-                  const ws = wb.worksheets[0];
-                  rawRows = [];
-                  ws.eachRow({ includeEmpty: true }, (row) => {
-                    const values = row.values as any[];
-                    // ExcelJS row.values is 1-indexed (index 0 is empty)
-                    const cells = values.slice(1).map((c) => {
-                      if (c == null) return "";
-                      if (typeof c === "object") {
-                        if ("text" in c) return String((c as any).text ?? "");
-                        if ("result" in c) return String((c as any).result ?? "");
-                        if ("richText" in c) return (c as any).richText.map((r: any) => r.text).join("");
-                      }
-                      return String(c);
-                    });
-                    rawRows.push(cells);
-                  });
-                } else {
-                  const text = await file.text();
-                  const lines = text.split(/\r?\n/).filter(Boolean);
-                  rawRows = lines.map(line => line.split(",").map(v => v.trim().replace(/"/g, "")));
-                }
-
-                // Najdi řádek s hlavičkou (obsahuje jmeno+prijmeni)
-                let headerIdx = -1;
-                for (let i = 0; i < Math.min(rawRows.length, 10); i++) {
-                  const norm = rawRows[i].map(normHeader);
-                  if (norm.some(h => keyMap[h] === "jmeno") && norm.some(h => keyMap[h] === "prijmeni")) {
-                    headerIdx = i;
-                    break;
-                  }
-                }
-                if (headerIdx === -1) {
-                  throw new Error("V souboru nebyla nalezena hlavička se sloupci Jméno a Příjmení.");
-                }
-                const headers = rawRows[headerIdx].map(normHeader);
-
-                let rows = rawRows.slice(headerIdx + 1).map(values => {
-                  const obj: any = {};
-                  headers.forEach((h, i) => {
-                    const key = keyMap[h] || h;
-                    obj[key] = (values[i] ?? "").toString().trim();
-                  });
-                  return obj;
-                }).filter((r: any) =>
-                  r.jmeno && r.prijmeni &&
-                  !r.jmeno.toLowerCase().includes("křestní") &&
-                  !r.jmeno.toLowerCase().includes("krestni") &&
-                  !r.jmeno.toLowerCase().includes("vzorový") &&
-                  !r.jmeno.toLowerCase().includes("vzorovy")
-                );
-
-                console.log("Řádky:", rows.length, rows[0]);
-                setImportPreview(rows);
-              } catch (err: any) {
-                console.error("Chyba při zpracování souboru:", err);
-                setImportErrors([`Chyba při čtení souboru: ${err.message}`]);
-              }
+              e.target.value = "";
+              if (file) handleImportFileSelected(file, true);
             }}
           />
+
         </label>
       </div>
 
@@ -1060,54 +1117,19 @@ const UsersManager = () => {
               >
                 <Upload className="w-10 h-10 mx-auto mb-3 text-muted-foreground" />
                 <p className="font-medium">Klikněte pro výběr souboru</p>
-                <p className="text-xs text-muted-foreground mt-1">.csv</p>
+                <p className="text-xs text-muted-foreground mt-1">.xlsx, .xls nebo .csv</p>
                 <input
                   id="zedu-import-file"
                   type="file"
-                  accept=".csv"
+                  accept=".csv,.xlsx,.xls"
                   className="sr-only"
-                  onChange={async (e) => {
+                  onChange={(e) => {
                     const file = e.target.files?.[0];
-                    if (!file) return;
-                    setImportFile(file);
-                    setImportErrors([]);
-
-                    try {
-                      let rows: any[] = [];
-
-                      const text = await file.text();
-                      const lines = text.split("\n").filter(Boolean);
-                      const rawHeaders = lines[0].split(",").map(h => h.trim().toLowerCase().replace(/"/g, ""));
-                      const keyMap: Record<string, string> = {
-                        "jmeno": "jmeno", "prijmeni": "prijmeni",
-                        "e-mail": "email", "email": "email",
-                        "e-mail_rodice": "email_rodice", "email_rodice": "email_rodice",
-                        "e-mail rodice": "email_rodice", "email rodice": "email_rodice",
-                        "skola": "skola", "trida": "trida", "rocnik": "rocnik", "role": "role",
-                        "zletily": "zletily", "zletilý": "zletily", "zletila": "zletily", "adult": "zletily",
-                      };
-                      rows = lines.slice(1).map(line => {
-                        const values = line.split(",").map(v => v.trim().replace(/"/g, ""));
-                        const obj: any = {};
-                        rawHeaders.forEach((h, i) => {
-                          const key = keyMap[h] || h;
-                          obj[key] = values[i] || "";
-                        });
-                        return obj;
-                      }).filter((r: any) =>
-                        r.jmeno && r.prijmeni &&
-                        !r.jmeno.toLowerCase().includes("křestní") &&
-                        !r.jmeno.toLowerCase().includes("krestni") &&
-                        !r.jmeno.toLowerCase().includes("vzorový") &&
-                        !r.jmeno.toLowerCase().includes("vzorovy")
-                      );
-
-                      setImportPreview(rows);
-                    } catch (err: any) {
-                      setImportErrors([`Chyba při čtení souboru: ${err.message}`]);
-                    }
+                    e.target.value = "";
+                    if (file) handleImportFileSelected(file);
                   }}
                 />
+
               </label>
               {importErrors.length > 0 && (
                 <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 space-y-1">
@@ -1141,7 +1163,27 @@ const UsersManager = () => {
                         <TableCell className="text-muted-foreground">{row.skola || "—"}</TableCell>
                         <TableCell className="text-muted-foreground">{row.trida || "—"}</TableCell>
                         <TableCell className="text-muted-foreground">{row.rocnik || "—"}</TableCell>
-                        <TableCell className="text-muted-foreground">{row.role || "zak"}</TableCell>
+                        <TableCell className="text-xs">
+                          {(() => {
+                            const resolved = resolveImportRole(row.role);
+                            if (!resolved) {
+                              return (
+                                <span className="text-red-400">
+                                  {row.role || "—"} → neznámá role (přeskočí se)
+                                </span>
+                              );
+                            }
+                            return (
+                              <span className="text-muted-foreground">
+                                {row.role ? `${row.role} → ` : "(prázdné) → "}
+                                <span className="text-foreground font-medium">
+                                  {IMPORT_ROLE_LABELS[resolved]} ({resolved})
+                                </span>
+                              </span>
+                            );
+                          })()}
+                        </TableCell>
+
                       </TableRow>
                     ))}
                     {importPreview.length > 10 && (
@@ -1183,7 +1225,13 @@ const UsersManager = () => {
                     try {
                       const sanitizeStr = (s: string) => (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
 
-                      const role = row.role === "ucitel" ? "teacher" : row.role === "rodic" ? "rodic" : row.role === "teacher" || row.role === "lektor" ? row.role : "user";
+                      const resolvedRole = resolveImportRole(row.role);
+                      if (!resolvedRole) {
+                        errors.push(`Řádek ${row.__rowNum} (${row.jmeno} ${row.prijmeni}): neznámá role „${row.role}“, přeskočeno.`);
+                        continue;
+                      }
+                      const role = resolvedRole;
+
                       const email = row.email || generateStudentEmail(row.jmeno, row.prijmeni, usedEmails, role);
 
                       usedEmails.push(email);
