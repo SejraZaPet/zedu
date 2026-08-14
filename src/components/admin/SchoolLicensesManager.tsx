@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { PLAN_LABELS, PLAN_DEFAULTS, STATUS_LABELS, type LicensePlan, type LicenseStatus, type SchoolLicense, isExpired } from "@/lib/school-licenses";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CRM_TYPES, statusMeta } from "@/lib/staff-modules";
+import { Copy } from "lucide-react";
 
 interface SchoolRow {
   id: string;
@@ -48,7 +49,7 @@ const SchoolLicensesManager = () => {
   const load = async () => {
     setLoading(true);
     const [schoolsRes, licRes, usageRes, orgsRes] = await Promise.all([
-      supabase.from("schools").select("id, name").order("name"),
+      supabase.from("schools").select("id, name, registration_code").order("name"),
       supabase.from("school_licenses").select("*"),
       supabase.rpc("school_license_usage_all"),
       supabase
@@ -71,6 +72,7 @@ const SchoolLicensesManager = () => {
       (schoolsRes.data ?? []).map((s: any) => ({
         id: s.id,
         name: s.name,
+        registration_code: s.registration_code ?? null,
         license: licBy.get(s.id) ?? null,
         teachers_used: useBy.get(s.id)?.t ?? 0,
         students_used: useBy.get(s.id)?.s ?? 0,
@@ -81,6 +83,15 @@ const SchoolLicensesManager = () => {
   };
 
   useEffect(() => { void load(); }, []);
+
+  const copyCode = async (code: string) => {
+    try {
+      await navigator.clipboard.writeText(code);
+      toast({ title: "Zkopírováno", description: `Registrační kód ${code} je ve schránce.` });
+    } catch {
+      toast({ title: "Chyba", description: "Nepodařilo se zkopírovat kód.", variant: "destructive" });
+    }
+  };
 
   const extend30 = async (r: SchoolRow) => {
     if (!r.license) return;
@@ -152,6 +163,7 @@ const SchoolLicensesManager = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Škola</TableHead>
+                    <TableHead>Registrační kód</TableHead>
                     <TableHead>Balíček</TableHead>
                     <TableHead>Učitelé</TableHead>
                     <TableHead>Žáci</TableHead>
@@ -171,6 +183,27 @@ const SchoolLicensesManager = () => {
                     return (
                       <TableRow key={r.id}>
                         <TableCell className="font-medium">{r.name}</TableCell>
+                        <TableCell>
+                          {r.registration_code ? (
+                            <div className="flex items-center gap-1">
+                              <code className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono tracking-wider">
+                                {r.registration_code}
+                              </code>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-7 w-7"
+                                title="Kopírovat registrační kód"
+                                aria-label={`Kopírovat registrační kód školy ${r.name}`}
+                                onClick={() => void copyCode(r.registration_code!)}
+                              >
+                                <Copy className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
                         <TableCell>{l ? PLAN_LABELS[l.plan] : <span className="text-muted-foreground">Bez licence</span>}</TableCell>
                         <TableCell className={over ? "text-destructive" : ""}>
                           {l ? fmtSeats(r.teachers_used, l.seats_teachers) : r.teachers_used}
