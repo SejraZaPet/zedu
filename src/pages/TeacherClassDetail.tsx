@@ -326,7 +326,7 @@ const TeacherClassDetail = () => {
         </Card>
 
         {/* Quick actions */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <Button variant="hero" className="h-auto py-4" onClick={() => navigate("/ucitel/ulohy")}>
             <ClipboardList className="w-4 h-4 mr-2" /> Zadat úkol
           </Button>
@@ -335,6 +335,15 @@ const TeacherClassDetail = () => {
           </Button>
           <Button variant="hero" className="h-auto py-4" onClick={() => navigate("/ucitel/rozvrh")}>
             <CalendarPlus className="w-4 h-4 mr-2" /> Přidat hodinu do rozvrhu
+          </Button>
+          <Button
+            variant="hero"
+            className="h-auto py-4"
+            onClick={() =>
+              navigate(`/ucitel/sesit?trida=${id}&nazev=${encodeURIComponent(cls.name)}`)
+            }
+          >
+            <NotebookPen className="w-4 h-4 mr-2" /> Otevřít poznámky třídy
           </Button>
         </div>
 
