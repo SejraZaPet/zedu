@@ -287,6 +287,26 @@ const UsersManager = () => {
   const [importedUsers, setImportedUsers] = useState<LoginCardData[]>([]);
   const [parentLinkMap, setParentLinkMap] = useState<Map<string, string>>(new Map());
 
+  /** Společné zpracování vybraného souboru (Excel i CSV) pro obě nahrávací cesty. */
+  const handleImportFileSelected = async (file: File, openDialog = false) => {
+    setImportFile(file);
+    setImportErrors([]);
+    if (openDialog) setImportOpen(true);
+    try {
+      const rows = await parseImportFile(file);
+      const roleErrors = rows
+        .filter((r) => resolveImportRole(r.role) === null)
+        .map((r) => `Řádek ${r.__rowNum} (${r.jmeno} ${r.prijmeni}): neznámá role „${r.role}“ – řádek bude přeskočen.`);
+      setImportErrors(roleErrors);
+      setImportPreview(rows);
+    } catch (err: any) {
+      console.error("Chyba při zpracování souboru:", err);
+      setImportErrors([`Chyba při čtení souboru: ${err.message}`]);
+    }
+  };
+
+
+
   const fetchUsers = async () => {
     setLoading(true);
     const { data: profiles, error } = await supabase
