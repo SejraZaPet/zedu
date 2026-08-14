@@ -5464,6 +5464,7 @@ export type Database = {
           active: boolean | null
           color: string | null
           created_at: string | null
+          created_by: string | null
           description: string | null
           id: string
           label: string
@@ -5476,6 +5477,7 @@ export type Database = {
           active?: boolean | null
           color?: string | null
           created_at?: string | null
+          created_by?: string | null
           description?: string | null
           id?: string
           label: string
@@ -5488,6 +5490,7 @@ export type Database = {
           active?: boolean | null
           color?: string | null
           created_at?: string | null
+          created_by?: string | null
           description?: string | null
           id?: string
           label?: string
@@ -5495,7 +5498,15 @@ export type Database = {
           sort_order?: number | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "textbook_subjects_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       textbook_templates: {
         Row: {
