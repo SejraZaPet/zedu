@@ -3058,6 +3058,92 @@ export type Database = {
           },
         ]
       }
+      notebook_pages: {
+        Row: {
+          background_style: string
+          content: Json
+          created_at: string
+          id: string
+          notebook_id: string
+          page_order: number
+          updated_at: string
+        }
+        Insert: {
+          background_style?: string
+          content?: Json
+          created_at?: string
+          id?: string
+          notebook_id: string
+          page_order?: number
+          updated_at?: string
+        }
+        Update: {
+          background_style?: string
+          content?: Json
+          created_at?: string
+          id?: string
+          notebook_id?: string
+          page_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notebook_pages_notebook_id_fkey"
+            columns: ["notebook_id"]
+            isOneToOne: false
+            referencedRelation: "notebooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notebooks: {
+        Row: {
+          cover_color: string | null
+          created_at: string
+          id: string
+          owner_id: string
+          related_lesson_id: string | null
+          subject: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          cover_color?: string | null
+          created_at?: string
+          id?: string
+          owner_id: string
+          related_lesson_id?: string | null
+          subject?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          cover_color?: string | null
+          created_at?: string
+          id?: string
+          owner_id?: string
+          related_lesson_id?: string | null
+          subject?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notebooks_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notebooks_related_lesson_id_fkey"
+            columns: ["related_lesson_id"]
+            isOneToOne: false
+            referencedRelation: "textbook_lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_broadcasts: {
         Row: {
           content: string
@@ -6268,6 +6354,7 @@ export type Database = {
         }[]
       }
       notify_deadline_soon: { Args: never; Returns: undefined }
+      owns_notebook: { Args: { _notebook_id: string }; Returns: boolean }
       owns_textbook: {
         Args: { _teacher_id: string; _textbook_id: string }
         Returns: boolean
