@@ -21,6 +21,28 @@ interface NavItem {
   icon: React.ElementType;
 }
 
+interface TeacherExtraNavItem {
+  label: string;
+  href: string;
+  icon: React.ElementType;
+}
+
+const TEACHER_EXTRA_ITEMS: TeacherExtraNavItem[] = [
+  { label: "Moje učebnice", href: "/ucitel/ucebnice", icon: BookOpen },
+  { label: "Živé hry", href: "/ucitel/hry", icon: Gamepad2 },
+  { label: "Média", href: "/ucitel/media", icon: ImageIcon },
+  { label: "Výsledky", href: "/ucitel/vysledky", icon: BarChart3 },
+  { label: "ZEduMarket", href: "/zedumarket", icon: ShoppingBag },
+  { label: "Sdíleno se mnou", href: "/ucitel/sdileno-se-mnou", icon: Layers },
+  { label: "Sledovaní tvůrci", href: "/ucitel/sledovani-tvurci", icon: UserCheck },
+  { label: "ŠVP k předmětům", href: "/ucitel/svp", icon: BookMarked },
+  { label: "Rubriky hodnocení", href: "/ucitel/rubriky", icon: ClipboardList },
+  { label: "Banka otázek", href: "/ucitel/banka-otazek", icon: Library },
+  { label: "Moje předměty", href: "/ucitel/predmety", icon: GraduationCap },
+  { label: "Skupiny předmětu", href: "/ucitel/skupiny", icon: Users },
+  { label: "ZedStart", href: "/ucitel/zedstart", icon: Zap },
+];
+
 const SiteHeader = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -196,58 +218,20 @@ const SiteHeader = () => {
                   {(userRole === "teacher" || userRole === "lektor") && (
                     <>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => navigate("/ucitel/ucebnice")} className="gap-2 cursor-pointer">
-                        <BookOpen size={16} />
-                        Moje učebnice
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate("/ucitel/hry")} className="gap-2 cursor-pointer">
-                        <Gamepad2 size={16} />
-                        Živé hry
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate("/ucitel/media")} className="gap-2 cursor-pointer">
-                        <ImageIcon size={16} />
-                        Média
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate("/ucitel/vysledky")} className="gap-2 cursor-pointer">
-                        <BarChart3 size={16} />
-                        Výsledky
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate("/zedumarket")} className="gap-2 cursor-pointer">
-                        <ShoppingBag size={16} />
-                        ZEduMarket
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate("/ucitel/sdileno-se-mnou")} className="gap-2 cursor-pointer">
-                        <Layers size={16} />
-                        Sdíleno se mnou
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate("/ucitel/sledovani-tvurci")} className="gap-2 cursor-pointer">
-                        <UserCheck size={16} />
-                        Sledovaní tvůrci
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate("/ucitel/svp")} className="gap-2 cursor-pointer">
-                        <BookMarked size={16} />
-                        ŠVP k předmětům
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate("/ucitel/rubriky")} className="gap-2 cursor-pointer">
-                        <ClipboardList size={16} />
-                        Rubriky hodnocení
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate("/ucitel/banka-otazek")} className="gap-2 cursor-pointer">
-                        <Library size={16} />
-                        Banka otázek
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate("/ucitel/predmety")} className="gap-2 cursor-pointer">
-                        <GraduationCap size={16} />
-                        Moje předměty
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate("/ucitel/skupiny")} className="gap-2 cursor-pointer">
-                        <Users size={16} />
-                        Skupiny předmětu
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate("/ucitel/zedstart")} className="gap-2 cursor-pointer">
-                        <Zap size={16} />
-                        ZedStart
-                      </DropdownMenuItem>
+                      {TEACHER_EXTRA_ITEMS.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                          <DropdownMenuItem
+                            key={item.href}
+                            onClick={() => navigate(item.href)}
+                            className="gap-2 cursor-pointer"
+                          >
+                            <Icon size={16} />
+                            {item.label}
+                          </DropdownMenuItem>
+                        );
+                      })}
+                      <DropdownMenuSeparator />
                     </>
                   )}
                   <DropdownMenuSeparator />
@@ -297,29 +281,24 @@ const SiteHeader = () => {
               );
             })}
             {(userRole === "teacher" || userRole === "lektor") && (
-              <>
-                <button onClick={() => { setMenuOpen(false); navigate("/ucitel/ucebnice"); }} className={`flex items-center gap-3 pl-6 py-2 rounded-lg text-sm font-medium transition-colors text-left ${location.pathname.startsWith("/ucitel/ucebnice") ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-primary hover:bg-muted/50"}`}>
-                  <BookOpen size={16} /> Moje učebnice
-                </button>
-                <button onClick={() => { setMenuOpen(false); navigate("/ucitel/hry"); }} className={`flex items-center gap-3 pl-6 py-2 rounded-lg text-sm font-medium transition-colors text-left ${location.pathname.startsWith("/ucitel/hry") ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-primary hover:bg-muted/50"}`}>
-                  <Gamepad2 size={16} /> Živé hry
-                </button>
-                <button onClick={() => { setMenuOpen(false); navigate("/ucitel/media"); }} className={`flex items-center gap-3 pl-6 py-2 rounded-lg text-sm font-medium transition-colors text-left ${location.pathname.startsWith("/ucitel/media") ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-primary hover:bg-muted/50"}`}>
-                  <ImageIcon size={16} /> Média
-                </button>
-                <button onClick={() => { setMenuOpen(false); navigate("/ucitel/vysledky"); }} className={`flex items-center gap-3 pl-6 py-2 rounded-lg text-sm font-medium transition-colors text-left ${location.pathname.startsWith("/ucitel/vysledky") ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-primary hover:bg-muted/50"}`}>
-                  <BarChart3 size={16} /> Výsledky
-                </button>
-                <button onClick={() => { setMenuOpen(false); navigate("/zedumarket"); }} className={`flex items-center gap-3 pl-6 py-2 rounded-lg text-sm font-medium transition-colors text-left ${location.pathname.startsWith("/zedumarket") ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-primary hover:bg-muted/50"}`}>
-                  <ShoppingBag size={16} /> ZEduMarket
-                </button>
-                <button onClick={() => { setMenuOpen(false); navigate("/ucitel/sdileno-se-mnou"); }} className={`flex items-center gap-3 pl-6 py-2 rounded-lg text-sm font-medium transition-colors text-left ${location.pathname.startsWith("/ucitel/sdileno-se-mnou") ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-primary hover:bg-muted/50"}`}>
-                  <Layers size={16} /> Sdíleno se mnou
-                </button>
-                <button onClick={() => { setMenuOpen(false); navigate("/ucitel/sledovani-tvurci"); }} className={`flex items-center gap-3 pl-6 py-2 rounded-lg text-sm font-medium transition-colors text-left ${location.pathname.startsWith("/ucitel/sledovani-tvurci") ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-primary hover:bg-muted/50"}`}>
-                  <UserCheck size={16} /> Sledovaní tvůrci
-                </button>
-              </>
+              TEACHER_EXTRA_ITEMS.map((item) => {
+                const Icon = item.icon;
+                const active = location.pathname.startsWith(item.href);
+                return (
+                  <button
+                    key={item.href}
+                    onClick={() => { setMenuOpen(false); navigate(item.href); }}
+                    className={`flex items-center gap-3 pl-6 py-2 rounded-lg text-sm font-medium transition-colors text-left ${
+                      active
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:text-primary hover:bg-muted/50"
+                    }`}
+                  >
+                    <Icon size={16} />
+                    {item.label}
+                  </button>
+                );
+              })
             )}
             <div className="border-t border-border mt-2 pt-2">
               {isLoggedIn ? (
