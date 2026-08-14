@@ -33,6 +33,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
+import SubjectPicker from "@/components/subjects/SubjectPicker";
 import { useTeacherClasses } from "@/hooks/useTeacherClasses";
 import {
   SUBJECT_COLORS,
@@ -63,6 +64,8 @@ export interface LessonFormSlot {
 export interface LessonFormValue {
   /** Subject display name (always non-empty when valid). */
   subject: string;
+  /** Canonical `subjects.id` when the subject comes from the catalog (dual write). */
+  subjectId?: string | null;
   abbreviation: string;
   color: string;
   classId: string | null;
@@ -132,6 +135,7 @@ export default function LessonFormDialog({
 
   // ----- Form state -----
   const [subjectChoice, setSubjectChoice] = useState<string>("");
+  const [subjectId, setSubjectId] = useState<string | null>(null);
   const [customSubject, setCustomSubject] = useState("");
   const [abbreviation, setAbbreviation] = useState("");
   const [color, setColor] = useState<string>(SUBJECT_COLORS[0].value);
@@ -154,12 +158,15 @@ export default function LessonFormDialog({
     const known = subjects.find((s) => s.label.toLowerCase() === subj.toLowerCase());
     if (subj && known) {
       setSubjectChoice(known.label);
+      setSubjectId(known.id ?? null);
       setCustomSubject("");
     } else if (subj) {
+      setSubjectId(null);
       setSubjectChoice(CUSTOM_SUBJECT);
       setCustomSubject(subj);
     } else {
       setSubjectChoice("");
+      setSubjectId(null);
       setCustomSubject("");
     }
     setAbbreviation(initial?.abbreviation ?? "");
@@ -254,6 +261,7 @@ export default function LessonFormDialog({
     const selectedClass = classes.find((c) => c.id === classSel);
     const value: LessonFormValue = {
       subject: resolvedSubject,
+      subjectId: subjectId,
       abbreviation: (abbreviation || resolvedSubject.slice(0, 3)).toUpperCase().slice(0, 5),
       color: color || colorForSubject(resolvedSubject),
       classId: classSel === NO_CLASS ? null : classSel,
@@ -382,24 +390,26 @@ export default function LessonFormDialog({
           {/* ----- Subject ----- */}
           <div className="space-y-1.5">
             <Label>Předmět *</Label>
-            <Select value={subjectChoice} onValueChange={setSubjectChoice}>
-              <SelectTrigger>
-                <SelectValue placeholder="Vyberte předmět" />
-              </SelectTrigger>
-              <SelectContent className="max-h-72">
-                {subjects.length === 0 && (
-                  <div className="px-2 py-1 text-xs text-muted-foreground">
-                    Žádné předměty. Přidejte učebnici nebo předmět v nastavení.
-                  </div>
-                )}
-                {subjects.map((s) => (
-                  <SelectItem key={`${s.source}-${s.label}`} value={s.label}>
-                    {s.abbreviation ? `${s.abbreviation} · ${s.label}` : s.label}
-                  </SelectItem>
-                ))}
-                <SelectItem value={CUSTOM_SUBJECT}>+ Vlastní název…</SelectItem>
-              </SelectContent>
-            </Select>
+            <SubjectPicker
+              value={subjectId}
+              textValue={subjectChoice === CUSTOM_SUBJECT ? customSubject : subjectChoice}
+              onChange={({ subjectId: id, name }) => {
+                setSubjectId(id);
+                setSubjectChoice(name);
+                setCustomSubject("");
+              }}
+              placeholder="Vyberte nebo založte předmět…"
+            />
+            <button
+              type="button"
+              className="text-xs text-muted-foreground underline underline-offset-2"
+              onClick={() => {
+                setSubjectChoice(CUSTOM_SUBJECT);
+                setSubjectId(null);
+              }}
+            >
+              Zadat vlastní název bez katalogu
+            </button>
             {subjectChoice === CUSTOM_SUBJECT && (
               <Input
                 value={customSubject}
