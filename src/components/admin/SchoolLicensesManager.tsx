@@ -17,6 +17,7 @@ import { CRM_TYPES, statusMeta } from "@/lib/staff-modules";
 interface SchoolRow {
   id: string;
   name: string;
+  registration_code: string | null;
   license: SchoolLicense | null;
   teachers_used: number;
   students_used: number;
