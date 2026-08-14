@@ -44,6 +44,7 @@ export const nextSchoolYear = (year: string) => {
 
 const TeacherSubjectGroups = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { classes } = useTeacherClasses();
 
