@@ -1117,54 +1117,19 @@ const UsersManager = () => {
               >
                 <Upload className="w-10 h-10 mx-auto mb-3 text-muted-foreground" />
                 <p className="font-medium">Klikněte pro výběr souboru</p>
-                <p className="text-xs text-muted-foreground mt-1">.csv</p>
+                <p className="text-xs text-muted-foreground mt-1">.xlsx, .xls nebo .csv</p>
                 <input
                   id="zedu-import-file"
                   type="file"
-                  accept=".csv"
+                  accept=".csv,.xlsx,.xls"
                   className="sr-only"
-                  onChange={async (e) => {
+                  onChange={(e) => {
                     const file = e.target.files?.[0];
-                    if (!file) return;
-                    setImportFile(file);
-                    setImportErrors([]);
-
-                    try {
-                      let rows: any[] = [];
-
-                      const text = await file.text();
-                      const lines = text.split("\n").filter(Boolean);
-                      const rawHeaders = lines[0].split(",").map(h => h.trim().toLowerCase().replace(/"/g, ""));
-                      const keyMap: Record<string, string> = {
-                        "jmeno": "jmeno", "prijmeni": "prijmeni",
-                        "e-mail": "email", "email": "email",
-                        "e-mail_rodice": "email_rodice", "email_rodice": "email_rodice",
-                        "e-mail rodice": "email_rodice", "email rodice": "email_rodice",
-                        "skola": "skola", "trida": "trida", "rocnik": "rocnik", "role": "role",
-                        "zletily": "zletily", "zletilý": "zletily", "zletila": "zletily", "adult": "zletily",
-                      };
-                      rows = lines.slice(1).map(line => {
-                        const values = line.split(",").map(v => v.trim().replace(/"/g, ""));
-                        const obj: any = {};
-                        rawHeaders.forEach((h, i) => {
-                          const key = keyMap[h] || h;
-                          obj[key] = values[i] || "";
-                        });
-                        return obj;
-                      }).filter((r: any) =>
-                        r.jmeno && r.prijmeni &&
-                        !r.jmeno.toLowerCase().includes("křestní") &&
-                        !r.jmeno.toLowerCase().includes("krestni") &&
-                        !r.jmeno.toLowerCase().includes("vzorový") &&
-                        !r.jmeno.toLowerCase().includes("vzorovy")
-                      );
-
-                      setImportPreview(rows);
-                    } catch (err: any) {
-                      setImportErrors([`Chyba při čtení souboru: ${err.message}`]);
-                    }
+                    e.target.value = "";
+                    if (file) handleImportFileSelected(file);
                   }}
                 />
+
               </label>
               {importErrors.length > 0 && (
                 <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 space-y-1">
