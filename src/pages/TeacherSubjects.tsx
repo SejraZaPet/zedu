@@ -118,7 +118,15 @@ const TeacherSubjects = () => {
             <SubjectPicker
               value={null}
               placeholder="Vybrat nebo založit předmět…"
-              onChange={() => {}}
+              onChange={({ subjectId, name }) => {
+                if (subjectId) {
+                  navigate(`/ucitel/skupiny?subjectId=${encodeURIComponent(subjectId)}`);
+                } else if (name) {
+                  // Pokud uživatel založil úplně nový předmět, přejdi na skupiny
+                  // s prázdným výběrem — nový předmět se načte v seznamu.
+                  navigate("/ucitel/skupiny");
+                }
+              }}
             />
           </div>
         </div>

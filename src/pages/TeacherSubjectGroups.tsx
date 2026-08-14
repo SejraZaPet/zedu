@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import SiteHeader from "@/components/SiteHeader";
@@ -44,6 +44,7 @@ export const nextSchoolYear = (year: string) => {
 
 const TeacherSubjectGroups = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { classes } = useTeacherClasses();
 
@@ -84,7 +85,12 @@ const TeacherSubjectGroups = () => {
     }
     const rows = (data as SubjectRow[]) ?? [];
     setSubjects(rows);
-    setSubjectId((prev) => prev || rows[0]?.id || "");
+    const initialFromQuery = searchParams.get("subjectId");
+    if (initialFromQuery && rows.some((r) => r.id === initialFromQuery)) {
+      setSubjectId(initialFromQuery);
+    } else {
+      setSubjectId((prev) => prev || rows[0]?.id || "");
+    }
   };
 
   const loadGroups = async () => {
