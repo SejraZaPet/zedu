@@ -1198,7 +1198,27 @@ const UsersManager = () => {
                         <TableCell className="text-muted-foreground">{row.skola || "—"}</TableCell>
                         <TableCell className="text-muted-foreground">{row.trida || "—"}</TableCell>
                         <TableCell className="text-muted-foreground">{row.rocnik || "—"}</TableCell>
-                        <TableCell className="text-muted-foreground">{row.role || "zak"}</TableCell>
+                        <TableCell className="text-xs">
+                          {(() => {
+                            const resolved = resolveImportRole(row.role);
+                            if (!resolved) {
+                              return (
+                                <span className="text-red-400">
+                                  {row.role || "—"} → neznámá role (přeskočí se)
+                                </span>
+                              );
+                            }
+                            return (
+                              <span className="text-muted-foreground">
+                                {row.role ? `${row.role} → ` : "(prázdné) → "}
+                                <span className="text-foreground font-medium">
+                                  {IMPORT_ROLE_LABELS[resolved]} ({resolved})
+                                </span>
+                              </span>
+                            );
+                          })()}
+                        </TableCell>
+
                       </TableRow>
                     ))}
                     {importPreview.length > 10 && (
