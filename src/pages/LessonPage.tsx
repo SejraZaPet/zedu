@@ -205,12 +205,26 @@ const LessonPage = () => {
                 <h1 className="font-heading text-4xl md:text-5xl font-bold text-foreground">
                   {lesson.title}
                 </h1>
-                <ReadAloudButton
-                  text={buildLessonReadableText(lesson.title, blocks)}
-                  label="Přečíst"
-                  className="mt-3 flex-shrink-0"
-                />
+                <div className="mt-3 flex flex-shrink-0 items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5"
+                    onClick={() =>
+                      navigate(
+                        `${isTeacherOrAdmin ? "/ucitel" : "/student"}/sesit?lekce=${lesson.id}&nazev=${encodeURIComponent(lesson.title)}`,
+                      )
+                    }
+                  >
+                    <NotebookPen className="h-4 w-4" /> Otevřít poznámky k této lekci
+                  </Button>
+                  <ReadAloudButton
+                    text={buildLessonReadableText(lesson.title, blocks)}
+                    label="Přečíst"
+                  />
+                </div>
               </div>
+
 
               <div className="space-y-6">
                 {blocks.filter((b) => b.visible !== false).map((block, index) => (
