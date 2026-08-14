@@ -36,7 +36,7 @@ const ALLOWED_EXT = ["pdf", "doc", "docx"];
 
 export default function TeacherCurriculumPlans() {
   const { user } = useAuth();
-  const { subjects, loading: subjectsLoading } = useTeacherSubjects();
+  const { subjects, loading: subjectsLoading, refetch: refetchSubjects } = useMySubjects();
   const [plans, setPlans] = useState<CurriculumPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<{ subject: string; plan: CurriculumPlan | null } | null>(null);
