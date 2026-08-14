@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
+import { useMySubjects } from "@/hooks/useMySubjects";
+import SubjectPicker from "@/components/subjects/SubjectPicker";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { Button } from "@/components/ui/button";
