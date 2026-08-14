@@ -29,6 +29,7 @@ import {
   Plus,
   PlayCircle,
   CalendarPlus,
+  NotebookPen,
   Copy,
   ChevronRight,
 } from "lucide-react";
