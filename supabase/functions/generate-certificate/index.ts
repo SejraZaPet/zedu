@@ -192,11 +192,16 @@ Deno.serve(async (req) => {
     // Fetch profile for name + email
     const { data: profile } = await admin
       .from("profiles")
-      .select("first_name, last_name, email")
+      .select("first_name, last_name, academic_title, email")
       .eq("id", enrollment.teacher_id)
       .maybeSingle();
-    const userName = [profile?.first_name, profile?.last_name].filter(Boolean).join(" ").trim()
-      || profile?.email || "Účastník kurzu";
+    const userName = [profile?.academic_title, profile?.first_name, profile?.last_name]
+      .filter(Boolean)
+      .join(" ")
+      .trim()
+      || profile?.email
+      || "Účastník kurzu";
+
 
     const bucket = "generated-pdfs";
     const storagePath = `academy-certificates/${cert.id}.pdf`;
