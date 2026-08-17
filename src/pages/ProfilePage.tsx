@@ -33,6 +33,7 @@ const statusColors: Record<string, string> = {
 interface Profile {
   first_name: string;
   last_name: string;
+  academic_title: string | null;
   email: string;
   school: string;
   field_of_study: string;
@@ -44,6 +45,7 @@ interface Profile {
   pin_code: string | null;
   username: string | null;
 }
+
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -58,6 +60,11 @@ const ProfilePage = () => {
   const [school, setSchool] = useState("");
   const [fieldOfStudy, setFieldOfStudy] = useState("");
   const [year, setYear] = useState<string>("");
+
+  // Academic title
+  const [academicTitle, setAcademicTitle] = useState("");
+  const [savingTitle, setSavingTitle] = useState(false);
+
 
   // Parent recovery email
   const [parentEmail, setParentEmail] = useState("");
@@ -135,10 +142,11 @@ const ProfilePage = () => {
       const profileRes = await supabase
         .from("profiles")
         .select(
-          "first_name, last_name, email, school, field_of_study, year, status, created_at, parent_email, parent_email_notifications, username"
+          "first_name, last_name, academic_title, email, school, field_of_study, year, status, created_at, parent_email, parent_email_notifications, username"
         )
         .eq("id", user.id)
         .single();
+
 
       const { data: pinSet } = await supabase.rpc("has_pin" as any, { _profile_id: user.id });
 
@@ -167,9 +175,11 @@ const ProfilePage = () => {
       setSchool(data.school || "");
       setFieldOfStudy(data.field_of_study || "");
       setYear(data.year ? String(data.year) : "");
+      setAcademicTitle(data.academic_title || "");
       setParentEmail((data as any).parent_email || "");
       setEmailNotifications((data as any).parent_email_notifications !== false);
       setLoading(false);
+
     };
 
     loadProfile();
@@ -285,6 +295,28 @@ const ProfilePage = () => {
     toast({ title: "Uloženo", description: "Údaje byly úspěšně aktualizovány." });
     setProfile((prev) => prev ? { ...prev, school, field_of_study: fieldOfStudy, year: year ? parseInt(year, 10) : null } : prev);
   };
+
+  const handleSaveTitle = async () => {
+    if (!user) return;
+    setSavingTitle(true);
+
+    const titleValue = academicTitle.trim() || null;
+    const { error } = await supabase
+      .from("profiles")
+      .update({ academic_title: titleValue })
+      .eq("id", user.id);
+
+    setSavingTitle(false);
+
+    if (error) {
+      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+      return;
+    }
+
+    toast({ title: "Titul uložen", description: "Akademický titul byl aktualizován." });
+    setProfile((prev) => prev ? { ...prev, academic_title: titleValue } : prev);
+  };
+
 
   const handleSaveParentEmail = async () => {
     if (!user) return;
@@ -402,7 +434,7 @@ const ProfilePage = () => {
             {user && <ProfileAvatarBubble userId={user.id} size={56} crop="head" />}
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <Label className="text-muted-foreground text-xs">Jméno</Label>
                 <p className="font-medium">{profile.first_name}</p>
@@ -411,11 +443,16 @@ const ProfilePage = () => {
                 <Label className="text-muted-foreground text-xs">Příjmení</Label>
                 <p className="font-medium">{profile.last_name}</p>
               </div>
+              <div>
+                <Label className="text-muted-foreground text-xs">Titul</Label>
+                <p className="font-medium">{profile.academic_title || "—"}</p>
+              </div>
             </div>
             <div>
               <Label className="text-muted-foreground text-xs">E-mail</Label>
               <p className="font-medium text-muted-foreground">{profile.email}</p>
             </div>
+
             <div className="flex items-center gap-4">
               <div>
                 <Label className="text-muted-foreground text-xs">Stav účtu</Label>
@@ -435,7 +472,34 @@ const ProfilePage = () => {
           </CardContent>
         </Card>
 
+        {/* Academic title */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Akademický titul</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="academic-title">Titul</Label>
+              <Input
+                id="academic-title"
+                value={academicTitle}
+                onChange={(e) => setAcademicTitle(e.target.value)}
+                placeholder="např. Mgr., Ing., Bc."
+                maxLength={20}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Titul se zobrazí před jménem v certifikátech ZEdu Akademie.
+              </p>
+            </div>
+            <Button onClick={handleSaveTitle} disabled={savingTitle} className="gap-2">
+              <Save className="w-4 h-4" />
+              {savingTitle ? "Ukládání..." : "Uložit titul"}
+            </Button>
+          </CardContent>
+        </Card>
+
         {/* Avatar – dostupné všem rolím */}
+
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
