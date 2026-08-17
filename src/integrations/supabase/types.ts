@@ -50,6 +50,7 @@ export type Database = {
         Row: {
           accreditation_number: string | null
           audience: string
+          category: string | null
           cover_image_url: string | null
           created_at: string
           creator_id: string | null
@@ -69,6 +70,7 @@ export type Database = {
         Insert: {
           accreditation_number?: string | null
           audience?: string
+          category?: string | null
           cover_image_url?: string | null
           created_at?: string
           creator_id?: string | null
@@ -88,6 +90,7 @@ export type Database = {
         Update: {
           accreditation_number?: string | null
           audience?: string
+          category?: string | null
           cover_image_url?: string | null
           created_at?: string
           creator_id?: string | null

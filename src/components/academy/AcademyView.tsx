@@ -10,8 +10,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  ArrowLeft, GraduationCap, CheckCircle2, Circle, Award, Play, Download, FileBadge2, Share2,
+  ArrowLeft, GraduationCap, CheckCircle2, Circle, Award, Play, Download, FileBadge2, Share2, SlidersHorizontal, PartyPopper,
 } from "lucide-react";
 
 type AudienceScope = "teacher" | "student" | "parent";
@@ -27,7 +28,9 @@ interface Course {
   issues_certificate: boolean;
   requires_evidence: boolean;
   price: number | null;
+  category: string | null;
   revenue_type: string | null;
+
   sort_order: number;
   moduleCount?: number;
   enrollment?: { id: string; completed_at: string | null } | null;
@@ -201,6 +204,33 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
   const [evidenceSubmitting, setEvidenceSubmitting] = useState(false);
 
   const audienceValues = audience === "teacher" ? ["teacher", "both"] : audience === "parent" ? ["parent", "both"] : ["student", "both"];
+
+  // --- Filtry kurzů ---
+  const [filterCategory, setFilterCategory] = useState<string>("all");
+  const [filterCert, setFilterCert] = useState<string>("all");
+  const [filterAccredited, setFilterAccredited] = useState<string>("all");
+  const [filterPrice, setFilterPrice] = useState<string>("all");
+
+  const categories = useMemo(
+    () => Array.from(new Set(courses.map((c) => c.category).filter((v): v is string => !!v && v.trim() !== ""))).sort((a, b) => a.localeCompare(b, "cs")),
+    [courses],
+  );
+  const filteredCourses = useMemo(
+    () => courses.filter((c) => {
+      if (filterCategory !== "all" && (c.category || "") !== filterCategory) return false;
+      if (filterCert !== "all" && String(!!c.issues_certificate) !== filterCert) return false;
+      if (filterAccredited !== "all" && String(!!c.is_accredited) !== filterAccredited) return false;
+      const isPaid = !!c.price && Number(c.price) > 0;
+      if (filterPrice === "free" && isPaid) return false;
+      if (filterPrice === "paid" && !isPaid) return false;
+      return true;
+    }),
+    [courses, filterCategory, filterCert, filterAccredited, filterPrice],
+  );
+  const filtersActive = filterCategory !== "all" || filterCert !== "all" || filterAccredited !== "all" || filterPrice !== "all";
+  const resetFilters = () => { setFilterCategory("all"); setFilterCert("all"); setFilterAccredited("all"); setFilterPrice("all"); };
+
+
 
   const fetchCourses = useCallback(async () => {
     setLoading(true);
@@ -505,13 +535,72 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
             </TabsList>
 
             <TabsContent value="courses" className="mt-4">
+              {!loading && courses.length > 0 && (
+                <div className="mb-4 p-3 rounded-xl border border-border bg-card flex flex-wrap items-end gap-3">
+                  <div className="flex items-center gap-2 text-sm font-medium mr-1">
+                    <SlidersHorizontal className="w-4 h-4 text-primary" /> Filtry
+                  </div>
+                  {categories.length > 0 && (
+                    <div className="w-[180px]">
+                      <Label className="text-xs text-muted-foreground">Téma</Label>
+                      <Select value={filterCategory} onValueChange={setFilterCategory}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Všechna témata</SelectItem>
+                          {categories.map((cat) => (<SelectItem key={cat} value={cat}>{cat}</SelectItem>))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  <div className="w-[170px]">
+                    <Label className="text-xs text-muted-foreground">Certifikát</Label>
+                    <Select value={filterCert} onValueChange={setFilterCert}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Nezáleží</SelectItem>
+                        <SelectItem value="true">Vydává certifikát</SelectItem>
+                        <SelectItem value="false">Bez certifikátu</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="w-[170px]">
+                    <Label className="text-xs text-muted-foreground">Akreditace DVPP</Label>
+                    <Select value={filterAccredited} onValueChange={setFilterAccredited}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Nezáleží</SelectItem>
+                        <SelectItem value="true">Akreditovaný</SelectItem>
+                        <SelectItem value="false">Neakreditovaný</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="w-[150px]">
+                    <Label className="text-xs text-muted-foreground">Cena</Label>
+                    <Select value={filterPrice} onValueChange={setFilterPrice}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Nezáleží</SelectItem>
+                        <SelectItem value="free">Zdarma</SelectItem>
+                        <SelectItem value="paid">Placené</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {filtersActive && (
+                    <Button variant="ghost" size="sm" onClick={resetFilters}>Zrušit filtry</Button>
+                  )}
+                  <div className="text-xs text-muted-foreground ml-auto">{filteredCourses.length} z {courses.length} kurzů</div>
+                </div>
+              )}
               {loading ? (
                 <p className="text-muted-foreground">Načítání…</p>
               ) : courses.length === 0 ? (
                 <p className="text-muted-foreground">Zatím zde nejsou žádné kurzy.</p>
+              ) : filteredCourses.length === 0 ? (
+                <p className="text-muted-foreground">Žádný kurz neodpovídá zvoleným filtrům.</p>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {courses.map((c) => {
+                  {filteredCourses.map((c) => {
+
                     const pct = c.moduleCount ? Math.round(((c.completedCount || 0) / c.moduleCount) * 100) : 0;
                     const priceLabel = c.price && Number(c.price) > 0 ? `${Number(c.price).toLocaleString("cs-CZ")} Kč` : "Zdarma";
                     return (
@@ -657,11 +746,24 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
             <Progress value={progressPct} className="h-2" />
             <div className="text-xs text-muted-foreground mt-1">{completedIds.size}/{modules.length} modulů · {progressPct} %</div>
             {enrollmentCompletedAt && !(selectedCourse?.requires_evidence && selectedCourse?.issues_certificate) && (
-              <div className="mt-3 p-3 rounded-lg bg-primary/10 border border-primary/30 text-sm flex items-center gap-2">
-                <Award className="w-5 h-5 text-primary" />
-                <span>🎉 Gratulujeme, kurz je dokončen!{selectedCourse?.issues_certificate ? " Certifikát najdete v záložce Moje certifikáty." : ""}</span>
+              <div className="mt-4 rounded-2xl border-2 border-primary/40 bg-primary/5 p-6 md:p-8 text-center">
+                <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-brand-sm flex items-center justify-center mb-4">
+                  <PartyPopper className="w-8 h-8 text-white" />
+                </div>
+                <h2 className="font-heading text-2xl md:text-3xl font-bold mb-2">
+                  Gratulujeme! Právě jsi dokončil/a kurz „{selectedCourse?.title}“
+                </h2>
+                {selectedCourse?.issues_certificate && (
+                  <p className="text-muted-foreground max-w-xl mx-auto mb-2">
+                    Certifikát ti dorazí e-mailem a najdeš ho i v sekci Moje certifikáty.
+                  </p>
+                )}
+                <Button size="lg" className="mt-4" onClick={backToList}>
+                  <ArrowLeft className="w-4 h-4 mr-2" /> Zpět do akademie
+                </Button>
               </div>
             )}
+
 
             {enrollmentCompletedAt && selectedCourse?.requires_evidence && selectedCourse?.issues_certificate && (
               <div className="mt-3">

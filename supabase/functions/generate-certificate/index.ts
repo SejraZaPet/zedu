@@ -5,8 +5,9 @@
 // - Sends an email with a signed download link via existing send-email fn.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { PDFDocument, rgb, StandardFonts } from "npm:pdf-lib@1.17.1";
+import { PDFDocument, rgb } from "npm:pdf-lib@1.17.1";
 import fontkit from "npm:@pdf-lib/fontkit@1.1.1";
+import { ZEDU_LOGO_PNG_BASE64 } from "../_shared/zedu-logo.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,10 +15,14 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+// IMPORTANT: use FULL font files. The previous fontsource "latin-ext" files are
+// unicode-range subsets that contain ONLY extended latin glyphs (no basic ASCII),
+// which made every plain letter render as an empty box.
 const FONT_REGULAR_URL =
-  "https://cdn.jsdelivr.net/fontsource/fonts/noto-sans@latest/latin-ext-400-normal.ttf";
+  "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/lato/Lato-Regular.ttf";
 const FONT_BOLD_URL =
-  "https://cdn.jsdelivr.net/fontsource/fonts/noto-sans@latest/latin-ext-700-normal.ttf";
+  "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/lato/Lato-Bold.ttf";
+
 
 // Brand tokens (must stay in sync with src/index.css)
 const TEAL = { r: 0x63 / 255, g: 0xc7 / 255, b: 0xcf / 255 };
@@ -34,13 +39,18 @@ async function buildCertificatePdf(params: {
   issuedAt: Date;
 }): Promise<Uint8Array> {
   const [rRes, bRes] = await Promise.all([fetch(FONT_REGULAR_URL), fetch(FONT_BOLD_URL)]);
+  if (!rRes.ok || !bRes.ok) {
+    throw new Error(`Font download failed (${rRes.status}/${bRes.status})`);
+  }
   const regular = new Uint8Array(await rRes.arrayBuffer());
   const bold = new Uint8Array(await bRes.arrayBuffer());
 
   const doc = await PDFDocument.create();
   doc.registerFontkit(fontkit);
-  const font = await doc.embedFont(regular, { subset: true });
-  const fontBold = await doc.embedFont(bold, { subset: true });
+  // subset: false — subsetting these files breaks glyph mapping in several viewers.
+  const font = await doc.embedFont(regular, { subset: false });
+  const fontBold = await doc.embedFont(bold, { subset: false });
+
 
   // A4 landscape
   const width = 842, height = 595;
@@ -73,12 +83,23 @@ async function buildCertificatePdf(params: {
     page.drawText(text, { x: centerX - w / 2, y, size, font: f, color: rgb(color.r, color.g, color.b) });
   };
 
-  // Brand mark
-  drawCentered("ZEdu Akademie", height - 90, 14, true, TEAL);
+  // Brand mark: logo image + wordmark
+  try {
+    const logoBytes = Uint8Array.from(atob(ZEDU_LOGO_PNG_BASE64), (c) => c.charCodeAt(0));
+    const logo = await doc.embedPng(logoBytes);
+    const logoW = 120;
+    const logoH = (logo.height / logo.width) * logoW;
+    page.drawImage(logo, { x: centerX - logoW / 2, y: height - 60 - logoH, width: logoW, height: logoH });
+    drawCentered("ZEdu Akademie", height - 72 - logoH, 12, true, TEAL);
+  } catch (e) {
+    console.warn("Logo embed failed, falling back to text:", e);
+    drawCentered("ZEdu Akademie", height - 90, 14, true, TEAL);
+  }
+
 
   // Title
-  drawCentered("CERTIFIKÁT", height - 155, 42, true, INK);
-  drawCentered("o absolvování kurzu", height - 180, 12, false, MUTED);
+  drawCentered("CERTIFIKÁT", height - 168, 40, true, INK);
+  drawCentered("o absolvování kurzu", height - 192, 12, false, MUTED);
 
   // Recipient
   drawCentered("Tímto se osvědčuje, že", height - 235, 12, false, MUTED);
