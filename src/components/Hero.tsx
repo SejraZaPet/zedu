@@ -52,7 +52,7 @@ const Hero = ({ props }: HeroProps) => {
 
         <div className="relative z-10 text-center px-4 max-w-3xl mx-auto py-16 md:py-24">
           <h1
-            className="flex items-center justify-center whitespace-nowrap gap-2 sm:gap-3 md:gap-4 font-heading font-extrabold tracking-tight mb-8 animate-fade-in-up"
+            className="flex items-center justify-center whitespace-nowrap gap-2 sm:gap-3 md:gap-4 font-heading font-bold tracking-tight mb-8 animate-fade-in-up"
             style={{ animationDelay: "0.1s" }}
           >
             <img

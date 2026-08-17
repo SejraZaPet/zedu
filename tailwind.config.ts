@@ -15,7 +15,7 @@ export default {
     extend: {
       fontFamily: {
         sans: ["Lato", "system-ui", "sans-serif"],
-        heading: ["Lato", "system-ui", "sans-serif"],
+        heading: ["Baloo 2", "Lato", "system-ui", "sans-serif"],
         body: ["Lato", "system-ui", "sans-serif"],
       },
       colors: {

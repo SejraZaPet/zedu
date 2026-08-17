@@ -266,7 +266,7 @@ const ActivitiesPage = () => {
       <main className="pb-16" style={{ paddingTop: "calc(70px + 1.5rem)" }}>
         {/* Header */}
         <div className="container mx-auto px-4 md:px-8 text-center mb-10">
-          <h1 className="font-heading text-3xl md:text-4xl font-extrabold text-foreground mb-3">
+          <h1 className="font-heading text-3xl md:text-4xl font-bold text-foreground mb-3">
             Interaktivní aktivity
           </h1>
           <p className="text-muted-foreground text-base md:text-lg max-w-xl mx-auto">
