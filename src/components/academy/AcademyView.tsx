@@ -210,6 +210,7 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
   const [filterCert, setFilterCert] = useState<string>("all");
   const [filterAccredited, setFilterAccredited] = useState<string>("all");
   const [filterPrice, setFilterPrice] = useState<string>("all");
+  const [filterAudience, setFilterAudience] = useState<string>("all");
 
   const categories = useMemo(
     () => Array.from(new Set(courses.map((c) => c.category).filter((v): v is string => !!v && v.trim() !== ""))).sort((a, b) => a.localeCompare(b, "cs")),
@@ -220,15 +221,17 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
       if (filterCategory !== "all" && (c.category || "") !== filterCategory) return false;
       if (filterCert !== "all" && String(!!c.issues_certificate) !== filterCert) return false;
       if (filterAccredited !== "all" && String(!!c.is_accredited) !== filterAccredited) return false;
+      if (filterAudience !== "all" && c.audience !== filterAudience) return false;
       const isPaid = !!c.price && Number(c.price) > 0;
       if (filterPrice === "free" && isPaid) return false;
       if (filterPrice === "paid" && !isPaid) return false;
       return true;
     }),
-    [courses, filterCategory, filterCert, filterAccredited, filterPrice],
+    [courses, filterCategory, filterCert, filterAccredited, filterPrice, filterAudience],
   );
-  const filtersActive = filterCategory !== "all" || filterCert !== "all" || filterAccredited !== "all" || filterPrice !== "all";
-  const resetFilters = () => { setFilterCategory("all"); setFilterCert("all"); setFilterAccredited("all"); setFilterPrice("all"); };
+  const filtersActive = filterCategory !== "all" || filterCert !== "all" || filterAccredited !== "all" || filterPrice !== "all" || filterAudience !== "all";
+  const resetFilters = () => { setFilterCategory("all"); setFilterCert("all"); setFilterAccredited("all"); setFilterPrice("all"); setFilterAudience("all"); };
+
 
 
 
@@ -552,7 +555,19 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
                       </Select>
                     </div>
                   )}
+                  <div className="w-[190px]">
+                    <Label className="text-xs text-muted-foreground">Cílová skupina</Label>
+                    <Select value={filterAudience} onValueChange={setFilterAudience}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Všechny</SelectItem>
+                        <SelectItem value={audience}>{audience === "teacher" ? "Jen pro učitele" : audience === "parent" ? "Jen pro rodiče" : "Jen pro žáky"}</SelectItem>
+                        <SelectItem value="both">Pro všechny skupiny</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div className="w-[170px]">
+
                     <Label className="text-xs text-muted-foreground">Certifikát</Label>
                     <Select value={filterCert} onValueChange={setFilterCert}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
