@@ -555,7 +555,19 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
                       </Select>
                     </div>
                   )}
+                  <div className="w-[190px]">
+                    <Label className="text-xs text-muted-foreground">Cílová skupina</Label>
+                    <Select value={filterAudience} onValueChange={setFilterAudience}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Všechny</SelectItem>
+                        <SelectItem value={audience}>{audience === "teacher" ? "Jen pro učitele" : audience === "parent" ? "Jen pro rodiče" : "Jen pro žáky"}</SelectItem>
+                        <SelectItem value="both">Pro všechny skupiny</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div className="w-[170px]">
+
                     <Label className="text-xs text-muted-foreground">Certifikát</Label>
                     <Select value={filterCert} onValueChange={setFilterCert}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
