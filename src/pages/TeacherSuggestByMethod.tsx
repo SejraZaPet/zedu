@@ -32,11 +32,37 @@ interface LearningMethod {
   tips: string | null;
 }
 
-interface TeacherLesson {
+type TeacherSourceKind = "lesson" | "plan" | "worksheet";
+
+interface TeacherSource {
   id: string;
   title: string;
-  content_data: any;
+  kind: TeacherSourceKind;
+  content: any;
 }
+
+const SOURCE_KIND_LABEL: Record<TeacherSourceKind, string> = {
+  lesson: "Lekce z učebnice",
+  plan: "Plán hodiny",
+  worksheet: "Pracovní list",
+};
+
+/** Vytáhne čitelný text z libovolné JSON struktury (slides, spec, blocks…). */
+function jsonToText(value: any, depth = 0): string {
+  if (value == null || depth > 8) return "";
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  if (Array.isArray(value)) return value.map((v) => jsonToText(v, depth + 1)).filter(Boolean).join("\n");
+  if (typeof value === "object") {
+    return Object.entries(value)
+      .filter(([k]) => !/^(id|_id|type|kind|color|theme|url|src|image|font|width|height|x|y|w|h|seed)$/i.test(k))
+      .map(([, v]) => jsonToText(v, depth + 1))
+      .filter(Boolean)
+      .join("\n");
+  }
+  return "";
+}
+
 
 interface PhaseValue {
   timeMin: string;
@@ -110,10 +136,13 @@ export default function TeacherSuggestByMethod() {
 
   const [methods, setMethods] = useState<LearningMethod[]>([]);
   const [selectedMethodIds, setSelectedMethodIds] = useState<string[]>([]);
-  const [teacherLessons, setTeacherLessons] = useState<TeacherLesson[]>([]);
+  const [teacherLessons, setTeacherLessons] = useState<TeacherSource[]>([]);
+  const [sourcesLoading, setSourcesLoading] = useState(false);
+  const [sourcesError, setSourcesError] = useState(false);
   const [sourceMode, setSourceMode] = useState<"text" | "lesson" | "file">("text");
   const [sourceText, setSourceText] = useState("");
   const [sourceLessonId, setSourceLessonId] = useState<string>("");
+
   const [sourceTitle, setSourceTitle] = useState("");
   const [subject, setSubject] = useState("");
   const [gradeBand, setGradeBand] = useState("");
@@ -137,16 +166,69 @@ export default function TeacherSuggestByMethod() {
 
   useEffect(() => {
     if (!user) return;
+    let cancelled = false;
     (async () => {
-      const { data } = await supabase
-        .from("teacher_textbook_lessons")
-        .select("id, title, content_data, teacher_textbooks!inner(teacher_id)")
-        .eq("teacher_textbooks.teacher_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(50);
-      setTeacherLessons(((data as any[]) ?? []).map((l) => ({ id: l.id, title: l.title, content_data: l.content_data })));
+      setSourcesLoading(true);
+      setSourcesError(false);
+      const [lessonsRes, plansRes, worksheetsRes] = await Promise.all([
+        supabase
+          .from("teacher_textbook_lessons")
+          .select("id, title, blocks, teacher_textbooks!inner(teacher_id)")
+          .eq("teacher_textbooks.teacher_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(50),
+        supabase
+          .from("lesson_plans")
+          .select("id, title, slides")
+          .eq("teacher_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(50),
+        supabase
+          .from("worksheets")
+          .select("id, title, spec")
+          .eq("teacher_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(50),
+      ]);
+      if (cancelled) return;
+      const errored = [lessonsRes.error, plansRes.error, worksheetsRes.error].filter(Boolean);
+      if (errored.length > 0) {
+        console.error("Nepodařilo se načíst zdroje učitele", errored);
+        setSourcesError(true);
+        toast({
+          title: "Nepodařilo se načíst lekce, zkuste to prosím znovu",
+          variant: "destructive",
+        });
+      }
+
+      const sources: TeacherSource[] = [
+        ...((lessonsRes.data as any[]) ?? []).map((l) => ({
+          id: `lesson:${l.id}`,
+          title: l.title || "Bez názvu",
+          kind: "lesson" as const,
+          content: l.blocks,
+        })),
+        ...((plansRes.data as any[]) ?? []).map((p) => ({
+          id: `plan:${p.id}`,
+          title: p.title || "Bez názvu",
+          kind: "plan" as const,
+          content: p.slides,
+        })),
+        ...((worksheetsRes.data as any[]) ?? []).map((w) => ({
+          id: `worksheet:${w.id}`,
+          title: w.title || "Bez názvu",
+          kind: "worksheet" as const,
+          content: w.spec,
+        })),
+      ];
+      setTeacherLessons(sources);
+      setSourcesLoading(false);
     })();
+    return () => {
+      cancelled = true;
+    };
   }, [user]);
+
 
   useEffect(() => {
     if (!user || !subject.trim()) {
@@ -232,12 +314,17 @@ export default function TeacherSuggestByMethod() {
     if (sourceMode === "lesson" && sourceLessonId) {
       const l = teacherLessons.find((x) => x.id === sourceLessonId);
       if (l) {
-        const blocks = (l.content_data as any)?.blocks ?? l.content_data ?? [];
-        return { text: blocksToText(Array.isArray(blocks) ? blocks : []), title: l.title };
+        const raw = (l.content as any)?.blocks ?? l.content ?? [];
+        const text =
+          l.kind === "lesson" && Array.isArray(raw)
+            ? blocksToText(raw) || jsonToText(raw)
+            : jsonToText(raw);
+        return { text: (text || "").slice(0, 20000), title: l.title };
       }
     }
     return { text: sourceText, title: sourceTitle };
   };
+
 
   const generate = async () => {
     if (selectedMethodIds.length === 0) {
@@ -433,26 +520,36 @@ export default function TeacherSuggestByMethod() {
 
             {sourceMode === "lesson" && (
               <div>
-                <Label>Vlastní lekce</Label>
+                <Label>Vlastní materiál (lekce, plán hodiny, pracovní list)</Label>
                 <Select value={sourceLessonId} onValueChange={setSourceLessonId}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Vyberte lekci…" />
+                    <SelectValue placeholder="Vyberte materiál…" />
                   </SelectTrigger>
                   <SelectContent>
                     {teacherLessons.map((l) => (
                       <SelectItem key={l.id} value={l.id}>
-                        {l.title}
+                        {SOURCE_KIND_LABEL[l.kind]}: {l.title}
                       </SelectItem>
                     ))}
                     {teacherLessons.length === 0 && (
                       <div className="p-3 text-sm text-muted-foreground">
-                        Zatím nemáte žádné vlastní lekce.
+                        {sourcesLoading
+                          ? "Načítám…"
+                          : sourcesError
+                            ? "Nepodařilo se načíst lekce, zkuste to prosím znovu."
+                            : "Zatím nemáte žádné vlastní materiály."}
                       </div>
                     )}
                   </SelectContent>
                 </Select>
+                {sourcesError && (
+                  <p className="text-xs text-destructive mt-1">
+                    Nepodařilo se načíst lekce, zkuste to prosím znovu.
+                  </p>
+                )}
               </div>
             )}
+
 
             {sourceMode === "file" && (
               <div className="border-2 border-dashed rounded-xl p-6 text-center">
