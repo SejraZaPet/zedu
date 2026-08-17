@@ -1,0 +1,1 @@
+ALTER TABLE public.academy_courses ADD COLUMN IF NOT EXISTS category text;

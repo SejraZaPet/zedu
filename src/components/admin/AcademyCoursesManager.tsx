@@ -27,6 +27,7 @@ interface Course {
   is_published: boolean;
   sort_order: number;
   audience: Audience;
+  category: string | null;
   issues_certificate: boolean;
   requires_evidence: boolean;
   price: number | null;
@@ -59,6 +60,16 @@ interface CourseStats {
 }
 
 const audienceLabel = (a: Audience) => a === "teacher" ? "Učitelé" : a === "student" ? "Žáci" : "Učitelé + žáci";
+
+const COURSE_CATEGORIES = [
+  "Pedagogika",
+  "Technologie ve výuce",
+  "Hodnocení a zpětná vazba",
+  "Inkluze a podpora",
+  "Wellbeing a klima třídy",
+  "Řízení školy",
+  "Práce s ZEdu",
+];
 
 const AcademyCoursesManager = () => {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -103,7 +114,7 @@ const AcademyCoursesManager = () => {
   const openNewCourse = () => {
     setCourseForm({
       title: "", description: "", is_published: false, is_accredited: false,
-      audience: "teacher", issues_certificate: false, requires_evidence: false, price: null,
+      audience: "teacher", category: null, issues_certificate: false, requires_evidence: false, price: null,
       revenue_type: null, creator_id: null, platform_commission_percent: null,
       sort_order: courses.length,
     });
@@ -122,6 +133,7 @@ const AcademyCoursesManager = () => {
       is_published: !!courseForm.is_published,
       sort_order: courseForm.sort_order ?? 0,
       audience: (courseForm.audience || "teacher") as Audience,
+      category: courseForm.category || null,
       issues_certificate: !!courseForm.issues_certificate,
       requires_evidence: !!courseForm.requires_evidence,
       price: courseForm.price != null && courseForm.price !== ("" as any) ? Number(courseForm.price) : null,
@@ -370,6 +382,22 @@ const AcademyCoursesManager = () => {
                 </SelectContent>
               </Select>
             </div>
+
+            <div>
+              <Label>Téma / kategorie</Label>
+              <Select
+                value={courseForm.category || "none"}
+                onValueChange={(v) => setCourseForm({ ...courseForm, category: v === "none" ? null : v })}
+              >
+                <SelectTrigger><SelectValue placeholder="Bez kategorie" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Bez kategorie</SelectItem>
+                  {COURSE_CATEGORIES.map((cat) => (<SelectItem key={cat} value={cat}>{cat}</SelectItem>))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">Podle kategorie mohou uživatelé kurzy filtrovat.</p>
+            </div>
+
 
             <div><Label>Pořadí</Label><Input type="number" value={courseForm.sort_order ?? 0} onChange={(e) => setCourseForm({ ...courseForm, sort_order: parseInt(e.target.value) || 0 })} /></div>
 
