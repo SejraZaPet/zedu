@@ -12,6 +12,7 @@ export interface LessonItem {
   blocks: any[];
   source: "textbook_lessons" | "teacher_textbook_lessons";
   topic_id?: string;
+  textbookId?: string;
 }
 
 export function usePresentationLauncher() {

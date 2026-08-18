@@ -830,7 +830,7 @@ const TeacherTextbooks = () => {
         />
 
         <PresentationEditorDialog
-          presentationLesson={presentationLesson}
+          presentationLesson={presentationLesson ? { ...presentationLesson, textbookId: selectedTextbook.id } : null}
           pendingSlides={pendingSlides}
           setPendingSlides={setPendingSlides}
           editingSlideIndex={editingSlideIndex}
@@ -920,7 +920,7 @@ const TeacherTextbooks = () => {
       <SiteFooter />
 
       <PresentationEditorDialog
-        presentationLesson={presentationLesson}
+        presentationLesson={presentationLesson ? { ...presentationLesson, textbookId: selectedTextbook?.id } : null}
         pendingSlides={pendingSlides}
         setPendingSlides={setPendingSlides}
         editingSlideIndex={editingSlideIndex}
