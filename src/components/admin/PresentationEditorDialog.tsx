@@ -314,7 +314,22 @@ export const PresentationEditorDialog = ({
             </DialogDescription>
 
             <div className="flex flex-wrap items-center gap-2">
+              {/* ČÁST 2 – zpět na lekci (jen pokud lze sestavit funkční URL) */}
+              {lessonBackUrl && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 max-w-[220px] gap-1.5 text-xs"
+                  onClick={() => { onClose(); navigate(lessonBackUrl); }}
+                  title={`Zpět na lekci ${presentationLesson?.title ?? ""}`}
+                >
+                  <ArrowLeft className="h-3.5 w-3.5 shrink-0" />
+                  <span className="truncate">Zpět na lekci{presentationLesson?.title ? `: ${presentationLesson.title}` : ""}</span>
+                </Button>
+              )}
+
               {/* Skupina „vzhled slidu“ */}
+
               <div className="flex items-center gap-2 rounded-lg border border-border bg-background/70 px-2 py-1">
                 <Select value={transition} onValueChange={(v) => setTransition(v as SlideTransition)}>
                   <SelectTrigger className="h-8 w-[124px] text-xs" title="Přechod mezi slidy">
