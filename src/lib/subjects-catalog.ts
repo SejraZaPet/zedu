@@ -136,3 +136,57 @@ export const resolveSubjectSelection = async (
   const created = await createSubject({ name: label });
   return { subject_id: created.id, name: created.name };
 };
+
+const rlsError = (message?: string) =>
+  new Error(
+    message ||
+      "Předmět může upravovat nebo mazat jen jeho autor, případně administrátor.",
+  );
+
+/** Archives (or restores) a subject — the row itself is never touched otherwise. */
+export const setSubjectArchived = async (id: string, archived: boolean): Promise<void> => {
+  const { data, error } = await supabase
+    .from("subjects")
+    .update({ archived })
+    .eq("id", id)
+    .select("id");
+  if (error) throw rlsError(error.code === "42501" ? undefined : error.message);
+  if (!data || data.length === 0) throw rlsError();
+};
+
+/**
+ * Number of rows that would be cascade-deleted with the subject. Deleting is
+ * only offered when both counts are zero, so group/class history can never be
+ * wiped by accident.
+ */
+export const fetchSubjectDependencies = async (
+  subjectIds: string[],
+): Promise<Record<string, { groups: number; classSubjects: number }>> => {
+  const result: Record<string, { groups: number; classSubjects: number }> = {};
+  for (const id of subjectIds) result[id] = { groups: 0, classSubjects: 0 };
+  if (subjectIds.length === 0) return result;
+
+  const [{ data: groups }, { data: classSubjects }] = await Promise.all([
+    supabase.from("subject_groups").select("subject_id").in("subject_id", subjectIds),
+    supabase.from("class_subjects").select("subject_id").in("subject_id", subjectIds),
+  ]);
+
+  for (const row of (groups ?? []) as { subject_id: string }[]) {
+    if (result[row.subject_id]) result[row.subject_id].groups += 1;
+  }
+  for (const row of (classSubjects ?? []) as { subject_id: string }[]) {
+    if (result[row.subject_id]) result[row.subject_id].classSubjects += 1;
+  }
+  return result;
+};
+
+/** Hard delete — callers must verify there are no dependencies first. */
+export const deleteSubject = async (id: string): Promise<void> => {
+  const { data, error } = await supabase
+    .from("subjects")
+    .delete()
+    .eq("id", id)
+    .select("id");
+  if (error) throw rlsError(error.code === "42501" ? undefined : error.message);
+  if (!data || data.length === 0) throw rlsError();
+};
