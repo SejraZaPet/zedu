@@ -182,7 +182,10 @@ export default function LessonFormDialog({
     setAbbreviation(initial?.abbreviation ?? "");
     setColor(initial?.color ?? colorForSubject(subj));
     setClassSel(initial?.classId ?? NO_CLASS);
+    setGroupSel(initial?.groupId ?? NO_CLASS);
+    setTarget(initial?.groupId ? "group" : "class");
     setRoom(initial?.room ?? "");
+
     setValidFrom(initial?.validFrom ? new Date(initial.validFrom) : undefined);
     setValidTo(initial?.validTo ? new Date(initial.validTo) : undefined);
     setMirrorBoth(!!initial?.mirrorBoth);
