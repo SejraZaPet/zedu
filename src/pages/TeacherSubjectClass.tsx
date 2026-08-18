@@ -22,6 +22,7 @@ import {
   Star,
 } from "lucide-react";
 import LessonReflectionDialog from "@/components/lessons/LessonReflectionDialog";
+import TeachingUnitCollaboratorsCard from "@/components/teacher/TeachingUnitCollaboratorsCard";
 import { fetchReflections, reflectionKey, type LessonReflection } from "@/lib/lesson-reflections";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
