@@ -1133,7 +1133,9 @@ export default function TeacherSchedule() {
                   abbreviation: editingClassSlot.abbreviation ?? "",
                   color: editingClassSlot.color ?? undefined,
                   classId: editingClassSlot.class_id,
+                  groupId: editingClassSlot.group_id ?? null,
                   className: editingClassSlot.classes?.name ?? "",
+
                   room: editingClassSlot.room ?? "",
                   validFrom: editingClassSlot.valid_from ?? null,
                   validTo: editingClassSlot.valid_to ?? null,
@@ -1144,7 +1146,7 @@ export default function TeacherSchedule() {
         }
         periods={dialogPeriods}
         showMirrorSwitch
-        title="Upravit hodinu třídy"
+        title={editingClassSlot?.group_id ? "Upravit hodinu skupiny" : "Upravit hodinu třídy"}
         onDelete={async () => {
           if (!editingClassSlot) return;
           const { error } = await supabase
