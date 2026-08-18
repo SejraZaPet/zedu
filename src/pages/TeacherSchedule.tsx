@@ -1252,6 +1252,12 @@ function ClassCard({ slot, conflict, onClick }: { slot: ClassSlot; conflict?: bo
       <div className="text-xs text-muted-foreground truncate flex items-center gap-1 mt-0.5">
         <Users className="w-2.5 h-2.5 shrink-0" />
         <span className="truncate">{className}</span>
+        {isGroup && (
+          <span className="shrink-0 text-[9px] uppercase tracking-wide bg-muted px-1 rounded">
+            skupina
+          </span>
+        )}
+
         {slot.room && <span className="shrink-0">· {slot.room}</span>}
       </div>
       {slot.textbook_id && (
