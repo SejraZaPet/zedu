@@ -10,13 +10,13 @@ import {
   Monitor, Plus, Trash2, ChevronDown, Save, Sun, Moon, Type, List, Image as ImageIcon,
   Table as TableIcon, Settings2, Undo2, Redo2, ZoomIn, Copy, FileDown, Heading as HeadingIcon,
   Quote as QuoteIcon, StickyNote, BarChart3, Sigma, Video as VideoIcon, Music, Loader2, Bookmark,
-  Wand2,
+  Wand2, Settings, Puzzle, ArrowLeft, ExternalLink,
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { SLIDE_GAME_MODES } from "@/lib/game-slide-settings";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import BlockEditor, { type BlockEditorHistory } from "@/components/admin/BlockEditor";
