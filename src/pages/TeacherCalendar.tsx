@@ -22,7 +22,7 @@ import {
   expandScheduleSlots,
   getWeekRange,
 } from "@/lib/calendar-utils";
-import { expandTeacherSchedule, loadSchedule } from "@/lib/teacher-schedule-store";
+import { expandTeacherSchedule, loadSchedule, hydrateScheduleFromRemote } from "@/lib/teacher-schedule-store";
 import LessonReflectionDialog from "@/components/lessons/LessonReflectionDialog";
 import { fetchReflections, reflectionKey } from "@/lib/lesson-reflections";
 import { CalendarExportMenu } from "@/components/calendar/CalendarExportMenu";
@@ -128,7 +128,10 @@ const TeacherCalendar = () => {
         to,
       );
 
-      const personalEvents = expandTeacherSchedule(loadSchedule(), from, to);
+      const personalSchedule = user
+        ? await hydrateScheduleFromRemote(user.id).catch(() => loadSchedule())
+        : loadSchedule();
+      const personalEvents = expandTeacherSchedule(personalSchedule, from, to);
 
       const assignmentEvents: CalendarEvent[] = ((assignmentsRes.data as any[]) ?? [])
         .map((a: any) => {

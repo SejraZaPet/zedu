@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
@@ -47,6 +47,8 @@ import {
   DEFAULT_PERIOD_TIMES,
   loadSchedule,
   saveSchedule,
+  hydrateScheduleFromRemote,
+  saveRemoteSchedule,
   buildSubjectStyleMap,
   colorForSubject,
   SUBJECT_COLORS,
