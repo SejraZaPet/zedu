@@ -35,6 +35,8 @@ import { cn } from "@/lib/utils";
 import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
 import SubjectPicker from "@/components/subjects/SubjectPicker";
 import { useTeacherClasses } from "@/hooks/useTeacherClasses";
+import { useSubjectGroups } from "@/hooks/useSubjectGroups";
+
 import {
   SUBJECT_COLORS,
   colorForSubject,
@@ -131,6 +133,7 @@ export default function LessonFormDialog({
 }: Props) {
   const { subjects } = useTeacherSubjects();
   const { classes } = useTeacherClasses();
+  const { groups } = useSubjectGroups();
 
   const defaultPeriod = useMemo(
     () => initial?.period ?? periods[0]?.period ?? 1,
@@ -144,7 +147,10 @@ export default function LessonFormDialog({
   const [abbreviation, setAbbreviation] = useState("");
   const [color, setColor] = useState<string>(SUBJECT_COLORS[0].value);
   const [classSel, setClassSel] = useState<string>(NO_CLASS);
+  const [target, setTarget] = useState<"class" | "group">("class");
+  const [groupSel, setGroupSel] = useState<string>(NO_CLASS);
   const [room, setRoom] = useState("");
+
   const [validFrom, setValidFrom] = useState<Date | undefined>();
   const [validTo, setValidTo] = useState<Date | undefined>();
   const [mirrorBoth, setMirrorBoth] = useState(false);
