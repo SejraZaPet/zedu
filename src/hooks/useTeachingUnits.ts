@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTeacherClasses } from "./useTeacherClasses";
+import { useAuth } from "@/contexts/AuthContext";
 
 /**
  * "Výuka" = jedna kombinace předmět × (třída | skupina předmětu).
