@@ -358,8 +358,12 @@ const GameBackgroundsManager = () => {
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} /> Obnovit
           </Button>
         </div>
+        {loadError && (
+          <p className="text-sm text-destructive">Seznam pozadí se nepodařilo načíst: {loadError}</p>
+        )}
         {loading ? (
           <p className="text-sm text-muted-foreground">Načítání…</p>
+
         ) : backgrounds.length === 0 ? (
           <p className="text-sm text-muted-foreground">Zatím není nahrané žádné pozadí.</p>
         ) : (
