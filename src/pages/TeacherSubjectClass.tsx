@@ -299,7 +299,7 @@ export default function TeacherSubjectClass() {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, user, navigate, classId, subjectLabel]);
+  }, [authLoading, user, navigate, classId, groupId, isGroup, subjectLabel]);
 
   const matchedSubject = useMemo(
     () => subjects.find((s) => s.label.toLowerCase() === subjectLabel.toLowerCase()),
