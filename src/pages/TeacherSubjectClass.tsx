@@ -1072,9 +1072,12 @@ export default function TeacherSubjectClass() {
                         ? `${m.profiles.first_name} ${m.profiles.last_name}`.trim()
                         : "Žák";
                     return (
-                      <div
+                      <button
                         key={m.user_id}
-                        className="px-4 py-2.5 flex items-center justify-between"
+                        type="button"
+                        onClick={() => navigate(`/portfolio/${m.user_id}`)}
+                        title="Otevřít portfolio žáka"
+                        className="w-full text-left px-4 py-2.5 flex items-center justify-between hover:bg-muted/50 transition-colors"
                       >
                         <div className="text-sm">{name || "Žák"}</div>
                         <div className="flex items-center gap-4 text-sm">
@@ -1085,7 +1088,7 @@ export default function TeacherSubjectClass() {
                             {pct !== null ? `${pct} %` : "—"}
                           </span>
                         </div>
-                      </div>
+                      </button>
                     );
                   })}
                 </div>
