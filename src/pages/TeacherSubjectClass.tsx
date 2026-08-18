@@ -132,15 +132,20 @@ const decodeSubject = (raw: string) => {
 };
 
 export default function TeacherSubjectClass() {
-  const { subjectId = "", classId = "" } = useParams();
+  const { subjectId = "", classId = "", groupId = "" } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
   const { subjects } = useTeacherSubjects();
 
+  /** Stránka umí pracovat buď nad třídou (dnešní tok), nebo nad skupinou předmětu. */
+  const isGroup = !!groupId;
+
   const subjectLabel = useMemo(() => decodeSubject(subjectId), [subjectId]);
 
   const [klass, setKlass] = useState<ClassRow | null>(null);
+  const [group, setGroup] = useState<{ id: string; name: string; school_year: string } | null>(null);
+
   const [slots, setSlots] = useState<ScheduleSlot[]>([]);
   const [plans, setPlans] = useState<LessonPlanRow[]>([]);
   const [planMethods, setPlanMethods] = useState<Record<string, { id: string; name: string }>>({});
