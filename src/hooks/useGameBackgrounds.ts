@@ -6,6 +6,7 @@ import type { GameBackground } from "@/lib/game-backgrounds";
 export function useGameBackgrounds(includeInactive = false) {
   const [backgrounds, setBackgrounds] = useState<GameBackground[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -15,7 +16,13 @@ export function useGameBackgrounds(includeInactive = false) {
       .order("category", { ascending: true })
       .order("name", { ascending: true });
     if (!includeInactive) query = query.eq("is_active", true);
-    const { data } = await query;
+    const { data, error: err } = await query;
+    if (err) {
+      console.error("useGameBackgrounds: nepodařilo se načíst herní pozadí", err);
+      setError(err.message);
+    } else {
+      setError(null);
+    }
     setBackgrounds(((data as any[]) ?? []) as GameBackground[]);
     setLoading(false);
   }, [includeInactive]);
@@ -24,5 +31,6 @@ export function useGameBackgrounds(includeInactive = false) {
     load();
   }, [load]);
 
-  return { backgrounds, loading, reload: load };
+  return { backgrounds, loading, error, reload: load };
+
 }

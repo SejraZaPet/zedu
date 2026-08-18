@@ -56,7 +56,7 @@ interface Row {
 }
 
 const GameBackgroundsManager = () => {
-  const { backgrounds, loading, reload } = useGameBackgrounds(true);
+  const { backgrounds, loading, error: loadError, reload } = useGameBackgrounds(true);
   const [rows, setRows] = useState<Row[]>([]);
   const [saving, setSaving] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -84,10 +84,15 @@ const GameBackgroundsManager = () => {
       const { data } = supabase.storage.from("lesson-images").getPublicUrl(path);
       setRows((s) => s.map((r) => (r.id === row.id ? { ...r, uploading: false, imageUrl: data.publicUrl } : r)));
     } catch (err: any) {
-      setRows((s) =>
-        s.map((r) => (r.id === row.id ? { ...r, uploading: false, error: err?.message ?? String(err) } : r)),
-      );
+      const message = err?.message ?? String(err);
+      setRows((s) => s.map((r) => (r.id === row.id ? { ...r, uploading: false, error: message } : r)));
+      toast({
+        title: `Nahrání souboru ${row.fileName} selhalo`,
+        description: message,
+        variant: "destructive",
+      });
     }
+
   };
 
   const addFiles = (files: FileList | File[]) => {
@@ -322,7 +327,16 @@ const GameBackgroundsManager = () => {
                 </Button>
               </div>
             ))}
-            <div className="flex justify-end gap-2">
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              {!canSave && !saving && (
+                <p className="text-xs text-muted-foreground mr-auto">
+                  {rows.some((r) => r.uploading)
+                    ? "Čekám na dokončení nahrávání souborů…"
+                    : rows.some((r) => r.error || !r.imageUrl)
+                      ? "Některý soubor se nenahrál – odeberte ho nebo nahrajte znovu."
+                      : "Doplňte u všech pozadí název a zařazení (předmět / období / obor)."}
+                </p>
+              )}
               <Button variant="outline" onClick={() => setRows([])} disabled={saving}>
                 Zrušit
               </Button>
@@ -331,6 +345,7 @@ const GameBackgroundsManager = () => {
                 Uložit {rows.length} pozadí
               </Button>
             </div>
+
           </div>
         )}
       </section>
@@ -343,8 +358,12 @@ const GameBackgroundsManager = () => {
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} /> Obnovit
           </Button>
         </div>
+        {loadError && (
+          <p className="text-sm text-destructive">Seznam pozadí se nepodařilo načíst: {loadError}</p>
+        )}
         {loading ? (
           <p className="text-sm text-muted-foreground">Načítání…</p>
+
         ) : backgrounds.length === 0 ? (
           <p className="text-sm text-muted-foreground">Zatím není nahrané žádné pozadí.</p>
         ) : (
