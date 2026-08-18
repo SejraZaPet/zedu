@@ -28,7 +28,14 @@ interface Props {
 const initials = (f: string, l: string) =>
   `${(f || "").charAt(0)}${(l || "").charAt(0)}`.toUpperCase() || "?";
 
-const QuickRecognitionCard = ({ classId, teacherId, students }: Props) => {
+const QuickRecognitionCard = ({
+  classId,
+  teacherId,
+  students,
+  subjectId,
+  groupId,
+  description,
+}: Props) => {
   const { toast } = useToast();
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
@@ -38,7 +45,9 @@ const QuickRecognitionCard = ({ classId, teacherId, students }: Props) => {
     const { error } = await supabase.from("behavior_points" as any).insert({
       student_id: student.user_id,
       teacher_id: teacherId,
-      class_id: classId,
+      class_id: classId ?? null,
+      subject_id: subjectId ?? null,
+      group_id: groupId ?? null,
       category,
     });
     setPendingId(null);
@@ -61,8 +70,12 @@ const QuickRecognitionCard = ({ classId, teacherId, students }: Props) => {
           Rychlé uznání
         </CardTitle>
         <p className="text-xs text-muted-foreground">
-          Klikněte na žáka a vyberte kategorii. Pouze pozitivní uznání — oddělené od herních bodů.
+          {description ??
+            "Klikněte na žáka a vyberte kategorii. Pouze pozitivní uznání — oddělené od herních bodů."}
         </p>
+      </CardHeader>
+      <CardContent>
+        {students.length === 0 ? (
       </CardHeader>
       <CardContent>
         {students.length === 0 ? (
