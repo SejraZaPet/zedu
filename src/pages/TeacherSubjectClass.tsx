@@ -478,8 +478,10 @@ export default function TeacherSubjectClass() {
   }
 
   function newAssignment() {
-    navigate(`/ucitel/ulohy?classId=${classId}&subject=${encodeURIComponent(subjectLabel)}`);
+    const target = isGroup ? `groupId=${groupId}` : `classId=${classId}`;
+    navigate(`/ucitel/ulohy?${target}&subject=${encodeURIComponent(subjectLabel)}`);
   }
+
 
   function newLessonPlan(date?: Date) {
     const params = new URLSearchParams();
