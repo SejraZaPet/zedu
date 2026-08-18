@@ -576,10 +576,13 @@ export const PresentationEditorDialog = ({
                         <LayoutTemplate className="h-3.5 w-3.5" /> Začít od šablony
                       </Button>
                     </div>
-                  </TabsContent>
+                  </div>
+                  )}
 
-                  {/* ---- Záložka Slide ---- */}
-                  <TabsContent value="slide" className="min-h-0 flex-1 space-y-4 overflow-y-auto p-3">
+                  {/* ---- Sekce Slide ---- */}
+                  {sidebarSection === "slide" && (
+                  <div className="space-y-4 p-3">
+
                     <div>
                       <Label className="text-xs">Rozvržení</Label>
                       <Select
