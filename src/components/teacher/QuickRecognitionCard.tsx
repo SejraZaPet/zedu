@@ -14,9 +14,15 @@ interface Student {
 }
 
 interface Props {
-  classId: string;
+  /** Třída, ke které pochvala patří (u skupiny předmětu může chybět). */
+  classId?: string | null;
   teacherId: string;
   students: Student[];
+  /** Volitelné navázání pochvaly na konkrétní Výuku (předmět + třída/skupina). */
+  subjectId?: string | null;
+  groupId?: string | null;
+  /** Vlastní popisek pod nadpisem karty. */
+  description?: string;
 }
 
 const initials = (f: string, l: string) =>
