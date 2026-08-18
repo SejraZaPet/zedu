@@ -1212,9 +1212,12 @@ function PersonalCard({
 }
 
 function ClassCard({ slot, conflict, onClick }: { slot: ClassSlot; conflict?: boolean; onClick: () => void }) {
-  const subject = slot.subject_label || "Hodina";
-  const color = slot.color || colorForSubject(subject);
-  const abbr = (slot.abbreviation || subject.slice(0, 3)).toUpperCase();
+  // Jeden předmět = jedna zkratka a barva: přednost má katalog `subjects`,
+  // hodnoty zapsané do konkrétní hodiny slouží jen jako fallback.
+  const canonical = slot.subjects;
+  const subject = canonical?.name || slot.subject_label || "Hodina";
+  const color = canonical?.color || slot.color || colorForSubject(subject);
+  const abbr = (canonical?.abbreviation || slot.abbreviation || subject.slice(0, 3)).toUpperCase();
   const className = slot.classes?.name ?? "";
   return (
     <button
