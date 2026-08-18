@@ -6526,6 +6526,7 @@ export type Database = {
         Args: { _textbook_id: string; _user_id: string }
         Returns: boolean
       }
+      has_elevated_role: { Args: { _user_id: string }; Returns: boolean }
       has_login_credential: { Args: { _profile_id: string }; Returns: boolean }
       has_pin: { Args: { _profile_id?: string }; Returns: boolean }
       has_staff_permission: {

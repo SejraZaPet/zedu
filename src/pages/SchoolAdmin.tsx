@@ -11,8 +11,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
-import { Home, LogOut, School as SchoolIcon, Users, GraduationCap, Plus, Trash2, ShieldCheck, ShieldOff, Copy, RefreshCw, KeyRound, Palette } from "lucide-react";
+import { Home, LogOut, School as SchoolIcon, Users, GraduationCap, Plus, Trash2, ShieldCheck, ShieldOff, Copy, RefreshCw, KeyRound, Palette, Upload } from "lucide-react";
 import SchoolBrandingSection from "@/components/school/SchoolBrandingSection";
+import SchoolBulkImportCard from "@/components/school/SchoolBulkImportCard";
 import SchoolCreatorSalesCard from "@/components/school/SchoolCreatorSalesCard";
 import SchoolLicenseCard from "@/components/school/SchoolLicenseCard";
 
@@ -42,6 +43,15 @@ const SchoolAdmin = () => {
   const [invEmail, setInvEmail] = useState("");
   const [invRole, setInvRole] = useState<"teacher" | "user">("teacher");
   const [submitting, setSubmitting] = useState(false);
+  const [createdCredentials, setCreatedCredentials] = useState<{
+    name: string;
+    email?: string;
+    password?: string;
+    username?: string;
+    studentCode?: string;
+    pin?: string;
+  } | null>(null);
+
 
   useEffect(() => {
     if (authLoading) return;
@@ -142,88 +152,54 @@ const SchoolAdmin = () => {
   };
 
   const inviteUser = async () => {
-    if (!school || !invEmail.trim()) {
-      toast({ title: "Vyplňte e-mail", variant: "destructive" });
+    if (!school) return;
+    if (!invFirst.trim() || !invLast.trim()) {
+      toast({ title: "Vyplňte jméno a příjmení", variant: "destructive" });
       return;
     }
     setSubmitting(true);
-    // Vytvoření uživatele přes existující edge function create-user (admin-only),
-    // ale school_admin to volat nemůže. Místo toho: pošli pozvánku pomocí signUp s pre-vytvořeným heslem
-    // a následně updatuj jeho profile + roli. Pro teď: preferuj cestu přes supabase functions create-school-user.
-    // Jelikož taková funkce neexistuje, použijeme rychlou variantu: vyhledat existujícího uživatele nebo požádat admina.
-    // ⇒ Vytvoříme uživatele pomocí veřejného signUp s dočasným heslem.
-
-    const tempPassword = crypto.randomUUID().slice(0, 12) + "Aa1!";
-    const { data: signed, error: signErr } = await supabase.auth.signUp({
-      email: invEmail.trim(),
-      password: tempPassword,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth`,
-        data: {
-          first_name: invFirst.trim(),
-          last_name: invLast.trim(),
-          role_label: invRole === "teacher" ? "teacher" : "student",
-        },
+    // Účet zakládá edge funkce create-school-user pod service-role klíčem.
+    // Nepoužíváme veřejný signUp — ten by přepsal session přihlášeného správce školy.
+    // Server si sám ověří roli school_admin a použije jeho vlastní school_id.
+    const { data, error } = await supabase.functions.invoke("create-school-user", {
+      body: {
+        first_name: invFirst.trim(),
+        last_name: invLast.trim(),
+        email: invEmail.trim() || undefined,
+        role: invRole,
       },
     });
-    if (signErr || !signed.user) {
-      setSubmitting(false);
-      toast({ title: "Pozvánka selhala", description: signErr?.message ?? "Neznámá chyba", variant: "destructive" });
-      return;
-    }
-    // Připojit ke škole + schválit
-    const { error: profErr } = await supabase
-      .from("profiles")
-      .update({ school_id: school.id, status: "approved" })
-      .eq("id", signed.user.id);
-    if (profErr) {
-      setSubmitting(false);
+    setSubmitting(false);
+
+    const result = (data as any)?.results?.[0];
+    if (error || (data as any)?.error || !result?.ok) {
       toast({
-        title: "Nepodařilo se přiřadit uživatele ke škole",
-        description: profErr.message,
+        title: "Uživatele nelze vytvořit",
+        description: result?.error ?? (data as any)?.error ?? error?.message ?? "Neznámá chyba",
         variant: "destructive",
       });
       return;
     }
-    // Role se vytvoří triggerem; pokud se vyžaduje 'teacher', přepiš.
-    if (invRole === "teacher") {
-      // smaž 'user' a přidej 'teacher'
-      const { error: delErr } = await supabase
-        .from("user_roles")
-        .delete()
-        .eq("user_id", signed.user.id)
-        .eq("role", "user");
-      if (delErr) {
-        setSubmitting(false);
-        toast({
-          title: "Nepodařilo se odebrat výchozí roli",
-          description: delErr.message,
-          variant: "destructive",
-        });
-        return;
-      }
-      const { error: insErr } = await supabase
-        .from("user_roles")
-        .insert({ user_id: signed.user.id, role: "teacher" });
-      if (insErr) {
-        setSubmitting(false);
-        toast({
-          title: "Role učitel nebyla přidělena",
-          description: insErr.message,
-          variant: "destructive",
-        });
-        return;
-      }
-    }
-    setSubmitting(false);
+
+    setCreatedCredentials({
+      name: result.name,
+      email: result.email,
+      password: result.password,
+      username: result.username,
+      studentCode: result.student_code,
+      pin: result.pin,
+    });
     toast({
-      title: "Uživatel pozván",
-      description: `Uživateli ${invEmail} bylo odesláno e-mailové potvrzení. Dočasné heslo: ${tempPassword}`,
+      title: "Účet vytvořen",
+      description: invEmail.trim()
+        ? `Přihlašovací údaje jsme poslali na ${result.email}.`
+        : "Uživatel nemá e-mail — opište mu údaje ze zobrazené karty.",
     });
     setInvFirst(""); setInvLast(""); setInvEmail(""); setInvRole("teacher");
     setInviteOpen(false);
     load();
   };
+
 
   const toggleRole = async (memberId: string, currentRoles: string[], target: "teacher" | "user") => {
     const has = currentRoles.includes(target);
@@ -355,10 +331,36 @@ const SchoolAdmin = () => {
           </CardContent>
         </Card>
 
+        {createdCredentials && (
+          <Card className="mb-6 border-primary/40">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">
+                Přihlašovací údaje: {createdCredentials.name}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1 text-sm">
+              {createdCredentials.email && <p><strong>E-mail:</strong> {createdCredentials.email}</p>}
+              {createdCredentials.username && <p><strong>Uživatelské jméno:</strong> {createdCredentials.username}</p>}
+              {createdCredentials.password && (
+                <p><strong>Heslo:</strong> <span className="font-mono">{createdCredentials.password}</span></p>
+              )}
+              {createdCredentials.studentCode && <p><strong>Kód žáka:</strong> {createdCredentials.studentCode}</p>}
+              {createdCredentials.pin && <p><strong>PIN:</strong> {createdCredentials.pin}</p>}
+              <p className="text-xs text-muted-foreground pt-2">
+                Údaje si opište — po zavření karty je znovu nezobrazíme.
+              </p>
+              <Button variant="outline" size="sm" className="mt-2" onClick={() => setCreatedCredentials(null)}>
+                Zavřít
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         <Tabs defaultValue="teachers">
           <TabsList>
             <TabsTrigger value="teachers"><GraduationCap className="w-4 h-4 mr-1" /> Učitelé ({teachers.length})</TabsTrigger>
             <TabsTrigger value="students"><Users className="w-4 h-4 mr-1" /> Studenti ({students.length})</TabsTrigger>
+            <TabsTrigger value="import"><Upload className="w-4 h-4 mr-1" /> Hromadný import</TabsTrigger>
             <TabsTrigger value="license">Licence</TabsTrigger>
             <TabsTrigger value="sales">Tvorba a prodej</TabsTrigger>
             <TabsTrigger value="branding"><Palette className="w-4 h-4 mr-1" /> Branding</TabsTrigger>
@@ -370,6 +372,10 @@ const SchoolAdmin = () => {
           <TabsContent value="students">
             <MembersTable rows={students} onToggleRole={toggleRole} onRemove={removeFromSchool} kind="user" />
           </TabsContent>
+          <TabsContent value="import">
+            <SchoolBulkImportCard onImported={load} />
+          </TabsContent>
+
           <TabsContent value="license">
             <SchoolLicenseCard schoolId={school.id} />
           </TabsContent>
