@@ -121,7 +121,9 @@ const SiteHeader = () => {
     if (userRole === "teacher" || userRole === "lektor") {
       return [
         { label: "Přehled", href: "/ucitel", icon: LayoutDashboard },
-        { label: "Kalendář", href: "/ucitel/rozvrh", icon: CalendarDays },
+        { label: "Výuka", href: "/ucitel/predmety", icon: GraduationCap },
+        { label: "Rozvrh", href: "/ucitel/rozvrh", icon: CalendarDays },
+        { label: "Kalendář", href: "/ucitel/kalendar", icon: CalendarDays },
         { label: "Třídy", href: "/ucitel/tridy", icon: FolderOpen },
         { label: "Můj sešit", href: "/ucitel/sesit", icon: NotebookPen },
         { label: "Nápověda", href: "/napoveda", icon: HelpCircle },
