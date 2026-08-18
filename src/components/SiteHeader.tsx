@@ -255,20 +255,27 @@ const SiteHeader = () => {
                   )}
                   {(userRole === "teacher" || userRole === "lektor") && (
                     <>
-                      <DropdownMenuSeparator />
-                      {TEACHER_EXTRA_ITEMS.map((item) => {
-                        const Icon = item.icon;
-                        return (
-                          <DropdownMenuItem
-                            key={item.href}
-                            onClick={() => navigate(item.href)}
-                            className="gap-2 cursor-pointer"
-                          >
-                            <Icon size={16} />
-                            {item.label}
-                          </DropdownMenuItem>
-                        );
-                      })}
+                      {TEACHER_MENU_GROUPS.map((group) => (
+                        <div key={group.title}>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuLabel className="text-xs uppercase tracking-wide text-muted-foreground">
+                            {group.title}
+                          </DropdownMenuLabel>
+                          {group.items.map((item) => {
+                            const Icon = item.icon;
+                            return (
+                              <DropdownMenuItem
+                                key={item.href}
+                                onClick={() => navigate(item.href)}
+                                className="gap-2 cursor-pointer"
+                              >
+                                <Icon size={16} />
+                                {item.label}
+                              </DropdownMenuItem>
+                            );
+                          })}
+                        </div>
+                      ))}
                       <DropdownMenuSeparator />
                     </>
                   )}
