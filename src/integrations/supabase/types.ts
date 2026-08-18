@@ -551,6 +551,7 @@ export type Database = {
           scheduled_publish_at: string | null
           settings: Json
           status: string
+          subject_id: string | null
           teacher_id: string
           title: string
           updated_at: string
@@ -574,6 +575,7 @@ export type Database = {
           scheduled_publish_at?: string | null
           settings?: Json
           status?: string
+          subject_id?: string | null
           teacher_id: string
           title?: string
           updated_at?: string
@@ -597,6 +599,7 @@ export type Database = {
           scheduled_publish_at?: string | null
           settings?: Json
           status?: string
+          subject_id?: string | null
           teacher_id?: string
           title?: string
           updated_at?: string
@@ -622,6 +625,13 @@ export type Database = {
             columns: ["lesson_plan_id"]
             isOneToOne: false
             referencedRelation: "lesson_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignments_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
             referencedColumns: ["id"]
           },
           {
@@ -5599,6 +5609,58 @@ export type Database = {
           },
         ]
       }
+      teaching_unit_collaborators: {
+        Row: {
+          class_id: string | null
+          created_at: string
+          group_id: string | null
+          id: string
+          invited_by: string
+          invited_teacher_id: string
+          subject_id: string
+        }
+        Insert: {
+          class_id?: string | null
+          created_at?: string
+          group_id?: string | null
+          id?: string
+          invited_by: string
+          invited_teacher_id: string
+          subject_id: string
+        }
+        Update: {
+          class_id?: string | null
+          created_at?: string
+          group_id?: string | null
+          id?: string
+          invited_by?: string
+          invited_teacher_id?: string
+          subject_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teaching_unit_collaborators_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teaching_unit_collaborators_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "subject_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teaching_unit_collaborators_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       test_sessions: {
         Row: {
           assignment_id: string
@@ -6620,12 +6682,25 @@ export type Database = {
         Args: { _school_id: string; _user_id: string }
         Returns: boolean
       }
+      is_subject_collaborator_of: {
+        Args: { _owner_id: string; _subject_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_teacher_of_game_session: {
         Args: { _session_id: string }
         Returns: boolean
       }
       is_teacher_of_student: {
         Args: { _student_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_teaching_unit_collaborator: {
+        Args: {
+          _class_id: string
+          _group_id: string
+          _subject_id: string
+          _user_id: string
+        }
         Returns: boolean
       }
       join_class_as_teacher: {
