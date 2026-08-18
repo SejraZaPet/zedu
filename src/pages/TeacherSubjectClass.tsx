@@ -340,8 +340,9 @@ export default function TeacherSubjectClass() {
     const fromSlot = slots.find(
       (s) => s.textbook_id && (s.textbook_type === "teacher" || !s.textbook_type),
     );
-    return fromSlot?.textbook_id ?? null;
-  }, [slots]);
+    return fromSlot?.textbook_id ?? unitTextbookId ?? null;
+  }, [slots, unitTextbookId]);
+
   const subjectColor =
     catalogSubject?.color || matchedSubject?.color || slots[0]?.color || "hsl(var(--primary))";
   const abbr =
