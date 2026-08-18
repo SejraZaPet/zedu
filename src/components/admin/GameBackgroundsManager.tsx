@@ -217,9 +217,9 @@ const GameBackgroundsManager = () => {
             multiple
             className="hidden"
             onChange={(e) => {
-              const files = e.target.files;
+              const files = Array.from(e.target.files ?? []);
               e.target.value = "";
-              if (files) addFiles(files);
+              if (files.length > 0) addFiles(files);
             }}
           />
         </div>
