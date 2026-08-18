@@ -833,7 +833,11 @@ export default function TeacherSuggestByMethod() {
                 </div>
               )}
 
-              <div className="flex justify-end pt-2 border-t">
+              <div className="flex flex-wrap justify-end gap-2 pt-2 border-t">
+                <Button variant="outline" className="gap-2" onClick={() => setInsertSlidesOpen(true)}>
+                  <MonitorPlay className="w-4 h-4" />
+                  Vložit fáze jako slidy
+                </Button>
                 <Button onClick={createDraft} disabled={creating} className="gap-2">
                   {creating ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -843,6 +847,14 @@ export default function TeacherSuggestByMethod() {
                   Vytvořit plán hodiny z tohoto návrhu
                 </Button>
               </div>
+
+              <InsertSlidesIntoPresentationDialog
+                open={insertSlidesOpen}
+                onOpenChange={setInsertSlidesOpen}
+                slides={phasesToSlides(suggestion.phases || {}, PHASE_LABELS, suggestion.title)}
+                description="Z každé fáze a aktivity vznikne textový slide. U aktivit pak můžete v editoru prezentace použít „Dogenerovat aktivitu“."
+              />
+            </CardContent>
             </CardContent>
           </Card>
         )}
