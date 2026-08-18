@@ -1223,7 +1223,9 @@ function ClassCard({ slot, conflict, onClick }: { slot: ClassSlot; conflict?: bo
   const subject = canonical?.name || slot.subject_label || "Hodina";
   const color = canonical?.color || slot.color || colorForSubject(subject);
   const abbr = (canonical?.abbreviation || slot.abbreviation || subject.slice(0, 3)).toUpperCase();
-  const className = slot.classes?.name ?? "";
+  const isGroup = !!slot.group_id;
+  const className = isGroup ? (slot.subject_groups?.name ?? "Skupina") : (slot.classes?.name ?? "");
+
   return (
     <button
       onClick={onClick}
