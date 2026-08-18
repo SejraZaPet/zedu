@@ -257,6 +257,34 @@ export default function TeacherSubjectClass() {
       });
       setSlots(filtered);
 
+      // Fallback propojení učebnice na úrovni Výuky (funguje i bez rozvrhu)
+      if (isGroup) {
+        const gRow: any = classRes.data;
+        setUnitTextbookId(
+          gRow?.textbook_id && (!gRow.textbook_type || gRow.textbook_type === "teacher")
+            ? gRow.textbook_id
+            : null,
+        );
+      } else if (resolvedSubjectId) {
+        const { data: csRow } = await supabase
+          .from("class_subjects")
+          .select("textbook_id, textbook_type")
+          .eq("class_id", classId)
+          .eq("subject_id", resolvedSubjectId)
+          .maybeSingle();
+        const r: any = csRow;
+        if (!cancelled)
+          setUnitTextbookId(
+            r?.textbook_id && (!r.textbook_type || r.textbook_type === "teacher")
+              ? r.textbook_id
+              : null,
+          );
+      } else {
+        setUnitTextbookId(null);
+      }
+
+
+
       const _plans = (plansRes.data as LessonPlanRow[]) ?? [];
       setPlans(_plans);
       // Načíst přiřazené metody pro tyto plány
