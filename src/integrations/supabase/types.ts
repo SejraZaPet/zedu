@@ -540,6 +540,7 @@ export type Database = {
           deadline: string | null
           description: string
           exam_type: string | null
+          group_id: string | null
           id: string
           is_portfolio_task: boolean
           lesson_plan_id: string | null
@@ -561,6 +562,7 @@ export type Database = {
           deadline?: string | null
           description?: string
           exam_type?: string | null
+          group_id?: string | null
           id?: string
           is_portfolio_task?: boolean
           lesson_plan_id?: string | null
@@ -582,6 +584,7 @@ export type Database = {
           deadline?: string | null
           description?: string
           exam_type?: string | null
+          group_id?: string | null
           id?: string
           is_portfolio_task?: boolean
           lesson_plan_id?: string | null
@@ -602,6 +605,13 @@ export type Database = {
             columns: ["class_id"]
             isOneToOne: false
             referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignments_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "subject_groups"
             referencedColumns: ["id"]
           },
           {
@@ -1226,12 +1236,13 @@ export type Database = {
         Row: {
           abbreviation: string | null
           bell_period_id: string | null
-          class_id: string
+          class_id: string | null
           color: string | null
           created_at: string
           created_by: string | null
           day_of_week: number
           end_time: string
+          group_id: string | null
           id: string
           room: string | null
           start_time: string
@@ -1247,12 +1258,13 @@ export type Database = {
         Insert: {
           abbreviation?: string | null
           bell_period_id?: string | null
-          class_id: string
+          class_id?: string | null
           color?: string | null
           created_at?: string
           created_by?: string | null
           day_of_week: number
           end_time: string
+          group_id?: string | null
           id?: string
           room?: string | null
           start_time: string
@@ -1268,12 +1280,13 @@ export type Database = {
         Update: {
           abbreviation?: string | null
           bell_period_id?: string | null
-          class_id?: string
+          class_id?: string | null
           color?: string | null
           created_at?: string
           created_by?: string | null
           day_of_week?: number
           end_time?: string
+          group_id?: string | null
           id?: string
           room?: string | null
           start_time?: string
@@ -1292,6 +1305,13 @@ export type Database = {
             columns: ["class_id"]
             isOneToOne: false
             referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_schedule_slots_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "subject_groups"
             referencedColumns: ["id"]
           },
           {
