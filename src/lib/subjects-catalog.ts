@@ -101,7 +101,7 @@ export const createSubject = async (input: {
       school_id: input.school_id ?? null,
       created_by: userId,
     })
-    .select("id, name, color, abbreviation, school_id, created_by")
+    .select(CATALOG_COLUMNS)
     .single();
   if (error) {
     if (error.code === "42501") {
