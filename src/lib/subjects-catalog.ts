@@ -18,14 +18,18 @@ export interface SubjectCatalogItem {
   abbreviation: string | null;
   school_id: string | null;
   created_by: string | null;
+  /** Archived subjects stay in the database but are hidden from new links. */
+  archived: boolean;
 }
 
 export const SUBJECT_CATALOG_QUERY_KEY = ["subjects-catalog"] as const;
 
+const CATALOG_COLUMNS = "id, name, color, abbreviation, school_id, created_by, archived";
+
 export const fetchSubjectCatalog = async (): Promise<SubjectCatalogItem[]> => {
   const { data, error } = await supabase
     .from("subjects")
-    .select("id, name, color, abbreviation, school_id, created_by")
+    .select(CATALOG_COLUMNS)
     .order("name", { ascending: true });
   if (error) throw error;
   return (data ?? []) as SubjectCatalogItem[];
@@ -59,11 +63,24 @@ export const createSubject = async (input: {
 
   const { data: existing } = await supabase
     .from("subjects")
-    .select("id, name, color, abbreviation, school_id, created_by")
+    .select(CATALOG_COLUMNS)
     .ilike("name", escapeLike(name))
     .limit(1)
     .maybeSingle();
-  if (existing) return existing as SubjectCatalogItem;
+  if (existing) {
+    const found = existing as SubjectCatalogItem;
+    // Re-creating a subject that was archived means the teacher wants it back.
+    if (found.archived) {
+      const { data: revived } = await supabase
+        .from("subjects")
+        .update({ archived: false })
+        .eq("id", found.id)
+        .select(CATALOG_COLUMNS)
+        .maybeSingle();
+      if (revived) return revived as SubjectCatalogItem;
+    }
+    return found;
+  }
 
   // The row must carry the current user's id — the RLS policy requires
   // `created_by = auth.uid()`. Reading the user directly (instead of a possibly
@@ -84,7 +101,7 @@ export const createSubject = async (input: {
       school_id: input.school_id ?? null,
       created_by: userId,
     })
-    .select("id, name, color, abbreviation, school_id, created_by")
+    .select(CATALOG_COLUMNS)
     .single();
   if (error) {
     if (error.code === "42501") {
@@ -118,4 +135,64 @@ export const resolveSubjectSelection = async (
   if (known) return { subject_id: known.id, name: known.name };
   const created = await createSubject({ name: label });
   return { subject_id: created.id, name: created.name };
+};
+
+const rlsError = (message?: string) =>
+  new Error(
+    message ||
+      "Předmět může upravovat nebo mazat jen jeho autor, případně administrátor.",
+  );
+
+/** Archives (or restores) a subject — the row itself is never touched otherwise. */
+export const setSubjectArchived = async (id: string, archived: boolean): Promise<void> => {
+  const { data, error } = await supabase
+    .from("subjects")
+    .update({ archived })
+    .eq("id", id)
+    .select("id");
+  if (error) throw rlsError(error.code === "42501" ? undefined : error.message);
+  if (!data || data.length === 0) throw rlsError();
+};
+
+/**
+ * Number of rows that would be cascade-deleted with the subject. Deleting is
+ * only offered when both counts are zero, so group/class history can never be
+ * wiped by accident.
+ */
+export const fetchSubjectDependencies = async (
+  subjectIds: string[],
+): Promise<Record<string, { groups: number; classSubjects: number }>> => {
+  const result: Record<string, { groups: number; classSubjects: number }> = {};
+  for (const id of subjectIds) result[id] = { groups: 0, classSubjects: 0 };
+  if (subjectIds.length === 0) return result;
+
+  // Counted server-side (SECURITY DEFINER) so rows owned by other teachers are
+  // included — client-side selects would be hidden by RLS and under-count.
+  const { data, error } = await supabase.rpc("subject_dependency_counts", {
+    _subject_ids: subjectIds,
+  });
+  if (error) throw error;
+
+  for (const row of (data ?? []) as {
+    subject_id: string;
+    group_count: number;
+    class_subject_count: number;
+  }[]) {
+    result[row.subject_id] = {
+      groups: Number(row.group_count) || 0,
+      classSubjects: Number(row.class_subject_count) || 0,
+    };
+  }
+  return result;
+};
+
+/** Hard delete — callers must verify there are no dependencies first. */
+export const deleteSubject = async (id: string): Promise<void> => {
+  const { data, error } = await supabase
+    .from("subjects")
+    .delete()
+    .eq("id", id)
+    .select("id");
+  if (error) throw rlsError(error.code === "42501" ? undefined : error.message);
+  if (!data || data.length === 0) throw rlsError();
 };

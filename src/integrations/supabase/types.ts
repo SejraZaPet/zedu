@@ -5117,6 +5117,7 @@ export type Database = {
       subjects: {
         Row: {
           abbreviation: string | null
+          archived: boolean
           color: string
           created_at: string
           created_by: string | null
@@ -5127,6 +5128,7 @@ export type Database = {
         }
         Insert: {
           abbreviation?: string | null
+          archived?: boolean
           color?: string
           created_at?: string
           created_by?: string | null
@@ -5137,6 +5139,7 @@ export type Database = {
         }
         Update: {
           abbreviation?: string | null
+          archived?: boolean
           color?: string
           created_at?: string
           created_by?: string | null
@@ -6702,6 +6705,14 @@ export type Database = {
         Returns: Json
       }
       strip_correct_flags: { Args: { _data: Json }; Returns: Json }
+      subject_dependency_counts: {
+        Args: { _subject_ids: string[] }
+        Returns: {
+          class_subject_count: number
+          group_count: number
+          subject_id: string
+        }[]
+      }
       submit_live_question: {
         Args: { _join_token: string; _text: string }
         Returns: string

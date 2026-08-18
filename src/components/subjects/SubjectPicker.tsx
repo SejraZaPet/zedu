@@ -42,20 +42,22 @@ const SubjectPicker = ({
   disabled,
   allowCreate = true,
 }: Props) => {
-  const { subjects, loading } = useSubjectCatalog();
+  // Archived subjects are not offered for new links, but an already selected
+  // archived subject must still render its name — hence `allSubjects` below.
+  const { subjects, allSubjects, loading } = useSubjectCatalog();
   const invalidate = useInvalidateSubjectCatalog();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [creating, setCreating] = useState(false);
 
   const selected = useMemo(() => {
-    if (value) return subjects.find((s) => s.id === value);
+    if (value) return allSubjects.find((s) => s.id === value);
     if (textValue) {
       const t = textValue.trim().toLowerCase();
-      return subjects.find((s) => s.name.trim().toLowerCase() === t);
+      return allSubjects.find((s) => s.name.trim().toLowerCase() === t);
     }
     return undefined;
-  }, [subjects, value, textValue]);
+  }, [allSubjects, value, textValue]);
 
   const label = selected?.name ?? (textValue?.trim() || "");
 

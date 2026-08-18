@@ -5,16 +5,24 @@ import {
   type SubjectCatalogItem,
 } from "@/lib/subjects-catalog";
 
-/** Canonical subject catalog (`subjects` table) — single source of truth. */
-export const useSubjectCatalog = () => {
+/**
+ * Canonical subject catalog (`subjects` table) — single source of truth.
+ * Archived subjects are hidden by default so they are never offered for new
+ * links; pass `{ includeArchived: true }` in management screens.
+ */
+export const useSubjectCatalog = (options?: { includeArchived?: boolean }) => {
+  const includeArchived = options?.includeArchived ?? false;
   const query = useQuery<SubjectCatalogItem[]>({
     queryKey: SUBJECT_CATALOG_QUERY_KEY,
     queryFn: fetchSubjectCatalog,
     staleTime: 60 * 1000,
   });
 
+  const all = query.data ?? [];
+
   return {
-    subjects: query.data ?? [],
+    subjects: includeArchived ? all : all.filter((s) => !s.archived),
+    allSubjects: all,
     loading: query.isLoading,
     refetch: query.refetch,
   };
