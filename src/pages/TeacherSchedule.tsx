@@ -1168,7 +1168,10 @@ export default function TeacherSchedule() {
           const { error } = await supabase
             .from("class_schedule_slots" as any)
             .update({
-              class_id: value.classId ?? editingClassSlot.class_id,
+              // Hodina má buď třídu, nebo skupinu – nikdy obojí (DB constraint).
+              class_id: value.groupId ? null : (value.classId ?? editingClassSlot.class_id),
+              group_id: value.groupId ?? null,
+
               subject_label: value.subject,
               subject_id: value.subjectId ?? null,
               abbreviation: value.abbreviation || null,
