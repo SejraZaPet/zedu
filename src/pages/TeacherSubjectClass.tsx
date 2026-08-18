@@ -519,28 +519,62 @@ export default function TeacherSubjectClass() {
   }
 
   async function linkTextbook(textbookId: string) {
-    if (!slots.length) {
-      toast({
-        title: "Chybí hodina v rozvrhu",
-        description: "Pro propojení učebnice musí mít předmět záznam v rozvrhu.",
-        variant: "destructive",
-      });
-      return;
-    }
     setLinking(true);
-    const ids = slots.map((s) => s.id);
-    const { error } = await supabase
-      .from("class_schedule_slots" as any)
-      .update({ textbook_id: textbookId, textbook_type: "teacher" })
-      .in("id", ids);
+    const payload = { textbook_id: textbookId, textbook_type: "teacher" };
+
+    // 1) Zpětná kompatibilita: pokud Výuka má sloty v rozvrhu, propoj je jako dosud.
+    if (slots.length) {
+      const ids = slots.map((s) => s.id);
+      const { error } = await supabase
+        .from("class_schedule_slots" as any)
+        .update(payload)
+        .in("id", ids);
+      if (error) {
+        setLinking(false);
+        toast({ title: "Nepodařilo se propojit učebnici", description: error.message, variant: "destructive" });
+        return;
+      }
+      setSlots((prev) => prev.map((s) => ({ ...s, ...payload })));
+    }
+
+    // 2) Vždy ulož propojení i na úroveň Výuky – funguje i bez rozvrhu.
+    let unitError: string | null = null;
+    if (isGroup) {
+      const { error } = await supabase
+        .from("subject_groups")
+        .update(payload as any)
+        .eq("id", groupId);
+      unitError = error?.message ?? null;
+    } else if (resolvedSubjectId) {
+      const { data: existing } = await supabase
+        .from("class_subjects")
+        .select("id")
+        .eq("class_id", classId)
+        .eq("subject_id", resolvedSubjectId)
+        .maybeSingle();
+      if (existing?.id) {
+        const { error } = await supabase
+          .from("class_subjects")
+          .update(payload as any)
+          .eq("id", existing.id);
+        unitError = error?.message ?? null;
+      } else {
+        const { error } = await supabase
+          .from("class_subjects")
+          .insert({ class_id: classId, subject_id: resolvedSubjectId, ...payload } as any);
+        unitError = error?.message ?? null;
+      }
+    } else if (!slots.length) {
+      unitError = "Předmět není v katalogu, propojení nelze uložit.";
+    }
+
     setLinking(false);
-    if (error) {
-      toast({ title: "Nepodařilo se propojit učebnici", description: error.message, variant: "destructive" });
+    if (unitError && !slots.length) {
+      toast({ title: "Nepodařilo se propojit učebnici", description: unitError, variant: "destructive" });
       return;
     }
-    setSlots((prev) =>
-      prev.map((s) => ({ ...s, textbook_id: textbookId, textbook_type: "teacher" })),
-    );
+    setUnitTextbookId(textbookId);
+
     setLinkOpen(false);
     toast({ title: "Učebnice propojena" });
   }
