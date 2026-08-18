@@ -147,6 +147,18 @@ const TeacherAssignments = () => {
         scheduledPublishAt = when.toISOString();
       }
 
+      // Předmět (Výuka) — použije se pro sdílení se spoluučiteli dané Výuky.
+      const subjectIdParam = searchParams.get("subjectId");
+      let subjectIdForAssignment: string | null = subjectIdParam || null;
+      if (!subjectIdForAssignment && selectedWorksheetId) {
+        const { data: ws } = await supabase
+          .from("worksheets")
+          .select("subject_id")
+          .eq("id", selectedWorksheetId)
+          .maybeSingle();
+        subjectIdForAssignment = (ws as any)?.subject_id ?? null;
+      }
+
       const { error } = await supabase.from("assignments" as any).insert({
         teacher_id: user.id,
         title: title.trim(),
@@ -157,6 +169,8 @@ const TeacherAssignments = () => {
         randomize_order: randomizeOrder,
         class_id: selectedGroupId ? null : (selectedClassId || null),
         group_id: selectedGroupId || null,
+        subject_id: subjectIdForAssignment,
+
 
         status: scheduledPublishAt ? "scheduled" : "draft",
         scheduled_publish_at: scheduledPublishAt,
