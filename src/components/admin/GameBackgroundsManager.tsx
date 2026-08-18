@@ -84,10 +84,15 @@ const GameBackgroundsManager = () => {
       const { data } = supabase.storage.from("lesson-images").getPublicUrl(path);
       setRows((s) => s.map((r) => (r.id === row.id ? { ...r, uploading: false, imageUrl: data.publicUrl } : r)));
     } catch (err: any) {
-      setRows((s) =>
-        s.map((r) => (r.id === row.id ? { ...r, uploading: false, error: err?.message ?? String(err) } : r)),
-      );
+      const message = err?.message ?? String(err);
+      setRows((s) => s.map((r) => (r.id === row.id ? { ...r, uploading: false, error: message } : r)));
+      toast({
+        title: `Nahrání souboru ${row.fileName} selhalo`,
+        description: message,
+        variant: "destructive",
+      });
     }
+
   };
 
   const addFiles = (files: FileList | File[]) => {
