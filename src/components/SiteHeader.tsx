@@ -7,6 +7,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -27,22 +28,51 @@ interface TeacherExtraNavItem {
   icon: React.ElementType;
 }
 
-const TEACHER_EXTRA_ITEMS: TeacherExtraNavItem[] = [
-  { label: "Moje učebnice", href: "/ucitel/ucebnice", icon: BookOpen },
-  { label: "Živé hry", href: "/ucitel/hry", icon: Gamepad2 },
-  { label: "Média", href: "/ucitel/media", icon: ImageIcon },
-  { label: "Výsledky", href: "/ucitel/vysledky", icon: BarChart3 },
-  { label: "ZEduMarket", href: "/zedumarket", icon: ShoppingBag },
-  { label: "Sdíleno se mnou", href: "/ucitel/sdileno-se-mnou", icon: Layers },
-  { label: "Sledovaní tvůrci", href: "/ucitel/sledovani-tvurci", icon: UserCheck },
-  { label: "ŠVP k předmětům", href: "/ucitel/svp", icon: BookMarked },
-  { label: "Rubriky hodnocení", href: "/ucitel/rubriky", icon: ClipboardList },
-  { label: "Banka otázek", href: "/ucitel/banka-otazek", icon: Library },
-  { label: "Moje předměty", href: "/ucitel/predmety", icon: GraduationCap },
-  { label: "Skupiny předmětu", href: "/ucitel/skupiny", icon: Users },
-  { label: "ZedStart", href: "/ucitel/zedstart", icon: Zap },
-  { label: "ZEdu Akademie", href: "/ucitel/akademie", icon: Award },
+interface TeacherMenuGroup {
+  title: string;
+  items: TeacherExtraNavItem[];
+}
+
+/** Skupiny v rozbalovacím "Menu" učitele — logicky sdružené nástroje. */
+const TEACHER_MENU_GROUPS: TeacherMenuGroup[] = [
+  {
+    title: "Předměty a skupiny",
+    items: [
+      { label: "Moje předměty", href: "/ucitel/predmety", icon: GraduationCap },
+      { label: "Skupiny předmětu", href: "/ucitel/skupiny", icon: Users },
+      { label: "ŠVP k předmětům", href: "/ucitel/svp", icon: BookMarked },
+    ],
+  },
+  {
+    title: "Nástroje pro hodiny",
+    items: [
+      { label: "Rubriky hodnocení", href: "/ucitel/rubriky", icon: ClipboardList },
+      { label: "Banka otázek", href: "/ucitel/banka-otazek", icon: Library },
+      { label: "ZedStart", href: "/ucitel/zedstart", icon: Zap },
+    ],
+  },
+  {
+    title: "Obsah a knihovna",
+    items: [
+      { label: "Moje učebnice", href: "/ucitel/ucebnice", icon: BookOpen },
+      { label: "Média", href: "/ucitel/media", icon: ImageIcon },
+      { label: "Sdíleno se mnou", href: "/ucitel/sdileno-se-mnou", icon: Layers },
+      { label: "Sledovaní tvůrci", href: "/ucitel/sledovani-tvurci", icon: UserCheck },
+      { label: "ZEduMarket", href: "/zedumarket", icon: ShoppingBag },
+    ],
+  },
+  {
+    title: "Aktivity a výsledky",
+    items: [
+      { label: "Živé hry", href: "/ucitel/hry", icon: Gamepad2 },
+      { label: "Výsledky", href: "/ucitel/vysledky", icon: BarChart3 },
+      { label: "ZEdu Akademie", href: "/ucitel/akademie", icon: Award },
+    ],
+  },
 ];
+
+const TEACHER_EXTRA_ITEMS: TeacherExtraNavItem[] = TEACHER_MENU_GROUPS.flatMap((g) => g.items);
+
 
 const ACADEMY_BY_ROLE: Record<string, string> = {
   user: "/student/akademie",
@@ -92,7 +122,9 @@ const SiteHeader = () => {
     if (userRole === "teacher" || userRole === "lektor") {
       return [
         { label: "Přehled", href: "/ucitel", icon: LayoutDashboard },
-        { label: "Kalendář", href: "/ucitel/rozvrh", icon: CalendarDays },
+        { label: "Výuka", href: "/ucitel/predmety", icon: GraduationCap },
+        { label: "Rozvrh", href: "/ucitel/rozvrh", icon: CalendarDays },
+        { label: "Kalendář", href: "/ucitel/kalendar", icon: CalendarDays },
         { label: "Třídy", href: "/ucitel/tridy", icon: FolderOpen },
         { label: "Můj sešit", href: "/ucitel/sesit", icon: NotebookPen },
         { label: "Nápověda", href: "/napoveda", icon: HelpCircle },
@@ -224,20 +256,27 @@ const SiteHeader = () => {
                   )}
                   {(userRole === "teacher" || userRole === "lektor") && (
                     <>
-                      <DropdownMenuSeparator />
-                      {TEACHER_EXTRA_ITEMS.map((item) => {
-                        const Icon = item.icon;
-                        return (
-                          <DropdownMenuItem
-                            key={item.href}
-                            onClick={() => navigate(item.href)}
-                            className="gap-2 cursor-pointer"
-                          >
-                            <Icon size={16} />
-                            {item.label}
-                          </DropdownMenuItem>
-                        );
-                      })}
+                      {TEACHER_MENU_GROUPS.map((group) => (
+                        <div key={group.title}>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuLabel className="text-xs uppercase tracking-wide text-muted-foreground">
+                            {group.title}
+                          </DropdownMenuLabel>
+                          {group.items.map((item) => {
+                            const Icon = item.icon;
+                            return (
+                              <DropdownMenuItem
+                                key={item.href}
+                                onClick={() => navigate(item.href)}
+                                className="gap-2 cursor-pointer"
+                              >
+                                <Icon size={16} />
+                                {item.label}
+                              </DropdownMenuItem>
+                            );
+                          })}
+                        </div>
+                      ))}
                       <DropdownMenuSeparator />
                     </>
                   )}

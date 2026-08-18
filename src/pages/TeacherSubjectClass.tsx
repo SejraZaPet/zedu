@@ -22,6 +22,7 @@ import {
   Star,
 } from "lucide-react";
 import LessonReflectionDialog from "@/components/lessons/LessonReflectionDialog";
+import TeachingUnitCollaboratorsCard from "@/components/teacher/TeachingUnitCollaboratorsCard";
 import { fetchReflections, reflectionKey, type LessonReflection } from "@/lib/lesson-reflections";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
@@ -514,8 +515,10 @@ export default function TeacherSubjectClass() {
 
   function newAssignment() {
     const target = isGroup ? `groupId=${groupId}` : `classId=${classId}`;
-    navigate(`/ucitel/ulohy?${target}&subject=${encodeURIComponent(subjectLabel)}`);
+    const subjectParam = resolvedSubjectId ? `&subjectId=${resolvedSubjectId}` : "";
+    navigate(`/ucitel/ulohy?${target}&subject=${encodeURIComponent(subjectLabel)}${subjectParam}`);
   }
+
 
 
   function newLessonPlan(date?: Date) {
@@ -881,8 +884,15 @@ export default function TeacherSubjectClass() {
                   </div>
                 )}
               </section>
+
+              <TeachingUnitCollaboratorsCard
+                subjectId={resolvedSubjectId}
+                classId={isGroup ? undefined : classId}
+                groupId={isGroup ? groupId : undefined}
+              />
             </div>
           </TabsContent>
+
 
           {/* ASSIGNMENTS */}
           <TabsContent value="assignments" className="mt-4">
