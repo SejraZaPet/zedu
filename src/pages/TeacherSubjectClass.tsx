@@ -881,8 +881,15 @@ export default function TeacherSubjectClass() {
                   </div>
                 )}
               </section>
+
+              <TeachingUnitCollaboratorsCard
+                subjectId={resolvedSubjectId}
+                classId={isGroup ? undefined : classId}
+                groupId={isGroup ? groupId : undefined}
+              />
             </div>
           </TabsContent>
+
 
           {/* ASSIGNMENTS */}
           <TabsContent value="assignments" className="mt-4">
