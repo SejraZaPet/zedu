@@ -73,8 +73,12 @@ type ParityTab = "both" | "odd" | "even";
 
 interface ClassSlot {
   id: string;
-  class_id: string;
+  class_id: string | null;
+  /** Skupina předmětu – alternativa ke class_id (vyplněno jen jedno z nich). */
+  group_id?: string | null;
+  subject_groups?: { name: string | null } | null;
   day_of_week: number;
+
   start_time: string;
   end_time: string;
   week_parity: "every" | "odd" | "even";
@@ -175,7 +179,8 @@ export default function TeacherSchedule() {
     const { data: slots } = await supabase
       .from("class_schedule_slots" as any)
       // `subjects(...)` je kanonický zdroj zkratky i barvy — slot je jen fallback.
-      .select("*, classes(name), subjects(name, abbreviation, color)")
+      .select("*, classes(name), subjects(name, abbreviation, color), subject_groups(name)")
+
       .order("day_of_week", { ascending: true })
       .order("start_time", { ascending: true });
     setClassSlots((slots as any) || []);
@@ -1052,6 +1057,37 @@ export default function TeacherSchedule() {
         onDelete={!isNew ? deleteLesson : undefined}
         onSave={async ({ value, slots }) => {
           if (!editing) return;
+          // Nově: hodina směrovaná na SKUPINU předmětu se ukládá do databáze
+          // (aby ji viděli i žáci skupiny). Osobní/třídní tok zůstává beze změny.
+          if (value.groupId) {
+            const rows = slots.map((s) => ({
+              class_id: null,
+              group_id: value.groupId,
+              subject_label: value.subject,
+              subject_id: value.subjectId ?? null,
+              abbreviation: value.abbreviation || null,
+              color: value.color || null,
+              room: value.room || null,
+              valid_from: value.validFrom,
+              valid_to: value.validTo,
+              week_parity: value.mirrorBoth ? "every" : value.weekParity,
+              day_of_week: s.day + 1,
+              start_time: s.start,
+              end_time: s.end,
+              created_by: user?.id ?? null,
+            }));
+            const { error } = await supabase.from("class_schedule_slots" as any).insert(rows as any);
+            if (error) {
+              toast({ title: "Chyba", description: error.message, variant: "destructive" });
+              return;
+            }
+            toast({
+              title: rows.length > 1 ? `Přidáno do ${rows.length} dnů` : "Přidáno do rozvrhu skupiny",
+            });
+            setEditing(null);
+            fetchClassSlots();
+            return;
+          }
           const base: LessonEntry = {
             ...editing,
             subject: value.subject,
@@ -1074,6 +1110,7 @@ export default function TeacherSchedule() {
           });
           setEditing(null);
         }}
+
       />
 
       {/* Edit dialog for a class-managed slot (DB-backed) */}
@@ -1096,7 +1133,9 @@ export default function TeacherSchedule() {
                   abbreviation: editingClassSlot.abbreviation ?? "",
                   color: editingClassSlot.color ?? undefined,
                   classId: editingClassSlot.class_id,
+                  groupId: editingClassSlot.group_id ?? null,
                   className: editingClassSlot.classes?.name ?? "",
+
                   room: editingClassSlot.room ?? "",
                   validFrom: editingClassSlot.valid_from ?? null,
                   validTo: editingClassSlot.valid_to ?? null,
@@ -1107,7 +1146,7 @@ export default function TeacherSchedule() {
         }
         periods={dialogPeriods}
         showMirrorSwitch
-        title="Upravit hodinu třídy"
+        title={editingClassSlot?.group_id ? "Upravit hodinu skupiny" : "Upravit hodinu třídy"}
         onDelete={async () => {
           if (!editingClassSlot) return;
           const { error } = await supabase
@@ -1129,7 +1168,10 @@ export default function TeacherSchedule() {
           const { error } = await supabase
             .from("class_schedule_slots" as any)
             .update({
-              class_id: value.classId ?? editingClassSlot.class_id,
+              // Hodina má buď třídu, nebo skupinu – nikdy obojí (DB constraint).
+              class_id: value.groupId ? null : (value.classId ?? editingClassSlot.class_id),
+              group_id: value.groupId ?? null,
+
               subject_label: value.subject,
               subject_id: value.subjectId ?? null,
               abbreviation: value.abbreviation || null,
@@ -1218,7 +1260,9 @@ function ClassCard({ slot, conflict, onClick }: { slot: ClassSlot; conflict?: bo
   const subject = canonical?.name || slot.subject_label || "Hodina";
   const color = canonical?.color || slot.color || colorForSubject(subject);
   const abbr = (canonical?.abbreviation || slot.abbreviation || subject.slice(0, 3)).toUpperCase();
-  const className = slot.classes?.name ?? "";
+  const isGroup = !!slot.group_id;
+  const className = isGroup ? (slot.subject_groups?.name ?? "Skupina") : (slot.classes?.name ?? "");
+
   return (
     <button
       onClick={onClick}
@@ -1245,6 +1289,12 @@ function ClassCard({ slot, conflict, onClick }: { slot: ClassSlot; conflict?: bo
       <div className="text-xs text-muted-foreground truncate flex items-center gap-1 mt-0.5">
         <Users className="w-2.5 h-2.5 shrink-0" />
         <span className="truncate">{className}</span>
+        {isGroup && (
+          <span className="shrink-0 text-[9px] uppercase tracking-wide bg-muted px-1 rounded">
+            skupina
+          </span>
+        )}
+
         {slot.room && <span className="shrink-0">· {slot.room}</span>}
       </div>
       {slot.textbook_id && (

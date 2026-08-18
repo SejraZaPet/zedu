@@ -132,15 +132,20 @@ const decodeSubject = (raw: string) => {
 };
 
 export default function TeacherSubjectClass() {
-  const { subjectId = "", classId = "" } = useParams();
+  const { subjectId = "", classId = "", groupId = "" } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
   const { subjects } = useTeacherSubjects();
 
+  /** Stránka umí pracovat buď nad třídou (dnešní tok), nebo nad skupinou předmětu. */
+  const isGroup = !!groupId;
+
   const subjectLabel = useMemo(() => decodeSubject(subjectId), [subjectId]);
 
   const [klass, setKlass] = useState<ClassRow | null>(null);
+  const [group, setGroup] = useState<{ id: string; name: string; school_year: string } | null>(null);
+
   const [slots, setSlots] = useState<ScheduleSlot[]>([]);
   const [plans, setPlans] = useState<LessonPlanRow[]>([]);
   const [planMethods, setPlanMethods] = useState<Record<string, { id: string; name: string }>>({});
@@ -171,31 +176,47 @@ export default function TeacherSubjectClass() {
     setLoading(true);
     (async () => {
       const [classRes, slotsRes, plansRes, assignRes, membersRes] = await Promise.all([
-        supabase.from("classes").select("id, name, school, field_of_study, year").eq("id", classId).maybeSingle(),
-        supabase
-          .from("class_schedule_slots" as any)
-          .select("*")
-          .eq("class_id", classId),
+        isGroup
+          ? supabase.from("subject_groups").select("id, name, school_year").eq("id", groupId).maybeSingle()
+          : supabase.from("classes").select("id, name, school, field_of_study, year").eq("id", classId).maybeSingle(),
+        isGroup
+          ? supabase.from("class_schedule_slots" as any).select("*").eq("group_id", groupId)
+          : supabase.from("class_schedule_slots" as any).select("*").eq("class_id", classId),
         supabase
           .from("lesson_plans")
           .select("id, title, subject, created_at, updated_at, input_data")
           .eq("teacher_id", user.id)
           .order("updated_at", { ascending: false }),
-        supabase
-          .from("assignments")
-          .select("id, title, description, status, deadline, created_at")
-          .eq("teacher_id", user.id)
-          .eq("class_id", classId)
-          .order("created_at", { ascending: false }),
-        supabase
-          .from("class_members")
-          .select("user_id, profiles:profiles!class_members_user_id_fkey(first_name, last_name)")
-          .eq("class_id", classId),
+        isGroup
+          ? supabase
+              .from("assignments")
+              .select("id, title, description, status, deadline, created_at")
+              .eq("teacher_id", user.id)
+              .eq("group_id", groupId)
+              .order("created_at", { ascending: false })
+          : supabase
+              .from("assignments")
+              .select("id, title, description, status, deadline, created_at")
+              .eq("teacher_id", user.id)
+              .eq("class_id", classId)
+              .order("created_at", { ascending: false }),
+        isGroup
+          ? supabase.from("subject_group_members").select("student_id").eq("group_id", groupId)
+          : supabase
+              .from("class_members")
+              .select("user_id, profiles:profiles!class_members_user_id_fkey(first_name, last_name)")
+              .eq("class_id", classId),
       ]);
 
       if (cancelled) return;
 
-      setKlass((classRes.data as ClassRow) ?? null);
+      if (isGroup) {
+        setGroup((classRes.data as any) ?? null);
+        setKlass(null);
+      } else {
+        setKlass((classRes.data as ClassRow) ?? null);
+        setGroup(null);
+      }
       const allSlots = ((slotsRes.data as any[]) ?? []) as ScheduleSlot[];
       // Filter slots to subject (case-insensitive label match)
       const filtered = allSlots.filter(
@@ -223,9 +244,23 @@ export default function TeacherSubjectClass() {
       const _assignments = (assignRes.data as AssignmentRow[]) ?? [];
       setAssignments(_assignments);
 
-      // Members – try simple shape if join failed
+      // Members – u skupiny čteme subject_group_members, jinak class_members
       let _members = (membersRes.data as any[]) ?? [];
-      if (!_members.length || (_members[0] && !_members[0].profiles)) {
+      if (isGroup) {
+        const ids = _members.map((r: any) => r.student_id);
+        let profs: any[] = [];
+        if (ids.length) {
+          const { data } = await supabase
+            .from("profiles")
+            .select("id, first_name, last_name")
+            .in("id", ids);
+          profs = data ?? [];
+        }
+        _members = ids.map((id: string) => ({
+          user_id: id,
+          profiles: profs.find((p: any) => p.id === id) ?? null,
+        }));
+      } else if (!_members.length || (_members[0] && !_members[0].profiles)) {
         const { data: m2 } = await supabase
           .from("class_members")
           .select("user_id")
@@ -243,6 +278,7 @@ export default function TeacherSubjectClass() {
         }
       }
       setMembers(_members as MemberRow[]);
+
 
       // Load attempts for these assignments
       if (_assignments.length) {
@@ -263,7 +299,7 @@ export default function TeacherSubjectClass() {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, user, navigate, classId, subjectLabel]);
+  }, [authLoading, user, navigate, classId, groupId, isGroup, subjectLabel]);
 
   const matchedSubject = useMemo(
     () => subjects.find((s) => s.label.toLowerCase() === subjectLabel.toLowerCase()),
@@ -442,8 +478,10 @@ export default function TeacherSubjectClass() {
   }
 
   function newAssignment() {
-    navigate(`/ucitel/ulohy?classId=${classId}&subject=${encodeURIComponent(subjectLabel)}`);
+    const target = isGroup ? `groupId=${groupId}` : `classId=${classId}`;
+    navigate(`/ucitel/ulohy?${target}&subject=${encodeURIComponent(subjectLabel)}`);
   }
+
 
   function newLessonPlan(date?: Date) {
     const params = new URLSearchParams();
@@ -551,6 +589,17 @@ export default function TeacherSubjectClass() {
                     {klass.year ? ` · ${klass.year}. ročník` : ""}
                   </span>
                 )}
+                {group && (
+                  <span className="flex items-center gap-1">
+                    <Users className="h-4 w-4" />
+                    {group.name}
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 font-normal">
+                      skupina
+                    </Badge>
+                    {group.school_year ? ` · ${group.school_year}` : ""}
+                  </span>
+                )}
+
                 {room && (
                   <span className="flex items-center gap-1">
                     <MapPin className="h-4 w-4" />

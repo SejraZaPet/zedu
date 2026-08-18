@@ -35,6 +35,8 @@ import { cn } from "@/lib/utils";
 import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
 import SubjectPicker from "@/components/subjects/SubjectPicker";
 import { useTeacherClasses } from "@/hooks/useTeacherClasses";
+import { useSubjectGroups } from "@/hooks/useSubjectGroups";
+
 import {
   SUBJECT_COLORS,
   colorForSubject,
@@ -70,12 +72,16 @@ export interface LessonFormValue {
   color: string;
   classId: string | null;
   className: string;
+  /** Skupina předmětu – alternativa ke třídě (nikdy obojí zároveň). */
+  groupId?: string | null;
+  groupName?: string;
   room: string;
   validFrom: string | null; // YYYY-MM-DD
   validTo: string | null;
   weekParity: "every" | "odd" | "even";
   mirrorBoth?: boolean;
 }
+
 
 export interface LessonFormResult {
   value: LessonFormValue;
@@ -127,6 +133,7 @@ export default function LessonFormDialog({
 }: Props) {
   const { subjects } = useTeacherSubjects();
   const { classes } = useTeacherClasses();
+  const { groups } = useSubjectGroups();
 
   const defaultPeriod = useMemo(
     () => initial?.period ?? periods[0]?.period ?? 1,
@@ -140,7 +147,10 @@ export default function LessonFormDialog({
   const [abbreviation, setAbbreviation] = useState("");
   const [color, setColor] = useState<string>(SUBJECT_COLORS[0].value);
   const [classSel, setClassSel] = useState<string>(NO_CLASS);
+  const [target, setTarget] = useState<"class" | "group">("class");
+  const [groupSel, setGroupSel] = useState<string>(NO_CLASS);
   const [room, setRoom] = useState("");
+
   const [validFrom, setValidFrom] = useState<Date | undefined>();
   const [validTo, setValidTo] = useState<Date | undefined>();
   const [mirrorBoth, setMirrorBoth] = useState(false);
@@ -172,7 +182,10 @@ export default function LessonFormDialog({
     setAbbreviation(initial?.abbreviation ?? "");
     setColor(initial?.color ?? colorForSubject(subj));
     setClassSel(initial?.classId ?? NO_CLASS);
+    setGroupSel(initial?.groupId ?? NO_CLASS);
+    setTarget(initial?.groupId ? "group" : "class");
     setRoom(initial?.room ?? "");
+
     setValidFrom(initial?.validFrom ? new Date(initial.validFrom) : undefined);
     setValidTo(initial?.validTo ? new Date(initial.validTo) : undefined);
     setMirrorBoth(!!initial?.mirrorBoth);
@@ -258,14 +271,18 @@ export default function LessonFormDialog({
     const slots = buildSlots();
     if (slots.length === 0) return;
 
+    const useGroup = target === "group" && groupSel !== NO_CLASS;
     const selectedClass = classes.find((c) => c.id === classSel);
+    const selectedGroup = groups.find((g) => g.id === groupSel);
     const value: LessonFormValue = {
       subject: resolvedSubject,
       subjectId: subjectId,
       abbreviation: (abbreviation || resolvedSubject.slice(0, 3)).toUpperCase().slice(0, 5),
       color: color || colorForSubject(resolvedSubject),
-      classId: classSel === NO_CLASS ? null : classSel,
-      className: selectedClass?.name ?? "",
+      classId: useGroup || classSel === NO_CLASS ? null : classSel,
+      className: useGroup ? "" : (selectedClass?.name ?? ""),
+      groupId: useGroup ? groupSel : null,
+      groupName: useGroup ? (selectedGroup?.name ?? "") : "",
       room: room.trim(),
       validFrom: validFrom ? format(validFrom, "yyyy-MM-dd") : null,
       validTo: validTo ? format(validTo, "yyyy-MM-dd") : null,
@@ -280,9 +297,12 @@ export default function LessonFormDialog({
       ? "Vyberte předmět."
       : selectedDays.length === 0
         ? "Vyberte alespoň jeden den."
-        : validFrom && validTo && validTo < validFrom
-          ? "Platnost do musí být po platnosti od."
-          : null;
+        : target === "group" && groupSel === NO_CLASS
+          ? "Vyberte skupinu předmětu."
+          : validFrom && validTo && validTo < validFrom
+            ? "Platnost do musí být po platnosti od."
+            : null;
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -435,27 +455,73 @@ export default function LessonFormDialog({
             </div>
             <div className="space-y-1.5">
               <Label className="flex items-center gap-1">
-                <Users className="w-3 h-3" /> Třída
+                <Users className="w-3 h-3" /> Komu hodina patří
               </Label>
-              <Select value={classSel} onValueChange={setClassSel}>
-                <SelectTrigger>
-                  <SelectValue placeholder="—" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NO_CLASS}>— Bez třídy —</SelectItem>
-                  {classes.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {classes.length === 0 && (
-                <p className="text-[10px] text-muted-foreground">
-                  Zatím nemáte žádné třídy.
-                </p>
+              <div className="flex gap-1.5">
+                {[
+                  { v: "class", label: "Třída" },
+                  { v: "group", label: "Skupina" },
+                ].map((opt) => (
+                  <button
+                    key={opt.v}
+                    type="button"
+                    onClick={() => setTarget(opt.v as "class" | "group")}
+                    className={`px-2.5 py-1 text-xs rounded-md border transition-colors flex-1 ${
+                      target === opt.v
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-card border-border hover:bg-muted"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              {target === "class" ? (
+                <>
+                  <Select value={classSel} onValueChange={setClassSel}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="—" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NO_CLASS}>— Bez třídy —</SelectItem>
+                      {classes.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {classes.length === 0 && (
+                    <p className="text-[10px] text-muted-foreground">
+                      Zatím nemáte žádné třídy.
+                    </p>
+                  )}
+                </>
+              ) : (
+                <>
+                  <Select value={groupSel} onValueChange={setGroupSel}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Vyberte skupinu" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NO_CLASS}>— Vyberte skupinu —</SelectItem>
+                      {groups.map((g) => (
+                        <SelectItem key={g.id} value={g.id}>
+                          {g.name}
+                          {g.subjectName ? ` · ${g.subjectName}` : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[10px] text-muted-foreground">
+                    {groups.length === 0
+                      ? "Zatím nemáte žádné skupiny předmětu (/ucitel/skupiny)."
+                      : "Hodina se uloží skupině místo třídy."}
+                  </p>
+                </>
               )}
             </div>
+
           </div>
 
           {/* ----- Room ----- */}

@@ -24,6 +24,8 @@ import RemindButton from "@/components/notifications/RemindButton";
 import TeacherAssignmentAttachments from "@/components/assignments/TeacherAssignmentAttachments";
 import { ExamTypeBadge } from "@/components/assignments/ExamTypeBadge";
 import { EXAM_TYPE_OPTIONS, type ExamType } from "@/lib/exam-types";
+import { useSubjectGroups } from "@/hooks/useSubjectGroups";
+
 
 
 interface Assignment {
@@ -36,6 +38,8 @@ interface Assignment {
   randomize_choices: boolean;
   randomize_order: boolean;
   class_id: string | null;
+  group_id?: string | null;
+
   created_at: string;
   activity_data: any[];
   worksheet_id?: string | null;
@@ -54,7 +58,9 @@ interface WorksheetOption {
 
 const TeacherAssignments = () => {
   const navigate = useNavigate();
+  const { groups } = useSubjectGroups();
   const [searchParams] = useSearchParams();
+
   const prefillLessonId = searchParams.get("lessonId");
   const prefillLessonTitle = searchParams.get("lessonTitle") || "";
   const prefillLessonType = (searchParams.get("lessonType") as "global" | "teacher" | null) || "teacher";
@@ -74,6 +80,9 @@ const TeacherAssignments = () => {
   const [randomizeChoices, setRandomizeChoices] = useState(false);
   const [randomizeOrder, setRandomizeOrder] = useState(false);
   const [selectedClassId, setSelectedClassId] = useState<string>("");
+  // Zadání lze nově směrovat i na skupinu předmětu (vedle třídy, nikdy obojí).
+  const [selectedGroupId, setSelectedGroupId] = useState<string>(searchParams.get("groupId") || "");
+
   const [worksheets, setWorksheets] = useState<WorksheetOption[]>([]);
   const [selectedWorksheetId, setSelectedWorksheetId] = useState<string>(prefillWorksheetId || "");
   const [lockdownMode, setLockdownMode] = useState(false);
@@ -125,7 +134,9 @@ const TeacherAssignments = () => {
         max_attempts: maxAttempts,
         randomize_choices: randomizeChoices,
         randomize_order: randomizeOrder,
-        class_id: selectedClassId || null,
+        class_id: selectedGroupId ? null : (selectedClassId || null),
+        group_id: selectedGroupId || null,
+
         status: "draft",
         activity_data: [] as any,
         worksheet_id: selectedWorksheetId || null,
@@ -155,6 +166,8 @@ const TeacherAssignments = () => {
     setRandomizeChoices(false);
     setRandomizeOrder(false);
     setSelectedClassId("");
+    setSelectedGroupId("");
+
     setSelectedWorksheetId("");
     setLockdownMode(false);
     setIsPortfolioTask(false);
@@ -269,19 +282,51 @@ const TeacherAssignments = () => {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                {/* Class */}
+                {/* Class or subject group */}
                 <div>
-                  <Label>Třída (volitelné)</Label>
-                  <Select value={selectedClassId || "__all__"} onValueChange={(v) => setSelectedClassId(v === "__all__" ? "" : v)}>
+                  <Label>Třída nebo skupina (volitelné)</Label>
+                  <Select
+                    value={
+                      selectedGroupId
+                        ? `group:${selectedGroupId}`
+                        : selectedClassId
+                          ? `class:${selectedClassId}`
+                          : "__all__"
+                    }
+                    onValueChange={(v) => {
+                      if (v === "__all__") {
+                        setSelectedClassId("");
+                        setSelectedGroupId("");
+                      } else if (v.startsWith("group:")) {
+                        setSelectedGroupId(v.slice(6));
+                        setSelectedClassId("");
+                      } else {
+                        setSelectedClassId(v.slice(6));
+                        setSelectedGroupId("");
+                      }
+                    }}
+                  >
                     <SelectTrigger className="mt-1"><SelectValue placeholder="Všichni žáci" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="__all__">Všichni žáci</SelectItem>
                       {classes.map((c) => (
-                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                        <SelectItem key={c.id} value={`class:${c.id}`}>{c.name}</SelectItem>
                       ))}
+                      {groups.length > 0 && (
+                        <>
+                          <div className="px-2 py-1.5 text-xs text-muted-foreground">Skupiny předmětu</div>
+                          {groups.map((g) => (
+                            <SelectItem key={g.id} value={`group:${g.id}`}>
+                              {g.name}
+                              {g.subjectName ? ` · ${g.subjectName}` : ""}
+                            </SelectItem>
+                          ))}
+                        </>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
+
 
                 {/* Exam type */}
                 <div>
@@ -444,6 +489,13 @@ const TeacherAssignments = () => {
                         <Badge variant={a.status === "published" ? "default" : "secondary"} className="text-xs">
                           {a.status === "published" ? "Publikováno" : "Koncept"}
                         </Badge>
+                        {a.group_id && (
+                          <Badge variant="outline" className="text-xs">
+                            <Users className="w-3 h-3 mr-1" />
+                            {groups.find((g) => g.id === a.group_id)?.name ?? "Skupina"}
+                          </Badge>
+                        )}
+
                       </div>
                       {a.description && <p className="text-sm text-muted-foreground">{a.description}</p>}
                       <div className="flex items-center gap-4 text-xs text-muted-foreground">
