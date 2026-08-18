@@ -471,15 +471,33 @@ export const PresentationEditorDialog = ({
           {currentSlide && (
             <div className="flex min-h-0 flex-1">
               {/* 3. LEVÝ POSTRANNÍ PANEL */}
-              <aside className="flex w-[250px] shrink-0 flex-col border-r border-border bg-muted/20">
-                <Tabs defaultValue="insert" className="flex min-h-0 flex-1 flex-col">
-                  <TabsList className="mx-2 mt-2 grid grid-cols-2">
-                    <TabsTrigger value="insert" className="text-xs">Vložit</TabsTrigger>
-                    <TabsTrigger value="slide" className="text-xs">Slide</TabsTrigger>
-                  </TabsList>
+              <aside className="flex shrink-0 border-r border-border bg-muted/20">
+                {/* Úzký sloupec ikon (Canva style) */}
+                <div className="flex w-16 shrink-0 flex-col gap-1 border-r border-border py-2">
+                  {RAIL_ITEMS.map((item) => {
+                    const active = sidebarSection === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => setSidebarSection(item.id)}
+                        aria-pressed={active}
+                        className={`mx-1 flex flex-col items-center gap-1 rounded-lg px-1 py-2 text-[10px] font-medium transition-colors ${
+                          active ? "bg-accent/10 text-primary" : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                        }`}
+                      >
+                        <item.icon className={`h-5 w-5 ${active ? "text-primary" : ""}`} />
+                        {item.label}
+                      </button>
+                    );
+                  })}
+                </div>
 
-                  {/* ---- Záložka Vložit ---- */}
-                  <TabsContent value="insert" className="min-h-0 flex-1 overflow-y-auto p-2">
+                {/* Rozbalovací panel vybrané sekce */}
+                <div className="flex min-h-0 w-[240px] flex-col overflow-y-auto">
+                  {sidebarSection === "insert" && (
+                  <div className="p-2">
+
                     <div className="grid grid-cols-3 gap-1.5">
                       <InsertTile icon={HeadingIcon} label="Nadpis" onClick={() => addBlock("heading")} />
                       <InsertTile icon={Type} label="Text" onClick={() => addBlock("paragraph")} />
