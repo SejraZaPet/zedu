@@ -27,22 +27,51 @@ interface TeacherExtraNavItem {
   icon: React.ElementType;
 }
 
-const TEACHER_EXTRA_ITEMS: TeacherExtraNavItem[] = [
-  { label: "Moje učebnice", href: "/ucitel/ucebnice", icon: BookOpen },
-  { label: "Živé hry", href: "/ucitel/hry", icon: Gamepad2 },
-  { label: "Média", href: "/ucitel/media", icon: ImageIcon },
-  { label: "Výsledky", href: "/ucitel/vysledky", icon: BarChart3 },
-  { label: "ZEduMarket", href: "/zedumarket", icon: ShoppingBag },
-  { label: "Sdíleno se mnou", href: "/ucitel/sdileno-se-mnou", icon: Layers },
-  { label: "Sledovaní tvůrci", href: "/ucitel/sledovani-tvurci", icon: UserCheck },
-  { label: "ŠVP k předmětům", href: "/ucitel/svp", icon: BookMarked },
-  { label: "Rubriky hodnocení", href: "/ucitel/rubriky", icon: ClipboardList },
-  { label: "Banka otázek", href: "/ucitel/banka-otazek", icon: Library },
-  { label: "Moje předměty", href: "/ucitel/predmety", icon: GraduationCap },
-  { label: "Skupiny předmětu", href: "/ucitel/skupiny", icon: Users },
-  { label: "ZedStart", href: "/ucitel/zedstart", icon: Zap },
-  { label: "ZEdu Akademie", href: "/ucitel/akademie", icon: Award },
+interface TeacherMenuGroup {
+  title: string;
+  items: TeacherExtraNavItem[];
+}
+
+/** Skupiny v rozbalovacím "Menu" učitele — logicky sdružené nástroje. */
+const TEACHER_MENU_GROUPS: TeacherMenuGroup[] = [
+  {
+    title: "Předměty a skupiny",
+    items: [
+      { label: "Moje předměty", href: "/ucitel/predmety", icon: GraduationCap },
+      { label: "Skupiny předmětu", href: "/ucitel/skupiny", icon: Users },
+      { label: "ŠVP k předmětům", href: "/ucitel/svp", icon: BookMarked },
+    ],
+  },
+  {
+    title: "Nástroje pro hodiny",
+    items: [
+      { label: "Rubriky hodnocení", href: "/ucitel/rubriky", icon: ClipboardList },
+      { label: "Banka otázek", href: "/ucitel/banka-otazek", icon: Library },
+      { label: "ZedStart", href: "/ucitel/zedstart", icon: Zap },
+    ],
+  },
+  {
+    title: "Obsah a knihovna",
+    items: [
+      { label: "Moje učebnice", href: "/ucitel/ucebnice", icon: BookOpen },
+      { label: "Média", href: "/ucitel/media", icon: ImageIcon },
+      { label: "Sdíleno se mnou", href: "/ucitel/sdileno-se-mnou", icon: Layers },
+      { label: "Sledovaní tvůrci", href: "/ucitel/sledovani-tvurci", icon: UserCheck },
+      { label: "ZEduMarket", href: "/zedumarket", icon: ShoppingBag },
+    ],
+  },
+  {
+    title: "Aktivity a výsledky",
+    items: [
+      { label: "Živé hry", href: "/ucitel/hry", icon: Gamepad2 },
+      { label: "Výsledky", href: "/ucitel/vysledky", icon: BarChart3 },
+      { label: "ZEdu Akademie", href: "/ucitel/akademie", icon: Award },
+    ],
+  },
 ];
+
+const TEACHER_EXTRA_ITEMS: TeacherExtraNavItem[] = TEACHER_MENU_GROUPS.flatMap((g) => g.items);
+
 
 const ACADEMY_BY_ROLE: Record<string, string> = {
   user: "/student/akademie",
