@@ -855,7 +855,6 @@ export default function TeacherSuggestByMethod() {
                 description="Z každé fáze a aktivity vznikne textový slide. U aktivit pak můžete v editoru prezentace použít „Dogenerovat aktivitu“."
               />
             </CardContent>
-            </CardContent>
           </Card>
         )}
       </main>
