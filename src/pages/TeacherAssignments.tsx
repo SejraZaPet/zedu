@@ -34,6 +34,7 @@ interface Assignment {
   description: string;
   status: string;
   deadline: string | null;
+  scheduled_publish_at?: string | null;
   max_attempts: number;
   randomize_choices: boolean;
   randomize_order: boolean;
@@ -89,6 +90,10 @@ const TeacherAssignments = () => {
   const [isPortfolioTask, setIsPortfolioTask] = useState(false);
   const [examType, setExamType] = useState<ExamType | "ukol">("ukol");
   const [filterExamType, setFilterExamType] = useState<string>("__all__");
+  // Naplánované zveřejnění – appka úlohu zpřístupní žákům sama v daný čas.
+  const [scheduleEnabled, setScheduleEnabled] = useState(false);
+  const [scheduleDate, setScheduleDate] = useState<Date | undefined>();
+  const [scheduleTime, setScheduleTime] = useState("08:00");
 
 
   useEffect(() => {
@@ -126,6 +131,22 @@ const TeacherAssignments = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Nepřihlášen");
 
+      // Naplánované zveřejnění: uloží se jako `scheduled` + časová značka,
+      // publikaci pak provede appka na pozadí. Bez plánu zůstává „Koncept“.
+      let scheduledPublishAt: string | null = null;
+      if (scheduleEnabled) {
+        if (!scheduleDate) {
+          throw new Error("Vyberte datum zveřejnění.");
+        }
+        const [h, m] = scheduleTime.split(":").map((n) => parseInt(n, 10));
+        const when = new Date(scheduleDate);
+        when.setHours(Number.isFinite(h) ? h : 8, Number.isFinite(m) ? m : 0, 0, 0);
+        if (when.getTime() <= Date.now()) {
+          throw new Error("Čas zveřejnění musí být v budoucnosti.");
+        }
+        scheduledPublishAt = when.toISOString();
+      }
+
       const { error } = await supabase.from("assignments" as any).insert({
         teacher_id: user.id,
         title: title.trim(),
@@ -137,7 +158,8 @@ const TeacherAssignments = () => {
         class_id: selectedGroupId ? null : (selectedClassId || null),
         group_id: selectedGroupId || null,
 
-        status: "draft",
+        status: scheduledPublishAt ? "scheduled" : "draft",
+        scheduled_publish_at: scheduledPublishAt,
         activity_data: [] as any,
         worksheet_id: selectedWorksheetId || null,
         lockdown_mode: lockdownMode,
@@ -147,7 +169,12 @@ const TeacherAssignments = () => {
 
 
       if (error) throw error;
-      toast({ title: "Úloha vytvořena" });
+      toast({
+        title: scheduledPublishAt ? "Úloha naplánována" : "Úloha vytvořena",
+        description: scheduledPublishAt
+          ? `Žákům se zpřístupní ${new Date(scheduledPublishAt).toLocaleString("cs-CZ")}.`
+          : undefined,
+      });
       setShowForm(false);
       resetForm();
       loadData();
@@ -172,11 +199,17 @@ const TeacherAssignments = () => {
     setLockdownMode(false);
     setIsPortfolioTask(false);
     setExamType("ukol");
+    setScheduleEnabled(false);
+    setScheduleDate(undefined);
+    setScheduleTime("08:00");
   };
 
 
   const handlePublish = async (id: string) => {
-    const { error } = await supabase.from("assignments" as any).update({ status: "published" } as any).eq("id", id);
+    const { error } = await supabase
+      .from("assignments" as any)
+      .update({ status: "published", scheduled_publish_at: null } as any)
+      .eq("id", id);
     if (error) {
       toast({ title: "Chyba", description: error.message, variant: "destructive" });
     } else {
@@ -280,6 +313,63 @@ const TeacherAssignments = () => {
                   <Input type="number" min={1} max={10} value={maxAttempts} onChange={(e) => setMaxAttempts(Number(e.target.value))} className="mt-1" />
                 </div>
               </div>
+
+              {/* Scheduled publishing */}
+              <div className="rounded-lg border border-border p-3 space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <Label className="text-sm">Naplánovat zveřejnění</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Úloha zůstane žákům skrytá a appka ji zpřístupní sama ve zvolený čas.
+                    </p>
+                  </div>
+                  <Switch checked={scheduleEnabled} onCheckedChange={setScheduleEnabled} />
+                </div>
+                {scheduleEnabled && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Datum zveřejnění</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full mt-1 justify-start text-left font-normal",
+                              !scheduleDate && "text-muted-foreground",
+                            )}
+                          >
+                            <CalendarIcon className="w-4 h-4 mr-2" />
+                            {scheduleDate
+                              ? format(scheduleDate, "d. M. yyyy", { locale: cs })
+                              : "Vyberte datum"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={scheduleDate}
+                            onSelect={setScheduleDate}
+                            disabled={(date) =>
+                              date < new Date(new Date().setHours(0, 0, 0, 0))
+                            }
+                            className={cn("p-3 pointer-events-auto")}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    <div>
+                      <Label>Čas</Label>
+                      <Input
+                        type="time"
+                        value={scheduleTime}
+                        onChange={(e) => setScheduleTime(e.target.value)}
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
 
               <div className="grid grid-cols-2 gap-4">
                 {/* Class or subject group */}
@@ -487,8 +577,24 @@ const TeacherAssignments = () => {
                         <h3 className="font-semibold">{a.title}</h3>
                         <ExamTypeBadge examType={a.exam_type} showDefault />
                         <Badge variant={a.status === "published" ? "default" : "secondary"} className="text-xs">
-                          {a.status === "published" ? "Publikováno" : "Koncept"}
+                          {a.status === "published"
+                            ? "Publikováno"
+                            : a.status === "scheduled"
+                              ? "Naplánováno"
+                              : "Koncept"}
                         </Badge>
+                        {a.status === "scheduled" && a.scheduled_publish_at && (
+                          <Badge variant="outline" className="text-xs">
+                            <CalendarIcon className="w-3 h-3 mr-1" />
+                            {new Date(a.scheduled_publish_at).toLocaleString("cs-CZ", {
+                              day: "numeric",
+                              month: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </Badge>
+                        )}
+
                         {a.group_id && (
                           <Badge variant="outline" className="text-xs">
                             <Users className="w-3 h-3 mr-1" />
@@ -533,9 +639,10 @@ const TeacherAssignments = () => {
                           link={`/student/ulohy`}
                         />
                       )}
-                      {a.status === "draft" && (
+                      {(a.status === "draft" || a.status === "scheduled") && (
                         <Button size="sm" variant="outline" onClick={() => handlePublish(a.id)}>
-                          <Send className="w-3.5 h-3.5 mr-1" /> Publikovat
+                          <Send className="w-3.5 h-3.5 mr-1" />
+                          {a.status === "scheduled" ? "Publikovat hned" : "Publikovat"}
                         </Button>
                       )}
                       <Button size="sm" variant="ghost" className="text-destructive" onClick={() => handleDelete(a.id)}>

@@ -50,6 +50,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
+import { useSubjectCatalog } from "@/hooks/useSubjectCatalog";
 import { expandScheduleSlots, formatTime } from "@/lib/calendar-utils";
 
 interface ClassRow {
@@ -132,17 +133,37 @@ const decodeSubject = (raw: string) => {
   }
 };
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export default function TeacherSubjectClass() {
   const { subjectId = "", classId = "", groupId = "" } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
   const { subjects } = useTeacherSubjects();
+  const { allSubjects, loading: catalogLoading } = useSubjectCatalog({ includeArchived: true });
 
   /** Stránka umí pracovat buď nad třídou (dnešní tok), nebo nad skupinou předmětu. */
   const isGroup = !!groupId;
 
-  const subjectLabel = useMemo(() => decodeSubject(subjectId), [subjectId]);
+  /**
+   * Výuku lze adresovat buď UUID předmětu (nová routa /ucitel/vyuka/...),
+   * nebo textovým labelem (původní routa /ucitel/predmet/...). Oba tvary
+   * se převedou na kanonický název a případně na subject_id.
+   */
+  const isUuidSubject = UUID_RE.test(subjectId);
+  const catalogSubject = useMemo(() => {
+    if (isUuidSubject) return allSubjects.find((s) => s.id === subjectId) ?? null;
+    const label = decodeSubject(subjectId).trim().toLowerCase();
+    return allSubjects.find((s) => (s.name ?? "").trim().toLowerCase() === label) ?? null;
+  }, [allSubjects, subjectId, isUuidSubject]);
+
+  const subjectLabel = useMemo(
+    () => (isUuidSubject ? catalogSubject?.name ?? "" : decodeSubject(subjectId)),
+    [isUuidSubject, catalogSubject, subjectId],
+  );
+  const resolvedSubjectId = catalogSubject?.id ?? null;
+
 
   const [klass, setKlass] = useState<ClassRow | null>(null);
   const [group, setGroup] = useState<{ id: string; name: string; school_year: string } | null>(null);
@@ -172,6 +193,10 @@ export default function TeacherSubjectClass() {
       navigate("/auth");
       return;
     }
+    // U nové routy podle UUID musíme počkat na katalog, ať známe název předmětu.
+    if (isUuidSubject && catalogLoading) return;
+
+
 
     let cancelled = false;
     setLoading(true);
@@ -219,11 +244,15 @@ export default function TeacherSubjectClass() {
         setGroup(null);
       }
       const allSlots = ((slotsRes.data as any[]) ?? []) as ScheduleSlot[];
-      // Filter slots to subject (case-insensitive label match)
-      const filtered = allSlots.filter(
-        (s) => (s.subject_label || "").trim().toLowerCase() === subjectLabel.trim().toLowerCase(),
-      );
+      // Filter slots to subject – přednostně podle subject_id, fallback na label
+      const wantLabel = subjectLabel.trim().toLowerCase();
+      const filtered = allSlots.filter((s) => {
+        const sid = (s as any).subject_id as string | null | undefined;
+        if (resolvedSubjectId && sid) return sid === resolvedSubjectId;
+        return (s.subject_label || "").trim().toLowerCase() === wantLabel;
+      });
       setSlots(filtered);
+
       const _plans = (plansRes.data as LessonPlanRow[]) ?? [];
       setPlans(_plans);
       // Načíst přiřazené metody pro tyto plány
@@ -300,7 +329,7 @@ export default function TeacherSubjectClass() {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, user, navigate, classId, groupId, isGroup, subjectLabel]);
+  }, [authLoading, user, navigate, classId, groupId, isGroup, subjectLabel, isUuidSubject, catalogLoading, resolvedSubjectId]);
 
   const matchedSubject = useMemo(
     () => subjects.find((s) => s.label.toLowerCase() === subjectLabel.toLowerCase()),
@@ -312,8 +341,10 @@ export default function TeacherSubjectClass() {
     );
     return fromSlot?.textbook_id ?? null;
   }, [slots]);
-  const subjectColor = matchedSubject?.color || slots[0]?.color || "hsl(var(--primary))";
+  const subjectColor =
+    catalogSubject?.color || matchedSubject?.color || slots[0]?.color || "hsl(var(--primary))";
   const abbr =
+    catalogSubject?.abbreviation ||
     matchedSubject?.abbreviation ||
     slots[0]?.abbreviation ||
     subjectLabel.slice(0, 3).toUpperCase();
@@ -597,8 +628,17 @@ export default function TeacherSubjectClass() {
               {abbr}
             </div>
             <div className="flex-1 min-w-0">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">
+                Výuka
+              </p>
               <h1 className="font-heading text-2xl md:text-3xl font-bold truncate">
                 {subjectLabel}
+                {(klass?.name || group?.name) && (
+                  <span className="text-muted-foreground font-normal">
+                    {" · "}
+                    {klass?.name ?? group?.name}
+                  </span>
+                )}
               </h1>
               <div className="flex flex-wrap gap-3 mt-1 text-sm text-muted-foreground">
                 {klass && (
