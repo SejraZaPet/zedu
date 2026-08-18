@@ -63,11 +63,24 @@ export const createSubject = async (input: {
 
   const { data: existing } = await supabase
     .from("subjects")
-    .select("id, name, color, abbreviation, school_id, created_by")
+    .select(CATALOG_COLUMNS)
     .ilike("name", escapeLike(name))
     .limit(1)
     .maybeSingle();
-  if (existing) return existing as SubjectCatalogItem;
+  if (existing) {
+    const found = existing as SubjectCatalogItem;
+    // Re-creating a subject that was archived means the teacher wants it back.
+    if (found.archived) {
+      const { data: revived } = await supabase
+        .from("subjects")
+        .update({ archived: false })
+        .eq("id", found.id)
+        .select(CATALOG_COLUMNS)
+        .maybeSingle();
+      if (revived) return revived as SubjectCatalogItem;
+    }
+    return found;
+  }
 
   // The row must carry the current user's id — the RLS policy requires
   // `created_by = auth.uid()`. Reading the user directly (instead of a possibly
