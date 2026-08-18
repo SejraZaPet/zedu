@@ -132,7 +132,9 @@ const TeacherAssignments = () => {
         max_attempts: maxAttempts,
         randomize_choices: randomizeChoices,
         randomize_order: randomizeOrder,
-        class_id: selectedClassId || null,
+        class_id: selectedGroupId ? null : (selectedClassId || null),
+        group_id: selectedGroupId || null,
+
         status: "draft",
         activity_data: [] as any,
         worksheet_id: selectedWorksheetId || null,
@@ -162,6 +164,8 @@ const TeacherAssignments = () => {
     setRandomizeChoices(false);
     setRandomizeOrder(false);
     setSelectedClassId("");
+    setSelectedGroupId("");
+
     setSelectedWorksheetId("");
     setLockdownMode(false);
     setIsPortfolioTask(false);
