@@ -86,6 +86,9 @@ interface ClassSlot {
   valid_from: string | null;
   valid_to: string | null;
   classes?: { name: string } | null;
+  subject_id?: string | null;
+  /** Kanonický předmět z katalogu `subjects` (má přednost před hodnotami ze slotu). */
+  subjects?: { name: string | null; abbreviation: string | null; color: string | null } | null;
 }
 
 /** Unified card-row item shown in the day column. */
@@ -171,7 +174,8 @@ export default function TeacherSchedule() {
     }
     const { data: slots } = await supabase
       .from("class_schedule_slots" as any)
-      .select("*, classes(name)")
+      // `subjects(...)` je kanonický zdroj zkratky i barvy — slot je jen fallback.
+      .select("*, classes(name), subjects(name, abbreviation, color)")
       .order("day_of_week", { ascending: true })
       .order("start_time", { ascending: true });
     setClassSlots((slots as any) || []);
