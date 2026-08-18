@@ -18,7 +18,9 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Sparkles, Upload, FileText, ArrowRight, Wand2, HelpCircle, Lightbulb } from "lucide-react";
+import { Loader2, Sparkles, Upload, FileText, ArrowRight, Wand2, HelpCircle, Lightbulb, MonitorPlay } from "lucide-react";
+import InsertSlidesIntoPresentationDialog from "@/components/presentation/InsertSlidesIntoPresentationDialog";
+import { phasesToSlides } from "@/lib/plan-to-slides";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { extractPdfText } from "@/lib/pdf-page-renderer";
 
