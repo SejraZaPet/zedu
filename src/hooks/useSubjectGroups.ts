@@ -22,10 +22,13 @@ export const useSubjectGroups = () => {
     queryFn: async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return [];
+      // Explicitní filtr na vlastníka: RLS pouští adminovi (is_admin()) všechny
+      // skupiny, v UI ale chceme vždy jen vlastní.
       const { data, error } = await supabase
         .from("subject_groups")
         .select("id, name, subject_id, school_year, subjects(name, abbreviation, color)")
         .eq("archived", false)
+        .eq("created_by", session.user.id)
         .order("name");
       if (error) throw error;
       return ((data as any[]) ?? []).map((g) => ({
