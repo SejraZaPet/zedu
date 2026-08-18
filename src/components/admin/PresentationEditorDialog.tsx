@@ -94,6 +94,7 @@ export const PresentationEditorDialog = ({
   existingSession, onContinueExisting, onLaunchNew, onCloseExisting,
 }: Props) => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [darkPreview, setDarkPreview] = useState(true);
   const [addSlideOpen, setAddSlideOpen] = useState(false);
   const [history, setHistory] = useState<BlockEditorHistory | null>(null);
@@ -101,7 +102,9 @@ export const PresentationEditorDialog = ({
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [exportingPdf, setExportingPdf] = useState(false);
   const [generatingActivity, setGeneratingActivity] = useState(false);
+  const [sidebarSection, setSidebarSection] = useState<"insert" | "slide" | "activities">("insert");
   const canvasWrapRef = useRef<HTMLDivElement>(null);
+
   const currentSlide = pendingSlides[editingSlideIndex];
   const themeId = themeIdFromSlides(pendingSlides);
   const theme = getPresentationTheme(themeId);
