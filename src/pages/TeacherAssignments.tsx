@@ -38,6 +38,8 @@ interface Assignment {
   randomize_choices: boolean;
   randomize_order: boolean;
   class_id: string | null;
+  group_id?: string | null;
+
   created_at: string;
   activity_data: any[];
   worksheet_id?: string | null;
@@ -487,6 +489,13 @@ const TeacherAssignments = () => {
                         <Badge variant={a.status === "published" ? "default" : "secondary"} className="text-xs">
                           {a.status === "published" ? "Publikováno" : "Koncept"}
                         </Badge>
+                        {a.group_id && (
+                          <Badge variant="outline" className="text-xs">
+                            <Users className="w-3 h-3 mr-1" />
+                            {groups.find((g) => g.id === a.group_id)?.name ?? "Skupina"}
+                          </Badge>
+                        )}
+
                       </div>
                       {a.description && <p className="text-sm text-muted-foreground">{a.description}</p>}
                       <div className="flex items-center gap-4 text-xs text-muted-foreground">
