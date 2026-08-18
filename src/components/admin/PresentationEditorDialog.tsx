@@ -56,7 +56,7 @@ export interface PresentationLessonRef {
 
 
 interface Props {
-  presentationLesson: { title: string } | null;
+  presentationLesson: PresentationLessonRef | null;
   pendingSlides: any[];
   setPendingSlides: (slides: any[]) => void;
   editingSlideIndex: number;
