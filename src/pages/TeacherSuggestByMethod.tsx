@@ -18,7 +18,9 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Sparkles, Upload, FileText, ArrowRight, Wand2, HelpCircle, Lightbulb } from "lucide-react";
+import { Loader2, Sparkles, Upload, FileText, ArrowRight, Wand2, HelpCircle, Lightbulb, MonitorPlay } from "lucide-react";
+import InsertSlidesIntoPresentationDialog from "@/components/presentation/InsertSlidesIntoPresentationDialog";
+import { phasesToSlides } from "@/lib/plan-to-slides";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { extractPdfText } from "@/lib/pdf-page-renderer";
 
@@ -150,6 +152,7 @@ export default function TeacherSuggestByMethod() {
   const [uploading, setUploading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [insertSlidesOpen, setInsertSlidesOpen] = useState(false);
   const [suggestion, setSuggestion] = useState<Suggestion | null>(null);
   const [thinkingTypes, setThinkingTypes] = useState<ThinkingType[]>([]);
   const [curriculumPlan, setCurriculumPlan] = useState<{ subject: string; content: string | null; file_name: string | null } | null>(null);
@@ -830,7 +833,11 @@ export default function TeacherSuggestByMethod() {
                 </div>
               )}
 
-              <div className="flex justify-end pt-2 border-t">
+              <div className="flex flex-wrap justify-end gap-2 pt-2 border-t">
+                <Button variant="outline" className="gap-2" onClick={() => setInsertSlidesOpen(true)}>
+                  <MonitorPlay className="w-4 h-4" />
+                  Vložit fáze jako slidy
+                </Button>
                 <Button onClick={createDraft} disabled={creating} className="gap-2">
                   {creating ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -840,6 +847,13 @@ export default function TeacherSuggestByMethod() {
                   Vytvořit plán hodiny z tohoto návrhu
                 </Button>
               </div>
+
+              <InsertSlidesIntoPresentationDialog
+                open={insertSlidesOpen}
+                onOpenChange={setInsertSlidesOpen}
+                slides={phasesToSlides(suggestion.phases || {}, PHASE_LABELS, suggestion.title)}
+                description="Z každé fáze a aktivity vznikne textový slide. U aktivit pak můžete v editoru prezentace použít „Dogenerovat aktivitu“."
+              />
             </CardContent>
           </Card>
         )}
