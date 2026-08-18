@@ -250,6 +250,56 @@ export const PresentationEditorDialog = ({
     }
   };
 
+  /** ČÁST 2 – URL zpět na lekci; null = odkaz nezobrazovat. */
+  const lessonBackUrl = (() => {
+    const l = presentationLesson;
+    if (!l) return null;
+    if (l.textbookId) return `/ucitel/ucebnice/${l.textbookId}/lekce`;
+    if (l.subjectId && l.grade && l.topicSlug) {
+      return `/ucebnice/${l.subjectId}/${l.grade}/${l.topicSlug}${l.id ? `/${l.id}` : ""}`;
+    }
+    return null;
+  })();
+
+  /** ČÁST 3 – vložení vlastní aktivity z lekce přímo do editované prezentace. */
+  const insertActivitySlide = (block: any, label: string) => {
+    const slide = activityBlockToSlide(block);
+    const updated = [...pendingSlides];
+    updated.splice(editingSlideIndex + 1, 0, slide);
+    setPendingSlides(updated);
+    setEditingSlideIndex(editingSlideIndex + 1);
+    setSelectedBlockId(null);
+    toast({ title: "Aktivita vložena", description: `„${label}" byla přidána jako nový slide.` });
+  };
+
+  const aiActivityButton = (
+    <div className="rounded-lg border border-dashed border-primary/50 bg-primary/5 p-2">
+      <Button
+        size="sm"
+        variant="outline"
+        className="w-full gap-1.5 text-xs"
+        onClick={generateActivityFromSlide}
+        disabled={generatingActivity || currentSlide?.type === "activity"}
+      >
+        {generatingActivity ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
+        Dogenerovat aktivitu (AI)
+      </Button>
+      <p className="mt-1 text-[11px] text-muted-foreground">
+        {currentSlide?.type === "activity"
+          ? "Tento slide už aktivitu obsahuje."
+          : "ZedAI z obsahu slidu vytvoří interaktivní aktivitu. Výstup prosím zkontrolujte."}
+      </p>
+    </div>
+  );
+
+  const RAIL_ITEMS = [
+    { id: "insert" as const, icon: Plus, label: "Vložit" },
+    { id: "slide" as const, icon: Settings, label: "Slide" },
+    { id: "activities" as const, icon: Puzzle, label: "Aktivity" },
+  ];
+
+
+
   return (
     <>
       <Dialog open={!!presentationLesson && pendingSlides.length > 0} onOpenChange={(open) => { if (!open) onClose(); }}>
