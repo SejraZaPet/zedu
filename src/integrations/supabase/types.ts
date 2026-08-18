@@ -1379,6 +1379,8 @@ export type Database = {
           id: string
           school_year: string
           subject_id: string
+          textbook_id: string | null
+          textbook_type: string | null
         }
         Insert: {
           archived?: boolean
@@ -1387,6 +1389,8 @@ export type Database = {
           id?: string
           school_year?: string
           subject_id: string
+          textbook_id?: string | null
+          textbook_type?: string | null
         }
         Update: {
           archived?: boolean
@@ -1395,6 +1399,8 @@ export type Database = {
           id?: string
           school_year?: string
           subject_id?: string
+          textbook_id?: string | null
+          textbook_type?: string | null
         }
         Relationships: [
           {
@@ -5111,6 +5117,8 @@ export type Database = {
           name: string
           school_year: string
           subject_id: string
+          textbook_id: string | null
+          textbook_type: string | null
         }
         Insert: {
           archived?: boolean
@@ -5120,6 +5128,8 @@ export type Database = {
           name: string
           school_year?: string
           subject_id: string
+          textbook_id?: string | null
+          textbook_type?: string | null
         }
         Update: {
           archived?: boolean
@@ -5129,6 +5139,8 @@ export type Database = {
           name?: string
           school_year?: string
           subject_id?: string
+          textbook_id?: string | null
+          textbook_type?: string | null
         }
         Relationships: [
           {
