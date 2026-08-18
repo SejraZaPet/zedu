@@ -73,8 +73,12 @@ type ParityTab = "both" | "odd" | "even";
 
 interface ClassSlot {
   id: string;
-  class_id: string;
+  class_id: string | null;
+  /** Skupina předmětu – alternativa ke class_id (vyplněno jen jedno z nich). */
+  group_id?: string | null;
+  subject_groups?: { name: string | null } | null;
   day_of_week: number;
+
   start_time: string;
   end_time: string;
   week_parity: "every" | "odd" | "even";
@@ -175,7 +179,8 @@ export default function TeacherSchedule() {
     const { data: slots } = await supabase
       .from("class_schedule_slots" as any)
       // `subjects(...)` je kanonický zdroj zkratky i barvy — slot je jen fallback.
-      .select("*, classes(name), subjects(name, abbreviation, color)")
+      .select("*, classes(name), subjects(name, abbreviation, color), subject_groups(name)")
+
       .order("day_of_week", { ascending: true })
       .order("start_time", { ascending: true });
     setClassSlots((slots as any) || []);
