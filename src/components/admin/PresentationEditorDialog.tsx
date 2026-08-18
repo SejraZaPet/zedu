@@ -671,15 +671,26 @@ export const PresentationEditorDialog = ({
                           aria-label="Vlastní barva pozadí slidu"
                         />
                       </div>
-                      <MediaPickerDialog
-                        imageOnly
-                        onPick={(url) => updateSlide({ backgroundOverride: { image: url } })}
-                        trigger={
-                          <Button size="sm" variant="outline" className="h-7 w-full gap-1 text-xs">
-                            <ImageIcon className="h-3.5 w-3.5" /> Obrázek pozadí
-                          </Button>
-                        }
-                      />
+                      <div className="grid grid-cols-1 gap-1.5">
+                        <MediaPickerDialog
+                          imageOnly
+                          onPick={(url) => updateSlide({ backgroundOverride: { image: url } })}
+                          trigger={
+                            <Button size="sm" variant="outline" className="h-7 w-full gap-1 text-xs">
+                              <ImageIcon className="h-3.5 w-3.5" /> Obrázek pozadí
+                            </Button>
+                          }
+                        />
+                        <GameBackgroundPickerDialog
+                          onPick={(url) => updateSlide({ backgroundOverride: { image: url } })}
+                          trigger={
+                            <Button size="sm" variant="outline" className="h-7 w-full gap-1 text-xs">
+                              <Gamepad2 className="h-3.5 w-3.5" /> Vybrat z herních pozadí
+                            </Button>
+                          }
+                        />
+                      </div>
+
                       {(currentSlide as any).backgroundOverride?.image && (
                         <div className="flex items-center gap-2">
                           <img
