@@ -1,0 +1,1 @@
+DELETE FROM lesson_plans WHERE id IN ('7830e4cf-fa3e-4ae3-b640-0df10720dd00', 'c484cc08-e2a0-448b-b23a-73191ecfd094', 'a69afdd2-84c6-430b-bd74-454b226b6ba6', 'd6c129d5-ac3e-497d-b070-a75d60186dbd', '996fda0b-d651-466d-988d-017c94b2293f')

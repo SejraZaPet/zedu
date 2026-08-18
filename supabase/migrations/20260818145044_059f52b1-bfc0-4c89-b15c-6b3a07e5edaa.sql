@@ -1,0 +1,1 @@
+DELETE FROM lesson_plans WHERE id = 'd790209d-8c40-4926-a73a-8a3988d87285'

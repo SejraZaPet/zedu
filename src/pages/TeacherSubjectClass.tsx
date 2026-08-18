@@ -87,6 +87,7 @@ interface TeacherTextbookRow {
 interface LinkedSlot {
   subject?: string;
   classId?: string;
+  groupId?: string;
   className?: string;
   date?: string;
   time?: string;
@@ -356,30 +357,33 @@ export default function TeacherSubjectClass() {
 
   const room = slots[0]?.room || "";
 
-  // Plans relevant to this subject + class.
-  // Match either by primary subject (legacy) or by linkedSlots.subject + classId.
+  // Plans relevant to this subject + class/group.
+  // Match either by primary subject (legacy) or by linkedSlots.subject + classId/groupId.
   const subjectKey = subjectLabel.trim().toLowerCase();
   const relevantPlans = useMemo(() => {
     return plans.filter((p) => {
       const linked: LinkedSlot[] = p.input_data?.linkedSlots ?? [];
-      const matchesLinked = linked.some(
-        (s) =>
-          (s.classId === classId || !s.classId) &&
-          (s.subject || "").trim().toLowerCase() === subjectKey,
-      );
+      const matchesLinked = linked.some((s) => {
+        const matchesClass = !isGroup && (s.classId === classId || (!s.classId && !s.groupId));
+        const matchesGroup = isGroup && (s.groupId === groupId || (!s.classId && !s.groupId));
+        const matchesContext = matchesClass || matchesGroup;
+        return matchesContext && (s.subject || "").trim().toLowerCase() === subjectKey;
+      });
       const matchesPrimary = (p.subject || "").trim().toLowerCase() === subjectKey;
       return matchesLinked || matchesPrimary;
     });
-  }, [plans, classId, subjectKey]);
+  }, [plans, classId, groupId, isGroup, subjectKey]);
 
-  /** Find a plan attached to a specific date (yyyy-MM-dd) for this class+subject. */
+  /** Find a plan attached to a specific date (yyyy-MM-dd) for this class/group+subject. */
   function findPlanForDate(dateKey: string): LessonPlanRow | undefined {
     return relevantPlans.find((p) => {
       const linked: LinkedSlot[] = p.input_data?.linkedSlots ?? [];
       return linked.some(
         (s) =>
           s.date === dateKey &&
-          (s.classId === classId || !s.classId) &&
+          (isGroup
+            ? s.groupId === groupId || (!s.classId && !s.groupId)
+            : s.classId === classId || (!s.classId && !s.groupId)) &&
           (!s.subject || s.subject.trim().toLowerCase() === subjectKey),
       );
     });
@@ -486,7 +490,11 @@ export default function TeacherSubjectClass() {
   function newLessonPlan(date?: Date) {
     const params = new URLSearchParams();
     params.set("subject", subjectLabel);
-    params.set("classId", classId);
+    if (isGroup) {
+      params.set("groupId", groupId);
+    } else {
+      params.set("classId", classId);
+    }
     if (date) params.set("date", format(date, "yyyy-MM-dd"));
     navigate(`/ucitel/plany-hodin/novy?${params.toString()}`);
   }
@@ -510,20 +518,31 @@ export default function TeacherSubjectClass() {
     );
     const time = occurrence ? formatTime(occurrence.start) : undefined;
     const existing: LinkedSlot[] = plan.input_data?.linkedSlots ?? [];
-    // Drop any prior link for the same date+class (re-assignment)
-    const cleaned = existing.filter(
-      (s) => !(s.date === assignPlanDate && (s.classId === classId || !s.classId)),
-    );
-    const next: LinkedSlot[] = [
-      ...cleaned,
-      {
-        subject: subjectLabel,
-        classId,
-        className: klass?.name,
-        date: assignPlanDate,
-        time,
-      },
-    ];
+    // Drop any prior link for the same date+context (class or group) to allow re-assignment
+    const cleaned = existing.filter((s) => {
+      if (s.date !== assignPlanDate) return true;
+      if (isGroup) {
+        return !(s.groupId === groupId || (!s.classId && !s.groupId));
+      } else {
+        return !(s.classId === classId || (!s.classId && !s.groupId));
+      }
+    });
+    const nextEntry: LinkedSlot = isGroup
+      ? {
+          subject: subjectLabel,
+          groupId,
+          className: group?.name,
+          date: assignPlanDate,
+          time,
+        }
+      : {
+          subject: subjectLabel,
+          classId,
+          className: klass?.name,
+          date: assignPlanDate,
+          time,
+        };
+    const next: LinkedSlot[] = [...cleaned, nextEntry];
     const newInput = { ...(plan.input_data || {}), linkedSlots: next };
     const { error } = await supabase
       .from("lesson_plans")
