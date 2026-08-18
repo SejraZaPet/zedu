@@ -24,6 +24,8 @@ import RemindButton from "@/components/notifications/RemindButton";
 import TeacherAssignmentAttachments from "@/components/assignments/TeacherAssignmentAttachments";
 import { ExamTypeBadge } from "@/components/assignments/ExamTypeBadge";
 import { EXAM_TYPE_OPTIONS, type ExamType } from "@/lib/exam-types";
+import { useSubjectGroups } from "@/hooks/useSubjectGroups";
+
 
 
 interface Assignment {
@@ -54,7 +56,9 @@ interface WorksheetOption {
 
 const TeacherAssignments = () => {
   const navigate = useNavigate();
+  const { groups } = useSubjectGroups();
   const [searchParams] = useSearchParams();
+
   const prefillLessonId = searchParams.get("lessonId");
   const prefillLessonTitle = searchParams.get("lessonTitle") || "";
   const prefillLessonType = (searchParams.get("lessonType") as "global" | "teacher" | null) || "teacher";
@@ -74,6 +78,9 @@ const TeacherAssignments = () => {
   const [randomizeChoices, setRandomizeChoices] = useState(false);
   const [randomizeOrder, setRandomizeOrder] = useState(false);
   const [selectedClassId, setSelectedClassId] = useState<string>("");
+  // Zadání lze nově směrovat i na skupinu předmětu (vedle třídy, nikdy obojí).
+  const [selectedGroupId, setSelectedGroupId] = useState<string>(searchParams.get("groupId") || "");
+
   const [worksheets, setWorksheets] = useState<WorksheetOption[]>([]);
   const [selectedWorksheetId, setSelectedWorksheetId] = useState<string>(prefillWorksheetId || "");
   const [lockdownMode, setLockdownMode] = useState(false);
