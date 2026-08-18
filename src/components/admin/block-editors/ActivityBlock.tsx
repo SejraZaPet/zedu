@@ -1,4 +1,8 @@
+import { useState } from "react";
+import { MonitorPlay } from "lucide-react";
 import { Block } from "@/lib/textbook-config";
+import InsertSlidesIntoPresentationDialog from "@/components/presentation/InsertSlidesIntoPresentationDialog";
+import { activityBlockToSlide } from "@/lib/plan-to-slides";
 import { generateCrosswordGrid } from "@/lib/crossword-engine";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
