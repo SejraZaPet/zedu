@@ -207,7 +207,7 @@ export default function TeacherSubjectClass() {
     (async () => {
       const [classRes, slotsRes, plansRes, assignRes, membersRes] = await Promise.all([
         isGroup
-          ? supabase.from("subject_groups").select("id, name, school_year").eq("id", groupId).maybeSingle()
+          ? supabase.from("subject_groups").select("id, name, school_year, textbook_id, textbook_type").eq("id", groupId).maybeSingle()
           : supabase.from("classes").select("id, name, school, field_of_study, year").eq("id", classId).maybeSingle(),
         isGroup
           ? supabase.from("class_schedule_slots" as any).select("*").eq("group_id", groupId)
