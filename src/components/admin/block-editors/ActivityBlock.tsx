@@ -1224,6 +1224,7 @@ const CrosswordEditor = ({ props, onChange }: { props: any; onChange: (p: any) =
 const ActivityBlock = ({ block, onChange }: Props) => {
   const p = block.props;
   const activityType = p.activityType || "flashcards";
+  const [insertOpen, setInsertOpen] = useState(false);
 
   return (
     <div className="space-y-3">
@@ -1243,6 +1244,24 @@ const ActivityBlock = ({ block, onChange }: Props) => {
             </SelectContent>
           </Select>
         </div>
+      </div>
+
+      <div>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="gap-1.5"
+          onClick={() => setInsertOpen(true)}
+        >
+          <MonitorPlay className="w-3.5 h-3.5" /> Vložit jako slide do prezentace
+        </Button>
+        <InsertSlidesIntoPresentationDialog
+          open={insertOpen}
+          onOpenChange={setInsertOpen}
+          slides={[activityBlockToSlide(block)]}
+          description="Tato aktivita se přidá jako nový slide na konec prezentace vybrané lekce."
+        />
       </div>
       <div className="flex gap-3 items-end">
         <div className="flex-1">
