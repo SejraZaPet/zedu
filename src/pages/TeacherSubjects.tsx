@@ -4,10 +4,31 @@ import { supabase } from "@/integrations/supabase/client";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Library } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { ArrowLeft, Library, Archive, ArchiveRestore, Trash2, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { useTeacherClasses } from "@/hooks/useTeacherClasses";
+import { useAuth } from "@/contexts/AuthContext";
 import SubjectPicker from "@/components/subjects/SubjectPicker";
-
+import { useSubjectCatalog, useInvalidateSubjectCatalog } from "@/hooks/useSubjectCatalog";
+import {
+  deleteSubject,
+  fetchSubjectDependencies,
+  setSubjectArchived,
+  type SubjectCatalogItem,
+} from "@/lib/subjects-catalog";
 
 const colorForLabel = (s: string) => {
   const palette = ["#6EC6D9", "#9B6CFF", "#F472B6", "#F87171", "#FB923C", "#FBBF24", "#34D399", "#60A5FA", "#A3A3A3"];
@@ -27,9 +48,18 @@ interface SubjectClassEntry {
 
 const TeacherSubjects = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { classes, loading: loadingClasses } = useTeacherClasses();
   const [slots, setSlots] = useState<any[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(true);
+
+  // Management of the canonical `subjects` catalog
+  const { allSubjects, loading: loadingCatalog } = useSubjectCatalog({ includeArchived: true });
+  const invalidateCatalog = useInvalidateSubjectCatalog();
+  const [showArchived, setShowArchived] = useState(false);
+  const [deps, setDeps] = useState<Record<string, { groups: number; classSubjects: number }>>({});
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [toDelete, setToDelete] = useState<SubjectCatalogItem | null>(null);
 
   useEffect(() => {
     if (loadingClasses) return;
@@ -40,13 +70,87 @@ const TeacherSubjects = () => {
     }
     supabase
       .from("class_schedule_slots")
-      .select("class_id, subject_label, abbreviation, color, room, subject_id, subjects(name, color, abbreviation)")
+      .select("class_id, subject_label, abbreviation, color, room, subject_id, subjects(name, color, abbreviation, archived)")
       .in("class_id", classes.map((c) => c.id))
       .then(({ data }) => {
         setSlots(data ?? []);
         setLoadingSlots(false);
       });
   }, [classes, loadingClasses]);
+
+  /** Subjects this teacher works with: authored by them or present in their schedule. */
+  const mySubjects = useMemo(() => {
+    const usedIds = new Set(
+      slots.map((s) => s.subject_id).filter(Boolean) as string[],
+    );
+    return allSubjects
+      .filter((s) => s.created_by === user?.id || usedIds.has(s.id))
+      .sort((a, b) => a.name.localeCompare(b.name, "cs"));
+  }, [allSubjects, slots, user?.id]);
+
+  const visibleSubjects = useMemo(
+    () => mySubjects.filter((s) => (showArchived ? true : !s.archived)),
+    [mySubjects, showArchived],
+  );
+
+  const archivedCount = mySubjects.filter((s) => s.archived).length;
+
+  // Dependency counts decide whether "Smazat" may be offered at all.
+  useEffect(() => {
+    const ids = mySubjects.filter((s) => s.created_by === user?.id).map((s) => s.id);
+    if (ids.length === 0) {
+      setDeps({});
+      return;
+    }
+    let cancelled = false;
+    fetchSubjectDependencies(ids)
+      .then((d) => {
+        if (!cancelled) setDeps(d);
+      })
+      .catch(() => {
+        // On failure we simply never offer deletion.
+        if (!cancelled) setDeps({});
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [mySubjects, user?.id]);
+
+  const canDelete = (s: SubjectCatalogItem) => {
+    if (s.created_by !== user?.id) return false;
+    const d = deps[s.id];
+    return !!d && d.groups === 0 && d.classSubjects === 0;
+  };
+
+  const handleArchive = async (s: SubjectCatalogItem, archived: boolean) => {
+    setBusyId(s.id);
+    try {
+      await setSubjectArchived(s.id, archived);
+      invalidateCatalog();
+      toast.success(
+        archived ? `Předmět „${s.name}" byl archivován.` : `Předmět „${s.name}" byl obnoven.`,
+      );
+    } catch (e: any) {
+      toast.error(e?.message ?? "Změnu se nepodařilo uložit.");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!toDelete) return;
+    setBusyId(toDelete.id);
+    try {
+      await deleteSubject(toDelete.id);
+      invalidateCatalog();
+      toast.success(`Předmět „${toDelete.name}" byl smazán.`);
+      setToDelete(null);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Předmět se nepodařilo smazat.");
+    } finally {
+      setBusyId(null);
+    }
+  };
 
   const entries: SubjectClassEntry[] = useMemo(() => {
     const classMap = new Map(classes.map((c) => [c.id, c.name]));
@@ -55,9 +159,11 @@ const TeacherSubjects = () => {
       // Prefer the canonical catalog name (subject_id join), fall back to the
       // legacy free-text label so older rows never disappear.
       const canonical = (s as any).subjects as
-        | { name?: string; color?: string | null; abbreviation?: string | null }
+        | { name?: string; color?: string | null; abbreviation?: string | null; archived?: boolean }
         | null
         | undefined;
+      // Archived subjects stay out of the regular overview.
+      if (canonical?.archived && !showArchived) continue;
       const label = (canonical?.name || s.subject_label || "").trim();
       if (!label) continue;
       const key = `${s.class_id}::${label.toLowerCase()}`;
@@ -78,7 +184,7 @@ const TeacherSubjects = () => {
       if (c !== 0) return c;
       return a.className.localeCompare(b.className, "cs");
     });
-  }, [slots, classes]);
+  }, [slots, classes, showArchived]);
 
   const loading = loadingClasses || loadingSlots;
 
@@ -131,6 +237,99 @@ const TeacherSubjects = () => {
           </div>
         </div>
 
+        {/* ───────── Správa předmětů (katalog) ───────── */}
+        <section className="bg-card border border-border rounded-xl p-4 mb-8">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-1">
+            <p className="text-sm font-medium">Správa předmětů</p>
+            <div className="flex items-center gap-2">
+              <Switch
+                id="show-archived-subjects"
+                checked={showArchived}
+                onCheckedChange={setShowArchived}
+              />
+              <Label htmlFor="show-archived-subjects" className="text-xs font-normal">
+                Zobrazit archivované{archivedCount > 0 ? ` (${archivedCount})` : ""}
+              </Label>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground mb-4">
+            Archivovaný předmět zůstává v databázi, ale appka ho už nenabízí pro nové
+            vazby. Smazat lze jen vlastní předmět bez navázaných skupin a tříd.
+          </p>
+
+          {loadingCatalog ? (
+            <div className="text-sm text-muted-foreground flex items-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin" /> Načítání…
+            </div>
+          ) : visibleSubjects.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              {mySubjects.length === 0
+                ? "Zatím nemáte žádné vlastní předměty."
+                : "Všechny vaše předměty jsou archivované — zapněte přepínač výše."}
+            </p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {visibleSubjects.map((s) => {
+                const d = deps[s.id];
+                const busy = busyId === s.id;
+                return (
+                  <li key={s.id} className="flex flex-wrap items-center gap-3 py-3">
+                    <span
+                      className="h-3 w-3 rounded-full shrink-0"
+                      style={{ backgroundColor: s.color }}
+                      aria-hidden
+                    />
+                    <span className={`text-sm font-medium ${s.archived ? "opacity-60" : ""}`}>
+                      {s.name}
+                    </span>
+                    {s.archived && <Badge variant="outline">Archivováno</Badge>}
+                    {s.created_by !== user?.id && (
+                      <Badge variant="secondary">Cizí předmět</Badge>
+                    )}
+                    {d && (d.groups > 0 || d.classSubjects > 0) && (
+                      <span className="text-xs text-muted-foreground">
+                        {d.groups} skupin · {d.classSubjects} tříd
+                      </span>
+                    )}
+                    <div className="ml-auto flex items-center gap-2">
+                      {s.archived ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={busy}
+                          onClick={() => void handleArchive(s, false)}
+                        >
+                          <ArchiveRestore className="w-4 h-4 mr-1" /> Obnovit
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={busy}
+                          onClick={() => void handleArchive(s, true)}
+                        >
+                          <Archive className="w-4 h-4 mr-1" /> Archivovat
+                        </Button>
+                      )}
+                      {canDelete(s) && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-destructive"
+                          disabled={busy}
+                          onClick={() => setToDelete(s)}
+                        >
+                          <Trash2 className="w-4 h-4 mr-1" /> Smazat
+                        </Button>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+
         {loading ? (
           <div className="text-muted-foreground">Načítání...</div>
         ) : entries.length === 0 ? (
@@ -178,6 +377,29 @@ const TeacherSubjects = () => {
         )}
       </main>
       <SiteFooter />
+
+      <AlertDialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Smazat předmět „{toDelete?.name}"?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tento předmět nemá žádné skupiny ani třídy, smazání je nevratné.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Zrušit</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={(e) => {
+                e.preventDefault();
+                void handleDelete();
+              }}
+            >
+              Smazat nevratně
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
