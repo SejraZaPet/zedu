@@ -76,9 +76,6 @@ const QuickRecognitionCard = ({
       </CardHeader>
       <CardContent>
         {students.length === 0 ? (
-      </CardHeader>
-      <CardContent>
-        {students.length === 0 ? (
           <p className="text-sm text-muted-foreground">Zatím žádní žáci ve třídě.</p>
         ) : (
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
