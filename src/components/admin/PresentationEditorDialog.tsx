@@ -863,8 +863,37 @@ export const PresentationEditorDialog = ({
                         </div>
                       </CollapsibleContent>
                     </Collapsible>
-                  </TabsContent>
-                </Tabs>
+                  </div>
+                  )}
+
+                  {/* ---- Sekce Aktivity ---- */}
+                  {sidebarSection === "activities" && (
+                  <div className="space-y-3 p-3">
+                    <div>
+                      <Label className="text-xs">Z mých lekcí</Label>
+                      <p className="mb-1.5 text-[11px] text-muted-foreground">
+                        Kliknutím vložíte aktivitu jako nový slide za aktuální.
+                      </p>
+                      <MyLessonActivitiesList onPick={(item) => insertActivitySlide(item.block, item.title)} />
+                    </div>
+
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full gap-1.5 text-xs"
+                      onClick={() => window.open("/ucitel/navrh-podle-metody", "_blank", "noopener")}
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" /> Návrh podle metody
+                    </Button>
+                    <p className="text-[11px] text-muted-foreground">
+                      Otevře se v nové záložce, rozdělaná prezentace zůstane zachovaná.
+                    </p>
+
+                    {aiActivityButton}
+                  </div>
+                  )}
+                </div>
+
               </aside>
 
               {/* 5. CENTRÁLNÍ PLÁTNO */}
