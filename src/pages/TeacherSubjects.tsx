@@ -211,7 +211,7 @@ const TeacherSubjects = () => {
           <div>
             <h1 className="font-heading text-3xl font-bold">Moje předměty</h1>
             <p className="text-muted-foreground text-sm">
-              Předměty přiřazené k vašim třídám podle rozvrhu
+              Vaše předměty a Výuka v konkrétních třídách a skupinách
             </p>
           </div>
         </div>
