@@ -5117,6 +5117,7 @@ export type Database = {
       subjects: {
         Row: {
           abbreviation: string | null
+          archived: boolean
           color: string
           created_at: string
           created_by: string | null
@@ -5127,6 +5128,7 @@ export type Database = {
         }
         Insert: {
           abbreviation?: string | null
+          archived?: boolean
           color?: string
           created_at?: string
           created_by?: string | null
@@ -5137,6 +5139,7 @@ export type Database = {
         }
         Update: {
           abbreviation?: string | null
+          archived?: boolean
           color?: string
           created_at?: string
           created_by?: string | null
