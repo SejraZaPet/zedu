@@ -70,12 +70,16 @@ export interface LessonFormValue {
   color: string;
   classId: string | null;
   className: string;
+  /** Skupina předmětu – alternativa ke třídě (nikdy obojí zároveň). */
+  groupId?: string | null;
+  groupName?: string;
   room: string;
   validFrom: string | null; // YYYY-MM-DD
   validTo: string | null;
   weekParity: "every" | "odd" | "even";
   mirrorBoth?: boolean;
 }
+
 
 export interface LessonFormResult {
   value: LessonFormValue;
