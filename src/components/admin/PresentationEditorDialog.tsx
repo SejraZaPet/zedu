@@ -10,7 +10,7 @@ import {
   Monitor, Plus, Trash2, ChevronDown, Save, Sun, Moon, Type, List, Image as ImageIcon,
   Table as TableIcon, Settings2, Undo2, Redo2, ZoomIn, Copy, FileDown, Heading as HeadingIcon,
   Quote as QuoteIcon, StickyNote, BarChart3, Sigma, Video as VideoIcon, Music, Loader2, Bookmark,
-  Wand2, Settings, Puzzle, ArrowLeft, ExternalLink,
+  Wand2, Settings, Puzzle, ArrowLeft, ExternalLink, Gamepad2,
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
@@ -41,6 +41,7 @@ import AiBlockTextButton from "@/components/admin/AiBlockTextButton";
 import SlideFloatingFormatToolbar from "@/components/admin/SlideFloatingFormatToolbar";
 import { activityBlockToSlide, mapPlanKindToActivityType } from "@/lib/plan-to-slides";
 import MyLessonActivitiesList from "@/components/presentation/MyLessonActivitiesList";
+import GameBackgroundPickerDialog from "@/components/game/GameBackgroundPickerDialog";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
