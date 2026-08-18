@@ -327,7 +327,16 @@ const GameBackgroundsManager = () => {
                 </Button>
               </div>
             ))}
-            <div className="flex justify-end gap-2">
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              {!canSave && !saving && (
+                <p className="text-xs text-muted-foreground mr-auto">
+                  {rows.some((r) => r.uploading)
+                    ? "Čekám na dokončení nahrávání souborů…"
+                    : rows.some((r) => r.error || !r.imageUrl)
+                      ? "Některý soubor se nenahrál – odeberte ho nebo nahrajte znovu."
+                      : "Doplňte u všech pozadí název a zařazení (předmět / období / obor)."}
+                </p>
+              )}
               <Button variant="outline" onClick={() => setRows([])} disabled={saving}>
                 Zrušit
               </Button>
@@ -336,6 +345,7 @@ const GameBackgroundsManager = () => {
                 Uložit {rows.length} pozadí
               </Button>
             </div>
+
           </div>
         )}
       </section>
