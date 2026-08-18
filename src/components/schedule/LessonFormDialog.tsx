@@ -455,27 +455,73 @@ export default function LessonFormDialog({
             </div>
             <div className="space-y-1.5">
               <Label className="flex items-center gap-1">
-                <Users className="w-3 h-3" /> Třída
+                <Users className="w-3 h-3" /> Komu hodina patří
               </Label>
-              <Select value={classSel} onValueChange={setClassSel}>
-                <SelectTrigger>
-                  <SelectValue placeholder="—" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NO_CLASS}>— Bez třídy —</SelectItem>
-                  {classes.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {classes.length === 0 && (
-                <p className="text-[10px] text-muted-foreground">
-                  Zatím nemáte žádné třídy.
-                </p>
+              <div className="flex gap-1.5">
+                {[
+                  { v: "class", label: "Třída" },
+                  { v: "group", label: "Skupina" },
+                ].map((opt) => (
+                  <button
+                    key={opt.v}
+                    type="button"
+                    onClick={() => setTarget(opt.v as "class" | "group")}
+                    className={`px-2.5 py-1 text-xs rounded-md border transition-colors flex-1 ${
+                      target === opt.v
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-card border-border hover:bg-muted"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              {target === "class" ? (
+                <>
+                  <Select value={classSel} onValueChange={setClassSel}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="—" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NO_CLASS}>— Bez třídy —</SelectItem>
+                      {classes.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {classes.length === 0 && (
+                    <p className="text-[10px] text-muted-foreground">
+                      Zatím nemáte žádné třídy.
+                    </p>
+                  )}
+                </>
+              ) : (
+                <>
+                  <Select value={groupSel} onValueChange={setGroupSel}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Vyberte skupinu" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NO_CLASS}>— Vyberte skupinu —</SelectItem>
+                      {groups.map((g) => (
+                        <SelectItem key={g.id} value={g.id}>
+                          {g.name}
+                          {g.subjectName ? ` · ${g.subjectName}` : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[10px] text-muted-foreground">
+                    {groups.length === 0
+                      ? "Zatím nemáte žádné skupiny předmětu (/ucitel/skupiny)."
+                      : "Hodina se uloží skupině místo třídy."}
+                  </p>
+                </>
               )}
             </div>
+
           </div>
 
           {/* ----- Room ----- */}
