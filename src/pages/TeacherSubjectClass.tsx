@@ -587,6 +587,17 @@ export default function TeacherSubjectClass() {
                     {klass.year ? ` · ${klass.year}. ročník` : ""}
                   </span>
                 )}
+                {group && (
+                  <span className="flex items-center gap-1">
+                    <Users className="h-4 w-4" />
+                    {group.name}
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 font-normal">
+                      skupina
+                    </Badge>
+                    {group.school_year ? ` · ${group.school_year}` : ""}
+                  </span>
+                )}
+
                 {room && (
                   <span className="flex items-center gap-1">
                     <MapPin className="h-4 w-4" />
