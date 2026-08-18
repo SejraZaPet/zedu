@@ -88,13 +88,6 @@ serve(async (req) => {
       return userId;
     }
 
-    // Browser-test administrator
-    await upsertUser({
-      email: "admin@test.zedu.cz",
-      first_name: "Admin", last_name: "Testovací",
-      role: "admin", status: "approved", school_id: null,
-    });
-
     // 1 + 2 Teachers A, B
     const teacherA = await upsertUser({
       email: "ucitel-a@test.zedu.cz",
