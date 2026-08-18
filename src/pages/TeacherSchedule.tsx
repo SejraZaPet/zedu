@@ -86,6 +86,9 @@ interface ClassSlot {
   valid_from: string | null;
   valid_to: string | null;
   classes?: { name: string } | null;
+  subject_id?: string | null;
+  /** Kanonický předmět z katalogu `subjects` (má přednost před hodnotami ze slotu). */
+  subjects?: { name: string | null; abbreviation: string | null; color: string | null } | null;
 }
 
 /** Unified card-row item shown in the day column. */
@@ -171,7 +174,8 @@ export default function TeacherSchedule() {
     }
     const { data: slots } = await supabase
       .from("class_schedule_slots" as any)
-      .select("*, classes(name)")
+      // `subjects(...)` je kanonický zdroj zkratky i barvy — slot je jen fallback.
+      .select("*, classes(name), subjects(name, abbreviation, color)")
       .order("day_of_week", { ascending: true })
       .order("start_time", { ascending: true });
     setClassSlots((slots as any) || []);
@@ -1208,9 +1212,12 @@ function PersonalCard({
 }
 
 function ClassCard({ slot, conflict, onClick }: { slot: ClassSlot; conflict?: boolean; onClick: () => void }) {
-  const subject = slot.subject_label || "Hodina";
-  const color = slot.color || colorForSubject(subject);
-  const abbr = (slot.abbreviation || subject.slice(0, 3)).toUpperCase();
+  // Jeden předmět = jedna zkratka a barva: přednost má katalog `subjects`,
+  // hodnoty zapsané do konkrétní hodiny slouží jen jako fallback.
+  const canonical = slot.subjects;
+  const subject = canonical?.name || slot.subject_label || "Hodina";
+  const color = canonical?.color || slot.color || colorForSubject(subject);
+  const abbr = (canonical?.abbreviation || slot.abbreviation || subject.slice(0, 3)).toUpperCase();
   const className = slot.classes?.name ?? "";
   return (
     <button
