@@ -954,6 +954,21 @@ export default function TeacherSubjectClass() {
                 )}
               </section>
 
+              {user && (
+                <QuickRecognitionCard
+                  classId={isGroup ? null : classId}
+                  teacherId={user.id}
+                  subjectId={resolvedSubjectId}
+                  groupId={isGroup ? groupId : null}
+                  description={`Pochvala se uloží k této Výuce (${subjectLabel || "předmět"}${isGroup ? " · skupina" : ""}). Pouze pozitivní uznání.`}
+                  students={members.map((m) => ({
+                    user_id: m.user_id,
+                    first_name: m.profiles?.first_name ?? "",
+                    last_name: m.profiles?.last_name ?? "",
+                  }))}
+                />
+              )}
+
               <TeachingUnitCollaboratorsCard
                 subjectId={resolvedSubjectId}
                 classId={isGroup ? undefined : classId}
