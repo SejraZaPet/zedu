@@ -442,11 +442,11 @@ const TeacherClassDetail = () => {
             </CardContent>
           </Card>
 
-          {/* Předměty / učebnice */}
+          {/* Učebnice propojené s třídou (předměty má vlastní karta výše) */}
           <Card>
             <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-base flex items-center gap-2">
-                <BookOpen className="w-4 h-4 text-primary" /> Předměty ({textbooks.length})
+                <BookOpen className="w-4 h-4 text-primary" /> Učebnice ({textbooks.length})
               </CardTitle>
               <Button size="sm" variant="ghost" onClick={() => navigate("/ucitel/ucebnice")}>
                 <ChevronRight className="w-4 h-4" />
