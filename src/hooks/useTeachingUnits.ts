@@ -44,6 +44,8 @@ export const useTeachingUnits = () => {
     queryFn: async () => {
       const classNames = new Map((classes ?? []).map((c) => [c.id, c.name]));
       const units = new Map<string, TeachingUnit>();
+      const { data: { session } } = await supabase.auth.getSession();
+      const uid = session?.user?.id;
 
       const [csRes, groupsRes, slotsRes] = await Promise.all([
         classIds.length
@@ -53,10 +55,15 @@ export const useTeachingUnits = () => {
               .in("class_id", classIds)
               .eq("archived", false)
           : Promise.resolve({ data: [] as any[], error: null }),
-        supabase
-          .from("subject_groups")
-          .select("id, name, school_year, subject_id, subjects(id, name, abbreviation, color, archived)")
-          .eq("archived", false),
+        // Explicitní filtr na vlastníka: RLS adminovi vrací všechny skupiny,
+        // v UI ale patří do "Výuky" jen vlastní.
+        uid
+          ? supabase
+              .from("subject_groups")
+              .select("id, name, school_year, subject_id, subjects(id, name, abbreviation, color, archived)")
+              .eq("archived", false)
+              .eq("created_by", uid)
+          : Promise.resolve({ data: [] as any[], error: null }),
         classIds.length
           ? supabase
               .from("class_schedule_slots")
