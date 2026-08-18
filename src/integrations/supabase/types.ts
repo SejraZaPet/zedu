@@ -1138,27 +1138,33 @@ export type Database = {
           category: string
           class_id: string | null
           created_at: string
+          group_id: string | null
           id: string
           note: string | null
           student_id: string
+          subject_id: string | null
           teacher_id: string
         }
         Insert: {
           category: string
           class_id?: string | null
           created_at?: string
+          group_id?: string | null
           id?: string
           note?: string | null
           student_id: string
+          subject_id?: string | null
           teacher_id: string
         }
         Update: {
           category?: string
           class_id?: string | null
           created_at?: string
+          group_id?: string | null
           id?: string
           note?: string | null
           student_id?: string
+          subject_id?: string | null
           teacher_id?: string
         }
         Relationships: [
@@ -1170,10 +1176,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "behavior_points_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "subject_groups"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "behavior_points_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "behavior_points_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
             referencedColumns: ["id"]
           },
           {

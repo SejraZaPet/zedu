@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import LessonReflectionDialog from "@/components/lessons/LessonReflectionDialog";
 import TeachingUnitCollaboratorsCard from "@/components/teacher/TeachingUnitCollaboratorsCard";
+import QuickRecognitionCard from "@/components/teacher/QuickRecognitionCard";
 import { fetchReflections, reflectionKey, type LessonReflection } from "@/lib/lesson-reflections";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
@@ -954,6 +955,21 @@ export default function TeacherSubjectClass() {
                 )}
               </section>
 
+              {user && (
+                <QuickRecognitionCard
+                  classId={isGroup ? null : classId}
+                  teacherId={user.id}
+                  subjectId={resolvedSubjectId}
+                  groupId={isGroup ? groupId : null}
+                  description={`Pochvala se uloží k této Výuce (${subjectLabel || "předmět"}${isGroup ? " · skupina" : ""}). Pouze pozitivní uznání.`}
+                  students={members.map((m) => ({
+                    user_id: m.user_id,
+                    first_name: m.profiles?.first_name ?? "",
+                    last_name: m.profiles?.last_name ?? "",
+                  }))}
+                />
+              )}
+
               <TeachingUnitCollaboratorsCard
                 subjectId={resolvedSubjectId}
                 classId={isGroup ? undefined : classId}
@@ -1056,9 +1072,12 @@ export default function TeacherSubjectClass() {
                         ? `${m.profiles.first_name} ${m.profiles.last_name}`.trim()
                         : "Žák";
                     return (
-                      <div
+                      <button
                         key={m.user_id}
-                        className="px-4 py-2.5 flex items-center justify-between"
+                        type="button"
+                        onClick={() => navigate(`/portfolio/${m.user_id}`)}
+                        title="Otevřít portfolio žáka"
+                        className="w-full text-left px-4 py-2.5 flex items-center justify-between hover:bg-muted/50 transition-colors"
                       >
                         <div className="text-sm">{name || "Žák"}</div>
                         <div className="flex items-center gap-4 text-sm">
@@ -1069,7 +1088,7 @@ export default function TeacherSubjectClass() {
                             {pct !== null ? `${pct} %` : "—"}
                           </span>
                         </div>
-                      </div>
+                      </button>
                     );
                   })}
                 </div>
