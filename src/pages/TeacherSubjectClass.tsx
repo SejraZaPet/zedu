@@ -515,8 +515,10 @@ export default function TeacherSubjectClass() {
 
   function newAssignment() {
     const target = isGroup ? `groupId=${groupId}` : `classId=${classId}`;
-    navigate(`/ucitel/ulohy?${target}&subject=${encodeURIComponent(subjectLabel)}`);
+    const subjectParam = resolvedSubjectId ? `&subjectId=${resolvedSubjectId}` : "";
+    navigate(`/ucitel/ulohy?${target}&subject=${encodeURIComponent(subjectLabel)}${subjectParam}`);
   }
+
 
 
   function newLessonPlan(date?: Date) {
