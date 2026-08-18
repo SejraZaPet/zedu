@@ -166,16 +166,22 @@ export const fetchSubjectDependencies = async (
   for (const id of subjectIds) result[id] = { groups: 0, classSubjects: 0 };
   if (subjectIds.length === 0) return result;
 
-  const [{ data: groups }, { data: classSubjects }] = await Promise.all([
-    supabase.from("subject_groups").select("subject_id").in("subject_id", subjectIds),
-    supabase.from("class_subjects").select("subject_id").in("subject_id", subjectIds),
-  ]);
+  // Counted server-side (SECURITY DEFINER) so rows owned by other teachers are
+  // included — client-side selects would be hidden by RLS and under-count.
+  const { data, error } = await supabase.rpc("subject_dependency_counts", {
+    _subject_ids: subjectIds,
+  });
+  if (error) throw error;
 
-  for (const row of (groups ?? []) as { subject_id: string }[]) {
-    if (result[row.subject_id]) result[row.subject_id].groups += 1;
-  }
-  for (const row of (classSubjects ?? []) as { subject_id: string }[]) {
-    if (result[row.subject_id]) result[row.subject_id].classSubjects += 1;
+  for (const row of (data ?? []) as {
+    subject_id: string;
+    group_count: number;
+    class_subject_count: number;
+  }[]) {
+    result[row.subject_id] = {
+      groups: Number(row.group_count) || 0,
+      classSubjects: Number(row.class_subject_count) || 0,
+    };
   }
   return result;
 };
