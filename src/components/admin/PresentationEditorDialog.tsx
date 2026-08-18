@@ -707,24 +707,9 @@ export const PresentationEditorDialog = ({
                       />
                     </div>
 
-                    {/* B3 – dogenerovat aktivitu z textového slidu */}
-                    {currentSlide?.type !== "activity" && (
-                      <div className="rounded-lg border border-dashed border-primary/50 bg-primary/5 p-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="w-full gap-1.5 text-xs"
-                          onClick={generateActivityFromSlide}
-                          disabled={generatingActivity}
-                        >
-                          {generatingActivity ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
-                          Dogenerovat aktivitu
-                        </Button>
-                        <p className="mt-1 text-[11px] text-muted-foreground">
-                          ZedAI z obsahu slidu vytvoří interaktivní aktivitu. Výstup prosím zkontrolujte.
-                        </p>
-                      </div>
-                    )}
+                    {/* B3 – dogenerovat aktivitu z textového slidu (též v sekci Aktivity) */}
+                    {currentSlide?.type !== "activity" && aiActivityButton}
+
 
                     {/* Nastavení aktivity */}
                     {currentSlide?.type === "activity" && (
