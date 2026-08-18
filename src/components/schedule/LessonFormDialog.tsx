@@ -165,9 +165,17 @@ export default function LessonFormDialog({
   // same day (e.g. two Math lessons on Thursday).
   const [slotPairs, setSlotPairs] = useState<Array<{ day: number; period: number }>>([]);
 
-  // Reset when opening
+  // Reset when opening. Runs only once per open — jinak by pozdější dotažení
+  // předmětů/tříd přepsalo hodnoty, které si učitel právě vybral (např. z Výuky).
+  const initializedRef = useRef(false);
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      initializedRef.current = false;
+      return;
+    }
+    if (initializedRef.current) return;
+    initializedRef.current = true;
+
     const subj = (initial?.subject ?? "").trim();
     const known = subjects.find((s) => s.label.toLowerCase() === subj.toLowerCase());
     if (subj && known) {
@@ -183,6 +191,7 @@ export default function LessonFormDialog({
       setSubjectId(null);
       setCustomSubject("");
     }
+    setUnitKey("");
     setAbbreviation(initial?.abbreviation ?? "");
     setColor(initial?.color ?? colorForSubject(subj));
     setClassSel(initial?.classId ?? NO_CLASS);
@@ -198,6 +207,15 @@ export default function LessonFormDialog({
     const startDay = initial?.day ?? 0;
     setSlotPairs([{ day: startDay, period: initial?.period ?? defaultPeriod }]);
   }, [open, isNew, initial, subjects, defaultPeriod]);
+
+  // Dohledání ID předmětu, když se katalog dotáhne až po otevření dialogu
+  // (u editace uložené hodiny, která má jen textový název).
+  useEffect(() => {
+    if (!open || subjectId || !subjectChoice || subjectChoice === CUSTOM_SUBJECT) return;
+    const known = subjects.find((s) => s.label.toLowerCase() === subjectChoice.toLowerCase());
+    if (known?.id) setSubjectId(known.id);
+  }, [open, subjectId, subjectChoice, subjects]);
+
 
   const selectedDays = useMemo(
     () => Array.from(new Set(slotPairs.map((s) => s.day))).sort(),
