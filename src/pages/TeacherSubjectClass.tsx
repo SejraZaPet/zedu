@@ -641,23 +641,22 @@ export default function TeacherSubjectClass() {
                 )}
               </h1>
               <div className="flex flex-wrap gap-3 mt-1 text-sm text-muted-foreground">
-                {klass && (
+                {/* Název třídy/skupiny je už v nadpisu – v metařádku jen doplňující údaje. */}
+                {klass?.year != null && (
                   <span className="flex items-center gap-1">
                     <Users className="h-4 w-4" />
-                    {klass.name}
-                    {klass.year ? ` · ${klass.year}. ročník` : ""}
+                    {klass.year}. ročník
                   </span>
                 )}
                 {group && (
                   <span className="flex items-center gap-1">
-                    <Users className="h-4 w-4" />
-                    {group.name}
                     <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 font-normal">
                       skupina
                     </Badge>
-                    {group.school_year ? ` · ${group.school_year}` : ""}
+                    {group.school_year || ""}
                   </span>
                 )}
+
 
                 {room && (
                   <span className="flex items-center gap-1">
