@@ -10,13 +10,13 @@ import {
   Monitor, Plus, Trash2, ChevronDown, Save, Sun, Moon, Type, List, Image as ImageIcon,
   Table as TableIcon, Settings2, Undo2, Redo2, ZoomIn, Copy, FileDown, Heading as HeadingIcon,
   Quote as QuoteIcon, StickyNote, BarChart3, Sigma, Video as VideoIcon, Music, Loader2, Bookmark,
-  Wand2,
+  Wand2, Settings, Puzzle, ArrowLeft, ExternalLink,
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { SLIDE_GAME_MODES } from "@/lib/game-slide-settings";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import BlockEditor, { type BlockEditorHistory } from "@/components/admin/BlockEditor";
@@ -39,11 +39,24 @@ import { exportSlidesToPdf } from "@/lib/presentation-pdf-export";
 import ShapePickerPopover from "@/components/admin/ShapePickerPopover";
 import AiBlockTextButton from "@/components/admin/AiBlockTextButton";
 import SlideFloatingFormatToolbar from "@/components/admin/SlideFloatingFormatToolbar";
-import { mapPlanKindToActivityType } from "@/lib/plan-to-slides";
+import { activityBlockToSlide, mapPlanKindToActivityType } from "@/lib/plan-to-slides";
+import MyLessonActivitiesList from "@/components/presentation/MyLessonActivitiesList";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
+export interface PresentationLessonRef {
+  id?: string;
+  title: string;
+  textbookId?: string;
+  subjectId?: string;
+  grade?: number | string;
+  topicSlug?: string;
+  source?: string;
+}
+
+
 interface Props {
-  presentationLesson: { title: string } | null;
+  presentationLesson: PresentationLessonRef | null;
   pendingSlides: any[];
   setPendingSlides: (slides: any[]) => void;
   editingSlideIndex: number;
@@ -81,6 +94,7 @@ export const PresentationEditorDialog = ({
   existingSession, onContinueExisting, onLaunchNew, onCloseExisting,
 }: Props) => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [darkPreview, setDarkPreview] = useState(true);
   const [addSlideOpen, setAddSlideOpen] = useState(false);
   const [history, setHistory] = useState<BlockEditorHistory | null>(null);
@@ -88,7 +102,9 @@ export const PresentationEditorDialog = ({
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [exportingPdf, setExportingPdf] = useState(false);
   const [generatingActivity, setGeneratingActivity] = useState(false);
+  const [sidebarSection, setSidebarSection] = useState<"insert" | "slide" | "activities">("insert");
   const canvasWrapRef = useRef<HTMLDivElement>(null);
+
   const currentSlide = pendingSlides[editingSlideIndex];
   const themeId = themeIdFromSlides(pendingSlides);
   const theme = getPresentationTheme(themeId);
@@ -234,6 +250,56 @@ export const PresentationEditorDialog = ({
     }
   };
 
+  /** ČÁST 2 – URL zpět na lekci; null = odkaz nezobrazovat. */
+  const lessonBackUrl = (() => {
+    const l = presentationLesson;
+    if (!l) return null;
+    if (l.textbookId) return `/ucitel/ucebnice/${l.textbookId}/lekce`;
+    if (l.subjectId && l.grade && l.topicSlug) {
+      return `/ucebnice/${l.subjectId}/${l.grade}/${l.topicSlug}${l.id ? `/${l.id}` : ""}`;
+    }
+    return null;
+  })();
+
+  /** ČÁST 3 – vložení vlastní aktivity z lekce přímo do editované prezentace. */
+  const insertActivitySlide = (block: any, label: string) => {
+    const slide = activityBlockToSlide(block);
+    const updated = [...pendingSlides];
+    updated.splice(editingSlideIndex + 1, 0, slide);
+    setPendingSlides(updated);
+    setEditingSlideIndex(editingSlideIndex + 1);
+    setSelectedBlockId(null);
+    toast({ title: "Aktivita vložena", description: `„${label}" byla přidána jako nový slide.` });
+  };
+
+  const aiActivityButton = (
+    <div className="rounded-lg border border-dashed border-primary/50 bg-primary/5 p-2">
+      <Button
+        size="sm"
+        variant="outline"
+        className="w-full gap-1.5 text-xs"
+        onClick={generateActivityFromSlide}
+        disabled={generatingActivity || currentSlide?.type === "activity"}
+      >
+        {generatingActivity ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
+        Dogenerovat aktivitu (AI)
+      </Button>
+      <p className="mt-1 text-[11px] text-muted-foreground">
+        {currentSlide?.type === "activity"
+          ? "Tento slide už aktivitu obsahuje."
+          : "ZedAI z obsahu slidu vytvoří interaktivní aktivitu. Výstup prosím zkontrolujte."}
+      </p>
+    </div>
+  );
+
+  const RAIL_ITEMS = [
+    { id: "insert" as const, icon: Plus, label: "Vložit" },
+    { id: "slide" as const, icon: Settings, label: "Slide" },
+    { id: "activities" as const, icon: Puzzle, label: "Aktivity" },
+  ];
+
+
+
   return (
     <>
       <Dialog open={!!presentationLesson && pendingSlides.length > 0} onOpenChange={(open) => { if (!open) onClose(); }}>
@@ -248,7 +314,22 @@ export const PresentationEditorDialog = ({
             </DialogDescription>
 
             <div className="flex flex-wrap items-center gap-2">
+              {/* ČÁST 2 – zpět na lekci (jen pokud lze sestavit funkční URL) */}
+              {lessonBackUrl && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 max-w-[220px] gap-1.5 text-xs"
+                  onClick={() => { onClose(); navigate(lessonBackUrl); }}
+                  title={`Zpět na lekci ${presentationLesson?.title ?? ""}`}
+                >
+                  <ArrowLeft className="h-3.5 w-3.5 shrink-0" />
+                  <span className="truncate">Zpět na lekci{presentationLesson?.title ? `: ${presentationLesson.title}` : ""}</span>
+                </Button>
+              )}
+
               {/* Skupina „vzhled slidu“ */}
+
               <div className="flex items-center gap-2 rounded-lg border border-border bg-background/70 px-2 py-1">
                 <Select value={transition} onValueChange={(v) => setTransition(v as SlideTransition)}>
                   <SelectTrigger className="h-8 w-[124px] text-xs" title="Přechod mezi slidy">
@@ -405,15 +486,33 @@ export const PresentationEditorDialog = ({
           {currentSlide && (
             <div className="flex min-h-0 flex-1">
               {/* 3. LEVÝ POSTRANNÍ PANEL */}
-              <aside className="flex w-[250px] shrink-0 flex-col border-r border-border bg-muted/20">
-                <Tabs defaultValue="insert" className="flex min-h-0 flex-1 flex-col">
-                  <TabsList className="mx-2 mt-2 grid grid-cols-2">
-                    <TabsTrigger value="insert" className="text-xs">Vložit</TabsTrigger>
-                    <TabsTrigger value="slide" className="text-xs">Slide</TabsTrigger>
-                  </TabsList>
+              <aside className="flex shrink-0 border-r border-border bg-muted/20">
+                {/* Úzký sloupec ikon (Canva style) */}
+                <div className="flex w-16 shrink-0 flex-col gap-1 border-r border-border py-2">
+                  {RAIL_ITEMS.map((item) => {
+                    const active = sidebarSection === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => setSidebarSection(item.id)}
+                        aria-pressed={active}
+                        className={`mx-1 flex flex-col items-center gap-1 rounded-lg px-1 py-2 text-[10px] font-medium transition-colors ${
+                          active ? "bg-accent/10 text-primary" : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                        }`}
+                      >
+                        <item.icon className={`h-5 w-5 ${active ? "text-primary" : ""}`} />
+                        {item.label}
+                      </button>
+                    );
+                  })}
+                </div>
 
-                  {/* ---- Záložka Vložit ---- */}
-                  <TabsContent value="insert" className="min-h-0 flex-1 overflow-y-auto p-2">
+                {/* Rozbalovací panel vybrané sekce */}
+                <div className="flex min-h-0 w-[240px] flex-col overflow-y-auto">
+                  {sidebarSection === "insert" && (
+                  <div className="p-2">
+
                     <div className="grid grid-cols-3 gap-1.5">
                       <InsertTile icon={HeadingIcon} label="Nadpis" onClick={() => addBlock("heading")} />
                       <InsertTile icon={Type} label="Text" onClick={() => addBlock("paragraph")} />
@@ -492,10 +591,13 @@ export const PresentationEditorDialog = ({
                         <LayoutTemplate className="h-3.5 w-3.5" /> Začít od šablony
                       </Button>
                     </div>
-                  </TabsContent>
+                  </div>
+                  )}
 
-                  {/* ---- Záložka Slide ---- */}
-                  <TabsContent value="slide" className="min-h-0 flex-1 space-y-4 overflow-y-auto p-3">
+                  {/* ---- Sekce Slide ---- */}
+                  {sidebarSection === "slide" && (
+                  <div className="space-y-4 p-3">
+
                     <div>
                       <Label className="text-xs">Rozvržení</Label>
                       <Select
@@ -620,24 +722,9 @@ export const PresentationEditorDialog = ({
                       />
                     </div>
 
-                    {/* B3 – dogenerovat aktivitu z textového slidu */}
-                    {currentSlide?.type !== "activity" && (
-                      <div className="rounded-lg border border-dashed border-primary/50 bg-primary/5 p-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="w-full gap-1.5 text-xs"
-                          onClick={generateActivityFromSlide}
-                          disabled={generatingActivity}
-                        >
-                          {generatingActivity ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
-                          Dogenerovat aktivitu
-                        </Button>
-                        <p className="mt-1 text-[11px] text-muted-foreground">
-                          ZedAI z obsahu slidu vytvoří interaktivní aktivitu. Výstup prosím zkontrolujte.
-                        </p>
-                      </div>
-                    )}
+                    {/* B3 – dogenerovat aktivitu z textového slidu (též v sekci Aktivity) */}
+                    {currentSlide?.type !== "activity" && aiActivityButton}
+
 
                     {/* Nastavení aktivity */}
                     {currentSlide?.type === "activity" && (
@@ -776,8 +863,37 @@ export const PresentationEditorDialog = ({
                         </div>
                       </CollapsibleContent>
                     </Collapsible>
-                  </TabsContent>
-                </Tabs>
+                  </div>
+                  )}
+
+                  {/* ---- Sekce Aktivity ---- */}
+                  {sidebarSection === "activities" && (
+                  <div className="space-y-3 p-3">
+                    <div>
+                      <Label className="text-xs">Z mých lekcí</Label>
+                      <p className="mb-1.5 text-[11px] text-muted-foreground">
+                        Kliknutím vložíte aktivitu jako nový slide za aktuální.
+                      </p>
+                      <MyLessonActivitiesList onPick={(item) => insertActivitySlide(item.block, item.title)} />
+                    </div>
+
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full gap-1.5 text-xs"
+                      onClick={() => window.open("/ucitel/navrh-podle-metody", "_blank", "noopener")}
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" /> Návrh podle metody
+                    </Button>
+                    <p className="text-[11px] text-muted-foreground">
+                      Otevře se v nové záložce, rozdělaná prezentace zůstane zachovaná.
+                    </p>
+
+                    {aiActivityButton}
+                  </div>
+                  )}
+                </div>
+
               </aside>
 
               {/* 5. CENTRÁLNÍ PLÁTNO */}
