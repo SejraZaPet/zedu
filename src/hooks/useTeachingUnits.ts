@@ -34,11 +34,12 @@ const fallbackColor = (s: string) => {
 };
 
 export const useTeachingUnits = () => {
+  const { user } = useAuth();
   const { classes, loading: loadingClasses } = useTeacherClasses();
   const classIds = (classes ?? []).map((c) => c.id).sort();
 
   const query = useQuery<TeachingUnit[]>({
-    queryKey: ["teaching-units", classIds.join(",")],
+    queryKey: ["teaching-units", user?.id ?? "anon", classIds.join(",")],
     enabled: !loadingClasses,
     staleTime: 30 * 1000,
     queryFn: async () => {
