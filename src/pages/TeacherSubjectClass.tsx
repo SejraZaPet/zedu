@@ -178,7 +178,10 @@ export default function TeacherSubjectClass() {
   const [loading, setLoading] = useState(true);
   const [linkOpen, setLinkOpen] = useState(false);
   const [teacherTextbooks, setTeacherTextbooks] = useState<TeacherTextbookRow[]>([]);
+  /** Propojení učebnice na úrovni Výuky (class_subjects / subject_groups) – fallback bez rozvrhu */
+  const [unitTextbookId, setUnitTextbookId] = useState<string | null>(null);
   const [linking, setLinking] = useState(false);
+
   const [assignPlanOpen, setAssignPlanOpen] = useState(false);
   const [assignPlanId, setAssignPlanId] = useState<string>("");
   const [assignPlanDate, setAssignPlanDate] = useState<string>("");
@@ -204,7 +207,7 @@ export default function TeacherSubjectClass() {
     (async () => {
       const [classRes, slotsRes, plansRes, assignRes, membersRes] = await Promise.all([
         isGroup
-          ? supabase.from("subject_groups").select("id, name, school_year").eq("id", groupId).maybeSingle()
+          ? supabase.from("subject_groups").select("id, name, school_year, textbook_id, textbook_type").eq("id", groupId).maybeSingle()
           : supabase.from("classes").select("id, name, school, field_of_study, year").eq("id", classId).maybeSingle(),
         isGroup
           ? supabase.from("class_schedule_slots" as any).select("*").eq("group_id", groupId)
@@ -253,6 +256,34 @@ export default function TeacherSubjectClass() {
         return (s.subject_label || "").trim().toLowerCase() === wantLabel;
       });
       setSlots(filtered);
+
+      // Fallback propojení učebnice na úrovni Výuky (funguje i bez rozvrhu)
+      if (isGroup) {
+        const gRow: any = classRes.data;
+        setUnitTextbookId(
+          gRow?.textbook_id && (!gRow.textbook_type || gRow.textbook_type === "teacher")
+            ? gRow.textbook_id
+            : null,
+        );
+      } else if (resolvedSubjectId) {
+        const { data: csRow } = await supabase
+          .from("class_subjects")
+          .select("textbook_id, textbook_type")
+          .eq("class_id", classId)
+          .eq("subject_id", resolvedSubjectId)
+          .maybeSingle();
+        const r: any = csRow;
+        if (!cancelled)
+          setUnitTextbookId(
+            r?.textbook_id && (!r.textbook_type || r.textbook_type === "teacher")
+              ? r.textbook_id
+              : null,
+          );
+      } else {
+        setUnitTextbookId(null);
+      }
+
+
 
       const _plans = (plansRes.data as LessonPlanRow[]) ?? [];
       setPlans(_plans);
@@ -340,8 +371,9 @@ export default function TeacherSubjectClass() {
     const fromSlot = slots.find(
       (s) => s.textbook_id && (s.textbook_type === "teacher" || !s.textbook_type),
     );
-    return fromSlot?.textbook_id ?? null;
-  }, [slots]);
+    return fromSlot?.textbook_id ?? unitTextbookId ?? null;
+  }, [slots, unitTextbookId]);
+
   const subjectColor =
     catalogSubject?.color || matchedSubject?.color || slots[0]?.color || "hsl(var(--primary))";
   const abbr =
@@ -487,28 +519,62 @@ export default function TeacherSubjectClass() {
   }
 
   async function linkTextbook(textbookId: string) {
-    if (!slots.length) {
-      toast({
-        title: "Chybí hodina v rozvrhu",
-        description: "Pro propojení učebnice musí mít předmět záznam v rozvrhu.",
-        variant: "destructive",
-      });
-      return;
-    }
     setLinking(true);
-    const ids = slots.map((s) => s.id);
-    const { error } = await supabase
-      .from("class_schedule_slots" as any)
-      .update({ textbook_id: textbookId, textbook_type: "teacher" })
-      .in("id", ids);
+    const payload = { textbook_id: textbookId, textbook_type: "teacher" };
+
+    // 1) Zpětná kompatibilita: pokud Výuka má sloty v rozvrhu, propoj je jako dosud.
+    if (slots.length) {
+      const ids = slots.map((s) => s.id);
+      const { error } = await supabase
+        .from("class_schedule_slots" as any)
+        .update(payload)
+        .in("id", ids);
+      if (error) {
+        setLinking(false);
+        toast({ title: "Nepodařilo se propojit učebnici", description: error.message, variant: "destructive" });
+        return;
+      }
+      setSlots((prev) => prev.map((s) => ({ ...s, ...payload })));
+    }
+
+    // 2) Vždy ulož propojení i na úroveň Výuky – funguje i bez rozvrhu.
+    let unitError: string | null = null;
+    if (isGroup) {
+      const { error } = await supabase
+        .from("subject_groups")
+        .update(payload as any)
+        .eq("id", groupId);
+      unitError = error?.message ?? null;
+    } else if (resolvedSubjectId) {
+      const { data: existing } = await supabase
+        .from("class_subjects")
+        .select("id")
+        .eq("class_id", classId)
+        .eq("subject_id", resolvedSubjectId)
+        .maybeSingle();
+      if (existing?.id) {
+        const { error } = await supabase
+          .from("class_subjects")
+          .update(payload as any)
+          .eq("id", existing.id);
+        unitError = error?.message ?? null;
+      } else {
+        const { error } = await supabase
+          .from("class_subjects")
+          .insert({ class_id: classId, subject_id: resolvedSubjectId, ...payload } as any);
+        unitError = error?.message ?? null;
+      }
+    } else if (!slots.length) {
+      unitError = "Předmět není v katalogu, propojení nelze uložit.";
+    }
+
     setLinking(false);
-    if (error) {
-      toast({ title: "Nepodařilo se propojit učebnici", description: error.message, variant: "destructive" });
+    if (unitError && !slots.length) {
+      toast({ title: "Nepodařilo se propojit učebnici", description: unitError, variant: "destructive" });
       return;
     }
-    setSlots((prev) =>
-      prev.map((s) => ({ ...s, textbook_id: textbookId, textbook_type: "teacher" })),
-    );
+    setUnitTextbookId(textbookId);
+
     setLinkOpen(false);
     toast({ title: "Učebnice propojena" });
   }
@@ -675,30 +741,33 @@ export default function TeacherSubjectClass() {
             </div>
             <div className="flex flex-wrap gap-2">
               {linkedTextbookId ? (
-                <div className="flex items-center gap-1">
-                  <Button variant="outline" onClick={openTextbook}>
-                    <BookOpen className="h-4 w-4 mr-2" />
-                    Otevřít učebnici
+                <>
+                  <div className="flex items-center gap-1">
+                    <Button variant="outline" onClick={openTextbook}>
+                      <BookOpen className="h-4 w-4 mr-2" />
+                      Otevřít učebnici
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title="Změnit propojenou učebnici"
+                      onClick={openLinkDialog}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <Button onClick={launchLesson}>
+                    <PlayCircle className="h-4 w-4 mr-2" />
+                    Spustit lekci
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    title="Změnit propojenou učebnici"
-                    onClick={openLinkDialog}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                </div>
+                </>
               ) : (
                 <Button variant="outline" onClick={openLinkDialog}>
                   <Link2 className="h-4 w-4 mr-2" />
                   Přiřadit učebnici
                 </Button>
               )}
-              <Button onClick={launchLesson}>
-                <PlayCircle className="h-4 w-4 mr-2" />
-                Spustit lekci
-              </Button>
+
             </div>
           </div>
         </Card>
