@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
@@ -47,6 +47,8 @@ import {
   DEFAULT_PERIOD_TIMES,
   loadSchedule,
   saveSchedule,
+  hydrateScheduleFromRemote,
+  saveRemoteSchedule,
   buildSubjectStyleMap,
   colorForSubject,
   SUBJECT_COLORS,
@@ -161,10 +163,38 @@ export default function TeacherSchedule() {
     };
   }, [user]);
 
-  // Persist personal schedule
+  // Hydrate personal schedule from the user's account (localStorage is only a
+  // cache – it is lost when the teacher switches browser, device or domain).
+  const remoteReady = useRef(false);
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const merged = await hydrateScheduleFromRemote(user.id);
+        if (!cancelled) {
+          setData(merged);
+          setActiveTab(merged.parityMode === "both" ? "both" : "odd");
+        }
+      } finally {
+        if (!cancelled) remoteReady.current = true;
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  // Persist personal schedule (browser cache + account)
   useEffect(() => {
     saveSchedule(data);
-  }, [data]);
+    if (!user || !remoteReady.current) return;
+    const t = setTimeout(() => {
+      void saveRemoteSchedule(user.id, data);
+    }, 600);
+    return () => clearTimeout(t);
+  }, [data, user]);
+
 
   // Load class slots (synced from Třídy – also editable in place).
   // We rely on RLS to surface the slots the current user is allowed to see

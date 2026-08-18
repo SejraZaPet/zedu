@@ -133,17 +133,20 @@ export const DEFAULT_SCHEDULE: TeacherScheduleData = {
 
 const STORAGE_KEY = "teacher_schedule_v1";
 
+function normalize(parsed: any): TeacherScheduleData {
+  return {
+    ...DEFAULT_SCHEDULE,
+    ...parsed,
+    periodTimes: { ...DEFAULT_PERIOD_TIMES, ...(parsed?.periodTimes ?? {}) },
+  };
+}
+
 export function loadSchedule(): TeacherScheduleData {
   if (typeof window === "undefined") return DEFAULT_SCHEDULE;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULT_SCHEDULE;
-    const parsed = JSON.parse(raw);
-    return {
-      ...DEFAULT_SCHEDULE,
-      ...parsed,
-      periodTimes: { ...DEFAULT_PERIOD_TIMES, ...(parsed.periodTimes ?? {}) },
-    };
+    return normalize(JSON.parse(raw));
   } catch {
     return DEFAULT_SCHEDULE;
   }
@@ -153,6 +156,72 @@ export function saveSchedule(data: TeacherScheduleData) {
   if (typeof window === "undefined") return;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 }
+
+/** True when the schedule contains any teacher-entered lesson. */
+export function hasAnyLessons(data: TeacherScheduleData): boolean {
+  return (
+    (data.lessonsBoth?.length ?? 0) +
+      (data.lessonsOdd?.length ?? 0) +
+      (data.lessonsEven?.length ?? 0) >
+    0
+  );
+}
+
+/**
+ * Fetch the personal schedule stored on the user's account (survives browser
+ * change, device change and different domains). Returns null when none stored.
+ */
+export async function fetchRemoteSchedule(
+  userId: string,
+): Promise<TeacherScheduleData | null> {
+  const { supabase } = await import("@/integrations/supabase/client");
+  const { data, error } = await supabase
+    .from("teacher_schedules" as any)
+    .select("data")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error || !data) return null;
+  const raw = (data as any).data;
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  return normalize(raw);
+}
+
+/** Upsert the personal schedule onto the user's account. */
+export async function saveRemoteSchedule(
+  userId: string,
+  schedule: TeacherScheduleData,
+): Promise<void> {
+  const { supabase } = await import("@/integrations/supabase/client");
+  await supabase
+    .from("teacher_schedules" as any)
+    .upsert(
+      { user_id: userId, data: schedule as any } as any,
+      { onConflict: "user_id" },
+    );
+}
+
+/**
+ * Make sure localStorage mirrors the account copy (used by pages that read the
+ * schedule synchronously). Pushes the local copy up when the account has none.
+ */
+export async function hydrateScheduleFromRemote(
+  userId: string,
+): Promise<TeacherScheduleData> {
+  const local = loadSchedule();
+  const remote = await fetchRemoteSchedule(userId);
+  if (remote && hasAnyLessons(remote)) {
+    saveSchedule(remote);
+    return remote;
+  }
+  if (hasAnyLessons(local)) {
+    await saveRemoteSchedule(userId, local);
+    return local;
+  }
+  const merged = remote ?? local;
+  saveSchedule(merged);
+  return merged;
+}
+
 
 const parseTime = (date: Date, time: string): Date => {
   const [h, m] = time.split(":").map((x) => parseInt(x, 10));
