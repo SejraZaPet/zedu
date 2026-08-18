@@ -1057,6 +1057,37 @@ export default function TeacherSchedule() {
         onDelete={!isNew ? deleteLesson : undefined}
         onSave={async ({ value, slots }) => {
           if (!editing) return;
+          // Nově: hodina směrovaná na SKUPINU předmětu se ukládá do databáze
+          // (aby ji viděli i žáci skupiny). Osobní/třídní tok zůstává beze změny.
+          if (value.groupId) {
+            const rows = slots.map((s) => ({
+              class_id: null,
+              group_id: value.groupId,
+              subject_label: value.subject,
+              subject_id: value.subjectId ?? null,
+              abbreviation: value.abbreviation || null,
+              color: value.color || null,
+              room: value.room || null,
+              valid_from: value.validFrom,
+              valid_to: value.validTo,
+              week_parity: value.mirrorBoth ? "every" : value.weekParity,
+              day_of_week: s.day + 1,
+              start_time: s.start,
+              end_time: s.end,
+              created_by: user?.id ?? null,
+            }));
+            const { error } = await supabase.from("class_schedule_slots" as any).insert(rows as any);
+            if (error) {
+              toast({ title: "Chyba", description: error.message, variant: "destructive" });
+              return;
+            }
+            toast({
+              title: rows.length > 1 ? `Přidáno do ${rows.length} dnů` : "Přidáno do rozvrhu skupiny",
+            });
+            setEditing(null);
+            fetchClassSlots();
+            return;
+          }
           const base: LessonEntry = {
             ...editing,
             subject: value.subject,
@@ -1079,6 +1110,7 @@ export default function TeacherSchedule() {
           });
           setEditing(null);
         }}
+
       />
 
       {/* Edit dialog for a class-managed slot (DB-backed) */}
