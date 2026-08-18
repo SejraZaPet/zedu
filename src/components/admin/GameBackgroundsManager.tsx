@@ -56,7 +56,7 @@ interface Row {
 }
 
 const GameBackgroundsManager = () => {
-  const { backgrounds, loading, reload } = useGameBackgrounds(true);
+  const { backgrounds, loading, error: loadError, reload } = useGameBackgrounds(true);
   const [rows, setRows] = useState<Row[]>([]);
   const [saving, setSaving] = useState(false);
   const [dragOver, setDragOver] = useState(false);
