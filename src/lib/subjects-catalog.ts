@@ -18,14 +18,18 @@ export interface SubjectCatalogItem {
   abbreviation: string | null;
   school_id: string | null;
   created_by: string | null;
+  /** Archived subjects stay in the database but are hidden from new links. */
+  archived: boolean;
 }
 
 export const SUBJECT_CATALOG_QUERY_KEY = ["subjects-catalog"] as const;
 
+const CATALOG_COLUMNS = "id, name, color, abbreviation, school_id, created_by, archived";
+
 export const fetchSubjectCatalog = async (): Promise<SubjectCatalogItem[]> => {
   const { data, error } = await supabase
     .from("subjects")
-    .select("id, name, color, abbreviation, school_id, created_by")
+    .select(CATALOG_COLUMNS)
     .order("name", { ascending: true });
   if (error) throw error;
   return (data ?? []) as SubjectCatalogItem[];
