@@ -39,8 +39,21 @@ import { exportSlidesToPdf } from "@/lib/presentation-pdf-export";
 import ShapePickerPopover from "@/components/admin/ShapePickerPopover";
 import AiBlockTextButton from "@/components/admin/AiBlockTextButton";
 import SlideFloatingFormatToolbar from "@/components/admin/SlideFloatingFormatToolbar";
-import { mapPlanKindToActivityType } from "@/lib/plan-to-slides";
+import { activityBlockToSlide, mapPlanKindToActivityType } from "@/lib/plan-to-slides";
+import MyLessonActivitiesList from "@/components/presentation/MyLessonActivitiesList";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+
+export interface PresentationLessonRef {
+  id?: string;
+  title: string;
+  textbookId?: string;
+  subjectId?: string;
+  grade?: number | string;
+  topicSlug?: string;
+  source?: string;
+}
+
 
 interface Props {
   presentationLesson: { title: string } | null;
