@@ -269,19 +269,51 @@ const TeacherAssignments = () => {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                {/* Class */}
+                {/* Class or subject group */}
                 <div>
-                  <Label>Třída (volitelné)</Label>
-                  <Select value={selectedClassId || "__all__"} onValueChange={(v) => setSelectedClassId(v === "__all__" ? "" : v)}>
+                  <Label>Třída nebo skupina (volitelné)</Label>
+                  <Select
+                    value={
+                      selectedGroupId
+                        ? `group:${selectedGroupId}`
+                        : selectedClassId
+                          ? `class:${selectedClassId}`
+                          : "__all__"
+                    }
+                    onValueChange={(v) => {
+                      if (v === "__all__") {
+                        setSelectedClassId("");
+                        setSelectedGroupId("");
+                      } else if (v.startsWith("group:")) {
+                        setSelectedGroupId(v.slice(6));
+                        setSelectedClassId("");
+                      } else {
+                        setSelectedClassId(v.slice(6));
+                        setSelectedGroupId("");
+                      }
+                    }}
+                  >
                     <SelectTrigger className="mt-1"><SelectValue placeholder="Všichni žáci" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="__all__">Všichni žáci</SelectItem>
                       {classes.map((c) => (
-                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                        <SelectItem key={c.id} value={`class:${c.id}`}>{c.name}</SelectItem>
                       ))}
+                      {groups.length > 0 && (
+                        <>
+                          <div className="px-2 py-1.5 text-xs text-muted-foreground">Skupiny předmětu</div>
+                          {groups.map((g) => (
+                            <SelectItem key={g.id} value={`group:${g.id}`}>
+                              {g.name}
+                              {g.subjectName ? ` · ${g.subjectName}` : ""}
+                            </SelectItem>
+                          ))}
+                        </>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
+
 
                 {/* Exam type */}
                 <div>
