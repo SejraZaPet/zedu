@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ClassBulkActions } from "@/components/teacher/ClassBulkActions";
 import { LeaderboardSettingsCard } from "@/components/teacher/LeaderboardSettingsCard";
 import QuickRecognitionCard from "@/components/teacher/QuickRecognitionCard";
+import ClassSubjectsCard from "@/components/teacher/ClassSubjectsCard";
 import ClassAlertsPanel from "@/components/alerts/ClassAlertsPanel";
 import ClassStoriesSection from "@/components/class-stories/ClassStoriesSection";
 import { useAuth } from "@/contexts/AuthContext";
@@ -362,6 +363,12 @@ const TeacherClassDetail = () => {
               last_name: m.last_name,
             }))}
           />
+        )}
+
+        {id && (
+          <div className="mb-6">
+            <ClassSubjectsCard classId={id} />
+          </div>
         )}
 
         {id && <ClassAlertsPanel classId={id} />}

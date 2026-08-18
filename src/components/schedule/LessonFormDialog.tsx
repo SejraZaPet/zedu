@@ -36,6 +36,8 @@ import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
 import SubjectPicker from "@/components/subjects/SubjectPicker";
 import { useTeacherClasses } from "@/hooks/useTeacherClasses";
 import { useSubjectGroups } from "@/hooks/useSubjectGroups";
+import { useTeachingUnits } from "@/hooks/useTeachingUnits";
+import { supabase } from "@/integrations/supabase/client";
 
 import {
   SUBJECT_COLORS,
@@ -134,6 +136,7 @@ export default function LessonFormDialog({
   const { subjects } = useTeacherSubjects();
   const { classes } = useTeacherClasses();
   const { groups } = useSubjectGroups();
+  const { units, refetch: refetchUnits } = useTeachingUnits();
 
   const defaultPeriod = useMemo(
     () => initial?.period ?? periods[0]?.period ?? 1,
@@ -141,6 +144,7 @@ export default function LessonFormDialog({
   );
 
   // ----- Form state -----
+  const [unitKey, setUnitKey] = useState<string>("");
   const [subjectChoice, setSubjectChoice] = useState<string>("");
   const [subjectId, setSubjectId] = useState<string | null>(null);
   const [customSubject, setCustomSubject] = useState("");
@@ -289,8 +293,35 @@ export default function LessonFormDialog({
       mirrorBoth,
       weekParity,
     };
+    // Nová kombinace předmět × třída se automaticky doplní do Výuky
+    // (`class_subjects`), aby existovala i bez ohledu na rozvrh.
+    if (!useGroup && subjectId && classSel !== NO_CLASS) {
+      try {
+        const { data: existing } = await supabase
+          .from("class_subjects")
+          .select("id, archived")
+          .eq("class_id", classSel)
+          .eq("subject_id", subjectId)
+          .maybeSingle();
+        if (!existing) {
+          await supabase
+            .from("class_subjects")
+            .insert({ class_id: classSel, subject_id: subjectId } as any);
+        } else if ((existing as any).archived) {
+          await supabase
+            .from("class_subjects")
+            .update({ archived: false } as any)
+            .eq("id", (existing as any).id);
+        }
+        void refetchUnits();
+      } catch {
+        // vazba je jen doplňková – chyba nesmí zablokovat uložení hodiny
+      }
+    }
+
     await onSave({ value, slots });
   }
+
 
   const validationError =
     !resolvedSubject
@@ -407,9 +438,53 @@ export default function LessonFormDialog({
             )}
           </div>
 
+          {/* ----- Existující Výuka (předmět × třída/skupina) ----- */}
+          {units.length > 0 && (
+            <div className="space-y-1.5">
+              <Label>Vybrat existující Výuku</Label>
+              <Select
+                value={unitKey}
+                onValueChange={(v) => {
+                  setUnitKey(v);
+                  const u = units.find((x) => x.key === v);
+                  if (!u) return;
+                  setSubjectId(u.subjectId);
+                  setSubjectChoice(u.subjectName);
+                  setCustomSubject("");
+                  setAbbreviation(u.abbreviation.slice(0, 5));
+                  setColor(u.color);
+                  if (u.kind === "group") {
+                    setTarget("group");
+                    setGroupSel(u.targetId);
+                  } else {
+                    setTarget("class");
+                    setClassSel(u.targetId);
+                  }
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Vyberte z už existující Výuky…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {units.map((u) => (
+                    <SelectItem key={u.key} value={u.key}>
+                      {u.subjectName} · {u.targetName}
+                      {u.kind === "group" ? " (skupina)" : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[10px] text-muted-foreground">
+                Rozvrh jen vybírá existující Výuku. Novou kombinaci předmět × třída si můžete
+                nastavit i ručně níže — appka ji do Výuky doplní sama.
+              </p>
+            </div>
+          )}
+
           {/* ----- Subject ----- */}
           <div className="space-y-1.5">
             <Label>Předmět *</Label>
+
             <SubjectPicker
               value={subjectId}
               textValue={subjectChoice === CUSTOM_SUBJECT ? customSubject : subjectChoice}

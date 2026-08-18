@@ -1,0 +1,46 @@
+// Edge function: publishes any assignments whose scheduled_publish_at has passed.
+// Triggered by pg_cron every minute via net.http_post.
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { getInternalSecret } from "../_shared/internal-secret.ts";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+};
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  const CRON_SECRET = await getInternalSecret("cron_internal_secret");
+  if (!CRON_SECRET || req.headers.get("X-Cron-Secret") !== CRON_SECRET) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  try {
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+
+    const { data, error } = await supabase.rpc("publish_due_assignments");
+    if (error) throw error;
+
+    return new Response(
+      JSON.stringify({ ok: true, published: data ?? 0, ts: new Date().toISOString() }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("publish-scheduled-assignments error:", msg);
+    return new Response(JSON.stringify({ ok: false, error: msg }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+});

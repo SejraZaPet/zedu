@@ -20,6 +20,7 @@ import {
 import { ArrowLeft, Library, Archive, ArchiveRestore, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useTeacherClasses } from "@/hooks/useTeacherClasses";
+import { useTeachingUnits } from "@/hooks/useTeachingUnits";
 import { useAuth } from "@/contexts/AuthContext";
 import SubjectPicker from "@/components/subjects/SubjectPicker";
 import { useSubjectCatalog, useInvalidateSubjectCatalog } from "@/hooks/useSubjectCatalog";
@@ -55,6 +56,7 @@ const TeacherSubjects = () => {
 
   // Management of the canonical `subjects` catalog
   const { allSubjects, loading: loadingCatalog } = useSubjectCatalog({ includeArchived: true });
+  const { units, loading: loadingUnits } = useTeachingUnits();
   const invalidateCatalog = useInvalidateSubjectCatalog();
   const [showArchived, setShowArchived] = useState(false);
   const [deps, setDeps] = useState<Record<string, { groups: number; classSubjects: number }>>({});
@@ -279,9 +281,14 @@ const TeacherSubjects = () => {
                       style={{ backgroundColor: s.color }}
                       aria-hidden
                     />
-                    <span className={`text-sm font-medium ${s.archived ? "opacity-60" : ""}`}>
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/ucitel/predmety/${s.id}`)}
+                      className={`text-sm font-medium text-left hover:text-primary hover:underline ${s.archived ? "opacity-60" : ""}`}
+                      title="Otevřít detail předmětu (ŠVP, třídy a skupiny)"
+                    >
                       {s.name}
-                    </span>
+                    </button>
                     {s.archived && <Badge variant="outline">Archivováno</Badge>}
                     {s.created_by !== user?.id && (
                       <Badge variant="secondary">Cizí předmět</Badge>
@@ -330,51 +337,62 @@ const TeacherSubjects = () => {
           )}
         </section>
 
-        {loading ? (
-          <div className="text-muted-foreground">Načítání...</div>
-        ) : entries.length === 0 ? (
-          <div className="bg-card border border-border rounded-xl p-8 text-center">
-            <p className="text-muted-foreground">
-              Zatím nemáte v rozvrhu žádné předměty. Přidejte je přes Rozvrh.
-            </p>
-            <Button className="mt-4" onClick={() => navigate("/ucitel/rozvrh")}>
-              Otevřít rozvrh
-            </Button>
-          </div>
+        <section>
+          <h2 className="font-heading text-xl font-semibold mb-1">Výuka</h2>
+          <p className="text-xs text-muted-foreground mb-4">
+            Každá karta je jedna Výuka — předmět v konkrétní třídě nebo skupině. Vazby vznikají
+            v Předmětech a skupinách nebo automaticky z rozvrhu.
+          </p>
 
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {entries.map((e) => (
-              <button
-                key={`${e.classId}-${e.subjectLabel}`}
-                type="button"
-                onClick={() =>
-                  navigate(
-                    `/ucitel/predmet/${encodeURIComponent(e.subjectLabel)}/trida/${e.classId}`,
-                  )
-                }
-                title={`${e.subjectLabel} · ${e.className}${e.room ? ` · ${e.room}` : ""}`}
-                className="text-left rounded-xl border border-border p-4 hover:border-primary/50 hover:shadow-sm transition-all bg-card"
-              >
-                <div className="flex items-center gap-2 mb-3">
-                  <span
-                    className="text-xs font-bold text-white px-2 py-1 rounded"
-                    style={{ backgroundColor: e.color }}
-                  >
-                    {e.abbreviation}
-                  </span>
-                  <span className="text-xs font-medium text-muted-foreground">
-                    {e.className}
-                  </span>
-                </div>
-                <div className="text-sm font-medium truncate">{e.subjectLabel}</div>
-                {e.room && (
-                  <div className="text-xs text-muted-foreground mt-1">{e.room}</div>
-                )}
-              </button>
-            ))}
-          </div>
-        )}
+          {loading || loadingUnits ? (
+            <div className="text-muted-foreground">Načítání...</div>
+          ) : units.length === 0 ? (
+            <div className="bg-card border border-border rounded-xl p-8 text-center">
+              <p className="text-muted-foreground">
+                Zatím nemáte žádnou Výuku. Přiřaďte předmět třídě nebo skupině — rozvrh k tomu
+                není potřeba.
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2 justify-center">
+                <Button onClick={() => navigate("/ucitel/skupiny")}>
+                  Předměty a skupiny
+                </Button>
+                <Button variant="outline" onClick={() => navigate("/ucitel/rozvrh")}>
+                  Otevřít rozvrh
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              {units.map((u) => (
+                <button
+                  key={u.key}
+                  type="button"
+                  onClick={() => navigate(u.path)}
+                  title={`Výuka: ${u.subjectName} · ${u.targetName}`}
+                  className="text-left rounded-xl border border-border p-4 hover:border-primary/50 hover:shadow-sm transition-all bg-card"
+                >
+                  <div className="flex items-center gap-2 mb-3">
+                    <span
+                      className="text-xs font-bold text-white px-2 py-1 rounded"
+                      style={{ backgroundColor: u.color }}
+                    >
+                      {u.abbreviation}
+                    </span>
+                    <span className="text-xs font-medium text-muted-foreground truncate">
+                      {u.targetName}
+                    </span>
+                  </div>
+                  <div className="text-sm font-medium truncate">{u.subjectName}</div>
+                  {u.kind === "group" && (
+                    <Badge variant="secondary" className="mt-1 text-[10px] px-1.5 py-0 h-4 font-normal">
+                      skupina
+                    </Badge>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
       </main>
       <SiteFooter />
 

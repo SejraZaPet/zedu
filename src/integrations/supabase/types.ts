@@ -548,6 +548,7 @@ export type Database = {
           max_attempts: number
           randomize_choices: boolean
           randomize_order: boolean
+          scheduled_publish_at: string | null
           settings: Json
           status: string
           teacher_id: string
@@ -570,6 +571,7 @@ export type Database = {
           max_attempts?: number
           randomize_choices?: boolean
           randomize_order?: boolean
+          scheduled_publish_at?: string | null
           settings?: Json
           status?: string
           teacher_id: string
@@ -592,6 +594,7 @@ export type Database = {
           max_attempts?: number
           randomize_choices?: boolean
           randomize_order?: boolean
+          scheduled_publish_at?: string | null
           settings?: Json
           status?: string
           teacher_id?: string
@@ -5201,6 +5204,7 @@ export type Database = {
           id: string
           subject: string
           teacher_id: string
+          title: string
           updated_at: string
         }
         Insert: {
@@ -5211,6 +5215,7 @@ export type Database = {
           id?: string
           subject: string
           teacher_id: string
+          title?: string
           updated_at?: string
         }
         Update: {
@@ -5221,6 +5226,7 @@ export type Database = {
           id?: string
           subject?: string
           teacher_id?: string
+          title?: string
           updated_at?: string
         }
         Relationships: [
@@ -6642,6 +6648,7 @@ export type Database = {
         Args: { _teacher_id: string; _textbook_id: string }
         Returns: boolean
       }
+      publish_due_assignments: { Args: never; Returns: number }
       publish_due_lessons: { Args: never; Returns: number }
       publish_due_worksheets: { Args: never; Returns: number }
       raise_hand: {

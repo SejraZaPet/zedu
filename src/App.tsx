@@ -70,6 +70,7 @@ import TeacherSchedule from "./pages/TeacherSchedule";
 import TeacherMediaLibrary from "./pages/TeacherMediaLibrary";
 import TeacherSubjectClass from "./pages/TeacherSubjectClass";
 import TeacherSubjects from "./pages/TeacherSubjects";
+import TeacherSubjectDetail from "./pages/TeacherSubjectDetail";
 import TeacherSubjectGroups from "./pages/TeacherSubjectGroups";
 import TeacherMethods from "./pages/TeacherMethods";
 import TeacherCurriculumPlans from "./pages/TeacherCurriculumPlans";
@@ -176,8 +177,11 @@ const App = () => (
             <Route path="/ucitel/rozvrh" element={<ProtectedRoute><TeacherSchedule /></ProtectedRoute>} />
             <Route path="/ucitel/media" element={<ProtectedRoute><TeacherMediaLibrary /></ProtectedRoute>} />
             <Route path="/ucitel/predmety" element={<ProtectedRoute><TeacherSubjects /></ProtectedRoute>} />
+            <Route path="/ucitel/predmety/:subjectId" element={<ProtectedRoute><TeacherSubjectDetail /></ProtectedRoute>} />
             <Route path="/ucitel/predmet/:subjectId/trida/:classId" element={<ProtectedRoute><TeacherSubjectClass /></ProtectedRoute>} />
             <Route path="/ucitel/predmet/:subjectId/skupina/:groupId" element={<ProtectedRoute><TeacherSubjectClass /></ProtectedRoute>} />
+            <Route path="/ucitel/vyuka/:subjectId/trida/:classId" element={<ProtectedRoute><TeacherSubjectClass /></ProtectedRoute>} />
+            <Route path="/ucitel/vyuka/:subjectId/skupina/:groupId" element={<ProtectedRoute><TeacherSubjectClass /></ProtectedRoute>} />
 
             <Route path="/ucitel/metody" element={<ProtectedRoute><TeacherMethods /></ProtectedRoute>} />
             <Route path="/ucitel/svp" element={<ProtectedRoute><TeacherCurriculumPlans /></ProtectedRoute>} />
