@@ -271,14 +271,18 @@ export default function LessonFormDialog({
     const slots = buildSlots();
     if (slots.length === 0) return;
 
+    const useGroup = target === "group" && groupSel !== NO_CLASS;
     const selectedClass = classes.find((c) => c.id === classSel);
+    const selectedGroup = groups.find((g) => g.id === groupSel);
     const value: LessonFormValue = {
       subject: resolvedSubject,
       subjectId: subjectId,
       abbreviation: (abbreviation || resolvedSubject.slice(0, 3)).toUpperCase().slice(0, 5),
       color: color || colorForSubject(resolvedSubject),
-      classId: classSel === NO_CLASS ? null : classSel,
-      className: selectedClass?.name ?? "",
+      classId: useGroup || classSel === NO_CLASS ? null : classSel,
+      className: useGroup ? "" : (selectedClass?.name ?? ""),
+      groupId: useGroup ? groupSel : null,
+      groupName: useGroup ? (selectedGroup?.name ?? "") : "",
       room: room.trim(),
       validFrom: validFrom ? format(validFrom, "yyyy-MM-dd") : null,
       validTo: validTo ? format(validTo, "yyyy-MM-dd") : null,
@@ -293,9 +297,12 @@ export default function LessonFormDialog({
       ? "Vyberte předmět."
       : selectedDays.length === 0
         ? "Vyberte alespoň jeden den."
-        : validFrom && validTo && validTo < validFrom
-          ? "Platnost do musí být po platnosti od."
-          : null;
+        : target === "group" && groupSel === NO_CLASS
+          ? "Vyberte skupinu předmětu."
+          : validFrom && validTo && validTo < validFrom
+            ? "Platnost do musí být po platnosti od."
+            : null;
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
