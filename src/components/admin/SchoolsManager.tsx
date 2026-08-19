@@ -453,7 +453,73 @@ const SchoolsManager = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Members of a school */}
+        <Dialog open={membersOpen} onOpenChange={(o) => { setMembersOpen(o); if (!o) { setMembersSchool(null); setMembers([]); } }}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Členové školy {membersSchool ? `· ${membersSchool.name}` : ""}</DialogTitle>
+            </DialogHeader>
+            {membersLoading ? (
+              <div className="py-8 text-center text-sm text-muted-foreground">Načítám…</div>
+            ) : members.length === 0 ? (
+              <div className="py-8 text-center text-sm text-muted-foreground">Škola nemá žádné napojené uživatele.</div>
+            ) : (
+              <div className="max-h-[60vh] overflow-y-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Jméno</TableHead>
+                      <TableHead>E-mail</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead className="text-right">Akce</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {members.map((m) => (
+                      <TableRow key={m.id}>
+                        <TableCell className="font-medium">{memberName(m)}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{m.email ?? "—"}</TableCell>
+                        <TableCell className="space-x-1">
+                          {m.roles.length === 0
+                            ? <span className="text-xs text-muted-foreground">—</span>
+                            : m.roles.map((r) => <Badge key={r} variant="outline">{r}</Badge>)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button size="sm" variant="outline" onClick={() => setPendingRemove(m)}>
+                            <UserMinus className="w-4 h-4 mr-1" /> Odebrat ze školy
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        <AlertDialog open={!!pendingRemove} onOpenChange={(o) => { if (!o) setPendingRemove(null); }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Odebrat uživatele ze školy?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {pendingRemove ? `${memberName(pendingRemove)} ztratí napojení na školu ${membersSchool?.name ?? ""}. ` : ""}
+                Účet i data zůstanou zachovány, ale uživatel přijde o přístup k obsahu školy.
+                Zpět to lze vrátit jen ručním opětovným přiřazením.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Zrušit</AlertDialogCancel>
+              <AlertDialogAction onClick={(e) => { e.preventDefault(); void confirmRemoveMember(); }} disabled={removing}>
+                {removing && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}
+                Odebrat ze školy
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </CardContent>
+
     </Card>
   );
 };
