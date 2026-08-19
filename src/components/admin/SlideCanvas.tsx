@@ -765,8 +765,10 @@ const SlideCanvas = ({ fit = true, darkMode = true, themeId, ...rest }: CanvasPr
   return (
     <div
       ref={frameRef}
-      className="relative aspect-video w-full rounded-xl overflow-hidden shadow-lg border border-border"
-      style={bgStyle}
+      className={`relative mx-auto max-h-full max-w-full rounded-xl overflow-hidden shadow-lg border border-border ${
+        box ? "" : "aspect-video w-full"
+      }`}
+      style={box ? { ...bgStyle, width: box.w, height: box.h } : bgStyle}
     >
       <div
         className="absolute left-1/2 top-1/2 origin-center"
