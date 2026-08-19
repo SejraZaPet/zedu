@@ -3890,6 +3890,104 @@ export type Database = {
           },
         ]
       }
+      school_calendar_event_attendees: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          teacher_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          teacher_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          teacher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "school_calendar_event_attendees_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "school_calendar_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      school_calendar_events: {
+        Row: {
+          all_day: boolean
+          color: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          end_time: string
+          id: string
+          location: string | null
+          recurrence_group_id: string | null
+          recurrence_rule: string | null
+          reminder_minutes: number[]
+          school_id: string
+          start_time: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          all_day?: boolean
+          color?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          end_time: string
+          id?: string
+          location?: string | null
+          recurrence_group_id?: string | null
+          recurrence_rule?: string | null
+          reminder_minutes?: number[]
+          school_id: string
+          start_time: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          all_day?: boolean
+          color?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          end_time?: string
+          id?: string
+          location?: string | null
+          recurrence_group_id?: string | null
+          recurrence_rule?: string | null
+          reminder_minutes?: number[]
+          school_id?: string
+          start_time?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "school_calendar_events_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "school_calendar_events_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       school_license_reminders: {
         Row: {
           created_at: string
