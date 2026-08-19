@@ -829,6 +829,8 @@ const WhiteboardOverlay = ({
           overlay
           localOnly={localOnly}
           simplified
+          joinToken={joinToken}
+
           className={interactive ? "" : "pointer-events-none"}
         />
         </div>
