@@ -1,3 +1,4 @@
+import { BetaBadge } from "@/components/common/BetaBadge";
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -690,6 +691,9 @@ export const PresentationEditorDialog = ({
                             </Button>
                           }
                         />
+                        <div className="flex justify-end">
+                          <BetaBadge context="Editor prezentace – herní pozadí" />
+                        </div>
                       </div>
 
                       {(currentSlide as any).backgroundOverride?.image && (
@@ -881,6 +885,10 @@ export const PresentationEditorDialog = ({
                   {/* ---- Sekce Aktivity ---- */}
                   {sidebarSection === "activities" && (
                   <div className="space-y-3 p-3">
+                    <div className="flex items-center gap-2">
+                      <Label className="text-xs">Aktivity</Label>
+                      <BetaBadge context="Editor prezentace – sekce Aktivity" />
+                    </div>
                     <div>
                       <Label className="text-xs">Z mých lekcí</Label>
                       <p className="mb-1.5 text-[11px] text-muted-foreground">

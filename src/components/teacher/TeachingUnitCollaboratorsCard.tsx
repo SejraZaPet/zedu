@@ -1,3 +1,4 @@
+import { BetaBadge } from "@/components/common/BetaBadge";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -181,7 +182,7 @@ const TeachingUnitCollaboratorsCard = ({ subjectId, classId, groupId }: Props) =
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h3 className="font-heading flex items-center gap-2">
-            <UserPlus className="h-4 w-4" /> Spoluučitelé této Výuky
+            <UserPlus className="h-4 w-4" /> Spoluučitelé této Výuky <BetaBadge context="Spoluučitelé Výuky" />
           </h3>
           <p className="text-sm text-muted-foreground">
             Pozvaný učitel uvidí a může upravovat zadání, plány hodin a pracovní listy této Výuky

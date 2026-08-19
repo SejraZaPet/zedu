@@ -1,3 +1,4 @@
+import { BetaBadge } from "@/components/common/BetaBadge";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import SiteHeader from "@/components/SiteHeader";
@@ -144,7 +145,7 @@ export default function TeacherSubjectDetail() {
             {(subject.abbreviation || subject.name.slice(0, 3)).toUpperCase()}
           </div>
           <div>
-            <h1 className="font-heading text-3xl font-bold">{subject.name}</h1>
+            <h1 className="font-heading text-3xl font-bold flex items-center gap-2">{subject.name} <BetaBadge context="Detail předmětu (ŠVP a Výuka)" /></h1>
             <p className="text-sm text-muted-foreground">
               Detail předmětu — ŠVP dokumenty a Výuka (třídy a skupiny)
             </p>

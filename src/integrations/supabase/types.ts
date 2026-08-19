@@ -2152,6 +2152,33 @@ export type Database = {
           },
         ]
       }
+      feedback_reports: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          page_context: string | null
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          page_context?: string | null
+          status?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          page_context?: string | null
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       game_backgrounds: {
         Row: {
           category: string

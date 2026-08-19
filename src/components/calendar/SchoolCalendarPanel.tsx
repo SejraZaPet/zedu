@@ -1,3 +1,4 @@
+import { BetaBadge } from "@/components/common/BetaBadge";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -193,7 +194,7 @@ const SchoolCalendarPanel = ({ schoolId, schoolName }: Props) => {
     <Card className="p-5 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 className="font-heading text-lg font-semibold">Školní kalendář</h2>
+          <h2 className="font-heading text-lg font-semibold flex items-center gap-2">Školní kalendář <BetaBadge context="Školní kalendář" /></h2>
           <p className="text-sm text-muted-foreground">
             Sdílené události {schoolName ? `školy ${schoolName}` : "vaší školy"} – vidí je všichni kolegové.
           </p>
