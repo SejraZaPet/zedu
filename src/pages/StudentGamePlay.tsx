@@ -389,14 +389,37 @@ const StudentGamePlay = () => {
             />
           )}
 
-          {/* Slide preview — stejný vizuál jako projekce, scalovaný do mobilní šířky */}
+          {/* Slide preview — stejný vizuál jako projekce, scalovaný do mobilní šířky.
+              Kreslicí vrstva je uvnitř TOHOTO boxu (16:9), takže plátno přesně odpovídá slidu. */}
           <div className="px-3 pt-3">
-            <div className="overflow-hidden rounded-xl">
-              <div style={zoomStageStyle(liveZoom)}>
+            <div className="relative overflow-hidden rounded-xl aspect-video w-full">
+              <div className="absolute inset-0" style={zoomStageStyle(liveZoom)}>
                 <SlideCanvas key={qi} slide={currentSlideData} themeId={(currentSlideData as any)?.themeId} darkMode />
               </div>
+              {(() => {
+                const allowSync = !!liveSettings?.allowStudentDrawSync;
+                const teacherBoardVisible = getSlideStrokes(whiteboard, qi).length > 0;
+                if (!teacherBoardVisible && !studentDrawMode) return null;
+                return (
+                  <div
+                    className={`absolute inset-0 z-30 overflow-hidden ${studentDrawMode ? "" : "pointer-events-none"}`}
+                  >
+                    <WhiteboardOverlay
+                      stageW={1600}
+                      stageH={900}
+                      zoom={liveZoom}
+                      sessionId={sessionId || ""}
+                      data={whiteboard}
+                      slideIndex={qi}
+                      interactive={studentDrawMode}
+                      localOnly={!allowSync}
+                    />
+                  </div>
+                );
+              })()}
             </div>
           </div>
+
 
           {/* Vlastní tempo — navigace mezi slidy */}
           {pacingMode === "student" && (
