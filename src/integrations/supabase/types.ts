@@ -4102,6 +4102,156 @@ export type Database = {
           },
         ]
       }
+      school_meeting_acknowledgments: {
+        Row: {
+          acknowledged_at: string
+          id: string
+          meeting_id: string
+          teacher_id: string
+        }
+        Insert: {
+          acknowledged_at?: string
+          id?: string
+          meeting_id: string
+          teacher_id: string
+        }
+        Update: {
+          acknowledged_at?: string
+          id?: string
+          meeting_id?: string
+          teacher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "school_meeting_acknowledgments_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "school_meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      school_meeting_attendees: {
+        Row: {
+          attended: boolean
+          created_at: string
+          id: string
+          meeting_id: string
+          teacher_id: string
+        }
+        Insert: {
+          attended?: boolean
+          created_at?: string
+          id?: string
+          meeting_id: string
+          teacher_id: string
+        }
+        Update: {
+          attended?: boolean
+          created_at?: string
+          id?: string
+          meeting_id?: string
+          teacher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "school_meeting_attendees_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "school_meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      school_meeting_tasks: {
+        Row: {
+          assigned_to: string
+          created_at: string
+          due_date: string | null
+          id: string
+          meeting_id: string
+          task: string
+          todo_id: string | null
+        }
+        Insert: {
+          assigned_to: string
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          meeting_id: string
+          task: string
+          todo_id?: string | null
+        }
+        Update: {
+          assigned_to?: string
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          meeting_id?: string
+          task?: string
+          todo_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "school_meeting_tasks_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "school_meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      school_meetings: {
+        Row: {
+          author_id: string
+          content: string | null
+          created_at: string
+          id: string
+          meeting_date: string
+          school_id: string
+          title: string
+          type: Database["public"]["Enums"]["school_meeting_type"]
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          content?: string | null
+          created_at?: string
+          id?: string
+          meeting_date?: string
+          school_id: string
+          title: string
+          type?: Database["public"]["Enums"]["school_meeting_type"]
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          content?: string | null
+          created_at?: string
+          id?: string
+          meeting_date?: string
+          school_id?: string
+          title?: string
+          type?: Database["public"]["Enums"]["school_meeting_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "school_meetings_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "school_meetings_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       schools: {
         Row: {
           allows_teacher_creators: boolean
@@ -6609,10 +6759,18 @@ export type Database = {
         Args: { _topic: string; _uid: string }
         Returns: boolean
       }
+      can_access_school_meeting: {
+        Args: { _meeting_id: string }
+        Returns: boolean
+      }
       can_access_textbooks: { Args: { _user_id: string }; Returns: boolean }
       can_creator_sell: { Args: { _creator_id: string }; Returns: boolean }
       can_manage_credentials: {
         Args: { _profile_id: string }
+        Returns: boolean
+      }
+      can_manage_school_meeting: {
+        Args: { _meeting_id: string }
         Returns: boolean
       }
       cancel_notification: { Args: { _broadcast_id: string }; Returns: boolean }
@@ -7018,6 +7176,13 @@ export type Database = {
         | "rodic"
         | "school_admin"
         | "lektor"
+      school_meeting_type:
+        | "predmetova"
+        | "pedagogicka"
+        | "ctvrtletni"
+        | "pololetni"
+        | "trictvrtletni"
+        | "zaverecna"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -7147,6 +7312,14 @@ export const Constants = {
     Enums: {
       account_status: ["pending", "approved", "blocked"],
       app_role: ["admin", "user", "teacher", "rodic", "school_admin", "lektor"],
+      school_meeting_type: [
+        "predmetova",
+        "pedagogicka",
+        "ctvrtletni",
+        "pololetni",
+        "trictvrtletni",
+        "zaverecna",
+      ],
     },
   },
 } as const
