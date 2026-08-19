@@ -699,8 +699,9 @@ export default function TeacherSubjectClass() {
               {abbr}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold flex items-center gap-2">
                 Výuka
+                <BetaBadge context="Výuka (předmět + třída/skupina)" />
               </p>
               <h1 className="font-heading text-2xl md:text-3xl font-bold truncate">
                 {subjectLabel}

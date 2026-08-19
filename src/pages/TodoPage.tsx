@@ -225,6 +225,7 @@ const TodoPage = () => {
               <Button variant="outline" onClick={() => setDelegateOpen(true)} className="gap-2">
                 <UserPlus className="w-4 h-4" />
                 Zadat úkol kolegovi
+                <BetaBadge context="Zadat úkol kolegovi" />
               </Button>
             )}
             <Button onClick={() => setAddOpen(true)} className="gap-2">
@@ -317,7 +318,7 @@ const TodoPage = () => {
 
         {hasSchool && delegated.length > 0 && (
           <div className="mt-10">
-            <h2 className="font-heading text-xl font-bold mb-3">Zadané kolegům</h2>
+            <h2 className="font-heading text-xl font-bold mb-3 flex items-center gap-2">Zadané kolegům <BetaBadge context="Zadané kolegům" /></h2>
             <div className="space-y-2">
               {delegated.map((todo) => (
                 <div
