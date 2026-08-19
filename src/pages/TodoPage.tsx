@@ -59,9 +59,22 @@ const TodoPage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  const { schoolId, hasSchool } = useMySchool();
+  const { colleagues } = useSchoolColleagues(schoolId);
+
   const [todos, setTodos] = useState<Todo[]>([]);
+  const [delegated, setDelegated] = useState<Todo[]>([]);
   const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
+  const [delegateOpen, setDelegateOpen] = useState(false);
+  const [delegateSaving, setDelegateSaving] = useState(false);
+  const [delegateForm, setDelegateForm] = useState({
+    assignee: "",
+    title: "",
+    description: "",
+    due_date: "",
+    priority: "normal",
+  });
   const [filter, setFilter] = useState<"all" | "pending" | "done" | "today">(
     "all",
   );
@@ -85,18 +98,56 @@ const TodoPage = () => {
 
   const fetchTodos = async () => {
     if (!user) return;
-    const { data, error } = await supabase
-      .from("todos")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("due_date", { ascending: true, nullsFirst: false });
-    if (error) {
-      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+    const [mineRes, delegatedRes] = await Promise.all([
+      supabase
+        .from("todos")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("due_date", { ascending: true, nullsFirst: false }),
+      supabase
+        .from("todos")
+        .select("*")
+        .eq("assigned_by", user.id)
+        .neq("user_id", user.id)
+        .order("due_date", { ascending: true, nullsFirst: false }),
+    ]);
+    if (mineRes.error) {
+      toast({ title: "Chyba", description: mineRes.error.message, variant: "destructive" });
     } else {
-      setTodos((data as Todo[]) || []);
+      setTodos((mineRes.data as Todo[]) || []);
     }
+    setDelegated((delegatedRes.data as Todo[]) || []);
     setLoading(false);
   };
+
+  const delegateTodo = async () => {
+    if (!user) return;
+    if (!delegateForm.assignee || !delegateForm.title.trim()) {
+      toast({ title: "Vyberte kolegu a zadejte název", variant: "destructive" });
+      return;
+    }
+    setDelegateSaving(true);
+    const { error } = await supabase.from("todos").insert({
+      user_id: delegateForm.assignee,
+      assigned_by: user.id,
+      title: delegateForm.title.trim(),
+      description: delegateForm.description || null,
+      due_date: delegateForm.due_date || null,
+      type: "task",
+      priority: delegateForm.priority,
+      status: "pending",
+    });
+    setDelegateSaving(false);
+    if (error) {
+      toast({ title: "Zadání se nepodařilo", description: error.message, variant: "destructive" });
+      return;
+    }
+    setDelegateForm({ assignee: "", title: "", description: "", due_date: "", priority: "normal" });
+    setDelegateOpen(false);
+    toast({ title: "Úkol byl zadán kolegovi" });
+    fetchTodos();
+  };
+
 
   const addTodo = async () => {
     if (!newTodo.title.trim() || !user) return;
