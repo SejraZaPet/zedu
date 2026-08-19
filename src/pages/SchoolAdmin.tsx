@@ -463,9 +463,10 @@ const MembersTable = ({
                       <ShieldOff className="w-4 h-4 mr-1" /> Odebrat učitele
                     </Button>
                   )}
-                  <Button size="sm" variant="ghost" onClick={() => onRemove(m.id)}>
-                    <Trash2 className="w-4 h-4 text-destructive" />
+                  <Button size="sm" variant="outline" onClick={() => onRemove(m)}>
+                    <UserMinus className="w-4 h-4 mr-1 text-destructive" /> Odebrat ze školy
                   </Button>
+
                 </TableCell>
               </TableRow>
             ))}
