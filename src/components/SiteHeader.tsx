@@ -69,6 +69,10 @@ const TEACHER_MENU_GROUPS: TeacherMenuGroup[] = [
       { label: "ZEdu Akademie", href: "/ucitel/akademie", icon: Award },
     ],
   },
+  {
+    title: "Škola",
+    items: [{ label: "Porady školy", href: "/ucitel/porady", icon: ClipboardList }],
+  },
 ];
 
 const TEACHER_EXTRA_ITEMS: TeacherExtraNavItem[] = TEACHER_MENU_GROUPS.flatMap((g) => g.items);

@@ -58,6 +58,7 @@ import StudentCalendar from "./pages/StudentCalendar";
 import StudentSubjectClass from "./pages/StudentSubjectClass";
 import StudentSchedule from "./pages/StudentSchedule";
 import TeacherCalendar from "./pages/TeacherCalendar";
+import SchoolMeetings from "./pages/SchoolMeetings";
 import NotificationsPage from "./pages/NotificationsPage";
 import TeacherWorksheets from "./pages/TeacherWorksheets";
 import WorksheetEditor from "./pages/WorksheetEditor";
@@ -165,6 +166,7 @@ const App = () => (
             <Route path="/student/kalendar" element={<ProtectedRoute><StudentCalendar /></ProtectedRoute>} />
             <Route path="/student/rozvrh" element={<ProtectedRoute><StudentSchedule /></ProtectedRoute>} />
             <Route path="/student/predmet/:subjectId/trida/:classId" element={<ProtectedRoute><StudentSubjectClass /></ProtectedRoute>} />
+            <Route path="/ucitel/porady" element={<ProtectedRoute><SchoolMeetings /></ProtectedRoute>} />
             <Route path="/ucitel/kalendar" element={<ProtectedRoute><TeacherCalendar /></ProtectedRoute>} />
             <Route path="/notifikace" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
             <Route path="/ucitel/pracovni-listy" element={<ProtectedRoute><TeacherWorksheets /></ProtectedRoute>} />
