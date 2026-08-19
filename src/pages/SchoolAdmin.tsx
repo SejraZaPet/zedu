@@ -403,7 +403,28 @@ const SchoolAdmin = () => {
             <SchoolBrandingSection schoolId={school.id} schoolName={school.name} />
           </TabsContent>
         </Tabs>
+
+        <AlertDialog open={!!pendingRemove} onOpenChange={(o) => { if (!o) setPendingRemove(null); }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Odebrat uživatele ze školy?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {pendingRemove ? `${pendingRemove.first_name} ${pendingRemove.last_name} ztratí napojení na školu ${school.name}. ` : ""}
+                Účet i data zůstanou zachovány, ale uživatel přijde o přístup k obsahu školy.
+                Zpět to lze vrátit jen ručním opětovným přiřazením.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Zrušit</AlertDialogCancel>
+              <AlertDialogAction onClick={(e) => { e.preventDefault(); void confirmRemoveFromSchool(); }} disabled={removing}>
+                {removing && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}
+                Odebrat ze školy
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </main>
+
     </div>
   );
 };
