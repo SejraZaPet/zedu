@@ -315,6 +315,7 @@ const Admin = () => {
         {activeTab === "results" && isTeacher && <ClassResultsManager />}
         {activeTab === "notifications" && !isTeacher && <NotificationsManager />}
         {activeTab === "licenses" && !isTeacher && <SchoolLicensesManager />}
+        {activeTab === "schools" && !isTeacher && <SchoolsManager />}
         {activeTab === "unassigned-teachers" && !isTeacher && <UnassignedTeachersManager />}
         {activeTab === "audit" && !isTeacher && <AuditLogViewer />}
         {activeTab === "templates" && !isTeacher && <TextbookTemplatesManager />}
