@@ -11,6 +11,7 @@
  */
 
 import type {
+import { qrSvgDataUrl } from "@/lib/qr-inline";
   WorksheetSpec,
   WorksheetVariant,
   WorksheetItem,
@@ -798,7 +799,7 @@ function renderItem(item: WorksheetItem, showPoints: boolean): string {
     case "qr_link": {
       const url = item.qrUrl ?? "";
       const qrImg = url
-        ? `<img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(url)}" width="100" height="100" alt="QR" />`
+        ? `<img src="${qrSvgDataUrl(url, 150)}" width="100" height="100" alt="QR" />`
         : `<div style="width:100px;height:100px;background:#eee;display:flex;align-items:center;justify-content:center;font-size:10pt;color:#999;">QR</div>`;
       return `<div style="display:flex;gap:12px;align-items:center;border:1px solid #ccc;border-radius:8px;padding:10px;margin:8px 0;">${qrImg}<div><p style="font-size:11pt;margin:0 0 4px;font-weight:500;">${esc(item.prompt)}</p>${url ? `<p style="font-size:9pt;margin:0;color:#666;word-break:break-all;">${esc(url)}</p>` : ""}</div></div>`;
     }

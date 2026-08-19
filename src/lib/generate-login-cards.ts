@@ -1,4 +1,5 @@
 import logoUrl from "@/assets/zedu-logo-new.png";
+import { qrSvgDataUrl } from "@/lib/qr-inline";
 
 export interface LoginCardData {
   firstName: string;
@@ -24,9 +25,7 @@ function escHtml(s: string): string {
 }
 
 function buildStrip(user: LoginCardData): string {
-  const qrUrl =
-    "https://api.qrserver.com/v1/create-qr-code/?size=70x70&data=" +
-    encodeURIComponent(APP_URL + "/auth");
+  const qrUrl = qrSvgDataUrl(APP_URL + "/auth", 70);
   const roleLabel =
     user.role === "teacher" ? "Učitel" : user.role === "rodic" ? "Rodič" : "Žák";
 

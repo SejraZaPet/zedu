@@ -23,7 +23,7 @@ export const GameLobby = ({ session, players, onStart, isTeacher }: Props) => {
 
   const joinUrl = useMemo(() => {
     const base = window.location.origin;
-    return `${base}/game/join?code=${session.game_code}`;
+    return `${base}/hra/pripojit?code=${session.game_code}`;
   }, [session.game_code]);
 
   const copyCode = () => {

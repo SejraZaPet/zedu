@@ -65,7 +65,7 @@ const LiveProjectorScreen = () => {
   const currentIndex = session.current_question_index ?? -1;
   const currentSlide = currentIndex >= 0 ? slides[currentIndex] : null;
   const gameCode = session.game_code || "";
-  const joinUrl = `${window.location.origin}/live/pripojit`;
+  const joinUrl = `${window.location.origin}/live/pripojit${gameCode ? `?code=${gameCode}` : ""}`;
 
   const settings = (session.settings as any) || {};
   const backgroundUrl = sessionBackgroundUrl(settings);
