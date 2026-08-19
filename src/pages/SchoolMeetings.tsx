@@ -98,7 +98,7 @@ const SchoolMeetings = () => {
   const { colleagues } = useSchoolColleagues(schoolId);
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { exportOne, isExporting } = usePdfExport();
+  const { exportOne, loading: isExporting } = usePdfExport();
 
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
@@ -295,7 +295,7 @@ const SchoolMeetings = () => {
 
   const exportPdf = async () => {
     if (!selected) return;
-    await exportOne("meeting_notes", selected.id, `porada-${selected.meeting_date}`);
+    await exportOne("meeting_notes" as never, selected.id);
   };
 
   const filtered = meetings.filter((m) => filterType === "all" || m.type === filterType);
