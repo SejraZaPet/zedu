@@ -12,8 +12,15 @@ export interface Stroke {
   color: string;
   width: number;
   points: [number, number][]; // 0..1 relativní souřadnice stránky
+  /**
+   * Volitelný tlak pera pro každý bod v `points` (0..1). Pero (stylus) posílá
+   * proměnlivé hodnoty → tah se kreslí po segmentech s proměnnou šířkou.
+   * Chybí-li pole (myš, prst, starší data, živá tabule), kreslí se konstantní šířkou.
+   */
+  pressures?: number[];
   text?: string;
 }
+
 
 export interface NotebookTextBox {
   id: string;
