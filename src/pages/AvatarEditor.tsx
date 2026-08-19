@@ -600,7 +600,7 @@ function AvatarPreview({
         return fill ? <div aria-hidden="true" className="absolute inset-0" style={{ background: fill }} /> : null;
       })()}
 
-      <div className="absolute" style={{ top: "20%", left: "10%", width: "80%", height: "80%" }}>
+      <div className="absolute" style={{ top: "9%", left: "9%", width: "82%", height: "82%" }}>
         {layers.map((l, idx) => (
           <LayerVisual
             key={`${l.item.id}-${l.sub ?? "main"}-${idx}`}
@@ -882,6 +882,7 @@ export default function AvatarEditor() {
       return;
     }
     setDbProfile({ ...draft });
+    window.dispatchEvent(new CustomEvent("avatar-profile-updated", { detail: { userId } }));
     toast({ title: "Uloženo", description: "Změny avatara byly uloženy." });
   };
 
