@@ -10,14 +10,15 @@
  *   - AAA print contrast
  */
 
-import type {
 import { qrSvgDataUrl } from "@/lib/qr-inline";
+import type {
   WorksheetSpec,
   WorksheetVariant,
   WorksheetItem,
   AnswerKeyEntry,
   AnswerSpace,
 } from "./worksheet-spec";
+
 
 /**
  * Brand palette for print/PDF rendering.
