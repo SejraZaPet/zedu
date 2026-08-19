@@ -1,3 +1,4 @@
+import { BetaBadge } from "@/components/common/BetaBadge";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import SiteHeader from "@/components/SiteHeader";

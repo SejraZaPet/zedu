@@ -1,3 +1,4 @@
+import { BetaBadge } from "@/components/common/BetaBadge";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";

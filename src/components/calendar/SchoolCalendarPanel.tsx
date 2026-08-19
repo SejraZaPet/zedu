@@ -1,3 +1,4 @@
+import { BetaBadge } from "@/components/common/BetaBadge";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
