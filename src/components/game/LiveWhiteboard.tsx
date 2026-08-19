@@ -69,7 +69,10 @@ interface Props {
   localOnly?: boolean;
   /** when true, hides advanced tools (text, shapes, undo/redo). Pen + eraser + colors + widths + clear only. */
   simplified?: boolean;
+  /** guest player token (game_players.join_token) — required for students without an account */
+  joinToken?: string | null;
 }
+
 
 const drawArrow = (ctx: CanvasRenderingContext2D, x1: number, y1: number, x2: number, y2: number) => {
   const angle = Math.atan2(y2 - y1, x2 - x1);
@@ -133,7 +136,7 @@ const renderStroke = (ctx: CanvasRenderingContext2D, s: Stroke, w: number, h: nu
   ctx.restore();
 };
 
-const LiveWhiteboard = ({ sessionId, data, slideIndex, readOnly = false, onClose, overlay = true, className, localOnly = false, simplified = false }: Props) => {
+const LiveWhiteboard = ({ sessionId, data, slideIndex, readOnly = false, onClose, overlay = true, className, localOnly = false, simplified = false, joinToken = null }: Props) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const bottomCanvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -237,15 +240,17 @@ const LiveWhiteboard = ({ sessionId, data, slideIndex, readOnly = false, onClose
     const prev = pendingPersistRef.current ?? Promise.resolve();
     const key = String(Math.max(0, slideIndex ?? 0));
     const p = prev.then(async () => {
-      await supabase.rpc("set_game_whiteboard_slide_strokes", {
+      await supabase.rpc("set_game_whiteboard_slide_strokes" as any, {
         _session_id: sessionId,
         _slide_index: Number(key),
         _strokes: next as any,
+        _join_token: joinToken || null,
       });
     });
     pendingPersistRef.current = p;
     return p;
-  }, [sessionId, slideIndex]);
+  }, [sessionId, slideIndex, joinToken]);
+
 
   const commitStrokes = useCallback((next: Stroke[]) => {
     if (localOnly) {
