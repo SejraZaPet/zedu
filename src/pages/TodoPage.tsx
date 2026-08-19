@@ -219,11 +219,20 @@ const TodoPage = () => {
               </p>
             )}
           </div>
-          <Button onClick={() => setAddOpen(true)} className="gap-2">
-            <Plus className="w-4 h-4" />
-            Přidat úkol
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            {hasSchool && (
+              <Button variant="outline" onClick={() => setDelegateOpen(true)} className="gap-2">
+                <UserPlus className="w-4 h-4" />
+                Zadat úkol kolegovi
+              </Button>
+            )}
+            <Button onClick={() => setAddOpen(true)} className="gap-2">
+              <Plus className="w-4 h-4" />
+              Přidat úkol
+            </Button>
+          </div>
         </div>
+
 
         <div className="flex gap-2 mb-6 flex-wrap">
           {(["all", "pending", "done", "today"] as const).map((f) => (
