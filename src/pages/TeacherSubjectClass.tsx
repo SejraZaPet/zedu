@@ -89,6 +89,14 @@ interface TeacherTextbookRow {
   description: string | null;
 }
 
+interface UnitTextbookLink {
+  id: string;
+  textbook_id: string;
+  textbook_type: string | null;
+  is_primary: boolean;
+}
+
+
 interface LinkedSlot {
   subject?: string;
   classId?: string;
@@ -183,7 +191,10 @@ export default function TeacherSubjectClass() {
   const [teacherTextbooks, setTeacherTextbooks] = useState<TeacherTextbookRow[]>([]);
   /** Propojení učebnice na úrovni Výuky (class_subjects / subject_groups) – fallback bez rozvrhu */
   const [unitTextbookId, setUnitTextbookId] = useState<string | null>(null);
+  const [classSubjectId, setClassSubjectId] = useState<string | null>(null);
+  const [unitTextbooks, setUnitTextbooks] = useState<UnitTextbookLink[]>([]);
   const [linking, setLinking] = useState(false);
+
 
   const [assignPlanOpen, setAssignPlanOpen] = useState(false);
   const [assignPlanId, setAssignPlanId] = useState<string>("");
@@ -268,23 +279,43 @@ export default function TeacherSubjectClass() {
             ? gRow.textbook_id
             : null,
         );
+        setClassSubjectId(null);
+        const { data: links } = await supabase
+          .from("subject_group_textbooks" as any)
+          .select("id, textbook_id, textbook_type, is_primary")
+          .eq("subject_group_id", groupId);
+        if (!cancelled) setUnitTextbooks(((links as any[]) ?? []) as UnitTextbookLink[]);
       } else if (resolvedSubjectId) {
         const { data: csRow } = await supabase
           .from("class_subjects")
-          .select("textbook_id, textbook_type")
+          .select("id, textbook_id, textbook_type")
           .eq("class_id", classId)
           .eq("subject_id", resolvedSubjectId)
           .maybeSingle();
         const r: any = csRow;
-        if (!cancelled)
+        if (!cancelled) {
           setUnitTextbookId(
             r?.textbook_id && (!r.textbook_type || r.textbook_type === "teacher")
               ? r.textbook_id
               : null,
           );
+          setClassSubjectId(r?.id ?? null);
+        }
+        if (r?.id) {
+          const { data: links } = await supabase
+            .from("class_subject_textbooks" as any)
+            .select("id, textbook_id, textbook_type, is_primary")
+            .eq("class_subject_id", r.id);
+          if (!cancelled) setUnitTextbooks(((links as any[]) ?? []) as UnitTextbookLink[]);
+        } else if (!cancelled) {
+          setUnitTextbooks([]);
+        }
       } else {
         setUnitTextbookId(null);
+        setClassSubjectId(null);
+        setUnitTextbooks([]);
       }
+
 
 
 
@@ -371,11 +402,13 @@ export default function TeacherSubjectClass() {
     [subjects, subjectLabel],
   );
   const linkedTextbookId = useMemo(() => {
+    const primary = unitTextbooks.find((r) => r.is_primary) ?? unitTextbooks[0];
+    if (primary) return primary.textbook_id;
     const fromSlot = slots.find(
       (s) => s.textbook_id && (s.textbook_type === "teacher" || !s.textbook_type),
     );
     return fromSlot?.textbook_id ?? unitTextbookId ?? null;
-  }, [slots, unitTextbookId]);
+  }, [slots, unitTextbookId, unitTextbooks]);
 
   const subjectColor =
     catalogSubject?.color || matchedSubject?.color || slots[0]?.color || "hsl(var(--primary))";
@@ -521,66 +554,132 @@ export default function TeacherSubjectClass() {
     }
   }
 
-  async function linkTextbook(textbookId: string) {
-    setLinking(true);
-    const payload = { textbook_id: textbookId, textbook_type: "teacher" };
+  const linkTable = isGroup ? "subject_group_textbooks" : "class_subject_textbooks";
+  const linkParentCol = isGroup ? "subject_group_id" : "class_subject_id";
 
-    // 1) Zpětná kompatibilita: pokud Výuka má sloty v rozvrhu, propoj je jako dosud.
+  /** Zajistí existenci rodičovského řádku (class_subjects / subject_groups). */
+  async function ensureParentId(): Promise<string | null> {
+    if (isGroup) return groupId ?? null;
+    if (classSubjectId) return classSubjectId;
+    if (!resolvedSubjectId) return null;
+    const { data: existing } = await supabase
+      .from("class_subjects")
+      .select("id")
+      .eq("class_id", classId)
+      .eq("subject_id", resolvedSubjectId)
+      .maybeSingle();
+    if (existing?.id) {
+      setClassSubjectId(existing.id);
+      return existing.id;
+    }
+    const { data: created } = await supabase
+      .from("class_subjects")
+      .insert({ class_id: classId, subject_id: resolvedSubjectId } as any)
+      .select("id")
+      .maybeSingle();
+    if (!created?.id) return null;
+    setClassSubjectId(created.id);
+    return created.id;
+  }
+
+  async function reloadUnitTextbooks(parentId: string) {
+    const { data } = await supabase
+      .from(linkTable as any)
+      .select("id, textbook_id, textbook_type, is_primary")
+      .eq(linkParentCol, parentId);
+    const rows = ((data as any[]) ?? []) as UnitTextbookLink[];
+    setUnitTextbooks(rows);
+    return rows;
+  }
+
+  /** Zrcadlí primární učebnici do původních sloupců (zpětná kompatibilita). */
+  async function syncLegacyPrimary(textbookId: string | null, parentId: string) {
+    const payload = { textbook_id: textbookId, textbook_type: textbookId ? "teacher" : null };
     if (slots.length) {
-      const ids = slots.map((s) => s.id);
-      const { error } = await supabase
+      await supabase
         .from("class_schedule_slots" as any)
         .update(payload)
-        .in("id", ids);
-      if (error) {
-        setLinking(false);
-        toast({ title: "Nepodařilo se propojit učebnici", description: error.message, variant: "destructive" });
-        return;
-      }
-      setSlots((prev) => prev.map((s) => ({ ...s, ...payload })));
+        .in("id", slots.map((s) => s.id));
+      setSlots((prev) => prev.map((s) => ({ ...s, ...payload }) as ScheduleSlot));
     }
-
-    // 2) Vždy ulož propojení i na úroveň Výuky – funguje i bez rozvrhu.
-    let unitError: string | null = null;
     if (isGroup) {
-      const { error } = await supabase
-        .from("subject_groups")
-        .update(payload as any)
-        .eq("id", groupId);
-      unitError = error?.message ?? null;
-    } else if (resolvedSubjectId) {
-      const { data: existing } = await supabase
-        .from("class_subjects")
-        .select("id")
-        .eq("class_id", classId)
-        .eq("subject_id", resolvedSubjectId)
-        .maybeSingle();
-      if (existing?.id) {
-        const { error } = await supabase
-          .from("class_subjects")
-          .update(payload as any)
-          .eq("id", existing.id);
-        unitError = error?.message ?? null;
-      } else {
-        const { error } = await supabase
-          .from("class_subjects")
-          .insert({ class_id: classId, subject_id: resolvedSubjectId, ...payload } as any);
-        unitError = error?.message ?? null;
-      }
-    } else if (!slots.length) {
-      unitError = "Předmět není v katalogu, propojení nelze uložit.";
-    }
-
-    setLinking(false);
-    if (unitError && !slots.length) {
-      toast({ title: "Nepodařilo se propojit učebnici", description: unitError, variant: "destructive" });
-      return;
+      await supabase.from("subject_groups").update(payload as any).eq("id", parentId);
+    } else {
+      await supabase.from("class_subjects").update(payload as any).eq("id", parentId);
     }
     setUnitTextbookId(textbookId);
+  }
 
-    setLinkOpen(false);
+  async function linkTextbook(textbookId: string) {
+    setLinking(true);
+    const parentId = await ensureParentId();
+    if (!parentId) {
+      setLinking(false);
+      toast({
+        title: "Nepodařilo se propojit učebnici",
+        description: "Předmět není v katalogu, propojení nelze uložit.",
+        variant: "destructive",
+      });
+      return;
+    }
+    const isFirst = unitTextbooks.length === 0;
+    const { error } = await supabase
+      .from(linkTable as any)
+      .insert({
+        [linkParentCol]: parentId,
+        textbook_id: textbookId,
+        textbook_type: "teacher",
+        is_primary: isFirst,
+      } as any);
+    if (error && !/duplicate|unique/i.test(error.message)) {
+      setLinking(false);
+      toast({ title: "Nepodařilo se propojit učebnici", description: error.message, variant: "destructive" });
+      return;
+    }
+    const rows = await reloadUnitTextbooks(parentId);
+    const primary = rows.find((r) => r.is_primary)?.textbook_id ?? rows[0]?.textbook_id ?? null;
+    await syncLegacyPrimary(primary, parentId);
+    setLinking(false);
     toast({ title: "Učebnice propojena" });
   }
+
+  async function setPrimaryTextbook(rowId: string) {
+    const parentId = isGroup ? groupId : classSubjectId;
+    if (!parentId) return;
+    setLinking(true);
+    await supabase.from(linkTable as any).update({ is_primary: false } as any).eq(linkParentCol, parentId);
+    const { error } = await supabase.from(linkTable as any).update({ is_primary: true } as any).eq("id", rowId);
+    if (error) {
+      setLinking(false);
+      toast({ title: "Nepodařilo se nastavit hlavní učebnici", description: error.message, variant: "destructive" });
+      return;
+    }
+    const rows = await reloadUnitTextbooks(parentId);
+    await syncLegacyPrimary(rows.find((r) => r.is_primary)?.textbook_id ?? null, parentId);
+    setLinking(false);
+    toast({ title: "Hlavní učebnice nastavena" });
+  }
+
+  async function removeTextbookLink(rowId: string) {
+    const parentId = isGroup ? groupId : classSubjectId;
+    if (!parentId) return;
+    setLinking(true);
+    const { error } = await supabase.from(linkTable as any).delete().eq("id", rowId);
+    if (error) {
+      setLinking(false);
+      toast({ title: "Nepodařilo se odpojit učebnici", description: error.message, variant: "destructive" });
+      return;
+    }
+    let rows = await reloadUnitTextbooks(parentId);
+    if (rows.length && !rows.some((r) => r.is_primary)) {
+      await supabase.from(linkTable as any).update({ is_primary: true } as any).eq("id", rows[0].id);
+      rows = await reloadUnitTextbooks(parentId);
+    }
+    await syncLegacyPrimary(rows.find((r) => r.is_primary)?.textbook_id ?? null, parentId);
+    setLinking(false);
+    toast({ title: "Učebnice odpojena" });
+  }
+
 
   function newAssignment() {
     const target = isGroup ? `groupId=${groupId}` : `classId=${classId}`;
@@ -754,7 +853,7 @@ export default function TeacherSubjectClass() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      title="Změnit propojenou učebnici"
+                      title="Spravovat propojené učebnice"
                       onClick={openLinkDialog}
                     >
                       <Pencil className="h-4 w-4" />
@@ -1122,25 +1221,79 @@ export default function TeacherSubjectClass() {
       <Dialog open={linkOpen} onOpenChange={setLinkOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Propojit učebnici s předmětem</DialogTitle>
+            <DialogTitle>Učebnice propojené s předmětem</DialogTitle>
             <DialogDescription>
-              Vyber jednu ze svých učebnic. Propojení se uloží do rozvrhu této třídy a předmětu „{subjectLabel}“.
+              K předmětu „{subjectLabel}“ můžeš propojit více učebnic. Hlavní učebnice se použije pro
+              tlačítko „Spustit lekci“.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-2 max-h-72 overflow-y-auto">
+          {unitTextbooks.length > 0 && (
+            <div className="space-y-2">
+              <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                Propojené učebnice ({unitTextbooks.length})
+              </Label>
+              {unitTextbooks.map((row) => {
+                const tb = teacherTextbooks.find((t) => t.id === row.textbook_id);
+                return (
+                  <div
+                    key={row.id}
+                    className="flex items-center justify-between gap-2 rounded-lg border border-border p-3"
+                  >
+                    <div className="min-w-0 flex items-center gap-2">
+                      <BookOpen className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <div className="min-w-0">
+                        <div className="font-medium truncate">{tb?.title ?? "Učebnice"}</div>
+                        {row.is_primary && (
+                          <Badge variant="secondary" className="mt-0.5 text-[10px]">
+                            Hlavní
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {!row.is_primary && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={linking}
+                          onClick={() => setPrimaryTextbook(row.id)}
+                        >
+                          <Star className="h-4 w-4 mr-1" />
+                          Nastavit jako hlavní
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={linking}
+                        onClick={() => removeTextbookLink(row.id)}
+                      >
+                        Odpojit
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+            Přidat další učebnici
+          </Label>
+          <div className="space-y-2 max-h-64 overflow-y-auto">
             {teacherTextbooks.length === 0 ? (
               <Card className="p-4 text-sm text-muted-foreground text-center">
                 Zatím nemáš žádné vlastní učebnice. Vytvoř ji v sekci Moje učebnice.
               </Card>
             ) : (
               teacherTextbooks.map((tb) => {
-                const isCurrent = tb.id === linkedTextbookId;
+                const isLinked = unitTextbooks.some((r) => r.textbook_id === tb.id);
                 return (
                   <button
                     key={tb.id}
                     type="button"
-                    disabled={linking}
+                    disabled={linking || isLinked}
                     onClick={() => linkTextbook(tb.id)}
                     className="w-full text-left rounded-lg border border-border p-3 hover:bg-accent transition disabled:opacity-50"
                   >
@@ -1151,13 +1304,18 @@ export default function TeacherSubjectClass() {
                           <div className="text-xs text-muted-foreground truncate">{tb.subject}</div>
                         )}
                       </div>
-                      {isCurrent && <Badge variant="secondary">Propojená</Badge>}
+                      {isLinked ? (
+                        <Badge variant="secondary">Propojená</Badge>
+                      ) : (
+                        <Plus className="h-4 w-4 text-muted-foreground" />
+                      )}
                     </div>
                   </button>
                 );
               })
             )}
           </div>
+
 
           <div className="mt-2 rounded-lg border border-dashed border-border p-3 bg-muted/30 opacity-70">
             <div className="flex items-center gap-2 text-sm font-medium">
