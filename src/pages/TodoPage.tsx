@@ -35,7 +35,10 @@ interface Todo {
   status: string;
   priority: string;
   created_at: string;
+  user_id?: string;
+  assigned_by?: string | null;
 }
+
 
 const typeLabel: Record<string, string> = {
   task: "Úkol",
