@@ -57,39 +57,105 @@ const ClassMembersDialog = ({ classItem, open, onOpenChange, onUpdated }: Props)
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<"members" | "add">("members");
+  const [schoolId, setSchoolId] = useState<string | null>(null);
+  const [includeOutside, setIncludeOutside] = useState(false);
 
-  const fetchData = async () => {
+  const fetchData = async (opts?: { includeOutside?: boolean }) => {
     setLoading(true);
+    const showOutside = opts?.includeOutside ?? includeOutside;
+
+    const { data: classRow } = await supabase
+      .from("classes")
+      .select("school_id")
+      .eq("id", classItem.id)
+      .maybeSingle();
+    const classSchoolId = (classRow as any)?.school_id ?? null;
+    setSchoolId(classSchoolId);
 
     const { data: memberLinks } = await supabase
       .from("class_members")
       .select("user_id")
       .eq("class_id", classItem.id);
 
-    const memberIds = new Set(memberLinks?.map((m: any) => m.user_id) ?? []);
+    const memberIds: string[] = (memberLinks?.map((m: any) => m.user_id) ?? []) as string[];
+    const memberIdSet = new Set(memberIds);
 
-    const { data: profiles } = await supabase
+    const mapProfiles = (rows: any[] | null): MemberProfile[] =>
+      (rows ?? []).map((p: any) => ({ ...p, status: p.status as string }));
+
+    // Members are always shown, regardless of school
+    let memberProfiles: MemberProfile[] = [];
+    if (memberIds.length > 0) {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, first_name, last_name, email, school, field_of_study, year, status")
+        .in("id", memberIds)
+        .order("last_name");
+      memberProfiles = mapProfiles(data);
+    }
+
+    // Candidates: when the class belongs to a school, default to that school's students
+    let candidatesQuery = supabase
       .from("profiles")
       .select("id, first_name, last_name, email, school, field_of_study, year, status")
       .order("last_name");
+    if (classSchoolId && !showOutside) {
+      candidatesQuery = candidatesQuery.eq("school_id", classSchoolId);
+    }
+    const { data: candidateRows } = await candidatesQuery;
 
-    const allProfiles: MemberProfile[] = (profiles ?? []).map((p: any) => ({
-      ...p,
-      status: p.status as string,
-    }));
-
-    setMembers(allProfiles.filter((p) => memberIds.has(p.id)));
-    setAllStudents(allProfiles.filter((p) => !memberIds.has(p.id)));
+    setMembers(memberProfiles);
+    setAllStudents(mapProfiles(candidateRows).filter((p) => !memberIdSet.has(p.id)));
     setLoading(false);
   };
 
   useEffect(() => {
     if (open) {
-      fetchData();
+      setIncludeOutside(false);
+      fetchData({ includeOutside: false });
       setSearch("");
       setTab("members");
     }
   }, [open, classItem.id]);
+
+  /** Warn (but never block) when the school would exceed its student seats. */
+  const checkLicenseSeats = async (targetSchoolId: string) => {
+    try {
+      const { data: license } = await supabase
+        .from("school_licenses")
+        .select("seats_students, status")
+        .eq("school_id", targetSchoolId)
+        .eq("status", "active")
+        .order("created_at", { ascending: false })
+        .maybeSingle();
+
+      const seats = (license as any)?.seats_students as number | null | undefined;
+      if (!seats || seats <= 0) return;
+
+      const { data: schoolClasses } = await supabase
+        .from("classes")
+        .select("id")
+        .eq("school_id", targetSchoolId);
+      const classIds = (schoolClasses ?? []).map((c: any) => c.id);
+      if (classIds.length === 0) return;
+
+      const { data: links } = await supabase
+        .from("class_members")
+        .select("user_id")
+        .in("class_id", classIds);
+      const unique = new Set((links ?? []).map((l: any) => l.user_id));
+
+      if (unique.size > seats) {
+        toast({
+          title: "Škola je nad rámec licence",
+          description: `${unique.size}/${seats} žáků. Žák byl přidán, doporučujeme navýšit licenci.`,
+          variant: "destructive",
+        });
+      }
+    } catch {
+      // Diagnostics only – never block adding a student
+    }
+  };
 
   const addMember = async (userId: string) => {
     const { error } = await supabase.from("class_members").insert({
@@ -100,9 +166,11 @@ const ClassMembersDialog = ({ classItem, open, onOpenChange, onUpdated }: Props)
       toast({ title: "Chyba", description: error.message, variant: "destructive" });
       return;
     }
+    if (schoolId) await checkLicenseSeats(schoolId);
     fetchData();
     onUpdated();
   };
+
 
   const removeMember = async (userId: string) => {
     const { error } = await supabase
