@@ -13,6 +13,8 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2, Pencil, Plus, School as SchoolIcon, Trash2, UserMinus, Users } from "lucide-react";
+import SchoolJoinRequestsManager from "@/components/admin/SchoolJoinRequestsManager";
+
 
 
 interface School {
@@ -287,7 +289,12 @@ const SchoolsManager = () => {
   };
 
   return (
+    <div className="space-y-6">
+    <SchoolJoinRequestsManager
+      onCreateSchool={(prefillName) => { setSchoolName(prefillName); setOpen(true); }}
+    />
     <Card>
+
       <CardHeader className="flex-row items-center justify-between space-y-0">
         <CardTitle className="flex items-center gap-2">
           <SchoolIcon className="w-5 h-5" /> Školy
@@ -521,6 +528,8 @@ const SchoolsManager = () => {
       </CardContent>
 
     </Card>
+    </div>
+
   );
 };
 

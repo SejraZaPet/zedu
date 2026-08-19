@@ -11,6 +11,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, Save, KeyRound, User, Mail, Sparkles, Check, Bell, Flame, Trophy, Star, Gamepad2, GraduationCap, Users, ClipboardList } from "lucide-react";
 import ProfileAvatarBubble from "@/components/profile/ProfileAvatarBubble";
+import SchoolJoinRequestCard from "@/components/profile/SchoolJoinRequestCard";
+
 
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
@@ -667,7 +669,9 @@ const ProfilePage = () => {
               <div>
                 <Label htmlFor="school">Škola</Label>
                 <Input id="school" value={school} onChange={(e) => setSchool(e.target.value)} />
+                {user?.id && <SchoolJoinRequestCard userId={user.id} defaultSchoolName={school} />}
               </div>
+
               <div>
                 <Label htmlFor="field">Obor</Label>
                 <Input id="field" value={fieldOfStudy} onChange={(e) => setFieldOfStudy(e.target.value)} />
