@@ -183,7 +183,10 @@ export default function TeacherSubjectClass() {
   const [teacherTextbooks, setTeacherTextbooks] = useState<TeacherTextbookRow[]>([]);
   /** Propojení učebnice na úrovni Výuky (class_subjects / subject_groups) – fallback bez rozvrhu */
   const [unitTextbookId, setUnitTextbookId] = useState<string | null>(null);
+  const [classSubjectId, setClassSubjectId] = useState<string | null>(null);
+  const [unitTextbooks, setUnitTextbooks] = useState<UnitTextbookLink[]>([]);
   const [linking, setLinking] = useState(false);
+
 
   const [assignPlanOpen, setAssignPlanOpen] = useState(false);
   const [assignPlanId, setAssignPlanId] = useState<string>("");
