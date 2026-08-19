@@ -6084,6 +6084,7 @@ export type Database = {
       }
       todos: {
         Row: {
+          assigned_by: string | null
           created_at: string | null
           description: string | null
           due_date: string | null
@@ -6095,6 +6096,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          assigned_by?: string | null
           created_at?: string | null
           description?: string | null
           due_date?: string | null
@@ -6106,6 +6108,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          assigned_by?: string | null
           created_at?: string | null
           description?: string | null
           due_date?: string | null
