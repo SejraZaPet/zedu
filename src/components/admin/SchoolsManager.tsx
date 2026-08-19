@@ -61,6 +61,74 @@ const SchoolsManager = () => {
 
   const [editing, setEditing] = useState<School>(emptySchool);
 
+  // members management
+  const [membersOpen, setMembersOpen] = useState(false);
+  const [membersSchool, setMembersSchool] = useState<SchoolWithStats | null>(null);
+  const [members, setMembers] = useState<SchoolMember[]>([]);
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [pendingRemove, setPendingRemove] = useState<SchoolMember | null>(null);
+  const [removing, setRemoving] = useState(false);
+
+  const loadMembers = async (schoolId: string) => {
+    setMembersLoading(true);
+    const { data: profs, error } = await supabase
+      .from("profiles")
+      .select("id, email, first_name, last_name, status")
+      .eq("school_id", schoolId)
+      .order("last_name", { ascending: true });
+    if (error) {
+      toast({ title: "Chyba načítání členů", description: error.message, variant: "destructive" });
+      setMembers([]);
+      setMembersLoading(false);
+      return;
+    }
+    const ids = (profs ?? []).map((p: any) => p.id);
+    const rolesByUser = new Map<string, string[]>();
+    if (ids.length) {
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("user_id, role")
+        .in("user_id", ids);
+      roles?.forEach((r: any) => {
+        const arr = rolesByUser.get(r.user_id) ?? [];
+        arr.push(r.role);
+        rolesByUser.set(r.user_id, arr);
+      });
+    }
+    setMembers(
+      (profs ?? []).map((p: any) => ({ ...p, roles: rolesByUser.get(p.id) ?? [] }))
+    );
+    setMembersLoading(false);
+  };
+
+  const openMembers = (school: SchoolWithStats) => {
+    setMembersSchool(school);
+    setMembersOpen(true);
+    void loadMembers(school.id);
+  };
+
+  const confirmRemoveMember = async () => {
+    if (!pendingRemove || !membersSchool) return;
+    setRemoving(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ school_id: null })
+      .eq("id", pendingRemove.id);
+    setRemoving(false);
+    if (error) {
+      toast({ title: "Odebrání se nezdařilo", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({
+      title: "Uživatel odebrán ze školy",
+      description: `${memberName(pendingRemove)} už není napojen na ${membersSchool.name}. Účet zůstává zachován.`,
+    });
+    setPendingRemove(null);
+    await loadMembers(membersSchool.id);
+    load();
+  };
+
+
   const load = async () => {
     setLoading(true);
     const { data: rows, error } = await supabase
