@@ -4050,6 +4050,47 @@ export type Database = {
           },
         ]
       }
+      school_join_requests: {
+        Row: {
+          created_at: string
+          id: string
+          message: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          school_name_text: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          school_name_text: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          school_name_text?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "school_join_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       school_license_reminders: {
         Row: {
           created_at: string
