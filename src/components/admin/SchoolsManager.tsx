@@ -13,6 +13,8 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2, Pencil, Plus, School as SchoolIcon, Trash2, UserMinus, Users } from "lucide-react";
+import SchoolJoinRequestsManager from "@/components/admin/SchoolJoinRequestsManager";
+
 
 
 interface School {
