@@ -526,6 +526,8 @@ const SchoolsManager = () => {
       </CardContent>
 
     </Card>
+    </div>
+
   );
 };
 
