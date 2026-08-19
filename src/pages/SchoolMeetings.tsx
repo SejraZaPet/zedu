@@ -326,7 +326,10 @@ const SchoolMeetings = () => {
           <>
             <div className="flex items-start justify-between gap-4 flex-wrap mb-6">
               <div>
-                <h1 className="font-heading text-3xl font-bold">Porady školy</h1>
+                <h1 className="font-heading text-3xl font-bold flex items-center gap-2">
+                  Porady školy
+                  <BetaBadge context="Porady školy" />
+                </h1>
                 <p className="text-sm text-muted-foreground mt-1">
                   Zápisy z porad, účast, potvrzení přečtení a úkoly. Zapisovat může kterýkoli učitel školy.
                 </p>
