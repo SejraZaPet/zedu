@@ -482,7 +482,11 @@ const ClassesManager = () => {
             </div>
             <div>
               <Label htmlFor="classSchool">Škola</Label>
-              <Input id="classSchool" value={school} onChange={(e) => setSchool(e.target.value)} />
+              {mySchoolId ? (
+                <Input id="classSchool" value={schoolName ?? school} readOnly disabled />
+              ) : (
+                <Input id="classSchool" value={school} onChange={(e) => setSchool(e.target.value)} />
+              )}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
