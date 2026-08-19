@@ -382,8 +382,10 @@ const ClassMembersDialog = ({ classItem, open, onOpenChange, onUpdated }: Props)
                     </div>
                   ))
                 )}
+                </div>
               </div>
             )}
+
           </div>
         )}
       </DialogContent>
