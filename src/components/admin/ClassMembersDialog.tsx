@@ -347,7 +347,24 @@ const ClassMembersDialog = ({ classItem, open, onOpenChange, onUpdated }: Props)
             )}
 
             {tab === "add" && (
-              <div className="overflow-y-auto max-h-[400px] border border-border rounded-md divide-y divide-border">
+              <div className="flex flex-col gap-2 min-h-0">
+                {schoolId && (
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      id="include-outside"
+                      checked={includeOutside}
+                      onCheckedChange={(v) => {
+                        setIncludeOutside(v);
+                        fetchData({ includeOutside: v });
+                      }}
+                    />
+                    <Label htmlFor="include-outside" className="text-xs text-muted-foreground">
+                      Zobrazit i žáky mimo školu
+                    </Label>
+                  </div>
+                )}
+                <div className="overflow-y-auto max-h-[400px] border border-border rounded-md divide-y divide-border">
+
                 {filteredStudents.length === 0 ? (
                   <p className="text-xs text-muted-foreground p-3 text-center">
                     {allStudents.length === 0 ? "Všichni studenti jsou již přiřazeni." : "Žádný student nenalezen."}
