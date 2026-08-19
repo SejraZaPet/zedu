@@ -41,6 +41,9 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
   const stageRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawingRef = useRef<Stroke | null>(null);
+  /** Čas posledního doteku pera — slouží k jednoduchému palm rejection. */
+  const lastPenAtRef = useRef(0);
+
   const fileRef = useRef<HTMLInputElement>(null);
   const [, force] = useState(0);
   const rerender = useCallback(() => force((n) => n + 1), []);
