@@ -1221,25 +1221,79 @@ export default function TeacherSubjectClass() {
       <Dialog open={linkOpen} onOpenChange={setLinkOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Propojit učebnici s předmětem</DialogTitle>
+            <DialogTitle>Učebnice propojené s předmětem</DialogTitle>
             <DialogDescription>
-              Vyber jednu ze svých učebnic. Propojení se uloží do rozvrhu této třídy a předmětu „{subjectLabel}“.
+              K předmětu „{subjectLabel}“ můžeš propojit více učebnic. Hlavní učebnice se použije pro
+              tlačítko „Spustit lekci“.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-2 max-h-72 overflow-y-auto">
+          {unitTextbooks.length > 0 && (
+            <div className="space-y-2">
+              <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                Propojené učebnice ({unitTextbooks.length})
+              </Label>
+              {unitTextbooks.map((row) => {
+                const tb = teacherTextbooks.find((t) => t.id === row.textbook_id);
+                return (
+                  <div
+                    key={row.id}
+                    className="flex items-center justify-between gap-2 rounded-lg border border-border p-3"
+                  >
+                    <div className="min-w-0 flex items-center gap-2">
+                      <BookOpen className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <div className="min-w-0">
+                        <div className="font-medium truncate">{tb?.title ?? "Učebnice"}</div>
+                        {row.is_primary && (
+                          <Badge variant="secondary" className="mt-0.5 text-[10px]">
+                            Hlavní
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {!row.is_primary && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={linking}
+                          onClick={() => setPrimaryTextbook(row.id)}
+                        >
+                          <Star className="h-4 w-4 mr-1" />
+                          Nastavit jako hlavní
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={linking}
+                        onClick={() => removeTextbookLink(row.id)}
+                      >
+                        Odpojit
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+            Přidat další učebnici
+          </Label>
+          <div className="space-y-2 max-h-64 overflow-y-auto">
             {teacherTextbooks.length === 0 ? (
               <Card className="p-4 text-sm text-muted-foreground text-center">
                 Zatím nemáš žádné vlastní učebnice. Vytvoř ji v sekci Moje učebnice.
               </Card>
             ) : (
               teacherTextbooks.map((tb) => {
-                const isCurrent = tb.id === linkedTextbookId;
+                const isLinked = unitTextbooks.some((r) => r.textbook_id === tb.id);
                 return (
                   <button
                     key={tb.id}
                     type="button"
-                    disabled={linking}
+                    disabled={linking || isLinked}
                     onClick={() => linkTextbook(tb.id)}
                     className="w-full text-left rounded-lg border border-border p-3 hover:bg-accent transition disabled:opacity-50"
                   >
@@ -1250,13 +1304,18 @@ export default function TeacherSubjectClass() {
                           <div className="text-xs text-muted-foreground truncate">{tb.subject}</div>
                         )}
                       </div>
-                      {isCurrent && <Badge variant="secondary">Propojená</Badge>}
+                      {isLinked ? (
+                        <Badge variant="secondary">Propojená</Badge>
+                      ) : (
+                        <Plus className="h-4 w-4 text-muted-foreground" />
+                      )}
                     </div>
                   </button>
                 );
               })
             )}
           </div>
+
 
           <div className="mt-2 rounded-lg border border-dashed border-border p-3 bg-muted/30 opacity-70">
             <div className="flex items-center gap-2 text-sm font-medium">
