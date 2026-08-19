@@ -7,11 +7,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2, Plus, School as SchoolIcon, Trash2 } from "lucide-react";
+import { Loader2, Pencil, Plus, School as SchoolIcon, Trash2 } from "lucide-react";
 
 interface School {
   id: string;
   name: string;
+  subdomain: string | null;
+  custom_logo_url: string | null;
+  custom_primary_color: string | null;
+  custom_welcome_text: string | null;
   created_at: string;
 }
 
@@ -20,11 +24,27 @@ interface SchoolWithStats extends School {
   admin_count: number;
 }
 
+const RESERVED_SUBDOMAINS = new Set(["www", "app", "id-preview", "preview", "zedu", "lovable", "staging"]);
+const SUBDOMAIN_RE = /^[a-z0-9]([a-z0-9-]{0,30}[a-z0-9])?$/;
+
+const subdomainOk = (s: string) => SUBDOMAIN_RE.test(s) && !RESERVED_SUBDOMAINS.has(s);
+
+const emptySchool: School = {
+  id: "",
+  name: "",
+  subdomain: "",
+  custom_logo_url: "",
+  custom_primary_color: "",
+  custom_welcome_text: "",
+  created_at: "",
+};
+
 const SchoolsManager = () => {
   const { toast } = useToast();
   const [schools, setSchools] = useState<SchoolWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const [schoolName, setSchoolName] = useState("");
@@ -33,11 +53,13 @@ const SchoolsManager = () => {
   const [adminEmail, setAdminEmail] = useState("");
   const [adminPassword, setAdminPassword] = useState("");
 
+  const [editing, setEditing] = useState<School>(emptySchool);
+
   const load = async () => {
     setLoading(true);
     const { data: rows, error } = await supabase
       .from("schools")
-      .select("id, name, created_at")
+      .select("id, name, subdomain, custom_logo_url, custom_primary_color, custom_welcome_text, created_at")
       .order("created_at", { ascending: false });
     if (error) {
       toast({ title: "Chyba načítání", description: error.message, variant: "destructive" });
@@ -131,6 +153,52 @@ const SchoolsManager = () => {
     load();
   };
 
+  const openEdit = (school: SchoolWithStats) => {
+    setEditing({ ...school });
+    setEditOpen(true);
+  };
+
+  const closeEdit = () => {
+    setEditing(emptySchool);
+    setEditOpen(false);
+  };
+
+  const saveEdit = async () => {
+    const name = editing.name.trim();
+    const sub = (editing.subdomain ?? "").trim().toLowerCase();
+    if (!name) {
+      toast({ title: "Název školy je povinný", variant: "destructive" });
+      return;
+    }
+    if (sub && !subdomainOk(sub)) {
+      toast({ title: "Neplatná subdoména", description: "Pouze malá písmena, číslice a pomlčky (1–32 znaků).", variant: "destructive" });
+      return;
+    }
+    setSubmitting(true);
+    const updatePayload: Record<string, any> = {
+      name,
+      subdomain: sub || null,
+      custom_logo_url: (editing.custom_logo_url ?? "").trim() || null,
+      custom_primary_color: (editing.custom_primary_color ?? "").trim() || null,
+      custom_welcome_text: (editing.custom_welcome_text ?? "").trim() || null,
+    };
+    const { error } = await supabase
+      .from("schools")
+      .update(updatePayload)
+      .eq("id", editing.id);
+    setSubmitting(false);
+    if (error) {
+      const msg = error.code === "23505"
+        ? "Tato subdoména je už obsazena."
+        : error.message;
+      toast({ title: "Uložení se nezdařilo", description: msg, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Škola upravena", description: `Údaje pro ${name} byly uloženy.` });
+    closeEdit();
+    load();
+  };
+
   return (
     <Card>
       <CardHeader className="flex-row items-center justify-between space-y-0">
@@ -189,6 +257,7 @@ const SchoolsManager = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Název</TableHead>
+                <TableHead>Subdoména</TableHead>
                 <TableHead className="text-right">Členů</TableHead>
                 <TableHead className="text-right">Adminů</TableHead>
                 <TableHead className="text-right">Akce</TableHead>
@@ -198,18 +267,101 @@ const SchoolsManager = () => {
               {schools.map((s) => (
                 <TableRow key={s.id}>
                   <TableCell className="font-medium">{s.name}</TableCell>
+                  <TableCell>{s.subdomain ? `${s.subdomain}.zedu.cz` : "—"}</TableCell>
                   <TableCell className="text-right">{s.member_count}</TableCell>
                   <TableCell className="text-right">{s.admin_count}</TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" onClick={() => remove(s.id, s.name)}>
-                      <Trash2 className="w-4 h-4 text-destructive" />
-                    </Button>
+                    <div className="inline-flex items-center gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(s)} title="Upravit">
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => remove(s.id, s.name)}>
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         )}
+
+        <Dialog open={editOpen} onOpenChange={(o) => { if (!o) closeEdit(); else setEditOpen(o); }}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Upravit školu</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div>
+                <Label htmlFor="edit-name">Název školy *</Label>
+                <Input
+                  id="edit-name"
+                  value={editing.name}
+                  onChange={(e) => setEditing({ ...editing, name: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-subdomain">Subdoména</Label>
+                <div className="flex items-center gap-2 mt-1">
+                  <Input
+                    id="edit-subdomain"
+                    value={editing.subdomain ?? ""}
+                    onChange={(e) => setEditing({ ...editing, subdomain: e.target.value.toLowerCase() })}
+                    placeholder="zs-brno"
+                    maxLength={32}
+                  />
+                  <span className="text-sm text-muted-foreground whitespace-nowrap">.zedu.cz</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Malá písmena, číslice a pomlčky. Nechte prázdné, pokud subdoména není potřeba.
+                </p>
+              </div>
+              <div>
+                <Label htmlFor="edit-logo">URL loga</Label>
+                <Input
+                  id="edit-logo"
+                  value={editing.custom_logo_url ?? ""}
+                  onChange={(e) => setEditing({ ...editing, custom_logo_url: e.target.value })}
+                  placeholder="https://..."
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-color">Primární barva</Label>
+                <div className="flex items-center gap-2 mt-1">
+                  <input
+                    id="edit-color"
+                    type="color"
+                    value={editing.custom_primary_color || "#6EC6D9"}
+                    onChange={(e) => setEditing({ ...editing, custom_primary_color: e.target.value })}
+                    className="h-10 w-14 rounded border border-border cursor-pointer bg-transparent"
+                  />
+                  <Input
+                    value={editing.custom_primary_color ?? ""}
+                    onChange={(e) => setEditing({ ...editing, custom_primary_color: e.target.value })}
+                    placeholder="#6EC6D9"
+                    maxLength={7}
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="edit-welcome">Uvítací text</Label>
+                <Input
+                  id="edit-welcome"
+                  value={editing.custom_welcome_text ?? ""}
+                  onChange={(e) => setEditing({ ...editing, custom_welcome_text: e.target.value })}
+                  placeholder="Vítejte v portálu školy."
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={closeEdit}>Zrušit</Button>
+              <Button onClick={saveEdit} disabled={submitting}>
+                {submitting && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}
+                Uložit
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );
