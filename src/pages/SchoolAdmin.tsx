@@ -11,7 +11,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
-import { Home, LogOut, School as SchoolIcon, Users, GraduationCap, Plus, Trash2, ShieldCheck, ShieldOff, Copy, RefreshCw, KeyRound, Palette, Upload } from "lucide-react";
+import { Home, LogOut, School as SchoolIcon, Users, GraduationCap, Plus, ShieldCheck, ShieldOff, Copy, RefreshCw, KeyRound, Palette, Upload, UserMinus, Loader2 } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
 import SchoolBrandingSection from "@/components/school/SchoolBrandingSection";
 import SchoolBulkImportCard from "@/components/school/SchoolBulkImportCard";
 import SchoolCreatorSalesCard from "@/components/school/SchoolCreatorSalesCard";
