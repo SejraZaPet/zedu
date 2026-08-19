@@ -5,10 +5,12 @@
 import { PDFDocument, rgb, StandardFonts, PDFFont, PDFPage } from "npm:pdf-lib@1.17.1";
 import fontkit from "npm:@pdf-lib/fontkit@1.1.1";
 
+// DejaVu Sans pokrývá basic latin i latin-ext (česká diakritika) v jednom souboru.
+// Fontsource subsety "latin-ext" obsahují POUZE akcentované znaky — bez ASCII, proto je nepoužíváme.
 const FONT_REGULAR_URL =
-  "https://cdn.jsdelivr.net/fontsource/fonts/noto-sans@latest/latin-ext-400-normal.ttf";
+  "https://cdn.jsdelivr.net/npm/dejavu-fonts-ttf@2.37.3/ttf/DejaVuSans.ttf";
 const FONT_BOLD_URL =
-  "https://cdn.jsdelivr.net/fontsource/fonts/noto-sans@latest/latin-ext-700-normal.ttf";
+  "https://cdn.jsdelivr.net/npm/dejavu-fonts-ttf@2.37.3/ttf/DejaVuSans-Bold.ttf";
 
 let fontPromise: Promise<{ regular: Uint8Array; bold: Uint8Array }> | null = null;
 
