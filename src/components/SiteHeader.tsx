@@ -11,6 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useMySchool } from "@/hooks/useMySchool";
 import { useAuth } from "@/contexts/AuthContext";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import { useSchoolBranding } from "@/hooks/useSchoolBranding";
@@ -75,7 +76,7 @@ const TEACHER_MENU_GROUPS: TeacherMenuGroup[] = [
   },
 ];
 
-const TEACHER_EXTRA_ITEMS: TeacherExtraNavItem[] = TEACHER_MENU_GROUPS.flatMap((g) => g.items);
+const SCHOOL_ONLY_GROUP = "Škola";
 
 
 const ACADEMY_BY_ROLE: Record<string, string> = {
@@ -90,6 +91,7 @@ const SiteHeader = () => {
   const { isLoggedIn, role: userRole, signOut } = useAuth();
   const { isStaff } = useStaffPermissions();
   const { branding } = useSchoolBranding();
+  const { hasSchool } = useMySchool();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -100,6 +102,12 @@ const SiteHeader = () => {
   }, []);
 
   const canAccessAdmin = userRole === "admin" || userRole === "teacher";
+
+  // Skupina "Škola" (porady, školní agenda) patří jen učitelům pod licencí školy.
+  const teacherMenuGroups = TEACHER_MENU_GROUPS.filter(
+    (g) => g.title !== SCHOOL_ONLY_GROUP || hasSchool,
+  );
+  const teacherExtraItems: TeacherExtraNavItem[] = teacherMenuGroups.flatMap((g) => g.items);
 
   const getNavItems = (): NavItem[] => {
     if (userRole === "admin") {
@@ -260,7 +268,7 @@ const SiteHeader = () => {
                   )}
                   {(userRole === "teacher" || userRole === "lektor") && (
                     <>
-                      {TEACHER_MENU_GROUPS.map((group) => (
+                      {teacherMenuGroups.map((group) => (
                         <div key={group.title}>
                           <DropdownMenuSeparator />
                           <DropdownMenuLabel className="text-xs uppercase tracking-wide text-muted-foreground">
@@ -337,7 +345,7 @@ const SiteHeader = () => {
               );
             })}
             {(userRole === "teacher" || userRole === "lektor") && (
-              TEACHER_EXTRA_ITEMS.map((item) => {
+              teacherExtraItems.map((item) => {
                 const Icon = item.icon;
                 const active = location.pathname.startsWith(item.href);
                 return (
