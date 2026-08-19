@@ -378,11 +378,12 @@ const SchoolAdmin = () => {
           </TabsList>
 
           <TabsContent value="teachers">
-            <MembersTable rows={teachers} onToggleRole={toggleRole} onRemove={removeFromSchool} kind="teacher" />
+            <MembersTable rows={teachers} onToggleRole={toggleRole} onRemove={setPendingRemove} kind="teacher" />
           </TabsContent>
           <TabsContent value="students">
-            <MembersTable rows={students} onToggleRole={toggleRole} onRemove={removeFromSchool} kind="user" />
+            <MembersTable rows={students} onToggleRole={toggleRole} onRemove={setPendingRemove} kind="user" />
           </TabsContent>
+
           <TabsContent value="import">
             <SchoolBulkImportCard onImported={load} />
           </TabsContent>
