@@ -177,7 +177,7 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
       setLoading(false);
     })();
     return () => { mounted = false; };
-  }, [userId]);
+  }, [userId, reloadKey]);
 
   const tintFor = (category: string): string | null => {
     if (!profile) return null;
