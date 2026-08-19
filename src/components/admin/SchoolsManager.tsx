@@ -30,10 +30,23 @@ interface SchoolWithStats extends School {
   admin_count: number;
 }
 
+interface SchoolMember {
+  id: string;
+  email: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  status: string | null;
+  roles: string[];
+}
+
+const memberName = (m: SchoolMember) =>
+  `${m.first_name ?? ""} ${m.last_name ?? ""}`.trim() || m.email || "Uživatel";
+
 const RESERVED_SUBDOMAINS = new Set(["www", "app", "id-preview", "preview", "zedu", "lovable", "staging"]);
 const SUBDOMAIN_RE = /^[a-z0-9]([a-z0-9-]{0,30}[a-z0-9])?$/;
 
 const subdomainOk = (s: string) => SUBDOMAIN_RE.test(s) && !RESERVED_SUBDOMAINS.has(s);
+
 
 const emptySchool: School = {
   id: "",
