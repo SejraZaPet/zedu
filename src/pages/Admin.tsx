@@ -36,6 +36,7 @@ import MarketplaceEconomicsManager from "@/components/admin/MarketplaceEconomics
 import WebsiteAssistantManager from "@/components/admin/WebsiteAssistantManager";
 import MyStaffPanel from "@/components/admin/MyStaffPanel";
 import StaffKnowledgeManager from "@/components/admin/StaffKnowledgeManager";
+import SchoolsManager from "@/components/admin/SchoolsManager";
 import { useStaffPermissions } from "@/hooks/useStaffPermissions";
 import { Button } from "@/components/ui/button";
 import { BookOpen, LogOut, Home, GraduationCap, Settings, Users, School, BarChart3, LayoutDashboard, HelpCircle, ListTree, CircleHelp, Link2, Pencil, Video, Bell, Activity, FileText, Sparkles, Globe, Smile, Library, Award, FileBadge2, Contact, ChevronDown, Coins, UserSquare2, Image as ImageIcon, Bot } from "lucide-react";
