@@ -4,6 +4,7 @@ import { createPdf, finalizePdf, drawFooter } from "../_shared/pdf/pdf-engine.ts
 import { buildWorksheetPdf } from "../_shared/pdf/worksheet.ts";
 import { buildLessonPlanPdf } from "../_shared/pdf/lesson-plan.ts";
 import { buildSchedulePdf } from "../_shared/pdf/schedule.ts";
+import { buildMeetingNotesPdf } from "../_shared/pdf/meeting-notes.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -16,7 +17,7 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-type DocType = "worksheet" | "lesson_plan" | "schedule";
+type DocType = "worksheet" | "lesson_plan" | "schedule" | "meeting_notes";
 
 interface ReqBody {
   type: DocType;
@@ -103,6 +104,71 @@ async function generateForType(
     return { bytes, suggestedName: `rozvrh-${slug((klass as any).name)}.pdf` };
   }
 
+  if (body.type === "meeting_notes") {
+    const { data: meeting, error: mErr } = await svc
+      .from("school_meetings")
+      .select("*")
+      .eq("id", body.id)
+      .maybeSingle();
+    if (mErr) throw new Error("DB error: " + mErr.message);
+    if (!meeting) throw new Error("Porada nenalezena");
+
+    const { data: me } = await svc.from("profiles").select("school_id").eq("id", userId).maybeSingle();
+    if (!(me as any)?.school_id || (me as any).school_id !== (meeting as any).school_id) {
+      throw new Error("Nemáte oprávnění k této poradě");
+    }
+
+    const [{ data: attRows }, { data: ackRows }, { data: taskRows }, { data: school }] = await Promise.all([
+      svc.from("school_meeting_attendees").select("teacher_id, attended").eq("meeting_id", body.id),
+      svc.from("school_meeting_acknowledgments").select("teacher_id, acknowledged_at").eq("meeting_id", body.id),
+      svc.from("school_meeting_tasks").select("task, due_date, assigned_to").eq("meeting_id", body.id),
+      svc.from("schools").select("name").eq("id", (meeting as any).school_id).maybeSingle(),
+    ]);
+
+    const ids = new Set<string>();
+    ((attRows as any[]) || []).forEach((a) => a.teacher_id && ids.add(a.teacher_id));
+    ((taskRows as any[]) || []).forEach((t) => t.assigned_to && ids.add(t.assigned_to));
+    if ((meeting as any).author_id) ids.add((meeting as any).author_id);
+
+    const nameById = new Map<string, string>();
+    if (ids.size > 0) {
+      const { data: profs } = await svc
+        .from("profiles")
+        .select("id, first_name, last_name, email")
+        .in("id", Array.from(ids));
+      ((profs as any[]) || []).forEach((p) => {
+        const label =
+          [p.first_name, p.last_name].filter(Boolean).join(" ").trim() || p.email || "Učitel";
+        nameById.set(p.id, label);
+      });
+    }
+
+    const ackMap = new Map<string, string>();
+    ((ackRows as any[]) || []).forEach((a) => ackMap.set(a.teacher_id, a.acknowledged_at));
+
+    const attendees = ((attRows as any[]) || []).map((a) => ({
+      teacher_id: a.teacher_id,
+      attended: !!a.attended,
+      name: nameById.get(a.teacher_id) || "Učitel",
+      acknowledgedAt: ackMap.get(a.teacher_id) ?? null,
+    }));
+    const tasks = ((taskRows as any[]) || []).map((t) => ({
+      task: t.task,
+      due_date: t.due_date,
+      assigneeName: t.assigned_to ? nameById.get(t.assigned_to) ?? null : null,
+    }));
+
+    const ctx = await createPdf("portrait");
+    buildMeetingNotesPdf(ctx, meeting as any, attendees, tasks, {
+      schoolName: (school as any)?.name ?? null,
+      authorName: (meeting as any).author_id ? nameById.get((meeting as any).author_id) ?? null : null,
+      date,
+    });
+    drawFooter(ctx, `${(meeting as any).title || "Zápis z porady"}  ·  ${date}`);
+    const bytes = await finalizePdf(ctx);
+    return { bytes, suggestedName: `porada-${slug((meeting as any).title)}-${body.id.slice(0, 8)}.pdf` };
+  }
+
   throw new Error("Neznámý typ dokumentu");
 }
 
@@ -155,7 +221,7 @@ Deno.serve(async (req) => {
     if (!body || !body.type || !body.id) {
       return jsonResp({ error: "Chybí type / id v requestu" }, 400);
     }
-    if (!["worksheet", "lesson_plan", "schedule"].includes(body.type)) {
+    if (!["worksheet", "lesson_plan", "schedule", "meeting_notes"].includes(body.type)) {
       return jsonResp({ error: "Neznámý type" }, 400);
     }
 

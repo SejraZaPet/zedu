@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { logAudit } from "@/lib/audit";
 
-export type PdfDocType = "worksheet" | "lesson_plan" | "schedule";
+export type PdfDocType = "worksheet" | "lesson_plan" | "schedule" | "meeting_notes";
 
 export function usePdfExport() {
   const { toast } = useToast();

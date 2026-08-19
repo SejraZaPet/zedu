@@ -295,7 +295,7 @@ const SchoolMeetings = () => {
 
   const exportPdf = async () => {
     if (!selected) return;
-    await exportOne("meeting_notes" as never, selected.id);
+    await exportOne("meeting_notes", selected.id);
   };
 
   const filtered = meetings.filter((m) => filterType === "all" || m.type === filterType);
