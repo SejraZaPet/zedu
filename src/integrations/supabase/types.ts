@@ -5514,39 +5514,69 @@ export type Database = {
       }
       teacher_curriculum_plans: {
         Row: {
+          class_id: string | null
           content: string | null
           created_at: string
           file_name: string | null
           file_url: string | null
+          group_id: string | null
           id: string
           subject: string
+          subject_id: string | null
           teacher_id: string
           title: string
           updated_at: string
         }
         Insert: {
+          class_id?: string | null
           content?: string | null
           created_at?: string
           file_name?: string | null
           file_url?: string | null
+          group_id?: string | null
           id?: string
           subject: string
+          subject_id?: string | null
           teacher_id: string
           title?: string
           updated_at?: string
         }
         Update: {
+          class_id?: string | null
           content?: string | null
           created_at?: string
           file_name?: string | null
           file_url?: string | null
+          group_id?: string | null
           id?: string
           subject?: string
+          subject_id?: string | null
           teacher_id?: string
           title?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "teacher_curriculum_plans_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_curriculum_plans_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "subject_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_curriculum_plans_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "teacher_curriculum_plans_teacher_id_fkey"
             columns: ["teacher_id"]
