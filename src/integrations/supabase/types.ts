@@ -1391,6 +1391,41 @@ export type Database = {
           },
         ]
       }
+      class_subject_textbooks: {
+        Row: {
+          class_subject_id: string
+          created_at: string
+          id: string
+          is_primary: boolean
+          textbook_id: string
+          textbook_type: string
+        }
+        Insert: {
+          class_subject_id: string
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          textbook_id: string
+          textbook_type?: string
+        }
+        Update: {
+          class_subject_id?: string
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          textbook_id?: string
+          textbook_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_subject_textbooks_class_subject_id_fkey"
+            columns: ["class_subject_id"]
+            isOneToOne: false
+            referencedRelation: "class_subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       class_subjects: {
         Row: {
           archived: boolean
@@ -5399,6 +5434,41 @@ export type Database = {
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subject_group_textbooks: {
+        Row: {
+          created_at: string
+          id: string
+          is_primary: boolean
+          subject_group_id: string
+          textbook_id: string
+          textbook_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          subject_group_id: string
+          textbook_id: string
+          textbook_type?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          subject_group_id?: string
+          textbook_id?: string
+          textbook_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subject_group_textbooks_subject_group_id_fkey"
+            columns: ["subject_group_id"]
+            isOneToOne: false
+            referencedRelation: "subject_groups"
             referencedColumns: ["id"]
           },
         ]
