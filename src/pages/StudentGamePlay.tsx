@@ -413,7 +413,9 @@ const StudentGamePlay = () => {
                       slideIndex={qi}
                       interactive={studentDrawMode}
                       localOnly={!allowSync}
+                      joinToken={joinToken}
                     />
+
                   </div>
                 );
               })()}
@@ -761,6 +763,7 @@ const WhiteboardOverlay = ({
   interactive = false,
   localOnly = false,
   zoom = null,
+  joinToken = null,
 }: {
   stageW: number;
   stageH: number;
@@ -770,7 +773,9 @@ const WhiteboardOverlay = ({
   interactive?: boolean;
   localOnly?: boolean;
   zoom?: ZoomRect | null;
+  joinToken?: string | null;
 }) => {
+
   const frameRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
 
@@ -824,6 +829,8 @@ const WhiteboardOverlay = ({
           overlay
           localOnly={localOnly}
           simplified
+          joinToken={joinToken}
+
           className={interactive ? "" : "pointer-events-none"}
         />
         </div>
