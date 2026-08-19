@@ -287,7 +287,12 @@ const SchoolsManager = () => {
   };
 
   return (
+    <div className="space-y-6">
+    <SchoolJoinRequestsManager
+      onCreateSchool={(prefillName) => { setSchoolName(prefillName); setOpen(true); }}
+    />
     <Card>
+
       <CardHeader className="flex-row items-center justify-between space-y-0">
         <CardTitle className="flex items-center gap-2">
           <SchoolIcon className="w-5 h-5" /> Školy
