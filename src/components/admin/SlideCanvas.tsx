@@ -703,12 +703,30 @@ export function SlideBody({
 const SlideCanvas = ({ fit = true, darkMode = true, themeId, ...rest }: CanvasProps) => {
   const frameRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
+  // Explicit 16:9 box computed from the *available* space of the parent element
+  // (width AND height), so the canvas never overflows its container.
+  const [box, setBox] = useState<{ w: number; h: number } | null>(null);
 
   useEffect(() => {
     if (!fit) return;
     const el = frameRef.current;
-    if (!el) return;
+    const parent = el?.parentElement;
+    if (!el || !parent) return;
     const update = () => {
+      const style = window.getComputedStyle(parent);
+      const availW =
+        parent.clientWidth - parseFloat(style.paddingLeft || "0") - parseFloat(style.paddingRight || "0");
+      const availH =
+        parent.clientHeight - parseFloat(style.paddingTop || "0") - parseFloat(style.paddingBottom || "0");
+      if (availW > 0 && availH > 0) {
+        const w = Math.min(availW, (availH * STAGE_W) / STAGE_H);
+        const h = (w * STAGE_H) / STAGE_W;
+        setBox({ w, h });
+        setScale(w / STAGE_W);
+        return;
+      }
+      // Fallback: parent has no definite height → keep width-driven aspect-video sizing.
+      setBox(null);
       const w = el.clientWidth;
       const h = el.clientHeight;
       if (!w || !h) return;
@@ -717,6 +735,7 @@ const SlideCanvas = ({ fit = true, darkMode = true, themeId, ...rest }: CanvasPr
     update();
     const ro = new ResizeObserver(update);
     ro.observe(el);
+    ro.observe(parent);
     return () => ro.disconnect();
   }, [fit]);
 
@@ -746,8 +765,10 @@ const SlideCanvas = ({ fit = true, darkMode = true, themeId, ...rest }: CanvasPr
   return (
     <div
       ref={frameRef}
-      className="relative aspect-video w-full rounded-xl overflow-hidden shadow-lg border border-border"
-      style={bgStyle}
+      className={`relative mx-auto max-h-full max-w-full rounded-xl overflow-hidden shadow-lg border border-border ${
+        box ? "" : "aspect-video w-full"
+      }`}
+      style={box ? { ...bgStyle, width: box.w, height: box.h } : bgStyle}
     >
       <div
         className="absolute left-1/2 top-1/2 origin-center"
