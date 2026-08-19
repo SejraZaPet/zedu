@@ -41,6 +41,9 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
   const stageRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawingRef = useRef<Stroke | null>(null);
+  /** Čas posledního doteku pera — slouží k jednoduchému palm rejection. */
+  const lastPenAtRef = useRef(0);
+
   const fileRef = useRef<HTMLInputElement>(null);
   const [, force] = useState(0);
   const rerender = useCallback(() => force((n) => n + 1), []);
@@ -114,7 +117,7 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
     [content, onChange],
   );
 
-  const relative = (e: React.PointerEvent): [number, number] => {
+  const relative = (e: React.PointerEvent | PointerEvent): [number, number] => {
     const stage = stageRef.current;
     if (!stage) return [0, 0];
     const r = stage.getBoundingClientRect();
@@ -123,9 +126,27 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
     return [Math.max(0, Math.min(1, x)), Math.max(0, Math.min(1, y))];
   };
 
+  /** Tlak 0..1 — jen pero dává použitelné hodnoty, jinak konstanta jako dosud. */
+  const pressureOf = (e: React.PointerEvent | PointerEvent): number => {
+    if (e.pointerType !== "pen") return 0.5;
+    const p = typeof e.pressure === "number" ? e.pressure : 0;
+    if (p <= 0) return 0.5; // pero se jen vznáší / ovladač tlak neposílá
+    return Math.max(0.05, Math.min(1, p));
+  };
+
+  /** Palm rejection: pokud se právě kreslilo perem, ignoruj souběžný dotyk. */
+  const shouldIgnorePointer = (e: React.PointerEvent) => {
+    if (e.pointerType === "pen") {
+      lastPenAtRef.current = Date.now();
+      return false;
+    }
+    return e.pointerType === "touch" && Date.now() - lastPenAtRef.current < 1000;
+  };
+
   /* --- kreslení --- */
   const onPointerDown = (e: React.PointerEvent) => {
     if (readOnly || mode === "select") return;
+    if (shouldIgnorePointer(e)) return;
     e.preventDefault();
     (e.target as Element).setPointerCapture(e.pointerId);
     const p = relative(e);
@@ -151,21 +172,39 @@ const NotebookCanvas = ({ ownerId, content, backgroundStyle, onChange, readOnly 
       color: mode === "eraser" ? "#000000" : color,
       width,
       points: [p],
+      pressures: [pressureOf(e)],
     };
     rerender();
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
     if (readOnly || !drawingRef.current) return;
-    const p = relative(e);
+    if (shouldIgnorePointer(e)) return;
     const cur = drawingRef.current;
+
     if (cur.tool === "rect" || cur.tool === "circle" || cur.tool === "arrow") {
-      cur.points = [cur.points[0], p];
-    } else {
-      cur.points.push(p);
+      cur.points = [cur.points[0], relative(e)];
+      cur.pressures = [cur.pressures?.[0] ?? 0.5, pressureOf(e)];
+      rerender();
+      return;
+    }
+
+    // Pero posílá vzorky rychleji než rAF prohlížeče — vyzvedni i sloučené eventy,
+    // ať se při rychlém tahu nezahazují body.
+    const native = e.nativeEvent;
+    const samples: PointerEvent[] =
+      typeof native.getCoalescedEvents === "function"
+        ? (native.getCoalescedEvents() as PointerEvent[])
+        : [];
+    const events = samples.length > 0 ? samples : [native];
+
+    for (const ev of events) {
+      cur.points.push(relative(ev));
+      (cur.pressures ??= []).push(pressureOf(ev));
     }
     rerender();
   };
+
 
   const finishStroke = () => {
     const s = drawingRef.current;

@@ -12,8 +12,15 @@ export interface Stroke {
   color: string;
   width: number;
   points: [number, number][]; // 0..1 relativní souřadnice stránky
+  /**
+   * Volitelný tlak pera pro každý bod v `points` (0..1). Pero (stylus) posílá
+   * proměnlivé hodnoty → tah se kreslí po segmentech s proměnnou šířkou.
+   * Chybí-li pole (myš, prst, starší data, živá tabule), kreslí se konstantní šířkou.
+   */
+  pressures?: number[];
   text?: string;
 }
+
 
 export interface NotebookTextBox {
   id: string;
@@ -133,12 +140,27 @@ export function renderStroke(ctx: CanvasRenderingContext2D, s: Stroke, w: number
   }
 
   const pts = s.points.map(([x, y]) => [x * w, y * h] as [number, number]);
+  const baseWidth = ctx.lineWidth;
+  const pressures = Array.isArray(s.pressures) && s.pressures.length === s.points.length ? s.pressures : null;
 
   if (s.tool === "pen" || s.tool === "highlight" || s.tool === "eraser") {
-    ctx.beginPath();
-    ctx.moveTo(pts[0][0], pts[0][1]);
-    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
-    ctx.stroke();
+    if (pressures && pts.length >= 2) {
+      // Tah po segmentech — šířka se odvozuje z tlaku pera.
+      for (let i = 1; i < pts.length; i++) {
+        const p = (pressures[i - 1] + pressures[i]) / 2;
+        ctx.lineWidth = Math.max(0.4, baseWidth * (0.5 + Math.max(0, Math.min(1, p))));
+        ctx.beginPath();
+        ctx.moveTo(pts[i - 1][0], pts[i - 1][1]);
+        ctx.lineTo(pts[i][0], pts[i][1]);
+        ctx.stroke();
+      }
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(pts[0][0], pts[0][1]);
+      for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+      ctx.stroke();
+    }
+
   } else if (s.tool === "rect" && pts.length >= 2) {
     const [x1, y1] = pts[0];
     const [x2, y2] = pts[pts.length - 1];
