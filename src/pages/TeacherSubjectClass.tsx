@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import LessonReflectionDialog from "@/components/lessons/LessonReflectionDialog";
 import TeachingUnitCollaboratorsCard from "@/components/teacher/TeachingUnitCollaboratorsCard";
+import UnitCurriculumPlansCard from "@/components/teaching/UnitCurriculumPlansCard";
 import QuickRecognitionCard from "@/components/teacher/QuickRecognitionCard";
 import { fetchReflections, reflectionKey, type LessonReflection } from "@/lib/lesson-reflections";
 import SiteHeader from "@/components/SiteHeader";
@@ -971,6 +972,12 @@ export default function TeacherSubjectClass() {
                   }))}
                 />
               )}
+
+              <UnitCurriculumPlansCard
+                subjectId={resolvedSubjectId}
+                classId={isGroup ? null : classId}
+                groupId={isGroup ? groupId : null}
+              />
 
               <TeachingUnitCollaboratorsCard
                 subjectId={resolvedSubjectId}
