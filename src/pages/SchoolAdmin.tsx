@@ -225,18 +225,26 @@ const SchoolAdmin = () => {
     load();
   };
 
-  const removeFromSchool = async (memberId: string) => {
-    if (!confirm("Odebrat uživatele ze školy? Účet zůstane, ztratí jen napojení.")) return;
+  const confirmRemoveFromSchool = async () => {
+    if (!pendingRemove) return;
+    setRemoving(true);
     const { error } = await supabase
       .from("profiles")
       .update({ school_id: null })
-      .eq("id", memberId);
+      .eq("id", pendingRemove.id);
+    setRemoving(false);
     if (error) {
-      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+      toast({ title: "Odebrání se nezdařilo", description: error.message, variant: "destructive" });
       return;
     }
+    toast({
+      title: "Uživatel odebrán ze školy",
+      description: `${pendingRemove.first_name} ${pendingRemove.last_name} už není napojen na školu. Účet zůstává zachován.`,
+    });
+    setPendingRemove(null);
     load();
   };
+
 
   if (authLoading || loading) {
     return (
