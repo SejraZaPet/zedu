@@ -428,11 +428,13 @@ export const PresentationEditorDialog = ({
                     }`}
                     style={themeStageStyle(theme)}
                   >
+                    <div className="pointer-events-none absolute left-0 top-0 origin-top-left scale-[0.714] xl:scale-100">
                     <div
-                      className="pointer-events-none absolute left-0 top-0 origin-top-left"
+                      className="absolute left-0 top-0 origin-top-left"
                       style={{ width: STAGE_W, height: STAGE_H, transform: `scale(${112 / STAGE_W})` }}
                     >
                       <SlideBody slide={slide} themeId={themeId} />
+                    </div>
                     </div>
                     <span className="absolute bottom-0.5 left-0.5 rounded bg-background/85 px-1 text-[9px] font-semibold text-foreground">
                       {i + 1}
@@ -944,6 +946,7 @@ export const PresentationEditorDialog = ({
                 </div>
 
                 <div className="mx-auto flex h-full min-h-0 w-full max-w-[1100px] flex-col items-center justify-center pt-10">
+                  <div className="flex min-h-0 w-full flex-1 items-center justify-center">
                   <SlideCanvas
                     slide={currentSlide}
                     themeId={themeId}
@@ -957,7 +960,8 @@ export const PresentationEditorDialog = ({
                     selectedBlockId={selectedBlockId}
                     onSelectBlock={setSelectedBlockId}
                   />
-                  <p className="mt-2 text-center text-[11px] text-muted-foreground">
+                  </div>
+                  <p className="mt-2 shrink-0 text-center text-[11px] text-muted-foreground">
                     Klikněte na nadpis nebo text v náhledu a upravte jej přímo na plátně.
                   </p>
                 </div>
