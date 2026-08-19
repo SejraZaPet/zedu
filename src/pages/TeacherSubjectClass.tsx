@@ -402,11 +402,13 @@ export default function TeacherSubjectClass() {
     [subjects, subjectLabel],
   );
   const linkedTextbookId = useMemo(() => {
+    const primary = unitTextbooks.find((r) => r.is_primary) ?? unitTextbooks[0];
+    if (primary) return primary.textbook_id;
     const fromSlot = slots.find(
       (s) => s.textbook_id && (s.textbook_type === "teacher" || !s.textbook_type),
     );
     return fromSlot?.textbook_id ?? unitTextbookId ?? null;
-  }, [slots, unitTextbookId]);
+  }, [slots, unitTextbookId, unitTextbooks]);
 
   const subjectColor =
     catalogSubject?.color || matchedSubject?.color || slots[0]?.color || "hsl(var(--primary))";
