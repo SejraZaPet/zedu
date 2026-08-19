@@ -48,7 +48,7 @@ export function buildMeetingNotesPdf(
   const meta = [opts.schoolName, opts.authorName ? `Zapsal(a): ${opts.authorName}` : ""]
     .filter(Boolean)
     .join(" · ");
-  drawHeader(ctx, meeting.title || "Zápis z porady", [sub, meta].filter(Boolean).join("    "));
+  drawHeader(ctx, meeting.title || "Zápis z porady", [sub, meta].filter(Boolean).join("  ·  "));
 
   // Obsah zápisu
   drawText(ctx, "Zápis", { size: 14, bold: true });
