@@ -422,7 +422,7 @@ const MembersTable = ({
 }: {
   rows: MemberRow[];
   onToggleRole: (id: string, roles: string[], target: "teacher" | "user") => void;
-  onRemove: (id: string) => void;
+  onRemove: (member: MemberRow) => void;
   kind: "teacher" | "user";
 }) => {
   if (rows.length === 0) {
