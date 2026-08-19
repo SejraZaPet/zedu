@@ -3,11 +3,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2, Pencil, Plus, School as SchoolIcon, Trash2 } from "lucide-react";
+import { Loader2, Pencil, Plus, School as SchoolIcon, Trash2, UserMinus, Users } from "lucide-react";
+
 
 interface School {
   id: string;
@@ -24,10 +30,23 @@ interface SchoolWithStats extends School {
   admin_count: number;
 }
 
+interface SchoolMember {
+  id: string;
+  email: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  status: string | null;
+  roles: string[];
+}
+
+const memberName = (m: SchoolMember) =>
+  `${m.first_name ?? ""} ${m.last_name ?? ""}`.trim() || m.email || "Uživatel";
+
 const RESERVED_SUBDOMAINS = new Set(["www", "app", "id-preview", "preview", "zedu", "lovable", "staging"]);
 const SUBDOMAIN_RE = /^[a-z0-9]([a-z0-9-]{0,30}[a-z0-9])?$/;
 
 const subdomainOk = (s: string) => SUBDOMAIN_RE.test(s) && !RESERVED_SUBDOMAINS.has(s);
+
 
 const emptySchool: School = {
   id: "",
@@ -54,6 +73,74 @@ const SchoolsManager = () => {
   const [adminPassword, setAdminPassword] = useState("");
 
   const [editing, setEditing] = useState<School>(emptySchool);
+
+  // members management
+  const [membersOpen, setMembersOpen] = useState(false);
+  const [membersSchool, setMembersSchool] = useState<SchoolWithStats | null>(null);
+  const [members, setMembers] = useState<SchoolMember[]>([]);
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [pendingRemove, setPendingRemove] = useState<SchoolMember | null>(null);
+  const [removing, setRemoving] = useState(false);
+
+  const loadMembers = async (schoolId: string) => {
+    setMembersLoading(true);
+    const { data: profs, error } = await supabase
+      .from("profiles")
+      .select("id, email, first_name, last_name, status")
+      .eq("school_id", schoolId)
+      .order("last_name", { ascending: true });
+    if (error) {
+      toast({ title: "Chyba načítání členů", description: error.message, variant: "destructive" });
+      setMembers([]);
+      setMembersLoading(false);
+      return;
+    }
+    const ids = (profs ?? []).map((p: any) => p.id);
+    const rolesByUser = new Map<string, string[]>();
+    if (ids.length) {
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("user_id, role")
+        .in("user_id", ids);
+      roles?.forEach((r: any) => {
+        const arr = rolesByUser.get(r.user_id) ?? [];
+        arr.push(r.role);
+        rolesByUser.set(r.user_id, arr);
+      });
+    }
+    setMembers(
+      (profs ?? []).map((p: any) => ({ ...p, roles: rolesByUser.get(p.id) ?? [] }))
+    );
+    setMembersLoading(false);
+  };
+
+  const openMembers = (school: SchoolWithStats) => {
+    setMembersSchool(school);
+    setMembersOpen(true);
+    void loadMembers(school.id);
+  };
+
+  const confirmRemoveMember = async () => {
+    if (!pendingRemove || !membersSchool) return;
+    setRemoving(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ school_id: null })
+      .eq("id", pendingRemove.id);
+    setRemoving(false);
+    if (error) {
+      toast({ title: "Odebrání se nezdařilo", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({
+      title: "Uživatel odebrán ze školy",
+      description: `${memberName(pendingRemove)} už není napojen na ${membersSchool.name}. Účet zůstává zachován.`,
+    });
+    setPendingRemove(null);
+    await loadMembers(membersSchool.id);
+    load();
+  };
+
 
   const load = async () => {
     setLoading(true);
@@ -272,7 +359,11 @@ const SchoolsManager = () => {
                   <TableCell className="text-right">{s.admin_count}</TableCell>
                   <TableCell className="text-right">
                     <div className="inline-flex items-center gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => openMembers(s)} title="Členové školy">
+                        <Users className="w-4 h-4" />
+                      </Button>
                       <Button variant="ghost" size="icon" onClick={() => openEdit(s)} title="Upravit">
+
                         <Pencil className="w-4 h-4" />
                       </Button>
                       <Button variant="ghost" size="icon" onClick={() => remove(s.id, s.name)}>
@@ -362,7 +453,73 @@ const SchoolsManager = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Members of a school */}
+        <Dialog open={membersOpen} onOpenChange={(o) => { setMembersOpen(o); if (!o) { setMembersSchool(null); setMembers([]); } }}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Členové školy {membersSchool ? `· ${membersSchool.name}` : ""}</DialogTitle>
+            </DialogHeader>
+            {membersLoading ? (
+              <div className="py-8 text-center text-sm text-muted-foreground">Načítám…</div>
+            ) : members.length === 0 ? (
+              <div className="py-8 text-center text-sm text-muted-foreground">Škola nemá žádné napojené uživatele.</div>
+            ) : (
+              <div className="max-h-[60vh] overflow-y-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Jméno</TableHead>
+                      <TableHead>E-mail</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead className="text-right">Akce</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {members.map((m) => (
+                      <TableRow key={m.id}>
+                        <TableCell className="font-medium">{memberName(m)}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{m.email ?? "—"}</TableCell>
+                        <TableCell className="space-x-1">
+                          {m.roles.length === 0
+                            ? <span className="text-xs text-muted-foreground">—</span>
+                            : m.roles.map((r) => <Badge key={r} variant="outline">{r}</Badge>)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button size="sm" variant="outline" onClick={() => setPendingRemove(m)}>
+                            <UserMinus className="w-4 h-4 mr-1" /> Odebrat ze školy
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        <AlertDialog open={!!pendingRemove} onOpenChange={(o) => { if (!o) setPendingRemove(null); }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Odebrat uživatele ze školy?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {pendingRemove ? `${memberName(pendingRemove)} ztratí napojení na školu ${membersSchool?.name ?? ""}. ` : ""}
+                Účet i data zůstanou zachovány, ale uživatel přijde o přístup k obsahu školy.
+                Zpět to lze vrátit jen ručním opětovným přiřazením.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Zrušit</AlertDialogCancel>
+              <AlertDialogAction onClick={(e) => { e.preventDefault(); void confirmRemoveMember(); }} disabled={removing}>
+                {removing && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}
+                Odebrat ze školy
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </CardContent>
+
     </Card>
   );
 };

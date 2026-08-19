@@ -11,7 +11,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
-import { Home, LogOut, School as SchoolIcon, Users, GraduationCap, Plus, Trash2, ShieldCheck, ShieldOff, Copy, RefreshCw, KeyRound, Palette, Upload } from "lucide-react";
+import { Home, LogOut, School as SchoolIcon, Users, GraduationCap, Plus, ShieldCheck, ShieldOff, Copy, RefreshCw, KeyRound, Palette, Upload, UserMinus, Loader2 } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
 import SchoolBrandingSection from "@/components/school/SchoolBrandingSection";
 import SchoolBulkImportCard from "@/components/school/SchoolBulkImportCard";
 import SchoolCreatorSalesCard from "@/components/school/SchoolCreatorSalesCard";
@@ -43,6 +48,9 @@ const SchoolAdmin = () => {
   const [invEmail, setInvEmail] = useState("");
   const [invRole, setInvRole] = useState<"teacher" | "user">("teacher");
   const [submitting, setSubmitting] = useState(false);
+  const [pendingRemove, setPendingRemove] = useState<MemberRow | null>(null);
+  const [removing, setRemoving] = useState(false);
+
   const [createdCredentials, setCreatedCredentials] = useState<{
     name: string;
     email?: string;
@@ -225,18 +233,26 @@ const SchoolAdmin = () => {
     load();
   };
 
-  const removeFromSchool = async (memberId: string) => {
-    if (!confirm("Odebrat uživatele ze školy? Účet zůstane, ztratí jen napojení.")) return;
+  const confirmRemoveFromSchool = async () => {
+    if (!pendingRemove) return;
+    setRemoving(true);
     const { error } = await supabase
       .from("profiles")
       .update({ school_id: null })
-      .eq("id", memberId);
+      .eq("id", pendingRemove.id);
+    setRemoving(false);
     if (error) {
-      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+      toast({ title: "Odebrání se nezdařilo", description: error.message, variant: "destructive" });
       return;
     }
+    toast({
+      title: "Uživatel odebrán ze školy",
+      description: `${pendingRemove.first_name} ${pendingRemove.last_name} už není napojen na školu. Účet zůstává zachován.`,
+    });
+    setPendingRemove(null);
     load();
   };
+
 
   if (authLoading || loading) {
     return (
@@ -367,11 +383,12 @@ const SchoolAdmin = () => {
           </TabsList>
 
           <TabsContent value="teachers">
-            <MembersTable rows={teachers} onToggleRole={toggleRole} onRemove={removeFromSchool} kind="teacher" />
+            <MembersTable rows={teachers} onToggleRole={toggleRole} onRemove={setPendingRemove} kind="teacher" />
           </TabsContent>
           <TabsContent value="students">
-            <MembersTable rows={students} onToggleRole={toggleRole} onRemove={removeFromSchool} kind="user" />
+            <MembersTable rows={students} onToggleRole={toggleRole} onRemove={setPendingRemove} kind="user" />
           </TabsContent>
+
           <TabsContent value="import">
             <SchoolBulkImportCard onImported={load} />
           </TabsContent>
@@ -386,7 +403,28 @@ const SchoolAdmin = () => {
             <SchoolBrandingSection schoolId={school.id} schoolName={school.name} />
           </TabsContent>
         </Tabs>
+
+        <AlertDialog open={!!pendingRemove} onOpenChange={(o) => { if (!o) setPendingRemove(null); }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Odebrat uživatele ze školy?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {pendingRemove ? `${pendingRemove.first_name} ${pendingRemove.last_name} ztratí napojení na školu ${school.name}. ` : ""}
+                Účet i data zůstanou zachovány, ale uživatel přijde o přístup k obsahu školy.
+                Zpět to lze vrátit jen ručním opětovným přiřazením.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Zrušit</AlertDialogCancel>
+              <AlertDialogAction onClick={(e) => { e.preventDefault(); void confirmRemoveFromSchool(); }} disabled={removing}>
+                {removing && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}
+                Odebrat ze školy
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </main>
+
     </div>
   );
 };
@@ -410,7 +448,7 @@ const MembersTable = ({
 }: {
   rows: MemberRow[];
   onToggleRole: (id: string, roles: string[], target: "teacher" | "user") => void;
-  onRemove: (id: string) => void;
+  onRemove: (member: MemberRow) => void;
   kind: "teacher" | "user";
 }) => {
   if (rows.length === 0) {
@@ -451,9 +489,10 @@ const MembersTable = ({
                       <ShieldOff className="w-4 h-4 mr-1" /> Odebrat učitele
                     </Button>
                   )}
-                  <Button size="sm" variant="ghost" onClick={() => onRemove(m.id)}>
-                    <Trash2 className="w-4 h-4 text-destructive" />
+                  <Button size="sm" variant="outline" onClick={() => onRemove(m)}>
+                    <UserMinus className="w-4 h-4 mr-1 text-destructive" /> Odebrat ze školy
                   </Button>
+
                 </TableCell>
               </TableRow>
             ))}
