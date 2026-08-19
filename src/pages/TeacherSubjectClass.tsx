@@ -89,6 +89,14 @@ interface TeacherTextbookRow {
   description: string | null;
 }
 
+interface UnitTextbookLink {
+  id: string;
+  textbook_id: string;
+  textbook_type: string | null;
+  is_primary: boolean;
+}
+
+
 interface LinkedSlot {
   subject?: string;
   classId?: string;
