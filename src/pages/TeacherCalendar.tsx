@@ -314,7 +314,14 @@ const TeacherCalendar = () => {
             Reflexe uložena
           </span>
         </div>
+
+        {hasSchool && schoolId && (
+          <div className="mt-8">
+            <SchoolCalendarPanel schoolId={schoolId} schoolName={schoolName} />
+          </div>
+        )}
       </main>
+
       {reflectionEvent && (
         <LessonReflectionDialog
           open={!!reflectionEvent}
