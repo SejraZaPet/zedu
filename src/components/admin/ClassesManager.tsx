@@ -33,6 +33,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Plus, Pencil, Archive, ArchiveRestore, Trash2, Users, Search, Key, KeyRound, Copy, RefreshCw, XCircle, Clock, BookOpen } from "lucide-react";
+import { useMySchool } from "@/hooks/useMySchool";
 import ClassMembersDialog from "./ClassMembersDialog";
 import ClassScheduleDialog from "./ClassScheduleDialog";
 import ClassTextbooksDialog from "./ClassTextbooksDialog";
@@ -57,6 +58,7 @@ interface ClassItem {
 const ClassesManager = () => {
   const { toast } = useToast();
   const { user } = useAuth();
+  const { schoolId: mySchoolId, schoolName } = useMySchool();
   const [classes, setClasses] = useState<ClassItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -158,7 +160,7 @@ const ClassesManager = () => {
     setEditingClass(null);
     setName("");
     setDescription("");
-    setSchool("");
+    setSchool(mySchoolId ? (schoolName ?? "") : "");
     setFieldOfStudy("");
     setYear("");
     setFormOpen(true);
@@ -184,7 +186,7 @@ const ClassesManager = () => {
     const payload = {
       name: name.trim(),
       description: description.trim(),
-      school: school.trim(),
+      school: mySchoolId ? (schoolName ?? school.trim()) : school.trim(),
       field_of_study: fieldOfStudy.trim(),
       year: year ? parseInt(year, 10) : null,
     };
@@ -206,7 +208,7 @@ const ClassesManager = () => {
       }
       const { data: created, error } = await supabase
         .from("classes")
-        .insert({ ...payload, created_by: user.id } as any)
+        .insert({ ...payload, created_by: user.id, ...(mySchoolId ? { school_id: mySchoolId } : {}) } as any)
         .select("id")
         .single();
       if (error) {
@@ -482,7 +484,11 @@ const ClassesManager = () => {
             </div>
             <div>
               <Label htmlFor="classSchool">Škola</Label>
-              <Input id="classSchool" value={school} onChange={(e) => setSchool(e.target.value)} />
+              {mySchoolId ? (
+                <Input id="classSchool" value={schoolName ?? school} readOnly disabled />
+              ) : (
+                <Input id="classSchool" value={school} onChange={(e) => setSchool(e.target.value)} />
+              )}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
