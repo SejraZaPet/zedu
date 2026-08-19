@@ -48,6 +48,7 @@ const adminTabs = [
   { id: "staff-academy", label: "Interní akademie", icon: BookOpen, module: null },
   { id: "crm", label: "CRM", icon: Contact, module: "crm" },
   { id: "stats", label: "Statistiky", icon: Activity, module: "stats" },
+  { id: "schools", label: "Školy", icon: School, module: "admin_only" },
   { id: "licenses", label: "Spolupracující organizace", icon: Award, module: "school_licenses" },
   { id: "unassigned-teachers", label: "Nepřiřazení učitelé", icon: UserSquare2, module: "school_licenses" },
   { id: "market-economics", label: "Ekonomika ZEduMarket", icon: Coins, module: "billing" },
