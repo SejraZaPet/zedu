@@ -83,12 +83,12 @@ const teacherTabs = [
   { id: "help", label: "Nápověda", icon: HelpCircle, module: null },
 ] as const;
 
-type Tab = "dashboard" | "my-panel" | "staff-academy" | "stats" | "textbooks" | "lessons" | "outline" | "mcq" | "matching" | "slide-edit" | "video-ai" | "subjects" | "users" | "classes" | "results" | "help" | "notifications" | "licenses" | "audit" | "templates" | "landing" | "avatars" | "game-backgrounds" | "textbook-overview" | "academy" | "academy-pathways" | "academy-evidence" | "crm" | "market-economics" | "unassigned-teachers" | "website-assistant";
+type Tab = "dashboard" | "my-panel" | "staff-academy" | "stats" | "textbooks" | "lessons" | "outline" | "mcq" | "matching" | "slide-edit" | "video-ai" | "subjects" | "users" | "classes" | "results" | "help" | "notifications" | "licenses" | "audit" | "templates" | "landing" | "avatars" | "game-backgrounds" | "textbook-overview" | "academy" | "academy-pathways" | "academy-evidence" | "crm" | "market-economics" | "unassigned-teachers" | "website-assistant" | "schools";
 
 /** Dvouúrovňová navigace administrace. `help` a `dashboard` řešíme mimo/uvnitř kategorií. */
 const adminGroups: { id: string; label: string; tabs: string[] }[] = [
   { id: "overview", label: "Přehled", tabs: ["dashboard", "stats"] },
-  { id: "sales", label: "Prodej a zákazníci", tabs: ["crm", "licenses", "unassigned-teachers", "market-economics"] },
+  { id: "sales", label: "Prodej a zákazníci", tabs: ["crm", "schools", "licenses", "unassigned-teachers", "market-economics"] },
   { id: "content", label: "Vzdělávací obsah", tabs: ["textbook-overview", "templates"] },
   { id: "academy", label: "ZEdu Akademie", tabs: ["academy", "academy-pathways", "academy-evidence"] },
   { id: "appearance", label: "Vzhled webu", tabs: ["landing", "avatars", "game-backgrounds"] },
