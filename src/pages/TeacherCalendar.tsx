@@ -27,10 +27,13 @@ import LessonReflectionDialog from "@/components/lessons/LessonReflectionDialog"
 import { fetchReflections, reflectionKey } from "@/lib/lesson-reflections";
 import { CalendarExportMenu } from "@/components/calendar/CalendarExportMenu";
 import { toExportEvent } from "@/lib/calendar-export";
+import SchoolCalendarPanel from "@/components/calendar/SchoolCalendarPanel";
+import { useMySchool } from "@/hooks/useMySchool";
 
 const TeacherCalendar = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  const { schoolId, schoolName, hasSchool } = useMySchool();
   const [weekStart, setWeekStart] = useState<Date>(
     () => getWeekRange(new Date()).start,
   );
@@ -314,7 +317,14 @@ const TeacherCalendar = () => {
             Reflexe uložena
           </span>
         </div>
+
+        {hasSchool && schoolId && (
+          <div className="mt-8">
+            <SchoolCalendarPanel schoolId={schoolId} schoolName={schoolName} />
+          </div>
+        )}
       </main>
+
       {reflectionEvent && (
         <LessonReflectionDialog
           open={!!reflectionEvent}

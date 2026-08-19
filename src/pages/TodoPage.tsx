@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, Calendar, Flag } from "lucide-react";
+import { Plus, Trash2, Calendar, Flag, UserPlus } from "lucide-react";
+import { useMySchool, useSchoolColleagues, colleagueLabel } from "@/hooks/useMySchool";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { useToast } from "@/hooks/use-toast";
@@ -34,7 +35,10 @@ interface Todo {
   status: string;
   priority: string;
   created_at: string;
+  user_id?: string;
+  assigned_by?: string | null;
 }
+
 
 const typeLabel: Record<string, string> = {
   task: "Úkol",
@@ -55,9 +59,22 @@ const TodoPage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  const { schoolId, hasSchool } = useMySchool();
+  const { colleagues } = useSchoolColleagues(schoolId);
+
   const [todos, setTodos] = useState<Todo[]>([]);
+  const [delegated, setDelegated] = useState<Todo[]>([]);
   const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
+  const [delegateOpen, setDelegateOpen] = useState(false);
+  const [delegateSaving, setDelegateSaving] = useState(false);
+  const [delegateForm, setDelegateForm] = useState({
+    assignee: "",
+    title: "",
+    description: "",
+    due_date: "",
+    priority: "normal",
+  });
   const [filter, setFilter] = useState<"all" | "pending" | "done" | "today">(
     "all",
   );
@@ -81,18 +98,56 @@ const TodoPage = () => {
 
   const fetchTodos = async () => {
     if (!user) return;
-    const { data, error } = await supabase
-      .from("todos")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("due_date", { ascending: true, nullsFirst: false });
-    if (error) {
-      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+    const [mineRes, delegatedRes] = await Promise.all([
+      supabase
+        .from("todos")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("due_date", { ascending: true, nullsFirst: false }),
+      supabase
+        .from("todos")
+        .select("*")
+        .eq("assigned_by", user.id)
+        .neq("user_id", user.id)
+        .order("due_date", { ascending: true, nullsFirst: false }),
+    ]);
+    if (mineRes.error) {
+      toast({ title: "Chyba", description: mineRes.error.message, variant: "destructive" });
     } else {
-      setTodos((data as Todo[]) || []);
+      setTodos((mineRes.data as Todo[]) || []);
     }
+    setDelegated((delegatedRes.data as Todo[]) || []);
     setLoading(false);
   };
+
+  const delegateTodo = async () => {
+    if (!user) return;
+    if (!delegateForm.assignee || !delegateForm.title.trim()) {
+      toast({ title: "Vyberte kolegu a zadejte název", variant: "destructive" });
+      return;
+    }
+    setDelegateSaving(true);
+    const { error } = await supabase.from("todos").insert({
+      user_id: delegateForm.assignee,
+      assigned_by: user.id,
+      title: delegateForm.title.trim(),
+      description: delegateForm.description || null,
+      due_date: delegateForm.due_date || null,
+      type: "task",
+      priority: delegateForm.priority,
+      status: "pending",
+    });
+    setDelegateSaving(false);
+    if (error) {
+      toast({ title: "Zadání se nepodařilo", description: error.message, variant: "destructive" });
+      return;
+    }
+    setDelegateForm({ assignee: "", title: "", description: "", due_date: "", priority: "normal" });
+    setDelegateOpen(false);
+    toast({ title: "Úkol byl zadán kolegovi" });
+    fetchTodos();
+  };
+
 
   const addTodo = async () => {
     if (!newTodo.title.trim() || !user) return;
@@ -164,11 +219,20 @@ const TodoPage = () => {
               </p>
             )}
           </div>
-          <Button onClick={() => setAddOpen(true)} className="gap-2">
-            <Plus className="w-4 h-4" />
-            Přidat úkol
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            {hasSchool && (
+              <Button variant="outline" onClick={() => setDelegateOpen(true)} className="gap-2">
+                <UserPlus className="w-4 h-4" />
+                Zadat úkol kolegovi
+              </Button>
+            )}
+            <Button onClick={() => setAddOpen(true)} className="gap-2">
+              <Plus className="w-4 h-4" />
+              Přidat úkol
+            </Button>
+          </div>
         </div>
+
 
         <div className="flex gap-2 mb-6 flex-wrap">
           {(["all", "pending", "done", "today"] as const).map((f) => (
@@ -214,7 +278,16 @@ const TodoPage = () => {
                     <Flag
                       className={`w-3.5 h-3.5 ${priorityColor[todo.priority] || ""}`}
                     />
+                    {todo.assigned_by && todo.assigned_by !== user?.id && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                        Zadal(a):{" "}
+                        {colleagueLabel(
+                          colleagues.find((c) => c.id === todo.assigned_by),
+                        ) || "kolega"}
+                      </span>
+                    )}
                   </div>
+
                   {todo.description && (
                     <p className="text-sm text-muted-foreground mt-1">{todo.description}</p>
                   )}
@@ -240,6 +313,145 @@ const TodoPage = () => {
             ))
           )}
         </div>
+
+        {hasSchool && delegated.length > 0 && (
+          <div className="mt-10">
+            <h2 className="font-heading text-xl font-bold mb-3">Zadané kolegům</h2>
+            <div className="space-y-2">
+              {delegated.map((todo) => (
+                <div
+                  key={todo.id}
+                  className="bg-muted/40 border border-border rounded-xl p-4 flex items-start gap-3"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-medium">{todo.title}</span>
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-background text-muted-foreground">
+                        {colleagueLabel(colleagues.find((c) => c.id === todo.user_id)) ||
+                          "kolega"}
+                      </span>
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full ${
+                          todo.status === "done"
+                            ? "bg-green-500/15 text-green-600"
+                            : "bg-yellow-500/15 text-yellow-700"
+                        }`}
+                      >
+                        {todo.status === "done" ? "Hotovo" : "Čeká"}
+                      </span>
+                    </div>
+                    {todo.due_date && (
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                        <Calendar className="w-3 h-3" />
+                        <span>{new Date(todo.due_date).toLocaleDateString("cs-CZ")}</span>
+                      </div>
+                    )}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => deleteTodo(todo.id)}
+                    className="text-red-500 hover:bg-red-50 h-8 w-8 p-0 shrink-0"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <Dialog open={delegateOpen} onOpenChange={setDelegateOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Zadat úkol kolegovi</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label>Kolega *</Label>
+                <Select
+                  value={delegateForm.assignee}
+                  onValueChange={(v) => setDelegateForm({ ...delegateForm, assignee: v })}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Vyberte kolegu ze školy" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {colleagues
+                      .filter((c) => c.id !== user?.id)
+                      .map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {colleagueLabel(c)}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Název *</Label>
+                <Input
+                  value={delegateForm.title}
+                  onChange={(e) => setDelegateForm({ ...delegateForm, title: e.target.value })}
+                  placeholder="Co má kolega udělat?"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label>Popis</Label>
+                <Input
+                  value={delegateForm.description}
+                  onChange={(e) =>
+                    setDelegateForm({ ...delegateForm, description: e.target.value })
+                  }
+                  placeholder="Volitelný popis"
+                  className="mt-1"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Termín</Label>
+                  <Input
+                    type="date"
+                    value={delegateForm.due_date}
+                    onChange={(e) =>
+                      setDelegateForm({ ...delegateForm, due_date: e.target.value })
+                    }
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label>Priorita</Label>
+                  <Select
+                    value={delegateForm.priority}
+                    onValueChange={(v) => setDelegateForm({ ...delegateForm, priority: v })}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="high">🔴 Vysoká</SelectItem>
+                      <SelectItem value="normal">🟡 Normální</SelectItem>
+                      <SelectItem value="low">🟢 Nízká</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Úkol se objeví v seznamu úkolů kolegy. Vy uvidíte jeho stav, ale obsah už
+                needitujete.
+              </p>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDelegateOpen(false)}>
+                Zrušit
+              </Button>
+              <Button onClick={delegateTodo} disabled={delegateSaving}>
+                {delegateSaving ? "Zadávám..." : "Zadat úkol"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
 
         <Dialog open={addOpen} onOpenChange={setAddOpen}>
           <DialogContent>
