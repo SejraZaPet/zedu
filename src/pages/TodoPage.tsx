@@ -314,6 +314,145 @@ const TodoPage = () => {
           )}
         </div>
 
+        {hasSchool && delegated.length > 0 && (
+          <div className="mt-10">
+            <h2 className="font-heading text-xl font-bold mb-3">Zadané kolegům</h2>
+            <div className="space-y-2">
+              {delegated.map((todo) => (
+                <div
+                  key={todo.id}
+                  className="bg-muted/40 border border-border rounded-xl p-4 flex items-start gap-3"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-medium">{todo.title}</span>
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-background text-muted-foreground">
+                        {colleagueLabel(colleagues.find((c) => c.id === todo.user_id)) ||
+                          "kolega"}
+                      </span>
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full ${
+                          todo.status === "done"
+                            ? "bg-green-500/15 text-green-600"
+                            : "bg-yellow-500/15 text-yellow-700"
+                        }`}
+                      >
+                        {todo.status === "done" ? "Hotovo" : "Čeká"}
+                      </span>
+                    </div>
+                    {todo.due_date && (
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                        <Calendar className="w-3 h-3" />
+                        <span>{new Date(todo.due_date).toLocaleDateString("cs-CZ")}</span>
+                      </div>
+                    )}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => deleteTodo(todo.id)}
+                    className="text-red-500 hover:bg-red-50 h-8 w-8 p-0 shrink-0"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <Dialog open={delegateOpen} onOpenChange={setDelegateOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Zadat úkol kolegovi</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label>Kolega *</Label>
+                <Select
+                  value={delegateForm.assignee}
+                  onValueChange={(v) => setDelegateForm({ ...delegateForm, assignee: v })}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Vyberte kolegu ze školy" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {colleagues
+                      .filter((c) => c.id !== user?.id)
+                      .map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {colleagueLabel(c)}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Název *</Label>
+                <Input
+                  value={delegateForm.title}
+                  onChange={(e) => setDelegateForm({ ...delegateForm, title: e.target.value })}
+                  placeholder="Co má kolega udělat?"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label>Popis</Label>
+                <Input
+                  value={delegateForm.description}
+                  onChange={(e) =>
+                    setDelegateForm({ ...delegateForm, description: e.target.value })
+                  }
+                  placeholder="Volitelný popis"
+                  className="mt-1"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Termín</Label>
+                  <Input
+                    type="date"
+                    value={delegateForm.due_date}
+                    onChange={(e) =>
+                      setDelegateForm({ ...delegateForm, due_date: e.target.value })
+                    }
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label>Priorita</Label>
+                  <Select
+                    value={delegateForm.priority}
+                    onValueChange={(v) => setDelegateForm({ ...delegateForm, priority: v })}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="high">🔴 Vysoká</SelectItem>
+                      <SelectItem value="normal">🟡 Normální</SelectItem>
+                      <SelectItem value="low">🟢 Nízká</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Úkol se objeví v seznamu úkolů kolegy. Vy uvidíte jeho stav, ale obsah už
+                needitujete.
+              </p>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDelegateOpen(false)}>
+                Zrušit
+              </Button>
+              <Button onClick={delegateTodo} disabled={delegateSaving}>
+                {delegateSaving ? "Zadávám..." : "Zadat úkol"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+
         <Dialog open={addOpen} onOpenChange={setAddOpen}>
           <DialogContent>
             <DialogHeader>
