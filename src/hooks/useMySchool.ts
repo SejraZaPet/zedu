@@ -79,5 +79,7 @@ export function useSchoolColleagues(schoolId: string | null) {
   return { colleagues, loading };
 }
 
-export const colleagueLabel = (p: SchoolColleague) =>
-  [p.first_name, p.last_name].filter(Boolean).join(" ").trim() || p.email || "Kolega";
+export const colleagueLabel = (p?: SchoolColleague | null) =>
+  p
+    ? [p.first_name, p.last_name].filter(Boolean).join(" ").trim() || p.email || "Kolega"
+    : "";
