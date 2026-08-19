@@ -279,23 +279,43 @@ export default function TeacherSubjectClass() {
             ? gRow.textbook_id
             : null,
         );
+        setClassSubjectId(null);
+        const { data: links } = await supabase
+          .from("subject_group_textbooks" as any)
+          .select("id, textbook_id, textbook_type, is_primary")
+          .eq("subject_group_id", groupId);
+        if (!cancelled) setUnitTextbooks(((links as any[]) ?? []) as UnitTextbookLink[]);
       } else if (resolvedSubjectId) {
         const { data: csRow } = await supabase
           .from("class_subjects")
-          .select("textbook_id, textbook_type")
+          .select("id, textbook_id, textbook_type")
           .eq("class_id", classId)
           .eq("subject_id", resolvedSubjectId)
           .maybeSingle();
         const r: any = csRow;
-        if (!cancelled)
+        if (!cancelled) {
           setUnitTextbookId(
             r?.textbook_id && (!r.textbook_type || r.textbook_type === "teacher")
               ? r.textbook_id
               : null,
           );
+          setClassSubjectId(r?.id ?? null);
+        }
+        if (r?.id) {
+          const { data: links } = await supabase
+            .from("class_subject_textbooks" as any)
+            .select("id, textbook_id, textbook_type, is_primary")
+            .eq("class_subject_id", r.id);
+          if (!cancelled) setUnitTextbooks(((links as any[]) ?? []) as UnitTextbookLink[]);
+        } else if (!cancelled) {
+          setUnitTextbooks([]);
+        }
       } else {
         setUnitTextbookId(null);
+        setClassSubjectId(null);
+        setUnitTextbooks([]);
       }
+
 
 
 
