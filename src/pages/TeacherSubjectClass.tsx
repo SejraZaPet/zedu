@@ -853,7 +853,7 @@ export default function TeacherSubjectClass() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      title="Změnit propojenou učebnici"
+                      title="Spravovat propojené učebnice"
                       onClick={openLinkDialog}
                     >
                       <Pencil className="h-4 w-4" />
