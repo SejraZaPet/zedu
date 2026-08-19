@@ -667,7 +667,9 @@ const ProfilePage = () => {
               <div>
                 <Label htmlFor="school">Škola</Label>
                 <Input id="school" value={school} onChange={(e) => setSchool(e.target.value)} />
+                {user?.id && <SchoolJoinRequestCard userId={user.id} defaultSchoolName={school} />}
               </div>
+
               <div>
                 <Label htmlFor="field">Obor</Label>
                 <Input id="field" value={fieldOfStudy} onChange={(e) => setFieldOfStudy(e.target.value)} />
