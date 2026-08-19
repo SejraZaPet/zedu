@@ -359,7 +359,11 @@ const SchoolsManager = () => {
                   <TableCell className="text-right">{s.admin_count}</TableCell>
                   <TableCell className="text-right">
                     <div className="inline-flex items-center gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => openMembers(s)} title="Členové školy">
+                        <Users className="w-4 h-4" />
+                      </Button>
                       <Button variant="ghost" size="icon" onClick={() => openEdit(s)} title="Upravit">
+
                         <Pencil className="w-4 h-4" />
                       </Button>
                       <Button variant="ghost" size="icon" onClick={() => remove(s.id, s.name)}>
