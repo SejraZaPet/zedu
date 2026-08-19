@@ -43,6 +43,9 @@ const SchoolAdmin = () => {
   const [invEmail, setInvEmail] = useState("");
   const [invRole, setInvRole] = useState<"teacher" | "user">("teacher");
   const [submitting, setSubmitting] = useState(false);
+  const [pendingRemove, setPendingRemove] = useState<MemberRow | null>(null);
+  const [removing, setRemoving] = useState(false);
+
   const [createdCredentials, setCreatedCredentials] = useState<{
     name: string;
     email?: string;
