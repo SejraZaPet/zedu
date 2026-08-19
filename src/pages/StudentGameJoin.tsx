@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,13 @@ const StudentGameJoin = () => {
   const { isLoggedIn, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
+
+  // Předvyplnění kódu z QR odkazu (?code=ABC123)
+  useEffect(() => {
+    const fromUrl = (searchParams.get("code") || "").trim().toUpperCase();
+    if (fromUrl) setCode(fromUrl.slice(0, 6));
+  }, [searchParams]);
 
   useEffect(() => {
     if (!user) return;

@@ -389,14 +389,37 @@ const StudentGamePlay = () => {
             />
           )}
 
-          {/* Slide preview — stejný vizuál jako projekce, scalovaný do mobilní šířky */}
+          {/* Slide preview — stejný vizuál jako projekce, scalovaný do mobilní šířky.
+              Kreslicí vrstva je uvnitř TOHOTO boxu (16:9), takže plátno přesně odpovídá slidu. */}
           <div className="px-3 pt-3">
-            <div className="overflow-hidden rounded-xl">
-              <div style={zoomStageStyle(liveZoom)}>
+            <div className="relative overflow-hidden rounded-xl aspect-video w-full">
+              <div className="absolute inset-0" style={zoomStageStyle(liveZoom)}>
                 <SlideCanvas key={qi} slide={currentSlideData} themeId={(currentSlideData as any)?.themeId} darkMode />
               </div>
+              {(() => {
+                const allowSync = !!liveSettings?.allowStudentDrawSync;
+                const teacherBoardVisible = getSlideStrokes(whiteboard, qi).length > 0;
+                if (!teacherBoardVisible && !studentDrawMode) return null;
+                return (
+                  <div
+                    className={`absolute inset-0 z-30 overflow-hidden ${studentDrawMode ? "" : "pointer-events-none"}`}
+                  >
+                    <WhiteboardOverlay
+                      stageW={1600}
+                      stageH={900}
+                      zoom={liveZoom}
+                      sessionId={sessionId || ""}
+                      data={whiteboard}
+                      slideIndex={qi}
+                      interactive={studentDrawMode}
+                      localOnly={!allowSync}
+                    />
+                  </div>
+                );
+              })()}
             </div>
           </div>
+
 
           {/* Vlastní tempo — navigace mezi slidy */}
           {pacingMode === "student" && (
@@ -653,49 +676,21 @@ const StudentGamePlay = () => {
             </p>
           </div>
 
-          {(() => {
-            const allowSync = !!liveSettings?.allowStudentDrawSync;
-            // `visible` is the teacher's own local panel state — students always see
-            // existing strokes for the current slide whenever any exist.
-            const teacherBoardVisible = getSlideStrokes(whiteboard, qi).length > 0;
-            const showBoard = teacherBoardVisible || studentDrawMode;
-            if (!showBoard && !allowSync && !teacherBoardVisible) {
-              // still allow student to open their local scratch pad via button
-            }
-            return (
-              <>
-                <button
-                  type="button"
-                  onClick={() => setStudentDrawMode((v) => !v)}
-                  aria-label={studentDrawMode ? "Vypnout kreslení" : "Zapnout kreslení"}
-                  title={studentDrawMode ? "Vypnout kreslení" : "Zapnout kreslení"}
-                  className={`fixed bottom-4 right-4 z-[60] h-12 w-12 rounded-full shadow-lg flex items-center justify-center border-2 transition-colors ${
-                    studentDrawMode
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-background/90 text-foreground border-border"
-                  }`}
-                >
-                  <Pencil className="w-5 h-5" />
-                </button>
-                {(showBoard || teacherBoardVisible) && (
-                  <div
-                    className={`fixed inset-0 z-30 overflow-hidden ${studentDrawMode ? "" : "pointer-events-none"}`}
-                  >
-                    <WhiteboardOverlay
-                      stageW={1600}
-                      stageH={900}
-                      zoom={liveZoom}
-                      sessionId={sessionId || ""}
-                      data={whiteboard}
-                      slideIndex={qi}
-                      interactive={studentDrawMode}
-                      localOnly={!allowSync}
-                    />
-                  </div>
-                )}
-              </>
-            );
-          })()}
+          {/* Přepínač kreslení — samotné plátno je uvnitř boxu se slidem výše */}
+          <button
+            type="button"
+            onClick={() => setStudentDrawMode((v) => !v)}
+            aria-label={studentDrawMode ? "Vypnout kreslení" : "Zapnout kreslení"}
+            title={studentDrawMode ? "Vypnout kreslení" : "Zapnout kreslení"}
+            className={`fixed bottom-4 right-4 z-[60] h-12 w-12 rounded-full shadow-lg flex items-center justify-center border-2 transition-colors ${
+              studentDrawMode
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-background/90 text-foreground border-border"
+            }`}
+          >
+            <Pencil className="w-5 h-5" />
+          </button>
+
         </div>
       </>
     );
