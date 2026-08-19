@@ -121,6 +121,18 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
     return () => { mounted = false; };
   }, [userId, editable]);
 
+  // Bumped when the avatar profile is saved elsewhere (AvatarEditor) so we refetch.
+  const [reloadKey, setReloadKey] = useState(0);
+  useEffect(() => {
+    if (!userId) return;
+    const onUpdated = (e: Event) => {
+      const detail = (e as CustomEvent<{ userId?: string }>).detail;
+      if (detail?.userId === userId) setReloadKey((k) => k + 1);
+    };
+    window.addEventListener("avatar-profile-updated", onUpdated);
+    return () => window.removeEventListener("avatar-profile-updated", onUpdated);
+  }, [userId]);
+
   useEffect(() => {
     if (!userId) {
       setProfile(null);
