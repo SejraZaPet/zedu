@@ -278,7 +278,16 @@ const TodoPage = () => {
                     <Flag
                       className={`w-3.5 h-3.5 ${priorityColor[todo.priority] || ""}`}
                     />
+                    {todo.assigned_by && todo.assigned_by !== user?.id && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                        Zadal(a):{" "}
+                        {colleagueLabel(
+                          colleagues.find((c) => c.id === todo.assigned_by),
+                        ) || "kolega"}
+                      </span>
+                    )}
                   </div>
+
                   {todo.description && (
                     <p className="text-sm text-muted-foreground mt-1">{todo.description}</p>
                   )}
