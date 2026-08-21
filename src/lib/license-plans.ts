@@ -5,6 +5,17 @@ export interface PlanFeature {
   beta?: boolean;
 }
 
+export interface PlanPrice {
+  headline: string;
+  suffix: string;
+  note?: string;
+}
+
+export interface PlanTier {
+  range: string;
+  price: string;
+}
+
 export interface Plan {
   key: PlanKey;
   title: string;
@@ -12,7 +23,11 @@ export interface Plan {
   highlight?: boolean;
   limits: string[];
   features: PlanFeature[];
+  price?: PlanPrice;
+  priceTable?: PlanTier[];
+  founderNote?: string;
 }
+
 
 export const PLANS: Plan[] = [
   {
