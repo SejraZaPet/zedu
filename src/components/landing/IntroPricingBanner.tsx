@@ -20,7 +20,10 @@ const IntroPricingBanner = () => {
 
   return (
     <div className="mx-auto max-w-[1100px] mb-6 md:mb-8">
-      <div className="bg-gradient-brand rounded-2xl p-6 md:p-8 lg:p-10 text-white shadow-xl overflow-hidden">
+      <div
+        className="bg-gradient-brand rounded-2xl p-6 md:p-8 lg:p-10 text-white shadow-xl overflow-hidden"
+        data-testid="intro-pricing-banner"
+      >
         <div className="flex flex-col items-center text-center">
           <span className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1.5 text-xs font-medium mb-4">
             <Rocket className="w-4 h-4" />
