@@ -101,6 +101,8 @@ export const PLANS: Plan[] = [
       { text: "Základní statistiky" },
       { text: "E-mailová podpora" },
     ],
+    price: { headline: "490 Kč", suffix: "ročně", note: "nebo 49 Kč/měsíc" },
+
   },
 ];
 
