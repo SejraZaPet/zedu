@@ -106,8 +106,8 @@ export default function StudentBooks() {
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
-      <main className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-6">
+      <main className="container mx-auto px-4 pb-8" style={{ paddingTop: "calc(70px + 2rem)" }}>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2">
               <BookOpen className="w-7 h-7" /> Moje knihy
@@ -116,10 +116,11 @@ export default function StudentBooks() {
               Vytvoř si vlastní multimediální knihu — stránku po stránce.
             </p>
           </div>
-          <Button onClick={() => setNewBookOpen(true)}>
+          <Button onClick={() => setNewBookOpen(true)} className="self-start sm:self-auto shrink-0">
             <Plus className="w-4 h-4 mr-1" /> Nová kniha
           </Button>
         </div>
+
 
         {loading ? (
           <p className="text-muted-foreground">Načítání…</p>
