@@ -71,13 +71,56 @@ const LicensePlansSection = () => {
 
               <div className="mt-auto">
                 <div className="text-center mb-3">
-                  <div className="text-lg font-bold text-foreground">Individuální nabídka</div>
-                  <div className="text-xs text-muted-foreground">Cena podle velikosti školy</div>
+                  {plan.price ? (
+                    <>
+                      <div className="font-heading text-3xl font-bold text-foreground leading-tight">
+                        {plan.price.headline}
+                      </div>
+                      <div className="text-sm text-muted-foreground">{plan.price.suffix}</div>
+                      {plan.price.note && (
+                        <div className="text-xs text-muted-foreground mt-1">{plan.price.note}</div>
+                      )}
+                      {plan.priceTable && (
+                        <Collapsible
+                          open={openTable === plan.key}
+                          onOpenChange={(o) => setOpenTable(o ? plan.key : null)}
+                        >
+                          <CollapsibleTrigger className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+                            Zobrazit celý ceník
+                            <ChevronDown
+                              className={`w-3 h-3 transition-transform ${openTable === plan.key ? "rotate-180" : ""}`}
+                            />
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                            <ul className="mt-2 space-y-1 text-left rounded-lg bg-muted/50 p-3">
+                              {plan.priceTable.map((t) => (
+                                <li key={t.range} className="flex justify-between gap-2 text-xs">
+                                  <span className="text-muted-foreground">{t.range}</span>
+                                  <span className="font-semibold text-foreground whitespace-nowrap">{t.price}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </CollapsibleContent>
+                        </Collapsible>
+                      )}
+                      {plan.founderNote && (
+                        <div className="mt-3 inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-2.5 py-1 text-xs font-medium">
+                          <Sparkles className="w-3 h-3" /> {plan.founderNote}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-lg font-bold text-foreground">Individuální nabídka</div>
+                      <div className="text-xs text-muted-foreground">Cena podle velikosti školy</div>
+                    </>
+                  )}
                 </div>
                 <Button variant={plan.highlight ? "hero" : "outline"} className="w-full" onClick={() => openFor(plan.key)}>
                   Napište nám pro více informací
                 </Button>
               </div>
+
             </div>
           ))}
         </div>
