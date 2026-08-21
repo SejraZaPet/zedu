@@ -1,12 +1,15 @@
 import { useState } from "react";
-import { Check, Star, Sparkles } from "lucide-react";
+import { Check, Star, Sparkles, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { PLANS, type PlanKey } from "@/lib/license-plans";
 import LicenseInquiryDialog from "@/components/license/LicenseInquiryDialog";
 
 const LicensePlansSection = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [initialPlan, setInitialPlan] = useState<PlanKey>("Start");
+  const [openTable, setOpenTable] = useState<PlanKey | null>(null);
+
 
   const openFor = (plan: PlanKey) => {
     setInitialPlan(plan);
