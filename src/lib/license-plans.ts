@@ -44,6 +44,9 @@ export const PLANS: Plan[] = [
       { text: "Základní statistiky" },
       { text: "E-mailová podpora" },
     ],
+    price: { headline: "100 Kč", suffix: "za žáka/rok", note: "max. 7 000 Kč/rok" },
+    founderNote: "Prvních 50 škol: 70 Kč/žák/rok",
+
   },
   {
     key: "Růst",
