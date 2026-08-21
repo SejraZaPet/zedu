@@ -76,6 +76,17 @@ export const PLANS: Plan[] = [
       { text: "Statistiky a exporty pro vedení školy", beta: true },
       { text: "Prioritní e-mailová podpora" },
     ],
+    price: { headline: "od 27 000 Kč", suffix: "ročně, podle počtu žáků" },
+    priceTable: [
+      { range: "250–300 žáků", price: "27 000 Kč" },
+      { range: "301–400 žáků", price: "34 000 Kč" },
+      { range: "401–500 žáků", price: "40 000 Kč" },
+      { range: "501–700 žáků", price: "48 000 Kč" },
+      { range: "701–1000 žáků", price: "58 000 Kč" },
+      { range: "1001–1500 žáků", price: "70 000 Kč" },
+      { range: "1501+ žáků", price: "85 000 Kč (strop)" },
+    ],
+
   },
   {
     key: "Lektor",
