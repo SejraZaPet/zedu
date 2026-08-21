@@ -57,9 +57,14 @@ const LicensePlansSection = () => {
 
               <ul className="space-y-2 mb-6 flex-1">
                 {plan.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-sm">
+                  <li key={f.text} className="flex items-start gap-2 text-sm">
                     <Check className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
-                    <span className="text-muted-foreground">{f}</span>
+                    <span className="text-muted-foreground">
+                      {f.text}
+                      {f.beta && (
+                        <span className="text-xs text-muted-foreground ml-0.5 align-super">*</span>
+                      )}
+                    </span>
                   </li>
                 ))}
               </ul>
