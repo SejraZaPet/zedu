@@ -5,6 +5,8 @@ import heroLogoDefault from "@/assets/zedu-hero-logo-text.png";
 import { getLandingIcon } from "@/lib/landing-icons";
 import { DEFAULT_HERO_PROPS, mergeSectionProps } from "@/lib/landing-defaults";
 import Editable from "@/components/landing-edit/Editable";
+import IntroPricingBanner from "@/components/landing/IntroPricingBanner";
+
 
 interface HeroProps {
   props?: Partial<typeof DEFAULT_HERO_PROPS>;
@@ -107,10 +109,12 @@ const Hero = ({ props }: HeroProps) => {
       </section>
 
       <div className="relative z-10 px-4 -mt-[60px]">
+        <IntroPricingBanner />
         <div
           className="mx-auto bg-card p-6 md:p-10"
           style={{ maxWidth: "1100px", boxShadow: "0 30px 80px rgba(0,0,0,0.15)", borderRadius: "28px" }}
         >
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {features.map((feature, i) => {
               const Icon = getLandingIcon(feature.icon);
