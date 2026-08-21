@@ -82,7 +82,11 @@ const LicensePlansSection = () => {
           ))}
         </div>
 
-        <p className="text-center text-sm text-muted-foreground mt-10 max-w-2xl mx-auto">
+        <p className="text-center text-xs text-muted-foreground mt-6 max-w-2xl mx-auto">
+          * Funkce je v beta verzi — appka ji stále dolaďuje a testuje.
+        </p>
+
+        <p className="text-center text-sm text-muted-foreground mt-4 max-w-2xl mx-auto">
           Nejste si jistí, který balíček je pro vás nejvhodnější? Napište nám —
           rádi vám pomůžeme vybrat a připravíme demo pro vaše kolegy.
         </p>
