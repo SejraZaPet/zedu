@@ -1,4 +1,4 @@
-import logoUrl from "@/assets/zedu-logo-new.png";
+import logoUrl from "@/assets/bezli-logo.png";
 import { qrSvgDataUrl } from "@/lib/qr-inline";
 
 export interface LoginCardData {
@@ -32,7 +32,7 @@ function buildStrip(user: LoginCardData): string {
   return [
     '<div class="strip">',
     '<div class="strip-left">',
-    '<img class="logo-img" src="' + logoUrl + '" alt="ZEdu" />',
+    '<img class="logo-img" src="' + logoUrl + '" alt="Bezli" />',
     '<div class="role-badge">' + escHtml(roleLabel) + "</div>",
     "</div>",
     '<div class="strip-center">',

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Menu, X, LogIn, LogOut, User, BookOpen, GraduationCap, LayoutDashboard, Users, BarChart3, HelpCircle, Layers, FolderOpen, Activity, TrendingUp, Gamepad2, Settings, CalendarDays, Brain, School, Image as ImageIcon, ShoppingBag, UserCheck, BookMarked, ClipboardList, Library, Zap, NotebookPen, Award } from "lucide-react";
-import logo from "@/assets/zedu-logo-new.png";
+import logo from "@/assets/bezli-logo.png";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -211,7 +211,7 @@ const SiteHeader = () => {
     >
       <div className="container mx-auto flex items-center justify-between h-full px-4 md:px-8">
         <button onClick={() => navigate("/")} className="flex items-center justify-center cursor-pointer bg-transparent border-none p-0 gap-3">
-          <img src={logo} alt="Zedu" className="h-9 w-auto" />
+          <img src={logo} alt="Bezli" className="h-9 w-auto" />
           {branding?.custom_logo_url && (
             <>
               <span className="h-6 w-px bg-border" aria-hidden />

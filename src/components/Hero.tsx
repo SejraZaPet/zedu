@@ -1,7 +1,7 @@
 import { Rocket, Play } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import heroBgDefault from "@/assets/hero-students.png";
-import heroLogoDefault from "@/assets/zedu-hero-logo-text.png";
+import heroLogoDefault from "@/assets/bezli-logo.png";
 import { getLandingIcon } from "@/lib/landing-icons";
 import { DEFAULT_HERO_PROPS, mergeSectionProps } from "@/lib/landing-defaults";
 import Editable from "@/components/landing-edit/Editable";
@@ -59,7 +59,7 @@ const Hero = ({ props }: HeroProps) => {
           >
             <img
               src={logoUrl}
-              alt="ZEdu"
+              alt="Bezli"
               className="h-[28px] sm:h-[40px] md:h-[52px] lg:h-[60px] w-auto object-contain block"
             />
             {titleParts.map((part, i) => (
