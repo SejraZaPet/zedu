@@ -65,8 +65,13 @@ const Hero = ({ props }: HeroProps) => {
             <h1 className="text-white font-heading font-bold text-4xl sm:text-5xl md:text-6xl lg:text-7xl mb-3">
               Bez limitu
             </h1>
-            <p className="text-white/90 font-heading text-xl sm:text-2xl md:text-3xl lg:text-4xl">
-              Tvoř, inspiruj, sdílej, uč
+            <p className="text-white/90 font-heading text-xl sm:text-2xl md:text-3xl lg:text-4xl flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+              {["Tvoř", "inspiruj", "sdílej", "uč"].map((word, i) => (
+                <span key={i} className="inline-flex items-center gap-2">
+                  <span>{word}</span>
+                  {i < 3 && <span className="text-white/60">•</span>}
+                </span>
+              ))}
             </p>
           </div>
 
