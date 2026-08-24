@@ -7,7 +7,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { PDFDocument, rgb } from "npm:pdf-lib@1.17.1";
 import fontkit from "npm:@pdf-lib/fontkit@1.1.1";
-import { Bezli_LOGO_PNG_BASE64 } from "../_shared/Bezli-logo.ts";
+import { BEZLI_LOGO_PNG_BASE64 } from "../_shared/bezli-logo.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -85,7 +85,7 @@ async function buildCertificatePdf(params: {
 
   // Brand mark: logo image + wordmark
   try {
-    const logoBytes = Uint8Array.from(atob(Bezli_LOGO_PNG_BASE64), (c) => c.charCodeAt(0));
+    const logoBytes = Uint8Array.from(atob(BEZLI_LOGO_PNG_BASE64), (c) => c.charCodeAt(0));
     const logo = await doc.embedPng(logoBytes);
     const logoW = 120;
     const logoH = (logo.height / logo.width) * logoW;
