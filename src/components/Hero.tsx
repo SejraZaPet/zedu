@@ -53,22 +53,22 @@ const Hero = ({ props }: HeroProps) => {
         />
 
         <div className="relative z-10 text-center px-4 max-w-3xl mx-auto py-16 md:py-24">
-          <h1
-            className="flex items-center justify-center whitespace-nowrap gap-2 sm:gap-3 md:gap-4 font-heading font-bold tracking-tight mb-8 animate-fade-in-up"
+          <div
+            className="flex flex-col items-center text-center mb-8 animate-fade-in-up"
             style={{ animationDelay: "0.1s" }}
           >
             <img
               src={logoUrl}
               alt="Bezli"
-              className="h-[28px] sm:h-[40px] md:h-[52px] lg:h-[60px] w-auto object-contain block"
+              className="h-24 sm:h-32 md:h-40 lg:h-52 w-auto object-contain block mb-6"
             />
-            {titleParts.map((part, i) => (
-              <span key={i} className="contents">
-                <span className="text-white/60 text-[24px] sm:text-[36px] md:text-[48px] lg:text-[56px] leading-none">•</span>
-                <span className="text-white text-[24px] sm:text-[36px] md:text-[48px] lg:text-[56px] leading-none">{part}</span>
-              </span>
-            ))}
-          </h1>
+            <h1 className="text-white font-heading font-bold text-4xl sm:text-5xl md:text-6xl lg:text-7xl mb-3">
+              Bez limitu
+            </h1>
+            <p className="text-white/90 font-heading text-xl sm:text-2xl md:text-3xl lg:text-4xl">
+              Tvoř, inspiruj, sdílej, uč
+            </p>
+          </div>
 
           <p
             className="text-base md:text-lg text-white max-w-xl mx-auto mb-8 mt-4 animate-fade-in-up leading-relaxed drop-shadow-md whitespace-pre-line"
