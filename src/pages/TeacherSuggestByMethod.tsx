@@ -455,12 +455,12 @@ export default function TeacherSuggestByMethod() {
             <div>
               <h1 className="font-heading text-3xl font-bold">Návrh lekce podle metody</h1>
               <p className="text-xs font-medium text-primary mt-0.5 inline-flex items-center gap-1">
-                <Sparkles className="w-3 h-3" /> S asistentem ZedAI
+                <Sparkles className="w-3 h-3" /> S asistentem Bezlai
               </p>
             </div>
           </div>
           <p className="text-muted-foreground">
-            Nahrajte materiál nebo vyberte lekci, zvolte jednu či více výukových metod a ZedAI navrhne, jak lekci pojmout — včetně konkrétních procvičovacích aktivit.
+            Nahrajte materiál nebo vyberte lekci, zvolte jednu či více výukových metod a Bezlai navrhne, jak lekci pojmout — včetně konkrétních procvičovacích aktivit.
           </p>
         </div>
 
@@ -686,7 +686,7 @@ export default function TeacherSuggestByMethod() {
             <div className="mt-5 rounded-lg border bg-muted/20 p-3 space-y-2">
               <div className="text-sm font-semibold">Zaměření myšlení a modelová situace (nepovinné)</div>
               <p className="text-xs text-muted-foreground">
-                ZedAI zahrne do návrhu aktivity či otázky rozvíjející vybrané typy uvažování a přidá modelovou situaci z praxe.
+                Bezlai zahrne do návrhu aktivity či otázky rozvíjející vybrané typy uvažování a přidá modelovou situaci z praxe.
               </p>
               <div className="flex flex-wrap gap-4 pt-1">
                 {(Object.keys(THINKING_LABELS) as ThinkingType[]).map((tt) => {
@@ -717,7 +717,7 @@ export default function TeacherSuggestByMethod() {
                   </div>
                   {!curriculumPlan.content && curriculumPlan.file_name && (
                     <div className="text-xs text-muted-foreground mt-0.5">
-                      Poznámka: máte uložený jen soubor ({curriculumPlan.file_name}). ZedAI zpracuje pouze textový obsah ŠVP – doplňte prosím text, pokud jej chcete použít.
+                      Poznámka: máte uložený jen soubor ({curriculumPlan.file_name}). Bezlai zpracuje pouze textový obsah ŠVP – doplňte prosím text, pokud jej chcete použít.
                     </div>
                   )}
                 </div>
@@ -768,7 +768,7 @@ export default function TeacherSuggestByMethod() {
                   <div className="flex items-center gap-2 mb-2">
                     <Lightbulb className="w-5 h-5 text-primary" />
                     <h3 className="font-semibold">Modelová situace</h3>
-                    <Badge variant="secondary" className="text-xs">ZedAI</Badge>
+                    <Badge variant="secondary" className="text-xs">Bezlai</Badge>
                   </div>
                   {suggestion.modelSituation.scenario && (
                     <p className="text-sm mb-2 whitespace-pre-line">{suggestion.modelSituation.scenario}</p>

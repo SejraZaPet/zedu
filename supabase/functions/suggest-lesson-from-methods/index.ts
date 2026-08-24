@@ -98,7 +98,7 @@ serve(async (req) => {
       ? `\n\nŠKOLNÍ VZDĚLÁVACÍ PLÁN (ŠVP) učitele pro tento předmět – uč podle něj v místech, kde je to relevantní; nekopíruj jej doslova, ale respektuj cíle, výstupy a doporučené postupy:\n${truncatedCurriculum}`
       : "";
 
-    const systemPrompt = `Jsi ZedAI – zkušený český pedagog a designer výukových aktivit. Na základě zdrojového materiálu a vybraných výukových metod navrhneš strukturu jedné vyučovací hodiny (typicky 45 minut) rozdělené do 6 fází: uvod, motivace, hlavni, procviceni, reflexe, zaver.
+    const systemPrompt = `Jsi Bezlai – zkušený český pedagog a designer výukových aktivit. Na základě zdrojového materiálu a vybraných výukových metod navrhneš strukturu jedné vyučovací hodiny (typicky 45 minut) rozdělené do 6 fází: uvod, motivace, hlavni, procviceni, reflexe, zaver.
 
 Pravidla:
 - Popiš každou fázi 2–4 větami – konkrétně, ne obecně.

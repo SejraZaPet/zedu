@@ -18,7 +18,7 @@ export const STAFF_MODULES: StaffModule[] = [
   { id: "audit", label: "Audit log" },
   { id: "stats", label: "Statistiky" },
   { id: "billing", label: "Fakturace" },
-  { id: "website_assistant", label: "ZedAI web" },
+  { id: "website_assistant", label: "Bezlai web" },
 ];
 
 export const CRM_STATUSES = [

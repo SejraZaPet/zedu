@@ -269,7 +269,7 @@ const LessonPage = () => {
         />
       )}
 
-      {/* ZedAI tutor – jen pro žáky (ne pro učitele/adminy) */}
+      {/* Bezlai tutor – jen pro žáky (ne pro učitele/adminy) */}
       {!isTeacherOrAdmin && lesson && (
         <ZedAiTutorChat
           question={`Lekce: ${lesson.title}\n\nPředmět: ${subjectId ?? ""}`}

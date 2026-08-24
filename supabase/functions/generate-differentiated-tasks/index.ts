@@ -37,7 +37,7 @@ serve(async (req) => {
       ? existingTeamNames.map((n) => String(n)).slice(0, count)
       : [];
 
-    const systemPrompt = `Jsi ZedAI – zkušený český pedagog. Pro dané téma vytvoříš přesně ${count} různých variant úkolu/otázky, každou pro jinou skupinu žáků ve třídě.
+    const systemPrompt = `Jsi Bezlai – zkušený český pedagog. Pro dané téma vytvoříš přesně ${count} různých variant úkolu/otázky, každou pro jinou skupinu žáků ve třídě.
 
 Pravidla:
 - Vygeneruj přesně ${count} variant – jednu pro každou skupinu.
