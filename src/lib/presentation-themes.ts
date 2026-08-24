@@ -22,12 +22,12 @@ export interface PresentationTheme {
   isDark: boolean;
 }
 
-export const DEFAULT_THEME_ID = "zedu-classic";
+export const DEFAULT_THEME_ID = "Bezli-classic";
 
 export const PRESENTATION_THEMES: PresentationTheme[] = [
   {
-    id: "zedu-classic",
-    name: "Klasický ZEdu",
+    id: "Bezli-classic",
+    name: "Klasický Bezli",
     description: "Výchozí tmavý gradient s tealovým a lavendrovým akcentem",
     primaryColor: "#6EC6D9",
     secondaryColor: "#9B6CFF",

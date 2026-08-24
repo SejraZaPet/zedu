@@ -1,5 +1,5 @@
 /**
- * WCAG 2.2 AA Checklist — ZEdu Platform
+ * WCAG 2.2 AA Checklist — Bezli Platform
  *
  * Practical dev+QA checklist for key user flows.
  * Generated 2026-03-15.
@@ -200,7 +200,7 @@ export const WCAG_CHECKLIST = {
 
   notes: [
     "Tón: vykání učiteli, tykání žákům – konzistentní s ui-microcopy.ts.",
-    "Prohlášení o přístupnosti: povinnost závisí na typu subjektu (veřejný sektor dle směrnice EU 2016/2102, soukromý sektor dle EAA od 28. 6. 2025). Typ subjektu ZEdu nespecifikován → doporučeno připravit prohlášení preventivně.",
+    "Prohlášení o přístupnosti: povinnost závisí na typu subjektu (veřejný sektor dle směrnice EU 2016/2102, soukromý sektor dle EAA od 28. 6. 2025). Typ subjektu Bezli nespecifikován → doporučeno připravit prohlášení preventivně.",
     "ARIA live regiony: toasty (sonner) musí mít role='status' nebo aria-live. Ověřit konfiguraci Sonner/Toaster komponenty.",
     "Drag-and-drop: všechny DnD interakce (matching, ordering, hotspot) MUSÍ mít klávesovou alternativu. Aktuální implementace používá <select> pro matching – OK.",
     "Grafy: pokud používáte Recharts, přidat <desc> do SVG nebo tabulkovou alternativu pod grafem.",

@@ -220,7 +220,7 @@ const StaffKnowledgeManager = () => {
           </Button>
         )}
       </div>
-      <p className="text-sm text-muted-foreground mb-6">Návody a dokumenty pro tým ZEdu.</p>
+      <p className="text-sm text-muted-foreground mb-6">Návody a dokumenty pro tým Bezli.</p>
 
       {loading ? (
         <p className="text-sm text-muted-foreground text-center py-8">Načítání…</p>

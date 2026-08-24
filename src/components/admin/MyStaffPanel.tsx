@@ -114,7 +114,7 @@ interface Props {
   onNavigate?: (tab: string) => void;
 }
 
-/** Osobní pracovní prostředí člena týmu ZEdu: úkoly, sdílený kalendář, rychlé odkazy. */
+/** Osobní pracovní prostředí člena týmu Bezli: úkoly, sdílený kalendář, rychlé odkazy. */
 const MyStaffPanel = ({ onNavigate }: Props) => {
   const { user } = useAuth();
   const { permissions, isAdmin } = useStaffPermissions();
@@ -1011,7 +1011,7 @@ const CalendarFeedDialog = ({
             <p className="text-sm text-muted-foreground">Odkaz se nepodařilo připravit.</p>
           )}
           <p className="text-xs text-muted-foreground">
-            Odběr je <strong>jednosměrný</strong> (ZEdu → váš kalendář). Úpravy provedené v Google nebo Apple
+            Odběr je <strong>jednosměrný</strong> (Bezli → váš kalendář). Úpravy provedené v Google nebo Apple
             Calendar se do aplikace nepropíšou. Odkaz je osobní a tajný — nesdílejte ho.
           </p>
         </div>

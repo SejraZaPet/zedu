@@ -1074,7 +1074,7 @@ export default function WorksheetEditor() {
 
   function handleExportPdf() {
     if (!spec || !id) return;
-    const skip = typeof window !== "undefined" && localStorage.getItem("zedu-skip-print-tip") === "true";
+    const skip = typeof window !== "undefined" && localStorage.getItem("Bezli-skip-print-tip") === "true";
     if (skip) {
       void performExportPdf();
     } else {
@@ -1084,7 +1084,7 @@ export default function WorksheetEditor() {
 
   function handleConfirmPrintTip() {
     if (dontShowPrintTipAgain) {
-      localStorage.setItem("zedu-skip-print-tip", "true");
+      localStorage.setItem("Bezli-skip-print-tip", "true");
     }
     setShowPrintTipDialog(false);
     void performExportPdf();

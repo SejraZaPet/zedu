@@ -13,7 +13,7 @@ const BLOCK_TOOL = {
   type: "function",
   function: {
     name: "create_blocks",
-    description: "Převeď vstupní studijní materiál do editovatelných bloků ZEdu.",
+    description: "Převeď vstupní studijní materiál do editovatelných bloků Bezli.",
     parameters: {
       type: "object",
       additionalProperties: false,
@@ -80,7 +80,7 @@ const BLOCK_TOOL = {
   },
 };
 
-const SYSTEM_PROMPT = `Jsi expert na zpracování vzdělávacích materiálů pro platformu ZEdu.
+const SYSTEM_PROMPT = `Jsi expert na zpracování vzdělávacích materiálů pro platformu Bezli.
 Dostaneš text z PDF, DOCX nebo PPTX a musíš převést VEŠKERÝ textový obsah do editovatelných bloků.
 
 DŮLEŽITÉ: Použij VÝHRADNĚ text z dokumentu. NEVYMÝŠLEJ žádný vlastní obsah. Pokud text neobsahuje informaci, NEVKLÁDEJ ji. Struktura musí přesně odpovídat originálnímu dokumentu.
@@ -532,7 +532,7 @@ async function callGatewayWithFile(
   apiKey: string,
   body: { fileBase64: string; fileName: string; mimeType: string; mode: "single" | "split" },
 ) {
-  const userPrompt = `Zpracuj soubor "${body.fileName}" a převeď jeho kompletní obsah do editovatelných bloků ZEdu. Režim: ${body.mode}.`;
+  const userPrompt = `Zpracuj soubor "${body.fileName}" a převeď jeho kompletní obsah do editovatelných bloků Bezli. Režim: ${body.mode}.`;
 
   const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",

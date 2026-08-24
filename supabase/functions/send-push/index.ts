@@ -18,10 +18,10 @@ const VAPID_PRIVATE = (Deno.env.get("VAPID_PRIVATE_KEY") || "")
   .replace(/\//g, "_")
   .replace(/=+$/g, "");
 
-const RAW_SUBJECT = (Deno.env.get("VAPID_SUBJECT") || "mailto:noreply@zedu.cz").trim();
+const RAW_SUBJECT = (Deno.env.get("VAPID_SUBJECT") || "mailto:noreply@Bezli.cz").trim();
 const VAPID_SUBJECT = /^(mailto:|https?:\/\/)/i.test(RAW_SUBJECT)
   ? RAW_SUBJECT
-  : `mailto:${RAW_SUBJECT.includes("@") ? RAW_SUBJECT : "noreply@zedu.cz"}`;
+  : `mailto:${RAW_SUBJECT.includes("@") ? RAW_SUBJECT : "noreply@Bezli.cz"}`;
 
 import { getInternalSecret } from "../_shared/internal-secret.ts";
 
@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
     let recipient_id = body.recipient_id;
-    let title = body.title || "ZEdu";
+    let title = body.title || "Bezli";
     let text = body.body || "";
     let link = body.link || "/";
 
@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
         });
       }
       recipient_id = uid;
-      title = "ZEdu — testovací notifikace";
+      title = "Bezli — testovací notifikace";
       text = "Push notifikace fungují správně. 🎉";
       link = "/profil";
     }

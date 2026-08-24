@@ -165,7 +165,7 @@ export function drawHeader(
     height: 28,
     color: rgb(0.43, 0.78, 0.85), // #6EC6D9 ish
   });
-  ctx.page.drawText("ZEdu", {
+  ctx.page.drawText("Bezli", {
     x: ctx.margin,
     y: ctx.height - 20,
     size: 12,

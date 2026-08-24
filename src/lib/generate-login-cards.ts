@@ -13,7 +13,7 @@ export interface LoginCardData {
   pin?: string;
 }
 
-const APP_URL = "https://www.zedu.cz";
+const APP_URL = "https://www.Bezli.cz";
 
 function escHtml(s: string): string {
   return s
@@ -60,7 +60,7 @@ function buildStrip(user: LoginCardData): string {
           ...(user.childCodes && user.childCodes.length > 0
             ? ['<div class="cred-row"><div class="cred-label">Kód dítěte:</div><div class="cred-value cred-password">' + escHtml(user.childCodes.join(", ")) + '</div></div>']
             : []),
-          '<div class="cred-row"><div class="cred-value cred-password-note">Další děti přidáte v profilu na zedu.cz zadáním jejich kódu ZAK-XXXX</div></div>',
+          '<div class="cred-row"><div class="cred-value cred-password-note">Další děti přidáte v profilu na Bezli.cz zadáním jejich kódu ZAK-XXXX</div></div>',
         ]
       : (user.studentCode
           ? ['<div class="cred-row"><div class="cred-label">Kód žáka:</div><div class="cred-value cred-password">' + escHtml(user.studentCode) + "</div></div>"]
@@ -68,7 +68,7 @@ function buildStrip(user: LoginCardData): string {
     "</div>",
     '<div class="strip-right">',
     '<img class="qr" src="' + qrUrl + '" alt="QR" />',
-    '<div class="qr-label">zedu.cz</div>',
+    '<div class="qr-label">Bezli.cz</div>',
     "</div>",
     "</div>",
     '<div class="cut-line"><span class="scissors">✂</span></div>',
@@ -101,7 +101,7 @@ const CSS = [
 export function generateLoginCardsHtml(users: LoginCardData[]): string {
   const strips = users.map(buildStrip).join("");
   const head =
-    "<!DOCTYPE html><html lang=\"cs\"><head><meta charset=\"UTF-8\"><title>Přihlašovací lístky ZEdu</title><style>" +
+    "<!DOCTYPE html><html lang=\"cs\"><head><meta charset=\"UTF-8\"><title>Přihlašovací lístky Bezli</title><style>" +
     CSS +
     "</style></head><body>";
   const foot =

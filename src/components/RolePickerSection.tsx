@@ -29,7 +29,7 @@ const RolePickerSection = () => {
           Najdete zde nápovědu a postupy.
         </h2>
         <p className="text-white/80 text-base md:text-lg max-w-xl mx-auto mb-12 leading-relaxed">
-          ZEdu nabízí návody, nápovědu a postupy jak pro učitele, tak pro žáky.
+          Bezli nabízí návody, nápovědu a postupy jak pro učitele, tak pro žáky.
           Vyberte si svou cestu.
         </p>
 

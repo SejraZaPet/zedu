@@ -27,7 +27,7 @@ const IntroPricingBanner = () => {
         <div className="flex flex-col items-center text-center">
           <span className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1.5 text-xs font-medium mb-4">
             <Rocket className="w-4 h-4" />
-            Právě jsme spustili ZEdu.cz
+            Právě jsme spustili Bezli.cz
           </span>
 
           <h2 className="font-heading text-[26px] md:text-[28px] font-bold leading-tight mb-3">

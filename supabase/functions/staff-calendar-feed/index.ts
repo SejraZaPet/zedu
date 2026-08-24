@@ -48,7 +48,7 @@ function buildIcs(events: EventRow[]): string {
     const end = e.end_time ? new Date(e.end_time) : new Date(start.getTime() + 60 * 60 * 1000)
     const lines = [
       'BEGIN:VEVENT',
-      fold(`UID:${e.id}@zedu.cz`),
+      fold(`UID:${e.id}@Bezli.cz`),
       `DTSTAMP:${dtstamp}`,
       `DTSTART:${toICSDate(start)}`,
       `DTEND:${toICSDate(end)}`,
@@ -61,10 +61,10 @@ function buildIcs(events: EventRow[]): string {
   return [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//ZEdu//Staff Calendar//CS',
+    'PRODID:-//Bezli//Staff Calendar//CS',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
-    'X-WR-CALNAME:ZEdu pracovní kalendář',
+    'X-WR-CALNAME:Bezli pracovní kalendář',
     ...vevents,
     'END:VCALENDAR',
   ].join('\r\n')
@@ -156,7 +156,7 @@ Deno.serve(async (req) => {
     headers: {
       ...corsHeaders,
       'Content-Type': 'text/calendar; charset=utf-8',
-      'Content-Disposition': 'attachment; filename="zedu-pracovni-kalendar.ics"',
+      'Content-Disposition': 'attachment; filename="Bezli-pracovni-kalendar.ics"',
       'Cache-Control': 'public, max-age=300',
     },
   })

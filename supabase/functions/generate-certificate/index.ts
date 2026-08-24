@@ -7,7 +7,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { PDFDocument, rgb } from "npm:pdf-lib@1.17.1";
 import fontkit from "npm:@pdf-lib/fontkit@1.1.1";
-import { ZEDU_LOGO_PNG_BASE64 } from "../_shared/zedu-logo.ts";
+import { Bezli_LOGO_PNG_BASE64 } from "../_shared/Bezli-logo.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -85,15 +85,15 @@ async function buildCertificatePdf(params: {
 
   // Brand mark: logo image + wordmark
   try {
-    const logoBytes = Uint8Array.from(atob(ZEDU_LOGO_PNG_BASE64), (c) => c.charCodeAt(0));
+    const logoBytes = Uint8Array.from(atob(Bezli_LOGO_PNG_BASE64), (c) => c.charCodeAt(0));
     const logo = await doc.embedPng(logoBytes);
     const logoW = 120;
     const logoH = (logo.height / logo.width) * logoW;
     page.drawImage(logo, { x: centerX - logoW / 2, y: height - 60 - logoH, width: logoW, height: logoH });
-    drawCentered("ZEdu Akademie", height - 72 - logoH, 12, true, TEAL);
+    drawCentered("Bezli Akademie", height - 72 - logoH, 12, true, TEAL);
   } catch (e) {
     console.warn("Logo embed failed, falling back to text:", e);
-    drawCentered("ZEdu Akademie", height - 90, 14, true, TEAL);
+    drawCentered("Bezli Akademie", height - 90, 14, true, TEAL);
   }
 
 
@@ -138,7 +138,7 @@ async function buildCertificatePdf(params: {
   page.drawText(params.certificateNumber, { x: rightX - numValW, y: footerY, size: boxValueSize, font, color: rgb(INK.r, INK.g, INK.b) });
 
   // Bottom signature line label (issuer)
-  const issuer = "ZEdu.cz · www.zedu.cz";
+  const issuer = "Bezli.cz · www.Bezli.cz";
   const iw = font.widthOfTextAtSize(issuer, 10);
   page.drawText(issuer, { x: centerX - iw / 2, y: 60, size: 10, font, color: rgb(MUTED.r, MUTED.g, MUTED.b) });
 
@@ -261,12 +261,12 @@ Deno.serve(async (req) => {
           </div>
           <div style="background:#fff; padding: 24px; border-radius: 0 0 14px 14px;">
             <p>Vážený/á ${userName},</p>
-            <p>úspěšně jste dokončil(a) kurz <strong>${course.title}</strong> v ZEdu Akademii. V příloze / na odkazu níže najdete svůj osobní certifikát.</p>
+            <p>úspěšně jste dokončil(a) kurz <strong>${course.title}</strong> v Bezli Akademii. V příloze / na odkazu níže najdete svůj osobní certifikát.</p>
             <p><strong>Číslo certifikátu:</strong> ${cert.certificate_number}</p>
             <div style="text-align:center; margin: 24px 0;">
               <a href="${downloadUrl}" style="background:#63C7CF; color:#fff; padding: 12px 24px; border-radius: 12px; text-decoration:none; font-weight:600; display:inline-block;">Stáhnout certifikát (PDF)</a>
             </div>
-            <p style="font-size:12px; color:#666;">Odkaz je platný 7 dní. Certifikát můžete kdykoli znovu stáhnout v ZEdu Akademii v sekci „Moje certifikáty“.</p>
+            <p style="font-size:12px; color:#666;">Odkaz je platný 7 dní. Certifikát můžete kdykoli znovu stáhnout v Bezli Akademii v sekci „Moje certifikáty“.</p>
           </div>
         </div>`;
       try {

@@ -490,7 +490,7 @@ const ProfilePage = () => {
                 maxLength={20}
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Titul se zobrazí před jménem v certifikátech ZEdu Akademie.
+                Titul se zobrazí před jménem v certifikátech Bezli Akademie.
               </p>
             </div>
             <Button onClick={handleSaveTitle} disabled={savingTitle} className="gap-2">
@@ -579,7 +579,7 @@ const ProfilePage = () => {
                   </div>
                 )}
 
-                <p className="text-xs text-muted-foreground">Na ZEDU od {joined}</p>
+                <p className="text-xs text-muted-foreground">Na Bezli od {joined}</p>
               </CardContent>
             </Card>
           );
@@ -623,7 +623,7 @@ const ProfilePage = () => {
                   </div>
                 )}
 
-                <p className="text-xs text-muted-foreground">Na ZEDU od {joined}</p>
+                <p className="text-xs text-muted-foreground">Na Bezli od {joined}</p>
               </CardContent>
             </Card>
           );

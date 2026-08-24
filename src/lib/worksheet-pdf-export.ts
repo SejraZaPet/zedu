@@ -34,7 +34,7 @@ async function buildPrintHtml(
   const variantId = options.variantId ?? spec.variants[0]?.variantId ?? "A";
   const baseUrl =
     options.baseUrl ??
-    (typeof window !== "undefined" ? window.location.origin : "https://zedu.cz");
+    (typeof window !== "undefined" ? window.location.origin : "https://Bezli.cz");
   const studentUrl = `${baseUrl}/student/pracovni-list/${options.worksheetId}`;
 
   const specWithConfig: WorksheetSpec = {
@@ -58,7 +58,7 @@ async function buildPrintHtml(
   const qrBlock = `
 <div class="ws-qr-wrap">
   <img src="${qrDataUrl}" alt="QR online verze" />
-  <div>Pokračuj online →<br/>zedu.cz</div>
+  <div>Pokračuj online →<br/>Bezli.cz</div>
 </div>`;
 
   // Vlož QR do header-top (před uzavírací </div> ws-header-top)

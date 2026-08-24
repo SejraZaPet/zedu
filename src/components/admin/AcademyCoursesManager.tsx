@@ -15,7 +15,7 @@ import { Plus, Pencil, Trash2, BookOpen, ArrowLeft, Award, FileBadge2, Users2, G
 import { toast } from "sonner";
 
 type Audience = "teacher" | "student" | "both";
-type RevenueType = "zedu" | "creator_share" | null;
+type RevenueType = "Bezli" | "creator_share" | null;
 
 interface Course {
   id: string;
@@ -68,7 +68,7 @@ const COURSE_CATEGORIES = [
   "Inkluze a podpora",
   "Wellbeing a klima třídy",
   "Řízení školy",
-  "Práce s ZEdu",
+  "Práce s Bezli",
 ];
 
 const AcademyCoursesManager = () => {
@@ -246,7 +246,7 @@ const AcademyCoursesManager = () => {
     <div>
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="font-heading text-xl font-semibold">ZEdu Akademie</h2>
+          <h2 className="font-heading text-xl font-semibold">Bezli Akademie</h2>
           <p className="text-sm text-muted-foreground">Správa kurzů, modulů a přehled statistik.</p>
         </div>
         <Button onClick={openNewCourse}><Plus className="w-4 h-4 mr-1" /> Nový kurz</Button>
@@ -347,7 +347,7 @@ const AcademyCoursesManager = () => {
                             <div>
                               <div>{Number(s.price).toLocaleString("cs-CZ")} Kč</div>
                               <div className="text-muted-foreground">
-                                {s.revenue_type === "zedu" ? "ZEdu" : s.revenue_type === "creator_share" ? "Tvůrce" : "—"}
+                                {s.revenue_type === "Bezli" ? "Bezli" : s.revenue_type === "creator_share" ? "Tvůrce" : "—"}
                               </div>
                             </div>
                           ) : (<span className="text-muted-foreground">Zdarma</span>)}
@@ -445,7 +445,7 @@ const AcademyCoursesManager = () => {
                   <SelectTrigger><SelectValue placeholder="Neuvedeno" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__none__">Neuvedeno</SelectItem>
-                    <SelectItem value="zedu">ZEdu (vlastní kurz)</SelectItem>
+                    <SelectItem value="Bezli">Bezli (vlastní kurz)</SelectItem>
                     <SelectItem value="creator_share">Externí tvůrce (podíl)</SelectItem>
                   </SelectContent>
                 </Select>

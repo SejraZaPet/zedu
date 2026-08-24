@@ -52,18 +52,18 @@ const SiteFooter = () => {
           <div>
             <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4">Kontakt</h4>
             <a
-              href="mailto:info@zedu.cz"
+              href="mailto:info@Bezli.cz"
               className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
             >
               <Mail className="w-4 h-4" />
-              info@zedu.cz
+              info@Bezli.cz
             </a>
           </div>
         </div>
 
         <div className="border-t border-border mt-10 pt-6 flex flex-col items-center gap-2">
           <p className="text-xs text-muted-foreground">
-            © {new Date().getFullYear()} Zedu. Všechna práva vyhrazena.
+            © {new Date().getFullYear()} Bezli. Všechna práva vyhrazena.
           </p>
           <a
             href="/auth"

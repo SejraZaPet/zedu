@@ -520,7 +520,7 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
               <GraduationCap className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="font-heading text-2xl font-semibold">{title || "ZEdu Akademie"}</h1>
+              <h1 className="font-heading text-2xl font-semibold">{title || "Bezli Akademie"}</h1>
               <p className="text-sm text-muted-foreground">{subtitle || (audience === "teacher" ? "Kurzy a webináře pro učitele." : audience === "parent" ? "Kurzy a rady pro rodiče." : "Kurzy a doplňkové vzdělávání pro žáky.")}</p>
             </div>
           </div>

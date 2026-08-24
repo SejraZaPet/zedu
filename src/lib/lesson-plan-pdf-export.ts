@@ -276,7 +276,7 @@ function buildHtml(template: LessonPlanTemplate, data: LessonPlanExportData): st
     ${headerMeta}
     <hr class="sep" />
     ${body}
-    <div class="footer">Vytvořeno v Zedu • ${new Date().toLocaleDateString("cs-CZ")}</div>
+    <div class="footer">Vytvořeno v Bezli • ${new Date().toLocaleDateString("cs-CZ")}</div>
   </div>
 </body>
 </html>`;

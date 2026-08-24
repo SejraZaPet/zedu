@@ -106,7 +106,7 @@ Deno.serve(async (req) => {
       ];
       const html = `
       <div style="font-family: Lato, Arial, sans-serif; max-width: 640px; margin: 0 auto; color: #1e293b;">
-        <h2 style="margin:0 0 12px;">Nová zpětná vazba z aplikace ZEdu</h2>
+        <h2 style="margin:0 0 12px;">Nová zpětná vazba z aplikace Bezli</h2>
         <table cellpadding="8" cellspacing="0" style="width:100%; border-collapse:collapse; background:#f8fafc; border-radius:12px;">
           ${rows
             .map(
@@ -128,8 +128,8 @@ Deno.serve(async (req) => {
           Authorization: `Bearer ${RESEND_API_KEY}`,
         },
         body: JSON.stringify({
-          from: "ZEdu zpětná vazba <noreply@zedu.cz>",
-          to: ["info@zedu.cz"],
+          from: "Bezli zpětná vazba <noreply@Bezli.cz>",
+          to: ["info@Bezli.cz"],
           ...(userEmail ? { reply_to: userEmail } : {}),
           subject: `Zpětná vazba z aplikace – ${pageContext || "neznámá stránka"}`,
           html,

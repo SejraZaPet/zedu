@@ -116,7 +116,7 @@ BEGIN
             AND e2.course_id = pc2.course_id
         )
     ) THEN
-      v_number := 'ZEDU-PATHWAY-' || to_char(now(), 'YYYY') || '-' ||
+      v_number := 'Bezli-PATHWAY-' || to_char(now(), 'YYYY') || '-' ||
                   lpad(nextval('public.academy_pathway_certificate_seq')::text, 6, '0');
       INSERT INTO public.academy_pathway_certificates (pathway_id, teacher_id, certificate_number)
         VALUES (v_pathway.id, v_teacher, v_number);

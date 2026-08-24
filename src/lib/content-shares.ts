@@ -18,7 +18,7 @@ export interface ContentShareRow {
 export interface CreateShareInput {
   kind: ShareTargetKind;
   targetId: string;
-  sharedWith: string | null; // null = public in ZEduMarket
+  sharedWith: string | null; // null = public in BezliMarket
   includesWorksheets?: boolean;
   includesPresentations?: boolean;
 }
@@ -312,7 +312,7 @@ export async function copyLessonPlan(sourceId: string): Promise<string> {
     .from("lesson_plans")
     .insert({
       teacher_id: userId,
-      title: `${src.title} (z ZEduMarket)`,
+      title: `${src.title} (z BezliMarket)`,
       subject: src.subject,
       grade_band: src.grade_band,
       slides: src.slides,
@@ -341,7 +341,7 @@ export async function copyWorksheet(sourceId: string): Promise<string> {
     .from("worksheets")
     .insert({
       teacher_id: userId,
-      title: `${src.title} (z ZEduMarket)`,
+      title: `${src.title} (z BezliMarket)`,
       subject: src.subject,
       grade_band: src.grade_band,
       worksheet_mode: src.worksheet_mode,
@@ -374,7 +374,7 @@ export async function copyTextbook(
     .from("teacher_textbooks")
     .insert({
       teacher_id: userId,
-      title: `${src.title} (z ZEduMarket)`,
+      title: `${src.title} (z BezliMarket)`,
       description: (src as any).description ?? "",
       subject: src.subject,
       visibility: "private",

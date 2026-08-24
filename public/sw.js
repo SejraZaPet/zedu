@@ -1,4 +1,4 @@
-// ZEdu Service Worker
+// Bezli Service Worker
 // - Push notifications only
 //
 // This worker intentionally does not cache HTML or JS/CSS bundles. Older
@@ -15,7 +15,7 @@ self.addEventListener("activate", (event) => {
       const names = await caches.keys();
       await Promise.all(
         names
-          .filter((n) => n.startsWith("zedu-"))
+          .filter((n) => n.startsWith("Bezli-"))
           .map((n) => caches.delete(n))
       );
       await self.clients.claim();
@@ -29,13 +29,13 @@ self.addEventListener("push", (event) => {
     data = event.data ? event.data.json() : {};
   } catch (_e) {
     try {
-      data = { title: "ZEdu", body: event.data ? event.data.text() : "" };
+      data = { title: "Bezli", body: event.data ? event.data.text() : "" };
     } catch (_) {
-      data = { title: "ZEdu", body: "" };
+      data = { title: "Bezli", body: "" };
     }
   }
 
-  const title = data.title || "ZEdu";
+  const title = data.title || "Bezli";
   const options = {
     body: data.body || "",
     icon: "/icons/icon-192.png",

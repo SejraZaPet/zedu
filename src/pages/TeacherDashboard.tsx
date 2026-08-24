@@ -267,8 +267,8 @@ const TeacherDashboard = () => {
     academy: {
       id: "academy",
       icon: Award,
-      title: "ZEdu Akademie",
-      description: "Kurzy a webináře pro učitele – rozvíjejte se s ZEdu.",
+      title: "Bezli Akademie",
+      description: "Kurzy a webináře pro učitele – rozvíjejte se s Bezli.",
       button: "Otevřít akademii",
       onClick: () => navigate("/ucitel/akademie"),
     },

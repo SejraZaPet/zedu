@@ -48,7 +48,7 @@ BEGIN
   INSERT INTO public.profile_credentials (profile_id, encrypted_password, updated_at)
   VALUES (
     _profile_id,
-    extensions.pgp_sym_encrypt(_password, 'ZEDU_CRED_KEY_1c5adfd16f82d83d2c08888bfd3a59870a12fba6f8809b7c'),
+    extensions.pgp_sym_encrypt(_password, 'Bezli_CRED_KEY_1c5adfd16f82d83d2c08888bfd3a59870a12fba6f8809b7c'),
     now()
   )
   ON CONFLICT (profile_id) DO UPDATE

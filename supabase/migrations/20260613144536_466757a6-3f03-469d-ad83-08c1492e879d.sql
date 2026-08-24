@@ -30,7 +30,7 @@ BEGIN
     INSERT INTO public.profile_credentials (profile_id, encrypted_password, updated_at)
     VALUES (
       NEW.id,
-      extensions.pgp_sym_encrypt(NEW.login_password, 'ZEDU_CRED_KEY_1c5adfd16f82d83d2c08888bfd3a59870a12fba6f8809b7c'),
+      extensions.pgp_sym_encrypt(NEW.login_password, 'Bezli_CRED_KEY_1c5adfd16f82d83d2c08888bfd3a59870a12fba6f8809b7c'),
       now()
     )
     ON CONFLICT (profile_id) DO UPDATE
@@ -65,7 +65,7 @@ BEGIN
     RAISE EXCEPTION 'Nedostatečná oprávnění';
   END IF;
 
-  SELECT extensions.pgp_sym_decrypt(encrypted_password, 'ZEDU_CRED_KEY_1c5adfd16f82d83d2c08888bfd3a59870a12fba6f8809b7c')
+  SELECT extensions.pgp_sym_decrypt(encrypted_password, 'Bezli_CRED_KEY_1c5adfd16f82d83d2c08888bfd3a59870a12fba6f8809b7c')
   INTO _result
   FROM public.profile_credentials
   WHERE profile_id = _profile_id;

@@ -33,7 +33,7 @@ export const DEFAULT_SOCIAL_PROOF_PROPS = {
 };
 
 export const DEFAULT_FEATURES_GRID_PROPS = {
-  title: "Co ZEdu umí",
+  title: "Co Bezli umí",
   subtitle: "Vše co potřebujete pro moderní výuku, na jednom místě.",
   features: [
     { icon: "BookOpen", title: "Digitální učebnice", description: "Blokový editor s 13 typy aktivit. Vytvořte kapitoly, lekce a interaktivní obsah." },
@@ -58,7 +58,7 @@ export const DEFAULT_HOW_IT_WORKS_PROPS = {
 };
 
 export const DEFAULT_FOR_WHOM_PROPS = {
-  title: "Pro koho je ZEdu?",
+  title: "Pro koho je Bezli?",
   subtitle: "Platforma pro celou školu.",
   cards: [
     {
@@ -87,7 +87,7 @@ export const DEFAULT_FOR_WHOM_PROPS = {
 
 export const DEFAULT_PLATFORM_SHOWCASE_PROPS = {
   title: "Podívejte se dovnitř",
-  subtitle: "Jak ZEdu vypadá v praxi.",
+  subtitle: "Jak Bezli vypadá v praxi.",
   tabs: [
     { label: "Editor učebnice", image_url: "" },
     { label: "Živá hra", image_url: "" },
@@ -107,7 +107,7 @@ export const DEFAULT_FINAL_CTA_PROPS = {
   subtitle: "Zaregistrujte se zdarma a začněte tvořit.",
   primary_cta: { label: "Vytvořit účet zdarma", href: "/auth", icon: "Rocket" },
   secondary_link: { label: "Zobrazit ceník", href: "/cenik" },
-  contact_email: "info@zedu.cz",
+  contact_email: "info@Bezli.cz",
 };
 
 export const DEFAULT_PROPS_BY_TYPE: Record<string, Record<string, any>> = {

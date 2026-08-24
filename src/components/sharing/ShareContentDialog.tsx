@@ -108,7 +108,7 @@ export default function ShareContentDialog({
       toast({
         title:
           mode === "public"
-            ? "Nabídnuto v ZEduMarket"
+            ? "Nabídnuto v BezliMarket"
             : `Sdíleno s ${selectedTeacher!.label}`,
       });
       onOpenChange(false);
@@ -146,7 +146,7 @@ export default function ShareContentDialog({
               <div className="flex-1">
                 <div className="flex items-center gap-2 font-medium text-sm">
                   <Globe className="w-4 h-4 text-primary" />
-                  Nabídnout veřejně v ZEduMarket
+                  Nabídnout veřejně v BezliMarket
                 </div>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   Kterýkoli učitel si obsah může přidat do svých materiálů.

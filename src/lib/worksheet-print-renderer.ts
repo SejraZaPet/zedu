@@ -50,7 +50,7 @@ export const WORKSHEET_PAGINATION_RULES = [
 
 export function buildWorksheetCss(): string {
   return `
-/* ═══ ZEdu Worksheet Print — Workbook / Study Material (Brand Manual v1, sekce D) ═══ */
+/* ═══ Bezli Worksheet Print — Workbook / Study Material (Brand Manual v1, sekce D) ═══ */
 
 @page {
   size: A4 portrait;
@@ -1030,7 +1030,7 @@ function renderAnswerKey(variantId: string, keys: AnswerKeyEntry[]): string {
 
 function renderFooter(spec: WorksheetSpec): string {
   return `<div class="ws-footer">
-  ZEdu · ${esc(spec.header.title)}
+  Bezli · ${esc(spec.header.title)}
 </div>`;
 }
 

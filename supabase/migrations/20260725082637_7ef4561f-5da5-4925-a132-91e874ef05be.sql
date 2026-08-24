@@ -52,7 +52,7 @@ GRANT ALL ON public.content_reviews TO service_role;
 
 ALTER TABLE public.content_reviews ENABLE ROW LEVEL SECURITY;
 
--- Anyone signed-in can read reviews (public trust signal in ZEduMarket)
+-- Anyone signed-in can read reviews (public trust signal in BezliMarket)
 CREATE POLICY "Authenticated can read reviews"
   ON public.content_reviews FOR SELECT
   TO authenticated

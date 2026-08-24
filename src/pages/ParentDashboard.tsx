@@ -72,7 +72,7 @@ const ParentDashboard = () => {
       setLoading(false);
       // Detect unlinked child_code from registration
       try {
-        const pending = window.localStorage.getItem("zedu:pending_child_code");
+        const pending = window.localStorage.getItem("Bezli:pending_child_code");
         if (pending) {
           setPendingChildCode(pending);
           toast({
@@ -86,7 +86,7 @@ const ParentDashboard = () => {
     }
 
     // Successfully linked — clear any stale flag
-    try { window.localStorage.removeItem("zedu:pending_child_code"); } catch { /* ignore */ }
+    try { window.localStorage.removeItem("Bezli:pending_child_code"); } catch { /* ignore */ }
     setPendingChildCode(null);
 
     const { data: profiles } = await supabase
@@ -225,7 +225,7 @@ const ParentDashboard = () => {
           <div className="flex flex-wrap gap-2 shrink-0">
             <Button variant="outline" onClick={() => navigate("/rodic/akademie")} className="gap-2">
               <GraduationCap className="w-4 h-4" />
-              ZEdu Akademie
+              Bezli Akademie
             </Button>
             <Button variant="outline" onClick={() => navigate("/rodic/zpravy")} className="gap-2">
               <MessageCircle className="w-4 h-4" />
@@ -273,7 +273,7 @@ const ParentDashboard = () => {
                 size="sm"
                 variant="ghost"
                 onClick={() => {
-                  try { window.localStorage.removeItem("zedu:pending_child_code"); } catch { /* ignore */ }
+                  try { window.localStorage.removeItem("Bezli:pending_child_code"); } catch { /* ignore */ }
                   setPendingChildCode(null);
                 }}
               >
@@ -341,7 +341,7 @@ const ParentDashboard = () => {
               const successPct = s && s.totalMaxScore > 0
                 ? Math.round((s.totalScore / s.totalMaxScore) * 100)
                 : null;
-              const hasOwnEmail = !!(student.email && !student.email.endsWith("@zedu-student.cz"));
+              const hasOwnEmail = !!(student.email && !student.email.endsWith("@Bezli-student.cz"));
               return (
                 <div key={student.id} className="bg-card border border-border rounded-xl p-5 shadow-sm flex flex-col">
                   <div className="flex items-start gap-3 mb-4">

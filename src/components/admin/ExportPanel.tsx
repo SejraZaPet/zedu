@@ -108,7 +108,7 @@ const ExportPanel = ({ lessonPlanId, planTitle, planSlides, mode = "live" }: Pro
     const pptx = new pptxgen();
     const suffix = exportTarget === "student" ? " (žák)" : " (učitel)";
     pptx.title = planTitle + suffix;
-    pptx.author = "ZEdu";
+    pptx.author = "Bezli";
     pptx.layout = "LAYOUT_WIDE";
 
     for (const spec of specDoc.slides) {
