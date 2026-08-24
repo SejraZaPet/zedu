@@ -1,8 +1,7 @@
 import { Rocket, Play } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import heroBgDefault from "@/assets/hero-students.png";
-import heroLogoAsset from "@/assets/bezli-logo.png.asset.json";
-const heroLogoDefault = heroLogoAsset.url;
+import heroLogoDefault from "@/assets/bezli-logo.png";
 import { getLandingIcon } from "@/lib/landing-icons";
 import { DEFAULT_HERO_PROPS, mergeSectionProps } from "@/lib/landing-defaults";
 import Editable from "@/components/landing-edit/Editable";
