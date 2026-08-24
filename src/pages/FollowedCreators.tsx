@@ -128,7 +128,7 @@ export default function FollowedCreators() {
           <div className="text-center py-16 text-muted-foreground text-sm">
             Zatím nikoho nesledujete. V{" "}
             <button
-              onClick={() => navigate("/Bezlimarket")}
+              onClick={() => navigate("/bezlimarket")}
               className="text-primary underline"
             >
               BezliMarketu
@@ -174,7 +174,7 @@ export default function FollowedCreators() {
                       return (
                         <button
                           key={i.id}
-                          onClick={() => navigate("/Bezlimarket")}
+                          onClick={() => navigate("/bezlimarket")}
                           className="text-left bg-background border border-border rounded-lg p-3 hover:border-primary transition-colors"
                         >
                           <div className="flex items-center gap-2 mb-1">

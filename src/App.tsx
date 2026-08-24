@@ -194,12 +194,12 @@ const App = () => (
 
             <Route path="/student/metody" element={<ProtectedRoute><StudentMethods /></ProtectedRoute>} />
             <Route path="/student/metody/:slug/procviceni" element={<ProtectedRoute><StudentPractice /></ProtectedRoute>} />
-            <Route path="/Bezlimarket" element={<ProtectedRoute><BezliMarketPage /></ProtectedRoute>} />
+            <Route path="/bezlimarket" element={<ProtectedRoute><BezliMarketPage /></ProtectedRoute>} />
             <Route path="/ucitel/sdileno-se-mnou" element={<ProtectedRoute><SharedWithMe /></ProtectedRoute>} />
             <Route path="/ucitel/sledovani-tvurci" element={<ProtectedRoute><FollowedCreators /></ProtectedRoute>} />
-            <Route path="/marketplace" element={<Navigate to="/Bezlimarket" replace />} />
-            <Route path="/marketplace/:id" element={<Navigate to="/Bezlimarket" replace />} />
-            <Route path="/ucitel/publikace" element={<Navigate to="/Bezlimarket" replace />} />
+            <Route path="/marketplace" element={<Navigate to="/bezlimarket" replace />} />
+            <Route path="/marketplace/:id" element={<Navigate to="/bezlimarket" replace />} />
+            <Route path="/ucitel/publikace" element={<Navigate to="/bezlimarket" replace />} />
             <Route path="/avatar" element={<ProtectedRoute><AvatarEditor /></ProtectedRoute>} />
             <Route path="/ucitel/akademie" element={<ProtectedRoute><TeacherAcademy /></ProtectedRoute>} />
             <Route path="/student/akademie" element={<ProtectedRoute><StudentAcademy /></ProtectedRoute>} />

@@ -59,7 +59,7 @@ const TEACHER_MENU_GROUPS: TeacherMenuGroup[] = [
       { label: "Média", href: "/ucitel/media", icon: ImageIcon },
       { label: "Sdíleno se mnou", href: "/ucitel/sdileno-se-mnou", icon: Layers },
       { label: "Sledovaní tvůrci", href: "/ucitel/sledovani-tvurci", icon: UserCheck },
-      { label: "BezliMarket", href: "/Bezlimarket", icon: ShoppingBag },
+      { label: "BezliMarket", href: "/bezlimarket", icon: ShoppingBag },
     ],
   },
   {
