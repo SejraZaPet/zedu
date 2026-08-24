@@ -166,7 +166,7 @@ const MarketplaceEconomicsManager = () => {
   };
 
   if (loading) {
-    return <p className="text-muted-foreground">Načítání ekonomiky ZEduMarketu…</p>;
+    return <p className="text-muted-foreground">Načítání ekonomiky BezliMarketu…</p>;
   }
 
   return (
@@ -174,7 +174,7 @@ const MarketplaceEconomicsManager = () => {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="font-heading text-xl flex items-center gap-2">
-            <Coins className="w-5 h-5 text-primary" /> Ekonomika ZEduMarket
+            <Coins className="w-5 h-5 text-primary" /> Ekonomika BezliMarket
           </h2>
           <p className="text-sm text-muted-foreground">
             Provize tvůrcům, fáze sazeb a evidence výdělků. Skutečné platby se spustí až s platební bránou.
@@ -194,7 +194,7 @@ const MarketplaceEconomicsManager = () => {
             </Badge>
           </CardTitle>
           <CardDescription>
-            Provize ZEdu z prodeje: <strong>{currentRate}&nbsp;%</strong> — tvůrci zůstává {100 - Number(currentRate ?? 0)} %.
+            Provize Bezli z prodeje: <strong>{currentRate}&nbsp;%</strong> — tvůrci zůstává {100 - Number(currentRate ?? 0)} %.
             Sazba se tvůrci zamkne při prvním označení materiálu „na prodej“ a platí{" "}
             {settings?.founding_lock_years} let i po přechodu do standardní fáze.
           </CardDescription>

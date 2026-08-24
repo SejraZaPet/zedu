@@ -13,7 +13,7 @@ export interface CalendarExportEvent {
   rrule?: string;
 }
 
-const PRODID = "-//ZEdu//Calendar//CS";
+const PRODID = "-//Bezli//Calendar//CS";
 
 function pad(n: number) {
   return n.toString().padStart(2, "0");
@@ -58,7 +58,7 @@ function makeUid(ev: CalendarExportEvent): string {
   if (ev.uid) return ev.uid;
   const stamp = ev.start.getTime().toString(36);
   const rand = Math.random().toString(36).slice(2, 8);
-  return `${stamp}-${rand}@zedu.cz`;
+  return `${stamp}-${rand}@bezli.cz`;
 }
 
 function buildVEvent(ev: CalendarExportEvent, dtstamp: string): string {
@@ -77,7 +77,7 @@ function buildVEvent(ev: CalendarExportEvent, dtstamp: string): string {
   return lines.join("\r\n");
 }
 
-export function generateICS(events: CalendarExportEvent[], calName = "ZEdu kalendář"): string {
+export function generateICS(events: CalendarExportEvent[], calName = "Bezli kalendář"): string {
   const dtstamp = toICSDate(new Date());
   const body = events.map((e) => buildVEvent(e, dtstamp)).join("\r\n");
   return [
@@ -93,7 +93,7 @@ export function generateICS(events: CalendarExportEvent[], calName = "ZEdu kalen
 }
 
 /** Trigger a browser download of the .ics file. */
-export function downloadICS(events: CalendarExportEvent[], filename = "zedu-kalendar.ics", calName?: string) {
+export function downloadICS(events: CalendarExportEvent[], filename = "Bezli-kalendar.ics", calName?: string) {
   const ics = generateICS(events, calName);
   const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
   const url = URL.createObjectURL(blob);

@@ -106,7 +106,7 @@ Deno.serve(async (req) => {
       <div>${escapeHtml(bodyText).replace(/\n/g, "<br />")}</div>
       <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0" />
       <p style="font-size:12px;color:#6b7280">
-        Tento e-mail jste obdrželi na základě souhlasu se zasíláním informací od ZEdu.
+        Tento e-mail jste obdrželi na základě souhlasu se zasíláním informací od Bezli.
         <a href="${unsubUrl}" style="color:#6b7280">Odhlásit se ze zasílání</a>
       </p>
     </div>`;

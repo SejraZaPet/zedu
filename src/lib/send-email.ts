@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-const APP_URL = "https://www.zedu.cz";
+const APP_URL = "https://www.bezli.cz";
 
 /**
  * Brand palette for e-mail HTML.
@@ -35,13 +35,13 @@ export const sendWelcomeEmail = async (params: {
   const html = `
     <div style="font-family: Lato, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: ${NEUTRAL_TEXT}; background: ${NEUTRAL_SURFACE};">
       <div style="background: linear-gradient(135deg, ${BRAND_GRADIENT_FROM} 0%, ${BRAND_GRADIENT_TO} 100%); padding: 32px 24px; border-radius: 14px 14px 0 0; text-align: center;">
-        <img src="https://zedu.lovable.app/bezli-logo.png" alt="Bezli" style="height: 48px; width: auto; margin-bottom: 12px;" onerror="this.style.display='none'" />
-        <h1 style="margin: 0; font-size: 28px; font-weight: 800; color: #ffffff; letter-spacing: -0.02em; font-family: Lato, Arial, sans-serif;">ZEdu<span style="color: ${BRAND_ACCENT_LIGHT};">.cz</span></h1>
+        <img src="https://bezli.cz/bezli-logo.png" alt="Bezli" style="height: 48px; width: auto; margin-bottom: 12px;" onerror="this.style.display='none'" />
+        <h1 style="margin: 0; font-size: 28px; font-weight: 800; color: #ffffff; letter-spacing: -0.02em; font-family: Lato, Arial, sans-serif;">Bezli<span style="color: ${BRAND_ACCENT_LIGHT};">.cz</span></h1>
         <p style="margin: 8px 0 0; opacity: 0.95; color: #ffffff; font-size: 14px; font-family: Lato, Arial, sans-serif;">Moderní nástroje pro vzdělávání</p>
       </div>
 
       <div style="background: #ffffff; padding: 28px 24px; border-radius: 0 0 14px 14px;">
-        <h2 style="margin-top: 0; color: ${NEUTRAL_TEXT};">Vítejte v ZEdu, ${params.firstName}!</h2>
+        <h2 style="margin-top: 0; color: ${NEUTRAL_TEXT};">Vítejte v Bezli, ${params.firstName}!</h2>
         <p style="color: ${NEUTRAL_TEXT};">Byl vám vytvořen účet <strong>${roleLabel}</strong>. Níže najdete své přihlašovací údaje.</p>
 
         <div style="background: ${NEUTRAL_SURFACE}; padding: 16px; border-radius: 14px; margin: 20px 0;">
@@ -54,7 +54,7 @@ export const sendWelcomeEmail = async (params: {
 
         <div style="text-align: center; margin: 28px 0;">
           <a href="${APP_URL}/auth" style="background: ${BRAND_PRIMARY}; color: #ffffff; padding: 12px 24px; border-radius: 14px; text-decoration: none; display: inline-block; font-weight: 600; font-family: Lato, Arial, sans-serif;">
-            Přihlásit se do ZEdu
+            Přihlásit se do Bezli
           </a>
         </div>
 
@@ -64,13 +64,13 @@ export const sendWelcomeEmail = async (params: {
       </div>
 
       <div style="text-align: center; padding: 16px; font-size: 12px; color: ${NEUTRAL_MUTED}; font-family: Lato, Arial, sans-serif;">
-        <p style="margin: 0 0 4px;">Tento email byl odeslán automaticky z platformy <a href="${APP_URL}" style="color: ${BRAND_PRIMARY}; text-decoration: none;">ZEdu.cz</a></p>
-        <p style="margin: 0;"><a href="${APP_URL}" style="color: ${BRAND_PRIMARY}; text-decoration: none;">www.zedu.cz</a></p>
+        <p style="margin: 0 0 4px;">Tento email byl odeslán automaticky z platformy <a href="${APP_URL}" style="color: ${BRAND_PRIMARY}; text-decoration: none;">bezli.cz</a></p>
+        <p style="margin: 0;"><a href="${APP_URL}" style="color: ${BRAND_PRIMARY}; text-decoration: none;">www.bezli.cz</a></p>
       </div>
     </div>
   `;
 
-  const text = `Vítejte v ZEdu, ${params.firstName}!
+  const text = `Vítejte v Bezli, ${params.firstName}!
 
 Byl vám vytvořen účet ${roleLabel}. Níže najdete své přihlašovací údaje:
 
@@ -82,12 +82,12 @@ Přihlaste se na: ${APP_URL}/auth
 Po prvním přihlášení si doporučujeme změnit heslo v nastavení profilu.
 
 —
-Tento email byl odeslán automaticky z platformy ZEdu.cz
+Tento email byl odeslán automaticky z platformy bezli.cz
 ${APP_URL}`;
 
   try {
     const result = await supabase.functions.invoke("send-email", {
-      body: { to: params.to, subject: "Vítejte v ZEdu – vaše přihlašovací údaje", html, text },
+      body: { to: params.to, subject: "Vítejte v Bezli – vaše přihlašovací údaje", html, text },
     });
     if (result.error) {
       console.warn("Email se nepodařilo odeslat:", result.error);

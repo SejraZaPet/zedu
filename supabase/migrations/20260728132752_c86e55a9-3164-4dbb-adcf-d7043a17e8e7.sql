@@ -95,7 +95,7 @@ BEGIN
       FROM public.academy_courses WHERE id = NEW.course_id;
     IF v_issues AND NOT COALESCE(v_requires_evidence, false) THEN
       IF NOT EXISTS (SELECT 1 FROM public.academy_certificates WHERE enrollment_id = NEW.id) THEN
-        v_number := 'ZEDU-' || to_char(now(), 'YYYY') || '-' ||
+        v_number := 'Bezli-' || to_char(now(), 'YYYY') || '-' ||
                     lpad(nextval('public.academy_certificate_seq')::text, 6, '0');
         INSERT INTO public.academy_certificates (enrollment_id, certificate_number)
           VALUES (NEW.id, v_number);
@@ -124,7 +124,7 @@ BEGIN
       FROM public.academy_courses WHERE id = v_course_id;
     IF v_issues THEN
       IF NOT EXISTS (SELECT 1 FROM public.academy_certificates WHERE enrollment_id = NEW.enrollment_id) THEN
-        v_number := 'ZEDU-' || to_char(now(), 'YYYY') || '-' ||
+        v_number := 'Bezli-' || to_char(now(), 'YYYY') || '-' ||
                     lpad(nextval('public.academy_certificate_seq')::text, 6, '0');
         INSERT INTO public.academy_certificates (enrollment_id, certificate_number)
           VALUES (NEW.enrollment_id, v_number);

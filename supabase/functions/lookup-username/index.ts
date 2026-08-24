@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
       // Timing side-channel defense: perform equivalent bcrypt-cost work
       // against a dummy account so miss and hit branches are indistinguishable.
       await anon.auth.signInWithPassword({
-        email: "__dummy_timing__@zedu.invalid",
+        email: "__dummy_timing__@Bezli.invalid",
         password: password.slice(0, 72),
       }).catch(() => null);
       await recordAttempt(admin, identifier, false, "lookup-username");

@@ -10,7 +10,7 @@ import { defineTool } from "npm:@lovable.dev/mcp-js@0.23.0";
 var whoami_default = defineTool({
   name: "whoami",
   title: "Kdo jsem",
-  description: "Vr\xE1t\xED identitu aktu\xE1ln\u011B p\u0159ihl\xE1\u0161en\xE9ho u\u017Eivatele ZEdu (user_id, email).",
+  description: "Vr\xE1t\xED identitu aktu\xE1ln\u011B p\u0159ihl\xE1\u0161en\xE9ho u\u017Eivatele Bezli (user_id, email).",
   inputSchema: {},
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: (_input, ctx) => {
@@ -106,10 +106,10 @@ var list_my_assignments_default = defineTool3({
 // src/lib/mcp/index.ts
 var projectRef = "rnndtpfmkanxbckdbflm";
 var mcp_default = defineMcp({
-  name: "zedu-mcp",
-  title: "ZEdu",
+  name: "Bezli-mcp",
+  title: "Bezli",
   version: "0.1.0",
-  instructions: "N\xE1stroje pro platformu ZEdu (u\u010Debnice, t\u0159\xEDdy, \xFAlohy). Volajte `whoami` pro ov\u011B\u0159en\xED identity, `list_my_classes` pro seznam t\u0159\xEDd p\u0159ihl\xE1\u0161en\xE9ho u\u017Eivatele a `list_my_assignments` pro jeho \xFAlohy. Data se \u010Dtou pod RLS jako p\u0159ihl\xE1\u0161en\xFD u\u017Eivatel.",
+  instructions: "N\xE1stroje pro platformu Bezli (u\u010Debnice, t\u0159\xEDdy, \xFAlohy). Volajte `whoami` pro ov\u011B\u0159en\xED identity, `list_my_classes` pro seznam t\u0159\xEDd p\u0159ihl\xE1\u0161en\xE9ho u\u017Eivatele a `list_my_assignments` pro jeho \xFAlohy. Data se \u010Dtou pod RLS jako p\u0159ihl\xE1\u0161en\xFD u\u017Eivatel.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated"

@@ -59,7 +59,7 @@ export const EXPORT_COPY = {
     storageFull: "Nedostatek místa pro uložení. Smažte starší exporty a zkuste to znovu.",
     formatUnsupported: "Tento formát zatím není podporován.",
     serverError: "Došlo k chybě na serveru. Zkuste to za chvíli znovu.",
-    retryExhausted: "Export se nepodařil ani po opakovaných pokusech. Kontaktujte podporu ZEdu.",
+    retryExhausted: "Export se nepodařil ani po opakovaných pokusech. Kontaktujte podporu Bezli.",
     pptxGeneration: "Nepodařilo se vygenerovat prezentaci. Zkuste to prosím znovu.",
   },
 

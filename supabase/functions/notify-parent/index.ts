@@ -10,7 +10,7 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const APP_URL = "https://www.zedu.cz";
+const APP_URL = "https://www.bezli.cz";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 import { getInternalSecret } from "../_shared/internal-secret.ts";
@@ -19,7 +19,7 @@ function emailShell(title: string, bodyHtml: string, ctaUrl: string, ctaLabel: s
   return `
   <div style="font-family: Lato, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #1A1F2C; background: #F8FAFC;">
     <div style="background: linear-gradient(135deg, #0E8F9A 0%, #AD87C9 100%); padding: 28px 24px; border-radius: 14px 14px 0 0; text-align: center;">
-      <h1 style="margin: 0; font-size: 24px; font-weight: 800; color: #ffffff;">ZEdu<span style="color:#a5f3fc;">.cz</span></h1>
+      <h1 style="margin: 0; font-size: 24px; font-weight: 800; color: #ffffff;">Bezli<span style="color:#a5f3fc;">.cz</span></h1>
     </div>
     <div style="background:#ffffff; padding: 24px; border-radius: 0 0 14px 14px;">
       <h2 style="margin: 0 0 12px; color:#1A1F2C; font-size: 20px;">${title}</h2>
@@ -28,7 +28,7 @@ function emailShell(title: string, bodyHtml: string, ctaUrl: string, ctaLabel: s
         <a href="${ctaUrl}" style="background:#0E8F9A; color:#ffffff; padding:12px 22px; border-radius:14px; text-decoration:none; font-weight:600; display:inline-block;">${ctaLabel}</a>
       </div>
       <p style="font-size:12px; color:#64748B; text-align:center; margin-top:18px;">
-        Tyto notifikace můžete vypnout v profilu rodiče na ZEdu.
+        Tyto notifikace můžete vypnout v profilu rodiče na Bezli.
       </p>
     </div>
   </div>`;
@@ -104,7 +104,7 @@ Deno.serve(async (req) => {
            <p style="margin:0; color:#64748B; font-size:13px;">Termín: <strong style="color:#1A1F2C;">${deadlineStr}</strong></p>
          </div>`,
         `${APP_URL}/rodic`,
-        "Zobrazit v ZEdu",
+        "Zobrazit v Bezli",
       );
     } else if (kind === "new_result") {
       const attemptId = body.attempt_id;

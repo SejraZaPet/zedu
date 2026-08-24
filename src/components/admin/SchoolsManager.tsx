@@ -44,7 +44,7 @@ interface SchoolMember {
 const memberName = (m: SchoolMember) =>
   `${m.first_name ?? ""} ${m.last_name ?? ""}`.trim() || m.email || "Uživatel";
 
-const RESERVED_SUBDOMAINS = new Set(["www", "app", "id-preview", "preview", "zedu", "lovable", "staging"]);
+const RESERVED_SUBDOMAINS = new Set(["www", "app", "id-preview", "preview", "Bezli", "lovable", "staging"]);
 const SUBDOMAIN_RE = /^[a-z0-9]([a-z0-9-]{0,30}[a-z0-9])?$/;
 
 const subdomainOk = (s: string) => SUBDOMAIN_RE.test(s) && !RESERVED_SUBDOMAINS.has(s);
@@ -361,7 +361,7 @@ const SchoolsManager = () => {
               {schools.map((s) => (
                 <TableRow key={s.id}>
                   <TableCell className="font-medium">{s.name}</TableCell>
-                  <TableCell>{s.subdomain ? `${s.subdomain}.zedu.cz` : "—"}</TableCell>
+                  <TableCell>{s.subdomain ? `${s.subdomain}.bezli.cz` : "—"}</TableCell>
                   <TableCell className="text-right">{s.member_count}</TableCell>
                   <TableCell className="text-right">{s.admin_count}</TableCell>
                   <TableCell className="text-right">
@@ -408,7 +408,7 @@ const SchoolsManager = () => {
                     placeholder="zs-brno"
                     maxLength={32}
                   />
-                  <span className="text-sm text-muted-foreground whitespace-nowrap">.zedu.cz</span>
+                  <span className="text-sm text-muted-foreground whitespace-nowrap">.bezli.cz</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
                   Malá písmena, číslice a pomlčky. Nechte prázdné, pokud subdoména není potřeba.

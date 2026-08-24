@@ -1324,7 +1324,7 @@ export default function TeacherSubjectClass() {
               Brzy: učebnice z tržiště
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Připravujeme možnost propojit ověřené učebnice z tržiště Zedu. Sleduj novinky.
+              Připravujeme možnost propojit ověřené učebnice z tržiště Bezli. Sleduj novinky.
             </p>
           </div>
 

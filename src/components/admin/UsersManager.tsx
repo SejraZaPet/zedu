@@ -17,7 +17,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import UserDetailDialog from "./UserDetailDialog";
-import ZeduTeamView from "./ZeduTeamView";
+import BezliTeamView from "./BezliTeamView";
 
 
 import { printLoginCards, type LoginCardData } from "@/lib/generate-login-cards";
@@ -105,7 +105,7 @@ function generateStudentEmail(
   const first = normalize(firstName) || "user";
   const last = normalize(lastName) || "user";
   const initial = first.charAt(0);
-  const domain = (role === "teacher" || role === "lektor") ? "@zedu-lektor.cz" : "@zedu-student.cz";
+  const domain = (role === "teacher" || role === "lektor") ? "@bezli-lektor.cz" : "@bezli-student.cz";
 
   const v1 = `${first}.${last}${domain}`;
   if (!existingEmails.includes(v1)) return v1;
@@ -397,7 +397,7 @@ const UsersManager = () => {
     <div className="inline-flex rounded-md border border-border p-1 bg-muted/30">
       {([
         { id: "orgs" as const, label: "Uživatelé organizací" },
-        { id: "team" as const, label: "Tým ZEdu" },
+        { id: "team" as const, label: "Tým Bezli" },
       ]).map((v) => (
         <button
           key={v.id}
@@ -416,7 +416,7 @@ const UsersManager = () => {
     return (
       <div className="space-y-4">
         {viewSwitcher}
-        <ZeduTeamView />
+        <BezliTeamView />
       </div>
     );
   }
@@ -978,7 +978,7 @@ const UsersManager = () => {
                     role: newUser.role as any,
                   }, { onConflict: "user_id,role", ignoreDuplicates: true });
 
-                  if (email && !email.includes("@zedu-student.cz") && !email.includes("@zedu-lektor.cz") && !email.includes("@zedu-rodic.cz")) {
+                  if (email && !email.includes("@bezli-student.cz") && !email.includes("@bezli-lektor.cz") && !email.includes("@bezli-rodic.cz")) {
                     const notifyEmailFailure = (detail?: unknown) => {
                       console.warn("Email se nepodařilo odeslat:", detail);
                       toast({
@@ -1015,7 +1015,7 @@ const UsersManager = () => {
 
                   if (newUser.role === "user" && createParentAccount) {
                     try {
-                      const parentLogin = parentEmail.trim() || `rodic.${username}@zedu-rodic.cz`;
+                      const parentLogin = parentEmail.trim() || `rodic.${username}@bezli-rodic.cz`;
                       const parentPassword = Math.random().toString(36).slice(-8) + "Aa1!";
                       const parentUsername = generateUsername(
                         "rodic",
@@ -1112,14 +1112,14 @@ const UsersManager = () => {
                 Nahrajte soubor Excel (.xlsx) nebo CSV (.csv) se sloupci: jmeno, prijmeni, email, email_rodice, skola, trida, rocnik, role
               </p>
               <label
-                htmlFor="zedu-import-file"
+                htmlFor="Bezli-import-file"
                 className="flex flex-col items-center justify-center border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:bg-muted/50 transition-colors"
               >
                 <Upload className="w-10 h-10 mx-auto mb-3 text-muted-foreground" />
                 <p className="font-medium">Klikněte pro výběr souboru</p>
                 <p className="text-xs text-muted-foreground mt-1">.xlsx, .xls nebo .csv</p>
                 <input
-                  id="zedu-import-file"
+                  id="Bezli-import-file"
                   type="file"
                   accept=".csv,.xlsx,.xls"
                   className="sr-only"
@@ -1304,7 +1304,7 @@ const UsersManager = () => {
                       if (!isAdultStudent && role === "user") {
                         try {
                           const parentEmailValue = (row.email_rodice && String(row.email_rodice).trim()) || "";
-                          const parentLogin = parentEmailValue || `rodic.${studentCode.toLowerCase()}@zedu-rodic.cz`;
+                          const parentLogin = parentEmailValue || `rodic.${studentCode.toLowerCase()}@bezli-rodic.cz`;
 
                           let parentId: string | undefined;
 

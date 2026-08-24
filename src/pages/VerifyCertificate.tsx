@@ -33,7 +33,7 @@ export default function VerifyCertificate() {
   useEffect(() => {
     const load = async () => {
       if (!certificateNumber) { setNotFound(true); setLoading(false); return; }
-      const isPathway = certificateNumber.startsWith("ZEDU-PATHWAY-");
+      const isPathway = certificateNumber.startsWith("Bezli-PATHWAY-");
       if (isPathway) {
         const { data, error } = await supabase.rpc("verify_academy_pathway_certificate" as any, {
           _cert_number: certificateNumber,
@@ -62,15 +62,15 @@ export default function VerifyCertificate() {
 
   useEffect(() => {
     document.title = result
-      ? `Ověřený certifikát ${result.data.certificate_number} – ZEdu Akademie`
-      : "Ověření certifikátu – ZEdu Akademie";
+      ? `Ověřený certifikát ${result.data.certificate_number} – Bezli Akademie`
+      : "Ověření certifikátu – Bezli Akademie";
   }, [result]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/40 flex flex-col">
       <header className="border-b bg-background/70 backdrop-blur">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-          <Link to="/" className="font-bold text-lg tracking-tight">ZEdu</Link>
+          <Link to="/" className="font-bold text-lg tracking-tight">Bezli</Link>
           <span className="text-sm text-muted-foreground flex items-center gap-1">
             <ShieldCheck className="w-4 h-4" /> Veřejné ověření certifikátu
           </span>
@@ -85,7 +85,7 @@ export default function VerifyCertificate() {
             <AlertCircle className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
             <h1 className="text-xl font-semibold mb-1">Certifikát nenalezen</h1>
             <p className="text-sm text-muted-foreground">
-              Zadané číslo certifikátu neodpovídá žádnému platnému záznamu v ZEdu Akademii.
+              Zadané číslo certifikátu neodpovídá žádnému platnému záznamu v Bezli Akademii.
             </p>
           </div>
         ) : result.kind === "course" ? (
@@ -96,7 +96,7 @@ export default function VerifyCertificate() {
       </main>
 
       <footer className="text-center text-xs text-muted-foreground p-4">
-        <Link to="/" className="hover:underline">zedu.cz</Link>
+        <Link to="/" className="hover:underline">bezli.cz</Link>
       </footer>
     </div>
   );
@@ -108,7 +108,7 @@ function CourseView({ cert }: { cert: VerifiedCert }) {
       <div className="bg-gradient-to-br from-primary to-[hsl(var(--accent))] p-8 text-primary-foreground">
         <div className="flex items-center gap-2 text-sm opacity-90">
           <ShieldCheck className="w-4 h-4" />
-          Ověřený certifikát ZEdu Akademie
+          Ověřený certifikát Bezli Akademie
         </div>
         <h1 className="text-2xl md:text-3xl font-bold mt-2">{cert.course_title}</h1>
         {cert.course_audience && (
@@ -143,7 +143,7 @@ function PathwayView({ cert }: { cert: VerifiedPathwayCert }) {
       <div className="bg-gradient-to-br from-primary to-[hsl(var(--accent))] p-8 text-primary-foreground">
         <div className="flex items-center gap-2 text-sm opacity-90">
           <ShieldCheck className="w-4 h-4" />
-          Ověřená kvalifikace ZEdu Akademie
+          Ověřená kvalifikace Bezli Akademie
         </div>
         <h1 className="text-2xl md:text-3xl font-bold mt-2">{cert.pathway_title}</h1>
         {cert.pathway_description && (
@@ -185,7 +185,7 @@ function VerifiedFooter() {
   return (
     <div className="border-t p-5 bg-muted/40 flex items-center gap-3 text-xs text-muted-foreground">
       <ShieldCheck className="w-4 h-4 text-primary shrink-0" />
-      <p>Tento certifikát byl ověřen v databázi ZEdu Akademie. Autenticitu můžete kdykoli znovu zkontrolovat sdílením této stránky.</p>
+      <p>Tento certifikát byl ověřen v databázi Bezli Akademie. Autenticitu můžete kdykoli znovu zkontrolovat sdílením této stránky.</p>
     </div>
   );
 }
@@ -226,7 +226,7 @@ function BadgeGraphic({ title }: { title: string }) {
         {initials}
       </text>
       <text x="100" y="150" textAnchor="middle" fontSize="11" letterSpacing="2" fill="hsl(var(--primary-foreground))" fontFamily="Lato, system-ui, sans-serif">
-        ZEDU AKADEMIE
+        Bezli AKADEMIE
       </text>
     </svg>
   );

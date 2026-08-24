@@ -115,7 +115,7 @@ export default function FollowedCreators() {
           <div>
             <h1 className="text-2xl font-bold">Sledovaní tvůrci</h1>
             <p className="text-sm text-muted-foreground">
-              Autoři, jejichž veřejný obsah v ZEduMarketu chcete sledovat.
+              Autoři, jejichž veřejný obsah v BezliMarketu chcete sledovat.
             </p>
           </div>
         </div>
@@ -128,10 +128,10 @@ export default function FollowedCreators() {
           <div className="text-center py-16 text-muted-foreground text-sm">
             Zatím nikoho nesledujete. V{" "}
             <button
-              onClick={() => navigate("/zedumarket")}
+              onClick={() => navigate("/bezlimarket")}
               className="text-primary underline"
             >
-              ZEduMarketu
+              BezliMarketu
             </button>{" "}
             klikněte u autora na „Sledovat".
           </div>
@@ -174,7 +174,7 @@ export default function FollowedCreators() {
                       return (
                         <button
                           key={i.id}
-                          onClick={() => navigate("/zedumarket")}
+                          onClick={() => navigate("/bezlimarket")}
                           className="text-left bg-background border border-border rounded-lg p-3 hover:border-primary transition-colors"
                         >
                           <div className="flex items-center gap-2 mb-1">

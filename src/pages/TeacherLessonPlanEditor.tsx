@@ -1546,7 +1546,7 @@ export default function TeacherLessonPlanEditor() {
                 {value.activities && value.activities.length > 0 && (
                   <div className="mt-3 space-y-2">
                     <p className="text-xs font-medium text-muted-foreground">
-                      Navržené ZEdu aktivity
+                      Navržené Bezli aktivity
                     </p>
                     <ul className="space-y-1.5">
                       {value.activities.map((act, i) => {

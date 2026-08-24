@@ -114,7 +114,7 @@ Deno.serve(async (req) => {
 
     const html = `
       <div style="font-family: Lato, Arial, sans-serif; max-width: 640px; margin: 0 auto; color: #1e293b;">
-        <h2 style="margin:0 0 12px;">Nová poptávka po licenci ZEdu</h2>
+        <h2 style="margin:0 0 12px;">Nová poptávka po licenci Bezli</h2>
         <p style="margin:0 0 16px; color:#64748b;">Balíček: <strong>${escapeHtml(plan)}</strong></p>
         <table cellpadding="8" cellspacing="0" style="width:100%; border-collapse:collapse; background:#f8fafc; border-radius:12px;">
           ${rows
@@ -127,7 +127,7 @@ Deno.serve(async (req) => {
             )
             .join("")}
         </table>
-        <p style="margin-top:16px; font-size:12px; color:#94a3b8;">Odesláno z veřejného formuláře /licence na zedu.cz</p>
+        <p style="margin-top:16px; font-size:12px; color:#94a3b8;">Odesláno z veřejného formuláře /licence na bezli.cz</p>
       </div>
     `;
     const text = rows.map(([k, v]) => `${k}: ${v || "—"}`).join("\n");
@@ -139,10 +139,10 @@ Deno.serve(async (req) => {
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "ZEdu poptávky <noreply@zedu.cz>",
-        to: ["info@zedu.cz"],
+        from: "Bezli poptávky <noreply@bezli.cz>",
+        to: ["info@bezli.cz"],
         reply_to: String(email),
-        subject: `Nová poptávka po licenci ZEdu – ${plan}`,
+        subject: `Nová poptávka po licenci Bezli – ${plan}`,
         html,
         text,
       }),

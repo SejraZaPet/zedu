@@ -1,5 +1,5 @@
 
--- Helper: is a textbook publicly listed in ZEduMarket?
+-- Helper: is a textbook publicly listed in BezliMarket?
 CREATE OR REPLACE FUNCTION public.is_public_shared_textbook(_textbook_id uuid)
 RETURNS boolean
 LANGUAGE sql

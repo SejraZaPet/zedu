@@ -43,7 +43,7 @@ const MATERIAL_MODES = [
   { value: "material_only", label: "Jen materiál" },
 ] as const;
 
-export default function ZEduMarketPage() {
+export default function BezliMarketPage() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [items, setItems] = useState<PublicShareItem[]>([]);
@@ -174,7 +174,7 @@ export default function ZEduMarketPage() {
       <div aria-hidden className="h-[70px] shrink-0" />
       <main className="flex-1 container mx-auto px-4 pt-8 pb-12 max-w-6xl">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold">ZEduMarket</h1>
+          <h1 className="text-2xl font-bold">BezliMarket</h1>
           <p className="text-sm text-muted-foreground">
             Veřejná nabídka učebnic, pracovních listů a prezentací od učitelů.
           </p>

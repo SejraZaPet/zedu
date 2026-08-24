@@ -81,7 +81,7 @@ INSERT INTO public.landing_sections (order_index, section_type, enabled, props) 
   )
 )),
 (30, 'features_grid', true, jsonb_build_object(
-  'title', 'Co ZEdu umí',
+  'title', 'Co Bezli umí',
   'subtitle', 'Vše co potřebujete pro moderní výuku, na jednom místě.',
   'features', jsonb_build_array(
     jsonb_build_object('icon','BookOpen','title','Digitální učebnice','description','Blokový editor s 13 typy aktivit. Vytvořte kapitoly, lekce a interaktivní obsah.'),
@@ -104,7 +104,7 @@ INSERT INTO public.landing_sections (order_index, section_type, enabled, props) 
   'cta', jsonb_build_object('label','Začít zdarma','href','/auth')
 )),
 (50, 'for_whom', true, jsonb_build_object(
-  'title', 'Pro koho je ZEdu?',
+  'title', 'Pro koho je Bezli?',
   'subtitle', 'Platforma pro celou školu.',
   'cards', jsonb_build_array(
     jsonb_build_object(
@@ -132,7 +132,7 @@ INSERT INTO public.landing_sections (order_index, section_type, enabled, props) 
 )),
 (60, 'platform_showcase', true, jsonb_build_object(
   'title', 'Podívejte se dovnitř',
-  'subtitle', 'Jak ZEdu vypadá v praxi.',
+  'subtitle', 'Jak Bezli vypadá v praxi.',
   'tabs', jsonb_build_array(
     jsonb_build_object('label','Editor učebnice','image_url',''),
     jsonb_build_object('label','Živá hra','image_url',''),
@@ -150,5 +150,5 @@ INSERT INTO public.landing_sections (order_index, section_type, enabled, props) 
   'subtitle', 'Zaregistrujte se zdarma a začněte tvořit.',
   'primary_cta', jsonb_build_object('label','Vytvořit účet zdarma','href','/auth','icon','Rocket'),
   'secondary_link', jsonb_build_object('label','Zobrazit ceník','href','/cenik'),
-  'contact_email', 'info@zedu.cz'
+  'contact_email', 'info@Bezli.cz'
 ));

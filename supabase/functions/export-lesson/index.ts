@@ -57,7 +57,7 @@ function renderSlideToHtml(slide: any, index: number, options: any): string {
       // Hotspot: fallback text description for print
       const areas = (!isStudent && options.includeAnswerKey && spec.model?.correctAreas)
         ? `<ul>${spec.model.correctAreas.map((a: any) => `<li>${a.label || a.description || "oblast"}</li>`).join("")}</ul>`
-        : `<p>Označte správné oblasti na obrázku (v aplikaci ZEdu).</p>`;
+        : `<p>Označte správné oblasti na obrázku (v aplikaci Bezli).</p>`;
       activityHtml = `<div class="activity-box">
         <h4>📍 ${spec.prompt || "Hotspot"}</h4>
         ${spec.model?.imageUrl ? `<img src="${spec.model.imageUrl}" alt="Hotspot obrázek" style="max-width:100%;border-radius:8px;margin:8px 0">` : ""}
@@ -100,7 +100,7 @@ function renderSlideToHtml(slide: any, index: number, options: any): string {
       // Generic fallback
       activityHtml = `<div class="activity-box activity-placeholder">
         <h4>🎯 Aktivita: ${aType.toUpperCase()}</h4>
-        <p>${isStudent ? "Vypracuj v aplikaci ZEdu." : (spec.prompt || "")}</p>
+        <p>${isStudent ? "Vypracuj v aplikaci Bezli." : (spec.prompt || "")}</p>
       </div>`;
     }
   }
@@ -158,7 +158,7 @@ function generateFullHtml(slides: any[], title: string, options: any, paper: "A4
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${title} – ${subtitle}</title>
 <style>
-  /* ═══ ZEdu PDF Export – ${paper} ═══ */
+  /* ═══ Bezli PDF Export – ${paper} ═══ */
   @page {
     size: ${pageSize};
     margin: ${pc.margin};
@@ -248,7 +248,7 @@ function generateFullHtml(slides: any[], title: string, options: any, paper: "A4
     <p style="color:#64748b;font-size:9pt;">${slides.length} slidů · ${subtitle}</p>
   </div>
   <div class="meta">
-    <div>ZEdu Export</div>
+    <div>Bezli Export</div>
     <div>${dateStr}</div>
   </div>
 </div>
@@ -258,7 +258,7 @@ ${slidesHtml}
 </div>
 
 <div class="doc-footer">
-  ZEdu · ${title} · ${dateStr}
+  Bezli · ${title} · ${dateStr}
 </div>
 
 <script>

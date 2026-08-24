@@ -64,7 +64,7 @@ const randomStudentCode = () => "ZAK-" + Math.random().toString(36).slice(-4).to
 const emailForRole = (first: string, last: string, role: string, taken: Set<string>) => {
   const f = slug(first) || "user";
   const l = slug(last) || "user";
-  const domain = role === "teacher" ? "@zedu-lektor.cz" : "@zedu-student.cz";
+  const domain = role === "teacher" ? "@bezli-lektor.cz" : "@bezli-student.cz";
   const candidates = [`${f}.${l}${domain}`, `${f.charAt(0)}${l}${domain}`];
   for (const c of candidates) if (!taken.has(c)) return c;
   for (let n = 2; n < 100; n++) {
@@ -85,7 +85,7 @@ const usernameFor = (first: string, last: string, taken: Set<string>) => {
 
 /** Doména generovaných zástupných e-mailů — na ty se neposílá uvítací zpráva. */
 const isPlaceholderEmail = (email: string) =>
-  email.endsWith("@zedu-student.cz") || email.endsWith("@zedu-lektor.cz");
+  email.endsWith("@bezli-student.cz") || email.endsWith("@bezli-lektor.cz");
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });

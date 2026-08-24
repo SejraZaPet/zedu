@@ -39,8 +39,8 @@ interface SearchRow {
 
 const fullName = (p: any) => `${p?.first_name ?? ""} ${p?.last_name ?? ""}`.trim() || "—";
 
-/** Přehled interního týmu ZEdu (admini + uživatelé se záznamem ve staff_members). */
-const ZeduTeamView = () => {
+/** Přehled interního týmu Bezli (admini + uživatelé se záznamem ve staff_members). */
+const BezliTeamView = () => {
   const { user } = useAuth();
   const [rows, setRows] = useState<TeamRow[]>([]);
   const [admins, setAdmins] = useState<AdminRow[]>([]);
@@ -177,7 +177,7 @@ const ZeduTeamView = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
-        <h3 className="text-sm font-medium text-muted-foreground">Tým ZEdu</h3>
+        <h3 className="text-sm font-medium text-muted-foreground">Tým Bezli</h3>
         <Button size="sm" onClick={() => setAddOpen(true)}>
           <UserPlus className="w-4 h-4 mr-1" /> Přidat do týmu
         </Button>
@@ -275,7 +275,7 @@ const ZeduTeamView = () => {
       <Dialog open={addOpen} onOpenChange={(o) => { setAddOpen(o); if (!o) { setQuery(""); setResults([]); } }}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Přidat uživatele do týmu ZEdu</DialogTitle>
+            <DialogTitle>Přidat uživatele do týmu Bezli</DialogTitle>
           </DialogHeader>
           <Tabs defaultValue="existing">
             <TabsList className="grid w-full grid-cols-2">
@@ -368,4 +368,4 @@ const ZeduTeamView = () => {
   );
 };
 
-export default ZeduTeamView;
+export default BezliTeamView;

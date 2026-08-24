@@ -299,7 +299,7 @@ const Auth = () => {
     if (role === "rodic" && trimmedChildCode) {
       metadata.child_code = trimmedChildCode;
       // Flag so ParentDashboard can warn if handle_new_user failed to link the child.
-      try { window.localStorage.setItem("zedu:pending_child_code", trimmedChildCode); } catch { /* ignore */ }
+      try { window.localStorage.setItem("Bezli:pending_child_code", trimmedChildCode); } catch { /* ignore */ }
     }
 
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
@@ -794,7 +794,7 @@ const Auth = () => {
                 <a href="/gdpr" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
                   zpracováním osobních údajů
                 </a>
-                {" "}a podmínkami užívání služby ZEdu.cz. *
+                {" "}a podmínkami užívání služby bezli.cz. *
               </Label>
             </div>
 

@@ -59,7 +59,7 @@ const SchoolCreatorSalesCard = ({ schoolId }: Props) => {
           <ShoppingBag className="w-5 h-5" /> Tvorba a prodej materiálů
         </CardTitle>
         <CardDescription>
-          Rozhodnutí školy o tom, zda a jak se její učitelé mohou zapojit do prodeje materiálů na ZEduMarketu.
+          Rozhodnutí školy o tom, zda a jak se její učitelé mohou zapojit do prodeje materiálů na BezliMarketu.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
@@ -71,7 +71,7 @@ const SchoolCreatorSalesCard = ({ schoolId }: Props) => {
           <>
             <div className="flex items-start justify-between gap-4">
               <Label htmlFor="allows-creators" className="font-normal leading-snug">
-                Naši učitelé mohou nabízet materiály na ZEduMarketu k prodeji
+                Naši učitelé mohou nabízet materiály na BezliMarketu k prodeji
               </Label>
               <Switch
                 id="allows-creators"

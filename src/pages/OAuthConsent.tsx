@@ -111,9 +111,9 @@ export default function OAuthConsent() {
     <main className="min-h-screen flex items-center justify-center p-6">
       <Card className="max-w-md w-full">
         <CardHeader>
-          <CardTitle>Propojit {clientName} s ZEdu</CardTitle>
+          <CardTitle>Propojit {clientName} s Bezli</CardTitle>
           <CardDescription>
-            {clientName} bude moci volat povolené nástroje ZEdu jako vy.
+            {clientName} bude moci volat povolené nástroje Bezli jako vy.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -128,7 +128,7 @@ export default function OAuthConsent() {
             </div>
           )}
           <p className="text-xs text-muted-foreground">
-            Toto propojení nijak neobchází pravidla přístupu a zabezpečení dat ZEdu (RLS).
+            Toto propojení nijak neobchází pravidla přístupu a zabezpečení dat Bezli (RLS).
           </p>
           <div className="flex gap-2 pt-2">
             <Button onClick={() => decide(true)} disabled={busy} className="flex-1">

@@ -25,7 +25,7 @@ interface AuthContextValue extends AuthState {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-const VIEW_AS_KEY = "zedu:view-as-role";
+const VIEW_AS_KEY = "Bezli:view-as-role";
 const VALID_VIEW_ROLES: AppRole[] = ["admin", "teacher", "user"];
 
 const readViewAs = (): AppRole => {

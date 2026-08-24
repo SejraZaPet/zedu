@@ -21,8 +21,8 @@ export interface StoredPhasePlan {
   updatedAt: string;
 }
 
-const LEGACY_KEY = "zedu.phase-plans.v1";
-const MIGRATED_FLAG = "zedu.phase-plans.migrated.v2";
+const LEGACY_KEY = "Bezli.phase-plans.v1";
+const MIGRATED_FLAG = "Bezli.phase-plans.migrated.v2";
 
 function readLegacy(): Record<string, StoredPhasePlan> {
   if (typeof window === "undefined") return {};

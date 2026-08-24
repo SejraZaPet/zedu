@@ -13,7 +13,7 @@ ALTER TABLE public.academy_courses ADD CONSTRAINT academy_courses_audience_check
 
 ALTER TABLE public.academy_courses DROP CONSTRAINT IF EXISTS academy_courses_revenue_type_check;
 ALTER TABLE public.academy_courses ADD CONSTRAINT academy_courses_revenue_type_check
-  CHECK (revenue_type IS NULL OR revenue_type IN ('zedu','creator_share'));
+  CHECK (revenue_type IS NULL OR revenue_type IN ('Bezli','creator_share'));
 
 -- 2) Certificate number sequence
 CREATE SEQUENCE IF NOT EXISTS public.academy_certificate_seq START 1;
@@ -67,7 +67,7 @@ BEGIN
       FROM public.academy_courses WHERE id = NEW.course_id;
     IF v_issues THEN
       IF NOT EXISTS (SELECT 1 FROM public.academy_certificates WHERE enrollment_id = NEW.id) THEN
-        v_number := 'ZEDU-' || to_char(now(), 'YYYY') || '-' ||
+        v_number := 'Bezli-' || to_char(now(), 'YYYY') || '-' ||
                     lpad(nextval('public.academy_certificate_seq')::text, 6, '0');
         INSERT INTO public.academy_certificates (enrollment_id, certificate_number)
           VALUES (NEW.id, v_number);

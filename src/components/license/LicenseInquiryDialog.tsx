@@ -98,7 +98,7 @@ const LicenseInquiryDialog = ({ open, onOpenChange, initialPlan = "Start" }: Pro
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Poptávka licence ZEdu</DialogTitle>
+          <DialogTitle>Poptávka licence Bezli</DialogTitle>
           <DialogDescription>
             Vyplňte formulář a my se vám ozveme s nabídkou na míru.
           </DialogDescription>

@@ -194,8 +194,8 @@ const StudentCalendar = () => {
           <div className="flex items-center gap-2">
             <CalendarExportMenu
               events={events.map((e) => toExportEvent(e as any))}
-              filename={`zedu-kalendar-${format(weekStart, "yyyy-MM-dd")}.ics`}
-              calName="ZEdu – můj kalendář"
+              filename={`Bezli-kalendar-${format(weekStart, "yyyy-MM-dd")}.ics`}
+              calName="Bezli – můj kalendář"
             />
             <div className="flex items-center gap-1 border border-border rounded-md p-0.5">
               <Button

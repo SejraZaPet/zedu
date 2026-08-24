@@ -121,7 +121,7 @@ const SchoolBrandingSection = ({ schoolId, schoolName }: Props) => {
     return <Card><CardContent className="py-8 text-center text-muted-foreground text-sm">Načítání…</CardContent></Card>;
   }
 
-  const previewUrl = subdomain ? `https://${subdomain}.zedu.cz` : null;
+  const previewUrl = subdomain ? `https://${subdomain}.bezli.cz` : null;
 
   return (
     <div className="grid gap-4 md:grid-cols-2">
@@ -142,7 +142,7 @@ const SchoolBrandingSection = ({ schoolId, schoolName }: Props) => {
                 placeholder="zs-brno"
                 maxLength={32}
               />
-              <span className="text-sm text-muted-foreground whitespace-nowrap">.zedu.cz</span>
+              <span className="text-sm text-muted-foreground whitespace-nowrap">.bezli.cz</span>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               Malá písmena, číslice a pomlčky. Pro aktivaci je nutné nastavit DNS wildcard (řeší administrátor).

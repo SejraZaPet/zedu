@@ -75,7 +75,7 @@ const HelpPage = () => {
       <main className="flex-1 pb-16" style={{ paddingTop: "calc(70px + 1.5rem)" }}>
         <div className="container mx-auto max-w-4xl px-4">
           <h1 className="text-3xl md:text-4xl font-heading font-bold text-foreground mb-2">Nápověda</h1>
-          <p className="text-muted-foreground mb-8">Návody k používání systému ZEdu</p>
+          <p className="text-muted-foreground mb-8">Návody k používání systému Bezli</p>
 
           {/* Role tabs - show both for admin, otherwise show relevant one(s) */}
           {(showTeacherTab || showStudentTab) && (

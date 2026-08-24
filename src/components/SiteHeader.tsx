@@ -59,7 +59,7 @@ const TEACHER_MENU_GROUPS: TeacherMenuGroup[] = [
       { label: "Média", href: "/ucitel/media", icon: ImageIcon },
       { label: "Sdíleno se mnou", href: "/ucitel/sdileno-se-mnou", icon: Layers },
       { label: "Sledovaní tvůrci", href: "/ucitel/sledovani-tvurci", icon: UserCheck },
-      { label: "ZEduMarket", href: "/zedumarket", icon: ShoppingBag },
+      { label: "BezliMarket", href: "/bezlimarket", icon: ShoppingBag },
     ],
   },
   {
@@ -67,7 +67,7 @@ const TEACHER_MENU_GROUPS: TeacherMenuGroup[] = [
     items: [
       { label: "Živé hry", href: "/ucitel/hry", icon: Gamepad2 },
       { label: "Výsledky", href: "/ucitel/vysledky", icon: BarChart3 },
-      { label: "ZEdu Akademie", href: "/ucitel/akademie", icon: Award },
+      { label: "Bezli Akademie", href: "/ucitel/akademie", icon: Award },
     ],
   },
   {
@@ -295,7 +295,7 @@ const SiteHeader = () => {
                   {ACADEMY_BY_ROLE[userRole ?? ""] && (
                     <DropdownMenuItem onClick={() => navigate(ACADEMY_BY_ROLE[userRole ?? ""])} className="gap-2 cursor-pointer">
                       <Award size={16} />
-                      ZEdu Akademie
+                      Bezli Akademie
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuSeparator />
@@ -369,7 +369,7 @@ const SiteHeader = () => {
                 onClick={() => { setMenuOpen(false); navigate(ACADEMY_BY_ROLE[userRole ?? ""]); }}
                 className="flex items-center gap-3 px-3 py-3 rounded-lg text-base font-medium transition-colors text-left text-muted-foreground hover:text-primary hover:bg-muted/50"
               >
-                <Award className="w-5 h-5" /> ZEdu Akademie
+                <Award className="w-5 h-5" /> Bezli Akademie
               </button>
             )}
             <div className="border-t border-border mt-2 pt-2">

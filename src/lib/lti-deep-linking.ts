@@ -30,7 +30,7 @@ export const LTI_DEEP_LINKING = {
         {
           type: "ltiResourceLink",
           title: "{{lessonTitle}}",
-          url: "https://zedu.cz/lti/launch",
+          url: "https://bezli.cz/lti/launch",
           custom: {
             resource_id: "{{lessonId}}",
             resource_type: "lesson",
@@ -64,7 +64,7 @@ export const LTI_DEEP_LINKING = {
       "deployment_id – ID nasazení toolu v rámci platformy. Získán při registraci.",
       "https://purl.imsglobal.org/spec/lti-dl/claim/data – Opaque string předaný platformou v Deep Linking Request, musí být vrácen beze změny.",
       "kid (JWT header) – Key ID pro ověření podpisu. Závisí na JWKS konfiguraci toolu.",
-      "custom.resource_id – Interní UUID lekce v Zedu. Generován při výběru obsahu učitelem.",
+      "custom.resource_id – Interní UUID lekce v Bezli. Generován při výběru obsahu učitelem.",
       "lineItem – Volitelný. Pokud LMS podporuje Assignment and Grade Services (AGS), umožní automatický přenos známek.",
       "available.startDateTime / endDateTime – Volitelné časové okno dostupnosti. Nastavuje učitel v LMS.",
       "submission.endDateTime – Volitelný deadline odevzdání. Nastavuje učitel v LMS.",

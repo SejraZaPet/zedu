@@ -1,6 +1,6 @@
 // Denní kontrola blížící se expirace školních licencí.
 // Pro každou licenci (trial/active) s expires_at v hranici 30/14/7/1 dní
-// pošle e-mail školnímu adminovi a na info@zedu.cz. Idempotence přes
+// pošle e-mail školnímu adminovi a na info@bezli.cz. Idempotence přes
 // tabulku school_license_reminders (UNIQUE license_id + threshold_days).
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
@@ -12,8 +12,8 @@ const corsHeaders = {
 };
 
 const THRESHOLDS = [30, 14, 7, 1];
-const INTERNAL_RECIPIENT = "info@zedu.cz";
-const APP_URL = "https://www.zedu.cz";
+const INTERNAL_RECIPIENT = "info@bezli.cz";
+const APP_URL = "https://www.bezli.cz";
 
 function escapeHtml(s: string) {
   return String(s ?? "")
@@ -116,11 +116,11 @@ Deno.serve(async (req) => {
         <h2 style="margin-top:0;">Blíží se expirace licence</h2>
         <p>Licence školy <strong>${escapeHtml(schoolName)}</strong> vyprší za <strong>${threshold} ${dayWord}</strong> (${dateLabel}).</p>
         <p>Pro obnovení nebo změnu balíčku nás prosím kontaktujte na
-          <a href="mailto:info@zedu.cz">info@zedu.cz</a>.</p>
+          <a href="mailto:info@bezli.cz">info@bezli.cz</a>.</p>
         <p style="font-size:12px;color:#6b7280;">Automatická zpráva z platformy
-          <a href="${APP_URL}">ZEdu.cz</a></p>
+          <a href="${APP_URL}">bezli.cz</a></p>
       </div>`;
-    const text = `Licence školy ${schoolName} vyprší za ${threshold} ${dayWord} (${dateLabel}).\n\nPro obnovení nás kontaktujte na info@zedu.cz.\n\n— ZEdu.cz`;
+    const text = `Licence školy ${schoolName} vyprší za ${threshold} ${dayWord} (${dateLabel}).\n\nPro obnovení nás kontaktujte na info@bezli.cz.\n\n— bezli.cz`;
 
     const recipients = Array.from(new Set([...adminEmails, INTERNAL_RECIPIENT]));
     let ok = false;

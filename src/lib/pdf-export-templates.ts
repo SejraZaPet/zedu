@@ -114,7 +114,7 @@ function buildBaseCss(paper: PaperConfig): string {
     : `${paper.widthMm}mm ${paper.heightMm}mm landscape`;
 
   return `
-/* ═══ ZEdu PDF Export – ${paper.format} ═══ */
+/* ═══ Bezli PDF Export – ${paper.format} ═══ */
 
 @page {
   size: ${pageSize};
@@ -421,7 +421,7 @@ export function generatePdfHtml(
     <p class="text-muted">${escHtml(opts.subtitle)} · ${opts.slideCount} slidů</p>
   </div>
   <div class="meta">
-    <div>ZEdu Export</div>
+    <div>Bezli Export</div>
     <div>${dateStr}</div>
   </div>
 </div>
@@ -431,7 +431,7 @@ ${slidesHtml}
 </div>
 
 <div class="doc-footer">
-  ZEdu · ${escHtml(opts.title)} · ${dateStr} · Strana <span class="page-num"></span>
+  Bezli · ${escHtml(opts.title)} · ${dateStr} · Strana <span class="page-num"></span>
 </div>
 
 </body>

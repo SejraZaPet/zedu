@@ -11,7 +11,7 @@ export interface SchoolBranding {
   registration_code: string | null;
 }
 
-const RESERVED = new Set(["www", "app", "id-preview", "preview", "zedu", "lovable", "staging"]);
+const RESERVED = new Set(["www", "app", "id-preview", "preview", "Bezli", "lovable", "staging"]);
 
 export function detectSubdomain(hostname: string = window.location.hostname): string | null {
   if (!hostname || hostname === "localhost" || /^\d+\.\d+\.\d+\.\d+$/.test(hostname)) return null;

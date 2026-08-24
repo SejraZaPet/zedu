@@ -346,8 +346,8 @@ const ACTIVITY_TRANSFORM_RULES: ActivityTransformRule[] = [
 
 const DEFAULT_RULE: ActivityTransformRule = {
   activityType: "unknown",
-  pptx: { renderChoices: false, correctInSpeakerNotes: false, showQr: true, fallbackText: "Vypracujte aktivitu v aplikaci ZEdu." },
-  pdf: { renderChoices: false, showQr: true, fallbackText: "Vypracujte aktivitu v aplikaci ZEdu." },
+  pptx: { renderChoices: false, correctInSpeakerNotes: false, showQr: true, fallbackText: "Vypracujte aktivitu v aplikaci Bezli." },
+  pdf: { renderChoices: false, showQr: true, fallbackText: "Vypracujte aktivitu v aplikaci Bezli." },
   html: { embedInteractive: false, offlineFallbackText: "Aktivita – otevřete online verzi." },
 };
 

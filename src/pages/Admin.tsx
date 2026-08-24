@@ -51,7 +51,7 @@ const adminTabs = [
   { id: "schools", label: "Školy", icon: School, module: "admin_only" },
   { id: "licenses", label: "Spolupracující organizace", icon: Award, module: "school_licenses" },
   { id: "unassigned-teachers", label: "Nepřiřazení učitelé", icon: UserSquare2, module: "school_licenses" },
-  { id: "market-economics", label: "Ekonomika ZEduMarket", icon: Coins, module: "billing" },
+  { id: "market-economics", label: "Ekonomika BezliMarket", icon: Coins, module: "billing" },
 
   { id: "users", label: "Uživatelé", icon: Users, module: "users" },
   { id: "textbook-overview", label: "Přehled učebnic", icon: Library, module: "textbook_overview" },
@@ -90,7 +90,7 @@ const adminGroups: { id: string; label: string; tabs: string[] }[] = [
   { id: "overview", label: "Přehled", tabs: ["dashboard", "stats"] },
   { id: "sales", label: "Prodej a zákazníci", tabs: ["crm", "schools", "licenses", "unassigned-teachers", "market-economics"] },
   { id: "content", label: "Vzdělávací obsah", tabs: ["textbook-overview", "templates"] },
-  { id: "academy", label: "ZEdu Akademie", tabs: ["academy", "academy-pathways", "academy-evidence"] },
+  { id: "academy", label: "Bezli Akademie", tabs: ["academy", "academy-pathways", "academy-evidence"] },
   { id: "appearance", label: "Vzhled webu", tabs: ["landing", "avatars", "game-backgrounds"] },
   { id: "system", label: "Systém", tabs: ["notifications", "website-assistant", "audit"] },
 ];

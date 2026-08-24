@@ -51,7 +51,7 @@ export function BetaBadge({ context, className }: BetaBadgeProps) {
     } catch (e) {
       toast({
         title: "Odeslání se nepodařilo",
-        description: "Zkuste to prosím znovu, nebo nám napište na info@zedu.cz.",
+        description: "Zkuste to prosím znovu, nebo nám napište na info@bezli.cz.",
         variant: "destructive",
       });
       console.error("submit-feedback failed", e);
@@ -86,7 +86,7 @@ export function BetaBadge({ context, className }: BetaBadgeProps) {
           placeholder="Co nefunguje nebo co by šlo zlepšit?"
           rows={4}
           maxLength={4000}
-          aria-label="Zpráva pro tým ZEdu"
+          aria-label="Zpráva pro tým Bezli"
         />
         <div className="flex justify-end">
           <Button size="sm" onClick={handleSend} disabled={sending}>

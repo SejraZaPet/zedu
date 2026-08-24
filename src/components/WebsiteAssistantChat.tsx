@@ -18,11 +18,11 @@ interface ChatMsg {
 
 /** Povinné odhalení AI podle EU AI Act (čl. 50) – vždy první zpráva konverzace. */
 const AI_DISCLOSURE =
-  "Dobrý den, jsem ZedAI – umělá inteligence, ne člověk. Ráda zodpovím vaše dotazy o platformě ZEdu.";
+  "Dobrý den, jsem ZedAI – umělá inteligence, ne člověk. Ráda zodpovím vaše dotazy o platformě Bezli.";
 const INITIAL_GREETING =
   "Zajímá vás funkce platformy, ceník nebo termín spuštění? Zeptejte se.";
 
-const SUGGESTIONS = ["Co ZEdu umí?", "Kolik to stojí?", "Kdy se platforma spouští?"];
+const SUGGESTIONS = ["Co Bezli umí?", "Kolik to stojí?", "Kdy se platforma spouští?"];
 
 const initialMessages = (): ChatMsg[] => [
   { role: "assistant", content: AI_DISCLOSURE },
@@ -151,7 +151,7 @@ export default function WebsiteAssistantChat({ className }: { className?: string
           "hover:brightness-110 hover:scale-105 transition-transform",
           className,
         )}
-        aria-label="Zeptat se ZedAI na platformu ZEdu"
+        aria-label="Zeptat se ZedAI na platformu Bezli"
         title="Zeptat se ZedAI"
       >
         <span className="relative flex items-center justify-center w-full h-full">
@@ -215,7 +215,7 @@ export default function WebsiteAssistantChat({ className }: { className?: string
           <SheetHeader className="px-4 py-3 border-b">
             <SheetTitle className="flex items-center gap-2">
               <Bot className="w-5 h-5 text-primary" />
-              ZedAI – asistent ZEdu
+              ZedAI – asistent Bezli
             </SheetTitle>
             <p className="text-xs text-muted-foreground text-left">
               Odpovědi na dotazy o platformě, funkcích a ceníku.

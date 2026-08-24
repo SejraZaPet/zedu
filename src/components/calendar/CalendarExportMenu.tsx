@@ -29,8 +29,8 @@ interface Props {
 export function CalendarExportMenu({
   events,
   primaryEvent,
-  filename = "zedu-kalendar.ics",
-  calName = "ZEdu kalendář",
+  filename = "Bezli-kalendar.ics",
+  calName = "Bezli kalendář",
   label = "Exportovat",
 }: Props) {
   const { toast } = useToast();

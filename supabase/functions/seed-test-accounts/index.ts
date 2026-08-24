@@ -7,7 +7,7 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const PASSWORD = "ZeduTest123!";
+const PASSWORD = "BezliTest123!";
 const SCHOOL_A_ID = "17840203-9bd6-47fc-97c3-726c4da82667";
 
 serve(async (req) => {
@@ -16,7 +16,7 @@ serve(async (req) => {
   try {
     // Require internal secret to protect this seed endpoint
     const secret = req.headers.get("X-Seed-Secret");
-    const expected = Deno.env.get("SEED_SECRET") ?? "seed-zedu-test-2026";
+    const expected = Deno.env.get("SEED_SECRET") ?? "seed-Bezli-test-2026";
     if (secret !== expected) {
       return new Response(JSON.stringify({ error: "Forbidden" }), {
         status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -90,19 +90,19 @@ serve(async (req) => {
 
     // 1 + 2 Teachers A, B
     const teacherA = await upsertUser({
-      email: "ucitel-a@test.zedu.cz",
+      email: "ucitel-a@test.bezli.cz",
       first_name: "Anna", last_name: "Tvůrcová",
       role: "teacher", status: "approved", school_id: SCHOOL_A_ID,
     });
     const teacherB = await upsertUser({
-      email: "ucitel-b@test.zedu.cz",
+      email: "ucitel-b@test.bezli.cz",
       first_name: "Barbora", last_name: "Příjemková",
       role: "teacher", status: "approved", school_id: SCHOOL_A_ID,
     });
 
     // 3 Lektor
     await upsertUser({
-      email: "lektor@test.zedu.cz",
+      email: "lektor@test.bezli.cz",
       first_name: "Lukáš", last_name: "Lektor",
       role: "lektor", status: "approved", school_id: null,
     });
@@ -189,11 +189,11 @@ serve(async (req) => {
 
     // Students
     const students = [
-      { email: "zak1@test.zedu.cz", first_name: "Jakub", last_name: "Žák1", status: "approved" as const },
-      { email: "zak2@test.zedu.cz", first_name: "Klára", last_name: "Žák2", status: "approved" as const },
-      { email: "zak3@test.zedu.cz", first_name: "Matěj", last_name: "Žák3", status: "approved" as const },
-      { email: "zak4@test.zedu.cz", first_name: "Nela", last_name: "Žák4", status: "pending" as const },
-      { email: "zak5@test.zedu.cz", first_name: "Ondřej", last_name: "Žák5", status: "blocked" as const },
+      { email: "zak1@test.bezli.cz", first_name: "Jakub", last_name: "Žák1", status: "approved" as const },
+      { email: "zak2@test.bezli.cz", first_name: "Klára", last_name: "Žák2", status: "approved" as const },
+      { email: "zak3@test.bezli.cz", first_name: "Matěj", last_name: "Žák3", status: "approved" as const },
+      { email: "zak4@test.bezli.cz", first_name: "Nela", last_name: "Žák4", status: "pending" as const },
+      { email: "zak5@test.bezli.cz", first_name: "Ondřej", last_name: "Žák5", status: "blocked" as const },
     ];
 
     const studentIds: Record<string, string> = {};
@@ -205,12 +205,12 @@ serve(async (req) => {
 
     // 6 Parent linked to zak1
     const parentId = await upsertUser({
-      email: "rodic@test.zedu.cz",
+      email: "rodic@test.bezli.cz",
       first_name: "Petra", last_name: "Rodičová",
       role: "rodic", status: "approved", school_id: null,
     });
     await admin.from("parent_student_links").upsert(
-      { parent_id: parentId, student_id: studentIds["zak1@test.zedu.cz"] },
+      { parent_id: parentId, student_id: studentIds["zak1@test.bezli.cz"] },
       { onConflict: "parent_id,student_id" },
     );
     log.push(`✓ Parent linked to zak1`);

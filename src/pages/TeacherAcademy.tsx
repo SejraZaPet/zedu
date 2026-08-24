@@ -6,7 +6,7 @@ const TeacherAcademy = () => (
   <div className="min-h-screen bg-background flex flex-col">
     <SiteHeader />
     <main className="flex-1">
-      <AcademyView audience="teacher" title="ZEdu Akademie" subtitle="Kurzy a webináře pro učitele." />
+      <AcademyView audience="teacher" title="Bezli Akademie" subtitle="Kurzy a webináře pro učitele." />
     </main>
     <SiteFooter />
   </div>

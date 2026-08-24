@@ -262,7 +262,7 @@ export default function TeacherSchedule() {
       const locationParts = [className, s.room].filter(Boolean) as string[];
 
       events.push({
-        uid: `slot-${s.id}@zedu.cz`,
+        uid: `slot-${s.id}@bezli.cz`,
         title,
         start: dtStart,
         end: dtEnd,
@@ -273,7 +273,7 @@ export default function TeacherSchedule() {
     }
 
     if (events.length === 0) return;
-    downloadICS(events, "zedu-rozvrh-semestr.ics", "ZEdu – rozvrh");
+    downloadICS(events, "Bezli-rozvrh-semestr.ics", "Bezli – rozvrh");
   };
 
   const [editing, setEditing] = useState<LessonEntry | null>(null);

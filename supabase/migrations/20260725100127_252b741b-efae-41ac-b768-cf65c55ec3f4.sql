@@ -87,7 +87,7 @@ BEGIN
     'creator_new_public_share',
     'Nový obsah od sledovaného tvůrce',
     _creator_name || ' přidal/a nový obsah: „' || COALESCE(_title, 'materiál') || '"',
-    '/zedumarket',
+    '/Bezlimarket',
     'sent',
     now(),
     jsonb_build_object(

@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 const STATUS_LABEL: Record<PushStatus, string> = {
   unsupported: "Tento prohlížeč push notifikace nepodporuje.",
   "preview-blocked":
-    "Push notifikace nejde povolit v editoru náhledu. Otevři aplikaci v samostatném okně (zedu.cz nebo .lovable.app).",
+    "Push notifikace nejde povolit v editoru náhledu. Otevři aplikaci v samostatném okně (bezli.cz nebo .lovable.app).",
   default: "Push notifikace zatím nejsou povolené.",
   "granted-not-subscribed": "Notifikace jsou povolené, ale toto zařízení ještě není zaregistrované.",
   subscribed: "Push notifikace jsou aktivní na tomto zařízení.",

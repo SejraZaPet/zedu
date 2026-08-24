@@ -10,11 +10,11 @@ const corsHeaders = {
 
 const PHASE_KEYS = ["uvod", "motivace", "hlavni", "procviceni", "reflexe", "zaver"] as const;
 
-// Allowed activity kinds — STRICTLY ZEdu features only.
+// Allowed activity kinds — STRICTLY Bezli features only.
 const ALLOWED_KINDS = [
-  "quiz", // Kvíz / interaktivní aktivita v ZEdu
-  "worksheet", // Pracovní list v ZEdu
-  "live_game", // Živá hra (Kahoot-like, ale v ZEdu)
+  "quiz", // Kvíz / interaktivní aktivita v Bezli
+  "worksheet", // Pracovní list v Bezli
+  "live_game", // Živá hra (Kahoot-like, ale v Bezli)
   "lesson_block", // Blok přímo z aktuálně vybrané lekce v učebnici
   "offline_activity", // Offline aktivita popsaná v učebnici (blok typu offline)
   "discussion", // Řízená diskuse vedená učitelem (bez nástroje)
@@ -53,7 +53,7 @@ serve(async (req) => {
           .join("\n")
       : "(žádné dostupné bloky)";
 
-    const sysPrompt = `Jsi zkušený český pedagog a navrhuješ plán vyučovací hodiny (${target} minut) pro platformu ZEdu.
+    const sysPrompt = `Jsi zkušený český pedagog a navrhuješ plán vyučovací hodiny (${target} minut) pro platformu Bezli.
 Navrhni 6 pevných fází:
 - uvod (Úvod)
 - motivace (Motivace)
@@ -68,11 +68,11 @@ U každé fáze vrať:
 - activities: pole 0–3 navrhovaných aktivit, KAŽDÁ s polem "kind" (POVINNĚ jedna z: ${ALLOWED_KINDS.join(", ")}) a "title"
 
 DŮLEŽITÁ PRAVIDLA pro fáze "procviceni" a "reflexe":
-- Navrhuj POUZE aktivity dostupné v ZEdu:
+- Navrhuj POUZE aktivity dostupné v Bezli:
   • online: kvíz / interaktivní aktivita (kind="quiz"), pracovní list (kind="worksheet"), živá hra (kind="live_game")
   • offline: blok z učebnice (kind="lesson_block" nebo kind="offline_activity")
   • případně řízená diskuse (kind="discussion")
-- NIKDY nezmiňuj externí nástroje ani konkurenční platformy (Kahoot, Mentimeter, Quizlet, Wordwall, Google Forms, Padlet, Microsoft Forms apod.). Místo nich vždy navrhni odpovídající ZEdu funkci.
+- NIKDY nezmiňuj externí nástroje ani konkurenční platformy (Kahoot, Mentimeter, Quizlet, Wordwall, Google Forms, Padlet, Microsoft Forms apod.). Místo nich vždy navrhni odpovídající Bezli funkci.
 - Pokud používáš kind="lesson_block", vyber z dostupných bloků níže a do "title" napiš název bloku.
 
 Dostupné bloky z vybrané lekce učebnice:
@@ -125,7 +125,7 @@ Vše česky.`;
           type: "function",
           function: {
             name: "create_phases",
-            description: "Návrh fází hodiny s časovou dotací a ZEdu aktivitami.",
+            description: "Návrh fází hodiny s časovou dotací a Bezli aktivitami.",
             parameters: {
               type: "object",
               properties: {
