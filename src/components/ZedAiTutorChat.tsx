@@ -23,7 +23,7 @@ interface ZedAiTutorChatProps {
 
 /** Povinné odhalení AI podle EU AI Act (čl. 50) – vždy první zpráva konverzace. */
 const AI_DISCLOSURE =
-  "Ahoj, jsem ZedAI, umělá inteligence. Nejsem člověk – dávám ti nápovědy, abys na odpověď přišel/přišla sám/sama.";
+  "Ahoj, jsem Bezlai, umělá inteligence. Nejsem člověk – dávám ti nápovědy, abys na odpověď přišel/přišla sám/sama.";
 const INITIAL_GREETING = "Čeho se zadání týká, čemu nerozumíš?";
 
 const initialMessages = (): ChatMsg[] => [
@@ -101,10 +101,10 @@ export default function ZedAiTutorChat({
           "fixed bottom-5 right-5 z-40 rounded-full shadow-lg h-14 pl-4 pr-5 gap-2 bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent,var(--primary)))]",
           className,
         )}
-        aria-label="Zeptej se ZedAI"
+        aria-label="Zeptej se Bezlai"
       >
         <MessageCircleQuestion className="w-5 h-5" />
-        <span className="font-semibold">Zeptej se ZedAI</span>
+        <span className="font-semibold">Zeptej se Bezlai</span>
       </Button>
 
       <Sheet open={open} onOpenChange={setOpen}>
@@ -112,7 +112,7 @@ export default function ZedAiTutorChat({
           <SheetHeader className="px-4 py-3 border-b">
             <SheetTitle className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-primary" />
-              ZedAI – tvůj tutor
+              Bezlai – tvůj tutor
             </SheetTitle>
             <p className="text-xs text-muted-foreground text-left">
               Neřeknu ti přímo odpověď, ale nasměruju tě k ní. 🧭
@@ -144,7 +144,7 @@ export default function ZedAiTutorChat({
               <div className="flex justify-start">
                 <div className="bg-muted rounded-2xl rounded-bl-sm px-3.5 py-2 text-sm flex items-center gap-2 text-muted-foreground">
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ZedAI přemýšlí…
+                  Bezlai přemýšlí…
                 </div>
               </div>
             )}

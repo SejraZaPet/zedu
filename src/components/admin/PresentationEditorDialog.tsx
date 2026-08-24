@@ -289,7 +289,7 @@ export const PresentationEditorDialog = ({
       <p className="mt-1 text-[11px] text-muted-foreground">
         {currentSlide?.type === "activity"
           ? "Tento slide už aktivitu obsahuje."
-          : "ZedAI z obsahu slidu vytvoří interaktivní aktivitu. Výstup prosím zkontrolujte."}
+          : "Bezlai z obsahu slidu vytvoří interaktivní aktivitu. Výstup prosím zkontrolujte."}
       </p>
     </div>
   );

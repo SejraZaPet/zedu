@@ -143,7 +143,7 @@ export default function WebsiteAssistantManager() {
         <div>
           <h2 className="text-2xl font-bold flex items-center gap-2">
             <Bot className="w-6 h-6 text-primary" />
-            ZedAI web
+            Bezlai web
           </h2>
           <p className="text-sm text-muted-foreground">
             Konverzace návštěvníků veřejného webu a doplňkové znalosti, které asistent použije přednostně.

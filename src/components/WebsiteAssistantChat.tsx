@@ -18,7 +18,7 @@ interface ChatMsg {
 
 /** Povinné odhalení AI podle EU AI Act (čl. 50) – vždy první zpráva konverzace. */
 const AI_DISCLOSURE =
-  "Dobrý den, jsem ZedAI – umělá inteligence, ne člověk. Ráda zodpovím vaše dotazy o platformě Bezli.";
+  "Dobrý den, jsem Bezlai – umělá inteligence, ne člověk. Ráda zodpovím vaše dotazy o platformě Bezli.";
 const INITIAL_GREETING =
   "Zajímá vás funkce platformy, ceník nebo termín spuštění? Zeptejte se.";
 
@@ -151,8 +151,8 @@ export default function WebsiteAssistantChat({ className }: { className?: string
           "hover:brightness-110 hover:scale-105 transition-transform",
           className,
         )}
-        aria-label="Zeptat se ZedAI na platformu Bezli"
-        title="Zeptat se ZedAI"
+        aria-label="Zeptat se Bezlai na platformu Bezli"
+        title="Zeptat se Bezlai"
       >
         <span className="relative flex items-center justify-center w-full h-full">
           {/* Zedíkova zjednodušená hlava – gumdrop tvar v brand gradientu */}
@@ -215,7 +215,7 @@ export default function WebsiteAssistantChat({ className }: { className?: string
           <SheetHeader className="px-4 py-3 border-b">
             <SheetTitle className="flex items-center gap-2">
               <Bot className="w-5 h-5 text-primary" />
-              ZedAI – asistent Bezli
+              Bezlai – asistent Bezli
             </SheetTitle>
             <p className="text-xs text-muted-foreground text-left">
               Odpovědi na dotazy o platformě, funkcích a ceníku.
@@ -271,7 +271,7 @@ export default function WebsiteAssistantChat({ className }: { className?: string
               <div className="flex justify-start">
                 <div className="bg-muted rounded-2xl rounded-bl-sm px-3.5 py-2 text-sm flex items-center gap-2 text-muted-foreground">
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ZedAI odpovídá…
+                  Bezlai odpovídá…
                 </div>
               </div>
             )}

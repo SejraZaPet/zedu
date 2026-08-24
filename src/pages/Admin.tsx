@@ -63,7 +63,7 @@ const adminTabs = [
   { id: "avatars", label: "Avatary", icon: Smile, module: "avatar_manager" },
   { id: "game-backgrounds", label: "Herní pozadí", icon: ImageIcon, module: "avatar_manager" },
   { id: "notifications", label: "Notifikace", icon: Bell, module: "notifications" },
-  { id: "website-assistant", label: "ZedAI web", icon: Bot, module: "website_assistant" },
+  { id: "website-assistant", label: "Bezlai web", icon: Bot, module: "website_assistant" },
   { id: "audit", label: "Audit log", icon: FileText, module: "audit" },
   { id: "help", label: "Nápověda", icon: HelpCircle, module: null },
 ] as const;
