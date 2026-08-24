@@ -8,7 +8,7 @@ const corsHeaders = {
 
 const GENERIC_MESSAGE =
   "Pokud e-mail existuje v systému, poslali jsme odkaz pro obnovení hesla.";
-const APP_URL = "https://www.Bezli.cz";
+const APP_URL = "https://www.bezli.cz";
 const RATE_LIMIT = 3;
 const RATE_WINDOW_MIN = 15;
 
@@ -107,7 +107,7 @@ Deno.serve(async (req) => {
   <div style="background: #ffffff; padding: 28px 24px; border-radius: 0 0 14px 14px;">
     <h2 style="margin-top: 0; color: #1A1F2C;">Obnovení hesla</h2>
     <p style="color: #1A1F2C;">${firstName ? `Dobrý den ${firstName},` : "Dobrý den,"}</p>
-    <p style="color: #1A1F2C;">obdrželi jsme žádost o obnovení hesla k vašemu účtu na Bezli.cz. Pro nastavení nového hesla klikněte na tlačítko níže.</p>
+    <p style="color: #1A1F2C;">obdrželi jsme žádost o obnovení hesla k vašemu účtu na bezli.cz. Pro nastavení nového hesla klikněte na tlačítko níže.</p>
     <div style="text-align: center; margin: 28px 0;">
       <a href="${resetUrl}" style="background: #0E8F9A; color: #ffffff; padding: 12px 24px; border-radius: 14px; text-decoration: none; display: inline-block; font-weight: 600;">
         Nastavit nové heslo
@@ -117,11 +117,11 @@ Deno.serve(async (req) => {
     <p style="font-size: 12px; color: #64748B; word-break: break-all;">Pokud tlačítko nefunguje, zkopírujte tento odkaz do prohlížeče:<br/>${resetUrl}</p>
   </div>
   <div style="text-align: center; padding: 16px; font-size: 12px; color: #64748B;">
-    <p style="margin: 0;">© Bezli.cz — <a href="${APP_URL}" style="color: #0E8F9A; text-decoration: none;">www.Bezli.cz</a></p>
+    <p style="margin: 0;">© bezli.cz — <a href="${APP_URL}" style="color: #0E8F9A; text-decoration: none;">www.bezli.cz</a></p>
   </div>
 </div>`;
 
-    const text = `Obnovení hesla Bezli.cz\n\nPro nastavení nového hesla otevřete tento odkaz (platný 1 hodinu):\n\n${resetUrl}\n\nPokud jste o obnovení hesla nežádali, tento email ignorujte.`;
+    const text = `Obnovení hesla bezli.cz\n\nPro nastavení nového hesla otevřete tento odkaz (platný 1 hodinu):\n\n${resetUrl}\n\nPokud jste o obnovení hesla nežádali, tento email ignorujte.`;
 
     // Invoke send-email with service-role auth (allowed by send-email).
     try {
@@ -135,7 +135,7 @@ Deno.serve(async (req) => {
           },
           body: JSON.stringify({
             to: normalized,
-            subject: "Obnovení hesla – Bezli.cz",
+            subject: "Obnovení hesla – bezli.cz",
             html,
             text,
           }),

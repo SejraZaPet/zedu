@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-const APP_URL = "https://www.Bezli.cz";
+const APP_URL = "https://www.bezli.cz";
 
 /**
  * Brand palette for e-mail HTML.
@@ -35,7 +35,7 @@ export const sendWelcomeEmail = async (params: {
   const html = `
     <div style="font-family: Lato, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: ${NEUTRAL_TEXT}; background: ${NEUTRAL_SURFACE};">
       <div style="background: linear-gradient(135deg, ${BRAND_GRADIENT_FROM} 0%, ${BRAND_GRADIENT_TO} 100%); padding: 32px 24px; border-radius: 14px 14px 0 0; text-align: center;">
-        <img src="https://Bezli.lovable.app/bezli-logo.png" alt="Bezli" style="height: 48px; width: auto; margin-bottom: 12px;" onerror="this.style.display='none'" />
+        <img src="https://zedu.lovable.app/bezli-logo.png" alt="Bezli" style="height: 48px; width: auto; margin-bottom: 12px;" onerror="this.style.display='none'" />
         <h1 style="margin: 0; font-size: 28px; font-weight: 800; color: #ffffff; letter-spacing: -0.02em; font-family: Lato, Arial, sans-serif;">Bezli<span style="color: ${BRAND_ACCENT_LIGHT};">.cz</span></h1>
         <p style="margin: 8px 0 0; opacity: 0.95; color: #ffffff; font-size: 14px; font-family: Lato, Arial, sans-serif;">Moderní nástroje pro vzdělávání</p>
       </div>
@@ -64,8 +64,8 @@ export const sendWelcomeEmail = async (params: {
       </div>
 
       <div style="text-align: center; padding: 16px; font-size: 12px; color: ${NEUTRAL_MUTED}; font-family: Lato, Arial, sans-serif;">
-        <p style="margin: 0 0 4px;">Tento email byl odeslán automaticky z platformy <a href="${APP_URL}" style="color: ${BRAND_PRIMARY}; text-decoration: none;">Bezli.cz</a></p>
-        <p style="margin: 0;"><a href="${APP_URL}" style="color: ${BRAND_PRIMARY}; text-decoration: none;">www.Bezli.cz</a></p>
+        <p style="margin: 0 0 4px;">Tento email byl odeslán automaticky z platformy <a href="${APP_URL}" style="color: ${BRAND_PRIMARY}; text-decoration: none;">bezli.cz</a></p>
+        <p style="margin: 0;"><a href="${APP_URL}" style="color: ${BRAND_PRIMARY}; text-decoration: none;">www.bezli.cz</a></p>
       </div>
     </div>
   `;
@@ -82,7 +82,7 @@ Přihlaste se na: ${APP_URL}/auth
 Po prvním přihlášení si doporučujeme změnit heslo v nastavení profilu.
 
 —
-Tento email byl odeslán automaticky z platformy Bezli.cz
+Tento email byl odeslán automaticky z platformy bezli.cz
 ${APP_URL}`;
 
   try {

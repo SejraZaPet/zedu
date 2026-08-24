@@ -127,7 +127,7 @@ Deno.serve(async (req) => {
             )
             .join("")}
         </table>
-        <p style="margin-top:16px; font-size:12px; color:#94a3b8;">Odesláno z veřejného formuláře /licence na Bezli.cz</p>
+        <p style="margin-top:16px; font-size:12px; color:#94a3b8;">Odesláno z veřejného formuláře /licence na bezli.cz</p>
       </div>
     `;
     const text = rows.map(([k, v]) => `${k}: ${v || "—"}`).join("\n");
@@ -139,8 +139,8 @@ Deno.serve(async (req) => {
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "Bezli poptávky <noreply@Bezli.cz>",
-        to: ["info@Bezli.cz"],
+        from: "Bezli poptávky <noreply@bezli.cz>",
+        to: ["info@bezli.cz"],
         reply_to: String(email),
         subject: `Nová poptávka po licenci Bezli – ${plan}`,
         html,

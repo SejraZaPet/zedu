@@ -1,7 +1,7 @@
 // Uvítací e-mail se stejnou strukturou jako `sendWelcomeEmail` v src/lib/send-email.ts,
 // jen renderovaný na serveru (správce školy nemá práva na send-email volat přímo).
 
-const APP_URL = "https://www.Bezli.cz";
+const APP_URL = "https://www.bezli.cz";
 const BRAND_PRIMARY = "#6EC6D9";
 const BRAND_SECONDARY = "#9B6CFF";
 const BRAND_ACCENT_LIGHT = "#E8FBFF";

@@ -30,7 +30,7 @@ export const LTI_DEEP_LINKING = {
         {
           type: "ltiResourceLink",
           title: "{{lessonTitle}}",
-          url: "https://Bezli.cz/lti/launch",
+          url: "https://bezli.cz/lti/launch",
           custom: {
             resource_id: "{{lessonId}}",
             resource_type: "lesson",

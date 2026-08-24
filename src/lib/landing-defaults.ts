@@ -107,7 +107,7 @@ export const DEFAULT_FINAL_CTA_PROPS = {
   subtitle: "Zaregistrujte se zdarma a začněte tvořit.",
   primary_cta: { label: "Vytvořit účet zdarma", href: "/auth", icon: "Rocket" },
   secondary_link: { label: "Zobrazit ceník", href: "/cenik" },
-  contact_email: "info@Bezli.cz",
+  contact_email: "info@bezli.cz",
 };
 
 export const DEFAULT_PROPS_BY_TYPE: Record<string, Record<string, any>> = {

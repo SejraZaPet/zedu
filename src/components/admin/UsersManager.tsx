@@ -105,7 +105,7 @@ function generateStudentEmail(
   const first = normalize(firstName) || "user";
   const last = normalize(lastName) || "user";
   const initial = first.charAt(0);
-  const domain = (role === "teacher" || role === "lektor") ? "@Bezli-lektor.cz" : "@Bezli-student.cz";
+  const domain = (role === "teacher" || role === "lektor") ? "@bezli-lektor.cz" : "@bezli-student.cz";
 
   const v1 = `${first}.${last}${domain}`;
   if (!existingEmails.includes(v1)) return v1;
@@ -978,7 +978,7 @@ const UsersManager = () => {
                     role: newUser.role as any,
                   }, { onConflict: "user_id,role", ignoreDuplicates: true });
 
-                  if (email && !email.includes("@Bezli-student.cz") && !email.includes("@Bezli-lektor.cz") && !email.includes("@Bezli-rodic.cz")) {
+                  if (email && !email.includes("@bezli-student.cz") && !email.includes("@bezli-lektor.cz") && !email.includes("@bezli-rodic.cz")) {
                     const notifyEmailFailure = (detail?: unknown) => {
                       console.warn("Email se nepodařilo odeslat:", detail);
                       toast({
@@ -1015,7 +1015,7 @@ const UsersManager = () => {
 
                   if (newUser.role === "user" && createParentAccount) {
                     try {
-                      const parentLogin = parentEmail.trim() || `rodic.${username}@Bezli-rodic.cz`;
+                      const parentLogin = parentEmail.trim() || `rodic.${username}@bezli-rodic.cz`;
                       const parentPassword = Math.random().toString(36).slice(-8) + "Aa1!";
                       const parentUsername = generateUsername(
                         "rodic",
@@ -1304,7 +1304,7 @@ const UsersManager = () => {
                       if (!isAdultStudent && role === "user") {
                         try {
                           const parentEmailValue = (row.email_rodice && String(row.email_rodice).trim()) || "";
-                          const parentLogin = parentEmailValue || `rodic.${studentCode.toLowerCase()}@Bezli-rodic.cz`;
+                          const parentLogin = parentEmailValue || `rodic.${studentCode.toLowerCase()}@bezli-rodic.cz`;
 
                           let parentId: string | undefined;
 

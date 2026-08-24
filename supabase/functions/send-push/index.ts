@@ -18,10 +18,10 @@ const VAPID_PRIVATE = (Deno.env.get("VAPID_PRIVATE_KEY") || "")
   .replace(/\//g, "_")
   .replace(/=+$/g, "");
 
-const RAW_SUBJECT = (Deno.env.get("VAPID_SUBJECT") || "mailto:noreply@Bezli.cz").trim();
+const RAW_SUBJECT = (Deno.env.get("VAPID_SUBJECT") || "mailto:noreply@bezli.cz").trim();
 const VAPID_SUBJECT = /^(mailto:|https?:\/\/)/i.test(RAW_SUBJECT)
   ? RAW_SUBJECT
-  : `mailto:${RAW_SUBJECT.includes("@") ? RAW_SUBJECT : "noreply@Bezli.cz"}`;
+  : `mailto:${RAW_SUBJECT.includes("@") ? RAW_SUBJECT : "noreply@bezli.cz"}`;
 
 import { getInternalSecret } from "../_shared/internal-secret.ts";
 

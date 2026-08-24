@@ -794,7 +794,7 @@ const Auth = () => {
                 <a href="/gdpr" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
                   zpracováním osobních údajů
                 </a>
-                {" "}a podmínkami užívání služby Bezli.cz. *
+                {" "}a podmínkami užívání služby bezli.cz. *
               </Label>
             </div>
 

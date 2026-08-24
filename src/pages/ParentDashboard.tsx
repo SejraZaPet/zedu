@@ -341,7 +341,7 @@ const ParentDashboard = () => {
               const successPct = s && s.totalMaxScore > 0
                 ? Math.round((s.totalScore / s.totalMaxScore) * 100)
                 : null;
-              const hasOwnEmail = !!(student.email && !student.email.endsWith("@Bezli-student.cz"));
+              const hasOwnEmail = !!(student.email && !student.email.endsWith("@bezli-student.cz"));
               return (
                 <div key={student.id} className="bg-card border border-border rounded-xl p-5 shadow-sm flex flex-col">
                   <div className="flex items-start gap-3 mb-4">

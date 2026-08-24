@@ -138,7 +138,7 @@ async function buildCertificatePdf(params: {
   page.drawText(params.certificateNumber, { x: rightX - numValW, y: footerY, size: boxValueSize, font, color: rgb(INK.r, INK.g, INK.b) });
 
   // Bottom signature line label (issuer)
-  const issuer = "Bezli.cz · www.Bezli.cz";
+  const issuer = "bezli.cz · www.bezli.cz";
   const iw = font.widthOfTextAtSize(issuer, 10);
   page.drawText(issuer, { x: centerX - iw / 2, y: 60, size: 10, font, color: rgb(MUTED.r, MUTED.g, MUTED.b) });
 

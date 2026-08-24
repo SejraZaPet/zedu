@@ -58,7 +58,7 @@ function makeUid(ev: CalendarExportEvent): string {
   if (ev.uid) return ev.uid;
   const stamp = ev.start.getTime().toString(36);
   const rand = Math.random().toString(36).slice(2, 8);
-  return `${stamp}-${rand}@Bezli.cz`;
+  return `${stamp}-${rand}@bezli.cz`;
 }
 
 function buildVEvent(ev: CalendarExportEvent, dtstamp: string): string {

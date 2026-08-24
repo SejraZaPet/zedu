@@ -48,7 +48,7 @@ function buildIcs(events: EventRow[]): string {
     const end = e.end_time ? new Date(e.end_time) : new Date(start.getTime() + 60 * 60 * 1000)
     const lines = [
       'BEGIN:VEVENT',
-      fold(`UID:${e.id}@Bezli.cz`),
+      fold(`UID:${e.id}@bezli.cz`),
       `DTSTAMP:${dtstamp}`,
       `DTSTART:${toICSDate(start)}`,
       `DTEND:${toICSDate(end)}`,

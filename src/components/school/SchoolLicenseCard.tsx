@@ -105,7 +105,7 @@ const SchoolLicenseCard = ({ schoolId }: Props) => {
 
         <div className="flex gap-2 pt-2">
           <Button asChild variant="outline"><Link to="/licence">Zobrazit balíčky</Link></Button>
-          <Button asChild><a href="mailto:info@Bezli.cz?subject=Upgrade%20licence%20Bezli">Chci upgradovat</a></Button>
+          <Button asChild><a href="mailto:info@bezli.cz?subject=Upgrade%20licence%20Bezli">Chci upgradovat</a></Button>
         </div>
       </CardContent>
     </Card>

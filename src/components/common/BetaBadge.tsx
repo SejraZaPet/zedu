@@ -51,7 +51,7 @@ export function BetaBadge({ context, className }: BetaBadgeProps) {
     } catch (e) {
       toast({
         title: "Odeslání se nepodařilo",
-        description: "Zkuste to prosím znovu, nebo nám napište na info@Bezli.cz.",
+        description: "Zkuste to prosím znovu, nebo nám napište na info@bezli.cz.",
         variant: "destructive",
       });
       console.error("submit-feedback failed", e);

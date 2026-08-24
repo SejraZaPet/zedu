@@ -1,6 +1,6 @@
 /**
  * Verifies the behaviour around the three seeded test accounts:
- *   student@test.Bezli.cz, ucitel@test.Bezli.cz, admin@test.Bezli.cz
+ *   student@test.bezli.cz, ucitel@test.bezli.cz, admin@test.bezli.cz
  *
  * Confirms that when the AuthContext reports `status="approved"` (the value
  * stored in the DB for these accounts), <ProtectedRoute> renders its children
@@ -40,9 +40,9 @@ vi.mock("@/integrations/supabase/client", () => ({
 }));
 
 const TEST_ACCOUNTS = [
-  { email: "student@test.Bezli.cz", role: "user" },
-  { email: "ucitel@test.Bezli.cz", role: "teacher" },
-  { email: "admin@test.Bezli.cz", role: "admin" },
+  { email: "student@test.bezli.cz", role: "user" },
+  { email: "ucitel@test.bezli.cz", role: "teacher" },
+  { email: "admin@test.bezli.cz", role: "admin" },
 ];
 
 describe("Test accounts – ProtectedRoute", () => {

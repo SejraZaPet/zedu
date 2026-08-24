@@ -38,7 +38,7 @@ const FinalCTA = ({ props }: FinalCTAProps) => {
         <p className="text-xs text-muted-foreground mt-6">
           Máte otázky? Napište nám na{" "}
           <a href={`mailto:${p.contact_email ?? ""}`} className="hover:underline">
-            <Editable path="contact_email" value={p.contact_email} placeholder="email@Bezli.cz" />
+            <Editable path="contact_email" value={p.contact_email} placeholder="email@bezli.cz" />
           </a>
         </p>
       </div>

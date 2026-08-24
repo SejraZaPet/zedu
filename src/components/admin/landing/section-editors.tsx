@@ -333,7 +333,7 @@ function FinalCTAEditor({ value, onChange }: SectionEditorProps) {
         <TextField label="Text" value={p.secondary_link?.label ?? ""} onChange={(v) => update({ secondary_link: { ...p.secondary_link, label: v } })} />
         <TextField label="Odkaz" value={p.secondary_link?.href ?? ""} onChange={(v) => update({ secondary_link: { ...p.secondary_link, href: v } })} />
       </div>
-      <TextField label="Kontaktní e-mail" value={p.contact_email} onChange={(v) => update({ contact_email: v })} placeholder="info@Bezli.cz" />
+      <TextField label="Kontaktní e-mail" value={p.contact_email} onChange={(v) => update({ contact_email: v })} placeholder="info@bezli.cz" />
     </div>
   );
 }

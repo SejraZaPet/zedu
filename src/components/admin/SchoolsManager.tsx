@@ -361,7 +361,7 @@ const SchoolsManager = () => {
               {schools.map((s) => (
                 <TableRow key={s.id}>
                   <TableCell className="font-medium">{s.name}</TableCell>
-                  <TableCell>{s.subdomain ? `${s.subdomain}.Bezli.cz` : "—"}</TableCell>
+                  <TableCell>{s.subdomain ? `${s.subdomain}.bezli.cz` : "—"}</TableCell>
                   <TableCell className="text-right">{s.member_count}</TableCell>
                   <TableCell className="text-right">{s.admin_count}</TableCell>
                   <TableCell className="text-right">
@@ -408,7 +408,7 @@ const SchoolsManager = () => {
                     placeholder="zs-brno"
                     maxLength={32}
                   />
-                  <span className="text-sm text-muted-foreground whitespace-nowrap">.Bezli.cz</span>
+                  <span className="text-sm text-muted-foreground whitespace-nowrap">.bezli.cz</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
                   Malá písmena, číslice a pomlčky. Nechte prázdné, pokud subdoména není potřeba.

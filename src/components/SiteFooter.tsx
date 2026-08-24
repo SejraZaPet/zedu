@@ -52,11 +52,11 @@ const SiteFooter = () => {
           <div>
             <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4">Kontakt</h4>
             <a
-              href="mailto:info@Bezli.cz"
+              href="mailto:info@bezli.cz"
               className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
             >
               <Mail className="w-4 h-4" />
-              info@Bezli.cz
+              info@bezli.cz
             </a>
           </div>
         </div>

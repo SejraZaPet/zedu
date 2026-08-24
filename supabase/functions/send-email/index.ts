@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
     }
 
     const payload: Record<string, unknown> = {
-      from: "Bezli <noreply@Bezli.cz>",
+      from: "Bezli <noreply@bezli.cz>",
       to,
       subject,
       html,

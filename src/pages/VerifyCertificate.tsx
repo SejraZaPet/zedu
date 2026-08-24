@@ -96,7 +96,7 @@ export default function VerifyCertificate() {
       </main>
 
       <footer className="text-center text-xs text-muted-foreground p-4">
-        <Link to="/" className="hover:underline">Bezli.cz</Link>
+        <Link to="/" className="hover:underline">bezli.cz</Link>
       </footer>
     </div>
   );

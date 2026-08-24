@@ -19,7 +19,7 @@ export const XAPI_EVENT_MAP = {
           actor: {
             objectType: "Agent",
             account: {
-              homePage: "https://Bezli.cz",
+              homePage: "https://bezli.cz",
               name: "{{pseudonymId}}",
             },
           },
@@ -29,7 +29,7 @@ export const XAPI_EVENT_MAP = {
           },
           object: {
             objectType: "Activity",
-            id: "https://Bezli.cz/sessions/{{sessionId}}",
+            id: "https://bezli.cz/sessions/{{sessionId}}",
             definition: {
               type: "http://adlnet.gov/expapi/activities/meeting",
               name: { "cs-CZ": "{{sessionTitle}}", "en-US": "Live session" },
@@ -43,7 +43,7 @@ export const XAPI_EVENT_MAP = {
             contextActivities: {
               grouping: [
                 {
-                  id: "https://Bezli.cz/classes/{{classId}}",
+                  id: "https://bezli.cz/classes/{{classId}}",
                   definition: {
                     type: "http://adlnet.gov/expapi/activities/group",
                     name: { "cs-CZ": "{{className}}" },
@@ -52,8 +52,8 @@ export const XAPI_EVENT_MAP = {
               ],
             },
             extensions: {
-              "https://Bezli.cz/xapi/ext/joinMethod": "{{code|qr}}",
-              "https://Bezli.cz/xapi/ext/privacyMode": "{{anonymous|identified}}",
+              "https://bezli.cz/xapi/ext/joinMethod": "{{code|qr}}",
+              "https://bezli.cz/xapi/ext/privacyMode": "{{anonymous|identified}}",
             },
           },
         },
@@ -66,7 +66,7 @@ export const XAPI_EVENT_MAP = {
           actor: {
             objectType: "Agent",
             account: {
-              homePage: "https://Bezli.cz",
+              homePage: "https://bezli.cz",
               name: "{{pseudonymId}}",
             },
           },
@@ -76,13 +76,13 @@ export const XAPI_EVENT_MAP = {
           },
           object: {
             objectType: "Activity",
-            id: "https://Bezli.cz/activities/{{activityId}}",
+            id: "https://bezli.cz/activities/{{activityId}}",
             definition: {
               type: "http://adlnet.gov/expapi/activities/assessment",
               name: { "cs-CZ": "{{activityTitle}}" },
               description: { "cs-CZ": "{{activityType}} aktivita." },
               extensions: {
-                "https://Bezli.cz/xapi/ext/activityType": "{{quiz|matching|flashcards|...}}",
+                "https://bezli.cz/xapi/ext/activityType": "{{quiz|matching|flashcards|...}}",
               },
             },
           },
@@ -91,7 +91,7 @@ export const XAPI_EVENT_MAP = {
             contextActivities: {
               parent: [
                 {
-                  id: "https://Bezli.cz/lessons/{{lessonId}}",
+                  id: "https://bezli.cz/lessons/{{lessonId}}",
                   definition: {
                     type: "http://adlnet.gov/expapi/activities/lesson",
                     name: { "cs-CZ": "{{lessonTitle}}" },
@@ -100,7 +100,7 @@ export const XAPI_EVENT_MAP = {
               ],
             },
             extensions: {
-              "https://Bezli.cz/xapi/ext/attemptNumber": "{{attemptNumber}}",
+              "https://bezli.cz/xapi/ext/attemptNumber": "{{attemptNumber}}",
             },
           },
         },
@@ -113,7 +113,7 @@ export const XAPI_EVENT_MAP = {
           actor: {
             objectType: "Agent",
             account: {
-              homePage: "https://Bezli.cz",
+              homePage: "https://bezli.cz",
               name: "{{pseudonymId}}",
             },
           },
@@ -123,7 +123,7 @@ export const XAPI_EVENT_MAP = {
           },
           object: {
             objectType: "Activity",
-            id: "https://Bezli.cz/activities/{{activityId}}/questions/{{questionIndex}}",
+            id: "https://bezli.cz/activities/{{activityId}}/questions/{{questionIndex}}",
             definition: {
               type: "http://adlnet.gov/expapi/activities/cmi.interaction",
               interactionType: "{{choice|matching|true-false|fill-in|sequencing}}",
@@ -146,7 +146,7 @@ export const XAPI_EVENT_MAP = {
             contextActivities: {
               parent: [
                 {
-                  id: "https://Bezli.cz/activities/{{activityId}}",
+                  id: "https://bezli.cz/activities/{{activityId}}",
                   definition: {
                     type: "http://adlnet.gov/expapi/activities/assessment",
                   },
@@ -154,7 +154,7 @@ export const XAPI_EVENT_MAP = {
               ],
               grouping: [
                 {
-                  id: "https://Bezli.cz/sessions/{{sessionId}}",
+                  id: "https://bezli.cz/sessions/{{sessionId}}",
                   definition: {
                     type: "http://adlnet.gov/expapi/activities/meeting",
                   },
@@ -162,7 +162,7 @@ export const XAPI_EVENT_MAP = {
               ],
             },
             extensions: {
-              "https://Bezli.cz/xapi/ext/responseTimeMs": "{{responseTimeMs}}",
+              "https://bezli.cz/xapi/ext/responseTimeMs": "{{responseTimeMs}}",
             },
           },
         },
@@ -175,7 +175,7 @@ export const XAPI_EVENT_MAP = {
           actor: {
             objectType: "Agent",
             account: {
-              homePage: "https://Bezli.cz",
+              homePage: "https://bezli.cz",
               name: "{{pseudonymId}}",
             },
           },
@@ -185,7 +185,7 @@ export const XAPI_EVENT_MAP = {
           },
           object: {
             objectType: "Activity",
-            id: "https://Bezli.cz/lessons/{{lessonId}}",
+            id: "https://bezli.cz/lessons/{{lessonId}}",
             definition: {
               type: "http://adlnet.gov/expapi/activities/lesson",
               name: { "cs-CZ": "{{lessonTitle}}" },
@@ -206,7 +206,7 @@ export const XAPI_EVENT_MAP = {
             contextActivities: {
               grouping: [
                 {
-                  id: "https://Bezli.cz/subjects/{{subjectSlug}}",
+                  id: "https://bezli.cz/subjects/{{subjectSlug}}",
                   definition: {
                     type: "http://adlnet.gov/expapi/activities/course",
                     name: { "cs-CZ": "{{subjectLabel}}" },
@@ -215,9 +215,9 @@ export const XAPI_EVENT_MAP = {
               ],
             },
             extensions: {
-              "https://Bezli.cz/xapi/ext/activitiesCompleted": "{{count}}",
-              "https://Bezli.cz/xapi/ext/activitiesTotal": "{{total}}",
-              "https://Bezli.cz/xapi/ext/privacyMode": "{{anonymous|identified}}",
+              "https://bezli.cz/xapi/ext/activitiesCompleted": "{{count}}",
+              "https://bezli.cz/xapi/ext/activitiesTotal": "{{total}}",
+              "https://bezli.cz/xapi/ext/privacyMode": "{{anonymous|identified}}",
             },
           },
         },

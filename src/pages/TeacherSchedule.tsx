@@ -262,7 +262,7 @@ export default function TeacherSchedule() {
       const locationParts = [className, s.room].filter(Boolean) as string[];
 
       events.push({
-        uid: `slot-${s.id}@Bezli.cz`,
+        uid: `slot-${s.id}@bezli.cz`,
         title,
         start: dtStart,
         end: dtEnd,
