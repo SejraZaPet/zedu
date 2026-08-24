@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Menu, X, LogIn, LogOut, User, BookOpen, GraduationCap, LayoutDashboard, Users, BarChart3, HelpCircle, Layers, FolderOpen, Activity, TrendingUp, Gamepad2, Settings, CalendarDays, Brain, School, Image as ImageIcon, ShoppingBag, UserCheck, BookMarked, ClipboardList, Library, Zap, NotebookPen, Award } from "lucide-react";
-import logo from "@/assets/zedu-logo-new.png";
+import logoAsset from "@/assets/bezli-logo.png.asset.json";
+const logo = logoAsset.url;
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,

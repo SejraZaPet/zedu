@@ -1,4 +1,5 @@
-import logoUrl from "@/assets/zedu-logo-new.png";
+import logoAsset from "@/assets/bezli-logo.png.asset.json";
+const logoUrl = logoAsset.url;
 import { qrSvgDataUrl } from "@/lib/qr-inline";
 
 export interface LoginCardData {

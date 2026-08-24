@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Mail, Settings } from "lucide-react";
-import logo from "@/assets/zedu-logo-new.png";
+import logoAsset from "@/assets/bezli-logo.png.asset.json";
+const logo = logoAsset.url;
 import { useAuth } from "@/contexts/AuthContext";
 
 const SiteFooter = () => {
