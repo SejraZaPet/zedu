@@ -14,7 +14,7 @@ const SiteFooter = () => {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
           <div className="col-span-2">
             <div className="mb-3">
-              <img src={logo} alt="Zedu" className="h-9 w-auto" />
+              <img src={logo} alt="Bezli" className="h-9 w-auto" />
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed max-w-xs">
               Moderní nástroje pro vzdělávání.

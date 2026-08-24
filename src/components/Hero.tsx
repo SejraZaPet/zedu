@@ -60,7 +60,7 @@ const Hero = ({ props }: HeroProps) => {
           >
             <img
               src={logoUrl}
-              alt="ZEdu"
+              alt="Bezli"
               className="h-[28px] sm:h-[40px] md:h-[52px] lg:h-[60px] w-auto object-contain block"
             />
             {titleParts.map((part, i) => (
