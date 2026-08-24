@@ -35,7 +35,7 @@ export const sendWelcomeEmail = async (params: {
   const html = `
     <div style="font-family: Lato, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: ${NEUTRAL_TEXT}; background: ${NEUTRAL_SURFACE};">
       <div style="background: linear-gradient(135deg, ${BRAND_GRADIENT_FROM} 0%, ${BRAND_GRADIENT_TO} 100%); padding: 32px 24px; border-radius: 14px 14px 0 0; text-align: center;">
-        <img src="https://zedu.lovable.app/bezli-logo.png" alt="Bezli" style="height: 48px; width: auto; margin-bottom: 12px;" onerror="this.style.display='none'" />
+        <img src="https://bezli.cz/bezli-logo.png" alt="Bezli" style="height: 48px; width: auto; margin-bottom: 12px;" onerror="this.style.display='none'" />
         <h1 style="margin: 0; font-size: 28px; font-weight: 800; color: #ffffff; letter-spacing: -0.02em; font-family: Lato, Arial, sans-serif;">Bezli<span style="color: ${BRAND_ACCENT_LIGHT};">.cz</span></h1>
         <p style="margin: 8px 0 0; opacity: 0.95; color: #ffffff; font-size: 14px; font-family: Lato, Arial, sans-serif;">Moderní nástroje pro vzdělávání</p>
       </div>
