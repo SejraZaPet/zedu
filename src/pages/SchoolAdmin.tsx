@@ -20,6 +20,7 @@ import {
 import SchoolBrandingSection from "@/components/school/SchoolBrandingSection";
 import SchoolBulkImportCard from "@/components/school/SchoolBulkImportCard";
 import SchoolCreatorSalesCard from "@/components/school/SchoolCreatorSalesCard";
+import SchoolLeadershipCard from "@/components/school/SchoolLeadershipCard";
 import SchoolLicenseCard from "@/components/school/SchoolLicenseCard";
 
 interface SchoolRow { id: string; name: string; registration_code: string | null; }
@@ -384,6 +385,7 @@ const SchoolAdmin = () => {
 
           <TabsContent value="teachers">
             <MembersTable rows={teachers} onToggleRole={toggleRole} onRemove={setPendingRemove} kind="teacher" />
+            <SchoolLeadershipCard schoolId={school.id} />
           </TabsContent>
           <TabsContent value="students">
             <MembersTable rows={students} onToggleRole={toggleRole} onRemove={setPendingRemove} kind="user" />

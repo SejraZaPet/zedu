@@ -35,6 +35,7 @@ import {
   CheckCircle2,
   ClipboardList,
   FileDown,
+  Pencil,
   Plus,
   Trash2,
   Users,
@@ -91,6 +92,7 @@ interface MeetingTask {
   assigned_to: string;
   task: string;
   due_date: string | null;
+  todo_id: string | null;
 }
 
 interface TaskDraft {
@@ -195,6 +197,15 @@ const SchoolMeetings = () => {
     task: "",
     due_date: "",
   });
+  const [isDelegate, setIsDelegate] = useState(false);
+  const [completions, setCompletions] = useState<Record<string, boolean>>({});
+  const [editOpen, setEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState({
+    type: "pedagogicka" as MeetingType,
+    title: "",
+    meeting_date: "",
+    content: "",
+  });
 
   const updateDraftTask = (index: number, patch: Partial<TaskDraft>) =>
     setDraftTasks((prev) => prev.map((d, i) => (i === index ? { ...d, ...patch } : d)));
@@ -257,7 +268,100 @@ const SchoolMeetings = () => {
 
   const selected = meetings.find((m) => m.id === selectedId) || null;
   const canManage =
-    !!selected && (selected.author_id === user?.id || realRole === "school_admin" || realRole === "admin");
+    !!selected &&
+    (selected.author_id === user?.id ||
+      realRole === "school_admin" ||
+      realRole === "admin" ||
+      isDelegate);
+
+  /** Úkoly seskupené podle zadání — jeden úkol může mít více adresátů. */
+  const groupedTasks = useMemo(() => {
+    const map = new Map<string, { task: string; due_date: string | null; rows: MeetingTask[] }>();
+    tasks.forEach((t) => {
+      const key = `${t.task}::${t.due_date ?? ""}`;
+      const g = map.get(key) ?? { task: t.task, due_date: t.due_date, rows: [] };
+      g.rows.push(t);
+      map.set(key, g);
+    });
+    return Array.from(map.values());
+  }, [tasks]);
+
+  // Zjisti, zda má přihlášený uživatel delegovaná práva vedení školy
+  useEffect(() => {
+    if (!user || !schoolId) {
+      setIsDelegate(false);
+      return;
+    }
+    let cancelled = false;
+    void supabase
+      .from("school_leadership_delegates")
+      .select("id")
+      .eq("school_id", schoolId)
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!cancelled) setIsDelegate(!!data);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, schoolId]);
+
+  // Stav splnění úkolů — načítá se jen pro vedení školy (funkce sama oprávnění ověřuje)
+  useEffect(() => {
+    if (!selectedId || !canManage) {
+      setCompletions({});
+      return;
+    }
+    let cancelled = false;
+    void supabase.rpc("meeting_task_completions", { _meeting_id: selectedId }).then(({ data }) => {
+      if (cancelled) return;
+      const map: Record<string, boolean> = {};
+      (data ?? []).forEach((r: { task_id: string; done: boolean }) => {
+        map[r.task_id] = r.done;
+      });
+      setCompletions(map);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedId, canManage]);
+
+  const openEdit = () => {
+    if (!selected) return;
+    setEditForm({
+      type: selected.type,
+      title: selected.title,
+      meeting_date: selected.meeting_date,
+      content: selected.content ?? "",
+    });
+    setEditOpen(true);
+  };
+
+  const saveEdit = async () => {
+    if (!selected || !editForm.title.trim()) {
+      toast({ title: "Zadejte název porady", variant: "destructive" });
+      return;
+    }
+    setSaving(true);
+    const { error } = await supabase
+      .from("school_meetings")
+      .update({
+        type: editForm.type,
+        title: editForm.title.trim(),
+        meeting_date: editForm.meeting_date,
+        content: editForm.content || null,
+      })
+      .eq("id", selected.id);
+    setSaving(false);
+    if (error) {
+      toast({ title: "Uložení selhalo", description: error.message, variant: "destructive" });
+      return;
+    }
+    setEditOpen(false);
+    toast({ title: "Zápis byl upraven" });
+    await fetchMeetings();
+  };
   const detailPresentIds = useMemo(
     () => attendees.filter((a) => a.attended).map((a) => a.teacher_id),
     [attendees],
@@ -519,6 +623,12 @@ const SchoolMeetings = () => {
                   {isExporting ? "Generuji..." : "Export do PDF"}
                 </Button>
                 {canManage && (
+                  <Button variant="outline" className="gap-2" onClick={openEdit}>
+                    <Pencil className="w-4 h-4" />
+                    Upravit zápis
+                  </Button>
+                )}
+                {canManage && (
                   <Button
                     variant="outline"
                     className="gap-2 text-red-500"
@@ -609,39 +719,131 @@ const SchoolMeetings = () => {
                     </Button>
                   )}
                 </CardHeader>
-                <CardContent className="space-y-2">
-                  {tasks.length === 0 ? (
+                <CardContent className="space-y-3">
+                  {groupedTasks.length === 0 ? (
                     <p className="text-sm text-muted-foreground">Žádné úkoly.</p>
                   ) : (
-                    tasks.map((t) => (
-                      <div key={t.id} className="flex items-start justify-between gap-2 text-sm">
-                        <div>
-                          <p>{t.task}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {nameOf(t.assigned_to)}
-                            {t.due_date
-                              ? ` · do ${new Date(t.due_date).toLocaleDateString("cs-CZ")}`
-                              : ""}
-                          </p>
+                    groupedTasks.map((g, gi) => {
+                      const doneCount = g.rows.filter((r) => completions[r.id]).length;
+                      return (
+                        <div key={gi} className="text-sm border-b border-border last:border-0 pb-3 last:pb-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p>{g.task}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {g.due_date
+                                  ? `do ${new Date(g.due_date).toLocaleDateString("cs-CZ")} · `
+                                  : ""}
+                                {g.rows.length > 1 ? `přiděleno ${g.rows.length} učitelům` : "přiděleno 1 učiteli"}
+                                {canManage && g.rows.length > 0 && completions[g.rows[0].id] !== undefined && (
+                                  <> · splněno {doneCount}/{g.rows.length}</>
+                                )}
+                              </p>
+                            </div>
+                          </div>
+                          {canManage && (
+                            <div className="mt-2 space-y-1 pl-3 border-l-2 border-border">
+                              {g.rows.map((t) => (
+                                <div key={t.id} className="flex items-center justify-between gap-2 text-xs">
+                                  <span className="flex items-center gap-2">
+                                    {nameOf(t.assigned_to)}
+                                    {completions[t.id] !== undefined &&
+                                      (completions[t.id] ? (
+                                        <Badge className="gap-1 text-[10px] px-1.5 py-0">
+                                          <CheckCircle2 className="w-3 h-3" /> Splněno
+                                        </Badge>
+                                      ) : (
+                                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                                          Čeká
+                                        </Badge>
+                                      ))}
+                                  </span>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 w-6 p-0 text-red-500"
+                                    onClick={() => removeTask(t.id)}
+                                    aria-label={`Odebrat úkol učiteli ${nameOf(t.assigned_to)}`}
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                        {canManage && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 w-7 p-0 text-red-500"
-                            onClick={() => removeTask(t.id)}
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
-                        )}
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </CardContent>
               </Card>
             </div>
           </>
         )}
+
+        <Dialog open={editOpen} onOpenChange={setEditOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Upravit zápis z porady</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 max-h-[65vh] overflow-y-auto pr-1">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Typ *</Label>
+                  <Select
+                    value={editForm.type}
+                    onValueChange={(v) => setEditForm({ ...editForm, type: v as MeetingType })}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {MEETING_TYPES.map((t) => (
+                        <SelectItem key={t.value} value={t.value}>
+                          {t.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Datum *</Label>
+                  <Input
+                    type="date"
+                    value={editForm.meeting_date}
+                    onChange={(e) => setEditForm({ ...editForm, meeting_date: e.target.value })}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label>Název *</Label>
+                <Input
+                  value={editForm.title}
+                  onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label>Obsah zápisu</Label>
+                <Textarea
+                  value={editForm.content}
+                  onChange={(e) => setEditForm({ ...editForm, content: e.target.value })}
+                  rows={8}
+                  className="mt-1"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditOpen(false)}>
+                Zrušit
+              </Button>
+              <Button onClick={saveEdit} disabled={saving}>
+                {saving ? "Ukládám..." : "Uložit změny"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogContent className="max-w-lg">

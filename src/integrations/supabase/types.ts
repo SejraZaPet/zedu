@@ -4091,6 +4091,45 @@ export type Database = {
           },
         ]
       }
+      school_leadership_delegates: {
+        Row: {
+          created_at: string
+          granted_by: string | null
+          id: string
+          school_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          school_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          school_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "school_leadership_delegates_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "school_leadership_delegates_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       school_license_reminders: {
         Row: {
           created_at: string
@@ -7141,6 +7180,10 @@ export type Database = {
         Args: { _school_id: string; _user_id: string }
         Returns: boolean
       }
+      is_school_leadership: {
+        Args: { _school_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_subject_collaborator_of: {
         Args: { _owner_id: string; _subject_id: string; _user_id: string }
         Returns: boolean
@@ -7182,6 +7225,13 @@ export type Database = {
           active_subscriptions: number
           items_for_sale: number
           monthly_downloads: number
+        }[]
+      }
+      meeting_task_completions: {
+        Args: { _meeting_id: string }
+        Returns: {
+          done: boolean
+          task_id: string
         }[]
       }
       my_school_sale_settings: {
