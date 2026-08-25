@@ -623,6 +623,12 @@ const SchoolMeetings = () => {
                   {isExporting ? "Generuji..." : "Export do PDF"}
                 </Button>
                 {canManage && (
+                  <Button variant="outline" className="gap-2" onClick={openEdit}>
+                    <Pencil className="w-4 h-4" />
+                    Upravit zápis
+                  </Button>
+                )}
+                {canManage && (
                   <Button
                     variant="outline"
                     className="gap-2 text-red-500"
