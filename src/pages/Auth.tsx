@@ -222,7 +222,7 @@ const Auth = () => {
     }
 
     if (!usedTokenHash) {
-      const { error: authError } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
+      const authError = await signInWithRetry(loginEmail, password);
 
       if (authError) {
         setError(describeAuthError(authError));
