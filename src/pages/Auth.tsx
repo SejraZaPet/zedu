@@ -179,10 +179,11 @@ const Auth = () => {
           type: "magiclink",
         });
         if (verifyError) {
-          setError("Nesprávné přihlašovací údaje.");
+          setError(describeAuthError(verifyError));
           setLoading(false);
           return;
         }
+
         usedTokenHash = true;
       }
     }
