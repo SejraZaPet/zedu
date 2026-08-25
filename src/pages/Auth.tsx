@@ -192,14 +192,11 @@ const Auth = () => {
       const { error: authError } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
 
       if (authError) {
-        if (authError.message?.toLowerCase().includes("email not confirmed")) {
-          setError("Nejprve potvrďte svůj e-mail prostřednictvím odkazu, který jsme vám poslali.");
-        } else {
-          setError("Nesprávné přihlašovací údaje.");
-        }
+        setError(describeAuthError(authError));
         setLoading(false);
         return;
       }
+
     }
 
     // Check profile status after successful auth
