@@ -118,10 +118,38 @@ const Auth = () => {
     }
   }, [authLoading, isLoggedIn, authRole, navigate, redirectTo, staffLoading, isStaff]);
 
+  // Rozlišuje dočasný výpadek serveru od skutečně špatných údajů,
+  // aby uživatel nehledal chybu v hesle, když je problém na straně serveru.
+  const describeAuthError = (err: unknown): string => {
+    const anyErr = err as { status?: number; message?: string; name?: string } | null;
+    const status = anyErr?.status;
+    const msg = (anyErr?.message || "").toLowerCase();
+    const serverIssue =
+      (typeof status === "number" && status >= 500) ||
+      status === 429 ||
+      status === 0 ||
+      msg.includes("timeout") ||
+      msg.includes("timed out") ||
+      msg.includes("deadline") ||
+      msg.includes("failed to fetch") ||
+      msg.includes("network") ||
+      msg.includes("unexpected_failure") ||
+      msg.includes("request_timeout") ||
+      msg.includes("gateway");
+    if (serverIssue) {
+      return "Přihlašovací server je momentálně přetížený nebo nedostupný. Vaše heslo je pravděpodobně správné — zkuste to prosím znovu za minutu.";
+    }
+    if (msg.includes("email not confirmed")) {
+      return "Nejprve potvrďte svůj e-mail prostřednictvím odkazu, který jsme vám poslali.";
+    }
+    return "Nesprávné přihlašovací údaje.";
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
+
 
     let loginEmail = email.trim();
     let usedTokenHash = false;
