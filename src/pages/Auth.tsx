@@ -166,10 +166,11 @@ const Auth = () => {
         return;
       }
       if (lookupError || !lookupData || !lookupData.email) {
-        setError("Nesprávné přihlašovací údaje.");
+        setError(lookupError ? describeAuthError(lookupError) : "Nesprávné přihlašovací údaje.");
         setLoading(false);
         return;
       }
+
       loginEmail = lookupData.email;
 
       if (lookupData.token_hash) {
