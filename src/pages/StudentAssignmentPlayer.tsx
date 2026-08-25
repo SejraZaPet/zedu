@@ -14,7 +14,7 @@ import AttachmentsUploader from "@/components/assignments/AttachmentsUploader";
 import type { WorksheetSpec } from "@/lib/worksheet-spec";
 import { useLockdownMode } from "@/hooks/useLockdownMode";
 import ReadAloudButton from "@/components/a11y/ReadAloudButton";
-import ZedAiTutorChat from "@/components/ZedAiTutorChat";
+import BezlaiTutorChat from "@/components/BezlaiTutorChat";
 
 interface AssignmentData {
   id: string;
@@ -600,7 +600,7 @@ const StudentAssignmentPlayer = () => {
         )}
       </main>
       {assignment && !isReadOnly && (
-        <ZedAiTutorChat
+        <BezlaiTutorChat
           question={`${assignment.title}${assignment.description ? `\n\n${assignment.description}` : ""}`}
           contextKey={assignment.id}
         />

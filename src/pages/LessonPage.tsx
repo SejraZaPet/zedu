@@ -12,7 +12,7 @@ import { LessonBlock } from "@/components/LessonBlockRenderer";
 import ReadAloudButton from "@/components/a11y/ReadAloudButton";
 import { Button } from "@/components/ui/button";
 import LessonEditorSheet from "@/components/LessonEditorSheet";
-import ZedAiTutorChat from "@/components/ZedAiTutorChat";
+import BezlaiTutorChat from "@/components/BezlaiTutorChat";
 import { useActivityTracking } from "@/hooks/useActivityTracking";
 
 // Extract plain readable text from lesson blocks for TTS.
@@ -271,7 +271,7 @@ const LessonPage = () => {
 
       {/* Bezlai tutor – jen pro žáky (ne pro učitele/adminy) */}
       {!isTeacherOrAdmin && lesson && (
-        <ZedAiTutorChat
+        <BezlaiTutorChat
           question={`Lekce: ${lesson.title}\n\nPředmět: ${subjectId ?? ""}`}
           subject={subjectId}
           contextKey={lesson.id}

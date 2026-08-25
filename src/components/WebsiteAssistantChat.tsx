@@ -155,7 +155,7 @@ export default function WebsiteAssistantChat({ className }: { className?: string
         title="Zeptat se Bezlai"
       >
         <span className="relative flex items-center justify-center w-full h-full">
-          {/* Zedíkova zjednodušená hlava – gumdrop tvar v brand gradientu */}
+          {/* Bezlíkova zjednodušená hlava – gumdrop tvar v brand gradientu */}
           <svg
             viewBox="0 0 48 48"
             className="w-8 h-8"

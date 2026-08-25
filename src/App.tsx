@@ -77,7 +77,7 @@ import TeacherMethods from "./pages/TeacherMethods";
 import TeacherCurriculumPlans from "./pages/TeacherCurriculumPlans";
 import TeacherRubrics from "./pages/TeacherRubrics";
 import TeacherQuestionBank from "./pages/TeacherQuestionBank";
-import TeacherZedStart from "./pages/TeacherZedStart";
+import TeacherBezliStart from "./pages/TeacherBezliStart";
 import StudentMethods from "./pages/StudentMethods";
 import StudentPractice from "./pages/StudentPractice";
 import SchoolAdmin from "./pages/SchoolAdmin";
@@ -190,7 +190,7 @@ const App = () => (
             <Route path="/ucitel/rubriky" element={<ProtectedRoute><TeacherRubrics /></ProtectedRoute>} />
             <Route path="/ucitel/banka-otazek" element={<ProtectedRoute><TeacherQuestionBank /></ProtectedRoute>} />
             <Route path="/ucitel/skupiny" element={<ProtectedRoute><TeacherSubjectGroups /></ProtectedRoute>} />
-            <Route path="/ucitel/zedstart" element={<ProtectedRoute><TeacherZedStart /></ProtectedRoute>} />
+            <Route path="/ucitel/bezlistart" element={<ProtectedRoute><TeacherBezliStart /></ProtectedRoute>} />
 
             <Route path="/student/metody" element={<ProtectedRoute><StudentMethods /></ProtectedRoute>} />
             <Route path="/student/metody/:slug/procviceni" element={<ProtectedRoute><StudentPractice /></ProtectedRoute>} />
