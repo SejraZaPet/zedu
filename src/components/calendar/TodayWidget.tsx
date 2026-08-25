@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-// quick-add dialog rendered at component root
 import { useNavigate } from "react-router-dom";
 import { CalendarDays, ClipboardList, ArrowRight, Plus } from "lucide-react";
 import { format, startOfDay, endOfDay, addDays, differenceInCalendarDays, isSameDay } from "date-fns";
