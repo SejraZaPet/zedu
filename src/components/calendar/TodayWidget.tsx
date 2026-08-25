@@ -135,9 +135,14 @@ const TodayWidget = ({ role }: Props) => {
     return "future";
   };
 
-  const handleAssignmentClick = (id: string) => {
-    if (role === "student") navigate(`/student/ulohy/${id}`);
-    else navigate("/ucitel/ulohy");
+  const handleAssignmentClick = (item: UpcomingAssignment) => {
+    if (item.kind === "todo") {
+      navigate("/todo");
+    } else if (role === "student") {
+      navigate(`/student/ulohy/${item.id}`);
+    } else {
+      navigate("/ucitel/ulohy");
+    }
   };
 
   const visibleAssignments = upcomingAssignments.slice(0, 5);
@@ -252,13 +257,18 @@ const TodayWidget = ({ role }: Props) => {
               return (
                 <li key={a.id}>
                   <button
-                    onClick={() => handleAssignmentClick(a.id)}
+                    onClick={() => handleAssignmentClick(a)}
                     className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-muted/50 transition-colors text-left"
                   >
                     <span className="shrink-0">
                       {days <= 0 ? "🔴" : days === 1 ? "🟠" : "⚪"}
                     </span>
                     <span className="flex-1 truncate">{a.title}</span>
+                    {a.kind === "todo" && (
+                      <Badge variant="secondary" className="text-[11px] shrink-0">
+                        Můj úkol
+                      </Badge>
+                    )}
                     <span
                       className={`text-xs shrink-0 ${colorClass}`}
                       style={days === 1 ? { color: "#ea580c" } : undefined}
