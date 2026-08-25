@@ -11,7 +11,7 @@ interface ChatMsg {
   content: string;
 }
 
-interface ZedAiTutorChatProps {
+interface BezlaiTutorChatProps {
   /** Aktuální otázka / zadání / nadpis lekce – dá se AI jako kontext. */
   question: string;
   subject?: string;
@@ -31,12 +31,12 @@ const initialMessages = (): ChatMsg[] => [
   { role: "assistant", content: INITIAL_GREETING },
 ];
 
-export default function ZedAiTutorChat({
+export default function BezlaiTutorChat({
   question,
   subject,
   contextKey,
   className,
-}: ZedAiTutorChatProps) {
+}: BezlaiTutorChatProps) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMsg[]>(initialMessages);
   const [input, setInput] = useState("");

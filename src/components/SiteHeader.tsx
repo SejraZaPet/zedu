@@ -49,7 +49,7 @@ const TEACHER_MENU_GROUPS: TeacherMenuGroup[] = [
     items: [
       { label: "Rubriky hodnocení", href: "/ucitel/rubriky", icon: ClipboardList },
       { label: "Banka otázek", href: "/ucitel/banka-otazek", icon: Library },
-      { label: "ZedStart", href: "/ucitel/zedstart", icon: Zap },
+      { label: "BezliStart", href: "/ucitel/bezlistart", icon: Zap },
     ],
   },
   {

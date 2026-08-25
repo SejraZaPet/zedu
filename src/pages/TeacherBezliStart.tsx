@@ -27,10 +27,10 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { ArrowLeft, Plus, Pencil, Trash2, Zap, Loader2, Clock } from "lucide-react";
 
-export const ZEDSTART_TAGLINE =
-  "ZedStart — krátká aktivita na rozproudění myšlení, ideální na začátek hodiny";
+export const BEZLISTART_TAGLINE =
+  "BezliStart — krátká aktivita na rozproudění myšlení, ideální na začátek hodiny";
 
-export const ZEDSTART_CATEGORIES = [
+export const BEZLISTART_CATEGORIES = [
   { value: "vizualni", label: "Vizuální" },
   { value: "verbalni", label: "Verbální" },
   { value: "pohybova", label: "Pohybová" },
@@ -39,7 +39,7 @@ export const ZEDSTART_CATEGORIES = [
 ] as const;
 
 export const zedstartCategoryLabel = (value?: string | null) =>
-  ZEDSTART_CATEGORIES.find((c) => c.value === value)?.label ?? "Bez kategorie";
+  BEZLISTART_CATEGORIES.find((c) => c.value === value)?.label ?? "Bez kategorie";
 
 interface Prompt {
   id: string;
@@ -49,7 +49,7 @@ interface Prompt {
   created_at: string;
 }
 
-const TeacherZedStart = () => {
+const TeacherBezliStart = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [prompts, setPrompts] = useState<Prompt[]>([]);
@@ -148,9 +148,9 @@ const TeacherZedStart = () => {
 
         <header className="mb-6">
           <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Zap className="w-7 h-7 text-primary" /> ZedStart
+            <Zap className="w-7 h-7 text-primary" /> BezliStart
           </h1>
-          <p className="text-muted-foreground mt-1">{ZEDSTART_TAGLINE}</p>
+          <p className="text-muted-foreground mt-1">{BEZLISTART_TAGLINE}</p>
         </header>
 
         <div className="flex flex-wrap items-center gap-3 mb-6">
@@ -160,7 +160,7 @@ const TeacherZedStart = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Všechny kategorie</SelectItem>
-              {ZEDSTART_CATEGORIES.map((c) => (
+              {BEZLISTART_CATEGORIES.map((c) => (
                 <SelectItem key={c.value} value={c.value}>
                   {c.label}
                 </SelectItem>
@@ -179,7 +179,7 @@ const TeacherZedStart = () => {
         ) : filtered.length === 0 ? (
           <Card>
             <CardContent className="py-10 text-center text-muted-foreground text-sm">
-              Zatím tu nemáte žádné ZedStart aktivity. Přidejte první zadání – pak ji vložíte do živé
+              Zatím tu nemáte žádné BezliStart aktivity. Přidejte první zadání – pak ji vložíte do živé
               prezentace jedním klikem.
             </CardContent>
           </Card>
@@ -214,7 +214,7 @@ const TeacherZedStart = () => {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editing ? "Upravit aktivitu" : "Nová ZedStart aktivita"}</DialogTitle>
+            <DialogTitle>{editing ? "Upravit aktivitu" : "Nová BezliStart aktivita"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">
@@ -224,7 +224,7 @@ const TeacherZedStart = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {ZEDSTART_CATEGORIES.map((c) => (
+                  {BEZLISTART_CATEGORIES.map((c) => (
                     <SelectItem key={c.value} value={c.value}>
                       {c.label}
                     </SelectItem>
@@ -271,4 +271,4 @@ const TeacherZedStart = () => {
   );
 };
 
-export default TeacherZedStart;
+export default TeacherBezliStart;

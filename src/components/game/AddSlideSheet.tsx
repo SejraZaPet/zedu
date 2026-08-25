@@ -18,11 +18,11 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { fetchGameTemplates, purposeLabel, type GameTemplate } from "@/lib/game-templates";
 
-type AddKind = "menu" | "text" | "mcq" | "wall" | "wordcloud" | "exit" | "teams" | "differentiated" | "escape" | "library" | "zedstart";
+type AddKind = "menu" | "text" | "mcq" | "wall" | "wordcloud" | "exit" | "teams" | "differentiated" | "escape" | "library" | "bezlistart";
 
-const ZEDSTART_TAGLINE = "Krátká aktivita na rozproudění myšlení";
+const BEZLISTART_TAGLINE = "Krátká aktivita na rozproudění myšlení";
 
-const ZEDSTART_CATEGORY_LABELS: Record<string, string> = {
+const BEZLISTART_CATEGORY_LABELS: Record<string, string> = {
   vizualni: "Vizuální",
   verbalni: "Verbální",
   pohybova: "Pohybová",
@@ -30,7 +30,7 @@ const ZEDSTART_CATEGORY_LABELS: Record<string, string> = {
   jina: "Jiná",
 };
 
-interface ZedStartPrompt {
+interface BezliStartPrompt {
   id: string;
   category: string | null;
   prompt_text: string;
@@ -176,7 +176,7 @@ export function AddSlideSheet({
 }: AddSlideSheetProps) {
   const navigate = useNavigate();
   const [kind, setKind] = useState<AddKind>("menu");
-  const [zsPrompts, setZsPrompts] = useState<ZedStartPrompt[]>([]);
+  const [zsPrompts, setZsPrompts] = useState<BezliStartPrompt[]>([]);
   const [zsLoading, setZsLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [templates, setTemplates] = useState<GameTemplate[]>([]);
@@ -318,42 +318,42 @@ export function AddSlideSheet({
   };
 
 
-  const fetchZedStartPrompts = async (): Promise<ZedStartPrompt[]> => {
+  const fetchBezliStartPrompts = async (): Promise<BezliStartPrompt[]> => {
     const { data, error } = await supabase
       .from("zedstart_prompts")
       .select("id, category, prompt_text, suggested_duration_minutes")
       .order("created_at", { ascending: false });
     if (error) throw error;
-    return (data as ZedStartPrompt[]) ?? [];
+    return (data as BezliStartPrompt[]) ?? [];
   };
 
-  const insertZedStart = (prompt: ZedStartPrompt) =>
+  const insertBezliStart = (prompt: BezliStartPrompt) =>
     appendAndJump(buildWallSlide(prompt.prompt_text, true));
 
-  const startZedStartRandom = async () => {
+  const startBezliStartRandom = async () => {
     setZsLoading(true);
     try {
-      const list = await fetchZedStartPrompts();
+      const list = await fetchBezliStartPrompts();
       setZsPrompts(list);
       if (list.length === 0) {
-        setKind("zedstart");
+        setKind("bezlistart");
         return;
       }
-      insertZedStart(list[Math.floor(Math.random() * list.length)]);
+      insertBezliStart(list[Math.floor(Math.random() * list.length)]);
     } catch (e: any) {
-      toast.error(e?.message || "Nepodařilo se načíst ZedStart aktivity.");
+      toast.error(e?.message || "Nepodařilo se načíst BezliStart aktivity.");
     } finally {
       setZsLoading(false);
     }
   };
 
-  const openZedStartPicker = async () => {
-    setKind("zedstart");
+  const openBezliStartPicker = async () => {
+    setKind("bezlistart");
     setZsLoading(true);
     try {
-      setZsPrompts(await fetchZedStartPrompts());
+      setZsPrompts(await fetchBezliStartPrompts());
     } catch (e: any) {
-      toast.error(e?.message || "Nepodařilo se načíst ZedStart aktivity.");
+      toast.error(e?.message || "Nepodařilo se načíst BezliStart aktivity.");
     } finally {
       setZsLoading(false);
     }
@@ -505,7 +505,7 @@ export function AddSlideSheet({
               {kind === "differentiated" && "Diferencovaná aktivita"}
               {kind === "escape" && "Úniková hra"}
               {kind === "library" && "Vložit z knihovny her"}
-              {kind === "zedstart" && "ZedStart"}
+              {kind === "bezlistart" && "BezliStart"}
             </SheetTitle>
           </div>
           <SheetDescription>
@@ -631,7 +631,7 @@ export function AddSlideSheet({
                 variant="outline"
                 className="justify-start h-auto py-3"
                 disabled={busy || zsLoading}
-                onClick={startZedStartRandom}
+                onClick={startBezliStartRandom}
               >
                 {zsLoading ? (
                   <Loader2 className="w-5 h-5 mr-3 animate-spin text-primary" />
@@ -639,8 +639,8 @@ export function AddSlideSheet({
                   <Zap className="w-5 h-5 mr-3 text-primary" />
                 )}
                 <div className="text-left">
-                  <p className="font-medium">ZedStart</p>
-                  <p className="text-xs text-muted-foreground">{ZEDSTART_TAGLINE}</p>
+                  <p className="font-medium">BezliStart</p>
+                  <p className="text-xs text-muted-foreground">{BEZLISTART_TAGLINE}</p>
                 </div>
               </Button>
               <Button
@@ -648,9 +648,9 @@ export function AddSlideSheet({
                 size="sm"
                 className="justify-start -mt-1 text-xs text-muted-foreground"
                 disabled={busy || zsLoading}
-                onClick={openZedStartPicker}
+                onClick={openBezliStartPicker}
               >
-                Vybrat konkrétní ZedStart…
+                Vybrat konkrétní BezliStart…
               </Button>
               <Button
                 variant="outline"
@@ -702,9 +702,9 @@ export function AddSlideSheet({
 
 
 
-          {kind === "zedstart" && (
+          {kind === "bezlistart" && (
             <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">{ZEDSTART_TAGLINE}</p>
+              <p className="text-sm text-muted-foreground">{BEZLISTART_TAGLINE}</p>
               {zsLoading ? (
                 <p className="text-sm text-muted-foreground flex items-center gap-2">
                   <Loader2 className="w-4 h-4 animate-spin" /> Načítání aktivit…
@@ -712,17 +712,17 @@ export function AddSlideSheet({
               ) : zsPrompts.length === 0 ? (
                 <div className="space-y-3">
                   <p className="text-sm text-muted-foreground">
-                    Zatím nemáte žádné ZedStart aktivity – přidejte je na /ucitel/zedstart.
+                    Zatím nemáte žádné BezliStart aktivity – přidejte je na /ucitel/bezlistart.
                   </p>
                   <Button
                     variant="outline"
                     className="w-full"
                     onClick={() => {
                       close();
-                      navigate("/ucitel/zedstart");
+                      navigate("/ucitel/bezlistart");
                     }}
                   >
-                    Přejít na ZedStart
+                    Přejít na BezliStart
                   </Button>
                 </div>
               ) : (
@@ -732,12 +732,12 @@ export function AddSlideSheet({
                     variant="outline"
                     className="justify-start h-auto py-3 w-full whitespace-normal"
                     disabled={busy}
-                    onClick={() => insertZedStart(p)}
+                    onClick={() => insertBezliStart(p)}
                   >
                     <div className="text-left">
                       <p className="font-medium">{p.prompt_text}</p>
                       <p className="text-xs text-muted-foreground">
-                        {ZEDSTART_CATEGORY_LABELS[p.category ?? "jina"] ?? "Jiná"} ·{" "}
+                        {BEZLISTART_CATEGORY_LABELS[p.category ?? "jina"] ?? "Jiná"} ·{" "}
                         {p.suggested_duration_minutes} min
                       </p>
                     </div>
