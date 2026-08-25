@@ -16,6 +16,7 @@ interface UpcomingAssignment {
   id: string;
   title: string;
   deadline: string;
+  kind: "assignment" | "todo";
 }
 
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -65,6 +66,8 @@ const TodayWidget = ({ role }: Props) => {
       const fromIso = new Date().toISOString();
       const toIso = addDays(today, 7).toISOString();
 
+      const { data: { user } } = await supabase.auth.getUser();
+
       let assignmentsQuery = supabase
         .from("assignments")
         .select("id, title, deadline, teacher_id, status")
@@ -75,17 +78,46 @@ const TodayWidget = ({ role }: Props) => {
 
       if (role === "student") {
         assignmentsQuery = assignmentsQuery.eq("status", "published");
-      } else {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) assignmentsQuery = assignmentsQuery.eq("teacher_id", user.id);
+      } else if (user) {
+        assignmentsQuery = assignmentsQuery.eq("teacher_id", user.id);
       }
 
-      const assignmentsRes = await assignmentsQuery;
-      const assignments = (assignmentsRes.data ?? []) as UpcomingAssignment[];
+      // Osobní úkoly (vč. úkolů z porad) s termínem v příštích 7 dnech
+      const todosQuery = user
+        ? supabase
+            .from("todos")
+            .select("id, title, due_date")
+            .eq("user_id", user.id)
+            .not("due_date", "is", null)
+            .gte("due_date", format(today, "yyyy-MM-dd"))
+            .lte("due_date", format(addDays(today, 7), "yyyy-MM-dd"))
+            .neq("status", "done")
+        : null;
+
+      const [assignmentsRes, todosRes] = await Promise.all([
+        assignmentsQuery,
+        todosQuery ?? Promise.resolve({ data: [] as any[] }),
+      ]);
+
+      const assignments: UpcomingAssignment[] = ((assignmentsRes.data ?? []) as any[]).map(
+        (a: any) => ({ id: a.id, title: a.title, deadline: a.deadline, kind: "assignment" as const }),
+      );
+      const todos: UpcomingAssignment[] = (((todosRes as any).data ?? []) as any[]).map(
+        (t: any) => ({
+          id: t.id,
+          title: t.title,
+          deadline: `${t.due_date}T09:00:00`,
+          kind: "todo" as const,
+        }),
+      );
+
+      const combined = [...assignments, ...todos].sort(
+        (a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime(),
+      );
 
       if (!mounted) return;
       setTodayLessons(lessons);
-      setUpcomingAssignments(assignments);
+      setUpcomingAssignments(combined);
       setLoading(false);
     };
 
