@@ -781,6 +781,70 @@ const SchoolMeetings = () => {
           </>
         )}
 
+        <Dialog open={editOpen} onOpenChange={setEditOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Upravit zápis z porady</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 max-h-[65vh] overflow-y-auto pr-1">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Typ *</Label>
+                  <Select
+                    value={editForm.type}
+                    onValueChange={(v) => setEditForm({ ...editForm, type: v as MeetingType })}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {MEETING_TYPES.map((t) => (
+                        <SelectItem key={t.value} value={t.value}>
+                          {t.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Datum *</Label>
+                  <Input
+                    type="date"
+                    value={editForm.meeting_date}
+                    onChange={(e) => setEditForm({ ...editForm, meeting_date: e.target.value })}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label>Název *</Label>
+                <Input
+                  value={editForm.title}
+                  onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label>Obsah zápisu</Label>
+                <Textarea
+                  value={editForm.content}
+                  onChange={(e) => setEditForm({ ...editForm, content: e.target.value })}
+                  rows={8}
+                  className="mt-1"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditOpen(false)}>
+                Zrušit
+              </Button>
+              <Button onClick={saveEdit} disabled={saving}>
+                {saving ? "Ukládám..." : "Uložit změny"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogContent className="max-w-lg">
             <DialogHeader>
