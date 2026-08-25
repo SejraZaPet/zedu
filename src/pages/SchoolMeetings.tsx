@@ -268,7 +268,100 @@ const SchoolMeetings = () => {
 
   const selected = meetings.find((m) => m.id === selectedId) || null;
   const canManage =
-    !!selected && (selected.author_id === user?.id || realRole === "school_admin" || realRole === "admin");
+    !!selected &&
+    (selected.author_id === user?.id ||
+      realRole === "school_admin" ||
+      realRole === "admin" ||
+      isDelegate);
+
+  /** Úkoly seskupené podle zadání — jeden úkol může mít více adresátů. */
+  const groupedTasks = useMemo(() => {
+    const map = new Map<string, { task: string; due_date: string | null; rows: MeetingTask[] }>();
+    tasks.forEach((t) => {
+      const key = `${t.task}::${t.due_date ?? ""}`;
+      const g = map.get(key) ?? { task: t.task, due_date: t.due_date, rows: [] };
+      g.rows.push(t);
+      map.set(key, g);
+    });
+    return Array.from(map.values());
+  }, [tasks]);
+
+  // Zjisti, zda má přihlášený uživatel delegovaná práva vedení školy
+  useEffect(() => {
+    if (!user || !schoolId) {
+      setIsDelegate(false);
+      return;
+    }
+    let cancelled = false;
+    void supabase
+      .from("school_leadership_delegates")
+      .select("id")
+      .eq("school_id", schoolId)
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!cancelled) setIsDelegate(!!data);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, schoolId]);
+
+  // Stav splnění úkolů — načítá se jen pro vedení školy (funkce sama oprávnění ověřuje)
+  useEffect(() => {
+    if (!selectedId || !canManage) {
+      setCompletions({});
+      return;
+    }
+    let cancelled = false;
+    void supabase.rpc("meeting_task_completions", { _meeting_id: selectedId }).then(({ data }) => {
+      if (cancelled) return;
+      const map: Record<string, boolean> = {};
+      (data ?? []).forEach((r: { task_id: string; done: boolean }) => {
+        map[r.task_id] = r.done;
+      });
+      setCompletions(map);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedId, canManage]);
+
+  const openEdit = () => {
+    if (!selected) return;
+    setEditForm({
+      type: selected.type,
+      title: selected.title,
+      meeting_date: selected.meeting_date,
+      content: selected.content ?? "",
+    });
+    setEditOpen(true);
+  };
+
+  const saveEdit = async () => {
+    if (!selected || !editForm.title.trim()) {
+      toast({ title: "Zadejte název porady", variant: "destructive" });
+      return;
+    }
+    setSaving(true);
+    const { error } = await supabase
+      .from("school_meetings")
+      .update({
+        type: editForm.type,
+        title: editForm.title.trim(),
+        meeting_date: editForm.meeting_date,
+        content: editForm.content || null,
+      })
+      .eq("id", selected.id);
+    setSaving(false);
+    if (error) {
+      toast({ title: "Uložení selhalo", description: error.message, variant: "destructive" });
+      return;
+    }
+    setEditOpen(false);
+    toast({ title: "Zápis byl upraven" });
+    await fetchMeetings();
+  };
   const detailPresentIds = useMemo(
     () => attendees.filter((a) => a.attended).map((a) => a.teacher_id),
     [attendees],
