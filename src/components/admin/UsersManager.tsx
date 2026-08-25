@@ -255,13 +255,15 @@ export async function parseImportFile(file: File): Promise<any[]> {
       });
       return obj;
     })
-    .filter((r: any) =>
-      r.jmeno && r.prijmeni &&
-      !r.jmeno.toLowerCase().includes("křestní") &&
-      !r.jmeno.toLowerCase().includes("krestni") &&
-      !r.jmeno.toLowerCase().includes("vzorový") &&
-      !r.jmeno.toLowerCase().includes("vzorovy")
-    );
+    .filter((r: any) => {
+      if (!r.jmeno || !r.prijmeni) return false;
+      const j = r.jmeno.toLowerCase();
+      // vyhoď hlavičkové zbytky a ukázkové řádky ze šablony
+      if (["křestní", "krestni", "vzorový", "vzorovy", "vzorová", "vzorova"].some((s) => j.includes(s))) return false;
+      if ((r.email || "").toLowerCase().includes("@example.")) return false;
+      if ((r.poznamka || "").toLowerCase().includes("příklad řádku")) return false;
+      return true;
+    });
 }
 
 
