@@ -35,6 +35,7 @@ import {
   CheckCircle2,
   ClipboardList,
   FileDown,
+  Pencil,
   Plus,
   Trash2,
   Users,
@@ -91,6 +92,7 @@ interface MeetingTask {
   assigned_to: string;
   task: string;
   due_date: string | null;
+  todo_id: string | null;
 }
 
 interface TaskDraft {
@@ -194,6 +196,15 @@ const SchoolMeetings = () => {
     assignees: [],
     task: "",
     due_date: "",
+  });
+  const [isDelegate, setIsDelegate] = useState(false);
+  const [completions, setCompletions] = useState<Record<string, boolean>>({});
+  const [editOpen, setEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState({
+    type: "pedagogicka" as MeetingType,
+    title: "",
+    meeting_date: "",
+    content: "",
   });
 
   const updateDraftTask = (index: number, patch: Partial<TaskDraft>) =>
