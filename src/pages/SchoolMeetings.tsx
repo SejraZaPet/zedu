@@ -725,61 +725,71 @@ const SchoolMeetings = () => {
                     </Button>
                   )}
                 </CardHeader>
-                <CardContent className="space-y-3">
+                <CardContent>
                   {groupedTasks.length === 0 ? (
                     <p className="text-sm text-muted-foreground">Žádné úkoly.</p>
                   ) : (
-                    groupedTasks.map((g, gi) => {
-                      const doneCount = g.rows.filter((r) => completions[r.id]).length;
-                      return (
-                        <div key={gi} className="text-sm border-b border-border last:border-0 pb-3 last:pb-0">
-                          <div className="flex items-start justify-between gap-2">
-                            <div>
-                              <p>{g.task}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {g.due_date
-                                  ? `do ${new Date(g.due_date).toLocaleDateString("cs-CZ")} · `
-                                  : ""}
-                                {g.rows.length > 1 ? `přiděleno ${g.rows.length} učitelům` : "přiděleno 1 učiteli"}
-                                {canManage && g.rows.length > 0 && completions[g.rows[0].id] !== undefined && (
-                                  <> · splněno {doneCount}/{g.rows.length}</>
-                                )}
-                              </p>
-                            </div>
-                          </div>
-                          {canManage && (
-                            <div className="mt-2 space-y-1 pl-3 border-l-2 border-border">
-                              {g.rows.map((t) => (
-                                <div key={t.id} className="flex items-center justify-between gap-2 text-xs">
-                                  <span className="flex items-center gap-2">
-                                    {nameOf(t.assigned_to)}
-                                    {completions[t.id] !== undefined &&
-                                      (completions[t.id] ? (
-                                        <Badge className="gap-1 text-[10px] px-1.5 py-0">
-                                          <CheckCircle2 className="w-3 h-3" /> Splněno
-                                        </Badge>
-                                      ) : (
-                                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                                          Čeká
-                                        </Badge>
-                                      ))}
-                                  </span>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-6 w-6 p-0 text-red-500"
-                                    onClick={() => removeTask(t.id)}
-                                    aria-label={`Odebrat úkol učiteli ${nameOf(t.assigned_to)}`}
-                                  >
-                                    <Trash2 className="w-3 h-3" />
-                                  </Button>
+                    <Accordion type="multiple" className="w-full">
+                      {groupedTasks.map((g, gi) => {
+                        const doneCount = g.rows.filter((r) => completions[r.id]).length;
+                        return (
+                          <AccordionItem key={gi} value={`task-${gi}`} className="border-b border-border last:border-0">
+                            <AccordionTrigger className="py-3 text-left hover:no-underline">
+                              <div className="flex flex-col items-start gap-0.5 pr-2">
+                                <span className="text-sm font-medium">{g.task}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  {g.due_date
+                                    ? `do ${new Date(g.due_date).toLocaleDateString("cs-CZ")} · `
+                                    : ""}
+                                  {g.rows.length > 1 ? `přiděleno ${g.rows.length} učitelům` : "přiděleno 1 učiteli"}
+                                  {canManage && g.rows.length > 0 && completions[g.rows[0].id] !== undefined && (
+                                    <> · splněno {doneCount}/{g.rows.length}</>
+                                  )}
+                                </span>
+                              </div>
+                            </AccordionTrigger>
+                            <AccordionContent>
+                              {canManage ? (
+                                <div className="space-y-1 pl-3 border-l-2 border-border pb-1">
+                                  {g.rows.map((t) => (
+                                    <div key={t.id} className="flex items-center justify-between gap-2 text-xs">
+                                      <span className="flex items-center gap-2">
+                                        {nameOf(t.assigned_to)}
+                                        {completions[t.id] !== undefined &&
+                                          (completions[t.id] ? (
+                                            <Badge className="gap-1 text-[10px] px-1.5 py-0">
+                                              <CheckCircle2 className="w-3 h-3" /> Splněno
+                                            </Badge>
+                                          ) : (
+                                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                                              Čeká
+                                            </Badge>
+                                          ))}
+                                      </span>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-6 w-6 p-0 text-red-500"
+                                        onClick={() => removeTask(t.id)}
+                                        aria-label={`Odebrat úkol učiteli ${nameOf(t.assigned_to)}`}
+                                      >
+                                        <Trash2 className="w-3 h-3" />
+                                      </Button>
+                                    </div>
+                                  ))}
                                 </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })
+                              ) : (
+                                <p className="text-xs text-muted-foreground pb-1">
+                                  {g.rows.length > 1
+                                    ? `Úkol je přidělen ${g.rows.length} učitelům.`
+                                    : "Úkol je přidělen 1 učiteli."}
+                                </p>
+                              )}
+                            </AccordionContent>
+                          </AccordionItem>
+                        );
+                      })}
+                    </Accordion>
                   )}
                 </CardContent>
               </Card>
