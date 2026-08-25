@@ -38,7 +38,7 @@ export const BEZLISTART_CATEGORIES = [
   { value: "jina", label: "Jiná" },
 ] as const;
 
-export const zedstartCategoryLabel = (value?: string | null) =>
+export const bezliStartCategoryLabel = (value?: string | null) =>
   BEZLISTART_CATEGORIES.find((c) => c.value === value)?.label ?? "Bez kategorie";
 
 interface Prompt {
@@ -199,7 +199,7 @@ const TeacherBezliStart = () => {
                   </div>
                 </CardHeader>
                 <CardContent className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Badge variant="secondary">{zedstartCategoryLabel(p.category)}</Badge>
+                  <Badge variant="secondary">{bezliStartCategoryLabel(p.category)}</Badge>
                   <span className="flex items-center gap-1">
                     <Clock size={13} /> {p.suggested_duration_minutes} min
                   </span>
