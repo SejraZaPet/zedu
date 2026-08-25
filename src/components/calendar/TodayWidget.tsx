@@ -58,9 +58,45 @@ const deadlineColorClass = (deadline: Date, now: Date): string => {
 
 const TodayWidget = ({ role }: Props) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const { schoolId } = useMySchool();
+  const { colleagues } = useSchoolColleagues(role === "teacher" ? schoolId : null);
   const [todayLessons, setTodayLessons] = useState<CalendarEvent[]>([]);
   const [upcomingAssignments, setUpcomingAssignments] = useState<UpcomingAssignment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [addOpen, setAddOpen] = useState(false);
+  const [addSaving, setAddSaving] = useState(false);
+  const [addForm, setAddForm] = useState({ assignee: "me", title: "", due_date: "", priority: "normal" });
+
+  const handleAddTask = async () => {
+    if (!user) return;
+    if (!addForm.title.trim()) {
+      toast({ title: "Zadejte název úkolu", variant: "destructive" });
+      return;
+    }
+    setAddSaving(true);
+    const assigneeId = addForm.assignee === "me" ? user.id : addForm.assignee;
+    const { error } = await supabase.from("todos").insert({
+      user_id: assigneeId,
+      assigned_by: assigneeId === user.id ? null : user.id,
+      title: addForm.title.trim(),
+      due_date: addForm.due_date || null,
+      type: "task",
+      priority: addForm.priority,
+      status: "pending",
+    });
+    setAddSaving(false);
+    if (error) {
+      toast({ title: "Úkol se nepodařilo přidat", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: assigneeId === user.id ? "Úkol přidán" : "Úkol byl zadán kolegovi" });
+    setAddForm({ assignee: "me", title: "", due_date: "", priority: "normal" });
+    setAddOpen(false);
+    setReloadKey((k) => k + 1);
+  };
 
   const now = new Date();
   const calendarPath = role === "student" ? "/student/kalendar" : "/ucitel/kalendar";
