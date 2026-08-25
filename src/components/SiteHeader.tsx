@@ -255,7 +255,7 @@ const SiteHeader = () => {
                     Menu
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuContent align="end" className="w-48 max-h-[70vh] overflow-y-auto overscroll-contain">
                   <DropdownMenuItem onClick={() => navigate("/profil")} className="gap-2 cursor-pointer">
                     <User size={16} />
                     Profil
