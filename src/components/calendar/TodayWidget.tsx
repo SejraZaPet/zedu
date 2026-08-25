@@ -1,12 +1,32 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CalendarDays, ClipboardList, ArrowRight } from "lucide-react";
+import { CalendarDays, ClipboardList, ArrowRight, Plus } from "lucide-react";
 import { format, startOfDay, endOfDay, addDays, differenceInCalendarDays, isSameDay } from "date-fns";
 import { cs } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { expandScheduleSlots, formatTime, type CalendarEvent } from "@/lib/calendar-utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { useMySchool, useSchoolColleagues, colleagueLabel } from "@/hooks/useMySchool";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 
 interface Props {
   role: "student" | "teacher";
@@ -38,9 +58,45 @@ const deadlineColorClass = (deadline: Date, now: Date): string => {
 
 const TodayWidget = ({ role }: Props) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const { schoolId } = useMySchool();
+  const { colleagues } = useSchoolColleagues(role === "teacher" ? schoolId : null);
   const [todayLessons, setTodayLessons] = useState<CalendarEvent[]>([]);
   const [upcomingAssignments, setUpcomingAssignments] = useState<UpcomingAssignment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [addOpen, setAddOpen] = useState(false);
+  const [addSaving, setAddSaving] = useState(false);
+  const [addForm, setAddForm] = useState({ assignee: "me", title: "", due_date: "", priority: "normal" });
+
+  const handleAddTask = async () => {
+    if (!user) return;
+    if (!addForm.title.trim()) {
+      toast({ title: "Zadejte název úkolu", variant: "destructive" });
+      return;
+    }
+    setAddSaving(true);
+    const assigneeId = addForm.assignee === "me" ? user.id : addForm.assignee;
+    const { error } = await supabase.from("todos").insert({
+      user_id: assigneeId,
+      assigned_by: assigneeId === user.id ? null : user.id,
+      title: addForm.title.trim(),
+      due_date: addForm.due_date || null,
+      type: "task",
+      priority: addForm.priority,
+      status: "pending",
+    });
+    setAddSaving(false);
+    if (error) {
+      toast({ title: "Úkol se nepodařilo přidat", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: assigneeId === user.id ? "Úkol přidán" : "Úkol byl zadán kolegovi" });
+    setAddForm({ assignee: "me", title: "", due_date: "", priority: "normal" });
+    setAddOpen(false);
+    setReloadKey((k) => k + 1);
+  };
 
   const now = new Date();
   const calendarPath = role === "student" ? "/student/kalendar" : "/ucitel/kalendar";
@@ -125,7 +181,7 @@ const TodayWidget = ({ role }: Props) => {
     return () => {
       mounted = false;
     };
-  }, [role]);
+  }, [role, reloadKey]);
 
   const todayLabel = capitalize(format(now, "EEEE, d. MMMM", { locale: cs }));
 
@@ -234,7 +290,18 @@ const TodayWidget = ({ role }: Props) => {
             </div>
             <h2 className="font-heading text-lg font-semibold">Nejbližší úkoly</h2>
           </div>
-          <span className="text-sm text-muted-foreground">následujících 7 dní</span>
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-muted-foreground">následujících 7 dní</span>
+            <button
+              type="button"
+              onClick={() => setAddOpen(true)}
+              aria-label="Přidat úkol"
+              title="Přidat úkol sobě nebo kolegovi"
+              className="w-9 h-9 rounded-xl bg-gradient-brand-sm flex items-center justify-center text-white shadow-sm hover:opacity-90 transition-opacity"
+            >
+              <Plus className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {loading ? (
@@ -294,6 +361,84 @@ const TodayWidget = ({ role }: Props) => {
           </div>
         )}
       </div>
+
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Přidat úkol</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {role === "teacher" && colleagues.length > 0 && (
+              <div>
+                <Label>Pro koho *</Label>
+                <Select
+                  value={addForm.assignee}
+                  onValueChange={(v) => setAddForm({ ...addForm, assignee: v })}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="me">Sobě</SelectItem>
+                    {colleagues
+                      .filter((c) => c.id !== user?.id)
+                      .map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {colleagueLabel(c)}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <div>
+              <Label>Název *</Label>
+              <Input
+                value={addForm.title}
+                onChange={(e) => setAddForm({ ...addForm, title: e.target.value })}
+                placeholder="Co je potřeba udělat?"
+                className="mt-1"
+                autoFocus
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Termín</Label>
+                <Input
+                  type="date"
+                  value={addForm.due_date}
+                  onChange={(e) => setAddForm({ ...addForm, due_date: e.target.value })}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label>Priorita</Label>
+                <Select
+                  value={addForm.priority}
+                  onValueChange={(v) => setAddForm({ ...addForm, priority: v })}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="high">🔴 Vysoká</SelectItem>
+                    <SelectItem value="normal">🟡 Normální</SelectItem>
+                    <SelectItem value="low">🟢 Nízká</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddOpen(false)}>
+              Zrušit
+            </Button>
+            <Button onClick={handleAddTask} disabled={addSaving}>
+              {addSaving ? "Ukládám…" : "Přidat úkol"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
