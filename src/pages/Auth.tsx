@@ -145,6 +145,39 @@ const Auth = () => {
     return "Nesprávné přihlašovací údaje.";
   };
 
+  /** True when the failure looks like server overload rather than bad credentials. */
+  const isTransientAuthError = (err: unknown) => {
+    const anyErr = err as { status?: number; message?: string } | null;
+    const status = anyErr?.status;
+    const msg = (anyErr?.message || "").toLowerCase();
+    return (
+      (typeof status === "number" && status >= 500) ||
+      status === 0 ||
+      msg.includes("timeout") ||
+      msg.includes("timed out") ||
+      msg.includes("deadline") ||
+      msg.includes("failed to fetch") ||
+      msg.includes("unexpected_failure") ||
+      msg.includes("request_timeout") ||
+      msg.includes("gateway")
+    );
+  };
+
+  /** Sign in with automatic retry on transient backend overload (3 attempts, backoff). */
+  const signInWithRetry = async (loginEmail: string, pwd: string) => {
+    let lastError: unknown = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const { error: authError } = await supabase.auth.signInWithPassword({ email: loginEmail, password: pwd });
+      if (!authError) return null;
+      lastError = authError;
+      if (!isTransientAuthError(authError)) return authError;
+      await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
+    }
+    return lastError;
+  };
+
+
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -189,7 +222,7 @@ const Auth = () => {
     }
 
     if (!usedTokenHash) {
-      const { error: authError } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
+      const authError = await signInWithRetry(loginEmail, password);
 
       if (authError) {
         setError(describeAuthError(authError));
