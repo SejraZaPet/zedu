@@ -93,9 +93,78 @@ interface MeetingTask {
   due_date: string | null;
 }
 
+interface TaskDraft {
+  task: string;
+  due_date: string;
+  assignees: string[];
+}
+
+type PoolMember = { id: string; first_name: string | null; last_name: string | null; email: string | null };
+
+/** Multi-výběr adresátů úkolu se zkratkami (všichni / přítomní / nepřítomní). */
+const AssigneePicker = ({
+  pool,
+  value,
+  onChange,
+  presentIds,
+  userId,
+}: {
+  pool: PoolMember[];
+  value: string[];
+  onChange: (ids: string[]) => void;
+  presentIds: string[];
+  userId?: string;
+}) => {
+  const allIds = pool.map((t) => t.id);
+  const present = allIds.filter((id) => presentIds.includes(id));
+  const absent = allIds.filter((id) => !presentIds.includes(id));
+  const toggle = (id: string, checked: boolean) =>
+    onChange(checked ? Array.from(new Set([...value, id])) : value.filter((v) => v !== id));
+
+  return (
+    <div className="mt-1 space-y-2">
+      <div className="flex flex-wrap gap-2">
+        <Button type="button" variant="outline" size="sm" onClick={() => onChange(allIds)}>
+          Všichni učitelé školy
+        </Button>
+        <Button type="button" variant="outline" size="sm" onClick={() => onChange(present)}>
+          Přítomní na poradě
+        </Button>
+        <Button type="button" variant="outline" size="sm" onClick={() => onChange(absent)}>
+          Nepřítomní
+        </Button>
+        {value.length > 0 && (
+          <Button type="button" variant="ghost" size="sm" onClick={() => onChange([])}>
+            Zrušit výběr
+          </Button>
+        )}
+      </div>
+      <div className="max-h-40 overflow-y-auto space-y-1 rounded-md border border-border p-2">
+        {pool.length === 0 ? (
+          <p className="text-xs text-muted-foreground">Ve škole nejsou žádní další učitelé.</p>
+        ) : (
+          pool.map((t) => (
+            <label key={t.id} className="flex items-center gap-2 text-sm cursor-pointer">
+              <Checkbox
+                checked={value.includes(t.id)}
+                onCheckedChange={(c) => toggle(t.id, !!c)}
+              />
+              {t.id === userId ? "Já" : colleagueLabel(t)}
+            </label>
+          ))
+        )}
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Vybráno: {value.length} {value.length === 1 ? "učitel" : "učitelů"}
+      </p>
+    </div>
+  );
+};
+
 const SchoolMeetings = () => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, realRole } = useAuth();
   const { schoolId, hasSchool, loading: schoolLoading } = useMySchool();
+
   const { colleagues } = useSchoolColleagues(schoolId);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -118,9 +187,18 @@ const SchoolMeetings = () => {
     content: "",
   });
   const [presentIds, setPresentIds] = useState<string[]>([]);
+  const [draftTasks, setDraftTasks] = useState<TaskDraft[]>([]);
 
   const [taskOpen, setTaskOpen] = useState(false);
-  const [taskForm, setTaskForm] = useState({ assigned_to: "", task: "", due_date: "" });
+  const [taskForm, setTaskForm] = useState<{ assignees: string[]; task: string; due_date: string }>({
+    assignees: [],
+    task: "",
+    due_date: "",
+  });
+
+  const updateDraftTask = (index: number, patch: Partial<TaskDraft>) =>
+    setDraftTasks((prev) => prev.map((d, i) => (i === index ? { ...d, ...patch } : d)));
+
 
   const nameOf = useCallback(
     (id: string) => {
@@ -178,7 +256,13 @@ const SchoolMeetings = () => {
   }, [selectedId, loadDetail]);
 
   const selected = meetings.find((m) => m.id === selectedId) || null;
-  const canManage = !!selected && selected.author_id === user?.id;
+  const canManage =
+    !!selected && (selected.author_id === user?.id || realRole === "school_admin" || realRole === "admin");
+  const detailPresentIds = useMemo(
+    () => attendees.filter((a) => a.attended).map((a) => a.teacher_id),
+    [attendees],
+  );
+
 
   const teacherPool = useMemo(() => {
     const me = user ? [{ id: user.id, first_name: "Já", last_name: null, email: null }] : [];
@@ -219,6 +303,24 @@ const SchoolMeetings = () => {
         toast({ title: "Účast se nepodařilo uložit", description: aErr.message, variant: "destructive" });
       }
     }
+
+    const taskRows = draftTasks
+      .filter((d) => d.task.trim() && d.assignees.length > 0)
+      .flatMap((d) =>
+        d.assignees.map((id) => ({
+          meeting_id: data.id,
+          assigned_to: id,
+          task: d.task.trim(),
+          due_date: d.due_date || null,
+        })),
+      );
+    if (taskRows.length) {
+      const { error: tErr } = await supabase.from("school_meeting_tasks").insert(taskRows);
+      if (tErr) {
+        toast({ title: "Úkoly se nepodařilo uložit", description: tErr.message, variant: "destructive" });
+      }
+    }
+
     setSaving(false);
     setCreateOpen(false);
     setForm({
@@ -228,31 +330,40 @@ const SchoolMeetings = () => {
       content: "",
     });
     setPresentIds([]);
+    setDraftTasks([]);
     toast({ title: "Zápis z porady byl vytvořen" });
     await fetchMeetings();
     setSelectedId(data.id);
   };
 
+
   const addTask = async () => {
-    if (!selected || !taskForm.assigned_to || !taskForm.task.trim()) {
-      toast({ title: "Vyberte učitele a zadejte úkol", variant: "destructive" });
+    if (!selected || taskForm.assignees.length === 0 || !taskForm.task.trim()) {
+      toast({ title: "Vyberte alespoň jednoho učitele a zadejte úkol", variant: "destructive" });
       return;
     }
-    const { error } = await supabase.from("school_meeting_tasks").insert({
-      meeting_id: selected.id,
-      assigned_to: taskForm.assigned_to,
-      task: taskForm.task.trim(),
-      due_date: taskForm.due_date || null,
-    });
+    const { error } = await supabase.from("school_meeting_tasks").insert(
+      taskForm.assignees.map((id) => ({
+        meeting_id: selected.id,
+        assigned_to: id,
+        task: taskForm.task.trim(),
+        due_date: taskForm.due_date || null,
+      })),
+    );
     if (error) {
       toast({ title: "Úkol se nepodařilo přidat", description: error.message, variant: "destructive" });
       return;
     }
-    setTaskForm({ assigned_to: "", task: "", due_date: "" });
+    const count = taskForm.assignees.length;
+    setTaskForm({ assignees: [], task: "", due_date: "" });
     setTaskOpen(false);
-    toast({ title: "Úkol přidán", description: "Objeví se i v seznamu úkolů učitele." });
+    toast({
+      title: count > 1 ? `Úkol přidán ${count} učitelům` : "Úkol přidán",
+      description: "Objeví se i v seznamu úkolů přiřazených učitelů.",
+    });
     loadDetail(selected.id);
   };
+
 
   const removeTask = async (id: string) => {
     if (!selected) return;
@@ -607,7 +718,70 @@ const SchoolMeetings = () => {
                   Neoznačení učitelé budou vedeni jako nepřítomní a uvidíme, kdo zápis potvrdil.
                 </p>
               </div>
+
+              <div className="border-t border-border pt-4">
+                <Label className="flex items-center gap-2">
+                  <ClipboardList className="w-4 h-4" /> Úkoly z porady (volitelné)
+                </Label>
+                <div className="mt-3 space-y-4">
+                  {draftTasks.length === 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      Zatím žádné úkoly. Můžete je přidat i později v detailu porady.
+                    </p>
+                  )}
+                  {draftTasks.map((d, i) => (
+                    <div key={i} className="rounded-lg border border-border p-3 space-y-3">
+                      <div className="flex items-start gap-2">
+                        <Input
+                          value={d.task}
+                          onChange={(e) => updateDraftTask(i, { task: e.target.value })}
+                          placeholder="Co je potřeba udělat"
+                        />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-9 w-9 p-0 text-red-500 shrink-0"
+                          aria-label="Odebrat úkol"
+                          onClick={() => setDraftTasks((prev) => prev.filter((_, idx) => idx !== i))}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      <div>
+                        <Label className="text-xs">Termín</Label>
+                        <Input
+                          type="date"
+                          value={d.due_date}
+                          onChange={(e) => updateDraftTask(i, { due_date: e.target.value })}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Přiřadit učitelům *</Label>
+                        <AssigneePicker
+                          pool={teacherPool}
+                          value={d.assignees}
+                          onChange={(ids) => updateDraftTask(i, { assignees: ids })}
+                          presentIds={presentIds}
+                          userId={user?.id}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1"
+                    onClick={() =>
+                      setDraftTasks((prev) => [...prev, { task: "", due_date: "", assignees: [] }])
+                    }
+                  >
+                    <Plus className="w-3 h-3" /> Přidat úkol
+                  </Button>
+                </div>
+              </div>
             </div>
+
             <DialogFooter>
               <Button variant="outline" onClick={() => setCreateOpen(false)}>
                 Zrušit
@@ -620,28 +794,20 @@ const SchoolMeetings = () => {
         </Dialog>
 
         <Dialog open={taskOpen} onOpenChange={setTaskOpen}>
-          <DialogContent>
+          <DialogContent className="max-w-lg">
             <DialogHeader>
               <DialogTitle>Úkol z porady</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4">
+            <div className="space-y-4 max-h-[65vh] overflow-y-auto pr-1">
               <div>
-                <Label>Přiřadit učiteli *</Label>
-                <Select
-                  value={taskForm.assigned_to}
-                  onValueChange={(v) => setTaskForm({ ...taskForm, assigned_to: v })}
-                >
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Vyberte učitele" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {teacherPool.map((t) => (
-                      <SelectItem key={t.id} value={t.id}>
-                        {t.id === user?.id ? "Já" : colleagueLabel(t)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label>Přiřadit učitelům *</Label>
+                <AssigneePicker
+                  pool={teacherPool}
+                  value={taskForm.assignees}
+                  onChange={(ids) => setTaskForm({ ...taskForm, assignees: ids })}
+                  presentIds={detailPresentIds}
+                  userId={user?.id}
+                />
               </div>
               <div>
                 <Label>Úkol *</Label>
@@ -662,7 +828,7 @@ const SchoolMeetings = () => {
                 />
               </div>
               <p className="text-xs text-muted-foreground">
-                Úkol se automaticky objeví v seznamu úkolů přiřazeného učitele.
+                Úkol se automaticky objeví v seznamu úkolů každého vybraného učitele.
               </p>
             </div>
             <DialogFooter>
@@ -673,6 +839,7 @@ const SchoolMeetings = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
       </main>
       <SiteFooter />
     </div>
