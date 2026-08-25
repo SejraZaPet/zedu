@@ -181,7 +181,7 @@ const TodayWidget = ({ role }: Props) => {
     return () => {
       mounted = false;
     };
-  }, [role]);
+  }, [role, reloadKey]);
 
   const todayLabel = capitalize(format(now, "EEEE, d. MMMM", { locale: cs }));
 
@@ -290,7 +290,18 @@ const TodayWidget = ({ role }: Props) => {
             </div>
             <h2 className="font-heading text-lg font-semibold">Nejbližší úkoly</h2>
           </div>
-          <span className="text-sm text-muted-foreground">následujících 7 dní</span>
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-muted-foreground">následujících 7 dní</span>
+            <button
+              type="button"
+              onClick={() => setAddOpen(true)}
+              aria-label="Přidat úkol"
+              title="Přidat úkol sobě nebo kolegovi"
+              className="w-9 h-9 rounded-xl bg-gradient-brand-sm flex items-center justify-center text-white shadow-sm hover:opacity-90 transition-opacity"
+            >
+              <Plus className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {loading ? (
