@@ -1,12 +1,32 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CalendarDays, ClipboardList, ArrowRight } from "lucide-react";
+import { CalendarDays, ClipboardList, ArrowRight, Plus } from "lucide-react";
 import { format, startOfDay, endOfDay, addDays, differenceInCalendarDays, isSameDay } from "date-fns";
 import { cs } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { expandScheduleSlots, formatTime, type CalendarEvent } from "@/lib/calendar-utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { useMySchool, useSchoolColleagues, colleagueLabel } from "@/hooks/useMySchool";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 
 interface Props {
   role: "student" | "teacher";
