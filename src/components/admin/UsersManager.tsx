@@ -183,50 +183,67 @@ const normImportHeader = (h: string) =>
 
 /** Jediná společná logika parsování importního souboru (Excel i CSV). */
 export async function parseImportFile(file: File): Promise<any[]> {
-  let rawRows: string[][] = [];
   const name = (file.name || "").toLowerCase();
   const isExcel =
     name.endsWith(".xlsx") || name.endsWith(".xls") ||
     file.type.includes("spreadsheet") || file.type.includes("excel");
 
+  /** Najde index řádku s hlavičkou (Jméno + Příjmení) v prvních 15 řádcích. */
+  const findHeaderIdx = (rows: string[][]) => {
+    for (let i = 0; i < Math.min(rows.length, 15); i++) {
+      const norm = rows[i].map(normImportHeader);
+      if (
+        norm.some((h) => IMPORT_KEY_MAP[h] === "jmeno") &&
+        norm.some((h) => IMPORT_KEY_MAP[h] === "prijmeni")
+      ) return i;
+    }
+    return -1;
+  };
+
+  let rawRows: string[][] = [];
+  let headerIdx = -1;
+
   if (isExcel) {
     const buf = await file.arrayBuffer();
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.load(buf);
-    const ws = wb.worksheets[0];
-    ws.eachRow({ includeEmpty: true }, (row) => {
-      const values = row.values as any[];
-      // ExcelJS row.values je 1-indexované (index 0 je prázdný)
-      const cells = values.slice(1).map((c) => {
-        if (c == null) return "";
-        if (typeof c === "object") {
-          if ("text" in c) return String((c as any).text ?? "");
-          if ("result" in c) return String((c as any).result ?? "");
-          if ("richText" in c) return (c as any).richText.map((r: any) => r.text).join("");
-        }
-        return String(c);
+    // Šablona může mít víc listů (např. „Instrukce“ + „Import“) — vezmi první,
+    // kde se najde hlavička se sloupci Jméno a Příjmení.
+    for (const ws of wb.worksheets) {
+      const sheetRows: string[][] = [];
+      ws.eachRow({ includeEmpty: true }, (row) => {
+        const values = row.values as any[];
+        // ExcelJS row.values je 1-indexované (index 0 je prázdný)
+        const cells = values.slice(1).map((c) => {
+          if (c == null) return "";
+          if (typeof c === "object") {
+            if ("text" in c) return String((c as any).text ?? "");
+            if ("result" in c) return String((c as any).result ?? "");
+            if ("richText" in c) return (c as any).richText.map((r: any) => r.text).join("");
+          }
+          return String(c);
+        });
+        sheetRows.push(cells);
       });
-      rawRows.push(cells);
-    });
+      const idx = findHeaderIdx(sheetRows);
+      if (idx !== -1) {
+        rawRows = sheetRows;
+        headerIdx = idx;
+        break;
+      }
+    }
   } else {
     const text = await file.text();
     const lines = text.split(/\r?\n/).filter(Boolean);
     rawRows = lines.map((line) => line.split(",").map((v) => v.trim().replace(/"/g, "")));
+    headerIdx = findHeaderIdx(rawRows);
   }
 
-  // Najdi řádek s hlavičkou (obsahuje jmeno+prijmeni)
-  let headerIdx = -1;
-  for (let i = 0; i < Math.min(rawRows.length, 10); i++) {
-    const norm = rawRows[i].map(normImportHeader);
-    if (norm.some((h) => IMPORT_KEY_MAP[h] === "jmeno") && norm.some((h) => IMPORT_KEY_MAP[h] === "prijmeni")) {
-      headerIdx = i;
-      break;
-    }
-  }
   if (headerIdx === -1) {
     throw new Error("V souboru nebyla nalezena hlavička se sloupci Jméno a Příjmení.");
   }
   const headers = rawRows[headerIdx].map(normImportHeader);
+
 
   return rawRows
     .slice(headerIdx + 1)
