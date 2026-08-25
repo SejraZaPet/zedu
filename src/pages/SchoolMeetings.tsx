@@ -713,33 +713,61 @@ const SchoolMeetings = () => {
                     </Button>
                   )}
                 </CardHeader>
-                <CardContent className="space-y-2">
-                  {tasks.length === 0 ? (
+                <CardContent className="space-y-3">
+                  {groupedTasks.length === 0 ? (
                     <p className="text-sm text-muted-foreground">Žádné úkoly.</p>
                   ) : (
-                    tasks.map((t) => (
-                      <div key={t.id} className="flex items-start justify-between gap-2 text-sm">
-                        <div>
-                          <p>{t.task}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {nameOf(t.assigned_to)}
-                            {t.due_date
-                              ? ` · do ${new Date(t.due_date).toLocaleDateString("cs-CZ")}`
-                              : ""}
-                          </p>
+                    groupedTasks.map((g, gi) => {
+                      const doneCount = g.rows.filter((r) => completions[r.id]).length;
+                      return (
+                        <div key={gi} className="text-sm border-b border-border last:border-0 pb-3 last:pb-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p>{g.task}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {g.due_date
+                                  ? `do ${new Date(g.due_date).toLocaleDateString("cs-CZ")} · `
+                                  : ""}
+                                {g.rows.length > 1 ? `přiděleno ${g.rows.length} učitelům` : "přiděleno 1 učiteli"}
+                                {canManage && g.rows.length > 0 && completions[g.rows[0].id] !== undefined && (
+                                  <> · splněno {doneCount}/{g.rows.length}</>
+                                )}
+                              </p>
+                            </div>
+                          </div>
+                          {canManage && (
+                            <div className="mt-2 space-y-1 pl-3 border-l-2 border-border">
+                              {g.rows.map((t) => (
+                                <div key={t.id} className="flex items-center justify-between gap-2 text-xs">
+                                  <span className="flex items-center gap-2">
+                                    {nameOf(t.assigned_to)}
+                                    {completions[t.id] !== undefined &&
+                                      (completions[t.id] ? (
+                                        <Badge className="gap-1 text-[10px] px-1.5 py-0">
+                                          <CheckCircle2 className="w-3 h-3" /> Splněno
+                                        </Badge>
+                                      ) : (
+                                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                                          Čeká
+                                        </Badge>
+                                      ))}
+                                  </span>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 w-6 p-0 text-red-500"
+                                    onClick={() => removeTask(t.id)}
+                                    aria-label={`Odebrat úkol učiteli ${nameOf(t.assigned_to)}`}
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                        {canManage && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 w-7 p-0 text-red-500"
-                            onClick={() => removeTask(t.id)}
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
-                        )}
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </CardContent>
               </Card>
