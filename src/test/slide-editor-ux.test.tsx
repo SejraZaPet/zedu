@@ -35,8 +35,9 @@ describe("ČÁST 2 – tažení textového bloku přes celou plochu", () => {
     const { container } = render(
       <SlideBody slide={{ projector: { headline: "H" }, blocks: [textBlock()] }} editable onChangeBlock={onChangeBlock} />,
     );
-    const editableEl = container.querySelector("[contenteditable]") as HTMLElement;
-    const wrapper = container.querySelector("[data-slide-block-id='t1']")!.closest("div.touch-none") as HTMLElement;
+    const blockEl = container.querySelector("[data-slide-block-id='t1']") as HTMLElement;
+    const editableEl = blockEl.querySelector("[contenteditable='true']") as HTMLElement;
+    const wrapper = blockEl.closest("div.touch-none") as HTMLElement;
     return { onChangeBlock, editableEl, wrapper };
   };
 
