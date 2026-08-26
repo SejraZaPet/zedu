@@ -470,12 +470,13 @@ function EditableBlock({
   if (block.type === "image" && block.props?.url) {
     return (
       <div
-        className={asCard ? "bg-white/10 p-4 border border-white/15" : ""}
+        className={`${asCard ? "bg-white/10 p-4 border border-white/15" : ""} ${framed ? "h-full w-full" : ""}`}
         style={asCard ? { borderRadius: "var(--slide-radius, 0.75rem)" } : undefined}
       >
         <ResizableSlideImage
           block={block}
           editable={editable}
+          framed={framed}
           onChange={(patch) => update(patch)}
         />
       </div>
