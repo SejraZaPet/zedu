@@ -793,30 +793,14 @@ export const PresentationEditorDialog = ({
                       >
                         Podle tématu prezentace
                       </button>
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        {SLIDE_BACKGROUND_COLORS.map((c) => (
-                          <button
-                            key={c}
-                            type="button"
-                            title={c}
-                            aria-label={`Vlastní pozadí ${c}`}
-                            onClick={() => updateSlide({ backgroundOverride: { color: c } })}
-                            className={`h-6 w-6 rounded-full border-2 transition-transform ${
-                              (currentSlide as any).backgroundOverride?.color === c
-                                ? "scale-110 border-primary"
-                                : "border-border"
-                            }`}
-                            style={{ background: c }}
-                          />
-                        ))}
-                        <input
-                          type="color"
-                          value={(currentSlide as any).backgroundOverride?.color || "#111111"}
-                          onChange={(e) => updateSlide({ backgroundOverride: { color: e.target.value } })}
-                          className="h-6 w-9 cursor-pointer rounded border border-border bg-transparent"
-                          aria-label="Vlastní barva pozadí slidu"
-                        />
-                      </div>
+                      <ColorPicker
+                        value={(currentSlide as any).backgroundOverride?.color || null}
+                        onChange={(v) =>
+                          updateSlide({ backgroundOverride: v ? { color: v } : null })
+                        }
+                        swatches={SLIDE_BACKGROUND_COLORS}
+                      />
+
                       <div className="grid grid-cols-1 gap-1.5">
                         <MediaPickerDialog
                           imageOnly
