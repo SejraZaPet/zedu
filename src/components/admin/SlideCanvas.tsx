@@ -507,6 +507,141 @@ function HeroImageSlot({
   );
 }
 
+/* ---------- Volné umístění bloku (opt-in) ---------- */
+
+const HANDLES: { handle: FrameHandle; className: string; cursor: string }[] = [
+  { handle: "nw", className: "left-0 top-0 -translate-x-1/2 -translate-y-1/2", cursor: "nwse-resize" },
+  { handle: "n", className: "left-1/2 top-0 -translate-x-1/2 -translate-y-1/2", cursor: "ns-resize" },
+  { handle: "ne", className: "right-0 top-0 translate-x-1/2 -translate-y-1/2", cursor: "nesw-resize" },
+  { handle: "e", className: "right-0 top-1/2 translate-x-1/2 -translate-y-1/2", cursor: "ew-resize" },
+  { handle: "se", className: "right-0 bottom-0 translate-x-1/2 translate-y-1/2", cursor: "nwse-resize" },
+  { handle: "s", className: "left-1/2 bottom-0 -translate-x-1/2 translate-y-1/2", cursor: "ns-resize" },
+  { handle: "sw", className: "left-0 bottom-0 -translate-x-1/2 translate-y-1/2", cursor: "nesw-resize" },
+  { handle: "w", className: "left-0 top-1/2 -translate-x-1/2 -translate-y-1/2", cursor: "ew-resize" },
+];
+
+/** Blok s vlastním rámcem – absolutně pozicovaný nad lineárním obsahem slidu. */
+function FreeFrameBlock({
+  block,
+  frame,
+  editable,
+  selected,
+  layerRef,
+  onSelect,
+  onChangeFrame,
+  onDelete,
+  children,
+}: {
+  block: Block;
+  frame: BlockFrame;
+  editable?: boolean;
+  selected?: boolean;
+  layerRef: React.RefObject<HTMLDivElement>;
+  onSelect?: () => void;
+  onChangeFrame?: (frame: BlockFrame) => void;
+  onDelete?: () => void;
+  children: React.ReactNode;
+}) {
+  const startDrag = (handle: FrameHandle) => (e: React.PointerEvent) => {
+    if (!editable || !onChangeFrame) return;
+    e.preventDefault();
+    e.stopPropagation();
+    onSelect?.();
+    const rect = layerRef.current?.getBoundingClientRect();
+    if (!rect || !rect.width || !rect.height) return;
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startFrame = frame;
+    const move = (ev: PointerEvent) => {
+      const dx = ((ev.clientX - startX) / rect.width) * 100;
+      const dy = ((ev.clientY - startY) / rect.height) * 100;
+      onChangeFrame(applyFrameDrag(startFrame, handle, dx, dy));
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+
+  const nudge = (e: React.KeyboardEvent) => {
+    if (!onChangeFrame) return;
+    const step = e.shiftKey ? 5 : 1;
+    const map: Record<string, [number, number]> = {
+      ArrowLeft: [-step, 0],
+      ArrowRight: [step, 0],
+      ArrowUp: [0, -step],
+      ArrowDown: [0, step],
+    };
+    const delta = map[e.key];
+    if (!delta) return;
+    e.preventDefault();
+    onChangeFrame(applyFrameDrag(frame, "move", delta[0], delta[1]));
+  };
+
+  return (
+    <div
+      data-slide-block-id={block.id}
+      data-free-frame="true"
+      className={`pointer-events-auto absolute ${
+        editable ? (selected ? "ring-2 ring-primary" : "ring-1 ring-dashed ring-white/30 hover:ring-primary/60") : ""
+      } rounded-lg`}
+      style={{
+        left: `${frame.x}%`,
+        top: `${frame.y}%`,
+        width: `${frame.w}%`,
+        height: `${frame.h}%`,
+      }}
+      onMouseDown={editable ? onSelect : undefined}
+    >
+      <div className="h-full w-full overflow-hidden">{children}</div>
+
+      {editable && (
+        <>
+          {/* Lišta pro posun + smazání */}
+          <div className="absolute -top-9 left-0 flex items-center gap-1 rounded-md border border-border bg-background/95 p-0.5 shadow-sm">
+            <button
+              type="button"
+              onPointerDown={startDrag("move")}
+              onKeyDown={nudge}
+              title="Přetáhnout blok (šipky = posun)"
+              aria-label="Přesunout volně umístěný blok"
+              className="cursor-grab touch-none rounded p-1 hover:bg-muted"
+            >
+              <Move className="h-3.5 w-3.5 text-foreground" />
+            </button>
+            <span className="px-1 text-[10px] tabular-nums text-muted-foreground">
+              {frame.x}% · {frame.y}% · {frame.w}×{frame.h}
+            </span>
+            {onDelete && (
+              <button
+                type="button"
+                onClick={onDelete}
+                title="Smazat blok"
+                className="rounded p-1 text-destructive hover:bg-destructive/10"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+
+          {HANDLES.map((h) => (
+            <span
+              key={h.handle}
+              role="presentation"
+              onPointerDown={startDrag(h.handle)}
+              style={{ cursor: h.cursor }}
+              className={`absolute h-3 w-3 touch-none rounded-full border-2 border-primary bg-background shadow ${h.className}`}
+            />
+          ))}
+        </>
+      )}
+    </div>
+  );
+}
+
+
 /* ---------- The shared slide body (no outer frame) ---------- */
 
 export function SlideBody({
