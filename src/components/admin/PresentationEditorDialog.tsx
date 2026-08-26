@@ -224,13 +224,23 @@ export const PresentationEditorDialog = ({
     setBlocks(next);
   };
   const deleteBlock = (id: string) => setBlocks(blocks.filter((b) => b.id !== id));
+  /**
+   * Úprava jednoho bloku. Pracuje funkčně nad `pendingSlides`, takže dvě
+   * změny ve stejném ticku (např. commit textu při blur + povýšení do frame)
+   * se nepřepíší.
+   */
   const updateBlock = (id: string, patch: any) => {
-    setBlocks(
-      blocks.map((b) => {
+    setPendingSlides((prev) => {
+      const slide = prev[editingSlideIndex];
+      if (!slide) return prev;
+      const nextBlocks = ((slide.blocks || []) as Block[]).map((b) => {
         if (b.id !== id) return b;
         return typeof patch === "function" ? patch(b) : { ...b, ...patch };
-      }),
-    );
+      });
+      const updated = [...prev];
+      updated[editingSlideIndex] = { ...slide, blocks: nextBlocks };
+      return updated;
+    });
   };
   const selectedBlock = blocks.find((b) => b.id === selectedBlockId) || null;
 
