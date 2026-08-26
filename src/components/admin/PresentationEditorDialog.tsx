@@ -95,7 +95,7 @@ const InsertTile = ({
 const stripHtml = (html: string) => String(html || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 
 export const PresentationEditorDialog = ({
-  presentationLesson, pendingSlides, setPendingSlides,
+  presentationLesson, source, pendingSlides, setPendingSlides,
   editingSlideIndex, setEditingSlideIndex,
   onClose, onLaunch, onSave, hasSavedPresentation,
   existingSession, onContinueExisting, onLaunchNew, onCloseExisting,
