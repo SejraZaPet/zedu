@@ -1,14 +1,32 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
-import { readFileSync } from "node:fs";
+import pptxgen from "pptxgenjs";
 import ImportPptxToPresentationDialog from "@/components/admin/ImportPptxToPresentationDialog";
 
-const FIXTURE = "/tmp/pptx-fixture/test-3-slides.pptx";
+/** Vytvoří reálný 3snímkový .pptx pomocí pptxgenjs (bez zápisu na disk). */
+async function mkFile(): Promise<File> {
+  const p = new pptxgen();
+  const s1 = p.addSlide();
+  s1.addText("První snímek", { x: 0.5, y: 0.4, w: 8, h: 1, fontSize: 36 });
+  s1.addText("Text prvního snímku", { x: 0.5, y: 1.8, w: 8, h: 1, fontSize: 20 });
+  const s2 = p.addSlide();
+  s2.addText("Druhý snímek", { x: 0.5, y: 0.4, w: 8, h: 1, fontSize: 36 });
+  s2.addText(
+    [
+      { text: "Bod A", options: { bullet: true } },
+      { text: "Bod B", options: { bullet: true } },
+    ],
+    { x: 0.5, y: 1.8, w: 8, h: 2, fontSize: 20 },
+  );
+  const s3 = p.addSlide();
+  s3.addText("Třetí snímek", { x: 0.5, y: 0.4, w: 8, h: 1, fontSize: 36 });
+  s3.addText("Závěr hodiny", { x: 0.5, y: 1.8, w: 8, h: 1, fontSize: 20 });
 
-const mkFile = () =>
-  new File([new Uint8Array(readFileSync(FIXTURE))], "hodina.pptx", {
+  const buf = (await p.write({ outputType: "arraybuffer" })) as ArrayBuffer;
+  return new File([new Uint8Array(buf)], "hodina.pptx", {
     type: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
   });
+}
 
 describe("Import .pptx do prezentace", () => {
   it("zobrazí upozornění o nepřenositelném rozvržení", () => {
@@ -30,7 +48,7 @@ describe("Import .pptx do prezentace", () => {
     );
 
     const input = document.getElementById("pptx-import-file") as HTMLInputElement;
-    fireEvent.change(input, { target: { files: [mkFile()] } });
+    fireEvent.change(input, { target: { files: [await mkFile()] } });
     fireEvent.click(screen.getByRole("button", { name: /Importovat snímky/i }));
 
     await waitFor(() => expect(onImported).toHaveBeenCalled());
