@@ -69,6 +69,7 @@ export const SlideFloatingFormatToolbar = ({
   };
 
   useLayoutEffect(() => {
+    if (staticBar) return;
     if (!block) {
       setPos(null);
       return;
