@@ -1,9 +1,11 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import MarkdownImageToolbar from "@/components/admin/MarkdownImageToolbar";
+import MarkdownContent from "@/components/MarkdownContent";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -82,6 +84,8 @@ const AcademyCoursesManager = () => {
 
   const [moduleDlgOpen, setModuleDlgOpen] = useState(false);
   const [moduleForm, setModuleForm] = useState<Partial<Module>>({});
+  const [modulePreview, setModulePreview] = useState(false);
+  const moduleTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   const [stats, setStats] = useState<CourseStats[]>([]);
   const [statsLoading, setStatsLoading] = useState(false);
@@ -226,13 +230,34 @@ const AcademyCoursesManager = () => {
         </div>
 
         <Sheet open={moduleDlgOpen} onOpenChange={setModuleDlgOpen}>
-          <SheetContent side="right" className="sm:max-w-xl overflow-y-auto">
+          <SheetContent side="right" className={modulePreview ? "sm:max-w-4xl overflow-y-auto" : "sm:max-w-xl overflow-y-auto"}>
             <SheetHeader><SheetTitle>{moduleForm.id ? "Upravit modul" : "Nový modul"}</SheetTitle></SheetHeader>
             <div className="space-y-3 mt-4">
               <div><Label>Název</Label><Input value={moduleForm.title || ""} onChange={(e) => setModuleForm({ ...moduleForm, title: e.target.value })} /></div>
               <div><Label>Pořadí</Label><Input type="number" value={moduleForm.sort_order ?? 0} onChange={(e) => setModuleForm({ ...moduleForm, sort_order: parseInt(e.target.value) || 0 })} /></div>
               <div><Label>Video URL (volitelné – embed odkaz)</Label><Input value={moduleForm.video_url || ""} onChange={(e) => setModuleForm({ ...moduleForm, video_url: e.target.value })} /></div>
-              <div><Label>Obsah (podporuje ## nadpisy)</Label><Textarea rows={16} value={moduleForm.content || ""} onChange={(e) => setModuleForm({ ...moduleForm, content: e.target.value })} /></div>
+              <div>
+                <Label>Obsah (markdown: ## nadpis, - odrážka, **tučně**, ![obrázek](url))</Label>
+                <div className="mt-2">
+                  <MarkdownImageToolbar
+                    textareaRef={moduleTextareaRef}
+                    value={moduleForm.content || ""}
+                    onChange={(next) => setModuleForm((f) => ({ ...f, content: next }))}
+                    folder={`academy/${moduleForm.course_id || "obecne"}`}
+                    showPreviewToggle
+                    previewOn={modulePreview}
+                    onTogglePreview={() => setModulePreview((p) => !p)}
+                  />
+                </div>
+                <div className={modulePreview ? "grid lg:grid-cols-2 gap-4" : ""}>
+                  <Textarea ref={moduleTextareaRef} rows={16} className="font-mono text-sm" value={moduleForm.content || ""} onChange={(e) => setModuleForm({ ...moduleForm, content: e.target.value })} />
+                  {modulePreview && (
+                    <div className="rounded-lg border border-border p-4 overflow-y-auto max-h-[420px]">
+                      <MarkdownContent content={moduleForm.content || ""} />
+                    </div>
+                  )}
+                </div>
+              </div>
               <Button onClick={saveModule} className="w-full">Uložit</Button>
             </div>
           </SheetContent>

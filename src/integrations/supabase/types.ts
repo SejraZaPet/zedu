@@ -2561,6 +2561,48 @@ export type Database = {
           },
         ]
       }
+      help_articles: {
+        Row: {
+          audience: string
+          category: string
+          content: string
+          cover_image_url: string | null
+          created_at: string
+          id: string
+          is_published: boolean
+          slug: string
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          audience?: string
+          category?: string
+          content?: string
+          cover_image_url?: string | null
+          created_at?: string
+          id?: string
+          is_published?: boolean
+          slug: string
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          audience?: string
+          category?: string
+          content?: string
+          cover_image_url?: string | null
+          created_at?: string
+          id?: string
+          is_published?: boolean
+          slug?: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       help_guides: {
         Row: {
           blocks: Json
