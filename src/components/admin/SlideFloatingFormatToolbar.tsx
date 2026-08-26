@@ -26,6 +26,8 @@ interface Props {
   positionKey?: string | number;
   /** Blok je volně umístěný (má `frame`) – u obrázku pak nabídneme object-fit. */
   framed?: boolean;
+  /** Statická lišta (vždy nad plátnem, nepozicuje se nad blok). */
+  staticBar?: boolean;
 }
 
 const TEXT_BLOCK_TYPES = new Set([
