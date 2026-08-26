@@ -401,6 +401,75 @@ export const SlideFloatingFormatToolbar = ({
         </>
       )}
 
+      {isShape && (
+        <>
+          <Select value={props.shapeKind || "rectangle"} onValueChange={(v) => set({ shapeKind: v })}>
+            <SelectTrigger className="h-7 w-[140px] text-xs" title="Typ tvaru">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {SHAPE_KINDS.map((s) => (
+                <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button size="sm" variant="ghost" className="h-7 px-2 text-[11px]" title="Barva výplně">
+                <span
+                  className="mr-1 inline-block h-3 w-3 rounded-full border border-border"
+                  style={{ background: props.fillColor && props.fillColor !== "none" ? props.fillColor : "transparent" }}
+                />
+                Výplň
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-2">
+              <ColorPicker
+                value={props.fillColor === "none" ? null : props.fillColor}
+                onChange={(v) => set({ fillColor: v ?? "none" })}
+                allowNull
+                nullLabel="Bez"
+              />
+            </PopoverContent>
+          </Popover>
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button size="sm" variant="ghost" className="h-7 px-2 text-[11px]" title="Barva obrysu">
+                <span
+                  className="mr-1 inline-block h-3 w-3 rounded-full border-2"
+                  style={{ borderColor: props.strokeColor && props.strokeColor !== "none" ? props.strokeColor : "hsl(var(--border))" }}
+                />
+                Obrys
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-2">
+              <ColorPicker
+                value={props.strokeColor === "none" ? null : props.strokeColor}
+                onChange={(v) => set({ strokeColor: v ?? "none" })}
+                allowNull
+                nullLabel="Bez"
+              />
+            </PopoverContent>
+          </Popover>
+
+          <Input
+            type="number"
+            min={0}
+            max={20}
+            className="h-7 w-[64px] text-xs"
+            title="Šířka obrysu (0–20)"
+            aria-label="Šířka obrysu"
+            value={props.strokeWidth ?? 2}
+            onChange={(e) =>
+              set({ strokeWidth: Math.max(0, Math.min(20, Number(e.target.value) || 0)) })
+            }
+          />
+
+          <div className="mx-0.5 h-5 w-px bg-border" />
+        </>
+      )}
 
 
       <Select
