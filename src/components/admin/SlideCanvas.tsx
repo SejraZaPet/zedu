@@ -20,7 +20,7 @@ import {
   slideTextStyle,
 } from "@/lib/slide-typography";
 
-const BLOCK_PLACEHOLDER = "Klikni pro psaní • klikni znovu pro formátování";
+const BLOCK_PLACEHOLDER = "Klikni pro psaní…";
 
 
 
