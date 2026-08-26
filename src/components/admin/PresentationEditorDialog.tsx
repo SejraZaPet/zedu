@@ -257,8 +257,11 @@ export const PresentationEditorDialog = ({
     }
   };
 
-  /** ČÁST 2 – URL zpět na lekci; null = odkaz nezobrazovat. */
+  const isStandalone = source?.type === "standalone";
+
+  /** ČÁST 2 – URL zpět (na lekci nebo na seznam samostatných prezentací). */
   const lessonBackUrl = (() => {
+    if (isStandalone) return "/ucitel/prezentace";
     const l = presentationLesson;
     if (!l) return null;
     if (l.textbookId) return `/ucitel/ucebnice/${l.textbookId}/lekce`;
