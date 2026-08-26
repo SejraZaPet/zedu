@@ -87,7 +87,6 @@ import BezliMarketPage from "./pages/BezliMarketPage";
 import SharedWithMe from "./pages/SharedWithMe";
 import FollowedCreators from "./pages/FollowedCreators";
 import AvatarEditor from "./pages/AvatarEditor";
-import AlignPreview from "./pages/AlignPreview";
 import TeacherAcademy from "./pages/TeacherAcademy";
 import StudentAcademy from "./pages/StudentAcademy";
 import ParentAcademy from "./pages/ParentAcademy";
@@ -211,7 +210,6 @@ const App = () => (
             <Route path="/rodic/akademie" element={<ProtectedRoute><ParentAcademy /></ProtectedRoute>} />
             <Route path="/ucitel/z-materialu" element={<ProtectedRoute><TeacherFromMaterial /></ProtectedRoute>} />
             <Route path="/student/z-materialu" element={<ProtectedRoute><StudentFromMaterial /></ProtectedRoute>} />
-            <Route path="/align-preview" element={<AlignPreview />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
