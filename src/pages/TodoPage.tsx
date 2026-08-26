@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, Calendar, Flag, UserPlus } from "lucide-react";
+import { Plus, Trash2, Calendar, Flag, UserPlus, Pencil } from "lucide-react";
 import { useMySchool, useSchoolColleagues, colleagueLabel } from "@/hooks/useMySchool";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
@@ -79,6 +79,16 @@ const TodoPage = () => {
   const [filter, setFilter] = useState<"all" | "pending" | "done" | "today">(
     "all",
   );
+  const [editOpen, setEditOpen] = useState(false);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editTodo, setEditTodo] = useState<Todo | null>(null);
+  const [editForm, setEditForm] = useState({
+    title: "",
+    description: "",
+    due_date: "",
+    type: "task",
+    priority: "normal",
+  });
   const [newTodo, setNewTodo] = useState({
     title: "",
     description: "",
@@ -192,6 +202,41 @@ const TodoPage = () => {
     fetchTodos();
   };
 
+  const openEdit = (todo: Todo) => {
+    setEditTodo(todo);
+    setEditForm({
+      title: todo.title,
+      description: todo.description || "",
+      due_date: todo.due_date || "",
+      type: todo.type || "task",
+      priority: todo.priority || "normal",
+    });
+    setEditOpen(true);
+  };
+
+  const saveEdit = async () => {
+    if (!editTodo || !editForm.title.trim()) return;
+    setEditSaving(true);
+    const { error } = await supabase
+      .from("todos")
+      .update({
+        title: editForm.title.trim(),
+        description: editForm.description || null,
+        due_date: editForm.due_date || null,
+        type: editForm.type,
+        priority: editForm.priority,
+      })
+      .eq("id", editTodo.id);
+    setEditSaving(false);
+    if (error) {
+      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+      return;
+    }
+    setEditOpen(false);
+    setEditTodo(null);
+    fetchTodos();
+  };
+
   const today = new Date().toISOString().split("T")[0];
   const overdue = todos.filter(
     (t) => t.due_date && t.due_date < today && t.status === "pending",
@@ -280,6 +325,19 @@ const TodoPage = () => {
                     <Flag
                       className={`w-3.5 h-3.5 ${priorityColor[todo.priority] || ""}`}
                     />
+                    {todo.due_date && (
+                      <span
+                        className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${
+                          todo.due_date < today && todo.status === "pending"
+                            ? "bg-red-500/15 text-red-600 font-medium"
+                            : "bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        <Calendar className="w-3 h-3" />
+                        {new Date(todo.due_date).toLocaleDateString("cs-CZ")}
+                        {todo.due_date < today && todo.status === "pending" && " · po termínu"}
+                      </span>
+                    )}
                     {todo.assigned_by && todo.assigned_by !== user?.id && (
                       <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">
                         Zadal(a):{" "}
@@ -293,16 +351,16 @@ const TodoPage = () => {
                   {todo.description && (
                     <p className="text-sm text-muted-foreground mt-1">{todo.description}</p>
                   )}
-                  {todo.due_date && (
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                      <Calendar className="w-3 h-3" />
-                      <span>{new Date(todo.due_date).toLocaleDateString("cs-CZ")}</span>
-                      {todo.due_date < today && todo.status === "pending" && (
-                        <span className="text-red-500 font-medium"> – po termínu!</span>
-                      )}
-                    </div>
-                  )}
                 </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => openEdit(todo)}
+                  className="h-8 w-8 p-0 shrink-0"
+                  aria-label="Upravit úkol"
+                >
+                  <Pencil className="w-4 h-4" />
+                </Button>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -454,6 +512,85 @@ const TodoPage = () => {
           </DialogContent>
         </Dialog>
 
+
+        <Dialog open={editOpen} onOpenChange={setEditOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Upravit úkol</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label>Název *</Label>
+                <Input
+                  value={editForm.title}
+                  onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label>Popis</Label>
+                <Input
+                  value={editForm.description}
+                  onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                  className="mt-1"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Termín</Label>
+                  <Input
+                    type="date"
+                    value={editForm.due_date}
+                    onChange={(e) => setEditForm({ ...editForm, due_date: e.target.value })}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label>Typ</Label>
+                  <Select
+                    value={editForm.type}
+                    onValueChange={(v) => setEditForm({ ...editForm, type: v })}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="task">Úkol</SelectItem>
+                      <SelectItem value="test">Test</SelectItem>
+                      <SelectItem value="homework">Domácí úkol</SelectItem>
+                      <SelectItem value="project">Projekt</SelectItem>
+                      <SelectItem value="other">Jiné</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div>
+                <Label>Priorita</Label>
+                <Select
+                  value={editForm.priority}
+                  onValueChange={(v) => setEditForm({ ...editForm, priority: v })}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="high">🔴 Vysoká</SelectItem>
+                    <SelectItem value="normal">🟡 Normální</SelectItem>
+                    <SelectItem value="low">🟢 Nízká</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditOpen(false)}>
+                Zrušit
+              </Button>
+              <Button onClick={saveEdit} disabled={editSaving}>
+                {editSaving ? "Ukládám..." : "Uložit"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         <Dialog open={addOpen} onOpenChange={setAddOpen}>
           <DialogContent>
