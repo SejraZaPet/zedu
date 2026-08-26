@@ -158,7 +158,26 @@ const RichTextEditor = ({ content, onChange }: Props) => {
         <MenuButton active={editor.isActive({ textAlign: "center" })} onClick={() => editor.chain().focus().setTextAlign("center").run()} title="Zarovnat na střed">
           <AlignCenter className="w-4 h-4" />
         </MenuButton>
+        <div className="w-px bg-border mx-1" />
+        <Select
+          value={currentLineHeight ?? "default"}
+          onValueChange={(v) => {
+            if (v === "default") editor.chain().focus().unsetLineHeight().run();
+            else editor.chain().focus().setLineHeight(v).run();
+          }}
+        >
+          <SelectTrigger className="h-7 w-[128px] px-2 text-xs" title="Řádkování">
+            <SelectValue placeholder="Řádkování" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="default" className="text-xs">Řádkování: auto</SelectItem>
+            {LINE_HEIGHT_OPTIONS.map((lh) => (
+              <SelectItem key={lh} value={lh} className="text-xs">{`Řádkování ${lh}×`}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
+
 
       <EditorContent editor={editor} />
 
