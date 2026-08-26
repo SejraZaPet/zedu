@@ -152,6 +152,43 @@ const TeacherTextbooks = () => {
     openEditor, launchLiveSession, launchNew,
   } = usePresentationLauncher();
 
+  /**
+   * ČÁST 5 – lekce bez slidů, ale s propojenou samostatnou prezentací:
+   * nabídneme pokračování v propojené prezentaci, nebo klasické vytvoření nové.
+   */
+  const [linkedPresentationChoice, setLinkedPresentationChoice] =
+    useState<{ lesson: any; presentationId: string; presentationTitle: string } | null>(null);
+
+  const handleOpenPresentation = async (lesson: any) => {
+    if (lesson?.source === "teacher_textbook_lessons") {
+      const { data: lessonRow } = await supabase
+        .from("teacher_textbook_lessons")
+        .select("presentation_slides")
+        .eq("id", lesson.id)
+        .maybeSingle();
+      const savedSlides = (lessonRow as any)?.presentation_slides;
+      const hasSlides = Array.isArray(savedSlides) && savedSlides.length > 0;
+      if (!hasSlides) {
+        const { data: linked } = await supabase
+          .from("teacher_presentations" as any)
+          .select("id, title")
+          .eq("lesson_id", lesson.id)
+          .order("updated_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (linked) {
+          setLinkedPresentationChoice({
+            lesson,
+            presentationId: (linked as any).id,
+            presentationTitle: (linked as any).title,
+          });
+          return;
+        }
+      }
+    }
+    await openEditor(lesson);
+  };
+
   const fetchTextbooks = async () => {
     const { data } = await supabase
       .from("teacher_textbooks")
