@@ -170,6 +170,15 @@ function BlockShell({
   onDragStart?: (e: React.PointerEvent) => void;
   children: React.ReactNode;
 }) {
+  const [showFormatHint, setShowFormatHint] = useState(true);
+
+  useEffect(() => {
+    if (!selected) return;
+    setShowFormatHint(true);
+    const t = setTimeout(() => setShowFormatHint(false), 3000);
+    return () => clearTimeout(t);
+  }, [selected, blockId]);
+
   if (!editable) return <>{children}</>;
   return (
     <div
@@ -219,9 +228,8 @@ function BlockShell({
           <Trash2 className="w-3.5 h-3.5" />
         </button>
       </div>
-      {selected && (
-        <div className="absolute -bottom-5 right-0 flex items-center gap-1 text-[10px] text-primary/80 bg-background/90 border border-primary/20 px-1.5 py-0.5 rounded shadow-sm pointer-events-none select-none">
-          <span>✦</span>
+      {selected && showFormatHint && (
+        <div className="absolute top-0 right-0 flex items-center gap-1 text-[10px] text-white/60 bg-white/10 px-1 py-0.5 rounded pointer-events-none select-none">
           <span>Formátování ↑</span>
         </div>
       )}
