@@ -8,10 +8,12 @@ import { getPresentationTheme, themeStageStyle } from "@/lib/presentation-themes
 import { getSlideIcon } from "@/lib/slide-icons";
 import {
   applyFrameDrag,
+  clampBlockFrame,
   getBlockFrame,
   type BlockFrame,
   type FrameHandle,
 } from "@/lib/block-frame";
+
 import {
   slideAnimationClass,
   slideBackgroundOverrideStyle,
