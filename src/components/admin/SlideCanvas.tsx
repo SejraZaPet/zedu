@@ -725,9 +725,27 @@ function EditableBlock({
     );
   }
 
-  // Ikony jsou v datech `image` s `props.icon`; tvary mají vlastní typ `shape`.
+  // Tvary vykreslujeme přímo jako SVG – ať jdou upravovat z plovoucí lišty.
+  if (block.type === "shape") {
+    const p = (block.props || {}) as Record<string, any>;
+    return (
+      <div className={framed ? "h-full w-full" : ""}>
+        <ShapeRenderer
+          shapeKind={p.shapeKind}
+          fillColor={p.fillColor}
+          strokeColor={p.strokeColor}
+          strokeWidth={p.strokeWidth}
+          height={Number(p.height) || 160}
+          fill={framed}
+        />
+      </div>
+    );
+  }
+
+  // Ikony jsou v datech `image` s `props.icon`.
   const needsPanelHint =
-    editable && (block.type === "shape" || (block.type === "image" && !!(block.props as any)?.icon));
+    editable && block.type === "image" && !!(block.props as any)?.icon;
+
 
 
   // Fallback (accordion, rovnice, video, zvuk…): use existing renderer
