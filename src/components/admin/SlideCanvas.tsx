@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useCallback } from "react";
-import { ArrowUp, ArrowDown, Trash2, ImageIcon, GripVertical, Move } from "lucide-react";
+import { ArrowUp, ArrowDown, Trash2, ImageIcon, GripVertical, Move, Video as VideoIcon, Music } from "lucide-react";
 import { LessonBlock, CALLOUT_STYLES } from "@/components/LessonBlockRenderer";
 import type { Block } from "@/lib/textbook-config";
 import { MediaPickerDialog } from "@/components/media/MediaPickerDialog";
