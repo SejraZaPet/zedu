@@ -1486,12 +1486,17 @@ const SlideCanvas = ({
     );
   }
 
+  const effectiveScale = scale * zoom;
+
   return (
     <div
       ref={frameRef}
+      onPointerDown={startPan}
       className={`relative mx-auto max-h-full max-w-full rounded-xl shadow-lg border border-border ${
         (rest as any).editable ? "overflow-visible" : "overflow-hidden"
-      } ${box ? "" : "aspect-video w-full"}`}
+      } ${box ? "" : "aspect-video w-full"} ${(rest as any).editable ? "cursor-grab" : ""} ${
+        panning ? "cursor-grabbing" : ""
+      }`}
       style={box ? { ...bgStyle, width: box.w, height: box.h } : bgStyle}
     >
       <div
@@ -1500,13 +1505,14 @@ const SlideCanvas = ({
         style={{
           width: `${STAGE_W}px`,
           height: `${STAGE_H}px`,
-          transform: `translate(-50%, -50%) scale(${scale})`,
+          transform: `translate(calc(-50% + ${pan.x}px), calc(-50% + ${pan.y}px)) scale(${effectiveScale})`,
         }}
       >
         {body}
       </div>
     </div>
   );
+
 };
 
 export default SlideCanvas;
