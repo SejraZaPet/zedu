@@ -20,7 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 import { SLIDE_GAME_MODES } from "@/lib/game-slide-settings";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import BlockEditor, { type BlockEditorHistory } from "@/components/admin/BlockEditor";
+import BlockEditor, { SingleBlockEditor, type BlockEditorHistory } from "@/components/admin/BlockEditor";
 import SlideCanvas, { SLIDE_LAYOUTS, type SlideLayout } from "@/components/admin/SlideCanvas";
 import { MediaPickerDialog } from "@/components/media/MediaPickerDialog";
 import { AddSlideSheet } from "@/components/game/AddSlideSheet";
