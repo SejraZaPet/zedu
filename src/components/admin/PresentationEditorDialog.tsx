@@ -203,7 +203,7 @@ export const PresentationEditorDialog = ({
     setSelectedBlockId(null);
   }, [editingSlideIndex]);
 
-  // Klik mimo plátno (a mimo lištu či její popovery) zruší výběr bloku.
+  // Klik mimo plátno (a mimo panel, lištu či její popovery) zruší výběr bloku.
   useEffect(() => {
     const onPointerDown = (e: PointerEvent) => {
       const target = e.target as HTMLElement | null;
@@ -211,8 +211,8 @@ export const PresentationEditorDialog = ({
       if (
         canvasWrapRef.current?.contains(target) ||
         target.closest("[data-slide-toolbar='true']") ||
-        target.closest("[data-radix-popper-content-wrapper]") ||
-        target.closest("[role='dialog']:not([data-presentation-editor])")
+        target.closest("[data-slide-sidebar='true']") ||
+        target.closest("[data-radix-popper-content-wrapper]")
       ) {
         return;
       }
