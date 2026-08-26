@@ -14,7 +14,11 @@ interface Props {
   className?: string;
 }
 
-const HEX_RE = /^#[0-9a-fA-F]{6}$/;
+const HEX_RE = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+
+/** #abc -> #aabbcc, aby native color input i uložená hodnota byly konzistentní. */
+const expandHex = (v: string) =>
+  v.length === 4 ? `#${v[1]}${v[1]}${v[2]}${v[2]}${v[3]}${v[3]}` : v;
 
 /**
  * Sdílený výběr barvy: paleta swatchů + nativní color input + textový HEX.
@@ -38,7 +42,7 @@ export const ColorPicker = ({
   const commitHex = () => {
     const v = hex.trim();
     if (HEX_RE.test(v)) {
-      onChange(v);
+      onChange(expandHex(v));
       return;
     }
     // Nevalidní vstup ignorujeme a vrátíme zobrazení na aktuální barvu.

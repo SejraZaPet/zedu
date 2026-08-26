@@ -95,7 +95,7 @@ const ShapeRenderer = ({
           y={sw}
           width={200 - sw * 2}
           height={100 - sw * 2}
-          rx={shapeKind === "rounded-rect" ? 20 : 6}
+          rx={shapeKind === "rounded-rect" ? 30 : 6}
           fill={fillColor}
           stroke={strokeColor}
           strokeWidth={sw}
