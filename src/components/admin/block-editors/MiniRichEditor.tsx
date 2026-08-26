@@ -284,6 +284,11 @@ const MiniRichEditor = ({
   if (!editor) return null;
 
   const sz = "w-3.5 h-3.5";
+  const currentLineHeight =
+    (editor.getAttributes("paragraph").lineHeight as string | null) ||
+    (editor.getAttributes("heading").lineHeight as string | null) ||
+    null;
+
 
   return (
     <div className="border border-border rounded-md overflow-hidden bg-background">
