@@ -383,7 +383,7 @@ function EditableBlock({
   }
 
   if (block.type === "bullet_list") {
-    const items: string[] = block.props?.items || [""];
+    const items: string[] = block.props?.items || [];
     const revealMode = !!block.props?.revealMode;
     const revealToggle = editable ? (
       <label className="flex items-center gap-2 text-xs text-white/70 mb-2 select-none">
@@ -417,6 +417,20 @@ function EditableBlock({
       <div className={asCard ? "bg-white/10 rounded-[var(--slide-radius,0.75rem)] p-4 border border-white/15" : ""}>
         {revealToggle}
         <ul className="space-y-2" style={slideTextStyle(block.props)}>
+          {items.length === 0 && editable && (
+            <li className="flex items-start gap-3 text-2xl">
+              <span className="mt-1 flex-shrink-0" style={{ color: "var(--slide-primary, currentColor)" }}>•</span>
+              <EditableText
+                editable={editable}
+                value=""
+                placeholder={BLOCK_PLACEHOLDER}
+                className="flex-1"
+                onCommit={(v) => {
+                  if (v.trim()) update((b) => ({ ...b, props: { ...b.props, items: [v] } }));
+                }}
+              />
+            </li>
+          )}
           {items.map((item, i) => (
             <li key={i} className="flex items-start gap-3 text-2xl">
               <span className="mt-1 flex-shrink-0" style={{ color: "var(--slide-primary, currentColor)" }}>•</span>
@@ -450,7 +464,7 @@ function EditableBlock({
               </div>
             </li>
           ))}
-          {editable && (
+          {editable && items.length > 0 && (
             <li>
               <button
                 type="button"
