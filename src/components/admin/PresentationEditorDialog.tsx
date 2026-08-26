@@ -137,6 +137,7 @@ export const PresentationEditorDialog = ({
   const [exportingPdf, setExportingPdf] = useState(false);
   const [generatingActivity, setGeneratingActivity] = useState(false);
   const [sidebarSection, setSidebarSection] = useState<"insert" | "slide" | "activities">("insert");
+  const [teacherNotesOpen, setTeacherNotesOpen] = useState(false);
   const canvasWrapRef = useRef<HTMLDivElement>(null);
 
   const currentSlide = pendingSlides[editingSlideIndex];
