@@ -15,10 +15,15 @@ import {
   Palette, X, Superscript as SuperscriptIcon, Subscript as SubscriptIcon,
 } from "lucide-react";
 import { SLIDE_HIGHLIGHT_COLORS } from "@/lib/slide-typography";
+import { LineHeight, LINE_HEIGHT_OPTIONS } from "@/lib/tiptap-line-height";
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { useEffect, useRef, useState } from "react";
+
 
 interface Props {
   content: string;
