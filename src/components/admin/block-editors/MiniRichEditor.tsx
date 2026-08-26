@@ -253,7 +253,9 @@ const MiniRichEditor = ({
       Placeholder.configure({ placeholder }),
       Superscript,
       Subscript,
+      LineHeight,
     ],
+
     content,
     onUpdate: ({ editor: e }) => {
       if (!skipUpdate.current) {
