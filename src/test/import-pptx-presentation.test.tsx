@@ -5,20 +5,10 @@ import ImportPptxToPresentationDialog from "@/components/admin/ImportPptxToPrese
 
 const FIXTURE = "/tmp/pptx-fixture/test-3-slides.pptx";
 
-const mkFile = () => {
-  const bytes = readFileSync(FIXTURE);
-  const file = new File([new Uint8Array(bytes)], "hodina.pptx", {
+const mkFile = () =>
+  new File([new Uint8Array(readFileSync(FIXTURE))], "hodina.pptx", {
     type: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
   });
-  // jsdom File nemá arrayBuffer() v starších verzích – doplníme.
-  if (typeof (file as any).arrayBuffer !== "function") {
-    (file as any).arrayBuffer = async () => bytes.buffer.slice(
-      bytes.byteOffset,
-      bytes.byteOffset + bytes.byteLength,
-    );
-  }
-  return file;
-};
 
 describe("Import .pptx do prezentace", () => {
   it("zobrazí upozornění o nepřenositelném rozvržení", () => {
