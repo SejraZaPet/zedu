@@ -196,24 +196,51 @@ const TeacherPresentations = () => {
     }
   };
 
+  /** Krok 1 – učebnice učitele. */
   const openLinkPicker = async (p: StandalonePresentation) => {
     setLinkTarget(p);
     setLessonQuery("");
-    setLessonsLoading(true);
+    setSelectedTextbook(null);
+    setLessonOptions([]);
+    setTextbooksLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       const { data, error } = await supabase
+        .from("teacher_textbooks")
+        .select("id, title, updated_at, teacher_textbook_lessons(count)")
+        .eq("teacher_id", user.id)
+        .order("updated_at", { ascending: false });
+      if (error) throw error;
+      setTextbookOptions(((data ?? []) as any[]).map((t) => ({
+        id: t.id,
+        title: t.title,
+        lessonCount: t.teacher_textbook_lessons?.[0]?.count ?? 0,
+      })));
+    } catch (e: any) {
+      toast({ title: "Učebnice se nepodařilo načíst", description: e?.message ?? String(e), variant: "destructive" });
+    } finally {
+      setTextbooksLoading(false);
+    }
+  };
+
+  /** Krok 2 – lekce vybrané učebnice. */
+  const selectTextbook = async (tb: TextbookOption) => {
+    setSelectedTextbook(tb);
+    setLessonQuery("");
+    setLessonsLoading(true);
+    try {
+      const { data, error } = await supabase
         .from("teacher_textbook_lessons")
-        .select("id, title, teacher_textbooks!inner(title, teacher_id)")
-        .eq("teacher_textbooks.teacher_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(300);
+        .select("id, title, status, sort_order")
+        .eq("textbook_id", tb.id)
+        .order("sort_order", { ascending: true });
       if (error) throw error;
       setLessonOptions(((data ?? []) as any[]).map((l) => ({
         id: l.id,
         title: l.title,
-        textbookTitle: l.teacher_textbooks?.title ?? "",
+        textbookTitle: tb.title,
+        description: l.status === "published" ? "Zveřejněná lekce" : "Koncept",
       })));
     } catch (e: any) {
       toast({ title: "Lekce se nepodařilo načíst", description: e?.message ?? String(e), variant: "destructive" });
@@ -221,6 +248,7 @@ const TeacherPresentations = () => {
       setLessonsLoading(false);
     }
   };
+
 
   /** ČÁST 4 – propojení s lekcí + okamžité zkopírování slidů do lekce. */
   const linkToLesson = async (lesson: LessonOption) => {
