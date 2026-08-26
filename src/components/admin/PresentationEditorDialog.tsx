@@ -1186,6 +1186,7 @@ export const PresentationEditorDialog = ({
                   containerRef={canvasWrapRef}
                   block={selectedBlock}
                   positionKey={`${editingSlideIndex}-${blocks.length}`}
+                  framed={!!selectedBlock && !!getBlockFrame(selectedBlock)}
                   onChangeProps={(props) => {
                     if (!selectedBlockId) return;
                     updateBlock(selectedBlockId, (b: Block) => ({ ...b, props }));
