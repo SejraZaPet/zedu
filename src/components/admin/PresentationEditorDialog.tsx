@@ -1252,7 +1252,49 @@ export const PresentationEditorDialog = ({
                   )}
                 </div>
 
+                {/* Zoom slider — Miro/Figma styl */}
+                <div className="absolute right-3 top-3 z-20 flex items-center gap-2 rounded-lg border border-border bg-background/90 p-1 shadow-sm">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 w-7 p-0"
+                    title="Oddálit"
+                    aria-label="Oddálit"
+                    onClick={() => setZoom((z) => Math.max(0.2, z - 0.2))}
+                  >
+                    <ZoomOut className="h-3.5 w-3.5" />
+                  </Button>
+                  <Slider
+                    value={[zoom]}
+                    min={0.2}
+                    max={4}
+                    step={0.1}
+                    onValueChange={([v]) => setZoom(v)}
+                    className="w-28"
+                    aria-label="Zoom plátna"
+                  />
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 w-7 p-0"
+                    title="Přiblížit"
+                    aria-label="Přiblížit"
+                    onClick={() => setZoom((z) => Math.min(4, z + 0.2))}
+                  >
+                    <ZoomIn className="h-3.5 w-3.5" />
+                  </Button>
+                  <button
+                    type="button"
+                    onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }}
+                    className="min-w-[44px] rounded px-1.5 py-0.5 text-[11px] tabular-nums text-muted-foreground hover:bg-muted"
+                    title="Resetovat pohled"
+                  >
+                    {Math.round(zoom * 100)}%
+                  </button>
+                </div>
+
                 <div className="mx-auto flex h-full min-h-0 w-full max-w-full flex-col items-center justify-center pt-4">
+
                   {/* FORMÁTOVACÍ LIŠTA – vždy nad plátnem slidu (pevný slot, bez skákání layoutu) */}
                   <div className="mb-2 flex min-h-[42px] w-full shrink-0 items-center justify-center">
                     {selectedBlock ? (
