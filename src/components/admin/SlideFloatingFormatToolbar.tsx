@@ -47,7 +47,9 @@ export const SlideFloatingFormatToolbar = ({
   const isText = block ? TEXT_BLOCK_TYPES.has(block.type) : false;
   const isHeading = block?.type === "heading";
   const isBulletList = block?.type === "bullet_list" && Array.isArray(props.items);
-  const isImage = block?.type === "image";
+  const isIcon = block?.type === "image" && !!props.icon;
+  const isImage = block?.type === "image" && !isIcon;
+
 
 
   /** Spočítá pozici lišty – nad blokem, u horní třetiny plátna pod ním. */
