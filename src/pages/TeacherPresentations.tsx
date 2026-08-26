@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Loader2, Monitor, Plus, Link2, Trash2, BookOpen, CalendarDays, Layers,
+  Loader2, Monitor, Plus, Link2, Trash2, BookOpen, CalendarDays, Layers, ArrowLeft,
 } from "lucide-react";
 import PresentationEditorDialog from "@/components/admin/PresentationEditorDialog";
 import { themeIdFromSlides } from "@/lib/presentation-themes";
@@ -32,7 +32,15 @@ interface LessonOption {
   id: string;
   title: string;
   textbookTitle: string;
+  description?: string | null;
 }
+
+interface TextbookOption {
+  id: string;
+  title: string;
+  lessonCount: number;
+}
+
 
 const emptySlide = (title: string) => ({
   slideId: `slide-${Date.now()}`,
@@ -58,12 +66,16 @@ const TeacherPresentations = () => {
   const [pendingSlides, setPendingSlides] = useState<any[]>([]);
   const [editingSlideIndex, setEditingSlideIndex] = useState(0);
 
-  // Propojení s lekcí
+  // Propojení s lekcí – dvoustupňový výběr (učebnice → lekce)
   const [linkTarget, setLinkTarget] = useState<StandalonePresentation | null>(null);
+  const [textbookOptions, setTextbookOptions] = useState<TextbookOption[]>([]);
+  const [selectedTextbook, setSelectedTextbook] = useState<TextbookOption | null>(null);
   const [lessonOptions, setLessonOptions] = useState<LessonOption[]>([]);
   const [lessonsLoading, setLessonsLoading] = useState(false);
+  const [textbooksLoading, setTextbooksLoading] = useState(false);
   const [linkingId, setLinkingId] = useState<string | null>(null);
   const [lessonQuery, setLessonQuery] = useState("");
+
 
   const fetchItems = async () => {
     setLoading(true);
@@ -184,24 +196,51 @@ const TeacherPresentations = () => {
     }
   };
 
+  /** Krok 1 – učebnice učitele. */
   const openLinkPicker = async (p: StandalonePresentation) => {
     setLinkTarget(p);
     setLessonQuery("");
-    setLessonsLoading(true);
+    setSelectedTextbook(null);
+    setLessonOptions([]);
+    setTextbooksLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       const { data, error } = await supabase
+        .from("teacher_textbooks")
+        .select("id, title, updated_at, teacher_textbook_lessons(count)")
+        .eq("teacher_id", user.id)
+        .order("updated_at", { ascending: false });
+      if (error) throw error;
+      setTextbookOptions(((data ?? []) as any[]).map((t) => ({
+        id: t.id,
+        title: t.title,
+        lessonCount: t.teacher_textbook_lessons?.[0]?.count ?? 0,
+      })));
+    } catch (e: any) {
+      toast({ title: "Učebnice se nepodařilo načíst", description: e?.message ?? String(e), variant: "destructive" });
+    } finally {
+      setTextbooksLoading(false);
+    }
+  };
+
+  /** Krok 2 – lekce vybrané učebnice. */
+  const selectTextbook = async (tb: TextbookOption) => {
+    setSelectedTextbook(tb);
+    setLessonQuery("");
+    setLessonsLoading(true);
+    try {
+      const { data, error } = await supabase
         .from("teacher_textbook_lessons")
-        .select("id, title, teacher_textbooks!inner(title, teacher_id)")
-        .eq("teacher_textbooks.teacher_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(300);
+        .select("id, title, status, sort_order")
+        .eq("textbook_id", tb.id)
+        .order("sort_order", { ascending: true });
       if (error) throw error;
       setLessonOptions(((data ?? []) as any[]).map((l) => ({
         id: l.id,
         title: l.title,
-        textbookTitle: l.teacher_textbooks?.title ?? "",
+        textbookTitle: tb.title,
+        description: l.status === "published" ? "Zveřejněná lekce" : "Koncept",
       })));
     } catch (e: any) {
       toast({ title: "Lekce se nepodařilo načíst", description: e?.message ?? String(e), variant: "destructive" });
@@ -209,6 +248,7 @@ const TeacherPresentations = () => {
       setLessonsLoading(false);
     }
   };
+
 
   /** ČÁST 4 – propojení s lekcí + okamžité zkopírování slidů do lekce. */
   const linkToLesson = async (lesson: LessonOption) => {
@@ -234,6 +274,7 @@ const TeacherPresentations = () => {
         i.id === linkTarget.id ? { ...i, lesson_id: lesson.id, lessonTitle: lesson.title } : i
       )));
       setLinkTarget(null);
+      setSelectedTextbook(null);
       toast({
         title: "Propojeno s lekcí",
         description: `Prezentace je nyní dostupná i v lekci „${lesson.title}“.`,
@@ -248,9 +289,15 @@ const TeacherPresentations = () => {
   const filteredLessons = useMemo(() => {
     const q = lessonQuery.trim().toLowerCase();
     if (!q) return lessonOptions;
-    return lessonOptions.filter((l) =>
-      l.title.toLowerCase().includes(q) || l.textbookTitle.toLowerCase().includes(q));
+    return lessonOptions.filter((l) => l.title.toLowerCase().includes(q));
   }, [lessonOptions, lessonQuery]);
+
+  const filteredTextbooks = useMemo(() => {
+    const q = lessonQuery.trim().toLowerCase();
+    if (!q) return textbookOptions;
+    return textbookOptions.filter((t) => t.title.toLowerCase().includes(q));
+  }, [textbookOptions, lessonQuery]);
+
 
   /** Spuštění živé prezentace ze samostatné prezentace. */
   const launchLive = async (slides: any[], title: string) => {
@@ -375,29 +422,73 @@ const TeacherPresentations = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Propojení s lekcí */}
-      <Dialog open={!!linkTarget} onOpenChange={(o) => { if (!o) setLinkTarget(null); }}>
+      {/* Propojení s lekcí – dvoustupňový výběr */}
+      <Dialog open={!!linkTarget} onOpenChange={(o) => { if (!o) { setLinkTarget(null); setSelectedTextbook(null); } }}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Link2 className="h-4 w-4" /> Propojit s lekcí
             </DialogTitle>
             <DialogDescription>
-              Vyberte lekci ve své učebnici. Slidy se do lekce hned zkopírují, takže je uvidíte i uvnitř lekce.
+              {selectedTextbook
+                ? `Vyberte lekci v učebnici „${selectedTextbook.title}“. Slidy se do lekce hned zkopírují.`
+                : "Nejprve vyberte učebnici, ve které lekce leží."}
             </DialogDescription>
           </DialogHeader>
+
+          {selectedTextbook && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-fit gap-1"
+              onClick={() => { setSelectedTextbook(null); setLessonQuery(""); }}
+            >
+              <ArrowLeft className="h-4 w-4" /> Zpět na učebnice
+            </Button>
+          )}
+
           <Input
-            placeholder="Hledat lekci nebo učebnici…"
+            placeholder={selectedTextbook ? "Hledat lekci…" : "Hledat učebnici…"}
             value={lessonQuery}
             onChange={(e) => setLessonQuery(e.target.value)}
           />
-          {lessonsLoading ? (
+
+          {!selectedTextbook ? (
+            textbooksLoading ? (
+              <div className="flex justify-center py-8 text-muted-foreground">
+                <Loader2 className="h-5 w-5 animate-spin" />
+              </div>
+            ) : filteredTextbooks.length === 0 ? (
+              <p className="py-6 text-sm text-muted-foreground">
+                Žádná učebnice nenalezena. Vytvořte učebnici a zkuste to znovu.
+              </p>
+            ) : (
+              <div className="max-h-[50vh] space-y-1 overflow-y-auto pr-1">
+                {filteredTextbooks.map((t) => (
+                  <Button
+                    key={t.id}
+                    variant="outline"
+                    className="h-auto w-full justify-between gap-2 py-2 text-left"
+                    onClick={() => selectTextbook(t)}
+                  >
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm">{t.title}</span>
+                      <span className="block truncate text-xs text-muted-foreground">
+                        {t.lessonCount} {t.lessonCount === 1 ? "lekce" : t.lessonCount >= 2 && t.lessonCount <= 4 ? "lekce" : "lekcí"}
+                      </span>
+                    </span>
+                    <BookOpen className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  </Button>
+                ))}
+              </div>
+            )
+          ) : lessonsLoading ? (
             <div className="flex justify-center py-8 text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin" />
             </div>
           ) : filteredLessons.length === 0 ? (
             <p className="py-6 text-sm text-muted-foreground">
-              Žádná lekce nenalezena. Vytvořte lekci ve své učebnici a zkuste to znovu.
+              V této učebnici není žádná odpovídající lekce.
             </p>
           ) : (
             <div className="max-h-[50vh] space-y-1 overflow-y-auto pr-1">
@@ -411,7 +502,7 @@ const TeacherPresentations = () => {
                 >
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm">{l.title}</span>
-                    <span className="block truncate text-xs text-muted-foreground">{l.textbookTitle}</span>
+                    <span className="block truncate text-xs text-muted-foreground">{l.description}</span>
                   </span>
                   {linkingId === l.id ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 </Button>
@@ -420,6 +511,7 @@ const TeacherPresentations = () => {
           )}
         </DialogContent>
       </Dialog>
+
 
       {/* ČÁST 3 – editor nad samostatnou prezentací */}
       <PresentationEditorDialog
