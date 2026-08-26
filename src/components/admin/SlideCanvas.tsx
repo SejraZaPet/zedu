@@ -303,11 +303,14 @@ function EditableBlock({
   block,
   editable,
   asCard,
+  framed,
   onChange,
 }: {
   block: Block;
   editable?: boolean;
   asCard?: boolean;
+  /** Blok je ve volné vrstvě (má `frame`). */
+  framed?: boolean;
   onChange?: (patch: Partial<Block> | ((b: Block) => Block)) => void;
 }) {
   const update = (patch: Partial<Block> | ((b: Block) => Block)) => onChange?.(patch);
