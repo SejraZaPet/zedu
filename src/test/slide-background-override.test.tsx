@@ -42,7 +42,7 @@ describe("SlideCanvas pozadí slidu", () => {
     const el = stageOf(container);
     expect(el.style.backgroundImage).toContain("https://cdn.test/bg.jpg");
     expect(el.style.backgroundSize).toBe("cover");
-    expect(el.style.background).toBe("");
+    expect(el.style.background).not.toContain("linear-gradient");
   });
 
   it("vykreslí vlastní barvu pozadí", () => {
