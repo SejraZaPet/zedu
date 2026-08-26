@@ -2,58 +2,13 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ShapeRenderer, { SHAPE_KINDS } from "@/components/blocks/ShapeRenderer";
-import { SLIDE_TEXT_COLORS } from "@/lib/slide-typography";
+import ColorPicker from "@/components/admin/ColorPicker";
 import type { Block } from "@/lib/textbook-config";
 
 interface Props {
   block: Block;
   onChange: (props: Record<string, any>) => void;
 }
-
-const ColorRow = ({
-  label,
-  value,
-  onPick,
-  allowNone,
-}: {
-  label: string;
-  value: string | null | undefined;
-  onPick: (v: string | null) => void;
-  allowNone?: boolean;
-}) => (
-  <div>
-    <Label className="text-[11px] text-muted-foreground">{label}</Label>
-    <div className="mt-1 flex items-center gap-1.5">
-      {allowNone && (
-        <button
-          type="button"
-          onClick={() => onPick(null)}
-          className={`h-6 rounded border px-1.5 text-[10px] ${!value ? "border-primary text-foreground" : "border-border text-muted-foreground"}`}
-        >
-          Bez
-        </button>
-      )}
-      {SLIDE_TEXT_COLORS.map((c) => (
-        <button
-          key={c}
-          type="button"
-          title={c}
-          aria-label={`${label} ${c}`}
-          onClick={() => onPick(c)}
-          className={`h-6 w-6 rounded-full border-2 transition-transform ${value === c ? "border-primary scale-110" : "border-border"}`}
-          style={{ background: c }}
-        />
-      ))}
-      <input
-        type="color"
-        value={/^#/.test(value || "") ? (value as string) : "#000000"}
-        onChange={(e) => onPick(e.target.value)}
-        className="h-6 w-9 cursor-pointer rounded border border-border bg-transparent"
-        aria-label={`Vlastní ${label.toLowerCase()}`}
-      />
-    </div>
-  </div>
-);
 
 const ShapeBlock = ({ block, onChange }: Props) => {
   const p = block.props || {};
@@ -97,8 +52,26 @@ const ShapeBlock = ({ block, onChange }: Props) => {
         </div>
       </div>
 
-      <ColorRow label="Výplň" value={p.fillColor} onPick={(v) => set({ fillColor: v ?? "none" })} allowNone />
-      <ColorRow label="Obrys" value={p.strokeColor} onPick={(v) => set({ strokeColor: v ?? "none" })} allowNone />
+      <div>
+        <Label className="text-[11px] text-muted-foreground">Výplň</Label>
+        <ColorPicker
+          value={p.fillColor === "none" ? null : p.fillColor}
+          onChange={(v) => set({ fillColor: v ?? "none" })}
+          allowNull
+          nullLabel="Bez"
+          className="mt-1"
+        />
+      </div>
+      <div>
+        <Label className="text-[11px] text-muted-foreground">Obrys</Label>
+        <ColorPicker
+          value={p.strokeColor === "none" ? null : p.strokeColor}
+          onChange={(v) => set({ strokeColor: v ?? "none" })}
+          allowNull
+          nullLabel="Bez"
+          className="mt-1"
+        />
+      </div>
 
       <div className="rounded-md border border-border bg-muted/20 p-2">
         <ShapeRenderer

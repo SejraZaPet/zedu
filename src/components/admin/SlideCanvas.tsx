@@ -4,6 +4,9 @@ import { LessonBlock, CALLOUT_STYLES } from "@/components/LessonBlockRenderer";
 import type { Block } from "@/lib/textbook-config";
 import { MediaPickerDialog } from "@/components/media/MediaPickerDialog";
 import DOMPurify from "dompurify";
+import ShapeRenderer from "@/components/blocks/ShapeRenderer";
+import SlideDrawingLayer, { type DrawingStroke } from "@/components/admin/SlideDrawingLayer";
+import { STAGE_W, STAGE_H } from "@/lib/slide-stage";
 import { getPresentationTheme, themeStageStyle } from "@/lib/presentation-themes";
 import { getSlideIcon } from "@/lib/slide-icons";
 import {
@@ -41,8 +44,7 @@ export const SLIDE_LAYOUTS: { value: SlideLayout; label: string }[] = [
   { value: "title-only", label: "Pouze nadpis" },
 ];
 
-export const STAGE_W = 1600;
-export const STAGE_H = 900;
+export { STAGE_W, STAGE_H } from "@/lib/slide-stage";
 
 interface BodyProps {
   slide: any;
@@ -56,6 +58,11 @@ interface BodyProps {
   onMoveBlock?: (blockId: string, dir: "up" | "down") => void;
   onDeleteBlock?: (blockId: string) => void;
   onChangeHeroImage?: (url: string) => void;
+  /** Režim kreslení tužkou nad slidem. */
+  drawMode?: boolean;
+  drawColor?: string;
+  drawWidth?: number;
+  onAddStroke?: (stroke: DrawingStroke) => void;
   /** Přesun bloku přetažením: cílem je index v rámci celého slidu. */
   onReorderBlock?: (blockId: string, toIndex: number) => void;
   /** ID právě vybraného bloku (viditelný rámeček). */
@@ -725,9 +732,27 @@ function EditableBlock({
     );
   }
 
-  // Ikony jsou v datech `image` s `props.icon`; tvary mají vlastní typ `shape`.
+  // Tvary vykreslujeme přímo jako SVG – ať jdou upravovat z plovoucí lišty.
+  if (block.type === "shape") {
+    const p = (block.props || {}) as Record<string, any>;
+    return (
+      <div className={framed ? "h-full w-full" : ""}>
+        <ShapeRenderer
+          shapeKind={p.shapeKind}
+          fillColor={p.fillColor}
+          strokeColor={p.strokeColor}
+          strokeWidth={p.strokeWidth}
+          height={Number(p.height) || 160}
+          fill={framed}
+        />
+      </div>
+    );
+  }
+
+  // Ikony jsou v datech `image` s `props.icon`.
   const needsPanelHint =
-    editable && (block.type === "shape" || (block.type === "image" && !!(block.props as any)?.icon));
+    editable && block.type === "image" && !!(block.props as any)?.icon;
+
 
 
   // Fallback (accordion, rovnice, video, zvuk…): use existing renderer
@@ -946,6 +971,10 @@ export function SlideBody({
   onReorderBlock,
   selectedBlockId,
   onSelectBlock,
+  drawMode,
+  drawColor,
+  drawWidth,
+  onAddStroke,
 }: BodyProps) {
   const freeLayerRef = useRef<HTMLDivElement>(null);
   const flowAreaRef = useRef<HTMLDivElement>(null);
@@ -1243,6 +1272,15 @@ export function SlideBody({
           {body}
         </div>
       </div>
+
+      {/* Vrstva ručního kreslení (tahy tužkou) – nad obsahem, pod volnými bloky */}
+      <SlideDrawingLayer
+        strokes={slide?.drawingStrokes}
+        drawMode={drawMode}
+        drawColor={drawColor}
+        drawWidth={drawWidth}
+        onAddStroke={onAddStroke}
+      />
 
       {/* Vrstva volně umístěných bloků (jen bloky s `frame`) */}
       {(
