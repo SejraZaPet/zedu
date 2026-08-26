@@ -1356,6 +1356,7 @@ const SlideCanvas = ({
   darkMode = true,
   themeId,
   zoom = 1,
+  absoluteScale = null,
   pan = { x: 0, y: 0 },
   onZoomChange,
   onPanChange,
