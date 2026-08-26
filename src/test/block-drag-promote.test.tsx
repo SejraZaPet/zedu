@@ -34,7 +34,10 @@ describe("drag & drop flow bloku (auto-promote do frame)", () => {
 
   it("klik (pod prahem 6px) blok nepovýší – text zůstane editovatelný", () => {
     const { onChangeBlock, wrapper } = setup();
-    fireEvent.pointerDown(wrapper, { button: 0, clientX: 200, clientY: 200 });
+    fireEvent(
+      wrapper,
+      new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 200, clientY: 200 }),
+    );
     fireEvent(window, new MouseEvent("pointermove", { clientX: 203, clientY: 202 } as any));
     fireEvent(window, new MouseEvent("pointerup", {} as any));
     expect(onChangeBlock).not.toHaveBeenCalled();
@@ -42,7 +45,10 @@ describe("drag & drop flow bloku (auto-promote do frame)", () => {
 
   it("tažení nad prahem povýší blok do frame a dál ho posouvá", () => {
     const { onChangeBlock, wrapper } = setup();
-    fireEvent.pointerDown(wrapper, { button: 0, clientX: 200, clientY: 200 });
+    fireEvent(
+      wrapper,
+      new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 200, clientY: 200 }),
+    );
     fireEvent(window, new MouseEvent("pointermove", { clientX: 240, clientY: 200 } as any));
     fireEvent(window, new MouseEvent("pointerup", {} as any));
 
