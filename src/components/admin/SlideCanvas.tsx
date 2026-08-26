@@ -516,22 +516,75 @@ function EditableBlock({
   if (block.type === "callout") {
     const value = block.props?.text || "";
     const isHtml = /<[^>]+>/.test(value);
-    const ct = CALLOUT_STYLES[block.props?.calloutType] || CALLOUT_STYLES.note;
+    const kind = block.props?.calloutType || "note";
+    const ct = CALLOUT_STYLES[kind] || CALLOUT_STYLES.note;
+    const tone =
+      kind === "tip"
+        ? "bg-green-500/20 border-green-400/50"
+        : kind === "warning"
+          ? "bg-amber-500/20 border-amber-400/50"
+          : kind === "remember"
+            ? "bg-purple-500/20 border-purple-400/50"
+            : "bg-blue-500/20 border-blue-400/50";
     return (
-      <div className={`rounded-lg border-l-4 ${ct.border} ${ct.bg} p-4 flex gap-3`}>
-        <span className="text-xl flex-shrink-0">{ct.icon}</span>
+      <div className={`rounded-lg border-l-4 ${tone} p-4 flex gap-3 text-white`}>
+        <span className="text-4xl flex-shrink-0 leading-none">{ct.icon}</span>
         <EditableText
           editable={editable}
           multiline
           html={isHtml}
           value={value}
           placeholder={BLOCK_PLACEHOLDER}
-          className="flex-1 text-foreground text-sm leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-1 [&_mark]:bg-primary/30"
+          className="flex-1 text-white text-2xl leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-1 [&_mark]:bg-primary/30"
+          style={slideTextStyle(block.props)}
           onCommit={(v) => update((b) => ({ ...b, props: { ...b.props, text: v } }))}
         />
       </div>
     );
   }
+
+  if (block.type === "video") {
+    const url = block.props?.url;
+    if (!url) {
+      return (
+        <div className="flex min-h-[300px] flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-white/40 p-6 text-center text-white">
+          <VideoIcon className="h-12 w-12" />
+          <span className="text-xl text-white/80">
+            Klikněte na „Více možností“ v pravém panelu a vložte URL videa
+          </span>
+        </div>
+      );
+    }
+    return (
+      <figure className="w-full text-white">
+        <video controls src={url} className="w-full rounded-lg" style={{ minHeight: "300px", maxHeight: "500px" }} />
+        {block.props?.caption && (
+          <figcaption className="mt-2 text-center text-xl text-white/80">{block.props.caption}</figcaption>
+        )}
+      </figure>
+    );
+  }
+
+  if (block.type === "audio") {
+    const url = block.props?.url;
+    if (!url) {
+      return (
+        <div className="flex min-h-[100px] flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-white/40 p-4 text-center text-white">
+          <Music className="h-10 w-10" />
+          <span className="text-xl text-white/80">Vložte URL zvuku v pravém panelu</span>
+        </div>
+      );
+    }
+    return (
+      <figure className="w-full text-white">
+        <audio controls src={url} className="w-full" style={{ minHeight: "80px", fontSize: "1.5rem" }} />
+        {block.props?.caption && (
+          <figcaption className="mt-2 text-center text-xl text-white/80">{block.props.caption}</figcaption>
+        )}
+      </figure>
+    );
+  }
+
 
 
   if (block.type === "image" && block.props?.icon && !block.props?.url) {
