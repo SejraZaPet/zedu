@@ -26,7 +26,6 @@ import TextbooksPage from "./pages/TextbooksPage";
 import ProfilePage from "./pages/ProfilePage";
 import TeacherTextbooks from "./pages/TeacherTextbooks";
 import TeacherPresentations from "./pages/TeacherPresentations";
-import SlideHintsPreview from "./pages/SlideHintsPreview";
 import TeacherLessons from "./pages/TeacherLessons";
 import StudentTextbooks from "./pages/StudentTextbooks";
 import StudentTextbookDetail from "./pages/StudentTextbookDetail";
