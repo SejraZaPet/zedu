@@ -577,16 +577,128 @@ function EditableBlock({
     );
   }
 
-  // Fallback (table, accordion, etc.): use existing renderer
+  if (block.type === "table") {
+    const headers: string[] = Array.isArray(block.props?.headers) ? block.props.headers : [];
+    const rows: string[][] = Array.isArray(block.props?.rows) ? block.props.rows : [];
+    const colCount = Math.max(headers.length, ...rows.map((r) => r.length), 1);
+    const setTable = (nextHeaders: string[], nextRows: string[][]) =>
+      update((b) => ({ ...b, props: { ...b.props, headers: nextHeaders, rows: nextRows } }));
+
+    return (
+      <div
+        className={asCard ? "bg-white/10 p-4 border border-white/15" : ""}
+        style={asCard ? { borderRadius: "var(--slide-radius, 0.75rem)" } : undefined}
+      >
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-2xl">
+            {headers.length > 0 && (
+              <thead>
+                <tr>
+                  {headers.map((h, ci) => (
+                    <th
+                      key={ci}
+                      className="border border-white/20 bg-white/20 px-3 py-2 text-left font-semibold text-white"
+                    >
+                      <EditableText
+                        editable={editable}
+                        value={h}
+                        placeholder={editable ? "Záhlaví…" : undefined}
+                        onCommit={(v) => {
+                          const next = [...headers];
+                          next[ci] = v;
+                          setTable(next, rows);
+                        }}
+                      />
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+            )}
+            <tbody>
+              {rows.map((row, ri) => (
+                <tr key={ri}>
+                  {Array.from({ length: colCount }).map((_, ci) => (
+                    <td
+                      key={ci}
+                      className="border border-white/20 bg-transparent px-3 py-2 align-top text-white/90"
+                    >
+                      <EditableText
+                        editable={editable}
+                        value={row[ci] ?? ""}
+                        placeholder={editable ? BLOCK_PLACEHOLDER : undefined}
+                        onCommit={(v) => {
+                          const nextRows = rows.map((r, j) => {
+                            if (j !== ri) return r;
+                            const nr = Array.from({ length: colCount }, (__, k) => r[k] ?? "");
+                            nr[ci] = v;
+                            return nr;
+                          });
+                          setTable(headers, nextRows);
+                        }}
+                      />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {editable && (
+          <div className="mt-2 flex gap-3" data-no-block-drag>
+            <button
+              type="button"
+              className="text-sm text-purple-300 hover:text-purple-200"
+              onClick={() =>
+                setTable(headers, [...rows, Array.from({ length: colCount }, () => "")])
+              }
+            >
+              + řádek
+            </button>
+            <button
+              type="button"
+              className="text-sm text-purple-300 hover:text-purple-200"
+              onClick={() =>
+                setTable(
+                  headers.length > 0 ? [...headers, ""] : headers,
+                  rows.map((r) => [...Array.from({ length: colCount }, (_, k) => r[k] ?? ""), ""]),
+                )
+              }
+            >
+              + sloupec
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Ikony jsou v datech `image` s `props.icon`; tvary mají vlastní typ `shape`.
+  const needsPanelHint =
+    editable && (block.type === "shape" || (block.type === "image" && !!(block.props as any)?.icon));
+
+
+  // Fallback (accordion, rovnice, video, zvuk…): use existing renderer
   return (
     <div
-      className={asCard ? "bg-white/10 p-4 border border-white/15" : ""}
-      style={asCard ? { borderRadius: "var(--slide-radius, 0.75rem)" } : undefined}
+      className={`${asCard ? "bg-white/10 p-4 border border-white/15" : ""} ${needsPanelHint ? "group/panel relative" : ""}`}
+      style={{
+        fontSize: "1.5rem",
+        lineHeight: 1.5,
+        ...(asCard ? { borderRadius: "var(--slide-radius, 0.75rem)" } : {}),
+      }}
     >
       <LessonBlock block={block} blockIndex={0} isTeacher={false} />
+      {needsPanelHint && (
+        <div className="pointer-events-none absolute inset-0 hidden items-center justify-center rounded-lg bg-black/50 group-hover/panel:flex">
+          <span className="rounded-md bg-white/90 px-3 py-1 text-sm font-medium text-slate-900">
+            ✏️ Upravit v panelu
+          </span>
+        </div>
+      )}
     </div>
   );
 }
+
 
 function splitIntoColumns<T>(arr: T[], n: number): T[][] {
   const cols: T[][] = Array.from({ length: n }, () => []);
@@ -929,8 +1041,9 @@ export function SlideBody({
         startFrame = clampBlockFrame({
           x: ((rect.left - lr.left) / lr.width) * 100,
           y: ((rect.top - lr.top) / lr.height) * 100,
-          w: (rect.width / lr.width) * 100,
+          w: Math.min((rect.width / lr.width) * 100, 80),
           h: (rect.height / lr.height) * 100,
+
         });
         onSelectBlock?.(b.id);
         onChangeBlock(b.id, (prev: Block) => ({ ...prev, frame: startFrame } as Block));

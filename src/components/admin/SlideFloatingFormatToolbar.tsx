@@ -48,26 +48,31 @@ export const SlideFloatingFormatToolbar = ({
   const isImage = block?.type === "image";
 
 
+  /** Spočítá pozici lišty – nad blokem, u horní třetiny plátna pod ním. */
+  const measurePos = () => {
+    const container = containerRef.current;
+    const el = container?.querySelector(`[data-slide-block-id="${block?.id}"]`) as HTMLElement | null;
+    if (!container || !el || !block) return null;
+    const cRect = container.getBoundingClientRect();
+    const bRect = el.getBoundingClientRect();
+    const relTop = bRect.top - cRect.top;
+    const inTopThird = cRect.height > 0 && relTop < cRect.height * 0.3;
+    const top = inTopThird
+      ? Math.min(bRect.bottom - cRect.top + 8, Math.max(4, cRect.height - 46))
+      : Math.max(4, relTop - 46);
+    return {
+      top,
+      left: Math.max(4, Math.min(bRect.left - cRect.left, cRect.width - 320)),
+    };
+  };
+
   useLayoutEffect(() => {
     if (!block) {
       setPos(null);
       return;
     }
     let frame = 0;
-    const measure = () => {
-      const container = containerRef.current;
-      const el = container?.querySelector(`[data-slide-block-id="${block.id}"]`) as HTMLElement | null;
-      if (!container || !el) {
-        setPos(null);
-        return;
-      }
-      const cRect = container.getBoundingClientRect();
-      const bRect = el.getBoundingClientRect();
-      setPos({
-        top: Math.max(4, bRect.top - cRect.top - 46),
-        left: Math.max(4, Math.min(bRect.left - cRect.left, cRect.width - 320)),
-      });
-    };
+    const measure = () => setPos(measurePos());
     measure();
     frame = window.requestAnimationFrame(measure);
     const container = containerRef.current;
@@ -85,19 +90,13 @@ export const SlideFloatingFormatToolbar = ({
   useEffect(() => {
     if (!block) return;
     const t = window.setTimeout(() => {
-      const container = containerRef.current;
-      const el = container?.querySelector(`[data-slide-block-id="${block.id}"]`) as HTMLElement | null;
-      if (!container || !el) return;
-      const cRect = container.getBoundingClientRect();
-      const bRect = el.getBoundingClientRect();
-      setPos({
-        top: Math.max(4, bRect.top - cRect.top - 46),
-        left: Math.max(4, Math.min(bRect.left - cRect.left, cRect.width - 320)),
-      });
+      const next = measurePos();
+      if (next) setPos(next);
     }, 60);
     return () => window.clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(props)]);
+
 
   if (!block || !pos) return null;
 
