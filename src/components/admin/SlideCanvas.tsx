@@ -4,6 +4,7 @@ import { LessonBlock, CALLOUT_STYLES } from "@/components/LessonBlockRenderer";
 import type { Block } from "@/lib/textbook-config";
 import { MediaPickerDialog } from "@/components/media/MediaPickerDialog";
 import DOMPurify from "dompurify";
+import ShapeRenderer from "@/components/blocks/ShapeRenderer";
 import { getPresentationTheme, themeStageStyle } from "@/lib/presentation-themes";
 import { getSlideIcon } from "@/lib/slide-icons";
 import {
