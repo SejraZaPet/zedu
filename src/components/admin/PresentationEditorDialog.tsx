@@ -137,6 +137,7 @@ export const PresentationEditorDialog = ({
   const [exportingPdf, setExportingPdf] = useState(false);
   const [generatingActivity, setGeneratingActivity] = useState(false);
   const [sidebarSection, setSidebarSection] = useState<"insert" | "slide" | "activities">("insert");
+  const [teacherNotesOpen, setTeacherNotesOpen] = useState(false);
   const canvasWrapRef = useRef<HTMLDivElement>(null);
 
   const currentSlide = pendingSlides[editingSlideIndex];
@@ -195,6 +196,12 @@ export const PresentationEditorDialog = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editingSlideIndex, currentSlide?.slideId]);
+
+  // Při přepnutí snímku sbal prázdné pole poznámek
+  useEffect(() => {
+    setTeacherNotesOpen(false);
+  }, [editingSlideIndex]);
+
 
   const updateSlide = (patch: any) => {
     const updated = [...pendingSlides];
@@ -986,6 +993,36 @@ export const PresentationEditorDialog = ({
                         </div>
                       </CollapsibleContent>
                     </Collapsible>
+
+                    {/* Poznámky pro učitele */}
+                    <div className="space-y-2 border-t border-border pt-3">
+                      <Label className="flex items-center gap-1.5 text-xs">
+                        <StickyNote className="h-3.5 w-3.5" /> Poznámky pro učitele
+                        <span className="font-normal text-muted-foreground">— vidí jen ty, žáci ne</span>
+                      </Label>
+                      {teacherNotesOpen || (currentSlide as any).teacherNotes ? (
+                        <Textarea
+                          rows={4}
+                          className="text-xs"
+                          value={(currentSlide as any).teacherNotes || ""}
+                          onChange={(e) => updateSlide({ teacherNotes: e.target.value })}
+                          placeholder="Poznámka k tomuto slidu..."
+                        />
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">Žádné poznámky</span>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-xs"
+                            onClick={() => setTeacherNotesOpen(true)}
+                          >
+                            Přidat
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   )}
 

@@ -1361,13 +1361,15 @@ const LiveTeacherScreen = () => {
             <p className="text-sm whitespace-pre-wrap">{currentSlide.device.instructions}</p>
           </div>
 
-          {/* Teacher notes */}
-          {currentSlide.teacherNotes && (
+          {/* Teacher notes (blokový model: teacherNotes, AI plány: speakerNotes) */}
+          {(currentSlide.teacherNotes || (currentSlide as any).speakerNotes) && (
             <div className="border border-dashed border-border rounded-lg p-3">
               <div className="flex items-center gap-2 mb-1 text-xs font-medium text-muted-foreground">
                 <StickyNote className="w-3.5 h-3.5" /> POZNÁMKY
               </div>
-              <p className="text-xs text-muted-foreground">{currentSlide.teacherNotes}</p>
+              <p className="text-xs text-muted-foreground whitespace-pre-wrap">
+                {currentSlide.teacherNotes || (currentSlide as any).speakerNotes}
+              </p>
             </div>
           )}
 
