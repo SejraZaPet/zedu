@@ -9,10 +9,11 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import {
   Monitor, Plus, Trash2, ChevronDown, Save, Sun, Moon, Type, List, Image as ImageIcon,
-  Table as TableIcon, Settings2, Undo2, Redo2, ZoomIn, Copy, FileDown, Heading as HeadingIcon,
+  Table as TableIcon, Settings2, Undo2, Redo2, ZoomIn, ZoomOut, Copy, FileDown, Heading as HeadingIcon,
   Quote as QuoteIcon, StickyNote, BarChart3, Sigma, Video as VideoIcon, Music, Loader2, Bookmark,
   Wand2, Settings, Puzzle, ArrowLeft, ExternalLink, Gamepad2, Move, FileUp,
 } from "lucide-react";
+
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
