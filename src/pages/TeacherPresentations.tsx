@@ -421,29 +421,73 @@ const TeacherPresentations = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Propojení s lekcí */}
-      <Dialog open={!!linkTarget} onOpenChange={(o) => { if (!o) setLinkTarget(null); }}>
+      {/* Propojení s lekcí – dvoustupňový výběr */}
+      <Dialog open={!!linkTarget} onOpenChange={(o) => { if (!o) { setLinkTarget(null); setSelectedTextbook(null); } }}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Link2 className="h-4 w-4" /> Propojit s lekcí
             </DialogTitle>
             <DialogDescription>
-              Vyberte lekci ve své učebnici. Slidy se do lekce hned zkopírují, takže je uvidíte i uvnitř lekce.
+              {selectedTextbook
+                ? `Vyberte lekci v učebnici „${selectedTextbook.title}“. Slidy se do lekce hned zkopírují.`
+                : "Nejprve vyberte učebnici, ve které lekce leží."}
             </DialogDescription>
           </DialogHeader>
+
+          {selectedTextbook && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-fit gap-1"
+              onClick={() => { setSelectedTextbook(null); setLessonQuery(""); }}
+            >
+              <ArrowLeft className="h-4 w-4" /> Zpět na učebnice
+            </Button>
+          )}
+
           <Input
-            placeholder="Hledat lekci nebo učebnici…"
+            placeholder={selectedTextbook ? "Hledat lekci…" : "Hledat učebnici…"}
             value={lessonQuery}
             onChange={(e) => setLessonQuery(e.target.value)}
           />
-          {lessonsLoading ? (
+
+          {!selectedTextbook ? (
+            textbooksLoading ? (
+              <div className="flex justify-center py-8 text-muted-foreground">
+                <Loader2 className="h-5 w-5 animate-spin" />
+              </div>
+            ) : filteredTextbooks.length === 0 ? (
+              <p className="py-6 text-sm text-muted-foreground">
+                Žádná učebnice nenalezena. Vytvořte učebnici a zkuste to znovu.
+              </p>
+            ) : (
+              <div className="max-h-[50vh] space-y-1 overflow-y-auto pr-1">
+                {filteredTextbooks.map((t) => (
+                  <Button
+                    key={t.id}
+                    variant="outline"
+                    className="h-auto w-full justify-between gap-2 py-2 text-left"
+                    onClick={() => selectTextbook(t)}
+                  >
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm">{t.title}</span>
+                      <span className="block truncate text-xs text-muted-foreground">
+                        {t.lessonCount} {t.lessonCount === 1 ? "lekce" : t.lessonCount >= 2 && t.lessonCount <= 4 ? "lekce" : "lekcí"}
+                      </span>
+                    </span>
+                    <BookOpen className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  </Button>
+                ))}
+              </div>
+            )
+          ) : lessonsLoading ? (
             <div className="flex justify-center py-8 text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin" />
             </div>
           ) : filteredLessons.length === 0 ? (
             <p className="py-6 text-sm text-muted-foreground">
-              Žádná lekce nenalezena. Vytvořte lekci ve své učebnici a zkuste to znovu.
+              V této učebnici není žádná odpovídající lekce.
             </p>
           ) : (
             <div className="max-h-[50vh] space-y-1 overflow-y-auto pr-1">
@@ -457,7 +501,7 @@ const TeacherPresentations = () => {
                 >
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm">{l.title}</span>
-                    <span className="block truncate text-xs text-muted-foreground">{l.textbookTitle}</span>
+                    <span className="block truncate text-xs text-muted-foreground">{l.description}</span>
                   </span>
                   {linkingId === l.id ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 </Button>
@@ -466,6 +510,7 @@ const TeacherPresentations = () => {
           )}
         </DialogContent>
       </Dialog>
+
 
       {/* ČÁST 3 – editor nad samostatnou prezentací */}
       <PresentationEditorDialog
