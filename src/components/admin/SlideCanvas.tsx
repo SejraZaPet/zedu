@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useCallback } from "react";
-import { ArrowUp, ArrowDown, Trash2, ImageIcon, GripVertical } from "lucide-react";
+import { ArrowUp, ArrowDown, Trash2, ImageIcon, GripVertical, Move } from "lucide-react";
 import { LessonBlock } from "@/components/LessonBlockRenderer";
 import type { Block } from "@/lib/textbook-config";
 import { MediaPickerDialog } from "@/components/media/MediaPickerDialog";
@@ -7,10 +7,17 @@ import DOMPurify from "dompurify";
 import { getPresentationTheme, themeStageStyle } from "@/lib/presentation-themes";
 import { getSlideIcon } from "@/lib/slide-icons";
 import {
+  applyFrameDrag,
+  getBlockFrame,
+  type BlockFrame,
+  type FrameHandle,
+} from "@/lib/block-frame";
+import {
   slideAnimationClass,
   slideBackgroundOverride,
   slideTextStyle,
 } from "@/lib/slide-typography";
+
 
 export type SlideLayout =
   | "full"
