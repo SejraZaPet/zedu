@@ -75,11 +75,14 @@ interface CanvasProps extends BodyProps {
   fit?: boolean;
   /** Ruční zoom nad rámec "fit" (1 = 100 % velikosti po autofitu). */
   zoom?: number;
+  /** Pevné škálování (1 = 100 % skutečné velikosti). Vypíná autofit i pan/wheel zoom. */
+  absoluteScale?: number | null;
   /** Posun plátna v CSS pixelech od středu. */
   pan?: { x: number; y: number };
   onZoomChange?: (zoom: number) => void;
   onPanChange?: (pan: { x: number; y: number }) => void;
 }
+
 
 
 /* ---------- Inline-editable atoms ---------- */
