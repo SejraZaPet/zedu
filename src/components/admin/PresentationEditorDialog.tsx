@@ -1177,7 +1177,7 @@ export const PresentationEditorDialog = ({
                   />
                   </div>
                   <p className="mt-2 shrink-0 text-center text-[11px] text-muted-foreground">
-                    Klikněte na blok pro editaci • klikněte znovu nebo vyberte blok pro formátovací lištu.
+                    Klikněte na blok pro editaci — formátovací lišta se zobrazí nad vybraným blokem.
                   </p>
                 </div>
 
