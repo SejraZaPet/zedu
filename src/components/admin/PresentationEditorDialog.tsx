@@ -11,7 +11,7 @@ import {
   Monitor, Plus, Trash2, ChevronDown, Save, Sun, Moon, Type, List, Image as ImageIcon,
   Table as TableIcon, Settings2, Undo2, Redo2, ZoomIn, Copy, FileDown, Heading as HeadingIcon,
   Quote as QuoteIcon, StickyNote, BarChart3, Sigma, Video as VideoIcon, Music, Loader2, Bookmark,
-  Wand2, Settings, Puzzle, ArrowLeft, ExternalLink, Gamepad2,
+  Wand2, Settings, Puzzle, ArrowLeft, ExternalLink, Gamepad2, Move, FileUp,
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
@@ -28,6 +28,9 @@ import { createDefaultBlock, type Block } from "@/lib/textbook-config";
 import { SLIDE_BACKGROUND_COLORS } from "@/lib/slide-typography";
 import ZoomZonesEditor from "@/components/admin/ZoomZonesEditor";
 import { isZoomableSlide, type ZoomZone } from "@/lib/zoom-zones";
+import { DEFAULT_BLOCK_FRAME, getBlockFrame } from "@/lib/block-frame";
+import { Switch } from "@/components/ui/switch";
+import ImportPptxToPresentationDialog from "@/components/admin/ImportPptxToPresentationDialog";
 import ThemeGalleryPopover from "@/components/admin/ThemeGalleryPopover";
 import StartFromTemplateDialog from "@/components/admin/StartFromTemplateDialog";
 import IconPickerDialog from "@/components/admin/IconPickerDialog";
@@ -91,6 +94,29 @@ const InsertTile = ({
     <span className="leading-tight text-center">{label}</span>
   </button>
 );
+
+const BLOCK_TYPE_LABELS: Record<string, string> = {
+  heading: "Nadpis",
+  paragraph: "Text",
+  bullet_list: "Odrážky",
+  image: "Obrázek",
+  table: "Tabulka",
+  chart: "Graf",
+  formula: "Rovnice",
+  video: "Video",
+  audio: "Zvuk",
+  quote: "Citace",
+  callout: "Box",
+  shape: "Tvar",
+};
+
+/** Krátký popis bloku pro seznam v panelu. */
+const blockLabel = (block: Block, index: number) => {
+  const kind = BLOCK_TYPE_LABELS[block.type] || block.type;
+  const raw = String(block.props?.text || block.props?.html || block.props?.caption || "");
+  const text = raw.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  return `${index + 1}. ${kind}${text ? ` – ${text.slice(0, 24)}` : ""}`;
+};
 
 const stripHtml = (html: string) => String(html || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 
