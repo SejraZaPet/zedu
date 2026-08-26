@@ -14,9 +14,10 @@ import {
 } from "@/lib/block-frame";
 import {
   slideAnimationClass,
-  slideBackgroundOverride,
+  slideBackgroundOverrideStyle,
   slideTextStyle,
 } from "@/lib/slide-typography";
+
 
 
 export type SlideLayout =
