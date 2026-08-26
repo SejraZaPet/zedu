@@ -91,13 +91,16 @@ function EditableText({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const sanitizedValue = html ? DOMPurify.sanitize(value || "") : value || "";
+  const [isEmpty, setIsEmpty] = useState(() => !(html ? sanitizedValue : value));
 
   useEffect(() => {
-    if (ref.current && document.activeElement !== ref.current) {
-      if (html) ref.current.innerHTML = sanitizedValue;
-      else ref.current.innerText = value || "";
-    }
+    setIsEmpty(!(html ? sanitizedValue : value));
   }, [html, sanitizedValue, value]);
+
+  const checkEmpty = useCallback(() => {
+    if (!ref.current) return;
+    setIsEmpty(!ref.current.innerText?.trim());
+  }, []);
 
   if (!editable) {
     return (
@@ -105,32 +108,42 @@ function EditableText({
         <div
           className={className}
           style={style}
-          dangerouslySetInnerHTML={{ __html: sanitizedValue || (placeholder ? `<span class="opacity-40">${placeholder}</span>` : "") }}
+          dangerouslySetInnerHTML={{ __html: sanitizedValue || (placeholder ? `<span class="opacity-40 italic pointer-events-none">${placeholder}</span>` : "") }}
         />
       ) : (
         <div className={className} style={{ whiteSpace: multiline ? "pre-wrap" : undefined, ...style }}>
-          {value || (placeholder ? <span className="opacity-40">{placeholder}</span> : null)}
+          {value || (placeholder ? <span className="opacity-40 italic pointer-events-none">{placeholder}</span> : null)}
         </div>
       )
     );
   }
 
   return (
-    <div
-      ref={ref}
-      contentEditable
-      suppressContentEditableWarning
-      data-placeholder={placeholder || ""}
-      style={style}
-      onBlur={(e) => onCommit(html ? e.currentTarget.innerHTML : e.currentTarget.innerText)}
-      onKeyDown={(e) => {
-        if (!multiline && e.key === "Enter") {
-          e.preventDefault();
-          (e.currentTarget as HTMLElement).blur();
-        }
-      }}
-      className={`${className || ""} cursor-text rounded px-1 -mx-1 outline-none focus:ring-2 focus:ring-primary focus:bg-white/5 hover:bg-white/5 transition-colors empty:before:content-[attr(data-placeholder)] empty:before:opacity-40`}
-    />
+    <div className="relative">
+      <div
+        ref={ref}
+        contentEditable
+        suppressContentEditableWarning
+        style={style}
+        onInput={checkEmpty}
+        onBlur={(e) => {
+          checkEmpty();
+          onCommit(html ? e.currentTarget.innerHTML : e.currentTarget.innerText);
+        }}
+        onKeyDown={(e) => {
+          if (!multiline && e.key === "Enter") {
+            e.preventDefault();
+            (e.currentTarget as HTMLElement).blur();
+          }
+        }}
+        className={`${className || ""} cursor-text rounded px-1 -mx-1 outline-none focus:ring-2 focus:ring-primary focus:bg-white/5 hover:bg-white/5 transition-colors`}
+      />
+      {isEmpty && placeholder && (
+        <span className="pointer-events-none absolute left-1 top-0 italic text-muted-foreground/40 select-none">
+          {placeholder}
+        </span>
+      )}
+    </div>
   );
 }
 
