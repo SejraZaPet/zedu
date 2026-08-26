@@ -150,7 +150,6 @@ const App = () => (
             <Route path="/portfolio/:studentId" element={<ProtectedRoute><PortfolioView /></ProtectedRoute>} />
             <Route path="/student/ulohy/:assignmentId" element={<ProtectedRoute><StudentAssignmentPlayer /></ProtectedRoute>} />
             <Route path="/aktivity" element={<ActivitiesPage />} />
-            <Route path="/slide-hints-preview" element={<SlideHintsPreview />} />
             <Route path="/hra/ucitel/:sessionId" element={<ProtectedRoute><TeacherGameScreen /></ProtectedRoute>} />
             <Route path="/hra/pripojit" element={<StudentGameJoin />} />
             <Route path="/hra/hrac/:sessionId" element={<StudentGamePlay />} />
