@@ -118,6 +118,12 @@ const RichTextEditor = ({ content, onChange }: Props) => {
 
   if (!editor) return null;
 
+  const currentLineHeight =
+    (editor.getAttributes("paragraph").lineHeight as string | null) ||
+    (editor.getAttributes("heading").lineHeight as string | null) ||
+    null;
+
+
   return (
     <div className="border border-border rounded-lg overflow-hidden bg-card">
       {/* Toolbar */}
