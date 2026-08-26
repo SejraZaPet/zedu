@@ -34,12 +34,18 @@ describe("block-frame helpers", () => {
     });
   });
 
-  it("drží rámec v ploše slidu", () => {
+  it("dovolí přesah za hranu slidu (full-bleed), ale drží rozumné meze", () => {
     expect(clampBlockFrame({ x: 95, y: -10, w: 30, h: 200 })).toEqual({
-      x: 70,
-      y: 0,
+      x: 95,
+      y: -10,
       w: 30,
-      h: 100,
+      h: 200,
+    });
+    expect(clampBlockFrame({ x: -500, y: 500, w: 1000, h: 1 })).toEqual({
+      x: -100,
+      y: 195,
+      w: 300,
+      h: 5,
     });
   });
 
