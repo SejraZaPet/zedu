@@ -73,7 +73,14 @@ interface BodyProps {
 interface CanvasProps extends BodyProps {
   /** When true (default), scale stage to fit container. Otherwise renders at native 1600×900. */
   fit?: boolean;
+  /** Ruční zoom nad rámec "fit" (1 = 100 % velikosti po autofitu). */
+  zoom?: number;
+  /** Posun plátna v CSS pixelech od středu. */
+  pan?: { x: number; y: number };
+  onZoomChange?: (zoom: number) => void;
+  onPanChange?: (pan: { x: number; y: number }) => void;
 }
+
 
 /* ---------- Inline-editable atoms ---------- */
 
@@ -1338,9 +1345,23 @@ export function SlideBody({
 
 /* ---------- Scaled canvas wrapper ---------- */
 
-const SlideCanvas = ({ fit = true, darkMode = true, themeId, ...rest }: CanvasProps) => {
+const MIN_ZOOM = 0.2;
+const MAX_ZOOM = 4;
+
+const SlideCanvas = ({
+  fit = true,
+  darkMode = true,
+  themeId,
+  zoom = 1,
+  pan = { x: 0, y: 0 },
+  onZoomChange,
+  onPanChange,
+  ...rest
+}: CanvasProps) => {
   const frameRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
+  const [panning, setPanning] = useState(false);
+
   // Explicit 16:9 box computed from the *available* space of the parent element
   // (width AND height), so the canvas never overflows its container.
   const [box, setBox] = useState<{ w: number; h: number } | null>(null);
@@ -1378,7 +1399,68 @@ const SlideCanvas = ({ fit = true, darkMode = true, themeId, ...rest }: CanvasPr
     return () => ro.disconnect();
   }, [fit]);
 
+  // Zoom kolečkem myši s kotvou pod kurzorem (Miro/Figma chování).
+  useEffect(() => {
+    const el = frameRef.current;
+    if (!el || !fit) return;
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 100 : 1);
+      const nextZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom * Math.exp(-dy * 0.0015)));
+      if (nextZoom === zoom || !onZoomChange) return;
+      const rect = el.getBoundingClientRect();
+      const px = e.clientX - rect.left;
+      const py = e.clientY - rect.top;
+      const effective = scale * zoom;
+      const centerX = rect.width / 2 + pan.x;
+      const centerY = rect.height / 2 + pan.y;
+      const topLeftX = centerX - (STAGE_W * effective) / 2;
+      const topLeftY = centerY - (STAGE_H * effective) / 2;
+      const k = nextZoom / zoom;
+      const newTopLeftX = px - (px - topLeftX) * k;
+      const newTopLeftY = py - (py - topLeftY) * k;
+      const newCenterX = newTopLeftX + (STAGE_W * scale * nextZoom) / 2;
+      const newCenterY = newTopLeftY + (STAGE_H * scale * nextZoom) / 2;
+      onZoomChange(nextZoom);
+      onPanChange?.({ x: newCenterX - rect.width / 2, y: newCenterY - rect.height / 2 });
+    };
+    el.addEventListener("wheel", handleWheel, { passive: false });
+    return () => el.removeEventListener("wheel", handleWheel);
+  }, [fit, zoom, pan, scale, onZoomChange, onPanChange]);
+
+  // Pan tažením prázdné plochy (neblokujeme interakce s bloky/ovládacími prvky).
+  const startPan = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return;
+    const target = e.target as HTMLElement;
+    if (
+      target.closest(
+        '[data-slide-block-id], [data-slide-drawing-layer], button, a, input, textarea, select, [role="slider"], [contenteditable="true"]'
+      )
+    ) {
+      return;
+    }
+    if ((rest as any).drawMode) return;
+    e.preventDefault();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setPanning(true);
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startPan = { ...pan };
+    const move = (ev: PointerEvent) => {
+      onPanChange?.({ x: startPan.x + (ev.clientX - startX), y: startPan.y + (ev.clientY - startY) });
+    };
+    const up = () => {
+      setPanning(false);
+      e.currentTarget.releasePointerCapture(e.pointerId);
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+
   const effectiveThemeId = themeId ?? (rest as any).slide?.themeId;
+
   const theme = getPresentationTheme(effectiveThemeId);
   const bgOverride = slideBackgroundOverrideStyle((rest as any).slide);
   let bgStyle: React.CSSProperties = effectiveThemeId
@@ -1404,12 +1486,17 @@ const SlideCanvas = ({ fit = true, darkMode = true, themeId, ...rest }: CanvasPr
     );
   }
 
+  const effectiveScale = scale * zoom;
+
   return (
     <div
       ref={frameRef}
+      onPointerDown={startPan}
       className={`relative mx-auto max-h-full max-w-full rounded-xl shadow-lg border border-border ${
         (rest as any).editable ? "overflow-visible" : "overflow-hidden"
-      } ${box ? "" : "aspect-video w-full"}`}
+      } ${box ? "" : "aspect-video w-full"} ${(rest as any).editable ? "cursor-grab" : ""} ${
+        panning ? "cursor-grabbing" : ""
+      }`}
       style={box ? { ...bgStyle, width: box.w, height: box.h } : bgStyle}
     >
       <div
@@ -1418,13 +1505,14 @@ const SlideCanvas = ({ fit = true, darkMode = true, themeId, ...rest }: CanvasPr
         style={{
           width: `${STAGE_W}px`,
           height: `${STAGE_H}px`,
-          transform: `translate(-50%, -50%) scale(${scale})`,
+          transform: `translate(calc(-50% + ${pan.x}px), calc(-50% + ${pan.y}px)) scale(${effectiveScale})`,
         }}
       >
         {body}
       </div>
     </div>
   );
+
 };
 
 export default SlideCanvas;

@@ -9,14 +9,17 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import {
   Monitor, Plus, Trash2, ChevronDown, Save, Sun, Moon, Type, List, Image as ImageIcon,
-  Table as TableIcon, Settings2, Undo2, Redo2, ZoomIn, Copy, FileDown, Heading as HeadingIcon,
+  Table as TableIcon, Settings2, Undo2, Redo2, ZoomIn, ZoomOut, Copy, FileDown, Heading as HeadingIcon,
   Quote as QuoteIcon, StickyNote, BarChart3, Sigma, Video as VideoIcon, Music, Loader2, Bookmark,
   Wand2, Settings, Puzzle, ArrowLeft, ExternalLink, Gamepad2, Move, FileUp,
 } from "lucide-react";
+
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+
 
 import { SLIDE_GAME_MODES } from "@/lib/game-slide-settings";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -144,11 +147,21 @@ export const PresentationEditorDialog = ({
   const [drawMode, setDrawMode] = useState(false);
   const [drawColor, setDrawColor] = useState("#FDE047");
   const [drawWidth, setDrawWidth] = useState(3);
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
   const canvasWrapRef = useRef<HTMLDivElement>(null);
+
 
   const currentSlide = pendingSlides[editingSlideIndex];
   const themeId = themeIdFromSlides(pendingSlides);
   const theme = getPresentationTheme(themeId);
+
+  // Při přepnutí slidu resetujeme zoom/pan zpět na autofit.
+  useEffect(() => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+  }, [editingSlideIndex]);
+
 
   const setThemeId = (next: string) => setPendingSlides(applyThemeToSlides(pendingSlides, next));
   const transition = transitionFromSlides(pendingSlides);
@@ -1239,7 +1252,49 @@ export const PresentationEditorDialog = ({
                   )}
                 </div>
 
+                {/* Zoom slider — Miro/Figma styl */}
+                <div className="absolute right-3 top-3 z-20 flex items-center gap-2 rounded-lg border border-border bg-background/90 p-1 shadow-sm">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 w-7 p-0"
+                    title="Oddálit"
+                    aria-label="Oddálit"
+                    onClick={() => setZoom((z) => Math.max(0.2, z - 0.2))}
+                  >
+                    <ZoomOut className="h-3.5 w-3.5" />
+                  </Button>
+                  <Slider
+                    value={[zoom]}
+                    min={0.2}
+                    max={4}
+                    step={0.1}
+                    onValueChange={([v]) => setZoom(v)}
+                    className="w-28"
+                    aria-label="Zoom plátna"
+                  />
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 w-7 p-0"
+                    title="Přiblížit"
+                    aria-label="Přiblížit"
+                    onClick={() => setZoom((z) => Math.min(4, z + 0.2))}
+                  >
+                    <ZoomIn className="h-3.5 w-3.5" />
+                  </Button>
+                  <button
+                    type="button"
+                    onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }}
+                    className="min-w-[44px] rounded px-1.5 py-0.5 text-[11px] tabular-nums text-muted-foreground hover:bg-muted"
+                    title="Resetovat pohled"
+                  >
+                    {Math.round(zoom * 100)}%
+                  </button>
+                </div>
+
                 <div className="mx-auto flex h-full min-h-0 w-full max-w-full flex-col items-center justify-center pt-4">
+
                   {/* FORMÁTOVACÍ LIŠTA – vždy nad plátnem slidu (pevný slot, bez skákání layoutu) */}
                   <div className="mb-2 flex min-h-[42px] w-full shrink-0 items-center justify-center">
                     {selectedBlock ? (
@@ -1305,7 +1360,12 @@ export const PresentationEditorDialog = ({
                         drawingStrokes: [...(((currentSlide as any).drawingStrokes || []) as DrawingStroke[]), stroke],
                       })
                     }
+                    zoom={zoom}
+                    pan={pan}
+                    onZoomChange={setZoom}
+                    onPanChange={setPan}
                   />
+
                   </div>
                 </div>
               </div>
