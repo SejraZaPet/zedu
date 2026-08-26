@@ -124,7 +124,7 @@ function EditableText({
         ref={ref}
         contentEditable
         suppressContentEditableWarning
-        style={style}
+        style={html ? style : { whiteSpace: multiline ? "pre-wrap" : undefined, ...style }}
         onInput={checkEmpty}
         onBlur={(e) => {
           checkEmpty();
@@ -137,6 +137,9 @@ function EditableText({
           }
         }}
         className={`${className || ""} cursor-text rounded px-1 -mx-1 outline-none focus:ring-2 focus:ring-primary focus:bg-white/5 hover:bg-white/5 transition-colors`}
+        {...(html
+          ? { dangerouslySetInnerHTML: { __html: sanitizedValue } }
+          : { children: value || "" })}
       />
       {isEmpty && placeholder && (
         <span className="pointer-events-none absolute left-1 top-0 text-white/30 italic text-sm select-none">
