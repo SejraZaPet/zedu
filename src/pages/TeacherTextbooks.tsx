@@ -22,7 +22,7 @@ import TeacherTextbookLessonEditorSheet from "@/components/teacher/TeacherTextbo
 import ShareContentDialog from "@/components/sharing/ShareContentDialog";
 import type { Block } from "@/lib/textbook-config";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
 
 import {
@@ -151,6 +151,43 @@ const TeacherTextbooks = () => {
     hasSavedPresentation,
     openEditor, launchLiveSession, launchNew,
   } = usePresentationLauncher();
+
+  /**
+   * ČÁST 5 – lekce bez slidů, ale s propojenou samostatnou prezentací:
+   * nabídneme pokračování v propojené prezentaci, nebo klasické vytvoření nové.
+   */
+  const [linkedPresentationChoice, setLinkedPresentationChoice] =
+    useState<{ lesson: any; presentationId: string; presentationTitle: string } | null>(null);
+
+  const handleOpenPresentation = async (lesson: any) => {
+    if (lesson?.source === "teacher_textbook_lessons") {
+      const { data: lessonRow } = await supabase
+        .from("teacher_textbook_lessons")
+        .select("presentation_slides")
+        .eq("id", lesson.id)
+        .maybeSingle();
+      const savedSlides = (lessonRow as any)?.presentation_slides;
+      const hasSlides = Array.isArray(savedSlides) && savedSlides.length > 0;
+      if (!hasSlides) {
+        const { data: linked } = await supabase
+          .from("teacher_presentations" as any)
+          .select("id, title")
+          .eq("lesson_id", lesson.id)
+          .order("updated_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (linked) {
+          setLinkedPresentationChoice({
+            lesson,
+            presentationId: (linked as any).id,
+            presentationTitle: (linked as any).title,
+          });
+          return;
+        }
+      }
+    }
+    await openEditor(lesson);
+  };
 
   const fetchTextbooks = async () => {
     const { data } = await supabase
@@ -600,7 +637,7 @@ const TeacherTextbooks = () => {
                 onAddLesson={(topicId) => { setNewLessonTopicId(topicId); setCreateLessonOpen(true); }}
                 onEditTopic={(topic) => setEditingTopic(topic)}
                 onDeleteTopic={handleDeleteTopic}
-                onOpenPresentation={openEditor}
+                onOpenPresentation={handleOpenPresentation}
                 onOpenWorksheet={async (lesson) => {
                   const lessonType: "global" | "teacher" =
                     lesson.source === "textbook_lessons" ? "global" : "teacher";
@@ -828,6 +865,42 @@ const TeacherTextbooks = () => {
           textbookTitle={selectedTextbook.title}
           subjectSlug={selectedTextbook.subject}
         />
+
+        {/* ČÁST 5 – volba mezi propojenou samostatnou prezentací a novou */}
+        <Dialog open={!!linkedPresentationChoice} onOpenChange={(o) => { if (!o) setLinkedPresentationChoice(null); }}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Prezentace k této lekci</DialogTitle>
+              <DialogDescription>
+                K lekci je propojená samostatná prezentace „{linkedPresentationChoice?.presentationTitle}“.
+                Můžete v ní pokračovat, nebo vytvořit novou prezentaci ze obsahu lekce.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-2">
+              <Button
+                className="w-full"
+                onClick={() => {
+                  const id = linkedPresentationChoice!.presentationId;
+                  setLinkedPresentationChoice(null);
+                  navigate(`/ucitel/prezentace?open=${id}`);
+                }}
+              >
+                Pokračovat v propojené prezentaci
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={async () => {
+                  const lesson = linkedPresentationChoice!.lesson;
+                  setLinkedPresentationChoice(null);
+                  await openEditor(lesson);
+                }}
+              >
+                Vytvořit novou
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         <PresentationEditorDialog
           presentationLesson={presentationLesson ? { ...presentationLesson, textbookId: selectedTextbook.id } : null}

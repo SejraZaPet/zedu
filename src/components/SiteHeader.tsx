@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Menu, X, LogIn, LogOut, User, BookOpen, GraduationCap, LayoutDashboard, Users, BarChart3, HelpCircle, Layers, FolderOpen, Activity, TrendingUp, Gamepad2, Settings, CalendarDays, Brain, School, Image as ImageIcon, ShoppingBag, UserCheck, BookMarked, ClipboardList, Library, Zap, NotebookPen, Award } from "lucide-react";
+import { Menu, X, LogIn, LogOut, User, BookOpen, GraduationCap, LayoutDashboard, Users, BarChart3, HelpCircle, Layers, FolderOpen, Activity, TrendingUp, Gamepad2, Settings, CalendarDays, Brain, School, Image as ImageIcon, ShoppingBag, UserCheck, BookMarked, ClipboardList, Library, Zap, NotebookPen, Award, Monitor } from "lucide-react";
 import logo from "@/assets/bezli-logo.png";
 import { Button } from "@/components/ui/button";
 import {
@@ -56,6 +56,7 @@ const TEACHER_MENU_GROUPS: TeacherMenuGroup[] = [
     title: "Obsah a knihovna",
     items: [
       { label: "Moje učebnice", href: "/ucitel/ucebnice", icon: BookOpen },
+      { label: "Prezentace", href: "/ucitel/prezentace", icon: Monitor },
       { label: "Média", href: "/ucitel/media", icon: ImageIcon },
       { label: "Sdíleno se mnou", href: "/ucitel/sdileno-se-mnou", icon: Layers },
       { label: "Sledovaní tvůrci", href: "/ucitel/sledovani-tvurci", icon: UserCheck },

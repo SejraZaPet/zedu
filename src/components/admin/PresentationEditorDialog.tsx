@@ -59,6 +59,11 @@ export interface PresentationLessonRef {
 
 interface Props {
   presentationLesson: PresentationLessonRef | null;
+  /**
+   * Zdroj slidů. 'lesson' = klasická prezentace uložená u lekce (výchozí, zpětně kompatibilní),
+   * 'standalone' = samostatná prezentace v tabulce teacher_presentations.
+   */
+  source?: { type: "lesson"; lessonId?: string } | { type: "standalone"; presentationId: string };
   pendingSlides: any[];
   setPendingSlides: (slides: any[]) => void;
   editingSlideIndex: number;
@@ -90,7 +95,7 @@ const InsertTile = ({
 const stripHtml = (html: string) => String(html || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 
 export const PresentationEditorDialog = ({
-  presentationLesson, pendingSlides, setPendingSlides,
+  presentationLesson, source, pendingSlides, setPendingSlides,
   editingSlideIndex, setEditingSlideIndex,
   onClose, onLaunch, onSave, hasSavedPresentation,
   existingSession, onContinueExisting, onLaunchNew, onCloseExisting,
@@ -252,8 +257,11 @@ export const PresentationEditorDialog = ({
     }
   };
 
-  /** ČÁST 2 – URL zpět na lekci; null = odkaz nezobrazovat. */
+  const isStandalone = source?.type === "standalone";
+
+  /** ČÁST 2 – URL zpět (na lekci nebo na seznam samostatných prezentací). */
   const lessonBackUrl = (() => {
+    if (isStandalone) return "/ucitel/prezentace";
     const l = presentationLesson;
     if (!l) return null;
     if (l.textbookId) return `/ucitel/ucebnice/${l.textbookId}/lekce`;
@@ -316,19 +324,24 @@ export const PresentationEditorDialog = ({
             </DialogDescription>
 
             <div className="flex flex-wrap items-center gap-2">
-              {/* ČÁST 2 – zpět na lekci (jen pokud lze sestavit funkční URL) */}
+              {/* ČÁST 2 – zpět na lekci / na seznam samostatných prezentací */}
               {lessonBackUrl && (
                 <Button
                   variant="ghost"
                   size="sm"
                   className="h-8 max-w-[220px] gap-1.5 text-xs"
                   onClick={() => { onClose(); navigate(lessonBackUrl); }}
-                  title={`Zpět na lekci ${presentationLesson?.title ?? ""}`}
+                  title={isStandalone ? "Zpět na prezentace" : `Zpět na lekci ${presentationLesson?.title ?? ""}`}
                 >
                   <ArrowLeft className="h-3.5 w-3.5 shrink-0" />
-                  <span className="truncate">Zpět na lekci{presentationLesson?.title ? `: ${presentationLesson.title}` : ""}</span>
+                  <span className="truncate">
+                    {isStandalone
+                      ? "Zpět na prezentace"
+                      : `Zpět na lekci${presentationLesson?.title ? `: ${presentationLesson.title}` : ""}`}
+                  </span>
                 </Button>
               )}
+
 
               {/* Skupina „vzhled slidu“ */}
 
