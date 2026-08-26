@@ -5,6 +5,8 @@ import Image from "@tiptap/extension-image";
 import Underline from "@tiptap/extension-underline";
 import TextAlign from "@tiptap/extension-text-align";
 import Placeholder from "@tiptap/extension-placeholder";
+import { LineHeight, LINE_HEIGHT_OPTIONS } from "@/lib/tiptap-line-height";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -59,6 +61,8 @@ const RichTextEditor = ({ content, onChange }: Props) => {
       Underline,
       TextAlign.configure({ types: ["heading", "paragraph", "image"] }),
       Placeholder.configure({ placeholder: "Začněte psát článek…" }),
+      LineHeight,
+
     ],
     content,
     onUpdate: ({ editor: e }) => onChange(e.getHTML()),
@@ -114,6 +118,12 @@ const RichTextEditor = ({ content, onChange }: Props) => {
 
   if (!editor) return null;
 
+  const currentLineHeight =
+    (editor.getAttributes("paragraph").lineHeight as string | null) ||
+    (editor.getAttributes("heading").lineHeight as string | null) ||
+    null;
+
+
   return (
     <div className="border border-border rounded-lg overflow-hidden bg-card">
       {/* Toolbar */}
@@ -158,7 +168,26 @@ const RichTextEditor = ({ content, onChange }: Props) => {
         <MenuButton active={editor.isActive({ textAlign: "center" })} onClick={() => editor.chain().focus().setTextAlign("center").run()} title="Zarovnat na střed">
           <AlignCenter className="w-4 h-4" />
         </MenuButton>
+        <div className="w-px bg-border mx-1" />
+        <Select
+          value={currentLineHeight ?? "default"}
+          onValueChange={(v) => {
+            if (v === "default") editor.chain().focus().unsetLineHeight().run();
+            else editor.chain().focus().setLineHeight(v).run();
+          }}
+        >
+          <SelectTrigger className="h-7 w-[128px] px-2 text-xs" title="Řádkování">
+            <SelectValue placeholder="Řádkování" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="default" className="text-xs">Řádkování: auto</SelectItem>
+            {LINE_HEIGHT_OPTIONS.map((lh) => (
+              <SelectItem key={lh} value={lh} className="text-xs">{`Řádkování ${lh}×`}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
+
 
       <EditorContent editor={editor} />
 

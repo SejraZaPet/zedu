@@ -15,10 +15,15 @@ import {
   Palette, X, Superscript as SuperscriptIcon, Subscript as SubscriptIcon,
 } from "lucide-react";
 import { SLIDE_HIGHLIGHT_COLORS } from "@/lib/slide-typography";
+import { LineHeight, LINE_HEIGHT_OPTIONS } from "@/lib/tiptap-line-height";
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { useEffect, useRef, useState } from "react";
+
 
 interface Props {
   content: string;
@@ -248,7 +253,9 @@ const MiniRichEditor = ({
       Placeholder.configure({ placeholder }),
       Superscript,
       Subscript,
+      LineHeight,
     ],
+
     content,
     onUpdate: ({ editor: e }) => {
       if (!skipUpdate.current) {
@@ -277,6 +284,11 @@ const MiniRichEditor = ({
   if (!editor) return null;
 
   const sz = "w-3.5 h-3.5";
+  const currentLineHeight =
+    (editor.getAttributes("paragraph").lineHeight as string | null) ||
+    (editor.getAttributes("heading").lineHeight as string | null) ||
+    null;
+
 
   return (
     <div className="border border-border rounded-md overflow-hidden bg-background">
@@ -354,7 +366,27 @@ const MiniRichEditor = ({
             </TB>
           </>
         )}
+
+        <div className="w-px bg-border mx-0.5" />
+        <Select
+          value={currentLineHeight ?? "default"}
+          onValueChange={(v) => {
+            if (v === "default") editor.chain().focus().unsetLineHeight().run();
+            else editor.chain().focus().setLineHeight(v).run();
+          }}
+        >
+          <SelectTrigger className="h-6 w-[104px] px-2 text-[11px]" title="Řádkování">
+            <SelectValue placeholder="Řádkování" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="default" className="text-xs">Řádkování: auto</SelectItem>
+            {LINE_HEIGHT_OPTIONS.map((lh) => (
+              <SelectItem key={lh} value={lh} className="text-xs">{`Řádkování ${lh}×`}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
+
       <EditorContent editor={editor} />
     </div>
   );
