@@ -13,6 +13,7 @@ import LessonsManager from "@/components/admin/LessonsManager";
 import TextbooksManager from "@/components/admin/TextbooksManager";
 import TeacherTextbooksManager from "@/components/admin/TeacherTextbooksManager";
 import HelpGuidesManager from "@/components/admin/HelpGuidesManager";
+import AdminHelpManager from "@/components/admin/AdminHelpManager";
 import SubjectsManager from "@/components/admin/SubjectsManager";
 import UsersManager from "@/components/admin/UsersManager";
 import ClassesManager from "@/components/admin/ClassesManager";
@@ -329,7 +330,12 @@ const Admin = () => {
         {activeTab === "crm" && !isTeacher && <CrmManager />}
         {activeTab === "market-economics" && !isTeacher && <MarketplaceEconomicsManager />}
         {activeTab === "website-assistant" && !isTeacher && <WebsiteAssistantManager />}
-        {activeTab === "help" && <HelpGuidesManager />}
+        {activeTab === "help" && (
+          <div className="space-y-10">
+            {!isTeacher && <AdminHelpManager />}
+            <HelpGuidesManager />
+          </div>
+        )}
 
       </div>
     </div>
