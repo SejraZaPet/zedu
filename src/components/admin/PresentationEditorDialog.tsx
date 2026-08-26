@@ -147,7 +147,7 @@ export const PresentationEditorDialog = ({
   const [drawMode, setDrawMode] = useState(false);
   const [drawColor, setDrawColor] = useState("#FDE047");
   const [drawWidth, setDrawWidth] = useState(3);
-  const [zoom, setZoom] = useState(1);
+  const [zoom, setZoom] = useState<number | "fit">("fit");
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const canvasWrapRef = useRef<HTMLDivElement>(null);
 
@@ -158,9 +158,13 @@ export const PresentationEditorDialog = ({
 
   // Při přepnutí slidu resetujeme zoom/pan zpět na autofit.
   useEffect(() => {
-    setZoom(1);
+    setZoom("fit");
     setPan({ x: 0, y: 0 });
   }, [editingSlideIndex]);
+
+  const zoomPct = zoom === "fit" ? 100 : zoom;
+  const stepZoom = (delta: number) =>
+    setZoom((z) => Math.min(500, Math.max(25, (z === "fit" ? 100 : z) + delta)));
 
 
   const setThemeId = (next: string) => setPendingSlides(applyThemeToSlides(pendingSlides, next));
@@ -1155,7 +1159,12 @@ export const PresentationEditorDialog = ({
               </aside>
 
               {/* 5. CENTRÁLNÍ PLÁTNO */}
-              <div ref={canvasWrapRef} className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-muted/30 p-4 xl:p-6">
+              <div
+                ref={canvasWrapRef}
+                className={`relative flex min-h-0 flex-1 flex-col bg-muted/30 p-4 xl:p-6 ${
+                  zoom === "fit" ? "overflow-hidden" : "overflow-auto"
+                }`}
+              >
                 <div className="absolute left-3 top-3 z-20 flex items-center gap-1">
                   <Button
                     size="sm"
@@ -1252,48 +1261,11 @@ export const PresentationEditorDialog = ({
                   )}
                 </div>
 
-                {/* Zoom slider — Miro/Figma styl */}
-                <div className="absolute right-3 top-3 z-20 flex items-center gap-2 rounded-lg border border-border bg-background/90 p-1 shadow-sm">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 w-7 p-0"
-                    title="Oddálit"
-                    aria-label="Oddálit"
-                    onClick={() => setZoom((z) => Math.max(0.2, z - 0.2))}
-                  >
-                    <ZoomOut className="h-3.5 w-3.5" />
-                  </Button>
-                  <Slider
-                    value={[zoom]}
-                    min={0.2}
-                    max={4}
-                    step={0.1}
-                    onValueChange={([v]) => setZoom(v)}
-                    className="w-28"
-                    aria-label="Zoom plátna"
-                  />
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 w-7 p-0"
-                    title="Přiblížit"
-                    aria-label="Přiblížit"
-                    onClick={() => setZoom((z) => Math.min(4, z + 0.2))}
-                  >
-                    <ZoomIn className="h-3.5 w-3.5" />
-                  </Button>
-                  <button
-                    type="button"
-                    onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }}
-                    className="min-w-[44px] rounded px-1.5 py-0.5 text-[11px] tabular-nums text-muted-foreground hover:bg-muted"
-                    title="Resetovat pohled"
-                  >
-                    {Math.round(zoom * 100)}%
-                  </button>
-                </div>
-
-                <div className="mx-auto flex h-full min-h-0 w-full max-w-full flex-col items-center justify-center pt-4">
+                <div
+                  className={`mx-auto flex w-full flex-col pt-4 ${
+                    zoom === "fit" ? "h-full min-h-0 max-w-full items-center justify-center" : "w-max items-center"
+                  }`}
+                >
 
                   {/* FORMÁTOVACÍ LIŠTA – vždy nad plátnem slidu (pevný slot, bez skákání layoutu) */}
                   <div className="mb-2 flex min-h-[42px] w-full shrink-0 items-center justify-center">
@@ -1339,7 +1311,11 @@ export const PresentationEditorDialog = ({
                       </p>
                     )}
                   </div>
-                  <div className="flex min-h-0 w-full flex-1 items-center justify-center">
+                  <div
+                    className={`flex w-full items-center justify-center ${
+                      zoom === "fit" ? "min-h-0 flex-1" : ""
+                    }`}
+                  >
                   <SlideCanvas
                     slide={currentSlide}
                     themeId={themeId}
@@ -1360,12 +1336,61 @@ export const PresentationEditorDialog = ({
                         drawingStrokes: [...(((currentSlide as any).drawingStrokes || []) as DrawingStroke[]), stroke],
                       })
                     }
-                    zoom={zoom}
+                    zoom={1}
+                    absoluteScale={zoom === "fit" ? null : zoom / 100}
                     pan={pan}
-                    onZoomChange={setZoom}
+                    onZoomChange={(z) => setZoom(Math.round(z * 100))}
                     onPanChange={setPan}
                   />
 
+                  </div>
+                </div>
+
+                {/* Zoom lišta — Canva styl, spodní střed plátna */}
+                <div className="pointer-events-none sticky bottom-0 z-20 flex justify-center pt-2">
+                  <div className="pointer-events-auto flex items-center gap-2 rounded-full border border-border bg-background/95 px-2 py-1 shadow-md">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 w-7 p-0"
+                      title="Oddálit"
+                      aria-label="Oddálit"
+                      onClick={() => stepZoom(-25)}
+                    >
+                      <ZoomOut className="h-3.5 w-3.5" />
+                    </Button>
+                    <input
+                      type="range"
+                      min={25}
+                      max={500}
+                      step={5}
+                      value={zoomPct}
+                      onChange={(e) => setZoom(Number(e.target.value))}
+                      className="h-1.5 w-[180px] cursor-pointer accent-primary"
+                      aria-label="Zoom plátna"
+                    />
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 w-7 p-0"
+                      title="Přiblížit"
+                      aria-label="Přiblížit"
+                      onClick={() => stepZoom(25)}
+                    >
+                      <ZoomIn className="h-3.5 w-3.5" />
+                    </Button>
+                    <span className="min-w-[86px] text-center text-[11px] tabular-nums text-muted-foreground">
+                      {zoom === "fit" ? "Přizpůsobit" : `${zoom}%`}
+                    </span>
+                    <Button
+                      size="sm"
+                      variant={zoom === "fit" ? "default" : "outline"}
+                      className="h-7 px-2 text-[11px]"
+                      onClick={() => { setZoom("fit"); setPan({ x: 0, y: 0 }); }}
+                      title="Přizpůsobit oknu"
+                    >
+                      Přizpůsobit
+                    </Button>
                   </div>
                 </div>
               </div>
