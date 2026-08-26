@@ -91,7 +91,7 @@ export const SlideFloatingFormatToolbar = ({
 
   // Po změně obsahu bloku se může posunout i lišta.
   useEffect(() => {
-    if (!block) return;
+    if (staticBar || !block) return;
     const t = window.setTimeout(() => {
       const next = measurePos();
       if (next) setPos(next);
