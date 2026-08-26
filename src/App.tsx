@@ -16,7 +16,6 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetHeslo from "./pages/ResetHeslo";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
-import PrezTest from "./pages/PrezTest";
 
 import SubjectPage from "./pages/SubjectPage";
 import TopicPage from "./pages/TopicPage";
@@ -113,7 +112,6 @@ const App = () => (
           <ViewAsBanner />
           <PublicSiteAssistant />
           <Routes>
-            <Route path="/prez-test" element={<PrezTest />} />
             <Route path="/" element={<Index />} />
 
 
