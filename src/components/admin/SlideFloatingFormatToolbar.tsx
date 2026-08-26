@@ -26,6 +26,8 @@ interface Props {
   positionKey?: string | number;
   /** Blok je volně umístěný (má `frame`) – u obrázku pak nabídneme object-fit. */
   framed?: boolean;
+  /** Statická lišta (vždy nad plátnem, nepozicuje se nad blok). */
+  staticBar?: boolean;
 }
 
 const TEXT_BLOCK_TYPES = new Set([
@@ -37,7 +39,7 @@ const TEXT_BLOCK_TYPES = new Set([
  * na plátně slidu (místo dřívějšího „Pokročilého editoru bloků“).
  */
 export const SlideFloatingFormatToolbar = ({
-  containerRef, block, onChangeProps, onMove, onDelete, positionKey, framed,
+  containerRef, block, onChangeProps, onMove, onDelete, positionKey, framed, staticBar,
 }: Props) => {
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const props = (block?.props || {}) as Record<string, any>;
@@ -67,6 +69,7 @@ export const SlideFloatingFormatToolbar = ({
   };
 
   useLayoutEffect(() => {
+    if (staticBar) return;
     if (!block) {
       setPos(null);
       return;
@@ -88,7 +91,7 @@ export const SlideFloatingFormatToolbar = ({
 
   // Po změně obsahu bloku se může posunout i lišta.
   useEffect(() => {
-    if (!block) return;
+    if (staticBar || !block) return;
     const t = window.setTimeout(() => {
       const next = measurePos();
       if (next) setPos(next);
@@ -98,13 +101,17 @@ export const SlideFloatingFormatToolbar = ({
   }, [JSON.stringify(props)]);
 
 
-  if (!block || !pos) return null;
+  if (!block || (!staticBar && !pos)) return null;
 
   return (
     <div
       data-slide-toolbar="true"
-      className="absolute z-30 flex max-w-full flex-wrap items-center gap-1 rounded-lg border border-border bg-popover/95 px-1.5 py-1 shadow-lg backdrop-blur"
-      style={{ top: pos.top, left: pos.left }}
+      className={
+        staticBar
+          ? "flex max-w-full flex-wrap items-center justify-center gap-1 rounded-lg border border-border bg-popover px-1.5 py-1 shadow-sm"
+          : "absolute z-30 flex max-w-full flex-wrap items-center gap-1 rounded-lg border border-border bg-popover/95 px-1.5 py-1 shadow-lg backdrop-blur"
+      }
+      style={staticBar ? undefined : { top: pos!.top, left: pos!.left }}
       onMouseDown={(e) => e.preventDefault()}
     >
       {isHeading && (
