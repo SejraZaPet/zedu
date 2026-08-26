@@ -324,19 +324,24 @@ export const PresentationEditorDialog = ({
             </DialogDescription>
 
             <div className="flex flex-wrap items-center gap-2">
-              {/* ČÁST 2 – zpět na lekci (jen pokud lze sestavit funkční URL) */}
+              {/* ČÁST 2 – zpět na lekci / na seznam samostatných prezentací */}
               {lessonBackUrl && (
                 <Button
                   variant="ghost"
                   size="sm"
                   className="h-8 max-w-[220px] gap-1.5 text-xs"
                   onClick={() => { onClose(); navigate(lessonBackUrl); }}
-                  title={`Zpět na lekci ${presentationLesson?.title ?? ""}`}
+                  title={isStandalone ? "Zpět na prezentace" : `Zpět na lekci ${presentationLesson?.title ?? ""}`}
                 >
                   <ArrowLeft className="h-3.5 w-3.5 shrink-0" />
-                  <span className="truncate">Zpět na lekci{presentationLesson?.title ? `: ${presentationLesson.title}` : ""}</span>
+                  <span className="truncate">
+                    {isStandalone
+                      ? "Zpět na prezentace"
+                      : `Zpět na lekci${presentationLesson?.title ? `: ${presentationLesson.title}` : ""}`}
+                  </span>
                 </Button>
               )}
+
 
               {/* Skupina „vzhled slidu“ */}
 
