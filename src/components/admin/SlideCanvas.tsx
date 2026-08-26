@@ -212,10 +212,13 @@ function BlockShell({
 function ResizableSlideImage({
   block,
   editable,
+  framed,
   onChange,
 }: {
   block: Block;
   editable?: boolean;
+  /** Blok je volně umístěný – velikost řeší rámec, obrázek vyplní celou plochu. */
+  framed?: boolean;
   onChange?: (patch: (b: Block) => Block) => void;
 }) {
   const p = block.props || {};
@@ -238,6 +241,24 @@ function ResizableSlideImage({
     window.removeEventListener("pointerup", stopDrag);
   }, [onPointerMove]);
 
+  // Volně umístěný obrázek vyplní celý rámec – velikost se mění výhradně
+  // přes 8 úchytů rámce, takže se nikdy neuřízne kvůli dvojímu měřítku.
+  if (framed) {
+    const fit = p.objectFit === "cover" ? "cover" : "contain";
+    return (
+      <figure className="flex h-full w-full flex-col">
+        <img
+          src={p.url}
+          alt={p.alt || p.caption || ""}
+          className="min-h-0 w-full flex-1 rounded-[var(--slide-radius,0.75rem)]"
+          style={{ objectFit: fit }}
+          draggable={false}
+        />
+        {p.caption && <figcaption className="mt-2 text-center text-lg opacity-70">{p.caption}</figcaption>}
+      </figure>
+    );
+  }
+
   return (
     <figure className={`relative ${wrapperAlign}`} style={{ width }}>
       <img
@@ -247,6 +268,7 @@ function ResizableSlideImage({
         draggable={false}
       />
       {p.caption && <figcaption className="mt-2 text-center text-lg opacity-70">{p.caption}</figcaption>}
+
       {editable && (
         <span
           role="slider"
