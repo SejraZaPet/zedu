@@ -24,6 +24,7 @@ import TeacherDashboard from "./pages/TeacherDashboard";
 import TextbooksPage from "./pages/TextbooksPage";
 import ProfilePage from "./pages/ProfilePage";
 import TeacherTextbooks from "./pages/TeacherTextbooks";
+import TeacherPresentations from "./pages/TeacherPresentations";
 import TeacherLessons from "./pages/TeacherLessons";
 import StudentTextbooks from "./pages/StudentTextbooks";
 import StudentTextbookDetail from "./pages/StudentTextbookDetail";
@@ -135,6 +136,7 @@ const App = () => (
             <Route path="/ucitel/ucebnice" element={<ProtectedRoute><TeacherTextbooks /></ProtectedRoute>} />
             <Route path="/ucitel/ucebnice/:textbookId" element={<ProtectedRoute><TeacherTextbooks /></ProtectedRoute>} />
             <Route path="/ucitel/ucebnice/:textbookId/lekce" element={<ProtectedRoute><TeacherLessons /></ProtectedRoute>} />
+            <Route path="/ucitel/prezentace" element={<ProtectedRoute><TeacherPresentations /></ProtectedRoute>} />
             <Route path="/ucitel/ulohy" element={<ProtectedRoute><TeacherAssignments /></ProtectedRoute>} />
             <Route path="/student/ucebnice" element={<ProtectedRoute><StudentTextbooks /></ProtectedRoute>} />
             <Route path="/student/ucebnice/:textbookId" element={<ProtectedRoute><StudentTextbookDetail /></ProtectedRoute>} />
