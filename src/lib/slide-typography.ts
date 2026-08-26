@@ -115,6 +115,30 @@ export function slideBackgroundOverride(slide: any): string | null {
   return typeof color === "string" && color ? color : null;
 }
 
+/**
+ * Pozadí slidu jako EXPLICITNÍ CSS vlastnosti (bez shorthandu `background`).
+ * Shorthand + `backgroundImage` na jednom elementu se navzájem přepisují —
+ * proto se tady vždy vrací jen konkrétní vlastnosti.
+ */
+export function slideBackgroundOverrideStyle(slide: any): Record<string, string> | null {
+  const image = slide?.backgroundOverride?.image;
+  if (typeof image === "string" && image) {
+    return {
+      backgroundImage: `url("${image.replace(/"/g, "%22")}")`,
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+      backgroundRepeat: "no-repeat",
+      backgroundColor: "transparent",
+    };
+  }
+  const color = slide?.backgroundOverride?.color;
+  if (typeof color === "string" && color) {
+    return { backgroundColor: color, backgroundImage: "none" };
+  }
+  return null;
+}
+
+
 /** Paleta barev pozadí slidu nabízená v nastavení slidu. */
 export const SLIDE_BACKGROUND_COLORS = [
   "#0F172A",
