@@ -844,6 +844,7 @@ const HANDLES: { handle: FrameHandle; className: string; cursor: string }[] = [
 function FreeFrameBlock({
   block,
   frame,
+  zIndex,
   editable,
   selected,
   layerRef,
@@ -854,6 +855,7 @@ function FreeFrameBlock({
 }: {
   block: Block;
   frame: BlockFrame;
+  zIndex: number;
   editable?: boolean;
   selected?: boolean;
   layerRef: React.RefObject<HTMLDivElement>;
@@ -912,6 +914,7 @@ function FreeFrameBlock({
         top: `${frame.y}%`,
         width: `${frame.w}%`,
         height: `${frame.h}%`,
+        zIndex,
       }}
       onMouseDown={editable ? onSelect : undefined}
     >
@@ -1295,11 +1298,12 @@ export function SlideBody({
       {(
         <div ref={freeLayerRef} className={`pointer-events-none absolute inset-0 ${blockTextScope}`}>
 
-          {framedBlocks.map(({ block, frame }) => (
+          {framedBlocks.map(({ block, frame }, frameIndex) => (
             <FreeFrameBlock
               key={block.id}
               block={block}
               frame={frame}
+              zIndex={typeof block.zIndex === "number" ? block.zIndex : frameIndex + 1}
               editable={editable}
               selected={selectedBlockId === block.id}
               layerRef={freeLayerRef}
