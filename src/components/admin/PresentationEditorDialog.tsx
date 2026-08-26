@@ -1161,6 +1161,32 @@ export const PresentationEditorDialog = ({
                 </div>
 
                 <div className="mx-auto flex h-full min-h-0 w-full max-w-full flex-col items-center justify-center pt-4">
+                  {/* FORMÁTOVACÍ LIŠTA – vždy nad plátnem slidu (pevný slot, bez skákání layoutu) */}
+                  <div className="mb-2 flex min-h-[42px] w-full shrink-0 items-center justify-center">
+                    {selectedBlock ? (
+                      <SlideFloatingFormatToolbar
+                        staticBar
+                        containerRef={canvasWrapRef}
+                        block={selectedBlock}
+                        positionKey={`${editingSlideIndex}-${blocks.length}`}
+                        framed={!!getBlockFrame(selectedBlock)}
+                        onChangeProps={(props) => {
+                          if (!selectedBlockId) return;
+                          updateBlock(selectedBlockId, (b: Block) => ({ ...b, props }));
+                        }}
+                        onMove={(dir) => selectedBlockId && moveBlock(selectedBlockId, dir)}
+                        onDelete={() => {
+                          if (!selectedBlockId) return;
+                          deleteBlock(selectedBlockId);
+                          setSelectedBlockId(null);
+                        }}
+                      />
+                    ) : (
+                      <p className="text-[11px] text-muted-foreground">
+                        Klikněte na blok pro editaci — formátovací lišta se zobrazí zde nad slidem.
+                      </p>
+                    )}
+                  </div>
                   <div className="flex min-h-0 w-full flex-1 items-center justify-center">
                   <SlideCanvas
                     slide={currentSlide}
@@ -1176,28 +1202,7 @@ export const PresentationEditorDialog = ({
                     onSelectBlock={setSelectedBlockId}
                   />
                   </div>
-                  <p className="mt-2 shrink-0 text-center text-[11px] text-muted-foreground">
-                    Klikněte na blok pro editaci — formátovací lišta se zobrazí nad vybraným blokem.
-                  </p>
                 </div>
-
-                {/* 4. PLOVOUCÍ FORMÁTOVACÍ LIŠTA nad vybraným blokem */}
-                <SlideFloatingFormatToolbar
-                  containerRef={canvasWrapRef}
-                  block={selectedBlock}
-                  positionKey={`${editingSlideIndex}-${blocks.length}`}
-                  framed={!!selectedBlock && !!getBlockFrame(selectedBlock)}
-                  onChangeProps={(props) => {
-                    if (!selectedBlockId) return;
-                    updateBlock(selectedBlockId, (b: Block) => ({ ...b, props }));
-                  }}
-                  onMove={(dir) => selectedBlockId && moveBlock(selectedBlockId, dir)}
-                  onDelete={() => {
-                    if (!selectedBlockId) return;
-                    deleteBlock(selectedBlockId);
-                    setSelectedBlockId(null);
-                  }}
-                />
               </div>
             </div>
           )}
