@@ -107,13 +107,24 @@ export function slideFromPptxText(
   };
 }
 
+/** ArrayBuffer ze souboru (s fallbackem pro prostředí bez Blob.arrayBuffer). */
+async function toArrayBuffer(file: File | Blob): Promise<ArrayBuffer> {
+  if (typeof (file as any).arrayBuffer === "function") return (file as any).arrayBuffer();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as ArrayBuffer);
+    reader.onerror = () => reject(new Error("Nelze načíst soubor."));
+    reader.readAsArrayBuffer(file);
+  });
+}
+
 /** Hlavní vstup: .pptx soubor → pole slidů (1:1 se snímky). */
 export async function parsePptxFileToSlides(
   file: File | Blob,
   themeId?: string,
 ): Promise<Record<string, any>[]> {
   const JSZip = (await import("jszip")).default;
-  const zip = await JSZip.loadAsync(await file.arrayBuffer());
+  const zip = await JSZip.loadAsync(await toArrayBuffer(file));
 
   const slidePaths = Object.keys(zip.files)
     .filter((name) => /^ppt\/slides\/slide\d+\.xml$/.test(name))
