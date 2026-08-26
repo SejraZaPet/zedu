@@ -663,7 +663,11 @@ export function SlideBody({
   onSelectBlock,
 }: BodyProps) {
   const freeLayerRef = useRef<HTMLDivElement>(null);
+  const flowAreaRef = useRef<HTMLDivElement>(null);
+  const flowContentRef = useRef<HTMLDivElement>(null);
+  const [flowScale, setFlowScale] = useState(1);
   const theme = getPresentationTheme(themeId ?? slide?.themeId);
+
 
   const explicitTheme = themeId ?? slide?.themeId;
   const isDark = explicitTheme ? theme.isDark : darkMode;
