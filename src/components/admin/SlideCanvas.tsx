@@ -1038,8 +1038,9 @@ export function SlideBody({
         startFrame = clampBlockFrame({
           x: ((rect.left - lr.left) / lr.width) * 100,
           y: ((rect.top - lr.top) / lr.height) * 100,
-          w: (rect.width / lr.width) * 100,
+          w: Math.min((rect.width / lr.width) * 100, 80),
           h: (rect.height / lr.height) * 100,
+
         });
         onSelectBlock?.(b.id);
         onChangeBlock(b.id, (prev: Block) => ({ ...prev, frame: startFrame } as Block));
