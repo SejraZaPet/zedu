@@ -1406,7 +1406,7 @@ const SlideCanvas = ({
   // Zoom kolečkem myši s kotvou pod kurzorem (Miro/Figma chování).
   useEffect(() => {
     const el = frameRef.current;
-    if (!el || !fit) return;
+    if (!el || !fit || absoluteScale) return;
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
       const dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 100 : 1);
@@ -1430,7 +1430,7 @@ const SlideCanvas = ({
     };
     el.addEventListener("wheel", handleWheel, { passive: false });
     return () => el.removeEventListener("wheel", handleWheel);
-  }, [fit, zoom, pan, scale, onZoomChange, onPanChange]);
+  }, [fit, absoluteScale, zoom, pan, scale, onZoomChange, onPanChange]);
 
   // Pan tažením prázdné plochy (neblokujeme interakce s bloky/ovládacími prvky).
   const startPan = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -1486,6 +1486,25 @@ const SlideCanvas = ({
     return (
       <div className="relative" style={{ width: STAGE_W, height: STAGE_H, ...bgStyle }}>
         {body}
+      </div>
+    );
+  }
+
+  // Pevný zoom (např. 150 %) – plátno má reálné rozměry a scrolluje se v rodiči.
+  if (absoluteScale) {
+    return (
+      <div
+        className={`relative rounded-xl shadow-lg border border-border ${
+          (rest as any).editable ? "overflow-visible" : "overflow-hidden"
+        }`}
+        style={{ ...bgStyle, width: STAGE_W * absoluteScale, height: STAGE_H * absoluteScale }}
+      >
+        <div
+          className="absolute left-0 top-0 origin-top-left"
+          style={{ width: `${STAGE_W}px`, height: `${STAGE_H}px`, transform: `scale(${absoluteScale})` }}
+        >
+          {body}
+        </div>
       </div>
     );
   }
