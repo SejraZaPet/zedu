@@ -1003,11 +1003,12 @@ export function SlideBody({
                 <EditableBlock
                   block={block}
                   editable
+                  framed
                   onChange={(patch) => onChangeBlock?.(block.id, patch)}
                 />
               ) : (
-                <div className={slideAnimationClass((block.props as any)?.animation)}>
-                  <EditableBlock block={block} />
+                <div className={`${slideAnimationClass((block.props as any)?.animation)} h-full w-full`}>
+                  <EditableBlock block={block} framed />
                 </div>
               )}
             </FreeFrameBlock>
