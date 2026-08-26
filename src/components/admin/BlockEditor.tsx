@@ -204,6 +204,9 @@ const BlockRenderer = React.memo(({ block, onChange }: { block: Block; onChange:
 });
 BlockRenderer.displayName = "BlockRenderer";
 
+/** Editor jednoho bloku (bez seznamu) – použito v panelu editoru prezentací. */
+export const SingleBlockEditor = BlockRenderer;
+
 type ReplaceHandler = (
   id: string,
   target: Block["type"],

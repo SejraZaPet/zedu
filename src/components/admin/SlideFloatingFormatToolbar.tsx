@@ -13,6 +13,7 @@ import {
   Maximize, Minus, Palette, Plus, Sparkles, Trash2,
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import IconPickerDialog from "@/components/admin/IconPickerDialog";
 import type { Block } from "@/lib/textbook-config";
 
 interface Props {
@@ -47,7 +48,9 @@ export const SlideFloatingFormatToolbar = ({
   const isText = block ? TEXT_BLOCK_TYPES.has(block.type) : false;
   const isHeading = block?.type === "heading";
   const isBulletList = block?.type === "bullet_list" && Array.isArray(props.items);
-  const isImage = block?.type === "image";
+  const isIcon = block?.type === "image" && !!props.icon;
+  const isImage = block?.type === "image" && !isIcon;
+
 
 
   /** Spočítá pozici lišty – nad blokem, u horní třetiny plátna pod ním. */
@@ -308,6 +311,41 @@ export const SlideFloatingFormatToolbar = ({
         </>
       )}
 
+      {isIcon && (
+        <>
+          <input
+            type="color"
+            value={props.iconColor && props.iconColor.startsWith("#") ? props.iconColor : "#ffffff"}
+            onChange={(e) => set({ iconColor: e.target.value })}
+            title="Barva ikony"
+            aria-label="Barva ikony"
+            className="h-7 w-8 rounded cursor-pointer border-0 p-0.5"
+          />
+          <IconPickerDialog
+            onPick={(picked) => set({ icon: picked.name, iconName: picked.name })}
+            trigger={
+              <Button size="sm" variant="ghost" className="h-7 px-2 text-[11px]" title="Změnit ikonu">
+                Změnit ikonu
+              </Button>
+            }
+          />
+          <Select
+            value={(props.width as string) || "full"}
+            onValueChange={(v) => set({ width: v })}
+          >
+            <SelectTrigger className="h-7 w-[92px] text-xs" title="Velikost ikony">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="small">Malá</SelectItem>
+              <SelectItem value="medium">Střední</SelectItem>
+              <SelectItem value="full">Velká</SelectItem>
+            </SelectContent>
+          </Select>
+          <div className="mx-0.5 h-5 w-px bg-border" />
+        </>
+      )}
+
       {isImage && (
         <>
           {(["left", "center", "right"] as const).map((a) => {
@@ -327,6 +365,7 @@ export const SlideFloatingFormatToolbar = ({
               </Button>
             );
           })}
+
 
           {framed && (
             <Button
