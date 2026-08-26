@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
+import MarkdownContent from "@/components/MarkdownContent";
   ArrowLeft, GraduationCap, CheckCircle2, Circle, Award, Play, Download, FileBadge2, Share2, SlidersHorizontal, PartyPopper,
 } from "lucide-react";
 
@@ -65,24 +66,7 @@ interface CertificateRow {
   course_title: string;
 }
 
-const renderContent = (content: string) => {
-  const lines = content.split("\n");
-  const out: JSX.Element[] = [];
-  let para: string[] = [];
-  const flush = () => {
-    if (para.length) {
-      out.push(<p key={out.length} className="text-foreground/90 whitespace-pre-wrap leading-relaxed">{para.join("\n").trim()}</p>);
-      para = [];
-    }
-  };
-  lines.forEach((l) => {
-    if (l.startsWith("## ")) { flush(); out.push(<h3 key={out.length} className="font-heading text-lg font-semibold mt-4 mb-1">{l.slice(3)}</h3>); }
-    else if (l.startsWith("# ")) { flush(); out.push(<h2 key={out.length} className="font-heading text-xl font-semibold mt-4 mb-1">{l.slice(2)}</h2>); }
-    else para.push(l);
-  });
-  flush();
-  return <div className="space-y-2">{out}</div>;
-};
+const renderContent = (content: string) => <MarkdownContent content={content} />;
 
 const statusMeta = (status: EvidenceSubmission["status"]) => {
   if (status === "approved") return { label: "Schváleno 🎉", cls: "bg-primary/10 text-primary border-primary/30" };

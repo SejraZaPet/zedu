@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Plus, Pencil, Trash2, Save, X, BookOpen } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import MarkdownContent from "@/components/MarkdownContent";
 
 interface StaffArticle {
   id: string;
@@ -17,70 +18,7 @@ interface StaffArticle {
   updated_at: string;
 }
 
-/** Minimalistický renderer podmnožiny markdownu: ##/### nadpisy, odrážky, **tučné**, odstavce. */
-const renderInline = (text: string) => {
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
-  return parts.map((part, i) =>
-    part.startsWith("**") && part.endsWith("**") ? (
-      <strong key={i} className="font-semibold text-foreground">{part.slice(2, -2)}</strong>
-    ) : (
-      <span key={i}>{part}</span>
-    ),
-  );
-};
-
-const MarkdownView = ({ content }: { content: string }) => {
-  const blocks: JSX.Element[] = [];
-  const lines = content.replace(/\r\n/g, "\n").split("\n");
-  let listBuffer: string[] = [];
-  let paraBuffer: string[] = [];
-
-  const flushList = () => {
-    if (!listBuffer.length) return;
-    blocks.push(
-      <ul key={`ul-${blocks.length}`} className="list-disc pl-6 space-y-1 text-muted-foreground mb-4">
-        {listBuffer.map((li, i) => <li key={i}>{renderInline(li)}</li>)}
-      </ul>,
-    );
-    listBuffer = [];
-  };
-  const flushPara = () => {
-    if (!paraBuffer.length) return;
-    blocks.push(
-      <p key={`p-${blocks.length}`} className="text-base leading-relaxed text-muted-foreground mb-4">
-        {renderInline(paraBuffer.join(" "))}
-      </p>,
-    );
-    paraBuffer = [];
-  };
-
-  lines.forEach((raw) => {
-    const line = raw.trim();
-    if (!line) { flushList(); flushPara(); return; }
-    if (line.startsWith("### ")) {
-      flushList(); flushPara();
-      blocks.push(<h3 key={`h3-${blocks.length}`} className="font-heading text-lg mt-6 mb-2 text-foreground">{renderInline(line.slice(4))}</h3>);
-      return;
-    }
-    if (line.startsWith("## ")) {
-      flushList(); flushPara();
-      blocks.push(<h2 key={`h2-${blocks.length}`} className="font-heading text-xl mt-8 mb-3 text-foreground">{renderInline(line.slice(3))}</h2>);
-      return;
-    }
-    if (line.startsWith("# ")) {
-      flushList(); flushPara();
-      blocks.push(<h2 key={`h1-${blocks.length}`} className="font-heading text-2xl mt-8 mb-3 text-foreground">{renderInline(line.slice(2))}</h2>);
-      return;
-    }
-    if (/^[-*]\s+/.test(line)) { flushPara(); listBuffer.push(line.replace(/^[-*]\s+/, "")); return; }
-    flushList();
-    paraBuffer.push(line);
-  });
-  flushList();
-  flushPara();
-
-  return <div className="max-w-none">{blocks}</div>;
-};
+const MarkdownView = ({ content }: { content: string }) => <MarkdownContent content={content} />;
 
 const fmtDate = (iso: string) =>
   new Date(iso).toLocaleDateString("cs-CZ", { day: "2-digit", month: "2-digit", year: "numeric" });
