@@ -42,7 +42,7 @@ export const ColorPicker = ({
   const commitHex = () => {
     const v = hex.trim();
     if (HEX_RE.test(v)) {
-      onChange(v);
+      onChange(expandHex(v));
       return;
     }
     // Nevalidní vstup ignorujeme a vrátíme zobrazení na aktuální barvu.
