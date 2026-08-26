@@ -39,7 +39,7 @@ const TEXT_BLOCK_TYPES = new Set([
  * na plátně slidu (místo dřívějšího „Pokročilého editoru bloků“).
  */
 export const SlideFloatingFormatToolbar = ({
-  containerRef, block, onChangeProps, onMove, onDelete, positionKey, framed,
+  containerRef, block, onChangeProps, onMove, onDelete, positionKey, framed, staticBar,
 }: Props) => {
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const props = (block?.props || {}) as Record<string, any>;
