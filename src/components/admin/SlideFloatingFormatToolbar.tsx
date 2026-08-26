@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import IconPickerDialog from "@/components/admin/IconPickerDialog";
+import ColorPicker from "@/components/admin/ColorPicker";
+import { SHAPE_KINDS } from "@/components/blocks/ShapeRenderer";
 import type { Block } from "@/lib/textbook-config";
 
 interface Props {
@@ -50,6 +52,7 @@ export const SlideFloatingFormatToolbar = ({
   const isBulletList = block?.type === "bullet_list" && Array.isArray(props.items);
   const isIcon = block?.type === "image" && !!props.icon;
   const isImage = block?.type === "image" && !isIcon;
+  const isShape = block?.type === "shape";
 
 
 
@@ -228,25 +231,12 @@ export const SlideFloatingFormatToolbar = ({
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-2">
-              <div className="flex flex-wrap gap-1.5">
-                {SLIDE_TEXT_COLORS.map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    aria-label={`Barva textu ${c}`}
-                    onClick={() => set({ color: c })}
-                    className="h-6 w-6 rounded-full border-2 border-border"
-                    style={{ background: c }}
-                  />
-                ))}
-                <button
-                  type="button"
-                  onClick={() => set({ color: null })}
-                  className="rounded border border-border px-2 text-[11px]"
-                >
-                  Výchozí
-                </button>
-              </div>
+              <ColorPicker
+                value={props.color}
+                onChange={(v) => set({ color: v })}
+                allowNull
+                nullLabel="Výchozí"
+              />
             </PopoverContent>
           </Popover>
 
@@ -257,27 +247,16 @@ export const SlideFloatingFormatToolbar = ({
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-2">
-              <div className="flex flex-wrap gap-1.5">
-                {SLIDE_HIGHLIGHT_COLORS.map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    aria-label={`Zvýraznění ${c}`}
-                    onClick={() => set({ highlightColor: c })}
-                    className="h-6 w-6 rounded-full border-2 border-border"
-                    style={{ background: c }}
-                  />
-                ))}
-                <button
-                  type="button"
-                  onClick={() => set({ highlightColor: null })}
-                  className="rounded border border-border px-2 text-[11px]"
-                >
-                  Bez
-                </button>
-              </div>
+              <ColorPicker
+                value={props.highlightColor}
+                onChange={(v) => set({ highlightColor: v })}
+                allowNull
+                nullLabel="Bez"
+                swatches={SLIDE_HIGHLIGHT_COLORS}
+              />
             </PopoverContent>
           </Popover>
+
 
           <div className="mx-0.5 h-5 w-px bg-border" />
         </>
@@ -313,14 +292,25 @@ export const SlideFloatingFormatToolbar = ({
 
       {isIcon && (
         <>
-          <input
-            type="color"
-            value={props.iconColor && props.iconColor.startsWith("#") ? props.iconColor : "#ffffff"}
-            onChange={(e) => set({ iconColor: e.target.value })}
-            title="Barva ikony"
-            aria-label="Barva ikony"
-            className="h-7 w-8 rounded cursor-pointer border-0 p-0.5"
-          />
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button size="sm" variant="ghost" className="h-7 px-2 text-[11px]" title="Barva ikony">
+                <span
+                  className="mr-1 inline-block h-3 w-3 rounded-full border border-border"
+                  style={{ background: props.iconColor || "#ffffff" }}
+                />
+                Barva
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-2">
+              <ColorPicker
+                value={props.iconColor}
+                onChange={(v) => set({ iconColor: v })}
+                allowNull
+                nullLabel="Výchozí"
+              />
+            </PopoverContent>
+          </Popover>
           <IconPickerDialog
             onPick={(picked) => set({ icon: picked.name, iconName: picked.name })}
             trigger={
