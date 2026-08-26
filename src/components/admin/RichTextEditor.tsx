@@ -59,6 +59,8 @@ const RichTextEditor = ({ content, onChange }: Props) => {
       Underline,
       TextAlign.configure({ types: ["heading", "paragraph", "image"] }),
       Placeholder.configure({ placeholder: "Začněte psát článek…" }),
+      LineHeight,
+
     ],
     content,
     onUpdate: ({ editor: e }) => onChange(e.getHTML()),
