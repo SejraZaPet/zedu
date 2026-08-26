@@ -68,7 +68,7 @@ interface Props {
    */
   source?: { type: "lesson"; lessonId?: string } | { type: "standalone"; presentationId: string };
   pendingSlides: any[];
-  setPendingSlides: (slides: any[]) => void;
+  setPendingSlides: React.Dispatch<React.SetStateAction<any[]>>;
   editingSlideIndex: number;
   setEditingSlideIndex: (i: number) => void;
   onClose: () => void;
