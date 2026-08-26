@@ -139,7 +139,6 @@ const App = () => (
             <Route path="/ucitel/ucebnice/:textbookId" element={<ProtectedRoute><TeacherTextbooks /></ProtectedRoute>} />
             <Route path="/ucitel/ucebnice/:textbookId/lekce" element={<ProtectedRoute><TeacherLessons /></ProtectedRoute>} />
             <Route path="/ucitel/prezentace" element={<ProtectedRoute><TeacherPresentations /></ProtectedRoute>} />
-            <Route path="/slide-hints-preview" element={<SlideHintsPreview />} />
             <Route path="/ucitel/ulohy" element={<ProtectedRoute><TeacherAssignments /></ProtectedRoute>} />
             <Route path="/student/ucebnice" element={<ProtectedRoute><StudentTextbooks /></ProtectedRoute>} />
             <Route path="/student/ucebnice/:textbookId" element={<ProtectedRoute><StudentTextbookDetail /></ProtectedRoute>} />
