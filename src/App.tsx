@@ -94,6 +94,7 @@ import TeacherFromMaterial from "./pages/TeacherFromMaterial";
 import StudentFromMaterial from "./pages/StudentFromMaterial";
 import ViewAsBanner from "./components/ViewAsBanner";
 import PublicSiteAssistant from "./components/PublicSiteAssistant";
+import ToolbarPreview from "./pages/ToolbarPreview";
 
 
 
