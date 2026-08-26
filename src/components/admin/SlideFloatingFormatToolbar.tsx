@@ -9,7 +9,8 @@ import {
   SLIDE_ANIMATIONS, SLIDE_FONTS, SLIDE_FONT_SIZES, SLIDE_HIGHLIGHT_COLORS, SLIDE_TEXT_COLORS,
 } from "@/lib/slide-typography";
 import {
-  AlignCenter, AlignLeft, AlignRight, ArrowDown, ArrowUp, Bold, Highlighter, Italic,
+  AlignCenter, AlignLeft, AlignRight, ArrowDown, ArrowUp, Bold, ChevronDown, ChevronUp,
+  ChevronsDown, ChevronsUp, Highlighter, Italic,
   Maximize, Minus, Palette, Plus, Sparkles, Trash2,
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -31,6 +32,8 @@ interface Props {
   framed?: boolean;
   /** Statická lišta (vždy nad plátnem, nepozicuje se nad blok). */
   staticBar?: boolean;
+  /** Změna vrstvy (z-index) volně umístěného bloku. */
+  onChangeLayer?: (action: "front" | "forward" | "backward" | "back") => void;
 }
 
 const TEXT_BLOCK_TYPES = new Set([
@@ -43,6 +46,7 @@ const TEXT_BLOCK_TYPES = new Set([
  */
 export const SlideFloatingFormatToolbar = ({
   containerRef, block, onChangeProps, onMove, onDelete, positionKey, framed, staticBar,
+  onChangeLayer,
 }: Props) => {
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const props = (block?.props || {}) as Record<string, any>;
@@ -479,6 +483,24 @@ export const SlideFloatingFormatToolbar = ({
           ))}
         </SelectContent>
       </Select>
+
+      {framed && onChangeLayer && (
+        <>
+          <div className="mx-0.5 h-5 w-px bg-border" />
+          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" title="Na popředí" onClick={() => onChangeLayer("front")}>
+            <ChevronsUp className="h-3.5 w-3.5" />
+          </Button>
+          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" title="Dopředu" onClick={() => onChangeLayer("forward")}>
+            <ChevronUp className="h-3.5 w-3.5" />
+          </Button>
+          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" title="Dozadu" onClick={() => onChangeLayer("backward")}>
+            <ChevronDown className="h-3.5 w-3.5" />
+          </Button>
+          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" title="Na pozadí" onClick={() => onChangeLayer("back")}>
+            <ChevronsDown className="h-3.5 w-3.5" />
+          </Button>
+        </>
+      )}
 
       <div className="mx-0.5 h-5 w-px bg-border" />
 

@@ -822,6 +822,13 @@ function HeroImageSlot({
 
 /* ---------- Volné umístění bloku (opt-in) ---------- */
 
+/**
+ * Minimální pohyb myši (px), po kterém se flow-blok povýší do volné vrstvy.
+ * 1px = blok se chová jako absolutně pozicovaný ihned po zahájení tažení,
+ * ale samotný klik (bez pohybu) pořád jen vybere blok / spustí psaní.
+ */
+const PROMOTE_THRESHOLD = 1;
+
 const HANDLES: { handle: FrameHandle; className: string; cursor: string }[] = [
   { handle: "nw", className: "left-0 top-0 -translate-x-1/2 -translate-y-1/2", cursor: "nwse-resize" },
   { handle: "n", className: "left-1/2 top-0 -translate-x-1/2 -translate-y-1/2", cursor: "ns-resize" },
@@ -837,6 +844,7 @@ const HANDLES: { handle: FrameHandle; className: string; cursor: string }[] = [
 function FreeFrameBlock({
   block,
   frame,
+  zIndex,
   editable,
   selected,
   layerRef,
@@ -847,6 +855,7 @@ function FreeFrameBlock({
 }: {
   block: Block;
   frame: BlockFrame;
+  zIndex: number;
   editable?: boolean;
   selected?: boolean;
   layerRef: React.RefObject<HTMLDivElement>;
@@ -905,6 +914,7 @@ function FreeFrameBlock({
         top: `${frame.y}%`,
         width: `${frame.w}%`,
         height: `${frame.h}%`,
+        zIndex,
       }}
       onMouseDown={editable ? onSelect : undefined}
     >
@@ -1043,8 +1053,10 @@ export function SlideBody({
 
 
 
+  // Bílý text jen na wrapperu; potomci barvu dědí (`text-inherit`), takže
+  // inline `style.color` z props konkrétního bloku vždy vyhraje.
   const blockTextScope = isDark
-    ? "[&_*]:text-white [&_h1]:text-white [&_h2]:text-white [&_h3]:text-white [&_.bg-card]:!bg-white/10 [&_.bg-muted\\/40]:!bg-white/10 [&_.bg-muted\\/30]:!bg-white/10 [&_.border]:!border-white/20"
+    ? "text-white [&_*]:text-inherit [&_h1]:text-inherit [&_h2]:text-inherit [&_h3]:text-inherit [&_.bg-card]:!bg-white/10 [&_.bg-muted\\/40]:!bg-white/10 [&_.bg-muted\\/30]:!bg-white/10 [&_.border]:!border-white/20"
     : "";
 
   const headlineEl = (
@@ -1108,7 +1120,7 @@ export function SlideBody({
 
     const move = (ev: PointerEvent) => {
       if (!startFrame) {
-        if (Math.abs(ev.clientX - startX) < 6 && Math.abs(ev.clientY - startY) < 6) return;
+        if (Math.abs(ev.clientX - startX) < PROMOTE_THRESHOLD && Math.abs(ev.clientY - startY) < PROMOTE_THRESHOLD) return;
         const layer = freeLayerRef.current;
         if (!layer) return;
         const lr = layer.getBoundingClientRect();
@@ -1176,7 +1188,7 @@ export function SlideBody({
     if (!editable) return <div key={b.id}>{shell}</div>;
 
     return (
-      <div key={b.id} className="touch-none" onPointerDown={startPromoteDrag(b)}>
+      <div key={b.id} className="touch-none cursor-move" onPointerDown={startPromoteDrag(b)}>
         {shell}
       </div>
     );
@@ -1286,11 +1298,12 @@ export function SlideBody({
       {(
         <div ref={freeLayerRef} className={`pointer-events-none absolute inset-0 ${blockTextScope}`}>
 
-          {framedBlocks.map(({ block, frame }) => (
+          {framedBlocks.map(({ block, frame }, frameIndex) => (
             <FreeFrameBlock
               key={block.id}
               block={block}
               frame={frame}
+              zIndex={typeof block.zIndex === "number" ? block.zIndex : frameIndex + 1}
               editable={editable}
               selected={selectedBlockId === block.id}
               layerRef={freeLayerRef}

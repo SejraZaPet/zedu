@@ -46,6 +46,8 @@ export interface Block {
    * Bez `frame` se blok renderuje ve stávajícím lineárním flow.
    */
   frame?: { x: number; y: number; w: number; h: number };
+  /** Vrstva volně umístěného bloku (z-index). Bez hodnoty = pořadí v DOM. */
+  zIndex?: number;
 }
 
 
@@ -68,6 +70,7 @@ export const normalizeBlocks = (blocks: Block[] | null | undefined): Block[] => 
       visible: typeof block?.visible === "boolean" ? block.visible : true,
       props: block?.props && typeof block.props === "object" ? block.props : {},
       ...(block?.frame ? { frame: block.frame } : {}),
+      ...(typeof block?.zIndex === "number" ? { zIndex: block.zIndex } : {}),
     } as Block;
 
 
