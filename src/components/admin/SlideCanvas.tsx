@@ -936,7 +936,7 @@ export function SlideBody({
       <div ref={flowAreaRef} className="flex-1 min-h-0 overflow-hidden px-6 py-6">
         <div
           ref={flowContentRef}
-          className="flex w-full flex-col items-center justify-start gap-6"
+          className="flex min-h-full w-full flex-col items-center justify-start gap-6"
           style={{
             transform: flowScale < 1 ? `scale(${flowScale})` : undefined,
             transformOrigin: "top center",
