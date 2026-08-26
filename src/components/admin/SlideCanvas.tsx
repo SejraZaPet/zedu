@@ -827,7 +827,7 @@ export function SlideBody({
       <>
         {headlineEl}
         <div className={`w-full text-2xl space-y-6 ${blockTextScope}`} style={{ zoom: fontScale } as any}>
-          {blocks.length === 0 && editable ? (
+          {blocks.length === 0 && framedBlocks.length === 0 && editable ? (
             <div className="text-white/40 text-center text-lg py-8 border-2 border-dashed border-white/15 rounded-xl">
               Přidejte text, odrážky nebo obrázek pomocí tlačítek pod náhledem.
             </div>
@@ -840,13 +840,49 @@ export function SlideBody({
   }
 
   return (
-    <div className={`flex h-full flex-col overflow-hidden ${isDark ? "text-white" : "text-foreground"}`}>
+    <div className={`relative flex h-full flex-col overflow-hidden ${isDark ? "text-white" : "text-foreground"}`}>
       <div className="flex-1 flex flex-col items-center justify-start px-12 py-10 gap-6 min-h-0 overflow-y-auto">
         {body}
       </div>
+
+      {/* Vrstva volně umístěných bloků (jen bloky s `frame`) */}
+      {framedBlocks.length > 0 && (
+        <div ref={freeLayerRef} className={`pointer-events-none absolute inset-0 ${blockTextScope}`}>
+          {framedBlocks.map(({ block, frame }) => (
+            <FreeFrameBlock
+              key={block.id}
+              block={block}
+              frame={frame}
+              editable={editable}
+              selected={selectedBlockId === block.id}
+              layerRef={freeLayerRef}
+              onSelect={() => onSelectBlock?.(block.id)}
+              onChangeFrame={
+                onChangeBlock
+                  ? (next) => onChangeBlock(block.id, (b: Block) => ({ ...b, frame: next }))
+                  : undefined
+              }
+              onDelete={onDeleteBlock ? () => onDeleteBlock(block.id) : undefined}
+            >
+              {editable ? (
+                <EditableBlock
+                  block={block}
+                  editable
+                  onChange={(patch) => onChangeBlock?.(block.id, patch)}
+                />
+              ) : (
+                <div className={slideAnimationClass((block.props as any)?.animation)}>
+                  <EditableBlock block={block} />
+                </div>
+              )}
+            </FreeFrameBlock>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
+
 
 /* ---------- Scaled canvas wrapper ---------- */
 
