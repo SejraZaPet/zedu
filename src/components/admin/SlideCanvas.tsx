@@ -768,11 +768,64 @@ export function SlideBody({
     window.addEventListener("pointerup", up);
   };
 
+  /**
+   * Tažení flow-bloku myší: po překonání 6px prahu se blok "povýší" do
+   * absolutní vrstvy (dostane `frame` spočítaný z aktuální pozice) a drag
+   * plynule pokračuje jako posun rámce.
+   */
+  const startPromoteDrag = (b: Block) => (e: React.PointerEvent) => {
+    if (!editable || !onChangeBlock) return;
+    if (e.button !== 0) return;
+    const targetEl = e.target as HTMLElement | null;
+    if (
+      targetEl?.closest(
+        "button, a, input, textarea, select, [contenteditable='true'], [data-no-block-drag]",
+      )
+    ) {
+      return;
+    }
+    const el = e.currentTarget as HTMLElement;
+    const startX = e.clientX;
+    const startY = e.clientY;
+    let startFrame: BlockFrame | null = null;
+    let layerRect: DOMRect | null = null;
+
+    const move = (ev: PointerEvent) => {
+      if (!startFrame) {
+        if (Math.abs(ev.clientX - startX) < 6 && Math.abs(ev.clientY - startY) < 6) return;
+        const layer = freeLayerRef.current;
+        if (!layer) return;
+        const lr = layer.getBoundingClientRect();
+        if (!lr.width || !lr.height) return;
+        const rect = el.getBoundingClientRect();
+        layerRect = lr;
+        startFrame = clampBlockFrame({
+          x: ((rect.left - lr.left) / lr.width) * 100,
+          y: ((rect.top - lr.top) / lr.height) * 100,
+          w: (rect.width / lr.width) * 100,
+          h: (rect.height / lr.height) * 100,
+        });
+        onSelectBlock?.(b.id);
+        onChangeBlock(b.id, (prev: Block) => ({ ...prev, frame: startFrame } as Block));
+      }
+      if (!startFrame || !layerRect) return;
+      const dx = ((ev.clientX - startX) / layerRect.width) * 100;
+      const dy = ((ev.clientY - startY) / layerRect.height) * 100;
+      const next = applyFrameDrag(startFrame, "move", dx, dy);
+      onChangeBlock(b.id, (prev: Block) => ({ ...prev, frame: next } as Block));
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+
   const renderBlock = (b: Block, sliceIndex: number, asCard?: boolean) => {
     const globalIndex = blocks.findIndex((x) => x.id === b.id);
-    return (
+    const shell = (
       <BlockShell
-        key={b.id}
         editable={editable}
         index={globalIndex}
         total={blocks.length}
@@ -797,7 +850,16 @@ export function SlideBody({
         )}
       </BlockShell>
     );
+
+    if (!editable) return <div key={b.id}>{shell}</div>;
+
+    return (
+      <div key={b.id} className="touch-none" onPointerDown={startPromoteDrag(b)}>
+        {shell}
+      </div>
+    );
   };
+
 
   let body: React.ReactNode = null;
 
