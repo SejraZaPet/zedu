@@ -241,6 +241,90 @@ export const SlideFloatingFormatToolbar = ({
         </>
       )}
 
+      {isBulletList && (
+        <>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 w-7 p-0"
+            title="Přidat odrážku"
+            onClick={() => set({ items: [...(props.items as string[]), ""] })}
+          >
+            <Plus className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 w-7 p-0"
+            title="Odebrat poslední odrážku"
+            disabled={(props.items as string[]).length <= 1}
+            onClick={() => set({ items: (props.items as string[]).slice(0, -1) })}
+          >
+            <Minus className="h-3.5 w-3.5" />
+          </Button>
+          <span className="px-1 text-[10px] tabular-nums text-muted-foreground">
+            {(props.items as string[]).length}
+          </span>
+          <div className="mx-0.5 h-5 w-px bg-border" />
+        </>
+      )}
+
+      {isImage && (
+        <>
+          {(["left", "center", "right"] as const).map((a) => {
+            const Icon = a === "left" ? AlignLeft : a === "right" ? AlignRight : AlignCenter;
+            const active = (props.alignment || "center") === a;
+            return (
+              <Button
+                key={a}
+                size="sm"
+                variant={active ? "default" : "ghost"}
+                className="h-7 w-7 p-0"
+                title={a === "left" ? "Zarovnat vlevo" : a === "right" ? "Zarovnat vpravo" : "Zarovnat na střed"}
+                aria-pressed={active}
+                onClick={() => set({ alignment: a })}
+              >
+                <Icon className="h-3.5 w-3.5" />
+              </Button>
+            );
+          })}
+
+          {framed && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 gap-1 px-2 text-[11px]"
+              title="Přepnout přizpůsobení obrázku v rámci"
+              onClick={() => set({ objectFit: props.objectFit === "cover" ? "contain" : "cover" })}
+            >
+              <Maximize className="h-3.5 w-3.5" />
+              {props.objectFit === "cover" ? "Oříznout" : "Přizpůsobit"}
+            </Button>
+          )}
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button size="sm" variant="ghost" className="h-7 px-2 text-[11px]" title="Alternativní text">
+                Alt
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 space-y-2 p-2">
+              <Label className="text-xs">Alternativní text (pro čtečky)</Label>
+              <Input
+                className="h-8 text-xs"
+                value={props.alt || ""}
+                placeholder="Co je na obrázku…"
+                onChange={(e) => set({ alt: e.target.value })}
+              />
+            </PopoverContent>
+          </Popover>
+
+          <div className="mx-0.5 h-5 w-px bg-border" />
+        </>
+      )}
+
+
+
       <Select
         value={props.animation || "none"}
         onValueChange={(v) => set({ animation: v === "none" ? null : v })}
