@@ -57,6 +57,10 @@ export interface SlideTextStyleProps {
   fontFamily?: string | null;
   /** Barva zvýraznění (pozadí za textem). */
   highlightColor?: string | null;
+  /** Tučné písmo celého bloku. */
+  bold?: boolean | null;
+  /** Kurzíva celého bloku. */
+  italic?: boolean | null;
 }
 
 /** Paleta barev zvýrazňovače. */
