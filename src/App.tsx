@@ -111,7 +111,9 @@ const App = () => (
           <ViewAsBanner />
           <PublicSiteAssistant />
           <Routes>
-           <Route path="/" element={<Index />} />
+            <Route path="/prezentace-test" element={<PrezentaceTest />} />
+            <Route path="/" element={<Index />} />
+
 
            <Route path="/auth" element={<Auth />} />
 
