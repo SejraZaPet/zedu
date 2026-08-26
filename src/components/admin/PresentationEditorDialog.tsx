@@ -630,6 +630,55 @@ export const PresentationEditorDialog = ({
                       </Select>
                     </div>
 
+                    {/* Volné umístění bloků (opt-in) */}
+                    {blocks.length > 0 && (
+                      <div className="space-y-2 rounded-lg border border-border p-2">
+                        <Label className="flex items-center gap-1.5 text-xs">
+                          <Move className="h-3.5 w-3.5" /> Volné umístění bloků
+                        </Label>
+                        <p className="text-[11px] text-muted-foreground">
+                          Zapnutím vyjmete blok z lineárního rozvržení a umístíte ho volně na plátno
+                          (posun a velikost tažením přímo na slidu).
+                        </p>
+                        <div className="space-y-1.5">
+                          {blocks.map((b, i) => {
+                            const free = !!getBlockFrame(b);
+                            return (
+                              <div
+                                key={b.id}
+                                className={`flex items-center justify-between gap-2 rounded-md border px-2 py-1.5 ${
+                                  selectedBlockId === b.id ? "border-primary bg-primary/5" : "border-border"
+                                }`}
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedBlockId(b.id)}
+                                  className="min-w-0 flex-1 truncate text-left text-[11px] text-muted-foreground hover:text-foreground"
+                                  title={blockLabel(b, i)}
+                                >
+                                  {blockLabel(b, i)}
+                                </button>
+                                <Switch
+                                  checked={free}
+                                  aria-label={`Volné umístění bloku ${i + 1}`}
+                                  onCheckedChange={(v) => {
+                                    setSelectedBlockId(b.id);
+                                    updateBlock(b.id, (prev: Block) => {
+                                      if (v) return { ...prev, frame: { ...DEFAULT_BLOCK_FRAME } };
+                                      const { frame, ...rest } = prev as any;
+                                      return rest as Block;
+                                    });
+                                  }}
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+
+
                     {/* Zóny přiblížení */}
                     {isZoomableSlide(currentSlide) && (
                       <Collapsible className="rounded-lg border border-border">
