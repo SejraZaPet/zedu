@@ -212,10 +212,13 @@ function BlockShell({
 function ResizableSlideImage({
   block,
   editable,
+  framed,
   onChange,
 }: {
   block: Block;
   editable?: boolean;
+  /** Blok je volně umístěný – velikost řeší rámec, obrázek vyplní celou plochu. */
+  framed?: boolean;
   onChange?: (patch: (b: Block) => Block) => void;
 }) {
   const p = block.props || {};
@@ -238,6 +241,24 @@ function ResizableSlideImage({
     window.removeEventListener("pointerup", stopDrag);
   }, [onPointerMove]);
 
+  // Volně umístěný obrázek vyplní celý rámec – velikost se mění výhradně
+  // přes 8 úchytů rámce, takže se nikdy neuřízne kvůli dvojímu měřítku.
+  if (framed) {
+    const fit = p.objectFit === "cover" ? "cover" : "contain";
+    return (
+      <figure className="flex h-full w-full flex-col">
+        <img
+          src={p.url}
+          alt={p.alt || p.caption || ""}
+          className="min-h-0 w-full flex-1 rounded-[var(--slide-radius,0.75rem)]"
+          style={{ objectFit: fit }}
+          draggable={false}
+        />
+        {p.caption && <figcaption className="mt-2 text-center text-lg opacity-70">{p.caption}</figcaption>}
+      </figure>
+    );
+  }
+
   return (
     <figure className={`relative ${wrapperAlign}`} style={{ width }}>
       <img
@@ -247,6 +268,7 @@ function ResizableSlideImage({
         draggable={false}
       />
       {p.caption && <figcaption className="mt-2 text-center text-lg opacity-70">{p.caption}</figcaption>}
+
       {editable && (
         <span
           role="slider"
@@ -281,11 +303,14 @@ function EditableBlock({
   block,
   editable,
   asCard,
+  framed,
   onChange,
 }: {
   block: Block;
   editable?: boolean;
   asCard?: boolean;
+  /** Blok je ve volné vrstvě (má `frame`). */
+  framed?: boolean;
   onChange?: (patch: Partial<Block> | ((b: Block) => Block)) => void;
 }) {
   const update = (patch: Partial<Block> | ((b: Block) => Block)) => onChange?.(patch);
@@ -445,12 +470,13 @@ function EditableBlock({
   if (block.type === "image" && block.props?.url) {
     return (
       <div
-        className={asCard ? "bg-white/10 p-4 border border-white/15" : ""}
+        className={`${asCard ? "bg-white/10 p-4 border border-white/15" : ""} ${framed ? "h-full w-full" : ""}`}
         style={asCard ? { borderRadius: "var(--slide-radius, 0.75rem)" } : undefined}
       >
         <ResizableSlideImage
           block={block}
           editable={editable}
+          framed={framed}
           onChange={(patch) => update(patch)}
         />
       </div>
@@ -773,18 +799,19 @@ export function SlideBody({
    * Tažení flow-bloku myší: po překonání 6px prahu se blok "povýší" do
    * absolutní vrstvy (dostane `frame` spočítaný z aktuální pozice) a drag
    * plynule pokračuje jako posun rámce.
+   *
+   * Textové bloky jsou `contenteditable`, proto se drag nezakazuje – při
+   * překonání prahu se editovatelnému prvku jen odebere focus, takže rychlý
+   * klik pořád spustí psaní, ale tažení funguje po celé ploše bloku.
    */
   const startPromoteDrag = (b: Block) => (e: React.PointerEvent) => {
     if (!editable || !onChangeBlock) return;
     if (e.button !== 0) return;
     const targetEl = e.target as HTMLElement | null;
-    if (
-      targetEl?.closest(
-        "button, a, input, textarea, select, [contenteditable='true'], [data-no-block-drag]",
-      )
-    ) {
+    if (targetEl?.closest("button, a, input, textarea, select, [data-no-block-drag]")) {
       return;
     }
+    const editableTarget = targetEl?.closest("[contenteditable='true']") as HTMLElement | null;
     const el = e.currentTarget as HTMLElement;
     const startX = e.clientX;
     const startY = e.clientY;
@@ -800,6 +827,11 @@ export function SlideBody({
         if (!lr.width || !lr.height) return;
         const rect = el.getBoundingClientRect();
         layerRect = lr;
+        // Tažení vyhrává nad editací textu – zrušíme focus i výběr.
+        if (editableTarget) {
+          editableTarget.blur();
+          window.getSelection?.()?.removeAllRanges();
+        }
         startFrame = clampBlockFrame({
           x: ((rect.left - lr.left) / lr.width) * 100,
           y: ((rect.top - lr.top) / lr.height) * 100,
@@ -971,11 +1003,12 @@ export function SlideBody({
                 <EditableBlock
                   block={block}
                   editable
+                  framed
                   onChange={(patch) => onChangeBlock?.(block.id, patch)}
                 />
               ) : (
-                <div className={slideAnimationClass((block.props as any)?.animation)}>
-                  <EditableBlock block={block} />
+                <div className={`${slideAnimationClass((block.props as any)?.animation)} h-full w-full`}>
+                  <EditableBlock block={block} framed />
                 </div>
               )}
             </FreeFrameBlock>

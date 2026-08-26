@@ -68,7 +68,7 @@ interface Props {
    */
   source?: { type: "lesson"; lessonId?: string } | { type: "standalone"; presentationId: string };
   pendingSlides: any[];
-  setPendingSlides: (slides: any[]) => void;
+  setPendingSlides: React.Dispatch<React.SetStateAction<any[]>>;
   editingSlideIndex: number;
   setEditingSlideIndex: (i: number) => void;
   onClose: () => void;
@@ -197,10 +197,30 @@ export const PresentationEditorDialog = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editingSlideIndex, currentSlide?.slideId]);
 
-  // Při přepnutí snímku sbal prázdné pole poznámek
+  // Při přepnutí snímku sbal prázdné pole poznámek a schovej plovoucí lištu
   useEffect(() => {
     setTeacherNotesOpen(false);
+    setSelectedBlockId(null);
   }, [editingSlideIndex]);
+
+  // Klik mimo plátno (a mimo panel, lištu či její popovery) zruší výběr bloku.
+  useEffect(() => {
+    const onPointerDown = (e: PointerEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+      if (
+        canvasWrapRef.current?.contains(target) ||
+        target.closest("[data-slide-toolbar='true']") ||
+        target.closest("[data-slide-sidebar='true']") ||
+        target.closest("[data-radix-popper-content-wrapper]")
+      ) {
+        return;
+      }
+      setSelectedBlockId(null);
+    };
+    document.addEventListener("pointerdown", onPointerDown, true);
+    return () => document.removeEventListener("pointerdown", onPointerDown, true);
+  }, []);
 
 
   const updateSlide = (patch: any) => {
@@ -224,13 +244,23 @@ export const PresentationEditorDialog = ({
     setBlocks(next);
   };
   const deleteBlock = (id: string) => setBlocks(blocks.filter((b) => b.id !== id));
+  /**
+   * Úprava jednoho bloku. Pracuje funkčně nad `pendingSlides`, takže dvě
+   * změny ve stejném ticku (např. commit textu při blur + povýšení do frame)
+   * se nepřepíší.
+   */
   const updateBlock = (id: string, patch: any) => {
-    setBlocks(
-      blocks.map((b) => {
+    setPendingSlides((prev) => {
+      const slide = prev[editingSlideIndex];
+      if (!slide) return prev;
+      const nextBlocks = ((slide.blocks || []) as Block[]).map((b) => {
         if (b.id !== id) return b;
         return typeof patch === "function" ? patch(b) : { ...b, ...patch };
-      }),
-    );
+      });
+      const updated = [...prev];
+      updated[editingSlideIndex] = { ...slide, blocks: nextBlocks };
+      return updated;
+    });
   };
   const selectedBlock = blocks.find((b) => b.id === selectedBlockId) || null;
 
@@ -537,7 +567,7 @@ export const PresentationEditorDialog = ({
           {currentSlide && (
             <div className="flex min-h-0 flex-1">
               {/* 3. LEVÝ POSTRANNÍ PANEL */}
-              <aside className="flex shrink-0 border-r border-border bg-muted/20">
+              <aside data-slide-sidebar="true" className="flex shrink-0 border-r border-border bg-muted/20">
                 {/* Úzký sloupec ikon (Canva style) */}
                 <div className="flex w-16 shrink-0 flex-col gap-1 border-r border-border py-2">
                   {RAIL_ITEMS.map((item) => {
@@ -974,16 +1004,59 @@ export const PresentationEditorDialog = ({
                       </div>
                     )}
 
-                    {/* Pokročilý editor bloků (záloha pro strukturální úpravy) */}
-                    <Collapsible className="rounded-lg border border-border">
-                      <CollapsibleTrigger className="flex w-full items-center justify-between px-2 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted/40">
-                        <span className="flex items-center gap-1.5">
-                          <Settings2 className="h-3.5 w-3.5" /> Pokročilé úpravy bloků
+                    {/* Obrázek ve volném rámci – přizpůsobení plochy */}
+                    {selectedBlock?.type === "image" && !!getBlockFrame(selectedBlock) && (
+                      <div className="space-y-2 rounded-lg border border-border p-2">
+                        <Label className="flex items-center gap-1.5 text-xs">
+                          <ImageIcon className="h-3.5 w-3.5" /> Obrázek v rámci
+                        </Label>
+                        <p className="text-[11px] text-muted-foreground">
+                          Velikost se mění tažením za úchyty rámce. Zvolte, jak obrázek plochu vyplní.
+                        </p>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {([
+                            { value: "contain", label: "Přizpůsobit" },
+                            { value: "cover", label: "Oříznout" },
+                          ] as const).map((o) => {
+                            const active =
+                              ((selectedBlock.props as any)?.objectFit || "contain") === o.value;
+                            return (
+                              <Button
+                                key={o.value}
+                                type="button"
+                                size="sm"
+                                variant={active ? "default" : "outline"}
+                                aria-pressed={active}
+                                className="h-7 text-xs"
+                                onClick={() =>
+                                  updateBlock(selectedBlock.id, (b: Block) => ({
+                                    ...b,
+                                    props: { ...b.props, objectFit: o.value },
+                                  }))
+                                }
+                              >
+                                {o.label}
+                              </Button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Strukturální editor bloků – jen jako záloha pod „Více možností“ */}
+                    <Collapsible>
+                      <CollapsibleTrigger className="flex w-full items-center justify-between rounded px-1 py-1 text-[11px] text-muted-foreground transition-colors hover:text-foreground">
+                        <span className="flex items-center gap-1">
+                          <Settings2 className="h-3 w-3" /> Více možností
                         </span>
-                        <ChevronDown className="h-3.5 w-3.5" />
+                        <ChevronDown className="h-3 w-3" />
                       </CollapsibleTrigger>
                       <CollapsibleContent>
-                        <div className="max-h-[40vh] overflow-y-auto border-t border-border bg-muted/20 p-2">
+                        <div className="mt-1 max-h-[40vh] overflow-y-auto rounded-lg border border-border bg-muted/20 p-2">
+                          <p className="mb-2 text-[11px] text-muted-foreground">
+                            Formátování řešte plovoucí lištou nad blokem na plátně. Zde jsou
+                            pokročilé strukturální úpravy.
+                          </p>
                           <BlockEditor
                             blocks={blocks}
                             onChange={(b) => setBlocks(b)}
@@ -1113,6 +1186,7 @@ export const PresentationEditorDialog = ({
                   containerRef={canvasWrapRef}
                   block={selectedBlock}
                   positionKey={`${editingSlideIndex}-${blocks.length}`}
+                  framed={!!selectedBlock && !!getBlockFrame(selectedBlock)}
                   onChangeProps={(props) => {
                     if (!selectedBlockId) return;
                     updateBlock(selectedBlockId, (b: Block) => ({ ...b, props }));
