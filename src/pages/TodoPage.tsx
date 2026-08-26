@@ -325,6 +325,19 @@ const TodoPage = () => {
                     <Flag
                       className={`w-3.5 h-3.5 ${priorityColor[todo.priority] || ""}`}
                     />
+                    {todo.due_date && (
+                      <span
+                        className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${
+                          todo.due_date < today && todo.status === "pending"
+                            ? "bg-red-500/15 text-red-600 font-medium"
+                            : "bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        <Calendar className="w-3 h-3" />
+                        {new Date(todo.due_date).toLocaleDateString("cs-CZ")}
+                        {todo.due_date < today && todo.status === "pending" && " · po termínu"}
+                      </span>
+                    )}
                     {todo.assigned_by && todo.assigned_by !== user?.id && (
                       <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">
                         Zadal(a):{" "}
@@ -338,16 +351,16 @@ const TodoPage = () => {
                   {todo.description && (
                     <p className="text-sm text-muted-foreground mt-1">{todo.description}</p>
                   )}
-                  {todo.due_date && (
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                      <Calendar className="w-3 h-3" />
-                      <span>{new Date(todo.due_date).toLocaleDateString("cs-CZ")}</span>
-                      {todo.due_date < today && todo.status === "pending" && (
-                        <span className="text-red-500 font-medium"> – po termínu!</span>
-                      )}
-                    </div>
-                  )}
                 </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => openEdit(todo)}
+                  className="h-8 w-8 p-0 shrink-0"
+                  aria-label="Upravit úkol"
+                >
+                  <Pencil className="w-4 h-4" />
+                </Button>
                 <Button
                   variant="ghost"
                   size="sm"
