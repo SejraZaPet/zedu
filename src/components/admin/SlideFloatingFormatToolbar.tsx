@@ -1,12 +1,17 @@
 import { useEffect, useLayoutEffect, useState, type RefObject } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
   SLIDE_ANIMATIONS, SLIDE_FONTS, SLIDE_FONT_SIZES, SLIDE_HIGHLIGHT_COLORS, SLIDE_TEXT_COLORS,
 } from "@/lib/slide-typography";
-import { ArrowDown, ArrowUp, Highlighter, Palette, Sparkles, Trash2 } from "lucide-react";
+import {
+  AlignCenter, AlignLeft, AlignRight, ArrowDown, ArrowUp, Bold, Highlighter, Italic,
+  Maximize, Minus, Palette, Plus, Sparkles, Trash2,
+} from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { Block } from "@/lib/textbook-config";
 
@@ -19,6 +24,8 @@ interface Props {
   onDelete: () => void;
   /** Klíč, jehož změna vynutí přepočet pozice (např. index slidu). */
   positionKey?: string | number;
+  /** Blok je volně umístěný (má `frame`) – u obrázku pak nabídneme object-fit. */
+  framed?: boolean;
 }
 
 const TEXT_BLOCK_TYPES = new Set([
@@ -30,12 +37,16 @@ const TEXT_BLOCK_TYPES = new Set([
  * na plátně slidu (místo dřívějšího „Pokročilého editoru bloků“).
  */
 export const SlideFloatingFormatToolbar = ({
-  containerRef, block, onChangeProps, onMove, onDelete, positionKey,
+  containerRef, block, onChangeProps, onMove, onDelete, positionKey, framed,
 }: Props) => {
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const props = (block?.props || {}) as Record<string, any>;
   const set = (patch: Record<string, any>) => onChangeProps({ ...props, ...patch });
   const isText = block ? TEXT_BLOCK_TYPES.has(block.type) : false;
+  const isHeading = block?.type === "heading";
+  const isBulletList = block?.type === "bullet_list" && Array.isArray(props.items);
+  const isImage = block?.type === "image";
+
 
   useLayoutEffect(() => {
     if (!block) {
