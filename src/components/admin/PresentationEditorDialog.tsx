@@ -1042,7 +1042,7 @@ export const PresentationEditorDialog = ({
                   </Button>
                 </div>
 
-                <div className="mx-auto flex h-full min-h-0 w-full max-w-[1100px] flex-col items-center justify-center pt-10">
+                <div className="mx-auto flex h-full min-h-0 w-full max-w-full flex-col items-center justify-center pt-4">
                   <div className="flex min-h-0 w-full flex-1 items-center justify-center">
                   <SlideCanvas
                     slide={currentSlide}
