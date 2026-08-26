@@ -85,6 +85,9 @@ export function slideTextStyle(props?: SlideTextStyleProps | null): React.CSSPro
   }
   if (props.color) style.color = props.color;
   if (props.fontFamily) style.fontFamily = props.fontFamily;
+  if (props.bold) style.fontWeight = 700;
+  if (props.italic) style.fontStyle = "italic";
+
   if (props.highlightColor) {
     style.backgroundColor = props.highlightColor;
     style.boxDecorationBreak = "clone" as any;
