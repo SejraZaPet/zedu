@@ -122,7 +122,7 @@ export const createDefaultBlock = (type: BlockType): Block => {
     case "paragraph":
       return { ...base, props: { text: "" } };
     case "bullet_list":
-      return { ...base, props: { items: [""] } };
+      return { ...base, props: { items: [] } };
     case "image":
       return { ...base, props: { url: "", caption: "", width: "full", alignment: "center" } };
     case "image_text":
