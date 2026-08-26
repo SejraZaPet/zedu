@@ -112,6 +112,7 @@ const App = () => (
           <PublicSiteAssistant />
           <Routes>
            <Route path="/" element={<Index />} />
+           <Route path="/toolbar-preview" element={<ToolbarPreview />} />
            
            <Route path="/auth" element={<Auth />} />
 
