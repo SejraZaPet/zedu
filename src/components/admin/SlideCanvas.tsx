@@ -340,7 +340,7 @@ function EditableBlock({
           multiline
           html={isHtml}
           value={value}
-          placeholder="Napište text…"
+          placeholder={BLOCK_PLACEHOLDER}
           className="text-2xl leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-2 [&_strong]:font-semibold"
           style={slideTextStyle(block.props)}
           onCommit={(v) => update((b) => ({ ...b, props: { ...b.props, text: v } }))}
@@ -360,7 +360,7 @@ function EditableBlock({
         editable={editable}
         html={isHtml}
         value={value}
-        placeholder="Nadpis…"
+        placeholder={BLOCK_PLACEHOLDER}
         className={`${cls} [&_strong]:font-semibold`}
         style={slideTextStyle(block.props)}
         onCommit={(v) => update((b) => ({ ...b, props: { ...b.props, text: v } }))}
@@ -391,7 +391,7 @@ function EditableBlock({
             multiline
             html
             value={block.props.html}
-            placeholder="Zadejte odrážky…"
+            placeholder={BLOCK_PLACEHOLDER}
             className="text-2xl leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mb-2"
             style={slideTextStyle(block.props)}
             onCommit={(v) => update((b) => ({ ...b, props: { ...b.props, html: v } }))}
@@ -399,6 +399,7 @@ function EditableBlock({
         </div>
       );
     }
+    const allItemsEmpty = items.every((it) => !it?.trim());
     return (
       <div className={asCard ? "bg-white/10 rounded-[var(--slide-radius,0.75rem)] p-4 border border-white/15" : ""}>
         {revealToggle}
@@ -410,7 +411,7 @@ function EditableBlock({
                 <EditableText
                   editable={editable}
                   value={item}
-                  placeholder="Odrážka…"
+                  placeholder={BLOCK_PLACEHOLDER}
                   className="flex-1"
                   onCommit={(v) => {
                     const next = [...items];
@@ -450,6 +451,59 @@ function EditableBlock({
             </li>
           )}
         </ul>
+        {editable && allItemsEmpty && items.length === 1 && (
+          <span className="pointer-events-none absolute left-1 top-0 italic text-muted-foreground/40 select-none hidden">
+            {BLOCK_PLACEHOLDER}
+          </span>
+        )}
+      </div>
+    );
+  }
+
+  if (block.type === "quote") {
+    const value = block.props?.text || "";
+    const isHtml = /<[^>]+>/.test(value);
+    return (
+      <blockquote className="border-l-4 border-primary pl-4 py-2 italic text-foreground">
+        <EditableText
+          editable={editable}
+          multiline
+          html={isHtml}
+          value={value}
+          placeholder={BLOCK_PLACEHOLDER}
+          className="text-2xl leading-relaxed"
+          style={slideTextStyle(block.props)}
+          onCommit={(v) => update((b) => ({ ...b, props: { ...b.props, text: v } }))}
+        />
+        {editable && (
+          <EditableText
+            editable={editable}
+            value={block.props?.author || ""}
+            placeholder="Autor citace…"
+            className="mt-2 block text-sm not-italic text-muted-foreground"
+            onCommit={(v) => update((b) => ({ ...b, props: { ...b.props, author: v } }))}
+          />
+        )}
+      </blockquote>
+    );
+  }
+
+  if (block.type === "callout") {
+    const value = block.props?.text || "";
+    const isHtml = /<[^>]+>/.test(value);
+    const ct = CALLOUT_STYLES[block.props?.calloutType] || CALLOUT_STYLES.note;
+    return (
+      <div className={`rounded-lg border-l-4 ${ct.border} ${ct.bg} p-4 flex gap-3`}>
+        <span className="text-xl flex-shrink-0">{ct.icon}</span>
+        <EditableText
+          editable={editable}
+          multiline
+          html={isHtml}
+          value={value}
+          placeholder={BLOCK_PLACEHOLDER}
+          className="flex-1 text-foreground text-sm leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-1 [&_mark]:bg-primary/30"
+          onCommit={(v) => update((b) => ({ ...b, props: { ...b.props, text: v } }))}
+        />
       </div>
     );
   }
