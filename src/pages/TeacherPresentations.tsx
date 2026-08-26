@@ -66,12 +66,16 @@ const TeacherPresentations = () => {
   const [pendingSlides, setPendingSlides] = useState<any[]>([]);
   const [editingSlideIndex, setEditingSlideIndex] = useState(0);
 
-  // Propojení s lekcí
+  // Propojení s lekcí – dvoustupňový výběr (učebnice → lekce)
   const [linkTarget, setLinkTarget] = useState<StandalonePresentation | null>(null);
+  const [textbookOptions, setTextbookOptions] = useState<TextbookOption[]>([]);
+  const [selectedTextbook, setSelectedTextbook] = useState<TextbookOption | null>(null);
   const [lessonOptions, setLessonOptions] = useState<LessonOption[]>([]);
   const [lessonsLoading, setLessonsLoading] = useState(false);
+  const [textbooksLoading, setTextbooksLoading] = useState(false);
   const [linkingId, setLinkingId] = useState<string | null>(null);
   const [lessonQuery, setLessonQuery] = useState("");
+
 
   const fetchItems = async () => {
     setLoading(true);
