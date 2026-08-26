@@ -197,10 +197,30 @@ export const PresentationEditorDialog = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editingSlideIndex, currentSlide?.slideId]);
 
-  // Při přepnutí snímku sbal prázdné pole poznámek
+  // Při přepnutí snímku sbal prázdné pole poznámek a schovej plovoucí lištu
   useEffect(() => {
     setTeacherNotesOpen(false);
+    setSelectedBlockId(null);
   }, [editingSlideIndex]);
+
+  // Klik mimo plátno (a mimo lištu či její popovery) zruší výběr bloku.
+  useEffect(() => {
+    const onPointerDown = (e: PointerEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+      if (
+        canvasWrapRef.current?.contains(target) ||
+        target.closest("[data-slide-toolbar='true']") ||
+        target.closest("[data-radix-popper-content-wrapper]") ||
+        target.closest("[role='dialog']:not([data-presentation-editor])")
+      ) {
+        return;
+      }
+      setSelectedBlockId(null);
+    };
+    document.addEventListener("pointerdown", onPointerDown, true);
+    return () => document.removeEventListener("pointerdown", onPointerDown, true);
+  }, []);
 
 
   const updateSlide = (patch: any) => {
