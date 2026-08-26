@@ -567,7 +567,7 @@ export const PresentationEditorDialog = ({
           {currentSlide && (
             <div className="flex min-h-0 flex-1">
               {/* 3. LEVÝ POSTRANNÍ PANEL */}
-              <aside className="flex shrink-0 border-r border-border bg-muted/20">
+              <aside data-slide-sidebar="true" className="flex shrink-0 border-r border-border bg-muted/20">
                 {/* Úzký sloupec ikon (Canva style) */}
                 <div className="flex w-16 shrink-0 flex-col gap-1 border-r border-border py-2">
                   {RAIL_ITEMS.map((item) => {
