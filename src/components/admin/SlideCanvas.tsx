@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect, useCallback } from "react";
 import { ArrowUp, ArrowDown, Trash2, ImageIcon, GripVertical, Move } from "lucide-react";
-import { LessonBlock } from "@/components/LessonBlockRenderer";
+import { LessonBlock, CALLOUT_STYLES } from "@/components/LessonBlockRenderer";
 import type { Block } from "@/lib/textbook-config";
 import { MediaPickerDialog } from "@/components/media/MediaPickerDialog";
 import DOMPurify from "dompurify";
@@ -19,6 +19,8 @@ import {
   slideBackgroundOverrideStyle,
   slideTextStyle,
 } from "@/lib/slide-typography";
+
+const BLOCK_PLACEHOLDER = "Klikni pro psaní • klikni znovu pro formátování";
 
 
 
