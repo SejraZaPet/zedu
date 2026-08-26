@@ -16,6 +16,7 @@ it("dbg", () => {
   const wrapper = inner!.closest("div.touch-none") as HTMLElement;
   console.log("wrapper?", !!wrapper, wrapper?.className);
   console.log("layer?", !!container.querySelector(".pointer-events-none"));
+  wrapper.addEventListener("pointerdown", (e:any)=>console.log("pd button", e.button, e.clientX, e.target===wrapper));
   fireEvent.pointerDown(wrapper, { button: 0, clientX: 200, clientY: 200 });
   fireEvent(window, new MouseEvent("pointermove", { clientX: 240, clientY: 200 } as any));
   console.log("calls", onChangeBlock.mock.calls.length);
