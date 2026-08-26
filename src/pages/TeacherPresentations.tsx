@@ -32,7 +32,15 @@ interface LessonOption {
   id: string;
   title: string;
   textbookTitle: string;
+  description?: string | null;
 }
+
+interface TextbookOption {
+  id: string;
+  title: string;
+  lessonCount: number;
+}
+
 
 const emptySlide = (title: string) => ({
   slideId: `slide-${Date.now()}`,
