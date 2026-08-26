@@ -719,6 +719,7 @@ export function SlideBody({
       setFlowScale(contentH > availH + 1 ? Math.max(0.35, availH / contentH) : 1);
     };
     update();
+    if (typeof ResizeObserver === "undefined") return;
     const ro = new ResizeObserver(update);
     ro.observe(area);
     ro.observe(content);
