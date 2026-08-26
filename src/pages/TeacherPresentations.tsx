@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Loader2, Monitor, Plus, Link2, Trash2, BookOpen, CalendarDays, Layers,
+  Loader2, Monitor, Plus, Link2, Trash2, BookOpen, CalendarDays, Layers, ArrowLeft,
 } from "lucide-react";
 import PresentationEditorDialog from "@/components/admin/PresentationEditorDialog";
 import { themeIdFromSlides } from "@/lib/presentation-themes";
