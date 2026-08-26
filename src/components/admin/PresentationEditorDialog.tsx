@@ -132,6 +132,7 @@ export const PresentationEditorDialog = ({
   const [addSlideOpen, setAddSlideOpen] = useState(false);
   const [history, setHistory] = useState<BlockEditorHistory | null>(null);
   const [templateOpen, setTemplateOpen] = useState(false);
+  const [importPptxOpen, setImportPptxOpen] = useState(false);
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [exportingPdf, setExportingPdf] = useState(false);
   const [generatingActivity, setGeneratingActivity] = useState(false);
@@ -633,6 +634,14 @@ export const PresentationEditorDialog = ({
                       >
                         <LayoutTemplate className="h-3.5 w-3.5" /> Začít od šablony
                       </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="w-full justify-start gap-1.5 text-xs"
+                        onClick={() => setImportPptxOpen(true)}
+                      >
+                        <FileUp className="h-3.5 w-3.5" /> Importovat prezentaci (.pptx)
+                      </Button>
                     </div>
                   </div>
                   )}
@@ -1073,6 +1082,18 @@ export const PresentationEditorDialog = ({
               </div>
             </div>
           )}
+
+          <ImportPptxToPresentationDialog
+            open={importPptxOpen}
+            onOpenChange={setImportPptxOpen}
+            themeId={themeId}
+            onImported={(slides) => {
+              const updated = [...pendingSlides, ...slides];
+              setPendingSlides(updated);
+              setEditingSlideIndex(pendingSlides.length);
+              setSelectedBlockId(null);
+            }}
+          />
 
           <StartFromTemplateDialog
             open={templateOpen}
