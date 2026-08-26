@@ -169,18 +169,21 @@ const TeacherTextbooks = () => {
       const savedSlides = (lessonRow as any)?.presentation_slides;
       const hasSlides = Array.isArray(savedSlides) && savedSlides.length > 0;
       if (!hasSlides) {
-        const { data: linked } = await supabase
-          .from("teacher_presentations" as any)
-          .select("id, title")
+        const { data: linkedRows, error: linkedError } = await supabase
+          .from("teacher_presentations")
+          .select("id, title, updated_at")
           .eq("lesson_id", lesson.id)
           .order("updated_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
+          .limit(1);
+        if (linkedError) {
+          console.error("[presentations] linked lookup failed", linkedError);
+        }
+        const linked = linkedRows?.[0];
         if (linked) {
           setLinkedPresentationChoice({
             lesson,
-            presentationId: (linked as any).id,
-            presentationTitle: (linked as any).title,
+            presentationId: linked.id,
+            presentationTitle: linked.title,
           });
           return;
         }
@@ -188,6 +191,7 @@ const TeacherTextbooks = () => {
     }
     await openEditor(lesson);
   };
+
 
   const fetchTextbooks = async () => {
     const { data } = await supabase
