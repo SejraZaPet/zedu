@@ -37,7 +37,7 @@ const SafeHTML = ({ html, className }: { html: string; className?: string }) => 
 );
 
 
-const CALLOUT_STYLES: Record<string, { icon: string; border: string; bg: string }> = {
+export const CALLOUT_STYLES: Record<string, { icon: string; border: string; bg: string }> = {
   note: { icon: "📝", border: "border-muted-foreground/40", bg: "bg-muted/40" },
   warning: { icon: "⚠️", border: "border-destructive/40", bg: "bg-destructive/10" },
   tip: { icon: "💡", border: "border-primary/40", bg: "bg-primary/10" },
