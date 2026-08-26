@@ -5,7 +5,7 @@ import WordCloudView from "@/components/activities/WordCloudView";
 import { SlideBody } from "@/components/admin/SlideCanvas";
 import { slideTransitionClass } from "@/lib/slide-transitions";
 import { getPresentationTheme, themeStageStyle } from "@/lib/presentation-themes";
-import { slideBackgroundOverride } from "@/lib/slide-typography";
+import { slideBackgroundOverrideStyle } from "@/lib/slide-typography";
 import { buildAnonymousLabelMap, type GamePlayer } from "@/lib/game-types";
 import { zoomStageStyle, type ZoomRect } from "@/lib/zoom-zones";
 import { gameBackgroundStyle } from "@/lib/game-backgrounds";
@@ -74,9 +74,9 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
   }, []);
 
   const projectorTheme = getPresentationTheme((currentSlide as any)?.themeId);
-  const projectorBgOverride = slideBackgroundOverride(currentSlide);
+  const projectorBgOverride = slideBackgroundOverrideStyle(currentSlide);
   const projectorStageStyle: CSSProperties = projectorBgOverride
-    ? { ...themeStageStyle(projectorTheme), backgroundImage: "none", background: projectorBgOverride }
+    ? { ...(({ background, ...rest }) => rest)(themeStageStyle(projectorTheme) as any), ...projectorBgOverride }
     : backgroundUrl
       ? gameBackgroundStyle(backgroundUrl)
       : themeStageStyle(projectorTheme);
