@@ -1054,9 +1054,24 @@ export const PresentationEditorDialog = ({
                       <CollapsibleContent>
                         <div className="mt-1 max-h-[40vh] overflow-y-auto rounded-lg border border-border bg-muted/20 p-2">
                           <p className="mb-2 text-[11px] text-muted-foreground">
-                            Formátování řešte plovoucí lištou nad blokem na plátně. Zde jsou
-                            pokročilé strukturální úpravy.
+                            Formátování řešte lištou nad plátnem. Zde jsou pokročilé strukturální
+                            úpravy vybraného bloku.
                           </p>
+                          {selectedBlock ? (
+                            <SingleBlockEditor
+                              block={selectedBlock}
+                              onChange={(props) =>
+                                updateBlock(selectedBlock.id, (b: Block) => ({ ...b, props }))
+                              }
+                            />
+                          ) : (
+                            <p className="py-3 text-center text-xs text-muted-foreground">
+                              Vyberte blok na plátně pro pokročilé úpravy.
+                            </p>
+                          )}
+                        </div>
+                        {/* Skrytý BlockEditor drží historii undo/redo pro celý slide. */}
+                        <div className="hidden" aria-hidden="true">
                           <BlockEditor
                             blocks={blocks}
                             onChange={(b) => setBlocks(b)}
@@ -1065,6 +1080,7 @@ export const PresentationEditorDialog = ({
                           />
                         </div>
                       </CollapsibleContent>
+
                     </Collapsible>
 
                     {/* Poznámky pro učitele */}
