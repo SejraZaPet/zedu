@@ -41,7 +41,13 @@ export interface Block {
   type: BlockType;
   visible: boolean;
   props: Record<string, any>;
+  /**
+   * Nepovinné volné umístění bloku na slidu prezentace (v % stage 1600×900).
+   * Bez `frame` se blok renderuje ve stávajícím lineárním flow.
+   */
+  frame?: { x: number; y: number; w: number; h: number };
 }
+
 
 export const normalizeBlocks = (blocks: Block[] | null | undefined): Block[] => {
   if (!Array.isArray(blocks)) return [];
@@ -61,7 +67,9 @@ export const normalizeBlocks = (blocks: Block[] | null | undefined): Block[] => 
       type: block?.type,
       visible: typeof block?.visible === "boolean" ? block.visible : true,
       props: block?.props && typeof block.props === "object" ? block.props : {},
+      ...(block?.frame ? { frame: block.frame } : {}),
     } as Block;
+
 
     if (
       finalId !== block?.id ||

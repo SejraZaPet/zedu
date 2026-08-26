@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useCallback } from "react";
-import { ArrowUp, ArrowDown, Trash2, ImageIcon, GripVertical } from "lucide-react";
+import { ArrowUp, ArrowDown, Trash2, ImageIcon, GripVertical, Move } from "lucide-react";
 import { LessonBlock } from "@/components/LessonBlockRenderer";
 import type { Block } from "@/lib/textbook-config";
 import { MediaPickerDialog } from "@/components/media/MediaPickerDialog";
@@ -7,10 +7,17 @@ import DOMPurify from "dompurify";
 import { getPresentationTheme, themeStageStyle } from "@/lib/presentation-themes";
 import { getSlideIcon } from "@/lib/slide-icons";
 import {
+  applyFrameDrag,
+  getBlockFrame,
+  type BlockFrame,
+  type FrameHandle,
+} from "@/lib/block-frame";
+import {
   slideAnimationClass,
   slideBackgroundOverride,
   slideTextStyle,
 } from "@/lib/slide-typography";
+
 
 export type SlideLayout =
   | "full"
@@ -500,6 +507,141 @@ function HeroImageSlot({
   );
 }
 
+/* ---------- Volné umístění bloku (opt-in) ---------- */
+
+const HANDLES: { handle: FrameHandle; className: string; cursor: string }[] = [
+  { handle: "nw", className: "left-0 top-0 -translate-x-1/2 -translate-y-1/2", cursor: "nwse-resize" },
+  { handle: "n", className: "left-1/2 top-0 -translate-x-1/2 -translate-y-1/2", cursor: "ns-resize" },
+  { handle: "ne", className: "right-0 top-0 translate-x-1/2 -translate-y-1/2", cursor: "nesw-resize" },
+  { handle: "e", className: "right-0 top-1/2 translate-x-1/2 -translate-y-1/2", cursor: "ew-resize" },
+  { handle: "se", className: "right-0 bottom-0 translate-x-1/2 translate-y-1/2", cursor: "nwse-resize" },
+  { handle: "s", className: "left-1/2 bottom-0 -translate-x-1/2 translate-y-1/2", cursor: "ns-resize" },
+  { handle: "sw", className: "left-0 bottom-0 -translate-x-1/2 translate-y-1/2", cursor: "nesw-resize" },
+  { handle: "w", className: "left-0 top-1/2 -translate-x-1/2 -translate-y-1/2", cursor: "ew-resize" },
+];
+
+/** Blok s vlastním rámcem – absolutně pozicovaný nad lineárním obsahem slidu. */
+function FreeFrameBlock({
+  block,
+  frame,
+  editable,
+  selected,
+  layerRef,
+  onSelect,
+  onChangeFrame,
+  onDelete,
+  children,
+}: {
+  block: Block;
+  frame: BlockFrame;
+  editable?: boolean;
+  selected?: boolean;
+  layerRef: React.RefObject<HTMLDivElement>;
+  onSelect?: () => void;
+  onChangeFrame?: (frame: BlockFrame) => void;
+  onDelete?: () => void;
+  children: React.ReactNode;
+}) {
+  const startDrag = (handle: FrameHandle) => (e: React.PointerEvent) => {
+    if (!editable || !onChangeFrame) return;
+    e.preventDefault();
+    e.stopPropagation();
+    onSelect?.();
+    const rect = layerRef.current?.getBoundingClientRect();
+    if (!rect || !rect.width || !rect.height) return;
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startFrame = frame;
+    const move = (ev: PointerEvent) => {
+      const dx = ((ev.clientX - startX) / rect.width) * 100;
+      const dy = ((ev.clientY - startY) / rect.height) * 100;
+      onChangeFrame(applyFrameDrag(startFrame, handle, dx, dy));
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+
+  const nudge = (e: React.KeyboardEvent) => {
+    if (!onChangeFrame) return;
+    const step = e.shiftKey ? 5 : 1;
+    const map: Record<string, [number, number]> = {
+      ArrowLeft: [-step, 0],
+      ArrowRight: [step, 0],
+      ArrowUp: [0, -step],
+      ArrowDown: [0, step],
+    };
+    const delta = map[e.key];
+    if (!delta) return;
+    e.preventDefault();
+    onChangeFrame(applyFrameDrag(frame, "move", delta[0], delta[1]));
+  };
+
+  return (
+    <div
+      data-slide-block-id={block.id}
+      data-free-frame="true"
+      className={`pointer-events-auto absolute ${
+        editable ? (selected ? "ring-2 ring-primary" : "ring-1 ring-dashed ring-white/30 hover:ring-primary/60") : ""
+      } rounded-lg`}
+      style={{
+        left: `${frame.x}%`,
+        top: `${frame.y}%`,
+        width: `${frame.w}%`,
+        height: `${frame.h}%`,
+      }}
+      onMouseDown={editable ? onSelect : undefined}
+    >
+      <div className="h-full w-full overflow-hidden">{children}</div>
+
+      {editable && (
+        <>
+          {/* Lišta pro posun + smazání */}
+          <div className="absolute -top-9 left-0 flex items-center gap-1 rounded-md border border-border bg-background/95 p-0.5 shadow-sm">
+            <button
+              type="button"
+              onPointerDown={startDrag("move")}
+              onKeyDown={nudge}
+              title="Přetáhnout blok (šipky = posun)"
+              aria-label="Přesunout volně umístěný blok"
+              className="cursor-grab touch-none rounded p-1 hover:bg-muted"
+            >
+              <Move className="h-3.5 w-3.5 text-foreground" />
+            </button>
+            <span className="px-1 text-[10px] tabular-nums text-muted-foreground">
+              {frame.x}% · {frame.y}% · {frame.w}×{frame.h}
+            </span>
+            {onDelete && (
+              <button
+                type="button"
+                onClick={onDelete}
+                title="Smazat blok"
+                className="rounded p-1 text-destructive hover:bg-destructive/10"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+
+          {HANDLES.map((h) => (
+            <span
+              key={h.handle}
+              role="presentation"
+              onPointerDown={startDrag(h.handle)}
+              style={{ cursor: h.cursor }}
+              className={`absolute h-3 w-3 touch-none rounded-full border-2 border-primary bg-background shadow ${h.className}`}
+            />
+          ))}
+        </>
+      )}
+    </div>
+  );
+}
+
+
 /* ---------- The shared slide body (no outer frame) ---------- */
 
 export function SlideBody({
@@ -517,7 +659,9 @@ export function SlideBody({
   selectedBlockId,
   onSelectBlock,
 }: BodyProps) {
+  const freeLayerRef = useRef<HTMLDivElement>(null);
   const theme = getPresentationTheme(themeId ?? slide?.themeId);
+
   const explicitTheme = themeId ?? slide?.themeId;
   const isDark = explicitTheme ? theme.isDark : darkMode;
   const layout: SlideLayout = (slide?.layout as SlideLayout) || "full";
@@ -527,7 +671,7 @@ export function SlideBody({
   const heroImage: string | undefined = slide?.heroImage;
 
   // Apply progressive-reveal transformation when not editing.
-  const blocks: Block[] = !editable && typeof revealStep === "number"
+  const allBlocks: Block[] = !editable && typeof revealStep === "number"
     ? rawBlocks.map((b) => {
         if (b.type !== "bullet_list" || !b.props?.revealMode) return b;
         const step = Math.max(0, revealStep);
@@ -547,6 +691,14 @@ export function SlideBody({
         return b;
       })
     : rawBlocks;
+
+  // Volné umístění (opt-in): bloky s `frame` jdou do absolutní vrstvy,
+  // ostatní zůstávají v původním lineárním flow.
+  const framedBlocks = allBlocks
+    .map((b) => ({ block: b, frame: getBlockFrame(b) }))
+    .filter((x): x is { block: Block; frame: BlockFrame } => !!x.frame);
+  const blocks: Block[] = allBlocks.filter((b) => !getBlockFrame(b));
+
 
   const blockTextScope = isDark
     ? "[&_*]:!text-white [&_h1]:!text-white [&_h2]:!text-white [&_h3]:!text-white [&_.bg-card]:!bg-white/10 [&_.bg-muted\\/40]:!bg-white/10 [&_.bg-muted\\/30]:!bg-white/10 [&_.border]:!border-white/20"
@@ -677,7 +829,7 @@ export function SlideBody({
       <>
         {headlineEl}
         <div className={`w-full text-2xl space-y-6 ${blockTextScope}`} style={{ zoom: fontScale } as any}>
-          {blocks.length === 0 && editable ? (
+          {blocks.length === 0 && framedBlocks.length === 0 && editable ? (
             <div className="text-white/40 text-center text-lg py-8 border-2 border-dashed border-white/15 rounded-xl">
               Přidejte text, odrážky nebo obrázek pomocí tlačítek pod náhledem.
             </div>
@@ -690,13 +842,49 @@ export function SlideBody({
   }
 
   return (
-    <div className={`flex h-full flex-col overflow-hidden ${isDark ? "text-white" : "text-foreground"}`}>
+    <div className={`relative flex h-full flex-col overflow-hidden ${isDark ? "text-white" : "text-foreground"}`}>
       <div className="flex-1 flex flex-col items-center justify-start px-12 py-10 gap-6 min-h-0 overflow-y-auto">
         {body}
       </div>
+
+      {/* Vrstva volně umístěných bloků (jen bloky s `frame`) */}
+      {framedBlocks.length > 0 && (
+        <div ref={freeLayerRef} className={`pointer-events-none absolute inset-0 ${blockTextScope}`}>
+          {framedBlocks.map(({ block, frame }) => (
+            <FreeFrameBlock
+              key={block.id}
+              block={block}
+              frame={frame}
+              editable={editable}
+              selected={selectedBlockId === block.id}
+              layerRef={freeLayerRef}
+              onSelect={() => onSelectBlock?.(block.id)}
+              onChangeFrame={
+                onChangeBlock
+                  ? (next) => onChangeBlock(block.id, (b: Block) => ({ ...b, frame: next }))
+                  : undefined
+              }
+              onDelete={onDeleteBlock ? () => onDeleteBlock(block.id) : undefined}
+            >
+              {editable ? (
+                <EditableBlock
+                  block={block}
+                  editable
+                  onChange={(patch) => onChangeBlock?.(block.id, patch)}
+                />
+              ) : (
+                <div className={slideAnimationClass((block.props as any)?.animation)}>
+                  <EditableBlock block={block} />
+                </div>
+              )}
+            </FreeFrameBlock>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
+
 
 /* ---------- Scaled canvas wrapper ---------- */
 

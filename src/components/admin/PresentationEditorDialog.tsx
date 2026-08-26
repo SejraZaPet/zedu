@@ -11,7 +11,7 @@ import {
   Monitor, Plus, Trash2, ChevronDown, Save, Sun, Moon, Type, List, Image as ImageIcon,
   Table as TableIcon, Settings2, Undo2, Redo2, ZoomIn, Copy, FileDown, Heading as HeadingIcon,
   Quote as QuoteIcon, StickyNote, BarChart3, Sigma, Video as VideoIcon, Music, Loader2, Bookmark,
-  Wand2, Settings, Puzzle, ArrowLeft, ExternalLink, Gamepad2,
+  Wand2, Settings, Puzzle, ArrowLeft, ExternalLink, Gamepad2, Move, FileUp,
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
@@ -28,6 +28,9 @@ import { createDefaultBlock, type Block } from "@/lib/textbook-config";
 import { SLIDE_BACKGROUND_COLORS } from "@/lib/slide-typography";
 import ZoomZonesEditor from "@/components/admin/ZoomZonesEditor";
 import { isZoomableSlide, type ZoomZone } from "@/lib/zoom-zones";
+import { DEFAULT_BLOCK_FRAME, getBlockFrame } from "@/lib/block-frame";
+import { Switch } from "@/components/ui/switch";
+import ImportPptxToPresentationDialog from "@/components/admin/ImportPptxToPresentationDialog";
 import ThemeGalleryPopover from "@/components/admin/ThemeGalleryPopover";
 import StartFromTemplateDialog from "@/components/admin/StartFromTemplateDialog";
 import IconPickerDialog from "@/components/admin/IconPickerDialog";
@@ -92,6 +95,29 @@ const InsertTile = ({
   </button>
 );
 
+const BLOCK_TYPE_LABELS: Record<string, string> = {
+  heading: "Nadpis",
+  paragraph: "Text",
+  bullet_list: "Odrážky",
+  image: "Obrázek",
+  table: "Tabulka",
+  chart: "Graf",
+  formula: "Rovnice",
+  video: "Video",
+  audio: "Zvuk",
+  quote: "Citace",
+  callout: "Box",
+  shape: "Tvar",
+};
+
+/** Krátký popis bloku pro seznam v panelu. */
+const blockLabel = (block: Block, index: number) => {
+  const kind = BLOCK_TYPE_LABELS[block.type] || block.type;
+  const raw = String(block.props?.text || block.props?.html || block.props?.caption || "");
+  const text = raw.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  return `${index + 1}. ${kind}${text ? ` – ${text.slice(0, 24)}` : ""}`;
+};
+
 const stripHtml = (html: string) => String(html || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 
 export const PresentationEditorDialog = ({
@@ -106,6 +132,7 @@ export const PresentationEditorDialog = ({
   const [addSlideOpen, setAddSlideOpen] = useState(false);
   const [history, setHistory] = useState<BlockEditorHistory | null>(null);
   const [templateOpen, setTemplateOpen] = useState(false);
+  const [importPptxOpen, setImportPptxOpen] = useState(false);
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [exportingPdf, setExportingPdf] = useState(false);
   const [generatingActivity, setGeneratingActivity] = useState(false);
@@ -607,6 +634,14 @@ export const PresentationEditorDialog = ({
                       >
                         <LayoutTemplate className="h-3.5 w-3.5" /> Začít od šablony
                       </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="w-full justify-start gap-1.5 text-xs"
+                        onClick={() => setImportPptxOpen(true)}
+                      >
+                        <FileUp className="h-3.5 w-3.5" /> Importovat prezentaci (.pptx)
+                      </Button>
                     </div>
                   </div>
                   )}
@@ -629,6 +664,55 @@ export const PresentationEditorDialog = ({
                         </SelectContent>
                       </Select>
                     </div>
+
+                    {/* Volné umístění bloků (opt-in) */}
+                    {blocks.length > 0 && (
+                      <div className="space-y-2 rounded-lg border border-border p-2">
+                        <Label className="flex items-center gap-1.5 text-xs">
+                          <Move className="h-3.5 w-3.5" /> Volné umístění bloků
+                        </Label>
+                        <p className="text-[11px] text-muted-foreground">
+                          Zapnutím vyjmete blok z lineárního rozvržení a umístíte ho volně na plátno
+                          (posun a velikost tažením přímo na slidu).
+                        </p>
+                        <div className="space-y-1.5">
+                          {blocks.map((b, i) => {
+                            const free = !!getBlockFrame(b);
+                            return (
+                              <div
+                                key={b.id}
+                                className={`flex items-center justify-between gap-2 rounded-md border px-2 py-1.5 ${
+                                  selectedBlockId === b.id ? "border-primary bg-primary/5" : "border-border"
+                                }`}
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedBlockId(b.id)}
+                                  className="min-w-0 flex-1 truncate text-left text-[11px] text-muted-foreground hover:text-foreground"
+                                  title={blockLabel(b, i)}
+                                >
+                                  {blockLabel(b, i)}
+                                </button>
+                                <Switch
+                                  checked={free}
+                                  aria-label={`Volné umístění bloku ${i + 1}`}
+                                  onCheckedChange={(v) => {
+                                    setSelectedBlockId(b.id);
+                                    updateBlock(b.id, (prev: Block) => {
+                                      if (v) return { ...prev, frame: { ...DEFAULT_BLOCK_FRAME } };
+                                      const { frame, ...rest } = prev as any;
+                                      return rest as Block;
+                                    });
+                                  }}
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+
 
                     {/* Zóny přiblížení */}
                     {isZoomableSlide(currentSlide) && (
@@ -998,6 +1082,18 @@ export const PresentationEditorDialog = ({
               </div>
             </div>
           )}
+
+          <ImportPptxToPresentationDialog
+            open={importPptxOpen}
+            onOpenChange={setImportPptxOpen}
+            themeId={themeId}
+            onImported={(slides) => {
+              const updated = [...pendingSlides, ...slides];
+              setPendingSlides(updated);
+              setEditingSlideIndex(pendingSlides.length);
+              setSelectedBlockId(null);
+            }}
+          />
 
           <StartFromTemplateDialog
             open={templateOpen}
