@@ -1043,8 +1043,10 @@ export function SlideBody({
 
 
 
+  // Bílý text jen na wrapperu; potomci barvu dědí (`text-inherit`), takže
+  // inline `style.color` z props konkrétního bloku vždy vyhraje.
   const blockTextScope = isDark
-    ? "[&_*]:text-white [&_h1]:text-white [&_h2]:text-white [&_h3]:text-white [&_.bg-card]:!bg-white/10 [&_.bg-muted\\/40]:!bg-white/10 [&_.bg-muted\\/30]:!bg-white/10 [&_.border]:!border-white/20"
+    ? "text-white [&_*]:text-inherit [&_h1]:text-inherit [&_h2]:text-inherit [&_h3]:text-inherit [&_.bg-card]:!bg-white/10 [&_.bg-muted\\/40]:!bg-white/10 [&_.bg-muted\\/30]:!bg-white/10 [&_.border]:!border-white/20"
     : "";
 
   const headlineEl = (
