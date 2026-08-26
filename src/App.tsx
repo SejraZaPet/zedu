@@ -94,7 +94,7 @@ import TeacherFromMaterial from "./pages/TeacherFromMaterial";
 import StudentFromMaterial from "./pages/StudentFromMaterial";
 import ViewAsBanner from "./components/ViewAsBanner";
 import PublicSiteAssistant from "./components/PublicSiteAssistant";
-import ToolbarPreview from "./pages/ToolbarPreview";
+
 
 
 
@@ -112,8 +112,7 @@ const App = () => (
           <PublicSiteAssistant />
           <Routes>
            <Route path="/" element={<Index />} />
-           <Route path="/toolbar-preview" element={<ToolbarPreview />} />
-           
+
            <Route path="/auth" element={<Auth />} />
 
             <Route path="/reset-password" element={<ResetPassword />} />
