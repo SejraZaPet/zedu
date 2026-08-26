@@ -13,6 +13,7 @@ import {
   Maximize, Minus, Palette, Plus, Sparkles, Trash2,
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import IconPickerDialog from "@/components/admin/IconPickerDialog";
 import type { Block } from "@/lib/textbook-config";
 
 interface Props {
