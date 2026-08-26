@@ -6,6 +6,8 @@
  * lineárním flow — chování zůstává beze změny (zpětná kompatibilita).
  */
 
+import type { CSSProperties } from "react";
+
 export interface BlockFrame {
   x: number;
   y: number;
@@ -50,7 +52,7 @@ export function getBlockFrame(block: any): BlockFrame | null {
   return isValidBlockFrame(block?.frame) ? clampBlockFrame(block.frame) : null;
 }
 
-export function frameStyle(frame: BlockFrame): React.CSSProperties {
+export function frameStyle(frame: BlockFrame): CSSProperties {
   return {
     position: "absolute",
     left: `${frame.x}%`,
