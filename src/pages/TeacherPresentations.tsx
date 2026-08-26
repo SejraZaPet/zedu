@@ -274,6 +274,7 @@ const TeacherPresentations = () => {
         i.id === linkTarget.id ? { ...i, lesson_id: lesson.id, lessonTitle: lesson.title } : i
       )));
       setLinkTarget(null);
+      setSelectedTextbook(null);
       toast({
         title: "Propojeno s lekcí",
         description: `Prezentace je nyní dostupná i v lekci „${lesson.title}“.`,
