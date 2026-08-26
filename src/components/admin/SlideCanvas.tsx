@@ -933,13 +933,23 @@ export function SlideBody({
 
   return (
     <div className={`relative flex h-full flex-col overflow-hidden ${isDark ? "text-white" : "text-foreground"}`}>
-      <div className="flex-1 flex flex-col items-center justify-start px-12 py-10 gap-6 min-h-0 overflow-y-auto">
-        {body}
+      <div ref={flowAreaRef} className="flex-1 min-h-0 overflow-hidden px-6 py-6">
+        <div
+          ref={flowContentRef}
+          className="flex w-full flex-col items-center justify-start gap-6"
+          style={{
+            transform: flowScale < 1 ? `scale(${flowScale})` : undefined,
+            transformOrigin: "top center",
+          }}
+        >
+          {body}
+        </div>
       </div>
 
       {/* Vrstva volně umístěných bloků (jen bloky s `frame`) */}
-      {framedBlocks.length > 0 && (
+      {(
         <div ref={freeLayerRef} className={`pointer-events-none absolute inset-0 ${blockTextScope}`}>
+
           {framedBlocks.map(({ block, frame }) => (
             <FreeFrameBlock
               key={block.id}
