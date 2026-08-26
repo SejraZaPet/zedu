@@ -145,7 +145,10 @@ export const PresentationEditorDialog = ({
   const [drawMode, setDrawMode] = useState(false);
   const [drawColor, setDrawColor] = useState("#FDE047");
   const [drawWidth, setDrawWidth] = useState(3);
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
   const canvasWrapRef = useRef<HTMLDivElement>(null);
+
 
   const currentSlide = pendingSlides[editingSlideIndex];
   const themeId = themeIdFromSlides(pendingSlides);
