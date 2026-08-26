@@ -1225,8 +1225,13 @@ export function SlideBody({
   }
 
   return (
-    <div className={`relative flex h-full flex-col overflow-hidden ${isDark ? "text-white" : "text-foreground"}`}>
+    <div
+      className={`relative flex h-full flex-col ${editable ? "" : "overflow-hidden"} ${
+        isDark ? "text-white" : "text-foreground"
+      }`}
+    >
       <div ref={flowAreaRef} className="flex-1 min-h-0 overflow-hidden px-6 py-6">
+
         <div
           ref={flowContentRef}
           className="flex min-h-full w-full flex-col items-center justify-start gap-6"
