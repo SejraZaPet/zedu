@@ -672,7 +672,10 @@ function EditableBlock({
     );
   }
 
-  const needsPanelHint = editable && (block.type === "icon" || block.type === "shape");
+  // Ikony jsou v datech `image` s `props.icon`; tvary mají vlastní typ `shape`.
+  const needsPanelHint =
+    editable && (block.type === "shape" || (block.type === "image" && !!(block.props as any)?.icon));
+
 
   // Fallback (accordion, rovnice, video, zvuk…): use existing renderer
   return (
