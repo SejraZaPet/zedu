@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import MarkdownImageToolbar from "@/components/admin/MarkdownImageToolbar";
+import MarkdownContent from "@/components/MarkdownContent";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -82,6 +84,8 @@ const AcademyCoursesManager = () => {
 
   const [moduleDlgOpen, setModuleDlgOpen] = useState(false);
   const [moduleForm, setModuleForm] = useState<Partial<Module>>({});
+  const [modulePreview, setModulePreview] = useState(false);
+  const moduleTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   const [stats, setStats] = useState<CourseStats[]>([]);
   const [statsLoading, setStatsLoading] = useState(false);
