@@ -5871,6 +5871,44 @@ export type Database = {
         }
         Relationships: []
       }
+      teacher_presentations: {
+        Row: {
+          created_at: string
+          id: string
+          lesson_id: string | null
+          slides: Json
+          teacher_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lesson_id?: string | null
+          slides?: Json
+          teacher_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lesson_id?: string | null
+          slides?: Json
+          teacher_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_presentations_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_textbook_lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       teacher_schedules: {
         Row: {
           created_at: string
