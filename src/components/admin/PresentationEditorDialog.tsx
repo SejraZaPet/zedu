@@ -1360,7 +1360,12 @@ export const PresentationEditorDialog = ({
                         drawingStrokes: [...(((currentSlide as any).drawingStrokes || []) as DrawingStroke[]), stroke],
                       })
                     }
+                    zoom={zoom}
+                    pan={pan}
+                    onZoomChange={setZoom}
+                    onPanChange={setPan}
                   />
+
                   </div>
                 </div>
               </div>
