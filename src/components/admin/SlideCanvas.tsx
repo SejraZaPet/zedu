@@ -799,18 +799,19 @@ export function SlideBody({
    * Tažení flow-bloku myší: po překonání 6px prahu se blok "povýší" do
    * absolutní vrstvy (dostane `frame` spočítaný z aktuální pozice) a drag
    * plynule pokračuje jako posun rámce.
+   *
+   * Textové bloky jsou `contenteditable`, proto se drag nezakazuje – při
+   * překonání prahu se editovatelnému prvku jen odebere focus, takže rychlý
+   * klik pořád spustí psaní, ale tažení funguje po celé ploše bloku.
    */
   const startPromoteDrag = (b: Block) => (e: React.PointerEvent) => {
     if (!editable || !onChangeBlock) return;
     if (e.button !== 0) return;
     const targetEl = e.target as HTMLElement | null;
-    if (
-      targetEl?.closest(
-        "button, a, input, textarea, select, [contenteditable='true'], [data-no-block-drag]",
-      )
-    ) {
+    if (targetEl?.closest("button, a, input, textarea, select, [data-no-block-drag]")) {
       return;
     }
+    const editableTarget = targetEl?.closest("[contenteditable='true']") as HTMLElement | null;
     const el = e.currentTarget as HTMLElement;
     const startX = e.clientX;
     const startY = e.clientY;
@@ -826,6 +827,11 @@ export function SlideBody({
         if (!lr.width || !lr.height) return;
         const rect = el.getBoundingClientRect();
         layerRect = lr;
+        // Tažení vyhrává nad editací textu – zrušíme focus i výběr.
+        if (editableTarget) {
+          editableTarget.blur();
+          window.getSelection?.()?.removeAllRanges();
+        }
         startFrame = clampBlockFrame({
           x: ((rect.left - lr.left) / lr.width) * 100,
           y: ((rect.top - lr.top) / lr.height) * 100,
