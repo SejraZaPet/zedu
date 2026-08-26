@@ -32,7 +32,7 @@ describe("Import .pptx do prezentace", () => {
   it("zobrazí upozornění o nepřenositelném rozvržení", () => {
     render(<ImportPptxToPresentationDialog open onOpenChange={() => {}} onImported={() => {}} />);
     expect(
-      screen.getByText(/Rozvržení, fonty\s+a animace z PowerPointu nelze přenést/i),
+      screen.getByText(/Rozvržení, fonty\s+a animace nelze přenést/i),
     ).toBeTruthy();
   });
 
