@@ -101,13 +101,17 @@ export const SlideFloatingFormatToolbar = ({
   }, [JSON.stringify(props)]);
 
 
-  if (!block || !pos) return null;
+  if (!block || (!staticBar && !pos)) return null;
 
   return (
     <div
       data-slide-toolbar="true"
-      className="absolute z-30 flex max-w-full flex-wrap items-center gap-1 rounded-lg border border-border bg-popover/95 px-1.5 py-1 shadow-lg backdrop-blur"
-      style={{ top: pos.top, left: pos.left }}
+      className={
+        staticBar
+          ? "flex max-w-full flex-wrap items-center justify-center gap-1 rounded-lg border border-border bg-popover px-1.5 py-1 shadow-sm"
+          : "absolute z-30 flex max-w-full flex-wrap items-center gap-1 rounded-lg border border-border bg-popover/95 px-1.5 py-1 shadow-lg backdrop-blur"
+      }
+      style={staticBar ? undefined : { top: pos!.top, left: pos!.left }}
       onMouseDown={(e) => e.preventDefault()}
     >
       {isHeading && (
