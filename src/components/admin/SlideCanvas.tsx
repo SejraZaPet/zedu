@@ -706,6 +706,27 @@ export function SlideBody({
     .filter((x): x is { block: Block; frame: BlockFrame } => !!x.frame);
   const blocks: Block[] = allBlocks.filter((b) => !getBlockFrame(b));
 
+  // Obsah slidu se nikdy nescrolluje – když se nevejde do stage, zmenší se
+  // (stejný princip jako živá projekce).
+  useEffect(() => {
+    const area = flowAreaRef.current;
+    const content = flowContentRef.current;
+    if (!area || !content) return;
+    const update = () => {
+      const availH = area.clientHeight;
+      const contentH = content.scrollHeight;
+      if (!availH || !contentH) return;
+      setFlowScale(contentH > availH + 1 ? Math.max(0.35, availH / contentH) : 1);
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(area);
+    ro.observe(content);
+    return () => ro.disconnect();
+  }, [slide, blocks.length, layout]);
+
+
+
 
   const blockTextScope = isDark
     ? "[&_*]:!text-white [&_h1]:!text-white [&_h2]:!text-white [&_h3]:!text-white [&_.bg-card]:!bg-white/10 [&_.bg-muted\\/40]:!bg-white/10 [&_.bg-muted\\/30]:!bg-white/10 [&_.border]:!border-white/20"
