@@ -1345,9 +1345,23 @@ export function SlideBody({
 
 /* ---------- Scaled canvas wrapper ---------- */
 
-const SlideCanvas = ({ fit = true, darkMode = true, themeId, ...rest }: CanvasProps) => {
+const MIN_ZOOM = 0.2;
+const MAX_ZOOM = 4;
+
+const SlideCanvas = ({
+  fit = true,
+  darkMode = true,
+  themeId,
+  zoom = 1,
+  pan = { x: 0, y: 0 },
+  onZoomChange,
+  onPanChange,
+  ...rest
+}: CanvasProps) => {
   const frameRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
+  const [panning, setPanning] = useState(false);
+
   // Explicit 16:9 box computed from the *available* space of the parent element
   // (width AND height), so the canvas never overflows its container.
   const [box, setBox] = useState<{ w: number; h: number } | null>(null);
