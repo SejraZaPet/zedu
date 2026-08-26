@@ -13,17 +13,26 @@ export interface SlideFontOption {
   label: string;
 }
 
-/** Kurátorovaná nabídka fontů (Google Fonts + systémové fallbacky). */
+/**
+ * Kurátorovaná nabídka fontů. Všechny mají plnou latin-ext sadu, takže
+ * podporují českou diakritiku (á č ď é ě í ň ó ř š ť ú ů ý ž).
+ */
 export const SLIDE_FONTS: SlideFontOption[] = [
   { value: '"Poppins", system-ui, sans-serif', label: "Poppins" },
-  { value: '"Inter", system-ui, sans-serif', label: "Inter" },
+  { value: '"Nunito", system-ui, sans-serif', label: "Nunito" },
+  { value: '"Baloo 2", system-ui, sans-serif', label: "Baloo 2" },
+  { value: '"Fredoka", system-ui, sans-serif', label: "Fredoka" },
+  { value: '"Comfortaa", system-ui, sans-serif', label: "Comfortaa" },
   { value: '"Quicksand", system-ui, sans-serif', label: "Quicksand" },
+  { value: '"Raleway", system-ui, sans-serif', label: "Raleway" },
+  { value: '"Montserrat", system-ui, sans-serif', label: "Montserrat" },
+  { value: '"Plus Jakarta Sans", system-ui, sans-serif', label: "Plus Jakarta Sans" },
+  { value: '"DM Sans", system-ui, sans-serif', label: "DM Sans" },
   { value: '"Source Sans 3", system-ui, sans-serif', label: "Source Sans 3" },
   { value: '"Playfair Display", Georgia, serif', label: "Playfair Display" },
   { value: '"Roboto Slab", Georgia, serif', label: "Roboto Slab" },
-  { value: '"Comic Neue", "Comic Sans MS", cursive', label: "Comic Neue" },
-  { value: 'Georgia, "Times New Roman", serif', label: "Georgia" },
-  { value: '"Courier New", ui-monospace, monospace', label: "Courier New" },
+  { value: '"Lora", Georgia, serif', label: "Lora" },
+  { value: '"Merriweather", Georgia, serif', label: "Merriweather" },
 ];
 
 export type SlideAnimation = "none" | "scale" | "from-bottom" | "from-top";
