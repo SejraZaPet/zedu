@@ -405,7 +405,6 @@ function EditableBlock({
         </div>
       );
     }
-    const allItemsEmpty = items.every((it) => !it?.trim());
     return (
       <div className={asCard ? "bg-white/10 rounded-[var(--slide-radius,0.75rem)] p-4 border border-white/15" : ""}>
         {revealToggle}
@@ -457,11 +456,6 @@ function EditableBlock({
             </li>
           )}
         </ul>
-        {editable && allItemsEmpty && items.length === 1 && (
-          <span className="pointer-events-none absolute left-1 top-0 italic text-muted-foreground/40 select-none hidden">
-            {BLOCK_PLACEHOLDER}
-          </span>
-        )}
       </div>
     );
   }
