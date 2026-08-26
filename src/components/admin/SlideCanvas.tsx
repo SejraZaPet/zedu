@@ -659,7 +659,9 @@ export function SlideBody({
   selectedBlockId,
   onSelectBlock,
 }: BodyProps) {
+  const freeLayerRef = useRef<HTMLDivElement>(null);
   const theme = getPresentationTheme(themeId ?? slide?.themeId);
+
   const explicitTheme = themeId ?? slide?.themeId;
   const isDark = explicitTheme ? theme.isDark : darkMode;
   const layout: SlideLayout = (slide?.layout as SlideLayout) || "full";
