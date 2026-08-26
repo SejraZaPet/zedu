@@ -154,6 +154,13 @@ export const PresentationEditorDialog = ({
   const themeId = themeIdFromSlides(pendingSlides);
   const theme = getPresentationTheme(themeId);
 
+  // Při přepnutí slidu resetujeme zoom/pan zpět na autofit.
+  useEffect(() => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+  }, [editingSlideIndex]);
+
+
   const setThemeId = (next: string) => setPendingSlides(applyThemeToSlides(pendingSlides, next));
   const transition = transitionFromSlides(pendingSlides);
   const setTransition = (next: SlideTransition) =>
