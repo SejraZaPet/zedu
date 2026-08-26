@@ -1022,6 +1022,7 @@ const SlideCanvas = ({ fit = true, darkMode = true, themeId, ...rest }: CanvasPr
       setScale(Math.min(w / STAGE_W, h / STAGE_H));
     };
     update();
+    if (typeof ResizeObserver === "undefined") return;
     const ro = new ResizeObserver(update);
     ro.observe(el);
     ro.observe(parent);
