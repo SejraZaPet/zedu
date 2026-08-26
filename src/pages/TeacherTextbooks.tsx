@@ -22,7 +22,7 @@ import TeacherTextbookLessonEditorSheet from "@/components/teacher/TeacherTextbo
 import ShareContentDialog from "@/components/sharing/ShareContentDialog";
 import type { Block } from "@/lib/textbook-config";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
 
 import {
