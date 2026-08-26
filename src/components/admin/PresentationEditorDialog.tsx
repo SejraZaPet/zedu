@@ -672,8 +672,8 @@ export const PresentationEditorDialog = ({
                           <Move className="h-3.5 w-3.5" /> Volné umístění bloků
                         </Label>
                         <p className="text-[11px] text-muted-foreground">
-                          Zapnutím vyjmete blok z lineárního rozvržení a umístíte ho volně na plátno
-                          (posun a velikost tažením přímo na slidu).
+                          Blok můžete přetáhnout myší přímo na slidu — tím se automaticky vyjme
+                          z lineárního rozvržení. Vypnutím přepínače ho vrátíte zpět do flow.
                         </p>
                         <div className="space-y-1.5">
                           {blocks.map((b, i) => {
@@ -693,9 +693,16 @@ export const PresentationEditorDialog = ({
                                 >
                                   {blockLabel(b, i)}
                                 </button>
+                                <span className="whitespace-nowrap text-[10px] text-muted-foreground">
+                                  {free ? "Vrátit do flow" : "Volné umístění"}
+                                </span>
                                 <Switch
                                   checked={free}
-                                  aria-label={`Volné umístění bloku ${i + 1}`}
+                                  aria-label={
+                                    free
+                                      ? `Vrátit blok ${i + 1} do flow`
+                                      : `Volné umístění bloku ${i + 1}`
+                                  }
                                   onCheckedChange={(v) => {
                                     setSelectedBlockId(b.id);
                                     updateBlock(b.id, (prev: Block) => {
@@ -709,6 +716,7 @@ export const PresentationEditorDialog = ({
                             );
                           })}
                         </div>
+
                       </div>
                     )}
 
@@ -1042,7 +1050,7 @@ export const PresentationEditorDialog = ({
                   </Button>
                 </div>
 
-                <div className="mx-auto flex h-full min-h-0 w-full max-w-[1100px] flex-col items-center justify-center pt-10">
+                <div className="mx-auto flex h-full min-h-0 w-full max-w-full flex-col items-center justify-center pt-4">
                   <div className="flex min-h-0 w-full flex-1 items-center justify-center">
                   <SlideCanvas
                     slide={currentSlide}

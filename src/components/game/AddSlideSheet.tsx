@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { FileText, HelpCircle, MessageSquare, Cloud, DoorOpen, ArrowLeft, Loader2, Users2, SplitSquareHorizontal, Sparkles, Plus, Trash2, KeyRound, Library, Zap } from "lucide-react";
+import { FileText, HelpCircle, MessageSquare, Cloud, DoorOpen, ArrowLeft, Loader2, Users2, SplitSquareHorizontal, Sparkles, Plus, Trash2, KeyRound, Library, Zap, Square } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -519,6 +519,28 @@ export function AddSlideSheet({
         <div className="mt-6 space-y-4">
           {kind === "menu" && (
             <div className="grid gap-2">
+              <Button
+                variant="outline"
+                className="justify-start h-auto py-3"
+                disabled={busy}
+                onClick={() =>
+                  appendAndJump({
+                    slideId: crypto.randomUUID(),
+                    type: "content",
+                    projector: { headline: "", body: "" },
+                    device: { instructions: "" },
+                    blocks: [],
+                  })
+                }
+              >
+                <Square className="w-5 h-5 mr-3 text-primary" />
+                <div className="text-left">
+                  <p className="font-medium">Prázdný slide</p>
+                  <p className="text-xs text-muted-foreground">
+                    Čistá plocha — obsah doplníte přímo v editoru
+                  </p>
+                </div>
+              </Button>
               <Button
                 variant="outline"
                 className="justify-start h-auto py-3"

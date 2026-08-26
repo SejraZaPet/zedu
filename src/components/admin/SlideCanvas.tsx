@@ -8,15 +8,18 @@ import { getPresentationTheme, themeStageStyle } from "@/lib/presentation-themes
 import { getSlideIcon } from "@/lib/slide-icons";
 import {
   applyFrameDrag,
+  clampBlockFrame,
   getBlockFrame,
   type BlockFrame,
   type FrameHandle,
 } from "@/lib/block-frame";
+
 import {
   slideAnimationClass,
-  slideBackgroundOverride,
+  slideBackgroundOverrideStyle,
   slideTextStyle,
 } from "@/lib/slide-typography";
+
 
 
 export type SlideLayout =
@@ -660,7 +663,11 @@ export function SlideBody({
   onSelectBlock,
 }: BodyProps) {
   const freeLayerRef = useRef<HTMLDivElement>(null);
+  const flowAreaRef = useRef<HTMLDivElement>(null);
+  const flowContentRef = useRef<HTMLDivElement>(null);
+  const [flowScale, setFlowScale] = useState(1);
   const theme = getPresentationTheme(themeId ?? slide?.themeId);
+
 
   const explicitTheme = themeId ?? slide?.themeId;
   const isDark = explicitTheme ? theme.isDark : darkMode;
@@ -698,6 +705,28 @@ export function SlideBody({
     .map((b) => ({ block: b, frame: getBlockFrame(b) }))
     .filter((x): x is { block: Block; frame: BlockFrame } => !!x.frame);
   const blocks: Block[] = allBlocks.filter((b) => !getBlockFrame(b));
+
+  // Obsah slidu se nikdy nescrolluje – když se nevejde do stage, zmenší se
+  // (stejný princip jako živá projekce).
+  useEffect(() => {
+    const area = flowAreaRef.current;
+    const content = flowContentRef.current;
+    if (!area || !content) return;
+    const update = () => {
+      const availH = area.clientHeight;
+      const contentH = content.scrollHeight;
+      if (!availH || !contentH) return;
+      setFlowScale(contentH > availH + 1 ? Math.max(0.35, availH / contentH) : 1);
+    };
+    update();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(update);
+    ro.observe(area);
+    ro.observe(content);
+    return () => ro.disconnect();
+  }, [slide, blocks.length, layout]);
+
+
 
 
   const blockTextScope = isDark
@@ -740,11 +769,64 @@ export function SlideBody({
     window.addEventListener("pointerup", up);
   };
 
+  /**
+   * Tažení flow-bloku myší: po překonání 6px prahu se blok "povýší" do
+   * absolutní vrstvy (dostane `frame` spočítaný z aktuální pozice) a drag
+   * plynule pokračuje jako posun rámce.
+   */
+  const startPromoteDrag = (b: Block) => (e: React.PointerEvent) => {
+    if (!editable || !onChangeBlock) return;
+    if (e.button !== 0) return;
+    const targetEl = e.target as HTMLElement | null;
+    if (
+      targetEl?.closest(
+        "button, a, input, textarea, select, [contenteditable='true'], [data-no-block-drag]",
+      )
+    ) {
+      return;
+    }
+    const el = e.currentTarget as HTMLElement;
+    const startX = e.clientX;
+    const startY = e.clientY;
+    let startFrame: BlockFrame | null = null;
+    let layerRect: DOMRect | null = null;
+
+    const move = (ev: PointerEvent) => {
+      if (!startFrame) {
+        if (Math.abs(ev.clientX - startX) < 6 && Math.abs(ev.clientY - startY) < 6) return;
+        const layer = freeLayerRef.current;
+        if (!layer) return;
+        const lr = layer.getBoundingClientRect();
+        if (!lr.width || !lr.height) return;
+        const rect = el.getBoundingClientRect();
+        layerRect = lr;
+        startFrame = clampBlockFrame({
+          x: ((rect.left - lr.left) / lr.width) * 100,
+          y: ((rect.top - lr.top) / lr.height) * 100,
+          w: (rect.width / lr.width) * 100,
+          h: (rect.height / lr.height) * 100,
+        });
+        onSelectBlock?.(b.id);
+        onChangeBlock(b.id, (prev: Block) => ({ ...prev, frame: startFrame } as Block));
+      }
+      if (!startFrame || !layerRect) return;
+      const dx = ((ev.clientX - startX) / layerRect.width) * 100;
+      const dy = ((ev.clientY - startY) / layerRect.height) * 100;
+      const next = applyFrameDrag(startFrame, "move", dx, dy);
+      onChangeBlock(b.id, (prev: Block) => ({ ...prev, frame: next } as Block));
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+
   const renderBlock = (b: Block, sliceIndex: number, asCard?: boolean) => {
     const globalIndex = blocks.findIndex((x) => x.id === b.id);
-    return (
+    const shell = (
       <BlockShell
-        key={b.id}
         editable={editable}
         index={globalIndex}
         total={blocks.length}
@@ -769,7 +851,16 @@ export function SlideBody({
         )}
       </BlockShell>
     );
+
+    if (!editable) return <div key={b.id}>{shell}</div>;
+
+    return (
+      <div key={b.id} className="touch-none" onPointerDown={startPromoteDrag(b)}>
+        {shell}
+      </div>
+    );
   };
+
 
   let body: React.ReactNode = null;
 
@@ -843,13 +934,23 @@ export function SlideBody({
 
   return (
     <div className={`relative flex h-full flex-col overflow-hidden ${isDark ? "text-white" : "text-foreground"}`}>
-      <div className="flex-1 flex flex-col items-center justify-start px-12 py-10 gap-6 min-h-0 overflow-y-auto">
-        {body}
+      <div ref={flowAreaRef} className="flex-1 min-h-0 overflow-hidden px-6 py-6">
+        <div
+          ref={flowContentRef}
+          className="flex min-h-full w-full flex-col items-center justify-start gap-6"
+          style={{
+            transform: flowScale < 1 ? `scale(${flowScale})` : undefined,
+            transformOrigin: "top center",
+          }}
+        >
+          {body}
+        </div>
       </div>
 
       {/* Vrstva volně umístěných bloků (jen bloky s `frame`) */}
-      {framedBlocks.length > 0 && (
+      {(
         <div ref={freeLayerRef} className={`pointer-events-none absolute inset-0 ${blockTextScope}`}>
+
           {framedBlocks.map(({ block, frame }) => (
             <FreeFrameBlock
               key={block.id}
@@ -921,6 +1022,7 @@ const SlideCanvas = ({ fit = true, darkMode = true, themeId, ...rest }: CanvasPr
       setScale(Math.min(w / STAGE_W, h / STAGE_H));
     };
     update();
+    if (typeof ResizeObserver === "undefined") return;
     const ro = new ResizeObserver(update);
     ro.observe(el);
     ro.observe(parent);
@@ -929,7 +1031,7 @@ const SlideCanvas = ({ fit = true, darkMode = true, themeId, ...rest }: CanvasPr
 
   const effectiveThemeId = themeId ?? (rest as any).slide?.themeId;
   const theme = getPresentationTheme(effectiveThemeId);
-  const bgOverride = slideBackgroundOverride((rest as any).slide);
+  const bgOverride = slideBackgroundOverrideStyle((rest as any).slide);
   let bgStyle: React.CSSProperties = effectiveThemeId
     ? themeStageStyle(theme)
     : darkMode
@@ -937,8 +1039,11 @@ const SlideCanvas = ({ fit = true, darkMode = true, themeId, ...rest }: CanvasPr
       : { background: "hsl(var(--background))", ...themeStageStyle(theme), backgroundImage: "none" as any };
 
   if (bgOverride) {
-    bgStyle = { ...bgStyle, backgroundImage: "none" as any, background: bgOverride };
+    // Shorthand `background` se nesmí mísit s explicitními vlastnostmi – nejdřív ho odstraníme.
+    const { background: _bg, backgroundImage: _bgi, backgroundColor: _bgc, ...withoutBg } = bgStyle as any;
+    bgStyle = { ...withoutBg, ...bgOverride } as React.CSSProperties;
   }
+
 
   const body = <SlideBody darkMode={darkMode} themeId={effectiveThemeId} {...rest} />;
 

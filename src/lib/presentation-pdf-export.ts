@@ -8,7 +8,7 @@ import { createRoot } from "react-dom/client";
 import { createElement } from "react";
 import { SlideBody, STAGE_W, STAGE_H } from "@/components/admin/SlideCanvas";
 import { getPresentationTheme, themeStageStyle } from "@/lib/presentation-themes";
-import { slideBackgroundOverride } from "@/lib/slide-typography";
+import { slideBackgroundOverrideStyle } from "@/lib/slide-typography";
 
 function sanitizeFileName(name: string): string {
   return (name || "prezentace")
@@ -59,10 +59,10 @@ export async function exportSlidesToPdf(
       stage.style.height = `${STAGE_H}px`;
       stage.style.overflow = "hidden";
       Object.assign(stage.style, themeStageStyle(theme) as any);
-      const bg = slideBackgroundOverride(slide);
+      const bg = slideBackgroundOverrideStyle(slide);
       if (bg) {
-        stage.style.backgroundImage = "none";
-        stage.style.background = bg;
+        stage.style.background = "";
+        Object.assign(stage.style, bg);
       }
       host.appendChild(stage);
 
