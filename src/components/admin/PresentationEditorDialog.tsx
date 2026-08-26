@@ -41,6 +41,8 @@ import { LayoutTemplate, Shapes } from "lucide-react";
 import { SLIDE_TRANSITIONS, transitionFromSlides, applyTransitionToSlides, type SlideTransition } from "@/lib/slide-transitions";
 import { exportSlidesToPdf } from "@/lib/presentation-pdf-export";
 import ShapePickerPopover from "@/components/admin/ShapePickerPopover";
+import ColorPicker from "@/components/admin/ColorPicker";
+import type { DrawingStroke } from "@/components/admin/SlideDrawingLayer";
 import AiBlockTextButton from "@/components/admin/AiBlockTextButton";
 import SlideFloatingFormatToolbar from "@/components/admin/SlideFloatingFormatToolbar";
 import { activityBlockToSlide, mapPlanKindToActivityType } from "@/lib/plan-to-slides";
@@ -138,6 +140,9 @@ export const PresentationEditorDialog = ({
   const [generatingActivity, setGeneratingActivity] = useState(false);
   const [sidebarSection, setSidebarSection] = useState<"insert" | "slide" | "activities">("insert");
   const [teacherNotesOpen, setTeacherNotesOpen] = useState(false);
+  const [drawMode, setDrawMode] = useState(false);
+  const [drawColor, setDrawColor] = useState("#FDE047");
+  const [drawWidth, setDrawWidth] = useState(3);
   const canvasWrapRef = useRef<HTMLDivElement>(null);
 
   const currentSlide = pendingSlides[editingSlideIndex];
@@ -648,6 +653,8 @@ export const PresentationEditorDialog = ({
                         onPick={(props) => {
                           const newBlock = createDefaultBlock("shape");
                           newBlock.props = { ...newBlock.props, ...props };
+                          // Tvary vkládáme přímo do volné vrstvy, ať jdou hned posouvat a resizovat.
+                          (newBlock as any).frame = { x: 20, y: 20, w: 60, h: 40 };
                           setBlocks([...blocks, newBlock]);
                         }}
                       />
@@ -1158,6 +1165,77 @@ export const PresentationEditorDialog = ({
                   >
                     <Redo2 className="h-3.5 w-3.5" />
                   </Button>
+
+                  <div className="mx-1 h-6 w-px bg-border" />
+
+                  <Button
+                    size="sm"
+                    variant={drawMode ? "default" : "outline"}
+                    className={`h-8 gap-1 px-2 text-xs ${drawMode ? "" : "bg-background/90"}`}
+                    onClick={() => {
+                      setDrawMode((v) => !v);
+                      setSelectedBlockId(null);
+                    }}
+                    title="Kreslení tužkou po slidu"
+                    aria-pressed={drawMode}
+                  >
+                    <Pencil className="h-3.5 w-3.5" /> Tužka
+                  </Button>
+
+                  {drawMode && (
+                    <>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button size="sm" variant="outline" className="h-8 gap-1 bg-background/90 px-2 text-xs" title="Barva tahu">
+                            <span
+                              className="inline-block h-3 w-3 rounded-full border border-border"
+                              style={{ background: drawColor }}
+                            />
+                            Barva
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-2">
+                          <ColorPicker value={drawColor} onChange={(v) => setDrawColor(v || "#FDE047")} />
+                        </PopoverContent>
+                      </Popover>
+
+                      <Select value={String(drawWidth)} onValueChange={(v) => setDrawWidth(Number(v))}>
+                        <SelectTrigger className="h-8 w-[76px] bg-background/90 text-xs" title="Šířka tahu">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {[1, 3, 5, 8].map((w) => (
+                            <SelectItem key={w} value={String(w)}>{w} px</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 gap-1 bg-background/90 px-2 text-xs"
+                        title="Smazat poslední tah"
+                        disabled={!((currentSlide as any)?.drawingStrokes || []).length}
+                        onClick={() =>
+                          updateSlide({
+                            drawingStrokes: (((currentSlide as any).drawingStrokes || []) as DrawingStroke[]).slice(0, -1),
+                          })
+                        }
+                      >
+                        <Eraser className="h-3.5 w-3.5" /> Guma
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 px-2 text-xs text-destructive bg-background/90"
+                        title="Smazat všechny tahy tohoto slidu"
+                        disabled={!((currentSlide as any)?.drawingStrokes || []).length}
+                        onClick={() => updateSlide({ drawingStrokes: [] })}
+                      >
+                        Vymazat vše
+                      </Button>
+                    </>
+                  )}
                 </div>
 
                 <div className="mx-auto flex h-full min-h-0 w-full max-w-full flex-col items-center justify-center pt-4">
@@ -1200,6 +1278,14 @@ export const PresentationEditorDialog = ({
                     onChangeHeroImage={(url) => updateSlide({ heroImage: url })}
                     selectedBlockId={selectedBlockId}
                     onSelectBlock={setSelectedBlockId}
+                    drawMode={drawMode}
+                    drawColor={drawColor}
+                    drawWidth={drawWidth}
+                    onAddStroke={(stroke: DrawingStroke) =>
+                      updateSlide({
+                        drawingStrokes: [...(((currentSlide as any).drawingStrokes || []) as DrawingStroke[]), stroke],
+                      })
+                    }
                   />
                   </div>
                 </div>
