@@ -20,7 +20,7 @@ import {
   slideTextStyle,
 } from "@/lib/slide-typography";
 
-const BLOCK_PLACEHOLDER = "Klikni pro psaní • klikni znovu pro formátování";
+const BLOCK_PLACEHOLDER = "Klikni pro psaní…";
 
 
 
@@ -139,7 +139,7 @@ function EditableText({
         className={`${className || ""} cursor-text rounded px-1 -mx-1 outline-none focus:ring-2 focus:ring-primary focus:bg-white/5 hover:bg-white/5 transition-colors`}
       />
       {isEmpty && placeholder && (
-        <span className="pointer-events-none absolute left-1 top-0 italic text-muted-foreground/40 select-none">
+        <span className="pointer-events-none absolute left-1 top-0 text-white/30 italic text-sm select-none">
           {placeholder}
         </span>
       )}
@@ -170,6 +170,15 @@ function BlockShell({
   onDragStart?: (e: React.PointerEvent) => void;
   children: React.ReactNode;
 }) {
+  const [showFormatHint, setShowFormatHint] = useState(true);
+
+  useEffect(() => {
+    if (!selected) return;
+    setShowFormatHint(true);
+    const t = setTimeout(() => setShowFormatHint(false), 3000);
+    return () => clearTimeout(t);
+  }, [selected, blockId]);
+
   if (!editable) return <>{children}</>;
   return (
     <div
@@ -219,9 +228,8 @@ function BlockShell({
           <Trash2 className="w-3.5 h-3.5" />
         </button>
       </div>
-      {selected && (
-        <div className="absolute -bottom-5 right-0 flex items-center gap-1 text-[10px] text-primary/80 bg-background/90 border border-primary/20 px-1.5 py-0.5 rounded shadow-sm pointer-events-none select-none">
-          <span>✦</span>
+      {selected && showFormatHint && (
+        <div className="absolute top-0 right-0 flex items-center gap-1 text-[10px] text-white/60 bg-white/10 px-1 py-0.5 rounded pointer-events-none select-none">
           <span>Formátování ↑</span>
         </div>
       )}
@@ -375,7 +383,7 @@ function EditableBlock({
   }
 
   if (block.type === "bullet_list") {
-    const items: string[] = block.props?.items || [""];
+    const items: string[] = block.props?.items || [];
     const revealMode = !!block.props?.revealMode;
     const revealToggle = editable ? (
       <label className="flex items-center gap-2 text-xs text-white/70 mb-2 select-none">
@@ -409,6 +417,20 @@ function EditableBlock({
       <div className={asCard ? "bg-white/10 rounded-[var(--slide-radius,0.75rem)] p-4 border border-white/15" : ""}>
         {revealToggle}
         <ul className="space-y-2" style={slideTextStyle(block.props)}>
+          {items.length === 0 && editable && (
+            <li className="flex items-start gap-3 text-2xl">
+              <span className="mt-1 flex-shrink-0" style={{ color: "var(--slide-primary, currentColor)" }}>•</span>
+              <EditableText
+                editable={editable}
+                value=""
+                placeholder={BLOCK_PLACEHOLDER}
+                className="flex-1"
+                onCommit={(v) => {
+                  if (v.trim()) update((b) => ({ ...b, props: { ...b.props, items: [v] } }));
+                }}
+              />
+            </li>
+          )}
           {items.map((item, i) => (
             <li key={i} className="flex items-start gap-3 text-2xl">
               <span className="mt-1 flex-shrink-0" style={{ color: "var(--slide-primary, currentColor)" }}>•</span>
@@ -442,7 +464,7 @@ function EditableBlock({
               </div>
             </li>
           ))}
-          {editable && (
+          {editable && items.length > 0 && (
             <li>
               <button
                 type="button"
