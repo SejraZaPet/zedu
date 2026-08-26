@@ -67,7 +67,9 @@ export const normalizeBlocks = (blocks: Block[] | null | undefined): Block[] => 
       type: block?.type,
       visible: typeof block?.visible === "boolean" ? block.visible : true,
       props: block?.props && typeof block.props === "object" ? block.props : {},
+      ...(block?.frame ? { frame: block.frame } : {}),
     } as Block;
+
 
     if (
       finalId !== block?.id ||
