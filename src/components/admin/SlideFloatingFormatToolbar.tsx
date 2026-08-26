@@ -103,12 +103,50 @@ export const SlideFloatingFormatToolbar = ({
 
   return (
     <div
-      className="absolute z-30 flex items-center gap-1 rounded-lg border border-border bg-popover/95 px-1.5 py-1 shadow-lg backdrop-blur"
+      data-slide-toolbar="true"
+      className="absolute z-30 flex max-w-full flex-wrap items-center gap-1 rounded-lg border border-border bg-popover/95 px-1.5 py-1 shadow-lg backdrop-blur"
       style={{ top: pos.top, left: pos.left }}
       onMouseDown={(e) => e.preventDefault()}
     >
+      {isHeading && (
+        <Select
+          value={String(props.level || 2)}
+          onValueChange={(v) => set({ level: Number(v) })}
+        >
+          <SelectTrigger className="h-7 w-[62px] text-xs" title="Úroveň nadpisu">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="1">H1</SelectItem>
+            <SelectItem value="2">H2</SelectItem>
+            <SelectItem value="3">H3</SelectItem>
+          </SelectContent>
+        </Select>
+      )}
+
       {isText && (
         <>
+          <Button
+            size="sm"
+            variant={props.bold ? "default" : "ghost"}
+            className="h-7 w-7 p-0"
+            title="Tučně"
+            aria-pressed={!!props.bold}
+            onClick={() => set({ bold: props.bold ? null : true })}
+          >
+            <Bold className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            size="sm"
+            variant={props.italic ? "default" : "ghost"}
+            className="h-7 w-7 p-0"
+            title="Kurzíva"
+            aria-pressed={!!props.italic}
+            onClick={() => set({ italic: props.italic ? null : true })}
+          >
+            <Italic className="h-3.5 w-3.5" />
+          </Button>
+
           <Select
             value={props.fontSize ? String(props.fontSize) : "inherit"}
             onValueChange={(v) => set({ fontSize: v === "inherit" ? null : Number(v) })}
