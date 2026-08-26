@@ -73,7 +73,14 @@ interface BodyProps {
 interface CanvasProps extends BodyProps {
   /** When true (default), scale stage to fit container. Otherwise renders at native 1600×900. */
   fit?: boolean;
+  /** Ruční zoom nad rámec "fit" (1 = 100 % velikosti po autofitu). */
+  zoom?: number;
+  /** Posun plátna v CSS pixelech od středu. */
+  pan?: { x: number; y: number };
+  onZoomChange?: (zoom: number) => void;
+  onPanChange?: (pan: { x: number; y: number }) => void;
 }
+
 
 /* ---------- Inline-editable atoms ---------- */
 
