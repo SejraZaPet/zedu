@@ -288,9 +288,15 @@ const TeacherPresentations = () => {
   const filteredLessons = useMemo(() => {
     const q = lessonQuery.trim().toLowerCase();
     if (!q) return lessonOptions;
-    return lessonOptions.filter((l) =>
-      l.title.toLowerCase().includes(q) || l.textbookTitle.toLowerCase().includes(q));
+    return lessonOptions.filter((l) => l.title.toLowerCase().includes(q));
   }, [lessonOptions, lessonQuery]);
+
+  const filteredTextbooks = useMemo(() => {
+    const q = lessonQuery.trim().toLowerCase();
+    if (!q) return textbookOptions;
+    return textbookOptions.filter((t) => t.title.toLowerCase().includes(q));
+  }, [textbookOptions, lessonQuery]);
+
 
   /** Spuštění živé prezentace ze samostatné prezentace. */
   const launchLive = async (slides: any[], title: string) => {
