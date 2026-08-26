@@ -1044,7 +1044,7 @@ export function SlideBody({
 
 
   const blockTextScope = isDark
-    ? "[&_*]:!text-white [&_h1]:!text-white [&_h2]:!text-white [&_h3]:!text-white [&_.bg-card]:!bg-white/10 [&_.bg-muted\\/40]:!bg-white/10 [&_.bg-muted\\/30]:!bg-white/10 [&_.border]:!border-white/20"
+    ? "[&_*]:text-white [&_h1]:text-white [&_h2]:text-white [&_h3]:text-white [&_.bg-card]:!bg-white/10 [&_.bg-muted\\/40]:!bg-white/10 [&_.bg-muted\\/30]:!bg-white/10 [&_.border]:!border-white/20"
     : "";
 
   const headlineEl = (
