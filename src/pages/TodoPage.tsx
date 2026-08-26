@@ -513,6 +513,85 @@ const TodoPage = () => {
         </Dialog>
 
 
+        <Dialog open={editOpen} onOpenChange={setEditOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Upravit úkol</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label>Název *</Label>
+                <Input
+                  value={editForm.title}
+                  onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label>Popis</Label>
+                <Input
+                  value={editForm.description}
+                  onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                  className="mt-1"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Termín</Label>
+                  <Input
+                    type="date"
+                    value={editForm.due_date}
+                    onChange={(e) => setEditForm({ ...editForm, due_date: e.target.value })}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label>Typ</Label>
+                  <Select
+                    value={editForm.type}
+                    onValueChange={(v) => setEditForm({ ...editForm, type: v })}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="task">Úkol</SelectItem>
+                      <SelectItem value="test">Test</SelectItem>
+                      <SelectItem value="homework">Domácí úkol</SelectItem>
+                      <SelectItem value="project">Projekt</SelectItem>
+                      <SelectItem value="other">Jiné</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div>
+                <Label>Priorita</Label>
+                <Select
+                  value={editForm.priority}
+                  onValueChange={(v) => setEditForm({ ...editForm, priority: v })}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="high">🔴 Vysoká</SelectItem>
+                    <SelectItem value="normal">🟡 Normální</SelectItem>
+                    <SelectItem value="low">🟢 Nízká</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditOpen(false)}>
+                Zrušit
+              </Button>
+              <Button onClick={saveEdit} disabled={editSaving}>
+                {editSaving ? "Ukládám..." : "Uložit"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         <Dialog open={addOpen} onOpenChange={setAddOpen}>
           <DialogContent>
             <DialogHeader>
