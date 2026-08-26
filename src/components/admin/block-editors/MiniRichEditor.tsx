@@ -361,7 +361,27 @@ const MiniRichEditor = ({
             </TB>
           </>
         )}
+
+        <div className="w-px bg-border mx-0.5" />
+        <Select
+          value={currentLineHeight ?? "default"}
+          onValueChange={(v) => {
+            if (v === "default") editor.chain().focus().unsetLineHeight().run();
+            else editor.chain().focus().setLineHeight(v).run();
+          }}
+        >
+          <SelectTrigger className="h-6 w-[104px] px-2 text-[11px]" title="Řádkování">
+            <SelectValue placeholder="Řádkování" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="default" className="text-xs">Řádkování: auto</SelectItem>
+            {LINE_HEIGHT_OPTIONS.map((lh) => (
+              <SelectItem key={lh} value={lh} className="text-xs">{`Řádkování ${lh}×`}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
+
       <EditorContent editor={editor} />
     </div>
   );
