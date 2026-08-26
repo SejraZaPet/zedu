@@ -147,6 +147,39 @@ export const SlideFloatingFormatToolbar = ({
             <Italic className="h-3.5 w-3.5" />
           </Button>
 
+          {(["left", "center", "right"] as const).map((a) => {
+            const Icon = a === "left" ? AlignLeft : a === "right" ? AlignRight : AlignCenter;
+            const active = (props.align || "left") === a;
+            return (
+              <Button
+                key={a}
+                size="sm"
+                variant={active ? "default" : "ghost"}
+                className="h-7 w-7 p-0"
+                title={a === "left" ? "Zarovnat vlevo" : a === "right" ? "Zarovnat vpravo" : "Zarovnat na střed"}
+                aria-pressed={active}
+                onClick={() => set({ align: a === "left" ? null : a })}
+              >
+                <Icon className="h-3.5 w-3.5" />
+              </Button>
+            );
+          })}
+
+          <Select
+            value={props.lineHeight ? String(props.lineHeight) : "inherit"}
+            onValueChange={(v) => set({ lineHeight: v === "inherit" ? null : Number(v) })}
+          >
+            <SelectTrigger className="h-7 w-[64px] text-xs" title="Řádkování">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="inherit">Auto</SelectItem>
+              <SelectItem value="1.2">1.2×</SelectItem>
+              <SelectItem value="1.5">1.5×</SelectItem>
+              <SelectItem value="2">2×</SelectItem>
+            </SelectContent>
+          </Select>
+
           <Select
             value={props.fontSize ? String(props.fontSize) : "inherit"}
             onValueChange={(v) => set({ fontSize: v === "inherit" ? null : Number(v) })}

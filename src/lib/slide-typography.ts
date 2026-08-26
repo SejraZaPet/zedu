@@ -61,6 +61,10 @@ export interface SlideTextStyleProps {
   bold?: boolean | null;
   /** Kurzíva celého bloku. */
   italic?: boolean | null;
+  /** Zarovnání textu (výchozí = left). */
+  align?: "left" | "center" | "right" | null;
+  /** Řádkování (násobek, např. 1.2 / 1.5 / 2). */
+  lineHeight?: number | null;
 }
 
 /** Paleta barev zvýrazňovače. */
@@ -87,6 +91,10 @@ export function slideTextStyle(props?: SlideTextStyleProps | null): React.CSSPro
   if (props.fontFamily) style.fontFamily = props.fontFamily;
   if (props.bold) style.fontWeight = 700;
   if (props.italic) style.fontStyle = "italic";
+  if (props.align) style.textAlign = props.align;
+  if (typeof props.lineHeight === "number" && props.lineHeight > 0) {
+    style.lineHeight = props.lineHeight;
+  }
 
   if (props.highlightColor) {
     style.backgroundColor = props.highlightColor;
