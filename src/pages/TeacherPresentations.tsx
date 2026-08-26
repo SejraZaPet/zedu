@@ -443,7 +443,7 @@ const TeacherPresentations = () => {
               className="w-fit gap-1"
               onClick={() => { setSelectedTextbook(null); setLessonQuery(""); }}
             >
-              <ArrowLeft className="h-4 w-4" /> Zpět na učebnice
+              <ArrowLeft className="h-4 w-4" /> <span className="max-w-[16rem] truncate">{selectedTextbook.title}</span>
             </Button>
           )}
 
