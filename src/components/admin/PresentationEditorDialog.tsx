@@ -59,6 +59,11 @@ export interface PresentationLessonRef {
 
 interface Props {
   presentationLesson: PresentationLessonRef | null;
+  /**
+   * Zdroj slidů. 'lesson' = klasická prezentace uložená u lekce (výchozí, zpětně kompatibilní),
+   * 'standalone' = samostatná prezentace v tabulce teacher_presentations.
+   */
+  source?: { type: "lesson"; lessonId?: string } | { type: "standalone"; presentationId: string };
   pendingSlides: any[];
   setPendingSlides: (slides: any[]) => void;
   editingSlideIndex: number;
