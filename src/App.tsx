@@ -159,7 +159,8 @@ const App = () => (
             <Route path="/live/pripojit" element={<StudentGameJoin />} />
             <Route path="/live/student/:sessionId" element={<StudentGamePlay />} />
             <Route path="/napoveda" element={<HelpPage />} />
-            <Route path="/napoveda/:guideId" element={<HelpDetailPage />} />
+            <Route path="/napoveda/pruvodce/:guideId" element={<HelpDetailPage />} />
+            <Route path="/napoveda/:slug" element={<HelpArticlePage />} />
             <Route path="/gdpr" element={<GdprPage />} />
             <Route path="/licence" element={<LicencePage />} />
             <Route path="/overit/:certificateNumber" element={<VerifyCertificate />} />
