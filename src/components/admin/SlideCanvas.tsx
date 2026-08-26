@@ -822,6 +822,13 @@ function HeroImageSlot({
 
 /* ---------- Volné umístění bloku (opt-in) ---------- */
 
+/**
+ * Minimální pohyb myši (px), po kterém se flow-blok povýší do volné vrstvy.
+ * 1px = blok se chová jako absolutně pozicovaný ihned po zahájení tažení,
+ * ale samotný klik (bez pohybu) pořád jen vybere blok / spustí psaní.
+ */
+const PROMOTE_THRESHOLD = 1;
+
 const HANDLES: { handle: FrameHandle; className: string; cursor: string }[] = [
   { handle: "nw", className: "left-0 top-0 -translate-x-1/2 -translate-y-1/2", cursor: "nwse-resize" },
   { handle: "n", className: "left-1/2 top-0 -translate-x-1/2 -translate-y-1/2", cursor: "ns-resize" },
@@ -1110,7 +1117,7 @@ export function SlideBody({
 
     const move = (ev: PointerEvent) => {
       if (!startFrame) {
-        if (Math.abs(ev.clientX - startX) < 6 && Math.abs(ev.clientY - startY) < 6) return;
+        if (Math.abs(ev.clientX - startX) < PROMOTE_THRESHOLD && Math.abs(ev.clientY - startY) < PROMOTE_THRESHOLD) return;
         const layer = freeLayerRef.current;
         if (!layer) return;
         const lr = layer.getBoundingClientRect();
@@ -1178,7 +1185,7 @@ export function SlideBody({
     if (!editable) return <div key={b.id}>{shell}</div>;
 
     return (
-      <div key={b.id} className="touch-none" onPointerDown={startPromoteDrag(b)}>
+      <div key={b.id} className="touch-none cursor-move" onPointerDown={startPromoteDrag(b)}>
         {shell}
       </div>
     );
