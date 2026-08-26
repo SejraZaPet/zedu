@@ -139,7 +139,7 @@ function EditableText({
         className={`${className || ""} cursor-text rounded px-1 -mx-1 outline-none focus:ring-2 focus:ring-primary focus:bg-white/5 hover:bg-white/5 transition-colors`}
       />
       {isEmpty && placeholder && (
-        <span className="pointer-events-none absolute left-1 top-0 italic text-muted-foreground/40 select-none">
+        <span className="pointer-events-none absolute left-1 top-0 text-white/30 italic text-sm select-none">
           {placeholder}
         </span>
       )}
