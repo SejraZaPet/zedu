@@ -1225,8 +1225,13 @@ export function SlideBody({
   }
 
   return (
-    <div className={`relative flex h-full flex-col overflow-hidden ${isDark ? "text-white" : "text-foreground"}`}>
+    <div
+      className={`relative flex h-full flex-col ${editable ? "" : "overflow-hidden"} ${
+        isDark ? "text-white" : "text-foreground"
+      }`}
+    >
       <div ref={flowAreaRef} className="flex-1 min-h-0 overflow-hidden px-6 py-6">
+
         <div
           ref={flowContentRef}
           className="flex min-h-full w-full flex-col items-center justify-start gap-6"
@@ -1351,13 +1356,14 @@ const SlideCanvas = ({ fit = true, darkMode = true, themeId, ...rest }: CanvasPr
   return (
     <div
       ref={frameRef}
-      className={`relative mx-auto max-h-full max-w-full rounded-xl overflow-hidden shadow-lg border border-border ${
-        box ? "" : "aspect-video w-full"
-      }`}
+      className={`relative mx-auto max-h-full max-w-full rounded-xl shadow-lg border border-border ${
+        (rest as any).editable ? "overflow-visible" : "overflow-hidden"
+      } ${box ? "" : "aspect-video w-full"}`}
       style={box ? { ...bgStyle, width: box.w, height: box.h } : bgStyle}
     >
       <div
         className="absolute left-1/2 top-1/2 origin-center"
+
         style={{
           width: `${STAGE_W}px`,
           height: `${STAGE_H}px`,

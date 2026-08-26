@@ -18,6 +18,10 @@ export interface BlockFrame {
 export const DEFAULT_BLOCK_FRAME: BlockFrame = { x: 10, y: 10, w: 80, h: 20 };
 
 export const MIN_FRAME_SIZE = 5; // %
+/** Maximální velikost rámce – bloky smí přesahovat slide (full-bleed). */
+export const MAX_FRAME_SIZE = 300; // %
+/** Jak daleko za hranu slidu smí rámec zajít. */
+export const FRAME_OVERFLOW = 100; // %
 
 export function isValidBlockFrame(frame: any): frame is BlockFrame {
   return (
@@ -35,17 +39,21 @@ export function isValidBlockFrame(frame: any): frame is BlockFrame {
 
 const round1 = (n: number) => Math.round(n * 10) / 10;
 
-/** Omezí rámec do plochy slidu a zaokrouhlí na 1 desetinné místo. */
+/**
+ * Zaokrouhlí rámec a udrží ho v rozumných mezích. Bloky smí přesahovat okraje
+ * slidu (obrázky/tvary na spad), stačí aby zůstala část viditelná na plátně.
+ */
 export function clampBlockFrame(frame: BlockFrame): BlockFrame {
-  const w = Math.max(MIN_FRAME_SIZE, Math.min(100, frame.w));
-  const h = Math.max(MIN_FRAME_SIZE, Math.min(100, frame.h));
+  const w = Math.max(MIN_FRAME_SIZE, Math.min(MAX_FRAME_SIZE, frame.w));
+  const h = Math.max(MIN_FRAME_SIZE, Math.min(MAX_FRAME_SIZE, frame.h));
   return {
-    x: round1(Math.max(0, Math.min(100 - w, frame.x))),
-    y: round1(Math.max(0, Math.min(100 - h, frame.y))),
+    x: round1(Math.max(-FRAME_OVERFLOW, Math.min(100 + FRAME_OVERFLOW - MIN_FRAME_SIZE, frame.x))),
+    y: round1(Math.max(-FRAME_OVERFLOW, Math.min(100 + FRAME_OVERFLOW - MIN_FRAME_SIZE, frame.y))),
     w: round1(w),
     h: round1(h),
   };
 }
+
 
 /** Vrátí platný rámec bloku, nebo null pro bloky v lineárním flow. */
 export function getBlockFrame(block: any): BlockFrame | null {
