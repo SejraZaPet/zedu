@@ -197,6 +197,12 @@ export const PresentationEditorDialog = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editingSlideIndex, currentSlide?.slideId]);
 
+  // Při přepnutí snímku sbal prázdné pole poznámek
+  useEffect(() => {
+    setTeacherNotesOpen(false);
+  }, [editingSlideIndex]);
+
+
   const updateSlide = (patch: any) => {
     const updated = [...pendingSlides];
     updated[editingSlideIndex] = { ...updated[editingSlideIndex], ...patch };
