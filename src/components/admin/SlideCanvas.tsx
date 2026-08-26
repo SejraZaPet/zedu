@@ -929,7 +929,7 @@ const SlideCanvas = ({ fit = true, darkMode = true, themeId, ...rest }: CanvasPr
 
   const effectiveThemeId = themeId ?? (rest as any).slide?.themeId;
   const theme = getPresentationTheme(effectiveThemeId);
-  const bgOverride = slideBackgroundOverride((rest as any).slide);
+  const bgOverride = slideBackgroundOverrideStyle((rest as any).slide);
   let bgStyle: React.CSSProperties = effectiveThemeId
     ? themeStageStyle(theme)
     : darkMode
@@ -937,8 +937,11 @@ const SlideCanvas = ({ fit = true, darkMode = true, themeId, ...rest }: CanvasPr
       : { background: "hsl(var(--background))", ...themeStageStyle(theme), backgroundImage: "none" as any };
 
   if (bgOverride) {
-    bgStyle = { ...bgStyle, backgroundImage: "none" as any, background: bgOverride };
+    // Shorthand `background` se nesmí mísit s explicitními vlastnostmi – nejdřív ho odstraníme.
+    const { background: _bg, backgroundImage: _bgi, backgroundColor: _bgc, ...withoutBg } = bgStyle as any;
+    bgStyle = { ...withoutBg, ...bgOverride } as React.CSSProperties;
   }
+
 
   const body = <SlideBody darkMode={darkMode} themeId={effectiveThemeId} {...rest} />;
 
