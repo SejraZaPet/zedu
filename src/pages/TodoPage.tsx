@@ -202,6 +202,41 @@ const TodoPage = () => {
     fetchTodos();
   };
 
+  const openEdit = (todo: Todo) => {
+    setEditTodo(todo);
+    setEditForm({
+      title: todo.title,
+      description: todo.description || "",
+      due_date: todo.due_date || "",
+      type: todo.type || "task",
+      priority: todo.priority || "normal",
+    });
+    setEditOpen(true);
+  };
+
+  const saveEdit = async () => {
+    if (!editTodo || !editForm.title.trim()) return;
+    setEditSaving(true);
+    const { error } = await supabase
+      .from("todos")
+      .update({
+        title: editForm.title.trim(),
+        description: editForm.description || null,
+        due_date: editForm.due_date || null,
+        type: editForm.type,
+        priority: editForm.priority,
+      })
+      .eq("id", editTodo.id);
+    setEditSaving(false);
+    if (error) {
+      toast({ title: "Chyba", description: error.message, variant: "destructive" });
+      return;
+    }
+    setEditOpen(false);
+    setEditTodo(null);
+    fetchTodos();
+  };
+
   const today = new Date().toISOString().split("T")[0];
   const overdue = todos.filter(
     (t) => t.due_date && t.due_date < today && t.status === "pending",
