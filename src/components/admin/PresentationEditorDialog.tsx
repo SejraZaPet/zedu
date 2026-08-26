@@ -1253,6 +1253,24 @@ export const PresentationEditorDialog = ({
                           if (!selectedBlockId) return;
                           updateBlock(selectedBlockId, (b: Block) => ({ ...b, props }));
                         }}
+                        onChangeLayer={(action) => {
+                          if (!selectedBlockId) return;
+                          const framed = blocks.filter((b: Block) => !!getBlockFrame(b));
+                          const idx = framed.findIndex((b: Block) => b.id === selectedBlockId);
+                          const maxZ = framed.reduce(
+                            (m: number, b: Block) => Math.max(m, typeof b.zIndex === "number" ? b.zIndex : 0),
+                            0,
+                          );
+                          updateBlock(selectedBlockId, (b: Block) => {
+                            const current = typeof b.zIndex === "number" ? b.zIndex : idx + 1;
+                            const next =
+                              action === "front" ? maxZ + 1
+                              : action === "forward" ? current + 1
+                              : action === "backward" ? Math.max(1, current - 1)
+                              : 0;
+                            return { ...b, zIndex: next };
+                          });
+                        }}
                         onMove={(dir) => selectedBlockId && moveBlock(selectedBlockId, dir)}
                         onDelete={() => {
                           if (!selectedBlockId) return;
