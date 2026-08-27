@@ -68,7 +68,13 @@ interface BodyProps {
   /** ID právě vybraného bloku (viditelný rámeček). */
   selectedBlockId?: string | null;
   onSelectBlock?: (blockId: string | null) => void;
+  /**
+   * Sdílený ref na cleanup právě aktivního gesta (drag bloku i pan plátna).
+   * Předává ho `SlideCanvas`, aby se pan a block-drag vzájemně ukončovaly.
+   */
+  gestureCleanupRef?: React.MutableRefObject<(() => void) | null>;
 }
+
 
 interface CanvasProps extends BodyProps {
   /** When true (default), scale stage to fit container. Otherwise renders at native 1600×900. */
@@ -1101,26 +1107,29 @@ export function SlideBody({
   drawColor,
   drawWidth,
   onAddStroke,
+  gestureCleanupRef,
 }: BodyProps) {
   const slideRootRef = useRef<HTMLDivElement>(null);
   const freeLayerRef = useRef<HTMLDivElement>(null);
   const flowAreaRef = useRef<HTMLDivElement>(null);
   const flowContentRef = useRef<HTMLDivElement>(null);
-  // Jediný sdílený ref pro VŠECHNA drag gesta na slidu (framed drag, flow
-  // promote i reorder). Nové gesto vždy nejdřív ukončí to předchozí.
-  const activeDragCleanupRef = useRef<(() => void) | null>(null);
+  // Jediný sdílený ref pro VŠECHNA gesta na slidu (framed drag, flow promote,
+  // reorder i pan celého plátna). Nové gesto vždy nejdřív ukončí to předchozí.
+  const localDragCleanupRef = useRef<(() => void) | null>(null);
+  const activeDragCleanupRef = gestureCleanupRef ?? localDragCleanupRef;
   const beginGesture = useCallback((cleanup: () => void) => {
     const prev = activeDragCleanupRef.current;
     activeDragCleanupRef.current = null;
     prev?.();
     activeDragCleanupRef.current = cleanup;
-  }, []);
+  }, [activeDragCleanupRef]);
   const endGesture = useCallback((cleanup: () => void) => {
     if (activeDragCleanupRef.current === cleanup) activeDragCleanupRef.current = null;
-  }, []);
+  }, [activeDragCleanupRef]);
 
   const [flowScale, setFlowScale] = useState(1);
   const theme = getPresentationTheme(themeId ?? slide?.themeId);
+
 
 
   const explicitTheme = themeId ?? slide?.themeId;
@@ -1544,6 +1553,24 @@ const SlideCanvas = ({
   const frameRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   const [panning, setPanning] = useState(false);
+  // Sdílený koordinátor gest pro pan plátna i drag bloků uvnitř SlideBody.
+  const gestureCleanupRef = useRef<(() => void) | null>(null);
+  const beginGesture = useCallback((cleanup: () => void) => {
+    const prev = gestureCleanupRef.current;
+    gestureCleanupRef.current = null;
+    prev?.();
+    gestureCleanupRef.current = cleanup;
+  }, []);
+  const endGesture = useCallback((cleanup: () => void) => {
+    if (gestureCleanupRef.current === cleanup) gestureCleanupRef.current = null;
+  }, []);
+  // Při odmountování plátna nesmí přežít žádné gesto.
+  useEffect(() => () => {
+    const pending = gestureCleanupRef.current;
+    gestureCleanupRef.current = null;
+    pending?.();
+  }, []);
+
 
   // Explicit 16:9 box computed from the *available* space of the parent element
   // (width AND height), so the canvas never overflows its container.
@@ -1612,6 +1639,7 @@ const SlideCanvas = ({
   }, [fit, absoluteScale, zoom, pan, scale, onZoomChange, onPanChange]);
 
   // Pan tažením prázdné plochy (neblokujeme interakce s bloky/ovládacími prvky).
+  // Sdílí stejný koordinátor gest jako drag bloků – nové gesto vždy ukončí staré.
   const startPan = (e: React.PointerEvent<HTMLDivElement>) => {
     if (e.button !== 0) return;
     const target = e.target as HTMLElement;
@@ -1624,23 +1652,53 @@ const SlideCanvas = ({
     }
     if ((rest as any).drawMode) return;
     e.preventDefault();
-    e.currentTarget.setPointerCapture(e.pointerId);
-    setPanning(true);
+    // `currentTarget` je v asynchronních callbackech už null – držíme si element.
+    const el = e.currentTarget as HTMLDivElement;
+    const pointerId = e.pointerId;
     const startX = e.clientX;
     const startY = e.clientY;
     const startPan = { ...pan };
+
     const move = (ev: PointerEvent) => {
+      if (ev.pointerId !== pointerId) return;
       onPanChange?.({ x: startPan.x + (ev.clientX - startX), y: startPan.y + (ev.clientY - startY) });
     };
-    const up = () => {
+    const cleanup = () => {
+      el.removeEventListener("pointermove", move);
+      el.removeEventListener("pointerup", finish);
+      el.removeEventListener("pointercancel", finish);
+      el.removeEventListener("lostpointercapture", finish);
+      window.removeEventListener("pointerup", finish);
+      window.removeEventListener("pointercancel", finish);
+      window.removeEventListener("blur", cleanup);
+      try {
+        if (el.hasPointerCapture?.(pointerId)) el.releasePointerCapture(pointerId);
+      } catch {
+        /* pointer už není zachycen */
+      }
       setPanning(false);
-      e.currentTarget.releasePointerCapture(e.pointerId);
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
+      endGesture(cleanup);
     };
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", up);
+    const finish = (ev: PointerEvent) => {
+      if (ev.pointerId === pointerId) cleanup();
+    };
+
+    beginGesture(cleanup);
+    setPanning(true);
+    try {
+      el.setPointerCapture?.(pointerId);
+    } catch {
+      /* capture nemusí být dostupný */
+    }
+    el.addEventListener("pointermove", move);
+    el.addEventListener("pointerup", finish);
+    el.addEventListener("pointercancel", finish);
+    el.addEventListener("lostpointercapture", finish);
+    window.addEventListener("pointerup", finish);
+    window.addEventListener("pointercancel", finish);
+    window.addEventListener("blur", cleanup);
   };
+
 
   const effectiveThemeId = themeId ?? (rest as any).slide?.themeId;
 
@@ -1659,7 +1717,15 @@ const SlideCanvas = ({
   }
 
 
-  const body = <SlideBody darkMode={darkMode} themeId={effectiveThemeId} {...rest} />;
+  const body = (
+    <SlideBody
+      darkMode={darkMode}
+      themeId={effectiveThemeId}
+      gestureCleanupRef={gestureCleanupRef}
+      {...rest}
+    />
+  );
+
 
   if (!fit) {
     return (
