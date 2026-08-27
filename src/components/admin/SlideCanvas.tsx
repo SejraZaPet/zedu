@@ -1107,25 +1107,26 @@ export function SlideBody({
   drawColor,
   drawWidth,
   onAddStroke,
+  gestureCleanupRef,
 }: BodyProps) {
   const slideRootRef = useRef<HTMLDivElement>(null);
   const freeLayerRef = useRef<HTMLDivElement>(null);
   const flowAreaRef = useRef<HTMLDivElement>(null);
   const flowContentRef = useRef<HTMLDivElement>(null);
-  // Jediný sdílený ref pro VŠECHNA drag gesta na slidu (framed drag, flow
-  // promote i reorder). Nové gesto vždy nejdřív ukončí to předchozí.
-  const activeDragCleanupRef = useRef<(() => void) | null>(null);
+  // Jediný sdílený ref pro VŠECHNA gesta na slidu (framed drag, flow promote,
+  // reorder i pan celého plátna). Nové gesto vždy nejdřív ukončí to předchozí.
+  const localDragCleanupRef = useRef<(() => void) | null>(null);
+  const activeDragCleanupRef = gestureCleanupRef ?? localDragCleanupRef;
   const beginGesture = useCallback((cleanup: () => void) => {
     const prev = activeDragCleanupRef.current;
     activeDragCleanupRef.current = null;
     prev?.();
     activeDragCleanupRef.current = cleanup;
-  }, []);
+  }, [activeDragCleanupRef]);
   const endGesture = useCallback((cleanup: () => void) => {
     if (activeDragCleanupRef.current === cleanup) activeDragCleanupRef.current = null;
-  }, []);
+  }, [activeDragCleanupRef]);
 
-  const [flowScale, setFlowScale] = useState(1);
   const theme = getPresentationTheme(themeId ?? slide?.themeId);
 
 
