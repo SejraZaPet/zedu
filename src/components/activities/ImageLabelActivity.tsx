@@ -13,9 +13,10 @@ interface Props {
   markers: Marker[];
   tolerance?: number; // percentage radius
   shuffleWords?: boolean;
+  onComplete?: (score: number, maxScore: number) => void;
 }
 
-const ImageLabelActivity = ({ imageUrl, markers = [], tolerance = 5, shuffleWords = true }: Props) => {
+const ImageLabelActivity = ({ imageUrl, markers = [], tolerance = 5, shuffleWords = true, onComplete }: Props) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [placed, setPlaced] = useState<Record<number, string>>({});
   const [dragging, setDragging] = useState<string | null>(null);
@@ -71,6 +72,7 @@ const ImageLabelActivity = ({ imageUrl, markers = [], tolerance = 5, shuffleWord
     });
     setResults(res);
     setChecked(true);
+    onComplete?.(Object.values(res).filter(Boolean).length, markers.length);
   };
 
   const handleReset = () => {

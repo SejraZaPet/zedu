@@ -34,7 +34,7 @@ const ACTIVITY_TYPES = [
   { value: "ordering", label: "Seřaď pořadí" },
   { value: "sorting", label: "Třídění do skupin" },
   { value: "wall", label: "🧱 Zeď (odpovědi žáků)" },
-  { value: "poll", label: "📊 Hlasování (Mentimeter)" },
+  { value: "poll", label: "📊 Anketa" },
 ];
 
 const PollEditor = ({ props, onChange }: { props: any; onChange: (p: any) => void }) => {

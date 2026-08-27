@@ -1068,7 +1068,7 @@ export const PresentationEditorDialog = ({
                             <SelectContent>
                               <SelectItem value="true_false">Pravda / Nepravda</SelectItem>
                               <SelectItem value="quiz">Kvíz (výběr odpovědi)</SelectItem>
-                              <SelectItem value="poll">Hlasování / Mentimetr</SelectItem>
+                              <SelectItem value="poll">Anketa</SelectItem>
                               <SelectItem value="wall">Zeď odpovědí</SelectItem>
                               <SelectItem value="flashcards">Kartičky (Flashcards)</SelectItem>
                               <SelectItem value="matching">Párování / Spojování dvojic</SelectItem>
