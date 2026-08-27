@@ -47,6 +47,12 @@ interface AddSlideSheetProps {
   sessionId?: string;
   slides: any[];
   /**
+   * ČÁST 4b – v editoru prezentací nabízí jen layoutové šablony slidů;
+   * aktivity se vkládají výhradně ze záložky „Aktivity“ v levém railu.
+   */
+  layoutsOnly?: boolean;
+
+  /**
    * When provided, built slides are handed over instead of being written to a
    * live session (used by the game library editor / presentation editor).
    */
@@ -173,6 +179,7 @@ export function AddSlideSheet({
   sessionId,
   slides,
   onAddSlides,
+  layoutsOnly = false,
 }: AddSlideSheetProps) {
   const navigate = useNavigate();
   const [kind, setKind] = useState<AddKind>("menu");
@@ -554,6 +561,7 @@ export function AddSlideSheet({
                   </p>
                 </div>
               </Button>
+{!layoutsOnly && (<>
               <Button
                 variant="outline"
                 className="justify-start h-auto py-3"
@@ -687,6 +695,7 @@ export function AddSlideSheet({
                   </p>
                 </div>
               </Button>
+</>)}
             </div>
           )}
 

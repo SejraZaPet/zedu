@@ -11,7 +11,7 @@ import {
   Monitor, Plus, Trash2, ChevronDown, Save, Sun, Moon, Type, List, Image as ImageIcon,
   Table as TableIcon, Settings2, Undo2, Redo2, ZoomIn, ZoomOut, Copy, FileDown, Heading as HeadingIcon,
   Quote as QuoteIcon, StickyNote, BarChart3, Sigma, Video as VideoIcon, Music, Loader2, Bookmark,
-  Wand2, Settings, Puzzle, ArrowLeft, ExternalLink, Gamepad2, Move, FileUp,
+  Wand2, Settings, Puzzle, ArrowLeft, ExternalLink, Gamepad2, Move, FileUp, ClipboardPaste, Paintbrush,
 } from "lucide-react";
 
 import {
@@ -48,11 +48,12 @@ import ColorPicker from "@/components/admin/ColorPicker";
 import type { DrawingStroke } from "@/components/admin/SlideDrawingLayer";
 import AiBlockTextButton from "@/components/admin/AiBlockTextButton";
 import SlideFloatingFormatToolbar from "@/components/admin/SlideFloatingFormatToolbar";
+import * as LucideIcons from "lucide-react";
 import { activityBlockToSlide, mapPlanKindToActivityType } from "@/lib/plan-to-slides";
 import MyLessonActivitiesList from "@/components/presentation/MyLessonActivitiesList";
 import { ACTIVITY_PRESETS, type ActivityPreset } from "@/lib/activity-slide-presets";
 import {
-  HelpCircle, Cloud, MessageSquare, Users2, KeyRound, SplitSquareHorizontal, Paintbrush, ClipboardPaste,
+  HelpCircle, Cloud, MessageSquare, Users2, KeyRound, SplitSquareHorizontal,
 } from "lucide-react";
 
 import GameBackgroundPickerDialog from "@/components/game/GameBackgroundPickerDialog";
@@ -664,6 +665,37 @@ export const PresentationEditorDialog = ({
               >
                 <Copy className="h-3.5 w-3.5" />
               </Button>
+
+              {/* ČÁST 1 – vložení zkopírovaného bloku na aktuální slide */}
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-8 gap-1 px-2 text-xs"
+                title={copiedBlock ? "Vložit kopii zkopírovaného bloku" : "Nejdřív zkopírujte blok tlačítkem Kopírovat v liště nad slidem"}
+                disabled={!copiedBlock}
+                onClick={pasteBlock}
+              >
+                <ClipboardPaste className="h-3.5 w-3.5" /> Vložit kopii
+              </Button>
+
+              {/* ČÁST 2 – vložení zkopírovaného stylu na vybraný blok */}
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-8 gap-1 px-2 text-xs"
+                title={
+                  !copiedStyle
+                    ? "Nejdřív zkopírujte styl štětcem v liště nad slidem"
+                    : !selectedBlockId
+                      ? "Vyberte blok, na který se styl použije"
+                      : "Použít zkopírovaný styl na vybraný blok"
+                }
+                disabled={!copiedStyle || !selectedBlockId}
+                onClick={() => selectedBlockId && applyCopiedStyle(selectedBlockId)}
+              >
+                <Paintbrush className="h-3.5 w-3.5" /> Vložit styl
+              </Button>
+
               {pendingSlides.length > 1 && (
                 <Button
                   size="sm"
@@ -987,7 +1019,7 @@ export const PresentationEditorDialog = ({
                     </div>
 
                     {/* B3 – dogenerovat aktivitu z textového slidu (též v sekci Aktivity) */}
-                    {currentSlide?.type !== "activity" && aiActivityButton}
+                    {/* AI aktivita je v levém railu v záložce Aktivity. */}
 
 
                     {/* Nastavení aktivity */}
@@ -1226,7 +1258,45 @@ export const PresentationEditorDialog = ({
                       <Label className="text-xs">Aktivity</Label>
                       <BetaBadge context="Editor prezentace – sekce Aktivity" />
                     </div>
+                    {/* ČÁST 4a – jediné místo, odkud se aktivity vkládají */}
                     <div>
+                      <Label className="text-xs">Přidat aktivitu</Label>
+                      <p className="mb-1.5 text-[11px] text-muted-foreground">
+                        Vloží nový slide s aktivitou za aktuální slide.
+                      </p>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {ACTIVITY_PRESETS.map((preset) => {
+                          const Icon = (LucideIcons as any)[preset.icon] ?? Puzzle;
+                          return (
+                            <button
+                              key={preset.id}
+                              type="button"
+                              onClick={() => insertActivityPreset(preset)}
+                              title={preset.hint}
+                              className="flex flex-col items-start gap-1 rounded-lg border border-border bg-card p-2 text-left transition-colors hover:border-primary hover:bg-primary/5"
+                            >
+                              <Icon className="h-4 w-4 text-primary" />
+                              <span className="text-[11px] font-medium leading-tight">{preset.label}</span>
+                            </button>
+                          );
+                        })}
+                        <button
+                          type="button"
+                          onClick={generateActivityFromSlide}
+                          disabled={generatingActivity || currentSlide?.type === "activity"}
+                          title="Bezlai vytvoří aktivitu z obsahu tohoto slidu"
+                          className="flex flex-col items-start gap-1 rounded-lg border border-dashed border-primary/60 bg-primary/5 p-2 text-left transition-colors hover:bg-primary/10 disabled:opacity-50"
+                        >
+                          {generatingActivity
+                            ? <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                            : <Wand2 className="h-4 w-4 text-primary" />}
+                          <span className="text-[11px] font-medium leading-tight">AI aktivita</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+
                       <Label className="text-xs">Z mých lekcí</Label>
                       <p className="mb-1.5 text-[11px] text-muted-foreground">
                         Kliknutím vložíte aktivitu jako nový slide za aktuální.
@@ -1246,7 +1316,7 @@ export const PresentationEditorDialog = ({
                       Otevře se v nové záložce, rozdělaná prezentace zůstane zachovaná.
                     </p>
 
-                    {aiActivityButton}
+                    {/* AI aktivita je nově kartou v sekci „Přidat aktivitu“ výše. */}
                   </div>
                   )}
                 </div>
@@ -1394,12 +1464,16 @@ export const PresentationEditorDialog = ({
                           });
                         }}
                         onMove={(dir) => selectedBlockId && moveBlock(selectedBlockId, dir)}
+                        onCopyBlock={copyBlock}
+                        onCopyStyle={copyStyle}
+                        styleCopied={!!copiedStyle}
                         onDelete={() => {
                           if (!selectedBlockId) return;
                           deleteBlock(selectedBlockId);
                           setSelectedBlockId(null);
                         }}
                       />
+
                     ) : (
                       <p className="text-[11px] text-muted-foreground">
                         Klikněte na blok pro editaci — formátovací lišta se zobrazí zde nad slidem.
@@ -1422,7 +1496,7 @@ export const PresentationEditorDialog = ({
                     onDeleteBlock={deleteBlock}
                     onChangeHeroImage={(url) => updateSlide({ heroImage: url })}
                     selectedBlockId={selectedBlockId}
-                    onSelectBlock={setSelectedBlockId}
+                    onSelectBlock={handleSelectBlock}
                     drawMode={drawMode}
                     drawColor={drawColor}
                     drawWidth={drawWidth}
@@ -1517,6 +1591,8 @@ export const PresentationEditorDialog = ({
             open={addSlideOpen}
             onOpenChange={setAddSlideOpen}
             slides={pendingSlides}
+            layoutsOnly
+
             onAddSlides={(newSlides) => {
               const updated = [...pendingSlides, ...newSlides];
               setPendingSlides(updated);
