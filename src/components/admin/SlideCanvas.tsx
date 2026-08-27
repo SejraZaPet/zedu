@@ -1092,9 +1092,11 @@ export function SlideBody({
   drawWidth,
   onAddStroke,
 }: BodyProps) {
+  const slideRootRef = useRef<HTMLDivElement>(null);
   const freeLayerRef = useRef<HTMLDivElement>(null);
   const flowAreaRef = useRef<HTMLDivElement>(null);
   const flowContentRef = useRef<HTMLDivElement>(null);
+  const activePromoteDragCleanupRef = useRef<(() => void) | null>(null);
   const [flowScale, setFlowScale] = useState(1);
   const theme = getPresentationTheme(themeId ?? slide?.themeId);
 
@@ -1155,6 +1157,10 @@ export function SlideBody({
     ro.observe(content);
     return () => ro.disconnect();
   }, [slide, blocks.length, layout]);
+
+  // Flow blok po povýšení do frame zmizí z lineárního DOMu. Aktivní pointer
+  // proto držíme na stabilním kořeni slidu a vždy ukončíme i při unmountu.
+  useEffect(() => () => activePromoteDragCleanupRef.current?.(), []);
 
 
 
@@ -1220,12 +1226,16 @@ export function SlideBody({
     }
     const editableTarget = targetEl?.closest("[contenteditable='true']") as HTMLElement | null;
     const el = e.currentTarget as HTMLElement;
+    const dragTarget = slideRootRef.current;
+    if (!dragTarget) return;
     const startX = e.clientX;
     const startY = e.clientY;
+    const pointerId = e.pointerId;
     let startFrame: BlockFrame | null = null;
     let layerRect: DOMRect | null = null;
 
     const move = (ev: PointerEvent) => {
+      if (ev.pointerId !== pointerId) return;
       if (!startFrame) {
         if (Math.abs(ev.clientX - startX) < PROMOTE_THRESHOLD && Math.abs(ev.clientY - startY) < PROMOTE_THRESHOLD) return;
         const layer = freeLayerRef.current;
@@ -1255,17 +1265,35 @@ export function SlideBody({
         onChangeBlock(b.id, (prev: Block) => ({ ...prev, frame: startFrame } as Block));
       }
       if (!startFrame || !layerRect) return;
+      ev.preventDefault();
       const dx = ((ev.clientX - startX) / layerRect.width) * 100;
       const dy = ((ev.clientY - startY) / layerRect.height) * 100;
       const next = applyFrameDrag(startFrame, "move", dx, dy);
       onChangeBlock(b.id, (prev: Block) => ({ ...prev, frame: next } as Block));
     };
-    const up = () => {
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
+    const cleanup = () => {
+      dragTarget.removeEventListener("pointermove", move);
+      dragTarget.removeEventListener("pointerup", finish);
+      dragTarget.removeEventListener("pointercancel", finish);
+      dragTarget.removeEventListener("lostpointercapture", finish);
+      window.removeEventListener("blur", cleanup);
+      if (dragTarget.hasPointerCapture?.(pointerId)) dragTarget.releasePointerCapture(pointerId);
+      if (activePromoteDragCleanupRef.current === cleanup) activePromoteDragCleanupRef.current = null;
     };
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", up);
+    const finish = (ev: PointerEvent) => {
+      if (ev.pointerId === pointerId) cleanup();
+    };
+
+    // Nikdy nesmí současně žít dvě flow-drag gesta. Právě uniklé listenery
+    // z předchozího gesta způsobovaly pohyb několika bloků najednou.
+    activePromoteDragCleanupRef.current?.();
+    activePromoteDragCleanupRef.current = cleanup;
+    dragTarget.setPointerCapture?.(pointerId);
+    dragTarget.addEventListener("pointermove", move);
+    dragTarget.addEventListener("pointerup", finish);
+    dragTarget.addEventListener("pointercancel", finish);
+    dragTarget.addEventListener("lostpointercapture", finish);
+    window.addEventListener("blur", cleanup);
   };
 
   const renderBlock = (b: Block, sliceIndex: number, asCard?: boolean) => {
@@ -1379,6 +1407,7 @@ export function SlideBody({
 
   return (
     <div
+      ref={slideRootRef}
       className={`relative flex h-full flex-col ${editable ? "" : "overflow-hidden"} ${
         isDark ? "text-white" : "text-foreground"
       }`}

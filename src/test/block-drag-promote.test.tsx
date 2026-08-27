@@ -15,7 +15,16 @@ beforeAll(() => {
     }
     return { left: 160, top: 90, width: 800, height: 180, right: 960, bottom: 270, x: 160, y: 90, toJSON: () => ({}) } as DOMRect;
   };
+  HTMLElement.prototype.setPointerCapture = vi.fn();
+  HTMLElement.prototype.releasePointerCapture = vi.fn();
+  HTMLElement.prototype.hasPointerCapture = vi.fn(() => true);
 });
+
+const pointerEvent = (type: string, pointerId: number, clientX: number, clientY: number) => {
+  const event = new MouseEvent(type, { bubbles: true, button: 0, clientX, clientY });
+  Object.defineProperty(event, "pointerId", { value: pointerId });
+  return event;
+};
 
 describe("drag & drop flow bloku (auto-promote do frame)", () => {
   const setup = () => {
@@ -60,5 +69,40 @@ describe("drag & drop flow bloku (auto-promote do frame)", () => {
     const moved = onChangeBlock.mock.calls[1][1](mkBlock());
     expect(moved.frame.x).toBeCloseTo(12.5, 1);
     expect(moved.frame.y).toBeCloseTo(10, 1);
+  });
+
+  it("pointercancel uklidí flow drag a další pohyb blok nezmění", () => {
+    const { onChangeBlock, wrapper } = setup();
+    const slideRoot = wrapper.closest(".relative.flex.h-full") as HTMLElement;
+
+    fireEvent(wrapper, pointerEvent("pointerdown", 7, 200, 200));
+    fireEvent(slideRoot, pointerEvent("pointermove", 7, 240, 200));
+    const callsAfterMove = onChangeBlock.mock.calls.length;
+    expect(callsAfterMove).toBeGreaterThanOrEqual(2);
+
+    fireEvent(slideRoot, pointerEvent("pointercancel", 7, 240, 200));
+    fireEvent(slideRoot, pointerEvent("pointermove", 7, 280, 200));
+    expect(onChangeBlock).toHaveBeenCalledTimes(callsAfterMove);
+  });
+
+  it("nové gesto uklidí staré a nemůže pohnout dvěma flow bloky", () => {
+    const onChangeBlock = vi.fn();
+    const { container } = render(
+      <SlideBody
+        slide={{ projector: { headline: "H" }, blocks: [mkBlock("first"), mkBlock("second")] }}
+        editable
+        onChangeBlock={onChangeBlock}
+      />,
+    );
+    const first = container.querySelector("[data-slide-block-id='first']")!.closest("div.touch-none") as HTMLElement;
+    const second = container.querySelector("[data-slide-block-id='second']")!.closest("div.touch-none") as HTMLElement;
+    const slideRoot = first.closest(".relative.flex.h-full") as HTMLElement;
+
+    fireEvent(first, pointerEvent("pointerdown", 11, 200, 200));
+    fireEvent(second, pointerEvent("pointerdown", 12, 300, 300));
+    fireEvent(slideRoot, pointerEvent("pointermove", 12, 340, 300));
+
+    expect(onChangeBlock.mock.calls.length).toBeGreaterThanOrEqual(2);
+    expect(onChangeBlock.mock.calls.every(([blockId]) => blockId === "second")).toBe(true);
   });
 });
