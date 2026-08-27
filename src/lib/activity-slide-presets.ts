@@ -15,7 +15,12 @@ export type ActivityPresetId =
   | "poll"
   | "teams"
   | "escape"
-  | "differentiated";
+  | "differentiated"
+  | "fill_blanks"
+  | "fill_choice"
+  | "image_hotspot"
+  | "crossword";
+
 
 export interface ActivityPreset {
   id: ActivityPresetId;
