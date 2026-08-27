@@ -2,6 +2,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useGameSession, useTeacherGameControls } from "@/hooks/useGameSession";
 import { ConnectionStatusBanner } from "@/components/game/ConnectionStatusBanner";
 import { GameLobby } from "@/components/game/GameLobby";
+import ActivityTaskPreview, { hasActivityTaskPreview } from "@/components/live/ActivityTaskPreview";
+
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
