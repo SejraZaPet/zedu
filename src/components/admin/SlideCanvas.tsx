@@ -830,8 +830,19 @@ function HeroImageSlot({
   editable?: boolean;
   onChange?: (url: string) => void;
 }) {
+  const [heroFailed, setHeroFailed] = useState(false);
   const content = url ? (
-    <img src={url} alt="" className="w-full h-full object-cover rounded-2xl" />
+    heroFailed ? (
+      <SlideImageFallback className="h-full w-full" />
+    ) : (
+      <img
+        src={url}
+        alt=""
+        className="w-full h-full object-cover rounded-2xl"
+        onError={() => setHeroFailed(true)}
+      />
+    )
+
   ) : (
     <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-white/40 border-2 border-dashed border-white/20 rounded-2xl">
       <ImageIcon className="w-16 h-16" />
