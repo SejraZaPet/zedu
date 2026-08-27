@@ -205,8 +205,9 @@ function BlockShell({
       data-slide-block-id={blockId}
       onMouseDown={onSelect}
       className={`group relative rounded-lg p-1 -m-1 transition-colors ${
-        selected ? "ring-2 ring-primary bg-white/10" : "ring-1 ring-transparent hover:bg-white/5"
+        selected ? "ring-2 ring-primary bg-white/10" : "hover:ring-1 hover:ring-white/30 hover:bg-white/5"
       }`}
+
     >
       {children}
       {onDragStart && (
