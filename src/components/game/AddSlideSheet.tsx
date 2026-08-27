@@ -47,6 +47,12 @@ interface AddSlideSheetProps {
   sessionId?: string;
   slides: any[];
   /**
+   * ČÁST 4b – v editoru prezentací nabízí jen layoutové šablony slidů;
+   * aktivity se vkládají výhradně ze záložky „Aktivity“ v levém railu.
+   */
+  layoutsOnly?: boolean;
+
+  /**
    * When provided, built slides are handed over instead of being written to a
    * live session (used by the game library editor / presentation editor).
    */
