@@ -140,7 +140,30 @@ export const PresentationEditorDialog = ({
   existingSession, onContinueExisting, onLaunchNew, onCloseExisting,
 }: Props) => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const navigate = useNavigate();
+
+  /**
+   * Obrázek z privátní knihovny učitele nejdřív zkopíruje do veřejného bucketu,
+   * aby odkaz ve slidu nevypršel. Při chybě nic nevloží a ukáže toast.
+   */
+  const insertPersistentImage = async (
+    url: string,
+    item: any,
+    apply: (finalUrl: string) => void,
+  ) => {
+    try {
+      const finalUrl = await persistSlideImageUrl(url, item, user?.id);
+      apply(finalUrl);
+    } catch (e: any) {
+      toast({
+        title: "Obrázek se nepodařilo vložit",
+        description: e?.message || "Zkuste to prosím znovu.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const [darkPreview, setDarkPreview] = useState(true);
   const [addSlideOpen, setAddSlideOpen] = useState(false);
   const [history, setHistory] = useState<BlockEditorHistory | null>(null);
