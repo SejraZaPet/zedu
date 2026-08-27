@@ -1257,7 +1257,45 @@ export const PresentationEditorDialog = ({
                       <Label className="text-xs">Aktivity</Label>
                       <BetaBadge context="Editor prezentace – sekce Aktivity" />
                     </div>
+                    {/* ČÁST 4a – jediné místo, odkud se aktivity vkládají */}
                     <div>
+                      <Label className="text-xs">Přidat aktivitu</Label>
+                      <p className="mb-1.5 text-[11px] text-muted-foreground">
+                        Vloží nový slide s aktivitou za aktuální slide.
+                      </p>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {ACTIVITY_PRESETS.map((preset) => {
+                          const Icon = (LucideIcons as any)[preset.icon] ?? Puzzle;
+                          return (
+                            <button
+                              key={preset.id}
+                              type="button"
+                              onClick={() => insertActivityPreset(preset)}
+                              title={preset.hint}
+                              className="flex flex-col items-start gap-1 rounded-lg border border-border bg-card p-2 text-left transition-colors hover:border-primary hover:bg-primary/5"
+                            >
+                              <Icon className="h-4 w-4 text-primary" />
+                              <span className="text-[11px] font-medium leading-tight">{preset.label}</span>
+                            </button>
+                          );
+                        })}
+                        <button
+                          type="button"
+                          onClick={generateActivityFromSlide}
+                          disabled={generatingActivity || currentSlide?.type === "activity"}
+                          title="Bezlai vytvoří aktivitu z obsahu tohoto slidu"
+                          className="flex flex-col items-start gap-1 rounded-lg border border-dashed border-primary/60 bg-primary/5 p-2 text-left transition-colors hover:bg-primary/10 disabled:opacity-50"
+                        >
+                          {generatingActivity
+                            ? <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                            : <Wand2 className="h-4 w-4 text-primary" />}
+                          <span className="text-[11px] font-medium leading-tight">AI aktivita</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+
                       <Label className="text-xs">Z mých lekcí</Label>
                       <p className="mb-1.5 text-[11px] text-muted-foreground">
                         Kliknutím vložíte aktivitu jako nový slide za aktuální.
