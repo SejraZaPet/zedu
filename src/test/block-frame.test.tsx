@@ -143,4 +143,33 @@ describe("SlideBody – volné umístění", () => {
     fireEvent(el, pointerEvent("pointermove", 7, 260, 200));
     expect(onChangeBlock).toHaveBeenCalledTimes(1);
   });
+
+  it("tažení z contenteditable textu po překročení prahu přesune framed blok", () => {
+    const onChangeBlock = vi.fn();
+    const { container } = render(
+      <SlideBody
+        slide={{
+          projector: { headline: "Test" },
+          blocks: [mkBlock({ frame: { x: 20, y: 20, w: 60, h: 15 } })],
+        }}
+        editable
+        onChangeBlock={onChangeBlock}
+      />,
+    );
+    const el = container.querySelector('[data-free-frame="true"]') as HTMLElement;
+    const editableText = el.querySelector('[contenteditable="true"]') as HTMLElement;
+    const blurSpy = vi.spyOn(editableText, "blur");
+    const pointerEvent = (type: string, clientX: number) => {
+      const event = new MouseEvent(type, { bubbles: true, button: 0, clientX, clientY: 200 });
+      Object.defineProperty(event, "pointerId", { value: 9 });
+      return event;
+    };
+
+    fireEvent(editableText, pointerEvent("pointerdown", 200));
+    fireEvent(el, pointerEvent("pointermove", 220));
+    fireEvent(el, pointerEvent("pointerup", 220));
+
+    expect(blurSpy).toHaveBeenCalled();
+    expect(onChangeBlock).toHaveBeenCalledTimes(1);
+  });
 });

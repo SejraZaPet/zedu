@@ -917,7 +917,7 @@ function FreeFrameBlock({
   useEffect(() => () => activeDragCleanupRef.current?.(), []);
 
   const startDrag =
-    (handle: FrameHandle, threshold = 0) =>
+    (handle: FrameHandle, threshold = 0, onActivate?: () => void) =>
     (e: React.PointerEvent) => {
       if (!editable || !onChangeFrame) return;
       if (threshold === 0) e.preventDefault();
@@ -938,7 +938,9 @@ function FreeFrameBlock({
         if (!active) {
           if (Math.abs(px) < threshold && Math.abs(py) < threshold) return;
           active = true;
+          onActivate?.();
         }
+        ev.preventDefault();
         const dx = (px / rect.width) * 100;
         const dy = (py / rect.height) * 100;
         onChangeFrame(applyFrameDrag(startFrame, handle, dx, dy));
@@ -967,7 +969,7 @@ function FreeFrameBlock({
     };
 
   const BODY_DRAG_BAILOUT =
-    'button, a, input, textarea, select, [contenteditable="true"], [data-no-block-drag], [role="slider"]';
+    'button, a, input, textarea, select, [data-no-block-drag], [role="slider"]';
 
   const startBodyDrag = (e: React.PointerEvent) => {
     if (!editable) return;
@@ -978,7 +980,11 @@ function FreeFrameBlock({
       onSelect?.();
       return;
     }
-    startDrag("move", 5)(e);
+    const editableTarget = target.closest('[contenteditable="true"]') as HTMLElement | null;
+    startDrag("move", 5, () => {
+      editableTarget?.blur();
+      window.getSelection?.()?.removeAllRanges();
+    })(e);
   };
 
 
