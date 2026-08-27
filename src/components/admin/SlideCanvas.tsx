@@ -1445,7 +1445,7 @@ const SlideCanvas = ({
     const target = e.target as HTMLElement;
     if (
       target.closest(
-        '[data-slide-block-id], [data-no-pan], [data-slide-drawing-layer], button, a, input, textarea, select, [role="slider"], [contenteditable="true"]'"
+        '[data-slide-block-id], [data-no-pan], [data-slide-drawing-layer], button, a, input, textarea, select, [role="slider"], [contenteditable="true"]'
       )
     ) {
       return;
