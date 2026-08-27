@@ -1118,6 +1118,13 @@ const LiveTeacherScreen = () => {
                   </div>
                 )}
               </div>
+              {hasActivityTaskPreview((currentSlide as any).activitySpec) && (
+                <div className="p-3 border border-border rounded-lg space-y-2">
+                  <p className="text-xs text-muted-foreground">Zadání a řešení</p>
+                  <ActivityTaskPreview spec={(currentSlide as any).activitySpec} showSolution />
+                </div>
+              )}
+
               {responses.filter(r => r.question_index === currentIndex).length > 0 && (
                 <div className="p-3 border border-border rounded-lg">
                   <p className="text-xs text-muted-foreground mb-2">Výsledky třídy</p>
