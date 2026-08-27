@@ -7,7 +7,6 @@ import { DEFAULT_HERO_PROPS, mergeSectionProps } from "@/lib/landing-defaults";
 import Editable from "@/components/landing-edit/Editable";
 import IntroPricingBanner from "@/components/landing/IntroPricingBanner";
 
-
 interface HeroProps {
   props?: Partial<typeof DEFAULT_HERO_PROPS>;
 }
@@ -57,14 +56,8 @@ const Hero = ({ props }: HeroProps) => {
             className="flex flex-col items-center text-center mb-8 animate-fade-in-up"
             style={{ animationDelay: "0.1s" }}
           >
-            <img
-              src={logoUrl}
-              alt="Bezli"
-              className="h-24 sm:h-32 md:h-40 lg:h-52 w-auto object-contain block mb-6"
-            />
-            <h1 className="text-white font-heading font-bold text-4xl sm:text-5xl md:text-6xl lg:text-7xl mb-3">
-              Bez limitu
-            </h1>
+            <img src={logoUrl} alt="Bezli" className="h-24 sm:h-32 md:h-40 lg:h-52 w-auto object-contain block mb-6" />
+            <h1 className="text-white font-heading font-bold text-4xl sm:text-5xl md:text-6xl lg:text-7xl mb-3"></h1>
             <p className="text-white/90 font-heading text-xl sm:text-2xl md:text-3xl lg:text-4xl flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
               {["Tvoř", "inspiruj", "sdílej", "uč"].map((word, i) => (
                 <span key={i} className="inline-flex items-center gap-2">
@@ -91,14 +84,22 @@ const Hero = ({ props }: HeroProps) => {
               className="bg-white text-primary font-semibold rounded-2xl px-8 py-4 text-lg shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all inline-flex items-center justify-center"
             >
               <PrimaryIcon className="w-5 h-5 mr-2" />{" "}
-              <Editable path="primary_cta.label" value={p.primary_cta?.label ?? "Vyzkoušet zdarma"} placeholder="Text tlačítka" />
+              <Editable
+                path="primary_cta.label"
+                value={p.primary_cta?.label ?? "Vyzkoušet zdarma"}
+                placeholder="Text tlačítka"
+              />
             </button>
             <button
               onClick={handleSecondary}
               className="bg-white/20 backdrop-blur-sm border border-white/30 text-white font-semibold rounded-2xl px-8 py-4 text-lg hover:bg-white/30 transition-all inline-flex items-center justify-center"
             >
               <SecondaryIcon className="w-5 h-5 mr-2" />{" "}
-              <Editable path="secondary_cta.label" value={p.secondary_cta?.label ?? "Jak to funguje ↓"} placeholder="Text tlačítka" />
+              <Editable
+                path="secondary_cta.label"
+                value={p.secondary_cta?.label ?? "Jak to funguje ↓"}
+                placeholder="Text tlačítka"
+              />
             </button>
           </div>
 
@@ -119,7 +120,6 @@ const Hero = ({ props }: HeroProps) => {
           className="mx-auto bg-card p-6 md:p-10"
           style={{ maxWidth: "1100px", boxShadow: "0 30px 80px rgba(0,0,0,0.15)", borderRadius: "28px" }}
         >
-
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {features.map((feature, i) => {
               const Icon = getLandingIcon(feature.icon);
@@ -135,12 +135,8 @@ const Hero = ({ props }: HeroProps) => {
                     <Icon size={24} className="text-primary-foreground" />
                   </div>
                   <div>
-                    <h3 className="font-heading text-base font-semibold text-foreground mb-1">
-                      {feature.title}
-                    </h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">
-                      {feature.description}
-                    </p>
+                    <h3 className="font-heading text-base font-semibold text-foreground mb-1">{feature.title}</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
                   </div>
                 </div>
               );
