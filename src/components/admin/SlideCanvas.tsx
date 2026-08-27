@@ -299,13 +299,18 @@ function ResizableSlideImage({
     const fit = p.objectFit === "cover" ? "cover" : "contain";
     return (
       <figure className="flex h-full w-full flex-col">
-        <img
-          src={p.url}
-          alt={p.alt || p.caption || ""}
-          className="min-h-0 w-full flex-1 rounded-[var(--slide-radius,0.75rem)]"
-          style={{ objectFit: fit }}
-          draggable={false}
-        />
+        {imgFailed ? (
+          <SlideImageFallback className="min-h-0 w-full flex-1" />
+        ) : (
+          <img
+            src={p.url}
+            alt={p.alt || p.caption || ""}
+            className="min-h-0 w-full flex-1 rounded-[var(--slide-radius,0.75rem)]"
+            style={{ objectFit: fit }}
+            draggable={false}
+            onError={() => setImgFailed(true)}
+          />
+        )}
         {p.caption && <figcaption className="mt-2 text-center text-lg opacity-70">{p.caption}</figcaption>}
       </figure>
     );
@@ -313,13 +318,19 @@ function ResizableSlideImage({
 
   return (
     <figure className={`relative ${wrapperAlign}`} style={{ width }}>
-      <img
-        src={p.url}
-        alt={p.alt || p.caption || ""}
-        className="w-full rounded-[var(--slide-radius,0.75rem)] object-contain"
-        draggable={false}
-      />
+      {imgFailed ? (
+        <SlideImageFallback className="aspect-video w-full" />
+      ) : (
+        <img
+          src={p.url}
+          alt={p.alt || p.caption || ""}
+          className="w-full rounded-[var(--slide-radius,0.75rem)] object-contain"
+          draggable={false}
+          onError={() => setImgFailed(true)}
+        />
+      )}
       {p.caption && <figcaption className="mt-2 text-center text-lg opacity-70">{p.caption}</figcaption>}
+
 
       {editable && (
         <span
