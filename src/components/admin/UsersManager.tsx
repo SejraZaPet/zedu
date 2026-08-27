@@ -808,8 +808,12 @@ const UsersManager = () => {
         user={selectedUser}
         open={detailOpen}
         onOpenChange={setDetailOpen}
-        onUpdated={fetchUsers}
+        onUpdated={(patch) => {
+          if (patch) setSelectedUser((prev) => (prev ? { ...prev, ...patch } : prev));
+          fetchUsers();
+        }}
       />
+
 
       <Dialog open={addUserOpen} onOpenChange={setAddUserOpen}>
         <DialogContent>
