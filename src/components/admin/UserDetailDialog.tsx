@@ -52,8 +52,9 @@ interface Props {
   user: UserProfile | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onUpdated: () => void;
+  onUpdated: (patch?: Partial<UserProfile>) => void;
 }
+
 
 const UserDetailDialog = ({ user, open, onOpenChange, onUpdated }: Props) => {
   const { toast } = useToast();
