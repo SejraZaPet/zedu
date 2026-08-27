@@ -67,7 +67,7 @@ interface BodyProps {
   onReorderBlock?: (blockId: string, toIndex: number) => void;
   /** ID právě vybraného bloku (viditelný rámeček). */
   selectedBlockId?: string | null;
-  onSelectBlock?: (blockId: string) => void;
+  onSelectBlock?: (blockId: string | null) => void;
 }
 
 interface CanvasProps extends BodyProps {
