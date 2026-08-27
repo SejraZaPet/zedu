@@ -38,17 +38,18 @@ describe("ČÁST 2 – tažení textového bloku přes celou plochu", () => {
     const blockEl = container.querySelector("[data-slide-block-id='t1']") as HTMLElement;
     const editableEl = blockEl.querySelector("[contenteditable='true']") as HTMLElement;
     const wrapper = blockEl.closest("div.touch-none") as HTMLElement;
-    return { onChangeBlock, editableEl, wrapper };
+    const root = container.querySelector("[data-slide-root='true']") as HTMLElement;
+    return { onChangeBlock, editableEl, wrapper, root };
   };
 
   it("tažení začínající na textu (contenteditable) blok povýší do frame", () => {
-    const { onChangeBlock, editableEl, wrapper } = setup();
+    const { onChangeBlock, editableEl, wrapper, root } = setup();
     expect(editableEl).toBeTruthy();
     const blurSpy = vi.spyOn(editableEl, "blur");
 
     fireEvent(editableEl, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 200, clientY: 200 }));
-    fireEvent(window, new MouseEvent("pointermove", { clientX: 250, clientY: 200 } as any));
-    fireEvent(window, new MouseEvent("pointerup", {} as any));
+    fireEvent(root, new MouseEvent("pointermove", { clientX: 250, clientY: 200 } as any));
+    fireEvent(root, new MouseEvent("pointerup", {} as any));
 
     expect(blurSpy).toHaveBeenCalled();
     const promoted = onChangeBlock.mock.calls[0][1](textBlock());
@@ -57,10 +58,10 @@ describe("ČÁST 2 – tažení textového bloku přes celou plochu", () => {
   });
 
   it("krátký klik na text nic nepovýší – psaní zůstává funkční", () => {
-    const { onChangeBlock, editableEl } = setup();
+    const { onChangeBlock, editableEl, root } = setup();
     fireEvent(editableEl, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 200, clientY: 200 }));
-    fireEvent(window, new MouseEvent("pointermove", { clientX: 202, clientY: 201 } as any));
-    fireEvent(window, new MouseEvent("pointerup", {} as any));
+    fireEvent(root, new MouseEvent("pointermove", { clientX: 202, clientY: 201 } as any));
+    fireEvent(root, new MouseEvent("pointerup", {} as any));
     expect(onChangeBlock).not.toHaveBeenCalled();
   });
 
@@ -71,12 +72,40 @@ describe("ČÁST 2 – tažení textového bloku přes celou plochu", () => {
       <SlideBody slide={{ projector: { headline: "H" }, blocks: [bullet] }} editable onChangeBlock={onChangeBlock} />,
     );
     const btn = container.querySelector("[data-slide-block-id='b1'] button") as HTMLElement;
+    const root = container.querySelector("[data-slide-root='true']") as HTMLElement;
     fireEvent(btn, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 200, clientY: 200 }));
-    fireEvent(window, new MouseEvent("pointermove", { clientX: 260, clientY: 200 } as any));
-    fireEvent(window, new MouseEvent("pointerup", {} as any));
+    fireEvent(root, new MouseEvent("pointermove", { clientX: 260, clientY: 200 } as any));
+    fireEvent(root, new MouseEvent("pointerup", {} as any));
     expect(onChangeBlock).not.toHaveBeenCalled();
   });
+
+  it("po sobě jdoucí tažení různých bloků se nenabalují (sdílený cleanup)", () => {
+    const onChangeBlock = vi.fn();
+    const blocks = ["t1", "t2", "t3"].map((id) => textBlock(id));
+    const { container } = render(
+      <SlideBody slide={{ projector: { headline: "H" }, blocks }} editable onChangeBlock={onChangeBlock} />,
+    );
+    const root = container.querySelector("[data-slide-root='true']") as HTMLElement;
+
+    for (let i = 0; i < 6; i++) {
+      const id = ["t1", "t2", "t3"][i % 3];
+      const el = container.querySelector(`[data-slide-block-id='${id}'] [contenteditable='true']`) as HTMLElement;
+      onChangeBlock.mockClear();
+      fireEvent(el, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 200, clientY: 200 }));
+      fireEvent(root, new MouseEvent("pointermove", { clientX: 260, clientY: 210 } as any));
+      fireEvent(root, new MouseEvent("pointerup", {} as any));
+      // Hýbe se výhradně tažený blok – žádné "nabalování" předchozích gest.
+      const touched = new Set(onChangeBlock.mock.calls.map((c) => c[0]));
+      expect([...touched]).toEqual([id]);
+
+      // Po pustnutí už další pohyb myší nic nemění.
+      onChangeBlock.mockClear();
+      fireEvent(root, new MouseEvent("pointermove", { clientX: 400, clientY: 400 } as any));
+      expect(onChangeBlock).not.toHaveBeenCalled();
+    }
+  });
 });
+
 
 describe("ČÁST 3 – obrázek v rámci vyplní plochu bez oříznutí", () => {
   it("obrázek s frame nemá px úchyt a používá object-fit: contain", () => {
