@@ -50,6 +50,11 @@ import AiBlockTextButton from "@/components/admin/AiBlockTextButton";
 import SlideFloatingFormatToolbar from "@/components/admin/SlideFloatingFormatToolbar";
 import { activityBlockToSlide, mapPlanKindToActivityType } from "@/lib/plan-to-slides";
 import MyLessonActivitiesList from "@/components/presentation/MyLessonActivitiesList";
+import { ACTIVITY_PRESETS, type ActivityPreset } from "@/lib/activity-slide-presets";
+import {
+  HelpCircle, Cloud, MessageSquare, Users2, KeyRound, SplitSquareHorizontal, Paintbrush, ClipboardPaste,
+} from "lucide-react";
+
 import GameBackgroundPickerDialog from "@/components/game/GameBackgroundPickerDialog";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -139,6 +144,9 @@ export const PresentationEditorDialog = ({
   const [templateOpen, setTemplateOpen] = useState(false);
   const [importPptxOpen, setImportPptxOpen] = useState(false);
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
+  const [copiedBlock, setCopiedBlock] = useState<Block | null>(null);
+  const [copiedStyle, setCopiedStyle] = useState<Record<string, unknown> | null>(null);
+
   const [exportingPdf, setExportingPdf] = useState(false);
   const [generatingActivity, setGeneratingActivity] = useState(false);
   const [sidebarSection, setSidebarSection] = useState<"insert" | "slide" | "activities">("insert");
