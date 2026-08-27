@@ -1205,7 +1205,7 @@ export function SlideBody({
     if (!editable) return <div key={b.id}>{shell}</div>;
 
     return (
-      <div key={b.id} className="touch-none cursor-move" data-slide-block-wrapper="true" onPointerDown={startPromoteDrag(b)}>
+      <div key={b.id} className="touch-none cursor-move" data-no-pan="true" onPointerDown={startPromoteDrag(b)}>
         {shell}
       </div>
     );
@@ -1445,7 +1445,7 @@ const SlideCanvas = ({
     const target = e.target as HTMLElement;
     if (
       target.closest(
-        '[data-slide-block-id], [data-slide-block-wrapper], [data-slide-drawing-layer], button, a, input, textarea, select, [role="slider"], [contenteditable="true"]'
+        '[data-slide-block-id], [data-no-pan], [data-slide-drawing-layer], button, a, input, textarea, select, [role="slider"], [contenteditable="true"]'
       )
     ) {
       return;
