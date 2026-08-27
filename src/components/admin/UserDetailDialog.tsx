@@ -109,42 +109,37 @@ const UserDetailDialog = ({ user, open, onOpenChange, onUpdated }: Props) => {
     }
   };
 
-  const handleSaveProfile = async () => {
+  const handleSave = async () => {
     if (!user) return;
     setSaving(true);
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        first_name: editData.first_name,
-        last_name: editData.last_name,
-        school: editData.school,
-        year: editData.year ? parseInt(editData.year) : null,
-        field_of_study: editData.field_of_study,
-      })
-      .eq("id", user.id);
 
-    if (error) {
-      toast({ title: "Chyba", description: error.message, variant: "destructive" });
-      setSaving(false);
-      return;
+    const profilePatch: Record<string, any> = { status: status as any };
+    if (editMode) {
+      profilePatch.first_name = editData.first_name;
+      profilePatch.last_name = editData.last_name;
+      profilePatch.school = editData.school;
+      profilePatch.year = editData.year ? parseInt(editData.year) : null;
+      profilePatch.field_of_study = editData.field_of_study;
     }
-    toast({ title: "Uloženo", description: "Profil byl aktualizován." });
-    setEditMode(false);
-    setSaving(false);
-    onUpdated();
-  };
 
-  const handleSaveStatusRole = async () => {
-    if (!user) return;
-    setSaving(true);
-
-    const { error: profileError } = await supabase
+    const { data, error: profileError } = await supabase
       .from("profiles")
-      .update({ status: status as any })
-      .eq("id", user.id);
+      .update(profilePatch)
+      .eq("id", user.id)
+      .select("id");
 
     if (profileError) {
       toast({ title: "Chyba", description: profileError.message, variant: "destructive" });
+      setSaving(false);
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      toast({
+        title: "Chyba",
+        description: "Nepodařilo se uložit - nemáte oprávnění upravit tento profil",
+        variant: "destructive",
+      });
       setSaving(false);
       return;
     }
@@ -162,11 +157,24 @@ const UserDetailDialog = ({ user, open, onOpenChange, onUpdated }: Props) => {
       }
     }
 
-    toast({ title: "Uloženo", description: "Stav a role byly aktualizovány." });
+    toast({ title: "Uloženo", description: "Změny byly uloženy." });
     setSaving(false);
-    onUpdated();
-    onOpenChange(false);
+    setEditMode(false);
+    onUpdated({
+      ...(editMode
+        ? {
+            first_name: editData.first_name,
+            last_name: editData.last_name,
+            school: editData.school,
+            year: editData.year ? parseInt(editData.year) : null,
+            field_of_study: editData.field_of_study,
+          }
+        : {}),
+      status,
+      role,
+    });
   };
+
 
   const handleDelete = async () => {
     if (!user) return;
