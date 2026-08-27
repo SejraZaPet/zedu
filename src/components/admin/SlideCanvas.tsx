@@ -979,9 +979,13 @@ function FreeFrameBlock({
     <div
       data-slide-block-id={block.id}
       data-free-frame="true"
-      className={`pointer-events-auto absolute ${
-        editable ? (selected ? "ring-2 ring-primary" : "ring-1 ring-dashed ring-white/30 hover:ring-primary/60") : ""
-      } rounded-lg`}
+      className={`pointer-events-auto absolute rounded-lg ${
+        editable
+          ? selected
+            ? "ring-2 ring-primary cursor-move"
+            : "hover:ring-1 hover:ring-white/40 cursor-move"
+          : ""
+      }`}
       style={{
         left: `${frame.x}%`,
         top: `${frame.y}%`,
@@ -989,11 +993,12 @@ function FreeFrameBlock({
         height: `${frame.h}%`,
         zIndex,
       }}
-      onMouseDown={editable ? onSelect : undefined}
+      onPointerDown={editable ? startBodyDrag : undefined}
     >
       <div className="h-full w-full overflow-hidden">{children}</div>
 
-      {editable && (
+      {editable && selected && (
+
         <>
           {/* Lišta pro posun + smazání */}
           <div className="absolute -top-9 left-0 flex items-center gap-1 rounded-md border border-border bg-background/95 p-0.5 shadow-sm">
