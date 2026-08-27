@@ -59,6 +59,8 @@ import {
 import GameBackgroundPickerDialog from "@/components/game/GameBackgroundPickerDialog";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { persistSlideImageUrl } from "@/lib/slide-image-persist";
 
 export interface PresentationLessonRef {
   id?: string;
@@ -138,7 +140,30 @@ export const PresentationEditorDialog = ({
   existingSession, onContinueExisting, onLaunchNew, onCloseExisting,
 }: Props) => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const navigate = useNavigate();
+
+  /**
+   * Obrázek z privátní knihovny učitele nejdřív zkopíruje do veřejného bucketu,
+   * aby odkaz ve slidu nevypršel. Při chybě nic nevloží a ukáže toast.
+   */
+  const insertPersistentImage = async (
+    url: string,
+    item: any,
+    apply: (finalUrl: string) => void,
+  ) => {
+    try {
+      const finalUrl = await persistSlideImageUrl(url, item, user?.id);
+      apply(finalUrl);
+    } catch (e: any) {
+      toast({
+        title: "Obrázek se nepodařilo vložit",
+        description: e?.message || "Zkuste to prosím znovu.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const [darkPreview, setDarkPreview] = useState(true);
   const [addSlideOpen, setAddSlideOpen] = useState(false);
   const [history, setHistory] = useState<BlockEditorHistory | null>(null);
@@ -758,10 +783,12 @@ export const PresentationEditorDialog = ({
 
                       <MediaPickerDialog
                         imageOnly
-                        onPick={(url) => {
-                          const newBlock = createDefaultBlock("image");
-                          newBlock.props = { ...newBlock.props, url };
-                          setBlocks([...blocks, newBlock]);
+                        onPick={(url, item) => {
+                          void insertPersistentImage(url, item, (finalUrl) => {
+                            const newBlock = createDefaultBlock("image");
+                            newBlock.props = { ...newBlock.props, url: finalUrl };
+                            setBlocks([...blocks, newBlock]);
+                          });
                         }}
                         trigger={
                           <button
@@ -956,7 +983,11 @@ export const PresentationEditorDialog = ({
                       <div className="grid grid-cols-1 gap-1.5">
                         <MediaPickerDialog
                           imageOnly
-                          onPick={(url) => updateSlide({ backgroundOverride: { image: url } })}
+                          onPick={(url, item) => {
+                            void insertPersistentImage(url, item, (finalUrl) =>
+                              updateSlide({ backgroundOverride: { image: finalUrl } }),
+                            );
+                          }}
                           trigger={
                             <Button size="sm" variant="outline" className="h-7 w-full gap-1 text-xs">
                               <ImageIcon className="h-3.5 w-3.5" /> Obrázek pozadí

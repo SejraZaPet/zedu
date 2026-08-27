@@ -67,7 +67,7 @@ interface BodyProps {
   onReorderBlock?: (blockId: string, toIndex: number) => void;
   /** ID právě vybraného bloku (viditelný rámeček). */
   selectedBlockId?: string | null;
-  onSelectBlock?: (blockId: string) => void;
+  onSelectBlock?: (blockId: string | null) => void;
 }
 
 interface CanvasProps extends BodyProps {
@@ -258,7 +258,20 @@ function BlockShell({
   );
 }
 
+/** Decentní placeholder, když se obrázek slidu nepodaří načíst. */
+function SlideImageFallback({ className = "" }: { className?: string }) {
+  return (
+    <div
+      className={`flex flex-col items-center justify-center gap-2 rounded-[var(--slide-radius,0.75rem)] border border-dashed border-current/30 bg-current/5 p-4 text-center ${className}`}
+    >
+      <ImageIcon className="h-8 w-8 opacity-50" aria-hidden />
+      <span className="text-base opacity-70">Obrázek se nepodařilo načíst</span>
+    </div>
+  );
+}
+
 /** Obrázek na slidu s plynulou změnou velikosti tažením za pravý dolní roh. */
+
 function ResizableSlideImage({
   block,
   editable,
@@ -272,11 +285,13 @@ function ResizableSlideImage({
   onChange?: (patch: (b: Block) => Block) => void;
 }) {
   const p = block.props || {};
+  const [imgFailed, setImgFailed] = useState(false);
   const presetWidth = p.width === "small" ? 420 : p.width === "medium" ? 760 : 1200;
   const width: number = Number(p.widthPx) > 0 ? Number(p.widthPx) : presetWidth;
   const align = p.alignment || "center";
   const wrapperAlign = align === "left" ? "mr-auto" : align === "right" ? "ml-auto" : "mx-auto";
   const dragRef = useRef<{ startX: number; startW: number } | null>(null);
+
 
   const onPointerMove = useCallback((e: PointerEvent) => {
     const st = dragRef.current;
@@ -297,13 +312,18 @@ function ResizableSlideImage({
     const fit = p.objectFit === "cover" ? "cover" : "contain";
     return (
       <figure className="flex h-full w-full flex-col">
-        <img
-          src={p.url}
-          alt={p.alt || p.caption || ""}
-          className="min-h-0 w-full flex-1 rounded-[var(--slide-radius,0.75rem)]"
-          style={{ objectFit: fit }}
-          draggable={false}
-        />
+        {imgFailed ? (
+          <SlideImageFallback className="min-h-0 w-full flex-1" />
+        ) : (
+          <img
+            src={p.url}
+            alt={p.alt || p.caption || ""}
+            className="min-h-0 w-full flex-1 rounded-[var(--slide-radius,0.75rem)]"
+            style={{ objectFit: fit }}
+            draggable={false}
+            onError={() => setImgFailed(true)}
+          />
+        )}
         {p.caption && <figcaption className="mt-2 text-center text-lg opacity-70">{p.caption}</figcaption>}
       </figure>
     );
@@ -311,13 +331,19 @@ function ResizableSlideImage({
 
   return (
     <figure className={`relative ${wrapperAlign}`} style={{ width }}>
-      <img
-        src={p.url}
-        alt={p.alt || p.caption || ""}
-        className="w-full rounded-[var(--slide-radius,0.75rem)] object-contain"
-        draggable={false}
-      />
+      {imgFailed ? (
+        <SlideImageFallback className="aspect-video w-full" />
+      ) : (
+        <img
+          src={p.url}
+          alt={p.alt || p.caption || ""}
+          className="w-full rounded-[var(--slide-radius,0.75rem)] object-contain"
+          draggable={false}
+          onError={() => setImgFailed(true)}
+        />
+      )}
       {p.caption && <figcaption className="mt-2 text-center text-lg opacity-70">{p.caption}</figcaption>}
+
 
       {editable && (
         <span
@@ -804,8 +830,19 @@ function HeroImageSlot({
   editable?: boolean;
   onChange?: (url: string) => void;
 }) {
+  const [heroFailed, setHeroFailed] = useState(false);
   const content = url ? (
-    <img src={url} alt="" className="w-full h-full object-cover rounded-2xl" />
+    heroFailed ? (
+      <SlideImageFallback className="h-full w-full" />
+    ) : (
+      <img
+        src={url}
+        alt=""
+        className="w-full h-full object-cover rounded-2xl"
+        onError={() => setHeroFailed(true)}
+      />
+    )
+
   ) : (
     <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-white/40 border-2 border-dashed border-white/20 rounded-2xl">
       <ImageIcon className="w-16 h-16" />
@@ -875,28 +912,53 @@ function FreeFrameBlock({
   onDelete?: () => void;
   children: React.ReactNode;
 }) {
-  const startDrag = (handle: FrameHandle) => (e: React.PointerEvent) => {
-    if (!editable || !onChangeFrame) return;
-    e.preventDefault();
-    e.stopPropagation();
-    onSelect?.();
-    const rect = layerRef.current?.getBoundingClientRect();
-    if (!rect || !rect.width || !rect.height) return;
-    const startX = e.clientX;
-    const startY = e.clientY;
-    const startFrame = frame;
-    const move = (ev: PointerEvent) => {
-      const dx = ((ev.clientX - startX) / rect.width) * 100;
-      const dy = ((ev.clientY - startY) / rect.height) * 100;
-      onChangeFrame(applyFrameDrag(startFrame, handle, dx, dy));
+  const startDrag =
+    (handle: FrameHandle, threshold = 0) =>
+    (e: React.PointerEvent) => {
+      if (!editable || !onChangeFrame) return;
+      if (threshold === 0) e.preventDefault();
+      e.stopPropagation();
+      onSelect?.();
+      const rect = layerRef.current?.getBoundingClientRect();
+      if (!rect || !rect.width || !rect.height) return;
+      const startX = e.clientX;
+      const startY = e.clientY;
+      const startFrame = frame;
+      let active = threshold === 0;
+      const move = (ev: PointerEvent) => {
+        const px = ev.clientX - startX;
+        const py = ev.clientY - startY;
+        if (!active) {
+          if (Math.abs(px) < threshold && Math.abs(py) < threshold) return;
+          active = true;
+        }
+        const dx = (px / rect.width) * 100;
+        const dy = (py / rect.height) * 100;
+        onChangeFrame(applyFrameDrag(startFrame, handle, dx, dy));
+      };
+      const up = () => {
+        window.removeEventListener("pointermove", move);
+        window.removeEventListener("pointerup", up);
+      };
+      window.addEventListener("pointermove", move);
+      window.addEventListener("pointerup", up);
     };
-    const up = () => {
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
-    };
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", up);
+
+  const BODY_DRAG_BAILOUT =
+    'button, a, input, textarea, select, [contenteditable="true"], [data-no-block-drag], [role="slider"]';
+
+  const startBodyDrag = (e: React.PointerEvent) => {
+    if (!editable) return;
+    if (e.button !== 0) return;
+    const target = e.target as HTMLElement;
+    if (target.closest(BODY_DRAG_BAILOUT)) {
+      e.stopPropagation();
+      onSelect?.();
+      return;
+    }
+    startDrag("move", 5)(e);
   };
+
 
   const nudge = (e: React.KeyboardEvent) => {
     if (!onChangeFrame) return;
@@ -917,9 +979,13 @@ function FreeFrameBlock({
     <div
       data-slide-block-id={block.id}
       data-free-frame="true"
-      className={`pointer-events-auto absolute ${
-        editable ? (selected ? "ring-2 ring-primary" : "ring-1 ring-dashed ring-white/30 hover:ring-primary/60") : ""
-      } rounded-lg`}
+      className={`pointer-events-auto absolute rounded-lg ${
+        editable
+          ? selected
+            ? "ring-2 ring-primary cursor-move"
+            : "hover:ring-1 hover:ring-white/40 cursor-move"
+          : ""
+      }`}
       style={{
         left: `${frame.x}%`,
         top: `${frame.y}%`,
@@ -927,11 +993,12 @@ function FreeFrameBlock({
         height: `${frame.h}%`,
         zIndex,
       }}
-      onMouseDown={editable ? onSelect : undefined}
+      onPointerDown={editable ? startBodyDrag : undefined}
     >
       <div className="h-full w-full overflow-hidden">{children}</div>
 
-      {editable && (
+      {editable && selected && (
+
         <>
           {/* Lišta pro posun + smazání */}
           <div className="absolute -top-9 left-0 flex items-center gap-1 rounded-md border border-border bg-background/95 p-0.5 shadow-sm">
@@ -1287,7 +1354,16 @@ export function SlideBody({
       className={`relative flex h-full flex-col ${editable ? "" : "overflow-hidden"} ${
         isDark ? "text-white" : "text-foreground"
       }`}
+      onPointerDown={
+        editable && onSelectBlock
+          ? (e) => {
+              const target = e.target as HTMLElement;
+              if (!target.closest("[data-slide-block-id]")) onSelectBlock(null);
+            }
+          : undefined
+      }
     >
+
       <div ref={flowAreaRef} className="flex-1 min-h-0 overflow-hidden px-6 py-6">
 
         <div
