@@ -173,6 +173,7 @@ export function AddSlideSheet({
   sessionId,
   slides,
   onAddSlides,
+  layoutsOnly = false,
 }: AddSlideSheetProps) {
   const navigate = useNavigate();
   const [kind, setKind] = useState<AddKind>("menu");
@@ -554,6 +555,7 @@ export function AddSlideSheet({
                   </p>
                 </div>
               </Button>
+{!layoutsOnly && (<>
               <Button
                 variant="outline"
                 className="justify-start h-auto py-3"
@@ -687,6 +689,7 @@ export function AddSlideSheet({
                   </p>
                 </div>
               </Button>
+</>)}
             </div>
           )}
 
