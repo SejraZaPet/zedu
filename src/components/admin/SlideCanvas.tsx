@@ -1717,7 +1717,15 @@ const SlideCanvas = ({
   }
 
 
-  const body = <SlideBody darkMode={darkMode} themeId={effectiveThemeId} {...rest} />;
+  const body = (
+    <SlideBody
+      darkMode={darkMode}
+      themeId={effectiveThemeId}
+      gestureCleanupRef={gestureCleanupRef}
+      {...rest}
+    />
+  );
+
 
   if (!fit) {
     return (
