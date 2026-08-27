@@ -203,7 +203,7 @@ function BlockShell({
   return (
     <div
       data-slide-block-id={blockId}
-      onMouseDown={onSelect}
+      onPointerDown={onSelect}
       className={`group relative rounded-lg p-1 -m-1 transition-colors ${
         selected ? "ring-2 ring-primary bg-white/10" : "hover:ring-1 hover:ring-white/30 hover:bg-white/5"
       }`}
@@ -912,6 +912,10 @@ function FreeFrameBlock({
   onDelete?: () => void;
   children: React.ReactNode;
 }) {
+  const activeDragCleanupRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => () => activeDragCleanupRef.current?.(), []);
+
   const startDrag =
     (handle: FrameHandle, threshold = 0) =>
     (e: React.PointerEvent) => {
@@ -924,8 +928,11 @@ function FreeFrameBlock({
       const startX = e.clientX;
       const startY = e.clientY;
       const startFrame = frame;
+      const pointerId = e.pointerId;
+      const dragTarget = e.currentTarget as HTMLElement;
       let active = threshold === 0;
       const move = (ev: PointerEvent) => {
+        if (ev.pointerId !== pointerId) return;
         const px = ev.clientX - startX;
         const py = ev.clientY - startY;
         if (!active) {
@@ -936,12 +943,27 @@ function FreeFrameBlock({
         const dy = (py / rect.height) * 100;
         onChangeFrame(applyFrameDrag(startFrame, handle, dx, dy));
       };
-      const up = () => {
-        window.removeEventListener("pointermove", move);
-        window.removeEventListener("pointerup", up);
+      const cleanup = () => {
+        dragTarget.removeEventListener("pointermove", move);
+        dragTarget.removeEventListener("pointerup", finish);
+        dragTarget.removeEventListener("pointercancel", finish);
+        dragTarget.removeEventListener("lostpointercapture", finish);
+        window.removeEventListener("blur", cleanup);
+        if (dragTarget.hasPointerCapture?.(pointerId)) dragTarget.releasePointerCapture(pointerId);
+        if (activeDragCleanupRef.current === cleanup) activeDragCleanupRef.current = null;
       };
-      window.addEventListener("pointermove", move);
-      window.addEventListener("pointerup", up);
+      const finish = (ev: PointerEvent) => {
+        if (ev.pointerId === pointerId) cleanup();
+      };
+
+      activeDragCleanupRef.current?.();
+      activeDragCleanupRef.current = cleanup;
+      dragTarget.setPointerCapture?.(pointerId);
+      dragTarget.addEventListener("pointermove", move);
+      dragTarget.addEventListener("pointerup", finish);
+      dragTarget.addEventListener("pointercancel", finish);
+      dragTarget.addEventListener("lostpointercapture", finish);
+      window.addEventListener("blur", cleanup);
     };
 
   const BODY_DRAG_BAILOUT =
