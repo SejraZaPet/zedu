@@ -838,7 +838,7 @@ function HeroImageSlot({
  * 1px = blok se chová jako absolutně pozicovaný ihned po zahájení tažení,
  * ale samotný klik (bez pohybu) pořád jen vybere blok / spustí psaní.
  */
-const PROMOTE_THRESHOLD = 1;
+const PROMOTE_THRESHOLD = 5;
 
 const HANDLES: { handle: FrameHandle; className: string; cursor: string }[] = [
   { handle: "nw", className: "left-0 top-0 -translate-x-1/2 -translate-y-1/2", cursor: "nwse-resize" },
@@ -1116,6 +1116,7 @@ export function SlideBody({
    * klik pořád spustí psaní, ale tažení funguje po celé ploše bloku.
    */
   const startPromoteDrag = (b: Block) => (e: React.PointerEvent) => {
+    e.stopPropagation();
     if (!editable || !onChangeBlock) return;
     if (e.button !== 0) return;
     const targetEl = e.target as HTMLElement | null;
@@ -1143,12 +1144,17 @@ export function SlideBody({
           editableTarget.blur();
           window.getSelection?.()?.removeAllRanges();
         }
+        const rawW = (rect.width / lr.width) * 100;
+        const rawH = (rect.height / lr.height) * 100;
+        const cappedW = Math.min(rawW, 80);
+        const cappedH = b.type === "image" && rawW > 0
+          ? rawH * (cappedW / rawW)
+          : rawH;
         startFrame = clampBlockFrame({
           x: ((rect.left - lr.left) / lr.width) * 100,
           y: ((rect.top - lr.top) / lr.height) * 100,
-          w: Math.min((rect.width / lr.width) * 100, 80),
-          h: (rect.height / lr.height) * 100,
-
+          w: cappedW,
+          h: cappedH,
         });
         onSelectBlock?.(b.id);
         onChangeBlock(b.id, (prev: Block) => ({ ...prev, frame: startFrame } as Block));
@@ -1199,7 +1205,7 @@ export function SlideBody({
     if (!editable) return <div key={b.id}>{shell}</div>;
 
     return (
-      <div key={b.id} className="touch-none cursor-move" onPointerDown={startPromoteDrag(b)}>
+      <div key={b.id} className="touch-none cursor-move" data-slide-block-wrapper="true" onPointerDown={startPromoteDrag(b)}>
         {shell}
       </div>
     );
@@ -1439,7 +1445,7 @@ const SlideCanvas = ({
     const target = e.target as HTMLElement;
     if (
       target.closest(
-        '[data-slide-block-id], [data-slide-drawing-layer], button, a, input, textarea, select, [role="slider"], [contenteditable="true"]'
+        '[data-slide-block-id], [data-slide-block-wrapper], [data-slide-drawing-layer], button, a, input, textarea, select, [role="slider"], [contenteditable="true"]'
       )
     ) {
       return;
