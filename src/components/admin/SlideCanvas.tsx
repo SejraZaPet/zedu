@@ -912,28 +912,53 @@ function FreeFrameBlock({
   onDelete?: () => void;
   children: React.ReactNode;
 }) {
-  const startDrag = (handle: FrameHandle) => (e: React.PointerEvent) => {
-    if (!editable || !onChangeFrame) return;
-    e.preventDefault();
-    e.stopPropagation();
-    onSelect?.();
-    const rect = layerRef.current?.getBoundingClientRect();
-    if (!rect || !rect.width || !rect.height) return;
-    const startX = e.clientX;
-    const startY = e.clientY;
-    const startFrame = frame;
-    const move = (ev: PointerEvent) => {
-      const dx = ((ev.clientX - startX) / rect.width) * 100;
-      const dy = ((ev.clientY - startY) / rect.height) * 100;
-      onChangeFrame(applyFrameDrag(startFrame, handle, dx, dy));
+  const startDrag =
+    (handle: FrameHandle, threshold = 0) =>
+    (e: React.PointerEvent) => {
+      if (!editable || !onChangeFrame) return;
+      if (threshold === 0) e.preventDefault();
+      e.stopPropagation();
+      onSelect?.();
+      const rect = layerRef.current?.getBoundingClientRect();
+      if (!rect || !rect.width || !rect.height) return;
+      const startX = e.clientX;
+      const startY = e.clientY;
+      const startFrame = frame;
+      let active = threshold === 0;
+      const move = (ev: PointerEvent) => {
+        const px = ev.clientX - startX;
+        const py = ev.clientY - startY;
+        if (!active) {
+          if (Math.abs(px) < threshold && Math.abs(py) < threshold) return;
+          active = true;
+        }
+        const dx = (px / rect.width) * 100;
+        const dy = (py / rect.height) * 100;
+        onChangeFrame(applyFrameDrag(startFrame, handle, dx, dy));
+      };
+      const up = () => {
+        window.removeEventListener("pointermove", move);
+        window.removeEventListener("pointerup", up);
+      };
+      window.addEventListener("pointermove", move);
+      window.addEventListener("pointerup", up);
     };
-    const up = () => {
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
-    };
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", up);
+
+  const BODY_DRAG_BAILOUT =
+    'button, a, input, textarea, select, [contenteditable="true"], [data-no-block-drag], [role="slider"]';
+
+  const startBodyDrag = (e: React.PointerEvent) => {
+    if (!editable) return;
+    if (e.button !== 0) return;
+    const target = e.target as HTMLElement;
+    if (target.closest(BODY_DRAG_BAILOUT)) {
+      e.stopPropagation();
+      onSelect?.();
+      return;
+    }
+    startDrag("move", 5)(e);
   };
+
 
   const nudge = (e: React.KeyboardEvent) => {
     if (!onChangeFrame) return;
