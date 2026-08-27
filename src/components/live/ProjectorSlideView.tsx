@@ -202,6 +202,10 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
                   }
                   darkMode
                 />
+              ) : currentSlide.type === "activity" && hasActivityTaskPreview(currentSlide.activitySpec) ? (
+                <div className="mt-6 w-full max-w-5xl rounded-2xl border border-white/20 bg-white/5 px-8 py-6 shrink-0 text-xl">
+                  <ActivityTaskPreview spec={currentSlide.activitySpec} darkMode />
+                </div>
               ) : currentSlide.type === "activity" && (
                 <div className="mt-8 bg-primary/10 border border-primary/20 rounded-2xl px-8 py-6 shrink-0">
                   <div className="flex items-center gap-4 text-primary text-2xl font-medium">
@@ -210,6 +214,7 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
                   </div>
                 </div>
               )}
+
               </div>
             </div>
 
