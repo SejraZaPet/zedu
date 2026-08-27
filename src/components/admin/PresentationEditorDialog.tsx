@@ -53,7 +53,7 @@ import { activityBlockToSlide, mapPlanKindToActivityType } from "@/lib/plan-to-s
 import MyLessonActivitiesList from "@/components/presentation/MyLessonActivitiesList";
 import { ACTIVITY_PRESETS, type ActivityPreset } from "@/lib/activity-slide-presets";
 import {
-  HelpCircle, Cloud, MessageSquare, Users2, KeyRound, SplitSquareHorizontal, Paintbrush, ClipboardPaste,
+  HelpCircle, Cloud, MessageSquare, Users2, KeyRound, SplitSquareHorizontal,
 } from "lucide-react";
 
 import GameBackgroundPickerDialog from "@/components/game/GameBackgroundPickerDialog";
