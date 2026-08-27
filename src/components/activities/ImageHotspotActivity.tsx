@@ -13,9 +13,10 @@ interface Hotspot {
 interface Props {
   imageUrl: string;
   hotspots: Hotspot[];
+  onComplete?: (score: number, maxScore: number) => void;
 }
 
-const ImageHotspotActivity = ({ imageUrl, hotspots = [] }: Props) => {
+const ImageHotspotActivity = ({ imageUrl, hotspots = [], onComplete }: Props) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [clickPos, setClickPos] = useState<{ x: number; y: number } | null>(null);
@@ -59,6 +60,7 @@ const ImageHotspotActivity = ({ imageUrl, hotspots = [] }: Props) => {
       setAnswered(false);
     } else {
       setFinished(true);
+      onComplete?.(Object.values(results).filter(Boolean).length, hotspots.length);
     }
   };
 

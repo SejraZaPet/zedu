@@ -5,9 +5,10 @@ import { generateCrosswordGrid, type CrosswordEntry, type PlacedWord } from "@/l
 
 interface Props {
   entries: CrosswordEntry[];
+  onComplete?: (score: number, maxScore: number) => void;
 }
 
-const CrosswordActivity = ({ entries = [] }: Props) => {
+const CrosswordActivity = ({ entries = [], onComplete }: Props) => {
   const grid = useMemo(() => generateCrosswordGrid(entries), [entries]);
 
   const [userGrid, setUserGrid] = useState<string[][]>([]);
@@ -135,7 +136,21 @@ const CrosswordActivity = ({ entries = [] }: Props) => {
     return user === expected;
   };
 
-  const handleCheck = () => setChecked(true);
+  const handleCheck = () => {
+    setChecked(true);
+    if (grid) {
+      let correct = 0;
+      let total = 0;
+      grid.cells.forEach((row, r) =>
+        row.forEach((expected, c) => {
+          if (expected === null) return;
+          total += 1;
+          if ((userGrid[r]?.[c]?.toUpperCase() || "") === expected) correct += 1;
+        }),
+      );
+      onComplete?.(correct, total);
+    }
+  };
 
   const handleShowSolution = () => {
     if (!grid) return;
