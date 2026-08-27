@@ -286,6 +286,94 @@ export const PresentationEditorDialog = ({
   };
   const selectedBlock = blocks.find((b) => b.id === selectedBlockId) || null;
 
+  /* ── ČÁST 1 – kopírování bloku (Ctrl+C / Ctrl+V styl) ─────────────── */
+  const copyBlock = () => {
+    if (!selectedBlock) return;
+    setCopiedBlock(structuredClone(selectedBlock));
+    toast({ title: "Blok zkopírován", description: "Vložte ho tlačítkem „Vložit kopii“ v horní liště." });
+  };
+
+  const pasteBlock = () => {
+    if (!copiedBlock) return;
+    const clone: any = structuredClone(copiedBlock);
+    clone.id = crypto.randomUUID();
+    const frame = getBlockFrame(clone);
+    if (frame) clone.frame = { ...frame, x: frame.x + 5, y: frame.y + 5 };
+    const maxZ = blocks.reduce(
+      (m: number, b: Block) => Math.max(m, typeof b.zIndex === "number" ? b.zIndex : 0),
+      0,
+    );
+    clone.zIndex = (typeof copiedBlock.zIndex === "number" ? copiedBlock.zIndex : maxZ) + 1;
+    setBlocks([...blocks, clone]);
+    setSelectedBlockId(clone.id);
+  };
+
+  /* ── ČÁST 2 – kopírování stylu (štětec) ───────────────────────────── */
+  const STYLE_KEYS = [
+    "fontSize", "fontFamily", "color", "textColor", "align", "alignment", "lineHeight",
+    "bold", "italic", "highlightColor", "backgroundOverride", "iconColor",
+    "fillColor", "strokeColor", "strokeWidth", "animation",
+  ] as const;
+  const TEXT_ONLY_KEYS = new Set(["fontSize", "fontFamily", "align", "lineHeight", "bold", "italic", "highlightColor"]);
+  const COLOR_KEYS = new Set(["fillColor", "strokeColor", "strokeWidth", "iconColor", "color", "textColor"]);
+  const TEXT_TYPES = new Set(["heading", "paragraph", "callout", "quote", "bullet_list", "summary", "two_column", "formula"]);
+
+  const copyStyle = () => {
+    if (!selectedBlock) return;
+    const src = (selectedBlock.props || {}) as Record<string, unknown>;
+    const picked: Record<string, unknown> = {};
+    for (const key of STYLE_KEYS) {
+      if (src[key] !== undefined && src[key] !== null) picked[key] = src[key];
+    }
+    if (Object.keys(picked).length === 0) {
+      toast({ title: "Blok nemá vlastní styl", description: "Nastavte nejdřív např. barvu nebo velikost písma.", variant: "destructive" });
+      return;
+    }
+    setCopiedStyle(picked);
+    toast({ title: "Styl zkopírován", description: "Klikněte na blok, na který se má styl použít." });
+  };
+
+  /** Aplikuje zkopírovaný styl na blok – jen props kompatibilní s jeho typem. */
+  const applyCopiedStyle = (targetId: string) => {
+    const style = copiedStyle;
+    if (!style) return;
+    const target = blocks.find((b) => b.id === targetId);
+    if (!target) return;
+    const isText = TEXT_TYPES.has(target.type);
+    const patch: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(style)) {
+      if (TEXT_ONLY_KEYS.has(key) && !isText) continue;
+      if (target.type === "shape" && !COLOR_KEYS.has(key) && key !== "animation") continue;
+      patch[key] = value;
+    }
+    if (Object.keys(patch).length === 0) {
+      toast({ title: "Styl nelze použít", description: "Cílový blok nepodporuje žádnou ze zkopírovaných vlastností." });
+    } else {
+      updateBlock(targetId, (b: Block) => ({ ...b, props: { ...b.props, ...patch } }));
+      toast({ title: "Styl použit" });
+    }
+    setCopiedStyle(null);
+  };
+
+  /** Výběr bloku na plátně – při aktivním štětci styl hned aplikuje. */
+  const handleSelectBlock = (id: string | null) => {
+    if (id && copiedStyle && id !== selectedBlockId) {
+      applyCopiedStyle(id);
+    }
+    setSelectedBlockId(id);
+  };
+
+  /** ČÁST 4a – vložení předpřipravené aktivity za aktuální slide. */
+  const insertActivityPreset = (preset: ActivityPreset) => {
+    const updated = [...pendingSlides];
+    updated.splice(editingSlideIndex + 1, 0, preset.build());
+    setPendingSlides(updated);
+    setEditingSlideIndex(editingSlideIndex + 1);
+    setSelectedBlockId(null);
+    toast({ title: "Aktivita přidána", description: `„${preset.label}" byla vložena jako nový slide.` });
+  };
+
+
   /** B3 – dogenerování interaktivní aktivity z textového slidu pomocí AI. */
   const generateActivityFromSlide = async () => {
     if (!currentSlide) return;
