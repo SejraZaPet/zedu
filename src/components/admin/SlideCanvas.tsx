@@ -1553,6 +1553,24 @@ const SlideCanvas = ({
   const frameRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   const [panning, setPanning] = useState(false);
+  // Sdílený koordinátor gest pro pan plátna i drag bloků uvnitř SlideBody.
+  const gestureCleanupRef = useRef<(() => void) | null>(null);
+  const beginGesture = useCallback((cleanup: () => void) => {
+    const prev = gestureCleanupRef.current;
+    gestureCleanupRef.current = null;
+    prev?.();
+    gestureCleanupRef.current = cleanup;
+  }, []);
+  const endGesture = useCallback((cleanup: () => void) => {
+    if (gestureCleanupRef.current === cleanup) gestureCleanupRef.current = null;
+  }, []);
+  // Při odmountování plátna nesmí přežít žádné gesto.
+  useEffect(() => () => {
+    const pending = gestureCleanupRef.current;
+    gestureCleanupRef.current = null;
+    pending?.();
+  }, []);
+
 
   // Explicit 16:9 box computed from the *available* space of the parent element
   // (width AND height), so the canvas never overflows its container.
