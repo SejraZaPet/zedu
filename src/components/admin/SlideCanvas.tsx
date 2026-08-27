@@ -272,11 +272,13 @@ function ResizableSlideImage({
   onChange?: (patch: (b: Block) => Block) => void;
 }) {
   const p = block.props || {};
+  const [imgFailed, setImgFailed] = useState(false);
   const presetWidth = p.width === "small" ? 420 : p.width === "medium" ? 760 : 1200;
   const width: number = Number(p.widthPx) > 0 ? Number(p.widthPx) : presetWidth;
   const align = p.alignment || "center";
   const wrapperAlign = align === "left" ? "mr-auto" : align === "right" ? "ml-auto" : "mx-auto";
   const dragRef = useRef<{ startX: number; startW: number } | null>(null);
+
 
   const onPointerMove = useCallback((e: PointerEvent) => {
     const st = dragRef.current;
