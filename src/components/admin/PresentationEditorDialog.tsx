@@ -1453,7 +1453,7 @@ export const PresentationEditorDialog = ({
                     onDeleteBlock={deleteBlock}
                     onChangeHeroImage={(url) => updateSlide({ heroImage: url })}
                     selectedBlockId={selectedBlockId}
-                    onSelectBlock={setSelectedBlockId}
+                    onSelectBlock={handleSelectBlock}
                     drawMode={drawMode}
                     drawColor={drawColor}
                     drawWidth={drawWidth}
