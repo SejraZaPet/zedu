@@ -19,7 +19,15 @@ export type ActivityPresetId =
   | "fill_blanks"
   | "fill_choice"
   | "image_hotspot"
-  | "crossword";
+  | "crossword"
+  | "flashcards"
+  | "reveal_cards"
+  | "memory_game"
+  | "image_label"
+  | "true_false"
+  | "matching"
+  | "ordering"
+  | "sorting";
 
 
 export interface ActivityPreset {
@@ -84,7 +92,7 @@ export const ACTIVITY_PRESETS: ActivityPreset[] = [
   },
   {
     id: "poll",
-    label: "Hlasování",
+    label: "Anketa",
     hint: "Rychlá anketa bez správné odpovědi",
     icon: "BarChart3",
     build: () =>
@@ -189,6 +197,118 @@ export const ACTIVITY_PRESETS: ActivityPreset[] = [
           entries: [
             { answer: "PRAHA", clue: "Hlavní město Česka" },
             { answer: "BRNO", clue: "Druhé největší město" },
+          ],
+        },
+      }),
+  },
+  {
+    id: "flashcards",
+    label: "Otoč kartičky",
+    hint: "Dvoustranné kartičky k opakování",
+    icon: "Layers",
+    build: () =>
+      activitySlide("flashcards", "Otoč kartičky", "Klikni na kartičku a otoč ji.", {
+        flashcards: [
+          { front: "Přední strana", back: "Zadní strana" },
+          { front: "Přední strana 2", back: "Zadní strana 2" },
+        ],
+      }),
+  },
+  {
+    id: "reveal_cards",
+    label: "Otevři kartičku",
+    hint: "Skryté texty k postupnému odhalení",
+    icon: "SquareStack",
+    build: () =>
+      activitySlide("reveal_cards", "Otevři kartičku", "Postupně odhal všechny kartičky.", {
+        revealCards: {
+          cards: [
+            { title: "Kartička 1", content: "Skrytý text" },
+            { title: "Kartička 2", content: "Skrytý text" },
+          ],
+        },
+      }),
+  },
+  {
+    id: "memory_game",
+    label: "Najdi dvojice",
+    hint: "Pexeso s páry pojmů",
+    icon: "Grid2X2",
+    build: () =>
+      activitySlide("memory_game", "Najdi dvojice", "Najdi všechny dvojice.", {
+        memoryGame: {
+          pairs: [
+            { left: "Pojem", right: "Význam" },
+            { left: "Pojem 2", right: "Význam 2" },
+          ],
+        },
+      }),
+  },
+  {
+    id: "image_label",
+    label: "Popiš obrázek",
+    hint: "Slepá mapa – přetahování popisků",
+    icon: "MapPin",
+    build: () =>
+      activitySlide("image_label", "Popiš obrázek", "Přetáhni popisky na správná místa.", {
+        imageLabel: {
+          imageUrl: "",
+          markers: [{ label: "Popisek", x: 50, y: 50 }],
+          tolerance: 5,
+          shuffleWords: true,
+        },
+      }),
+  },
+  {
+    id: "true_false",
+    label: "Urči pravda/nepravda",
+    hint: "Tvrzení k posouzení",
+    icon: "CheckCheck",
+    build: () =>
+      activitySlide("true_false", "Pravda, nebo nepravda?", "Rozhodni u každého tvrzení.", {
+        trueFalse: {
+          statements: [
+            { text: "Nové tvrzení", isTrue: true },
+            { text: "Další tvrzení", isTrue: false },
+          ],
+        },
+      }),
+  },
+  {
+    id: "matching",
+    label: "Přiřaď dvojice A–B",
+    hint: "Spojování odpovídajících pojmů",
+    icon: "ArrowLeftRight",
+    build: () =>
+      activitySlide("matching", "Přiřaď dvojice", "Ke každému pojmu vyber správnou dvojici.", {
+        matching: {
+          left: ["Pojem A", "Pojem B"],
+          right: ["Odpověď A", "Odpověď B"],
+        },
+      }),
+  },
+  {
+    id: "ordering",
+    label: "Seřaď správně",
+    hint: "Uspořádání kroků do pořadí",
+    icon: "ListOrdered",
+    build: () =>
+      activitySlide("ordering", "Seřaď správně", "Přetáhni položky do správného pořadí.", {
+        ordering: { items: ["První", "Druhý", "Třetí"] },
+      }),
+  },
+  {
+    id: "sorting",
+    label: "Roztřiď do skupin",
+    hint: "Třídění položek do kategorií",
+    icon: "FolderTree",
+    build: () =>
+      activitySlide("sorting", "Roztřiď do skupin", "Zařaď každou položku do správné skupiny.", {
+        sorting: {
+          groups: ["Skupina 1", "Skupina 2"],
+          items: [
+            { text: "Položka 1", group: 0 },
+            { text: "Položka 2", group: 1 },
           ],
         },
       }),
