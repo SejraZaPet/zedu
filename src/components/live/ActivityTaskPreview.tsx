@@ -16,7 +16,20 @@ interface Props {
 }
 
 export const hasActivityTaskPreview = (spec: any) =>
-  ["fill_blanks", "fill_choice", "image_hotspot", "crossword"].includes(spec?.activityType);
+  [
+    "fill_blanks",
+    "fill_choice",
+    "image_hotspot",
+    "crossword",
+    "flashcards",
+    "reveal_cards",
+    "memory_game",
+    "image_label",
+    "true_false",
+    "matching",
+    "ordering",
+    "sorting",
+  ].includes(spec?.activityType);
 
 const blanksFromText = (text: string, reveal: boolean) => {
   const parts: { text: string; blank: boolean }[] = [];
@@ -163,6 +176,165 @@ const ActivityTaskPreview = ({ spec, showSolution = false, darkMode = false }: P
             </li>
           ))}
         </ol>
+      </div>
+    );
+  }
+
+
+  if (type === "flashcards" || type === "reveal_cards" || type === "memory_game") {
+    const rows: any[] =
+      type === "flashcards"
+        ? Array.isArray(spec?.flashcards)
+          ? spec.flashcards
+          : []
+        : type === "reveal_cards"
+        ? Array.isArray(spec?.revealCards?.cards)
+          ? spec.revealCards.cards
+          : []
+        : Array.isArray(spec?.memoryGame?.pairs)
+        ? spec.memoryGame.pairs
+        : [];
+    if (!rows.length) return null;
+    const front = (r: any) =>
+      type === "flashcards" ? r.front : type === "reveal_cards" ? r.title : r.left;
+    const back = (r: any) =>
+      type === "flashcards" ? r.back : type === "reveal_cards" ? r.content : r.right;
+    return (
+      <div className="grid gap-2 sm:grid-cols-2">
+        {rows.map((r, i) => (
+          <div key={i} className={`rounded-lg border px-3 py-2 text-sm ${chip}`}>
+            <span className="font-semibold">{front(r) || "—"}</span>
+            {showSolution && back(r) ? (
+              <span className={`ml-2 ${muted}`}>· {back(r)}</span>
+            ) : null}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (type === "true_false") {
+    const statements: any[] = Array.isArray(spec?.trueFalse?.statements)
+      ? spec.trueFalse.statements
+      : [];
+    if (!statements.length) return null;
+    return (
+      <ol className={`list-decimal space-y-1 pl-5 ${base}`}>
+        {statements.map((st, i) => (
+          <li key={i}>
+            {st.text || "—"}
+            {showSolution ? (
+              <span className={`ml-2 font-semibold ${muted}`}>
+                {st.isTrue ? "· Pravda" : "· Nepravda"}
+              </span>
+            ) : null}
+          </li>
+        ))}
+      </ol>
+    );
+  }
+
+  if (type === "matching") {
+    const left: string[] = Array.isArray(spec?.matching?.left) ? spec.matching.left : [];
+    const right: string[] = Array.isArray(spec?.matching?.right) ? spec.matching.right : [];
+    if (!left.length) return null;
+    return (
+      <div className="space-y-2">
+        {left.map((l, i) => (
+          <div key={i} className={`flex items-center gap-2 text-sm ${base}`}>
+            <span className={`rounded border px-2 py-0.5 ${chip}`}>{l || "—"}</span>
+            <span className={muted}>→</span>
+            <span className={`rounded border px-2 py-0.5 ${chip}`}>
+              {showSolution ? right[i] || "—" : "?"}
+            </span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (type === "ordering") {
+    const items: string[] = Array.isArray(spec?.ordering?.items) ? spec.ordering.items : [];
+    if (!items.length) return null;
+    const shown = showSolution ? items : [...items].sort((a, b) => a.localeCompare(b, "cs"));
+    return (
+      <ol className={`space-y-1 ${base}`}>
+        {shown.map((it, i) => (
+          <li key={i} className={`rounded border px-2 py-1 text-sm ${chip}`}>
+            {showSolution ? `${i + 1}. ` : "• "}
+            {it || "—"}
+          </li>
+        ))}
+      </ol>
+    );
+  }
+
+  if (type === "sorting") {
+    const groups: string[] = Array.isArray(spec?.sorting?.groups) ? spec.sorting.groups : [];
+    const items: any[] = Array.isArray(spec?.sorting?.items) ? spec.sorting.items : [];
+    if (!groups.length) return null;
+    return (
+      <div className="space-y-3">
+        {!showSolution && items.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {items.map((it, i) => (
+              <span key={i} className={`rounded-full border px-3 py-1 text-sm ${chip}`}>
+                {it.text || "—"}
+              </span>
+            ))}
+          </div>
+        )}
+        <div className="grid gap-2 sm:grid-cols-2">
+          {groups.map((g, gi) => (
+            <div key={gi} className={`rounded-lg border px-3 py-2 ${chip}`}>
+              <p className="text-sm font-semibold">{g || `Skupina ${gi + 1}`}</p>
+              {showSolution && (
+                <ul className={`mt-1 space-y-0.5 text-xs ${muted}`}>
+                  {items
+                    .filter((it) => Number(it.group) === gi)
+                    .map((it, i) => (
+                      <li key={i}>{it.text || "—"}</li>
+                    ))}
+                </ul>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (type === "image_label") {
+    const imageUrl = spec?.imageLabel?.imageUrl;
+    const markers: any[] = Array.isArray(spec?.imageLabel?.markers) ? spec.imageLabel.markers : [];
+    if (!imageUrl) return null;
+    return (
+      <div className="space-y-3">
+        <div className="relative inline-block max-w-full">
+          <img
+            src={imageUrl}
+            alt="Obrázek k popisu"
+            className="max-h-[45vh] w-auto max-w-full rounded-xl border border-white/20 object-contain"
+          />
+          {markers.map((m, i) => (
+            <span
+              key={i}
+              className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-primary bg-primary/40 px-2 py-0.5 text-xs font-bold text-white"
+              style={{ left: `${m.x ?? 50}%`, top: `${m.y ?? 50}%` }}
+            >
+              {showSolution ? m.label || i + 1 : i + 1}
+            </span>
+          ))}
+        </div>
+        {!showSolution && markers.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {markers.map((m, i) => (
+              <span key={i} className={`rounded-full border px-3 py-1 text-sm ${chip}`}>
+                {m.label || "—"}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
     );
   }
