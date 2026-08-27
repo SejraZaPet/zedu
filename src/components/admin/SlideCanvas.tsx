@@ -1127,7 +1127,9 @@ export function SlideBody({
     if (activeDragCleanupRef.current === cleanup) activeDragCleanupRef.current = null;
   }, [activeDragCleanupRef]);
 
+  const [flowScale, setFlowScale] = useState(1);
   const theme = getPresentationTheme(themeId ?? slide?.themeId);
+
 
 
   const explicitTheme = themeId ?? slide?.themeId;
