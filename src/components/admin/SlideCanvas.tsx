@@ -68,7 +68,13 @@ interface BodyProps {
   /** ID právě vybraného bloku (viditelný rámeček). */
   selectedBlockId?: string | null;
   onSelectBlock?: (blockId: string | null) => void;
+  /**
+   * Sdílený ref na cleanup právě aktivního gesta (drag bloku i pan plátna).
+   * Předává ho `SlideCanvas`, aby se pan a block-drag vzájemně ukončovaly.
+   */
+  gestureCleanupRef?: React.MutableRefObject<(() => void) | null>;
 }
+
 
 interface CanvasProps extends BodyProps {
   /** When true (default), scale stage to fit container. Otherwise renders at native 1600×900. */
