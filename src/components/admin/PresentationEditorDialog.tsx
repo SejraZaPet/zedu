@@ -664,6 +664,37 @@ export const PresentationEditorDialog = ({
               >
                 <Copy className="h-3.5 w-3.5" />
               </Button>
+
+              {/* ČÁST 1 – vložení zkopírovaného bloku na aktuální slide */}
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-8 gap-1 px-2 text-xs"
+                title={copiedBlock ? "Vložit kopii zkopírovaného bloku" : "Nejdřív zkopírujte blok tlačítkem Kopírovat v liště nad slidem"}
+                disabled={!copiedBlock}
+                onClick={pasteBlock}
+              >
+                <ClipboardPaste className="h-3.5 w-3.5" /> Vložit kopii
+              </Button>
+
+              {/* ČÁST 2 – vložení zkopírovaného stylu na vybraný blok */}
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-8 gap-1 px-2 text-xs"
+                title={
+                  !copiedStyle
+                    ? "Nejdřív zkopírujte styl štětcem v liště nad slidem"
+                    : !selectedBlockId
+                      ? "Vyberte blok, na který se styl použije"
+                      : "Použít zkopírovaný styl na vybraný blok"
+                }
+                disabled={!copiedStyle || !selectedBlockId}
+                onClick={() => selectedBlockId && applyCopiedStyle(selectedBlockId)}
+              >
+                <Paintbrush className="h-3.5 w-3.5" /> Vložit styl
+              </Button>
+
               {pendingSlides.length > 1 && (
                 <Button
                   size="sm"
