@@ -1425,12 +1425,16 @@ export const PresentationEditorDialog = ({
                           });
                         }}
                         onMove={(dir) => selectedBlockId && moveBlock(selectedBlockId, dir)}
+                        onCopyBlock={copyBlock}
+                        onCopyStyle={copyStyle}
+                        styleCopied={!!copiedStyle}
                         onDelete={() => {
                           if (!selectedBlockId) return;
                           deleteBlock(selectedBlockId);
                           setSelectedBlockId(null);
                         }}
                       />
+
                     ) : (
                       <p className="text-[11px] text-muted-foreground">
                         Klikněte na blok pro editaci — formátovací lišta se zobrazí zde nad slidem.
