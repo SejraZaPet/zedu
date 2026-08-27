@@ -10,9 +10,10 @@ import {
 } from "@/lib/slide-typography";
 import {
   AlignCenter, AlignLeft, AlignRight, ArrowDown, ArrowUp, Bold, ChevronDown, ChevronUp,
-  ChevronsDown, ChevronsUp, Highlighter, Italic,
-  Maximize, Minus, Palette, Plus, Sparkles, Trash2,
+  ChevronsDown, ChevronsUp, Copy, Highlighter, Italic,
+  Maximize, Minus, Paintbrush, Palette, Plus, Sparkles, Trash2,
 } from "lucide-react";
+
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import IconPickerDialog from "@/components/admin/IconPickerDialog";
 import ColorPicker from "@/components/admin/ColorPicker";
@@ -34,7 +35,14 @@ interface Props {
   staticBar?: boolean;
   /** Změna vrstvy (z-index) volně umístěného bloku. */
   onChangeLayer?: (action: "front" | "forward" | "backward" | "back") => void;
+  /** ČÁST 1 – zkopíruje vybraný blok do „schránky“ editoru. */
+  onCopyBlock?: () => void;
+  /** ČÁST 2 – zkopíruje styl (props) vybraného bloku (štětec). */
+  onCopyStyle?: () => void;
+  /** Štětec je aktivní (styl je ve schránce a čeká na aplikaci). */
+  styleCopied?: boolean;
 }
+
 
 const TEXT_BLOCK_TYPES = new Set([
   "heading", "paragraph", "callout", "quote", "bullet_list", "summary", "two_column", "formula",
@@ -46,8 +54,9 @@ const TEXT_BLOCK_TYPES = new Set([
  */
 export const SlideFloatingFormatToolbar = ({
   containerRef, block, onChangeProps, onMove, onDelete, positionKey, framed, staticBar,
-  onChangeLayer,
+  onChangeLayer, onCopyBlock, onCopyStyle, styleCopied,
 }: Props) => {
+
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const props = (block?.props || {}) as Record<string, any>;
   const set = (patch: Record<string, any>) => onChangeProps({ ...props, ...patch });
@@ -510,6 +519,29 @@ export const SlideFloatingFormatToolbar = ({
       <Button size="sm" variant="ghost" className="h-7 w-7 p-0" title="Posunout níž" onClick={() => onMove("down")}>
         <ArrowDown className="h-3.5 w-3.5" />
       </Button>
+      {onCopyBlock && (
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 w-7 p-0"
+          title="Kopírovat blok (vložíte tlačítkem „Vložit kopii“ v horní liště)"
+          onClick={onCopyBlock}
+        >
+          <Copy className="h-3.5 w-3.5" />
+        </Button>
+      )}
+      {onCopyStyle && (
+        <Button
+          size="sm"
+          variant={styleCopied ? "default" : "ghost"}
+          className="h-7 w-7 p-0"
+          title="Kopírovat styl – pak klikněte na blok, na který se má styl použít"
+          aria-pressed={!!styleCopied}
+          onClick={onCopyStyle}
+        >
+          <Paintbrush className="h-3.5 w-3.5" />
+        </Button>
+      )}
       <Button
         size="sm"
         variant="ghost"
@@ -519,6 +551,7 @@ export const SlideFloatingFormatToolbar = ({
       >
         <Trash2 className="h-3.5 w-3.5" />
       </Button>
+
     </div>
   );
 };
