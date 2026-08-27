@@ -899,6 +899,8 @@ function FreeFrameBlock({
   onSelect,
   onChangeFrame,
   onDelete,
+  beginGesture,
+  endGesture,
   children,
 }: {
   block: Block;
@@ -910,11 +912,16 @@ function FreeFrameBlock({
   onSelect?: () => void;
   onChangeFrame?: (frame: BlockFrame) => void;
   onDelete?: () => void;
+  /** Registrace gesta do sdíleného refu na úrovni slidu (viz SlideBody). */
+  beginGesture: (cleanup: () => void) => void;
+  endGesture: (cleanup: () => void) => void;
   children: React.ReactNode;
 }) {
-  const activeDragCleanupRef = useRef<(() => void) | null>(null);
+  // Lokální ref drží jen *vlastní* běžící gesto kvůli úklidu při unmountu;
+  // koordinaci napříč bloky řeší sdílený ref v SlideBody.
+  const ownDragCleanupRef = useRef<(() => void) | null>(null);
 
-  useEffect(() => () => activeDragCleanupRef.current?.(), []);
+  useEffect(() => () => ownDragCleanupRef.current?.(), []);
 
   const startDrag =
     (handle: FrameHandle, threshold = 0, onActivate?: () => void) =>
@@ -952,14 +959,16 @@ function FreeFrameBlock({
         dragTarget.removeEventListener("lostpointercapture", finish);
         window.removeEventListener("blur", cleanup);
         if (dragTarget.hasPointerCapture?.(pointerId)) dragTarget.releasePointerCapture(pointerId);
-        if (activeDragCleanupRef.current === cleanup) activeDragCleanupRef.current = null;
+        if (ownDragCleanupRef.current === cleanup) ownDragCleanupRef.current = null;
+        endGesture(cleanup);
       };
       const finish = (ev: PointerEvent) => {
         if (ev.pointerId === pointerId) cleanup();
       };
 
-      activeDragCleanupRef.current?.();
-      activeDragCleanupRef.current = cleanup;
+      // Ukončí případné předchozí gesto na JAKÉMKOLIV bloku slidu.
+      beginGesture(cleanup);
+      ownDragCleanupRef.current = cleanup;
       dragTarget.setPointerCapture?.(pointerId);
       dragTarget.addEventListener("pointermove", move);
       dragTarget.addEventListener("pointerup", finish);
@@ -967,6 +976,7 @@ function FreeFrameBlock({
       dragTarget.addEventListener("lostpointercapture", finish);
       window.addEventListener("blur", cleanup);
     };
+
 
   const BODY_DRAG_BAILOUT =
     'button, a, input, textarea, select, [data-no-block-drag], [role="slider"]';
@@ -1096,7 +1106,19 @@ export function SlideBody({
   const freeLayerRef = useRef<HTMLDivElement>(null);
   const flowAreaRef = useRef<HTMLDivElement>(null);
   const flowContentRef = useRef<HTMLDivElement>(null);
-  const activePromoteDragCleanupRef = useRef<(() => void) | null>(null);
+  // Jediný sdílený ref pro VŠECHNA drag gesta na slidu (framed drag, flow
+  // promote i reorder). Nové gesto vždy nejdřív ukončí to předchozí.
+  const activeDragCleanupRef = useRef<(() => void) | null>(null);
+  const beginGesture = useCallback((cleanup: () => void) => {
+    const prev = activeDragCleanupRef.current;
+    activeDragCleanupRef.current = null;
+    prev?.();
+    activeDragCleanupRef.current = cleanup;
+  }, []);
+  const endGesture = useCallback((cleanup: () => void) => {
+    if (activeDragCleanupRef.current === cleanup) activeDragCleanupRef.current = null;
+  }, []);
+
   const [flowScale, setFlowScale] = useState(1);
   const theme = getPresentationTheme(themeId ?? slide?.themeId);
 
@@ -1160,7 +1182,7 @@ export function SlideBody({
 
   // Flow blok po povýšení do frame zmizí z lineárního DOMu. Aktivní pointer
   // proto držíme na stabilním kořeni slidu a vždy ukončíme i při unmountu.
-  useEffect(() => () => activePromoteDragCleanupRef.current?.(), []);
+  useEffect(() => () => activeDragCleanupRef.current?.(), []);
 
 
 
@@ -1191,7 +1213,9 @@ export function SlideBody({
     if (!onReorderBlock) return;
     e.preventDefault();
     e.stopPropagation();
+    const pointerId = e.pointerId;
     const move = (ev: PointerEvent) => {
+      if (ev.pointerId !== pointerId) return;
       const el = document.elementFromPoint(ev.clientX, ev.clientY) as HTMLElement | null;
       const target = el?.closest("[data-slide-block-id]") as HTMLElement | null;
       const overId = target?.getAttribute("data-slide-block-id");
@@ -1199,12 +1223,22 @@ export function SlideBody({
       const toIndex = blocks.findIndex((x) => x.id === overId);
       if (toIndex >= 0) onReorderBlock(blockId, toIndex);
     };
-    const up = () => {
+    const cleanup = () => {
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", up);
+      window.removeEventListener("blur", cleanup);
+      endGesture(cleanup);
     };
+    const up = (ev: PointerEvent) => {
+      if (ev.pointerId === pointerId) cleanup();
+    };
+    beginGesture(cleanup);
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", up);
+    window.addEventListener("blur", cleanup);
+
   };
 
   /**
@@ -1278,16 +1312,16 @@ export function SlideBody({
       dragTarget.removeEventListener("lostpointercapture", finish);
       window.removeEventListener("blur", cleanup);
       if (dragTarget.hasPointerCapture?.(pointerId)) dragTarget.releasePointerCapture(pointerId);
-      if (activePromoteDragCleanupRef.current === cleanup) activePromoteDragCleanupRef.current = null;
+      endGesture(cleanup);
     };
     const finish = (ev: PointerEvent) => {
       if (ev.pointerId === pointerId) cleanup();
     };
 
-    // Nikdy nesmí současně žít dvě flow-drag gesta. Právě uniklé listenery
-    // z předchozího gesta způsobovaly pohyb několika bloků najednou.
-    activePromoteDragCleanupRef.current?.();
-    activePromoteDragCleanupRef.current = cleanup;
+    // Nikdy nesmí současně žít dvě gesta na slidu – nové vždy ukončí předchozí,
+    // ať proběhlo na jakémkoliv bloku a jakoukoliv cestou.
+    beginGesture(cleanup);
+
     dragTarget.setPointerCapture?.(pointerId);
     dragTarget.addEventListener("pointermove", move);
     dragTarget.addEventListener("pointerup", finish);
@@ -1408,6 +1442,8 @@ export function SlideBody({
   return (
     <div
       ref={slideRootRef}
+      data-slide-root="true"
+
       className={`relative flex h-full flex-col ${editable ? "" : "overflow-hidden"} ${
         isDark ? "text-white" : "text-foreground"
       }`}
@@ -1464,6 +1500,9 @@ export function SlideBody({
                   : undefined
               }
               onDelete={onDeleteBlock ? () => onDeleteBlock(block.id) : undefined}
+              beginGesture={beginGesture}
+              endGesture={endGesture}
+
             >
               {editable ? (
                 <EditableBlock
