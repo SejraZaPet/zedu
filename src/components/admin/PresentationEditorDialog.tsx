@@ -48,6 +48,7 @@ import ColorPicker from "@/components/admin/ColorPicker";
 import type { DrawingStroke } from "@/components/admin/SlideDrawingLayer";
 import AiBlockTextButton from "@/components/admin/AiBlockTextButton";
 import SlideFloatingFormatToolbar from "@/components/admin/SlideFloatingFormatToolbar";
+import * as LucideIcons from "lucide-react";
 import { activityBlockToSlide, mapPlanKindToActivityType } from "@/lib/plan-to-slides";
 import MyLessonActivitiesList from "@/components/presentation/MyLessonActivitiesList";
 import { ACTIVITY_PRESETS, type ActivityPreset } from "@/lib/activity-slide-presets";
@@ -1018,7 +1019,7 @@ export const PresentationEditorDialog = ({
                     </div>
 
                     {/* B3 – dogenerovat aktivitu z textového slidu (též v sekci Aktivity) */}
-                    {currentSlide?.type !== "activity" && aiActivityButton}
+                    {/* AI aktivita je v levém railu v záložce Aktivity. */}
 
 
                     {/* Nastavení aktivity */}
@@ -1315,7 +1316,7 @@ export const PresentationEditorDialog = ({
                       Otevře se v nové záložce, rozdělaná prezentace zůstane zachovaná.
                     </p>
 
-                    {aiActivityButton}
+                    {/* AI aktivita je nově kartou v sekci „Přidat aktivitu“ výše. */}
                   </div>
                   )}
                 </div>
