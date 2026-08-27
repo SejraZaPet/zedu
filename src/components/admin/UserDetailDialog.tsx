@@ -381,8 +381,9 @@ const UserDetailDialog = ({ user, open, onOpenChange, onUpdated }: Props) => {
           </AlertDialog>
 
           <Button variant="outline" onClick={() => onOpenChange(false)}>Zavřít</Button>
-          <Button onClick={handleSaveStatusRole} disabled={saving}>
-            <Save className="w-4 h-4 mr-1" /> {saving ? "Ukládání..." : "Uložit role/stav"}
+          <Button onClick={handleSave} disabled={saving}>
+            <Save className="w-4 h-4 mr-1" /> {saving ? "Ukládání..." : "Uložit"}
+
           </Button>
         </DialogFooter>
       </DialogContent>
