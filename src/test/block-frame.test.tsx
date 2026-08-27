@@ -129,13 +129,18 @@ describe("SlideBody – volné umístění", () => {
       />,
     );
     const el = container.querySelector('[data-free-frame="true"]') as HTMLElement;
+    const pointerEvent = (type: string, pointerId: number, clientX: number, clientY: number) => {
+      const event = new MouseEvent(type, { bubbles: true, button: 0, clientX, clientY });
+      Object.defineProperty(event, "pointerId", { value: pointerId });
+      return event;
+    };
 
-    fireEvent.pointerDown(el, { pointerId: 7, button: 0, clientX: 200, clientY: 200 });
-    fireEvent.pointerMove(el, { pointerId: 7, clientX: 220, clientY: 200 });
+    fireEvent(el, pointerEvent("pointerdown", 7, 200, 200));
+    fireEvent(el, pointerEvent("pointermove", 7, 220, 200));
     expect(onChangeBlock).toHaveBeenCalledTimes(1);
 
-    fireEvent.pointerCancel(el, { pointerId: 7 });
-    fireEvent.pointerMove(el, { pointerId: 7, clientX: 260, clientY: 200 });
+    fireEvent(el, pointerEvent("pointercancel", 7, 220, 200));
+    fireEvent(el, pointerEvent("pointermove", 7, 260, 200));
     expect(onChangeBlock).toHaveBeenCalledTimes(1);
   });
 });
