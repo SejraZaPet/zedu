@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNod
 import { BookOpen } from "lucide-react";
 import WallProjectorView from "@/components/activities/WallProjectorView";
 import WordCloudView from "@/components/activities/WordCloudView";
+import ActivityTaskPreview, { hasActivityTaskPreview } from "@/components/live/ActivityTaskPreview";
+
 import { SlideBody } from "@/components/admin/SlideCanvas";
 import { slideTransitionClass } from "@/lib/slide-transitions";
 import { getPresentationTheme, themeStageStyle } from "@/lib/presentation-themes";
