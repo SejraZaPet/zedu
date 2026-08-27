@@ -1354,7 +1354,16 @@ export function SlideBody({
       className={`relative flex h-full flex-col ${editable ? "" : "overflow-hidden"} ${
         isDark ? "text-white" : "text-foreground"
       }`}
+      onPointerDown={
+        editable && onSelectBlock
+          ? (e) => {
+              const target = e.target as HTMLElement;
+              if (!target.closest("[data-slide-block-id]")) onSelectBlock(null);
+            }
+          : undefined
+      }
     >
+
       <div ref={flowAreaRef} className="flex-1 min-h-0 overflow-hidden px-6 py-6">
 
         <div
