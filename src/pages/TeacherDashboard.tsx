@@ -206,7 +206,7 @@ const TeacherDashboard = () => {
       title: "Moje aktivity",
       description: "Vytvářejte kvízy a interaktivní úkoly pro studenty.",
       button: "Otevřít aktivity",
-      onClick: () => navigate("/ucitel/ucebnice"),
+      onClick: () => navigate("/aktivity"),
     },
     classes: {
       id: "classes",
