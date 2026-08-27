@@ -1621,6 +1621,7 @@ const SlideCanvas = ({
   }, [fit, absoluteScale, zoom, pan, scale, onZoomChange, onPanChange]);
 
   // Pan tažením prázdné plochy (neblokujeme interakce s bloky/ovládacími prvky).
+  // Sdílí stejný koordinátor gest jako drag bloků – nové gesto vždy ukončí staré.
   const startPan = (e: React.PointerEvent<HTMLDivElement>) => {
     if (e.button !== 0) return;
     const target = e.target as HTMLElement;
@@ -1633,23 +1634,53 @@ const SlideCanvas = ({
     }
     if ((rest as any).drawMode) return;
     e.preventDefault();
-    e.currentTarget.setPointerCapture(e.pointerId);
-    setPanning(true);
+    // `currentTarget` je v asynchronních callbackech už null – držíme si element.
+    const el = e.currentTarget as HTMLDivElement;
+    const pointerId = e.pointerId;
     const startX = e.clientX;
     const startY = e.clientY;
     const startPan = { ...pan };
+
     const move = (ev: PointerEvent) => {
+      if (ev.pointerId !== pointerId) return;
       onPanChange?.({ x: startPan.x + (ev.clientX - startX), y: startPan.y + (ev.clientY - startY) });
     };
-    const up = () => {
+    const cleanup = () => {
+      el.removeEventListener("pointermove", move);
+      el.removeEventListener("pointerup", finish);
+      el.removeEventListener("pointercancel", finish);
+      el.removeEventListener("lostpointercapture", finish);
+      window.removeEventListener("pointerup", finish);
+      window.removeEventListener("pointercancel", finish);
+      window.removeEventListener("blur", cleanup);
+      try {
+        if (el.hasPointerCapture?.(pointerId)) el.releasePointerCapture(pointerId);
+      } catch {
+        /* pointer už není zachycen */
+      }
       setPanning(false);
-      e.currentTarget.releasePointerCapture(e.pointerId);
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
+      endGesture(cleanup);
     };
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", up);
+    const finish = (ev: PointerEvent) => {
+      if (ev.pointerId === pointerId) cleanup();
+    };
+
+    beginGesture(cleanup);
+    setPanning(true);
+    try {
+      el.setPointerCapture?.(pointerId);
+    } catch {
+      /* capture nemusí být dostupný */
+    }
+    el.addEventListener("pointermove", move);
+    el.addEventListener("pointerup", finish);
+    el.addEventListener("pointercancel", finish);
+    el.addEventListener("lostpointercapture", finish);
+    window.addEventListener("pointerup", finish);
+    window.addEventListener("pointercancel", finish);
+    window.addEventListener("blur", cleanup);
   };
+
 
   const effectiveThemeId = themeId ?? (rest as any).slide?.themeId;
 
