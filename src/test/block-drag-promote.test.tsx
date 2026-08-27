@@ -54,12 +54,10 @@ describe("drag & drop flow bloku (auto-promote do frame)", () => {
 
   it("tažení nad prahem povýší blok do frame a dál ho posouvá", () => {
     const { onChangeBlock, wrapper } = setup();
-    fireEvent(
-      wrapper,
-      new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 200, clientY: 200 }),
-    );
-    fireEvent(window, new MouseEvent("pointermove", { clientX: 240, clientY: 200 } as any));
-    fireEvent(window, new MouseEvent("pointerup", {} as any));
+    const slideRoot = wrapper.closest(".relative.flex.h-full") as HTMLElement;
+    fireEvent(wrapper, pointerEvent("pointerdown", 5, 200, 200));
+    fireEvent(slideRoot, pointerEvent("pointermove", 5, 240, 200));
+    fireEvent(slideRoot, pointerEvent("pointerup", 5, 240, 200));
 
     expect(onChangeBlock.mock.calls.length).toBeGreaterThanOrEqual(2);
     // 1. volání = promote na aktuální pozici (160/1600 = 10 %, 90/900 = 10 %)
