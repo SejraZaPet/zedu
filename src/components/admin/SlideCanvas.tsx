@@ -258,7 +258,20 @@ function BlockShell({
   );
 }
 
+/** Decentní placeholder, když se obrázek slidu nepodaří načíst. */
+function SlideImageFallback({ className = "" }: { className?: string }) {
+  return (
+    <div
+      className={`flex flex-col items-center justify-center gap-2 rounded-[var(--slide-radius,0.75rem)] border border-dashed border-current/30 bg-current/5 p-4 text-center ${className}`}
+    >
+      <ImageIcon className="h-8 w-8 opacity-50" aria-hidden />
+      <span className="text-base opacity-70">Obrázek se nepodařilo načíst</span>
+    </div>
+  );
+}
+
 /** Obrázek na slidu s plynulou změnou velikosti tažením za pravý dolní roh. */
+
 function ResizableSlideImage({
   block,
   editable,
