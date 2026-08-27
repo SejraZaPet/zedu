@@ -1168,8 +1168,16 @@ export const PresentationEditorDialog = ({
                             </div>
                           </div>
                         )}
+
+                        <LiveActivitySpecEditor
+                          spec={(currentSlide as any).activitySpec}
+                          onChange={(patch) =>
+                            updateSlide({ activitySpec: { ...(currentSlide as any).activitySpec, ...patch } })
+                          }
+                        />
                       </div>
                     )}
+
 
                     {/* Obrázek ve volném rámci – přizpůsobení plochy */}
                     {selectedBlock?.type === "image" && !!getBlockFrame(selectedBlock) && (
