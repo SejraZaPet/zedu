@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { render } from "@testing-library/react";
+import { describe, it, expect, vi, beforeAll } from "vitest";
+import { fireEvent, render } from "@testing-library/react";
 import { SlideBody } from "@/components/admin/SlideCanvas";
 import {
   applyFrameDrag,
@@ -17,6 +17,15 @@ const mkBlock = (extra: Partial<Block> = {}): Block =>
     props: { text: "Ahoj svět" },
     ...extra,
   }) as Block;
+
+beforeAll(() => {
+  Element.prototype.getBoundingClientRect = function () {
+    return { left: 0, top: 0, width: 1600, height: 900, right: 1600, bottom: 900, x: 0, y: 0, toJSON: () => ({}) } as DOMRect;
+  };
+  HTMLElement.prototype.setPointerCapture = vi.fn();
+  HTMLElement.prototype.releasePointerCapture = vi.fn();
+  HTMLElement.prototype.hasPointerCapture = vi.fn(() => true);
+});
 
 describe("block-frame helpers", () => {
   it("ignoruje neplatné rámce", () => {
@@ -105,5 +114,62 @@ describe("SlideBody – volné umístění", () => {
     expect(framed.length).toBe(1);
     expect(framed[0].textContent).toContain("Volně");
     expect(container.textContent).toContain("Ve flow");
+  });
+
+  it("pointercancel ukončí tažení a další pohyb už blok nezmění", () => {
+    const onChangeBlock = vi.fn();
+    const { container } = render(
+      <SlideBody
+        slide={{
+          projector: { headline: "Test" },
+          blocks: [mkBlock({ frame: { x: 20, y: 20, w: 60, h: 15 } })],
+        }}
+        editable
+        onChangeBlock={onChangeBlock}
+      />,
+    );
+    const el = container.querySelector('[data-free-frame="true"]') as HTMLElement;
+    const pointerEvent = (type: string, pointerId: number, clientX: number, clientY: number) => {
+      const event = new MouseEvent(type, { bubbles: true, button: 0, clientX, clientY });
+      Object.defineProperty(event, "pointerId", { value: pointerId });
+      return event;
+    };
+
+    fireEvent(el, pointerEvent("pointerdown", 7, 200, 200));
+    fireEvent(el, pointerEvent("pointermove", 7, 220, 200));
+    expect(onChangeBlock).toHaveBeenCalledTimes(1);
+
+    fireEvent(el, pointerEvent("pointercancel", 7, 220, 200));
+    fireEvent(el, pointerEvent("pointermove", 7, 260, 200));
+    expect(onChangeBlock).toHaveBeenCalledTimes(1);
+  });
+
+  it("tažení z contenteditable textu po překročení prahu přesune framed blok", () => {
+    const onChangeBlock = vi.fn();
+    const { container } = render(
+      <SlideBody
+        slide={{
+          projector: { headline: "Test" },
+          blocks: [mkBlock({ frame: { x: 20, y: 20, w: 60, h: 15 } })],
+        }}
+        editable
+        onChangeBlock={onChangeBlock}
+      />,
+    );
+    const el = container.querySelector('[data-free-frame="true"]') as HTMLElement;
+    const editableText = el.querySelector('[contenteditable="true"]') as HTMLElement;
+    const blurSpy = vi.spyOn(editableText, "blur");
+    const pointerEvent = (type: string, clientX: number) => {
+      const event = new MouseEvent(type, { bubbles: true, button: 0, clientX, clientY: 200 });
+      Object.defineProperty(event, "pointerId", { value: 9 });
+      return event;
+    };
+
+    fireEvent(editableText, pointerEvent("pointerdown", 200));
+    fireEvent(el, pointerEvent("pointermove", 220));
+    fireEvent(el, pointerEvent("pointerup", 220));
+
+    expect(blurSpy).toHaveBeenCalled();
+    expect(onChangeBlock).toHaveBeenCalledTimes(1);
   });
 });
