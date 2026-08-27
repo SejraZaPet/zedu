@@ -267,9 +267,6 @@ const UserDetailDialog = ({ user, open, onOpenChange, onUpdated }: Props) => {
                   />
                 </div>
               </div>
-              <Button className="w-full" onClick={handleSaveProfile} disabled={saving}>
-                <Save className="w-4 h-4 mr-1" /> {saving ? "Ukládání..." : "Uložit změny"}
-              </Button>
             </div>
           ) : (
             <div className="space-y-3">
