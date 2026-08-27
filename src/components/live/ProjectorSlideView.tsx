@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNod
 import { BookOpen } from "lucide-react";
 import WallProjectorView from "@/components/activities/WallProjectorView";
 import WordCloudView from "@/components/activities/WordCloudView";
+import ActivityTaskPreview, { hasActivityTaskPreview } from "@/components/live/ActivityTaskPreview";
+
 import { SlideBody } from "@/components/admin/SlideCanvas";
 import { slideTransitionClass } from "@/lib/slide-transitions";
 import { getPresentationTheme, themeStageStyle } from "@/lib/presentation-themes";
@@ -202,6 +204,10 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
                   }
                   darkMode
                 />
+              ) : currentSlide.type === "activity" && hasActivityTaskPreview(currentSlide.activitySpec) ? (
+                <div className="mt-6 w-full max-w-5xl rounded-2xl border border-white/20 bg-white/5 px-8 py-6 shrink-0 text-xl">
+                  <ActivityTaskPreview spec={currentSlide.activitySpec} darkMode />
+                </div>
               ) : currentSlide.type === "activity" && (
                 <div className="mt-8 bg-primary/10 border border-primary/20 rounded-2xl px-8 py-6 shrink-0">
                   <div className="flex items-center gap-4 text-primary text-2xl font-medium">
@@ -210,6 +216,7 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
                   </div>
                 </div>
               )}
+
               </div>
             </div>
 

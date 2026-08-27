@@ -15,7 +15,12 @@ export type ActivityPresetId =
   | "poll"
   | "teams"
   | "escape"
-  | "differentiated";
+  | "differentiated"
+  | "fill_blanks"
+  | "fill_choice"
+  | "image_hotspot"
+  | "crossword";
+
 
 export interface ActivityPreset {
   id: ActivityPresetId;
@@ -129,7 +134,67 @@ export const ACTIVITY_PRESETS: ActivityPreset[] = [
         teamCount: 2,
       }),
   },
+  {
+    id: "fill_blanks",
+    label: "Doplň slova",
+    hint: "Text s mezerami, žáci píší odpovědi",
+    icon: "TextCursorInput",
+    build: () =>
+      activitySlide("fill_blanks", "Doplň slova", "Doplň chybějící slova do textu.", {
+        fillBlanks: {
+          text: "Hlavní město Česka je {{Praha}}.",
+          caseSensitive: false,
+          diacriticSensitive: true,
+        },
+      }),
+  },
+  {
+    id: "fill_choice",
+    label: "Doplň z nabídky",
+    hint: "Text s mezerami a bankou slov",
+    icon: "ListChecks",
+    build: () =>
+      activitySlide("fill_choice", "Doplň z nabídky", "Přetáhni nebo vyber správná slova.", {
+        fillChoice: {
+          tokens: [
+            { type: "text", value: "Voda vře při " },
+            { type: "blank", answer: "100" },
+            { type: "text", value: " °C." },
+          ],
+          options: ["100", "90"],
+        },
+      }),
+  },
+  {
+    id: "image_hotspot",
+    label: "Klikni na správnou část",
+    hint: "Aktivní body v obrázku",
+    icon: "MousePointerClick",
+    build: () =>
+      activitySlide("image_hotspot", "Klikni na správnou část", "Klikni do obrázku na správné místo.", {
+        imageHotspot: {
+          imageUrl: "",
+          hotspots: [{ label: "Klikni na…", x: 50, y: 50, radius: 8 }],
+        },
+      }),
+  },
+  {
+    id: "crossword",
+    label: "Křížovka",
+    hint: "Mřížka s nápovědami",
+    icon: "Grid3X3",
+    build: () =>
+      activitySlide("crossword", "Křížovka", "Vylušti křížovku.", {
+        crossword: {
+          entries: [
+            { answer: "PRAHA", clue: "Hlavní město Česka" },
+            { answer: "BRNO", clue: "Druhé největší město" },
+          ],
+        },
+      }),
+  },
 ];
 
 export const getActivityPreset = (id: string): ActivityPreset | undefined =>
   ACTIVITY_PRESETS.find((p) => p.id === id);
+

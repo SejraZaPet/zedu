@@ -2,6 +2,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useGameSession, useTeacherGameControls } from "@/hooks/useGameSession";
 import { ConnectionStatusBanner } from "@/components/game/ConnectionStatusBanner";
 import { GameLobby } from "@/components/game/GameLobby";
+import ActivityTaskPreview, { hasActivityTaskPreview } from "@/components/live/ActivityTaskPreview";
+
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -1118,6 +1120,13 @@ const LiveTeacherScreen = () => {
                   </div>
                 )}
               </div>
+              {hasActivityTaskPreview((currentSlide as any).activitySpec) && (
+                <div className="p-3 border border-border rounded-lg space-y-2">
+                  <p className="text-xs text-muted-foreground">Zadání a řešení</p>
+                  <ActivityTaskPreview spec={(currentSlide as any).activitySpec} showSolution />
+                </div>
+              )}
+
               {responses.filter(r => r.question_index === currentIndex).length > 0 && (
                 <div className="p-3 border border-border rounded-lg">
                   <p className="text-xs text-muted-foreground mb-2">Výsledky třídy</p>

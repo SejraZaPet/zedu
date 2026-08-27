@@ -379,6 +379,7 @@ export const LessonBlock = ({ block, blockIndex, onActivityComplete, isTeacher }
             <ImageHotspotActivity
               imageUrl={p.imageHotspot.imageUrl}
               hotspots={p.imageHotspot.hotspots || []}
+              onComplete={handleComplete}
             />
           )}
           {at === "fill_blanks" && p.fillBlanks && (
@@ -407,7 +408,7 @@ export const LessonBlock = ({ block, blockIndex, onActivityComplete, isTeacher }
             <MemoryGameActivity pairs={p.memoryGame.pairs || []} />
           )}
           {at === "crossword" && p.crossword && (
-            <CrosswordActivity entries={p.crossword.entries || []} />
+            <CrosswordActivity entries={p.crossword.entries || []} onComplete={handleComplete} />
           )}
           {at === "wall" && (
             <WallActivity
