@@ -9,6 +9,7 @@ interface MemoryPair {
 
 interface Props {
   pairs: MemoryPair[];
+  onComplete?: (score: number, maxScore: number) => void;
 }
 
 interface Card {
@@ -18,7 +19,7 @@ interface Card {
   side: "left" | "right";
 }
 
-const MemoryGameActivity = ({ pairs = [] }: Props) => {
+const MemoryGameActivity = ({ pairs = [], onComplete }: Props) => {
   const cards = useMemo(() => {
     const all: Card[] = [];
     pairs.forEach((p, i) => {
@@ -41,7 +42,7 @@ const MemoryGameActivity = ({ pairs = [] }: Props) => {
   const [elapsed, setElapsed] = useState(0);
   const lockRef = useRef(false);
 
-  const finished = matched.size === cards.length;
+  const finished = cards.length > 0 && matched.size === cards.length;
 
   // Timer
   useEffect(() => {
@@ -80,6 +81,11 @@ const MemoryGameActivity = ({ pairs = [] }: Props) => {
       }
     }
   };
+
+  useEffect(() => {
+    if (finished) onComplete?.(pairs.length, pairs.length);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [finished, pairs.length]);
 
   const reset = () => {
     setFlipped([]);

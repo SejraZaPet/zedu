@@ -373,6 +373,7 @@ export const LessonBlock = ({ block, blockIndex, onActivityComplete, isTeacher }
               markers={p.imageLabel.markers || []}
               tolerance={p.imageLabel.tolerance}
               shuffleWords={p.imageLabel.shuffleWords}
+              onComplete={handleComplete}
             />
           )}
           {at === "image_hotspot" && p.imageHotspot && (
@@ -402,10 +403,10 @@ export const LessonBlock = ({ block, blockIndex, onActivityComplete, isTeacher }
             <TrueFalseActivity statements={p.trueFalse.statements || []} onComplete={handleComplete} />
           )}
           {at === "reveal_cards" && p.revealCards && (
-            <RevealCardsActivity cards={p.revealCards.cards || []} />
+            <RevealCardsActivity cards={p.revealCards.cards || []} onComplete={handleComplete} />
           )}
           {at === "memory_game" && p.memoryGame && (
-            <MemoryGameActivity pairs={p.memoryGame.pairs || []} />
+            <MemoryGameActivity pairs={p.memoryGame.pairs || []} onComplete={handleComplete} />
           )}
           {at === "crossword" && p.crossword && (
             <CrosswordActivity entries={p.crossword.entries || []} onComplete={handleComplete} />

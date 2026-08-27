@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface RevealCard {
   title: string;
@@ -7,9 +7,10 @@ interface RevealCard {
 
 interface Props {
   cards: RevealCard[];
+  onComplete?: (score: number, maxScore: number) => void;
 }
 
-const RevealCardsActivity = ({ cards = [] }: Props) => {
+const RevealCardsActivity = ({ cards = [], onComplete }: Props) => {
   const [opened, setOpened] = useState<Set<number>>(new Set());
 
   const toggle = (idx: number) => {
@@ -21,9 +22,14 @@ const RevealCardsActivity = ({ cards = [] }: Props) => {
     });
   };
 
-  if (!cards.length) return null;
+  const allOpened = cards.length > 0 && opened.size === cards.length;
 
-  const allOpened = opened.size === cards.length;
+  useEffect(() => {
+    if (allOpened) onComplete?.(cards.length, cards.length);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allOpened, cards.length]);
+
+  if (!cards.length) return null;
 
   return (
     <div className="space-y-4">
