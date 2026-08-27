@@ -114,3 +114,6 @@ verify_jwt = false
 
 [functions.website-assistant-chat]
 verify_jwt = false
+
+[functions.migrate-slide-images]
+verify_jwt = true
