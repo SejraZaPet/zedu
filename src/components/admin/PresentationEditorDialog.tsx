@@ -1591,6 +1591,8 @@ export const PresentationEditorDialog = ({
             open={addSlideOpen}
             onOpenChange={setAddSlideOpen}
             slides={pendingSlides}
+            layoutsOnly
+
             onAddSlides={(newSlides) => {
               const updated = [...pendingSlides, ...newSlides];
               setPendingSlides(updated);
