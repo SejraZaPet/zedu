@@ -11,7 +11,7 @@ import {
   Monitor, Plus, Trash2, ChevronDown, Save, Sun, Moon, Type, List, Image as ImageIcon,
   Table as TableIcon, Settings2, Undo2, Redo2, ZoomIn, ZoomOut, Copy, FileDown, Heading as HeadingIcon,
   Quote as QuoteIcon, StickyNote, BarChart3, Sigma, Video as VideoIcon, Music, Loader2, Bookmark,
-  Wand2, Settings, Puzzle, ArrowLeft, ExternalLink, Gamepad2, Move, FileUp,
+  Wand2, Settings, Puzzle, ArrowLeft, ExternalLink, Gamepad2, Move, FileUp, ClipboardPaste, Paintbrush,
 } from "lucide-react";
 
 import {
