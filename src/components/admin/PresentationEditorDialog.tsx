@@ -52,6 +52,8 @@ import * as LucideIcons from "lucide-react";
 import { activityBlockToSlide, mapPlanKindToActivityType } from "@/lib/plan-to-slides";
 import MyLessonActivitiesList from "@/components/presentation/MyLessonActivitiesList";
 import { ACTIVITY_PRESETS, type ActivityPreset } from "@/lib/activity-slide-presets";
+import LiveActivitySpecEditor from "@/components/admin/LiveActivitySpecEditor";
+
 import {
   HelpCircle, Cloud, MessageSquare, Users2, KeyRound, SplitSquareHorizontal,
 } from "lucide-react";
