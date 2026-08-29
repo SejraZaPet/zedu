@@ -240,7 +240,14 @@ export default function TeacherReservations() {
       toast({ title: "Rezervaci nelze uložit", description: error.message, variant: "destructive" });
       return;
     }
-    toast({ title: "Rezervováno" });
+    toast(
+      selected.requires_approval
+        ? {
+            title: "Žádost odeslána",
+            description: "Rezervace čeká na schválení administrátora školy.",
+          }
+        : { title: "Rezervováno" },
+    );
     setOpen(false);
     void loadReservations();
   };
@@ -421,7 +428,7 @@ export default function TeacherReservations() {
               </div>
             </CardHeader>
             <CardContent>
-              {selected && (selected.photo_url || selected.buffer_minutes > 0 || (selected.type === "inventory" && selected.condition_status !== "ok")) && (
+              {selected && (selected.photo_url || selected.requires_approval || selected.buffer_minutes > 0 || (selected.type === "inventory" && selected.condition_status !== "ok")) && (
                 <div className="mb-3 flex items-start gap-3 rounded-md border border-border p-2.5">
                   {selected.photo_url && (
                     <img
@@ -433,6 +440,9 @@ export default function TeacherReservations() {
                   )}
                   <div className="space-y-1 text-xs text-muted-foreground">
                     {resourcePlaceLabel(selected) && <p>{resourcePlaceLabel(selected)}</p>}
+                    {selected.requires_approval && (
+                      <p>Rezervace této položky musí schválit administrátor školy.</p>
+                    )}
                     {selected.buffer_minutes > 0 && (
                       <p>Mezi rezervacemi je ochranná pauza {selected.buffer_minutes} min.</p>
                     )}
@@ -451,7 +461,7 @@ export default function TeacherReservations() {
                 <div className="overflow-x-auto">
                   <div className="grid min-w-[720px] grid-cols-5 gap-2">
                     {weekDays.map((d, i) => {
-                      const items = dayReservations(d);
+                      const items = dayReservations(d).filter((r) => r.status !== "rejected");
                       return (
                         <div key={i} className="rounded-md border border-border">
                           <div className="border-b border-border bg-muted/40 px-2 py-1.5 text-xs font-medium">
@@ -467,7 +477,11 @@ export default function TeacherReservations() {
                             {items.map((r) => (
                               <div
                                 key={r.id}
-                                className="rounded border border-primary/30 bg-primary/5 p-1.5 text-xs"
+                                className={`rounded border p-1.5 text-xs ${
+                                  r.status === "pending"
+                                    ? "border-dashed border-amber-500/60 bg-amber-500/10"
+                                    : "border-primary/30 bg-primary/5"
+                                }`}
                               >
                                 <div className="font-medium">
                                   {hhmm(r.time_from)}–{hhmm(r.time_to)}
@@ -475,6 +489,11 @@ export default function TeacherReservations() {
                                 </div>
                                 <div className="text-muted-foreground">{reserverLabel(r)}</div>
                                 {r.purpose_note && <div className="truncate">{r.purpose_note}</div>}
+                                {r.status === "pending" && (
+                                  <Badge variant="outline" className="mt-1">
+                                    Čeká na schválení
+                                  </Badge>
+                                )}
                                 {r.returned_at && (
                                   <Badge variant="secondary" className="mt-1">Vráceno</Badge>
                                 )}

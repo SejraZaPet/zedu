@@ -3854,6 +3854,7 @@ export type Database = {
           resource_id: string
           returned_at: string | null
           schedule_entry_id: string | null
+          status: string
           time_from: string
           time_to: string
           updated_at: string
@@ -3869,6 +3870,7 @@ export type Database = {
           resource_id: string
           returned_at?: string | null
           schedule_entry_id?: string | null
+          status?: string
           time_from: string
           time_to: string
           updated_at?: string
@@ -3884,6 +3886,7 @@ export type Database = {
           resource_id?: string
           returned_at?: string | null
           schedule_entry_id?: string | null
+          status?: string
           time_from?: string
           time_to?: string
           updated_at?: string
@@ -4523,6 +4526,7 @@ export type Database = {
           location_note: string | null
           name: string
           photo_url: string | null
+          requires_approval: boolean
           room_number: string | null
           school_id: string
           total_quantity: number
@@ -4542,6 +4546,7 @@ export type Database = {
           location_note?: string | null
           name: string
           photo_url?: string | null
+          requires_approval?: boolean
           room_number?: string | null
           school_id: string
           total_quantity?: number
@@ -4561,6 +4566,7 @@ export type Database = {
           location_note?: string | null
           name?: string
           photo_url?: string | null
+          requires_approval?: boolean
           room_number?: string | null
           school_id?: string
           total_quantity?: number

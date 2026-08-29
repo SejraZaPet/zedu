@@ -1705,6 +1705,12 @@ async function reserveRoomForSlots(
 ) {
   let created = 0;
   const conflicts: string[] = [];
+  const { data: roomRow } = await supabase
+    .from("school_resources" as any)
+    .select("requires_approval")
+    .eq("id", roomResourceId)
+    .maybeSingle();
+  const needsApproval = !!(roomRow as any)?.requires_approval;
   for (const slot of slots) {
     const res = await createRecurringReservations({
       resourceId: roomResourceId,
@@ -1728,6 +1734,13 @@ async function reserveRoomForSlots(
       variant: "destructive",
     });
   } else if (created > 0) {
-    toast({ title: `Místnost rezervována na ${created} hodin` });
+    toast(
+      needsApproval
+        ? {
+            title: `Odesláno ${created} žádostí o místnost`,
+            description: "Celá série čeká na schválení administrátora školy.",
+          }
+        : { title: `Místnost rezervována na ${created} hodin` },
+    );
   }
 }
