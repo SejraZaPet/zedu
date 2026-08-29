@@ -63,7 +63,7 @@ import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import LessonFormDialog from "@/components/schedule/LessonFormDialog";
-import { createRecurringReservations } from "@/lib/school-resources";
+import { reserveRoomSeries, deleteFutureReservationsForEntry } from "@/lib/school-resources";
 import { downloadICS, buildScheduleRrule, type CalendarExportEvent } from "@/lib/calendar-export";
 import { Download } from "lucide-react";
 
@@ -1234,6 +1234,14 @@ export default function TeacherSchedule() {
             toast({ title: "Chyba", description: error.message, variant: "destructive" });
             return;
           }
+          if (!value.roomResourceId) {
+            // Místnost byla odebrána → uklidit budoucí rezervace staré série.
+            try {
+              await deleteFutureReservationsForEntry(editingClassSlot.id);
+            } catch {
+              /* neblokuje uložení hodiny */
+            }
+          }
           if (value.roomResourceId && user?.id) {
             await reserveRoomForSlots(
               value.roomResourceId,
@@ -1694,8 +1702,10 @@ function BreakSettingRow({
 }
 
 /**
- * Založí pravidelné rezervace místnosti pro uložené hodiny rozvrhu.
- * Kolize hlásí trigger v databázi – ty pouze vypíšeme učiteli.
+ * Založí/přegeneruje pravidelné rezervace místnosti pro uložené hodiny rozvrhu.
+ * Serverová funkce nejdřív zruší budoucí rezervace staré série té samé hodiny,
+ * takže úprava hodiny nikdy nekoliduje sama se sebou. Skutečná kolize s cizí
+ * rezervací celou operaci vrátí zpět (stará série zůstane).
  */
 async function reserveRoomForSlots(
   roomResourceId: string,
@@ -1704,33 +1714,32 @@ async function reserveRoomForSlots(
   userId: string,
 ) {
   let created = 0;
-  const conflicts: string[] = [];
-  const { data: roomRow } = await supabase
-    .from("school_resources" as any)
-    .select("requires_approval")
-    .eq("id", roomResourceId)
-    .maybeSingle();
-  const needsApproval = !!(roomRow as any)?.requires_approval;
+  let needsApproval = false;
+  const errors: string[] = [];
   for (const slot of slots) {
-    const res = await createRecurringReservations({
-      resourceId: roomResourceId,
-      reservedBy: userId,
-      dayOfWeek: slot.day_of_week,
-      timeFrom: (slot.start_time || "").slice(0, 5),
-      timeTo: (slot.end_time || "").slice(0, 5),
-      validFrom: value.validFrom,
-      validTo: value.validTo,
-      weekParity: value.mirrorBoth ? "every" : (value.weekParity ?? "every"),
-      purposeNote: [value.subject, value.className || value.groupName].filter(Boolean).join(" – "),
-      scheduleEntryId: slot.id,
-    });
-    created += res.created;
-    res.conflicts.forEach((c) => conflicts.push(c.date));
+    try {
+      const res = await reserveRoomSeries({
+        resourceId: roomResourceId,
+        reservedBy: userId,
+        dayOfWeek: slot.day_of_week,
+        timeFrom: (slot.start_time || "").slice(0, 5),
+        timeTo: (slot.end_time || "").slice(0, 5),
+        validFrom: value.validFrom,
+        validTo: value.validTo,
+        weekParity: value.mirrorBoth ? "every" : (value.weekParity ?? "every"),
+        purposeNote: [value.subject, value.className || value.groupName].filter(Boolean).join(" – "),
+        scheduleEntryId: slot.id,
+      });
+      created += res.created;
+      needsApproval = needsApproval || res.requiresApproval;
+    } catch (e: any) {
+      errors.push(e?.message ?? "Rezervaci místnosti nepodařilo uložit");
+    }
   }
-  if (conflicts.length > 0) {
+  if (errors.length > 0) {
     toast({
-      title: `Místnost rezervována ${created}×, ${conflicts.length} termínů koliduje`,
-      description: `Obsazeno: ${conflicts.slice(0, 5).join(", ")}${conflicts.length > 5 ? "…" : ""}. Zvolte jinou místnost nebo rezervaci vyřešte v sekci Rezervace.`,
+      title: "Místnost nelze rezervovat",
+      description: `${errors[0]} Původní rezervace zůstaly nezměněné – zvolte jinou místnost nebo čas.`,
       variant: "destructive",
     });
   } else if (created > 0) {

@@ -7522,6 +7522,20 @@ export type Database = {
         Args: { _school_id: string }
         Returns: string
       }
+      reserve_room_series: {
+        Args: {
+          p_day_of_week: number
+          p_purpose_note?: string
+          p_resource_id: string
+          p_schedule_entry_id: string
+          p_time_from: string
+          p_time_to: string
+          p_valid_from?: string
+          p_valid_to?: string
+          p_week_parity?: string
+        }
+        Returns: Json
+      }
       reset_class_leaderboard: {
         Args: { _class_id: string }
         Returns: undefined
