@@ -71,6 +71,7 @@ import TeacherLessonPlans from "./pages/TeacherLessonPlans";
 import TeacherLessonPlanEditor from "./pages/TeacherLessonPlanEditor";
 import TeacherSuggestByMethod from "./pages/TeacherSuggestByMethod";
 import TeacherSchedule from "./pages/TeacherSchedule";
+import TeacherReservations from "./pages/TeacherReservations";
 import TeacherMediaLibrary from "./pages/TeacherMediaLibrary";
 import TeacherSubjectClass from "./pages/TeacherSubjectClass";
 import TeacherSubjects from "./pages/TeacherSubjects";
@@ -184,6 +185,7 @@ const App = () => (
             <Route path="/ucitel/plany-hodin/:id" element={<ProtectedRoute><TeacherLessonPlanEditor /></ProtectedRoute>} />
             <Route path="/ucitel/navrh-podle-metody" element={<ProtectedRoute><TeacherSuggestByMethod /></ProtectedRoute>} />
             <Route path="/ucitel/rozvrh" element={<ProtectedRoute><TeacherSchedule /></ProtectedRoute>} />
+            <Route path="/ucitel/rezervace" element={<ProtectedRoute><TeacherReservations /></ProtectedRoute>} />
             <Route path="/ucitel/media" element={<ProtectedRoute><TeacherMediaLibrary /></ProtectedRoute>} />
             <Route path="/ucitel/predmety" element={<ProtectedRoute><TeacherSubjects /></ProtectedRoute>} />
             <Route path="/ucitel/predmety/:subjectId" element={<ProtectedRoute><TeacherSubjectDetail /></ProtectedRoute>} />
