@@ -3676,6 +3676,7 @@ export type Database = {
           last_name: string
           parent_email: string | null
           parent_email_notifications: boolean
+          preferred_view: string | null
           school: string
           school_id: string | null
           status: Database["public"]["Enums"]["account_status"]
@@ -3695,6 +3696,7 @@ export type Database = {
           last_name?: string
           parent_email?: string | null
           parent_email_notifications?: boolean
+          preferred_view?: string | null
           school?: string
           school_id?: string | null
           status?: Database["public"]["Enums"]["account_status"]
@@ -3714,6 +3716,7 @@ export type Database = {
           last_name?: string
           parent_email?: string | null
           parent_email_notifications?: boolean
+          preferred_view?: string | null
           school?: string
           school_id?: string | null
           status?: Database["public"]["Enums"]["account_status"]
@@ -7219,6 +7222,10 @@ export type Database = {
         Returns: boolean
       }
       can_reserve_resources: { Args: { _user_id?: string }; Returns: boolean }
+      can_view_class_engagement: {
+        Args: { _class_id: string; _user_id: string }
+        Returns: boolean
+      }
       cancel_notification: { Args: { _broadcast_id: string }; Returns: boolean }
       check_course_completion: {
         Args: { _textbook_id: string }
@@ -7249,6 +7256,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      class_engagement_stats: { Args: { _class_id: string }; Returns: Json }
       clear_player_hand: { Args: { _player_id: string }; Returns: undefined }
       creator_payout_target: {
         Args: { _creator_id: string }
@@ -7522,6 +7530,10 @@ export type Database = {
         Args: { _resource_id: string }
         Returns: boolean
       }
+      school_engagement_overview: {
+        Args: { _school_id: string }
+        Returns: Json
+      }
       school_license_usage: {
         Args: { _school_id: string }
         Returns: {
@@ -7538,6 +7550,7 @@ export type Database = {
           teachers_used: number
         }[]
       }
+      school_overview_stats: { Args: { _school_id: string }; Returns: Json }
       send_admin_notification: {
         Args: {
           _body: string

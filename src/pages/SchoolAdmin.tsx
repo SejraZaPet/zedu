@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
-import { Home, LogOut, School as SchoolIcon, Users, GraduationCap, Plus, ShieldCheck, ShieldOff, Copy, RefreshCw, KeyRound, Palette, Upload, UserMinus, Loader2 } from "lucide-react";
+import { Home, LogOut, School as SchoolIcon, Users, GraduationCap, Plus, ShieldCheck, ShieldOff, Copy, RefreshCw, KeyRound, Palette, Upload, UserMinus, Loader2, LayoutDashboard } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -23,6 +23,9 @@ import SchoolCreatorSalesCard from "@/components/school/SchoolCreatorSalesCard";
 import SchoolLeadershipCard from "@/components/school/SchoolLeadershipCard";
 import SchoolLicenseCard from "@/components/school/SchoolLicenseCard";
 import SchoolResourcesManager from "@/components/school/SchoolResourcesManager";
+import SchoolOverviewTab from "@/components/school/SchoolOverviewTab";
+import SchoolEngagementTab from "@/components/school/SchoolEngagementTab";
+import SchoolViewSwitcher from "@/components/school/SchoolViewSwitcher";
 
 interface SchoolRow { id: string; name: string; registration_code: string | null; }
 interface MemberRow {
@@ -374,8 +377,10 @@ const SchoolAdmin = () => {
           </Card>
         )}
 
-        <Tabs defaultValue="teachers">
-          <TabsList>
+        <Tabs defaultValue="overview">
+          <TabsList className="flex-wrap h-auto">
+            <TabsTrigger value="overview"><LayoutDashboard className="w-4 h-4 mr-1" /> Přehled</TabsTrigger>
+            <TabsTrigger value="engagement">Žáci – statistiky</TabsTrigger>
             <TabsTrigger value="teachers"><GraduationCap className="w-4 h-4 mr-1" /> Učitelé ({teachers.length})</TabsTrigger>
             <TabsTrigger value="students"><Users className="w-4 h-4 mr-1" /> Studenti ({students.length})</TabsTrigger>
             <TabsTrigger value="import"><Upload className="w-4 h-4 mr-1" /> Hromadný import</TabsTrigger>
@@ -384,6 +389,14 @@ const SchoolAdmin = () => {
             <TabsTrigger value="sales">Tvorba a prodej</TabsTrigger>
             <TabsTrigger value="branding"><Palette className="w-4 h-4 mr-1" /> Branding</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="overview">
+            <SchoolOverviewTab schoolId={school.id} />
+          </TabsContent>
+
+          <TabsContent value="engagement">
+            <SchoolEngagementTab schoolId={school.id} />
+          </TabsContent>
 
           <TabsContent value="teachers">
             <MembersTable rows={teachers} onToggleRole={toggleRole} onRemove={setPendingRemove} kind="teacher" />
@@ -444,6 +457,7 @@ const Header = ({ onLogout, schoolName }: { onLogout: () => void; schoolName?: s
         <SchoolIcon className="w-5 h-5" /> Administrace školy {schoolName ? `· ${schoolName}` : ""}
       </h1>
       <div className="flex items-center gap-2">
+        <SchoolViewSwitcher />
         <Button size="sm" variant="ghost" asChild><a href="/"><Home className="w-4 h-4 mr-1" /> Web</a></Button>
         <Button size="sm" variant="ghost" onClick={onLogout}><LogOut className="w-4 h-4 mr-1" /> Odhlásit</Button>
       </div>
