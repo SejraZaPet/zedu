@@ -110,10 +110,7 @@ export default function TeacherLessonPlans() {
     const ids = Array.from(new Set(rows.filter((r) => !r.anonymous).map((r) => r.teacher_id)));
     let nameMap = new Map<string, string>();
     if (ids.length) {
-      const { data: profs } = await supabase
-        .from("profiles")
-        .select("id, first_name, last_name")
-        .in("id", ids);
+      const { data: profs } = await supabase.rpc("teacher_display_names", { _ids: ids });
       for (const p of (profs as any[]) ?? []) {
         const nm = `${p.first_name || ""} ${p.last_name || ""}`.trim();
         nameMap.set(p.id, nm || "Učitel");

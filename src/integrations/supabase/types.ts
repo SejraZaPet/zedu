@@ -7530,6 +7530,16 @@ export type Database = {
         Args: { _resource_id: string }
         Returns: boolean
       }
+      school_directory: {
+        Args: never
+        Returns: {
+          academic_title: string
+          first_name: string
+          id: string
+          last_name: string
+          school_id: string
+        }[]
+      }
       school_engagement_overview: {
         Args: { _school_id: string }
         Returns: Json
@@ -7551,6 +7561,14 @@ export type Database = {
         }[]
       }
       school_overview_stats: { Args: { _school_id: string }; Returns: Json }
+      search_teacher_directory: {
+        Args: { _term: string }
+        Returns: {
+          first_name: string
+          id: string
+          last_name: string
+        }[]
+      }
       send_admin_notification: {
         Args: {
           _body: string
@@ -7619,6 +7637,14 @@ export type Database = {
       sync_avatar_unlocks: {
         Args: { p_student_id: string }
         Returns: undefined
+      }
+      teacher_display_names: {
+        Args: { _ids: string[] }
+        Returns: {
+          first_name: string
+          id: string
+          last_name: string
+        }[]
       }
       toggle_game_whiteboard: { Args: { _session_id: string }; Returns: Json }
       toggle_question_vote: {

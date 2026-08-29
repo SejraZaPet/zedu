@@ -42,7 +42,7 @@ export interface ResourceReservation {
   returned_at: string | null;
   status: ReservationStatus;
   /** Doplněno joinem na profil vlastníka. */
-  profiles?: { first_name: string | null; last_name: string | null; email: string | null } | null;
+  profiles?: { first_name: string | null; last_name: string | null; email?: string | null } | null;
 }
 
 export const CONDITION_LABELS: Record<ConditionStatus, string> = {
@@ -61,8 +61,25 @@ export const hhmm = (t: string | null | undefined) => (t ?? "").slice(0, 5);
 
 export const reserverLabel = (r: ResourceReservation) =>
   [r.profiles?.first_name, r.profiles?.last_name].filter(Boolean).join(" ").trim() ||
-  r.profiles?.email ||
   "Neznámý učitel";
+
+/**
+ * Bezpečný adresář školy (jen jméno/příjmení/titul) — bez kontaktních údajů.
+ * Profily kolegů nejsou čitelné přímo, proto se jména dotahují přes RPC.
+ */
+export async function fetchSchoolDirectory() {
+  const { data, error } = await supabase.rpc("school_directory");
+  if (error) return new Map<string, { first_name: string | null; last_name: string | null }>();
+  return new Map(
+    (data ?? []).map((p: any) => [p.id as string, { first_name: p.first_name, last_name: p.last_name }]),
+  );
+}
+
+async function withReserverNames(rows: ResourceReservation[]): Promise<ResourceReservation[]> {
+  if (rows.length === 0) return rows;
+  const dir = await fetchSchoolDirectory();
+  return rows.map((r) => ({ ...r, profiles: dir.get(r.reserved_by) ?? null }));
+}
 
 export const resourcePlaceLabel = (r: SchoolResource) => {
   if (r.type === "room") {
@@ -88,7 +105,7 @@ export async function fetchResources(schoolId: string): Promise<SchoolResource[]
 }
 
 const RESERVATION_COLUMNS =
-  "id, resource_id, reserved_by, date, time_from, time_to, quantity, purpose_note, schedule_entry_id, recurrence_group_id, returned_at, status, profiles:reserved_by(first_name, last_name, email)";
+  "id, resource_id, reserved_by, date, time_from, time_to, quantity, purpose_note, schedule_entry_id, recurrence_group_id, returned_at, status";
 
 /** Rezervace jednoho zdroje v intervalu dat (včetně). */
 export async function fetchReservations(
@@ -105,7 +122,7 @@ export async function fetchReservations(
     .order("date", { ascending: true })
     .order("time_from", { ascending: true });
   if (error) throw error;
-  return (data ?? []) as unknown as ResourceReservation[];
+  return withReserverNames((data ?? []) as unknown as ResourceReservation[]);
 }
 
 /** Všechny rezervace školy pro daný den (přehled „co je teď volné“). */
@@ -121,7 +138,7 @@ export async function fetchDayReservations(
     .eq("date", date)
     .order("time_from", { ascending: true });
   if (error) throw error;
-  return (data ?? []) as unknown as ResourceReservation[];
+  return withReserverNames((data ?? []) as unknown as ResourceReservation[]);
 }
 
 export const overlaps = (aFrom: string, aTo: string, bFrom: string, bTo: string) =>
@@ -197,7 +214,7 @@ export async function fetchPendingReservations(
     .order("date", { ascending: true })
     .order("time_from", { ascending: true });
   if (error) throw error;
-  return (data ?? []) as unknown as ResourceReservation[];
+  return withReserverNames((data ?? []) as unknown as ResourceReservation[]);
 }
 
 export async function markReturned(id: string) {
