@@ -2,6 +2,13 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type ResourceType = "room" | "inventory";
 export type ConditionStatus = "ok" | "repair" | "retired";
+export type ReservationStatus = "confirmed" | "pending" | "rejected";
+
+export const RESERVATION_STATUS_LABELS: Record<ReservationStatus, string> = {
+  confirmed: "Potvrzeno",
+  pending: "Čeká na schválení",
+  rejected: "Zamítnuto",
+};
 
 export interface SchoolResource {
   id: string;
@@ -17,6 +24,7 @@ export interface SchoolResource {
   photo_url: string | null;
   condition_status: ConditionStatus;
   buffer_minutes: number;
+  requires_approval: boolean;
   is_active: boolean;
 }
 
@@ -32,6 +40,7 @@ export interface ResourceReservation {
   schedule_entry_id: string | null;
   recurrence_group_id: string | null;
   returned_at: string | null;
+  status: ReservationStatus;
   /** Doplněno joinem na profil vlastníka. */
   profiles?: { first_name: string | null; last_name: string | null; email: string | null } | null;
 }
@@ -65,7 +74,7 @@ export const resourcePlaceLabel = (r: SchoolResource) => {
 };
 
 const RESOURCE_COLUMNS =
-  "id, school_id, type, name, description, building, floor, room_number, total_quantity, location_note, photo_url, condition_status, buffer_minutes, is_active";
+  "id, school_id, type, name, description, building, floor, room_number, total_quantity, location_note, photo_url, condition_status, buffer_minutes, requires_approval, is_active";
 
 export async function fetchResources(schoolId: string): Promise<SchoolResource[]> {
   const { data, error } = await supabase
@@ -79,7 +88,7 @@ export async function fetchResources(schoolId: string): Promise<SchoolResource[]
 }
 
 const RESERVATION_COLUMNS =
-  "id, resource_id, reserved_by, date, time_from, time_to, quantity, purpose_note, schedule_entry_id, recurrence_group_id, returned_at, profiles:reserved_by(first_name, last_name, email)";
+  "id, resource_id, reserved_by, date, time_from, time_to, quantity, purpose_note, schedule_entry_id, recurrence_group_id, returned_at, status, profiles:reserved_by(first_name, last_name, email)";
 
 /** Rezervace jednoho zdroje v intervalu dat (včetně). */
 export async function fetchReservations(
@@ -126,7 +135,7 @@ export function freeQuantity(
   timeTo: string,
 ) {
   const used = reservations
-    .filter((r) => !r.returned_at && overlaps(timeFrom, timeTo, hhmm(r.time_from), hhmm(r.time_to)))
+    .filter((r) => !r.returned_at && r.status !== "rejected" && overlaps(timeFrom, timeTo, hhmm(r.time_from), hhmm(r.time_to)))
     .reduce((sum, r) => sum + r.quantity, 0);
   return Math.max(resource.total_quantity - used, 0);
 }
@@ -164,6 +173,31 @@ export async function deleteSeries(recurrenceGroupId: string, fromDate?: string)
   if (fromDate) q = q.gte("date", fromDate);
   const { error } = await q;
   if (error) throw error;
+}
+
+/** Schválení / zamítnutí čekající rezervace (admin školy). */
+export async function setReservationStatus(id: string, status: ReservationStatus) {
+  const { error } = await supabase
+    .from("resource_reservations" as any)
+    .update({ status } as any)
+    .eq("id", id);
+  if (error) throw error;
+}
+
+/** Čekající žádosti o rezervaci napříč zadanými položkami. */
+export async function fetchPendingReservations(
+  resourceIds: string[],
+): Promise<ResourceReservation[]> {
+  if (resourceIds.length === 0) return [];
+  const { data, error } = await supabase
+    .from("resource_reservations" as any)
+    .select(RESERVATION_COLUMNS)
+    .in("resource_id", resourceIds)
+    .eq("status", "pending")
+    .order("date", { ascending: true })
+    .order("time_from", { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as unknown as ResourceReservation[];
 }
 
 export async function markReturned(id: string) {

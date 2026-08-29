@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -24,6 +25,7 @@ import {
 } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Pencil, Trash2, DoorOpen, Package, Upload, RefreshCw } from "lucide-react";
+import PendingReservationsCard from "@/components/school/PendingReservationsCard";
 import { useSchoolResources } from "@/hooks/useSchoolResources";
 import {
   CONDITION_LABELS,
@@ -52,6 +54,7 @@ interface FormState {
   location_note: string;
   condition_status: ConditionStatus;
   buffer_minutes: string;
+  requires_approval: boolean;
   photo_url: string | null;
 }
 
@@ -66,6 +69,7 @@ const emptyForm = (type: ResourceType = "room"): FormState => ({
   location_note: "",
   condition_status: "ok",
   buffer_minutes: "0",
+  requires_approval: false,
   photo_url: null,
 });
 
@@ -142,6 +146,7 @@ export default function SchoolResourcesManager({ schoolId }: { schoolId: string 
       location_note: r.location_note ?? "",
       condition_status: r.condition_status,
       buffer_minutes: String(r.buffer_minutes ?? 0),
+      requires_approval: !!r.requires_approval,
       photo_url: r.photo_url,
     });
     setOpen(true);
@@ -165,6 +170,7 @@ export default function SchoolResourcesManager({ schoolId }: { schoolId: string 
       location_note: form.type === "inventory" ? form.location_note.trim() || null : null,
       condition_status: form.condition_status,
       buffer_minutes: Math.max(Number(form.buffer_minutes) || 0, 0),
+      requires_approval: form.requires_approval,
       photo_url: form.photo_url,
       created_by: user?.id ?? null,
     };
@@ -193,6 +199,8 @@ export default function SchoolResourcesManager({ schoolId }: { schoolId: string 
   };
 
   return (
+    <div className="space-y-6">
+    <PendingReservationsCard resources={resources} />
     <Card>
       <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3">
         <CardTitle className="text-base">Místnosti a inventář</CardTitle>
@@ -456,6 +464,19 @@ export default function SchoolResourcesManager({ schoolId }: { schoolId: string 
                 />
               </div>
             </div>
+            <div className="flex items-center justify-between gap-3 rounded-md border border-border p-3">
+              <div>
+                <Label htmlFor="requires-approval">Vyžaduje schválení admina</Label>
+                <p className="text-xs text-muted-foreground">
+                  Rezervace této položky budou čekat na schválení (např. tělocvična, drahé vybavení).
+                </p>
+              </div>
+              <Switch
+                id="requires-approval"
+                checked={form.requires_approval}
+                onCheckedChange={(v) => setForm((f) => ({ ...f, requires_approval: v }))}
+              />
+            </div>
             <div>
               <Label>Fotka (volitelné)</Label>
               <div className="flex items-center gap-3">
@@ -492,5 +513,6 @@ export default function SchoolResourcesManager({ schoolId }: { schoolId: string 
         </DialogContent>
       </Dialog>
     </Card>
+    </div>
   );
 }
