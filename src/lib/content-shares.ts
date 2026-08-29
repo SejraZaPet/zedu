@@ -260,36 +260,17 @@ export async function listPublicShares(
 
 export async function searchTeachers(query: string) {
   const q = query.trim();
-  if (q.length < 2) return [];
-  const { data: teacherRoles } = await supabase
-    .from("user_roles")
-    .select("user_id")
-    .in("role", ["teacher", "lektor", "admin"]);
-  const ids = (teacherRoles ?? []).map((r) => r.user_id);
-  if (ids.length === 0) return [];
-
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("id, first_name, last_name, email")
-    .in("id", ids)
-    .or(
-      [
-        `first_name.ilike.%${q}%`,
-        `last_name.ilike.%${q}%`,
-        `email.ilike.%${q}%`,
-      ].join(","),
-    )
-    .limit(15);
+  if (q.length < 3) return [];
+  // Kontaktní údaje kolegů nejsou čitelné — hledáme jen podle jména přes bezpečnou funkci.
+  const { data, error } = await supabase.rpc("search_teacher_directory", { _term: q });
   if (error) throw error;
-  return (data ?? []).map((p) => ({
+  return ((data ?? []) as any[]).map((p) => ({
     id: p.id as string,
-    label:
-      [p.first_name, p.last_name].filter(Boolean).join(" ").trim() ||
-      (p.email as string) ||
-      p.id,
-    email: p.email as string | null,
+    label: [p.first_name, p.last_name].filter(Boolean).join(" ").trim() || p.id,
+    email: null as string | null,
   }));
 }
+
 
 // ------------------------- Copy helpers -------------------------
 
