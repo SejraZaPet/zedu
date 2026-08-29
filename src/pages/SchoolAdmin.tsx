@@ -24,6 +24,7 @@ import SchoolLeadershipCard from "@/components/school/SchoolLeadershipCard";
 import SchoolLicenseCard from "@/components/school/SchoolLicenseCard";
 import SchoolResourcesManager from "@/components/school/SchoolResourcesManager";
 import SchoolOverviewTab from "@/components/school/SchoolOverviewTab";
+import SchoolEngagementTab from "@/components/school/SchoolEngagementTab";
 import SchoolViewSwitcher from "@/components/school/SchoolViewSwitcher";
 
 interface SchoolRow { id: string; name: string; registration_code: string | null; }
@@ -379,6 +380,7 @@ const SchoolAdmin = () => {
         <Tabs defaultValue="overview">
           <TabsList className="flex-wrap h-auto">
             <TabsTrigger value="overview"><LayoutDashboard className="w-4 h-4 mr-1" /> Přehled</TabsTrigger>
+            <TabsTrigger value="engagement">Žáci – statistiky</TabsTrigger>
             <TabsTrigger value="teachers"><GraduationCap className="w-4 h-4 mr-1" /> Učitelé ({teachers.length})</TabsTrigger>
             <TabsTrigger value="students"><Users className="w-4 h-4 mr-1" /> Studenti ({students.length})</TabsTrigger>
             <TabsTrigger value="import"><Upload className="w-4 h-4 mr-1" /> Hromadný import</TabsTrigger>
@@ -390,6 +392,10 @@ const SchoolAdmin = () => {
 
           <TabsContent value="overview">
             <SchoolOverviewTab schoolId={school.id} />
+          </TabsContent>
+
+          <TabsContent value="engagement">
+            <SchoolEngagementTab schoolId={school.id} />
           </TabsContent>
 
           <TabsContent value="teachers">

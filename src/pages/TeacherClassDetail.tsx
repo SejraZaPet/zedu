@@ -12,6 +12,7 @@ import { ClassBulkActions } from "@/components/teacher/ClassBulkActions";
 import { LeaderboardSettingsCard } from "@/components/teacher/LeaderboardSettingsCard";
 import QuickRecognitionCard from "@/components/teacher/QuickRecognitionCard";
 import ClassSubjectsCard from "@/components/teacher/ClassSubjectsCard";
+import ClassEngagementCard from "@/components/school/ClassEngagementCard";
 import ClassAlertsPanel from "@/components/alerts/ClassAlertsPanel";
 import ClassStoriesSection from "@/components/class-stories/ClassStoriesSection";
 import { useAuth } from "@/contexts/AuthContext";
@@ -370,6 +371,8 @@ const TeacherClassDetail = () => {
             <ClassSubjectsCard classId={id} />
           </div>
         )}
+
+        {id && <ClassEngagementCard classId={id} />}
 
         {id && <ClassAlertsPanel classId={id} />}
 
