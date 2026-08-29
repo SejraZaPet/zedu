@@ -63,7 +63,7 @@ import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import LessonFormDialog from "@/components/schedule/LessonFormDialog";
-import { createRecurringReservations } from "@/lib/school-resources";
+import { reserveRoomSeries, deleteFutureReservationsForEntry } from "@/lib/school-resources";
 import { downloadICS, buildScheduleRrule, type CalendarExportEvent } from "@/lib/calendar-export";
 import { Download } from "lucide-react";
 
@@ -1233,6 +1233,14 @@ export default function TeacherSchedule() {
           if (error) {
             toast({ title: "Chyba", description: error.message, variant: "destructive" });
             return;
+          }
+          if (!value.roomResourceId) {
+            // Místnost byla odebrána → uklidit budoucí rezervace staré série.
+            try {
+              await deleteFutureReservationsForEntry(editingClassSlot.id);
+            } catch {
+              /* neblokuje uložení hodiny */
+            }
           }
           if (value.roomResourceId && user?.id) {
             await reserveRoomForSlots(
