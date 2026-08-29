@@ -256,3 +256,60 @@ export async function createRecurringReservations(input: SeriesInput): Promise<S
   }
   return { recurrenceGroupId, created, conflicts };
 }
+
+/** Nahraje fotku položky do bucketu `school-logos` (cesta začíná ID školy kvůli RLS). */
+export async function uploadResourcePhoto(schoolId: string, file: File): Promise<string> {
+  const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+  const path = `${schoolId}/resources/${crypto.randomUUID()}.${ext}`;
+  const { error } = await supabase.storage.from("school-logos").upload(path, file, {
+    cacheControl: "3600",
+    upsert: false,
+  });
+  if (error) throw error;
+  return supabase.storage.from("school-logos").getPublicUrl(path).data.publicUrl;
+}
+
+export interface ResourceNowStatus {
+  resource: SchoolResource;
+  /** Aktuálně běžící rezervace. */
+  active: ResourceReservation[];
+  /** U inventáře počet volných kusů, u místností 1/0. */
+  free: number;
+}
+
+/** Přehled „co je teď volné“ napříč položkami školy. */
+export async function fetchNowStatus(resources: SchoolResource[]): Promise<ResourceNowStatus[]> {
+  const today = iso(new Date());
+  const now = new Date().toTimeString().slice(0, 5);
+  const all = await fetchDayReservations(
+    resources.map((r) => r.id),
+    today,
+  );
+  return resources.map((resource) => {
+    const mine = all.filter((r) => r.resource_id === resource.id);
+    const active = mine.filter(
+      (r) => !r.returned_at && hhmm(r.time_from) <= now && now < hhmm(r.time_to),
+    );
+    const free =
+      resource.type === "inventory"
+        ? freeQuantity(resource, mine, now, now === "23:59" ? "23:59" : addMinute(now))
+        : active.length > 0
+          ? 0
+          : 1;
+    return { resource, active, free };
+  });
+}
+
+const addMinute = (t: string) => {
+  const [h, m] = t.split(":").map(Number);
+  const total = Math.min(h * 60 + m + 1, 23 * 60 + 59);
+  return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+};
+
+/** Kolizní hlídání v UI: k času „do“ se u místností přičítá ochranná pauza. */
+export const withBuffer = (timeTo: string, bufferMinutes: number) => {
+  if (!bufferMinutes) return timeTo;
+  const [h, m] = timeTo.split(":").map(Number);
+  const total = Math.min(h * 60 + m + bufferMinutes, 23 * 60 + 59);
+  return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+};
