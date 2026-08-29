@@ -75,11 +75,9 @@ const TeachingUnitCollaboratorsCard = ({ subjectId, classId, groupId }: Props) =
 
     const list = (collabRes.data as any[]) ?? [];
     if (list.length) {
-      const { data: profs } = await supabase
-        .from("profiles")
-        .select("id, first_name, last_name, email")
-        .in("id", list.map((r) => r.invited_teacher_id));
-      const byId = new Map((profs ?? []).map((p: any) => [p.id, p]));
+      // Jména se dotahují z bezpečného adresáře školy (bez kontaktních údajů).
+      const { data: profs } = await supabase.rpc("school_directory");
+      const byId = new Map(((profs ?? []) as any[]).map((p: any) => [p.id, p]));
       setRows(
         list.map((r) => {
           const p = byId.get(r.invited_teacher_id);
@@ -88,7 +86,7 @@ const TeachingUnitCollaboratorsCard = ({ subjectId, classId, groupId }: Props) =
             invited_teacher_id: r.invited_teacher_id,
             invited_by: r.invited_by,
             name: p ? fullName(p) : "Neznámý učitel",
-            email: p?.email ?? null,
+            email: null,
           };
         }),
       );
@@ -106,22 +104,20 @@ const TeachingUnitCollaboratorsCard = ({ subjectId, classId, groupId }: Props) =
   const search = async () => {
     if (!schoolId || !user) return;
     const term = query.trim();
-    let q = supabase
-      .from("profiles")
-      .select("id, first_name, last_name, email")
-      .eq("school_id", schoolId)
-      .neq("id", user.id)
-      .limit(20);
-    if (term) {
-      q = q.or(
-        `first_name.ilike.%${term}%,last_name.ilike.%${term}%,email.ilike.%${term}%`,
-      );
-    }
-    const { data, error } = await q;
+    const { data: dir, error } = await supabase.rpc("school_directory");
     if (error) {
       toast({ title: "Hledání se nepovedlo", description: error.message, variant: "destructive" });
       return;
     }
+    const lower = term.toLowerCase();
+    const data = ((dir ?? []) as any[])
+      .filter((p) => p.id !== user.id)
+      .filter((p) =>
+        !lower ||
+        `${p.first_name ?? ""} ${p.last_name ?? ""}`.toLowerCase().includes(lower),
+      )
+      .slice(0, 20)
+      .map((p) => ({ id: p.id, first_name: p.first_name, last_name: p.last_name, email: null }));
     const ids = (data ?? []).map((p: any) => p.id);
     if (!ids.length) {
       setCandidates([]);
