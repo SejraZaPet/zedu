@@ -618,14 +618,46 @@ export default function LessonFormDialog({
           </div>
 
           {/* ----- Room ----- */}
-          <div className="space-y-1.5">
-            <Label>Místnost</Label>
-            <Input
-              value={room}
-              onChange={(e) => setRoom(e.target.value)}
-              placeholder="Např. 204"
-            />
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1.5">
+              <Label>Místnost (text)</Label>
+              <Input
+                value={room}
+                onChange={(e) => setRoom(e.target.value)}
+                placeholder="Např. 204"
+              />
+            </div>
+            {rooms.length > 0 && (
+              <div className="space-y-1.5">
+                <Label>Školní místnost (rezervace)</Label>
+                <Select
+                  value={roomResourceId ?? NO_ROOM}
+                  onValueChange={(v) => {
+                    setRoomResourceId(v === NO_ROOM ? null : v);
+                    const picked = rooms.find((r) => r.id === v);
+                    if (picked && !room.trim()) setRoom(picked.room_number || picked.name);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Bez rezervace" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NO_ROOM}>Bez rezervace</SelectItem>
+                    {rooms.map((r) => (
+                      <SelectItem key={r.id} value={r.id}>
+                        {r.name}
+                        {r.room_number ? ` (${r.room_number})` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Vybraná místnost se automaticky rezervuje na pravidelné hodiny.
+                </p>
+              </div>
+            )}
           </div>
+
 
           {/* ----- Validity ----- */}
           <div className="grid grid-cols-2 gap-2">
