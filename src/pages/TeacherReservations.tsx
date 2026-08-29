@@ -27,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CalendarDays, ChevronLeft, ChevronRight, DoorOpen, Package, Search, Trash2, Undo2 } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, DoorOpen, Package, Search, Trash2, Undo2, AlertTriangle } from "lucide-react";
 import {
   CONDITION_LABELS,
   deleteReservation,
@@ -38,6 +38,7 @@ import {
   markReturned,
   resourcePlaceLabel,
   reserverLabel,
+  withBuffer,
   type ResourceReservation,
   type SchoolResource,
 } from "@/lib/school-resources";
@@ -81,7 +82,8 @@ interface ScheduleSlotLite {
 }
 
 export default function TeacherReservations() {
-  const { user } = useAuth();
+  const { user, role, realRole } = useAuth();
+  const isManager = realRole === "admin" || role === "admin" || role === "school_admin";
   const { schoolId, loading: schoolLoading } = useMySchool();
   const { resources, loading: resLoading } = useSchoolResources(schoolId);
 
@@ -206,6 +208,14 @@ export default function TeacherReservations() {
 
   const submit = async () => {
     if (!selected || !user) return;
+    if (selected.type === "inventory" && selected.condition_status !== "ok") {
+      toast({
+        title: "Položku nelze rezervovat",
+        description: `Stav položky: ${CONDITION_LABELS[selected.condition_status]}.`,
+        variant: "destructive",
+      });
+      return;
+    }
     if (!fDate || !fFrom || !fTo) {
       toast({ title: "Doplňte datum a čas.", variant: "destructive" });
       return;
@@ -235,7 +245,7 @@ export default function TeacherReservations() {
     void loadReservations();
   };
 
-  const canManage = (r: ResourceReservation) => r.reserved_by === user?.id;
+  const canManage = (r: ResourceReservation) => r.reserved_by === user?.id || isManager;
 
   const doCancel = async (r: ResourceReservation, whole: boolean) => {
     try {
@@ -363,7 +373,9 @@ export default function TeacherReservations() {
                     }`}
                   >
                     <div className="flex items-center gap-2 text-sm font-medium">
-                      {r.type === "room" ? (
+                      {r.photo_url ? (
+                        <img src={r.photo_url} alt="" className="h-8 w-8 rounded object-cover" loading="lazy" />
+                      ) : r.type === "room" ? (
                         <DoorOpen className="h-4 w-4 text-muted-foreground" />
                       ) : (
                         <Package className="h-4 w-4 text-muted-foreground" />
@@ -409,6 +421,30 @@ export default function TeacherReservations() {
               </div>
             </CardHeader>
             <CardContent>
+              {selected && (selected.photo_url || selected.buffer_minutes > 0 || (selected.type === "inventory" && selected.condition_status !== "ok")) && (
+                <div className="mb-3 flex items-start gap-3 rounded-md border border-border p-2.5">
+                  {selected.photo_url && (
+                    <img
+                      src={selected.photo_url}
+                      alt={selected.name}
+                      className="h-16 w-16 rounded object-cover"
+                      loading="lazy"
+                    />
+                  )}
+                  <div className="space-y-1 text-xs text-muted-foreground">
+                    {resourcePlaceLabel(selected) && <p>{resourcePlaceLabel(selected)}</p>}
+                    {selected.buffer_minutes > 0 && (
+                      <p>Mezi rezervacemi je ochranná pauza {selected.buffer_minutes} min.</p>
+                    )}
+                    {selected.type === "inventory" && selected.condition_status !== "ok" && (
+                      <p className="flex items-center gap-1 text-destructive">
+                        <AlertTriangle className="h-3.5 w-3.5" />
+                        {CONDITION_LABELS[selected.condition_status]} – položku nelze rezervovat.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
               {!selected ? (
                 <p className="text-sm text-muted-foreground">Nejprve vyberte položku vlevo.</p>
               ) : (
@@ -471,7 +507,9 @@ export default function TeacherReservations() {
                                 const busy =
                                   selected.type === "room" &&
                                   items.some(
-                                    (r) => hhmm(r.time_from) <= h && h < hhmm(r.time_to),
+                                    (r) =>
+                                      hhmm(r.time_from) <= h &&
+                                      h < withBuffer(hhmm(r.time_to), selected.buffer_minutes),
                                   );
                                 return (
                                   <button
