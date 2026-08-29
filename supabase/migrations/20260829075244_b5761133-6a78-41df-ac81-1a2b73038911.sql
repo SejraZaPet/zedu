@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.can_reserve_resources(uuid) FROM anon;

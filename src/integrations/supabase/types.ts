@@ -7218,6 +7218,7 @@ export type Database = {
         Args: { _meeting_id: string }
         Returns: boolean
       }
+      can_reserve_resources: { Args: { _user_id?: string }; Returns: boolean }
       cancel_notification: { Args: { _broadcast_id: string }; Returns: boolean }
       check_course_completion: {
         Args: { _textbook_id: string }

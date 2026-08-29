@@ -125,40 +125,40 @@ const App = () => (
             <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
             <Route path="/skola" element={<ProtectedRoute><SchoolAdmin /></ProtectedRoute>} />
             <Route path="/student" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
-            <Route path="/ucitel" element={<ProtectedRoute><TeacherDashboard /></ProtectedRoute>} />
+            <Route path="/ucitel" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherDashboard /></ProtectedRoute>} />
             <Route path="/rodic" element={<ProtectedRoute><ParentDashboard /></ProtectedRoute>} />
             <Route path="/rodic/zpravy" element={<ProtectedRoute><ParentMessages /></ProtectedRoute>} />
-            <Route path="/ucitel/zpravy-rodicu" element={<ProtectedRoute><TeacherParentMessages /></ProtectedRoute>} />
-            <Route path="/ucitel/tridy" element={<ProtectedRoute><TeacherClasses /></ProtectedRoute>} />
-            <Route path="/ucitel/tridy/:id" element={<ProtectedRoute><TeacherClassDetail /></ProtectedRoute>} />
-            <Route path="/ucitel/vysledky" element={<ProtectedRoute><TeacherResults /></ProtectedRoute>} />
+            <Route path="/ucitel/zpravy-rodicu" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherParentMessages /></ProtectedRoute>} />
+            <Route path="/ucitel/tridy" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherClasses /></ProtectedRoute>} />
+            <Route path="/ucitel/tridy/:id" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherClassDetail /></ProtectedRoute>} />
+            <Route path="/ucitel/vysledky" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherResults /></ProtectedRoute>} />
             <Route path="/profil" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
             <Route path="/podcast/:episodeId" element={<PodcastDetailPage />} />
             <Route path="/ucebnice" element={<ProtectedRoute><TextbooksPage /></ProtectedRoute>} />
             <Route path="/ucebnice/:subjectId" element={<ProtectedRoute><SubjectPage /></ProtectedRoute>} />
             <Route path="/ucebnice/:subjectId/:grade/:topicSlug" element={<ProtectedRoute><TopicPage /></ProtectedRoute>} />
             <Route path="/ucebnice/:subjectId/:grade/:topicSlug/:lessonSlug" element={<ProtectedRoute><LessonPage /></ProtectedRoute>} />
-            <Route path="/ucitel/ucebnice" element={<ProtectedRoute><TeacherTextbooks /></ProtectedRoute>} />
-            <Route path="/ucitel/ucebnice/:textbookId" element={<ProtectedRoute><TeacherTextbooks /></ProtectedRoute>} />
-            <Route path="/ucitel/ucebnice/:textbookId/lekce" element={<ProtectedRoute><TeacherLessons /></ProtectedRoute>} />
-            <Route path="/ucitel/prezentace" element={<ProtectedRoute><TeacherPresentations /></ProtectedRoute>} />
-            <Route path="/ucitel/ulohy" element={<ProtectedRoute><TeacherAssignments /></ProtectedRoute>} />
+            <Route path="/ucitel/ucebnice" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherTextbooks /></ProtectedRoute>} />
+            <Route path="/ucitel/ucebnice/:textbookId" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherTextbooks /></ProtectedRoute>} />
+            <Route path="/ucitel/ucebnice/:textbookId/lekce" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherLessons /></ProtectedRoute>} />
+            <Route path="/ucitel/prezentace" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherPresentations /></ProtectedRoute>} />
+            <Route path="/ucitel/ulohy" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherAssignments /></ProtectedRoute>} />
             <Route path="/student/ucebnice" element={<ProtectedRoute><StudentTextbooks /></ProtectedRoute>} />
             <Route path="/student/ucebnice/:textbookId" element={<ProtectedRoute><StudentTextbookDetail /></ProtectedRoute>} />
             <Route path="/student/ulohy" element={<ProtectedRoute><StudentAssignments /></ProtectedRoute>} />
             <Route path="/student/zebricek" element={<ProtectedRoute><StudentLeaderboard /></ProtectedRoute>} />
             <Route path="/student/portfolio" element={<ProtectedRoute><StudentPortfolio /></ProtectedRoute>} />
             <Route path="/student/sesit" element={<ProtectedRoute><MyNotebook /></ProtectedRoute>} />
-            <Route path="/ucitel/sesit" element={<ProtectedRoute><MyNotebook /></ProtectedRoute>} />
+            <Route path="/ucitel/sesit" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><MyNotebook /></ProtectedRoute>} />
             <Route path="/student/knihy" element={<ProtectedRoute><StudentBooks /></ProtectedRoute>} />
             <Route path="/portfolio/:studentId" element={<ProtectedRoute><PortfolioView /></ProtectedRoute>} />
             <Route path="/student/ulohy/:assignmentId" element={<ProtectedRoute><StudentAssignmentPlayer /></ProtectedRoute>} />
             <Route path="/aktivity" element={<ActivitiesPage />} />
-            <Route path="/hra/ucitel/:sessionId" element={<ProtectedRoute><TeacherGameScreen /></ProtectedRoute>} />
+            <Route path="/hra/ucitel/:sessionId" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherGameScreen /></ProtectedRoute>} />
             <Route path="/hra/pripojit" element={<StudentGameJoin />} />
             <Route path="/hra/hrac/:sessionId" element={<StudentGamePlay />} />
-            <Route path="/ucitel/hry" element={<ProtectedRoute><TeacherGames /></ProtectedRoute>} />
-            <Route path="/live/ucitel/:sessionId" element={<ProtectedRoute><LiveTeacherScreen /></ProtectedRoute>} />
+            <Route path="/ucitel/hry" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherGames /></ProtectedRoute>} />
+            <Route path="/live/ucitel/:sessionId" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><LiveTeacherScreen /></ProtectedRoute>} />
             <Route path="/live/projektor/:sessionId" element={<LiveProjectorScreen />} />
             <Route path="/prezentace/ovladani/:sessionId" element={<ProtectedRoute><PresenterRemote /></ProtectedRoute>} />
             <Route path="/live/pripojit" element={<StudentGameJoin />} />
@@ -174,46 +174,46 @@ const App = () => (
             <Route path="/student/kalendar" element={<ProtectedRoute><StudentCalendar /></ProtectedRoute>} />
             <Route path="/student/rozvrh" element={<ProtectedRoute><StudentSchedule /></ProtectedRoute>} />
             <Route path="/student/predmet/:subjectId/trida/:classId" element={<ProtectedRoute><StudentSubjectClass /></ProtectedRoute>} />
-            <Route path="/ucitel/porady" element={<ProtectedRoute><SchoolMeetings /></ProtectedRoute>} />
-            <Route path="/ucitel/kalendar" element={<ProtectedRoute><TeacherCalendar /></ProtectedRoute>} />
+            <Route path="/ucitel/porady" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><SchoolMeetings /></ProtectedRoute>} />
+            <Route path="/ucitel/kalendar" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherCalendar /></ProtectedRoute>} />
             <Route path="/notifikace" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
-            <Route path="/ucitel/pracovni-listy" element={<ProtectedRoute><TeacherWorksheets /></ProtectedRoute>} />
-            <Route path="/ucitel/pracovni-listy/:id" element={<ProtectedRoute><WorksheetEditor /></ProtectedRoute>} />
+            <Route path="/ucitel/pracovni-listy" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherWorksheets /></ProtectedRoute>} />
+            <Route path="/ucitel/pracovni-listy/:id" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><WorksheetEditor /></ProtectedRoute>} />
             <Route path="/student/pracovni-list/:id" element={<ProtectedRoute><StudentWorksheetView /></ProtectedRoute>} />
-            <Route path="/ucitel/notifikace" element={<ProtectedRoute><TeacherNotifications /></ProtectedRoute>} />
-            <Route path="/ucitel/plany-hodin" element={<ProtectedRoute><TeacherLessonPlans /></ProtectedRoute>} />
-            <Route path="/ucitel/plany-hodin/:id" element={<ProtectedRoute><TeacherLessonPlanEditor /></ProtectedRoute>} />
-            <Route path="/ucitel/navrh-podle-metody" element={<ProtectedRoute><TeacherSuggestByMethod /></ProtectedRoute>} />
-            <Route path="/ucitel/rozvrh" element={<ProtectedRoute><TeacherSchedule /></ProtectedRoute>} />
-            <Route path="/ucitel/rezervace" element={<ProtectedRoute><TeacherReservations /></ProtectedRoute>} />
-            <Route path="/ucitel/media" element={<ProtectedRoute><TeacherMediaLibrary /></ProtectedRoute>} />
-            <Route path="/ucitel/predmety" element={<ProtectedRoute><TeacherSubjects /></ProtectedRoute>} />
-            <Route path="/ucitel/predmety/:subjectId" element={<ProtectedRoute><TeacherSubjectDetail /></ProtectedRoute>} />
-            <Route path="/ucitel/predmet/:subjectId/trida/:classId" element={<ProtectedRoute><TeacherSubjectClass /></ProtectedRoute>} />
-            <Route path="/ucitel/predmet/:subjectId/skupina/:groupId" element={<ProtectedRoute><TeacherSubjectClass /></ProtectedRoute>} />
-            <Route path="/ucitel/vyuka/:subjectId/trida/:classId" element={<ProtectedRoute><TeacherSubjectClass /></ProtectedRoute>} />
-            <Route path="/ucitel/vyuka/:subjectId/skupina/:groupId" element={<ProtectedRoute><TeacherSubjectClass /></ProtectedRoute>} />
+            <Route path="/ucitel/notifikace" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherNotifications /></ProtectedRoute>} />
+            <Route path="/ucitel/plany-hodin" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherLessonPlans /></ProtectedRoute>} />
+            <Route path="/ucitel/plany-hodin/:id" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherLessonPlanEditor /></ProtectedRoute>} />
+            <Route path="/ucitel/navrh-podle-metody" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherSuggestByMethod /></ProtectedRoute>} />
+            <Route path="/ucitel/rozvrh" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherSchedule /></ProtectedRoute>} />
+            <Route path="/ucitel/rezervace" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherReservations /></ProtectedRoute>} />
+            <Route path="/ucitel/media" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherMediaLibrary /></ProtectedRoute>} />
+            <Route path="/ucitel/predmety" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherSubjects /></ProtectedRoute>} />
+            <Route path="/ucitel/predmety/:subjectId" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherSubjectDetail /></ProtectedRoute>} />
+            <Route path="/ucitel/predmet/:subjectId/trida/:classId" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherSubjectClass /></ProtectedRoute>} />
+            <Route path="/ucitel/predmet/:subjectId/skupina/:groupId" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherSubjectClass /></ProtectedRoute>} />
+            <Route path="/ucitel/vyuka/:subjectId/trida/:classId" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherSubjectClass /></ProtectedRoute>} />
+            <Route path="/ucitel/vyuka/:subjectId/skupina/:groupId" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherSubjectClass /></ProtectedRoute>} />
 
-            <Route path="/ucitel/metody" element={<ProtectedRoute><TeacherMethods /></ProtectedRoute>} />
-            <Route path="/ucitel/svp" element={<ProtectedRoute><TeacherCurriculumPlans /></ProtectedRoute>} />
-            <Route path="/ucitel/rubriky" element={<ProtectedRoute><TeacherRubrics /></ProtectedRoute>} />
-            <Route path="/ucitel/banka-otazek" element={<ProtectedRoute><TeacherQuestionBank /></ProtectedRoute>} />
-            <Route path="/ucitel/skupiny" element={<ProtectedRoute><TeacherSubjectGroups /></ProtectedRoute>} />
-            <Route path="/ucitel/bezlistart" element={<ProtectedRoute><TeacherBezliStart /></ProtectedRoute>} />
+            <Route path="/ucitel/metody" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherMethods /></ProtectedRoute>} />
+            <Route path="/ucitel/svp" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherCurriculumPlans /></ProtectedRoute>} />
+            <Route path="/ucitel/rubriky" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherRubrics /></ProtectedRoute>} />
+            <Route path="/ucitel/banka-otazek" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherQuestionBank /></ProtectedRoute>} />
+            <Route path="/ucitel/skupiny" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherSubjectGroups /></ProtectedRoute>} />
+            <Route path="/ucitel/bezlistart" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherBezliStart /></ProtectedRoute>} />
 
             <Route path="/student/metody" element={<ProtectedRoute><StudentMethods /></ProtectedRoute>} />
             <Route path="/student/metody/:slug/procviceni" element={<ProtectedRoute><StudentPractice /></ProtectedRoute>} />
             <Route path="/bezlimarket" element={<ProtectedRoute><BezliMarketPage /></ProtectedRoute>} />
-            <Route path="/ucitel/sdileno-se-mnou" element={<ProtectedRoute><SharedWithMe /></ProtectedRoute>} />
-            <Route path="/ucitel/sledovani-tvurci" element={<ProtectedRoute><FollowedCreators /></ProtectedRoute>} />
+            <Route path="/ucitel/sdileno-se-mnou" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><SharedWithMe /></ProtectedRoute>} />
+            <Route path="/ucitel/sledovani-tvurci" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><FollowedCreators /></ProtectedRoute>} />
             <Route path="/marketplace" element={<Navigate to="/bezlimarket" replace />} />
             <Route path="/marketplace/:id" element={<Navigate to="/bezlimarket" replace />} />
             <Route path="/ucitel/publikace" element={<Navigate to="/bezlimarket" replace />} />
             <Route path="/avatar" element={<ProtectedRoute><AvatarEditor /></ProtectedRoute>} />
-            <Route path="/ucitel/akademie" element={<ProtectedRoute><TeacherAcademy /></ProtectedRoute>} />
+            <Route path="/ucitel/akademie" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherAcademy /></ProtectedRoute>} />
             <Route path="/student/akademie" element={<ProtectedRoute><StudentAcademy /></ProtectedRoute>} />
             <Route path="/rodic/akademie" element={<ProtectedRoute><ParentAcademy /></ProtectedRoute>} />
-            <Route path="/ucitel/z-materialu" element={<ProtectedRoute><TeacherFromMaterial /></ProtectedRoute>} />
+            <Route path="/ucitel/z-materialu" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherFromMaterial /></ProtectedRoute>} />
             <Route path="/student/z-materialu" element={<ProtectedRoute><StudentFromMaterial /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
