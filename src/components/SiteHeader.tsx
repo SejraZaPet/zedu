@@ -16,6 +16,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import { useSchoolBranding } from "@/hooks/useSchoolBranding";
 import { useStaffPermissions } from "@/hooks/useStaffPermissions";
+import SchoolViewSwitcher from "@/components/school/SchoolViewSwitcher";
 
 interface NavItem {
   label: string;
@@ -249,6 +250,7 @@ const SiteHeader = () => {
           </nav>
           {isLoggedIn ? (
             <div className="flex items-center gap-2 ml-2 border-l border-border pl-4">
+              <SchoolViewSwitcher />
               <NotificationBell />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
