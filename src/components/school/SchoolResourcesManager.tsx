@@ -23,14 +23,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Pencil, Trash2, DoorOpen, Package } from "lucide-react";
+import { Plus, Pencil, Trash2, DoorOpen, Package, Upload, RefreshCw } from "lucide-react";
 import { useSchoolResources } from "@/hooks/useSchoolResources";
 import {
   CONDITION_LABELS,
   RESOURCE_TYPE_LABELS,
+  fetchNowStatus,
+  hhmm,
   resourcePlaceLabel,
+  reserverLabel,
+  uploadResourcePhoto,
   type ConditionStatus,
   type ResourceType,
+  type ResourceNowStatus,
   type SchoolResource,
 } from "@/lib/school-resources";
 
@@ -47,6 +52,7 @@ interface FormState {
   location_note: string;
   condition_status: ConditionStatus;
   buffer_minutes: string;
+  photo_url: string | null;
 }
 
 const emptyForm = (type: ResourceType = "room"): FormState => ({
@@ -60,6 +66,7 @@ const emptyForm = (type: ResourceType = "room"): FormState => ({
   location_note: "",
   condition_status: "ok",
   buffer_minutes: "0",
+  photo_url: null,
 });
 
 /** Správa místností a inventáře školy (jen pro administrátora). */
@@ -72,6 +79,34 @@ export default function SchoolResourcesManager({ schoolId }: { schoolId: string 
   const [editing, setEditing] = useState<SchoolResource | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm());
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [nowStatus, setNowStatus] = useState<ResourceNowStatus[] | null>(null);
+  const [nowLoading, setNowLoading] = useState(false);
+
+  const loadNow = async () => {
+    setNowLoading(true);
+    try {
+      setNowStatus(await fetchNowStatus(resources.filter((r) => r.is_active)));
+    } catch (e: any) {
+      toast({ title: "Chyba", description: e.message, variant: "destructive" });
+    } finally {
+      setNowLoading(false);
+    }
+  };
+
+  const handlePhoto = async (file: File | undefined) => {
+    if (!file) return;
+    setUploading(true);
+    try {
+      const url = await uploadResourcePhoto(schoolId, file);
+      setForm((f) => ({ ...f, photo_url: url }));
+      toast({ title: "Fotka nahrána" });
+    } catch (e: any) {
+      toast({ title: "Fotku nelze nahrát", description: e.message, variant: "destructive" });
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const buildings = useMemo(
     () => Array.from(new Set(resources.map((r) => r.building).filter(Boolean) as string[])).sort(),
@@ -107,6 +142,7 @@ export default function SchoolResourcesManager({ schoolId }: { schoolId: string 
       location_note: r.location_note ?? "",
       condition_status: r.condition_status,
       buffer_minutes: String(r.buffer_minutes ?? 0),
+      photo_url: r.photo_url,
     });
     setOpen(true);
   };
@@ -129,6 +165,7 @@ export default function SchoolResourcesManager({ schoolId }: { schoolId: string 
       location_note: form.type === "inventory" ? form.location_note.trim() || null : null,
       condition_status: form.condition_status,
       buffer_minutes: Math.max(Number(form.buffer_minutes) || 0, 0),
+      photo_url: form.photo_url,
       created_by: user?.id ?? null,
     };
     const { error } = editing
@@ -192,6 +229,40 @@ export default function SchoolResourcesManager({ schoolId }: { schoolId: string 
         </div>
       </CardHeader>
       <CardContent>
+        <div className="mb-4 rounded-md border border-border p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm font-medium">Co je teď volné</p>
+            <Button size="sm" variant="outline" onClick={loadNow} disabled={nowLoading}>
+              <RefreshCw className="mr-1 h-4 w-4" /> {nowLoading ? "Zjišťuji…" : "Zobrazit aktuální stav"}
+            </Button>
+          </div>
+          {nowStatus && (
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              {nowStatus.length === 0 && (
+                <p className="text-sm text-muted-foreground">Žádné aktivní položky.</p>
+              )}
+              {nowStatus.map((s) => (
+                <div key={s.resource.id} className="flex items-start justify-between gap-2 rounded border border-border px-2.5 py-2 text-sm">
+                  <div>
+                    <p className="font-medium">{s.resource.name}</p>
+                    {s.active.length > 0 ? (
+                      <p className="text-xs text-muted-foreground">
+                        {s.active
+                          .map((r) => `${reserverLabel(r)} ${hhmm(r.time_from)}–${hhmm(r.time_to)}`)
+                          .join(", ")}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">Nikdo si ji teď nedrží</p>
+                    )}
+                  </div>
+                  <Badge variant={s.free > 0 ? "secondary" : "destructive"}>
+                    {s.resource.type === "inventory" ? `${s.free} z ${s.resource.total_quantity} ks` : s.free > 0 ? "Volná" : "Obsazená"}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
         {loading ? (
           <p className="text-sm text-muted-foreground">Načítání…</p>
         ) : filtered.length === 0 ? (
@@ -219,6 +290,14 @@ export default function SchoolResourcesManager({ schoolId }: { schoolId: string 
                         <DoorOpen className="h-4 w-4 text-muted-foreground" />
                       ) : (
                         <Package className="h-4 w-4 text-muted-foreground" />
+                      )}
+                      {r.photo_url && (
+                        <img
+                          src={r.photo_url}
+                          alt={r.name}
+                          className="h-9 w-9 rounded object-cover"
+                          loading="lazy"
+                        />
                       )}
                       <div>
                         {r.name}
@@ -376,6 +455,30 @@ export default function SchoolResourcesManager({ schoolId }: { schoolId: string 
                   onChange={(e) => setForm((f) => ({ ...f, buffer_minutes: e.target.value }))}
                 />
               </div>
+            </div>
+            <div>
+              <Label>Fotka (volitelné)</Label>
+              <div className="flex items-center gap-3">
+                {form.photo_url && (
+                  <img src={form.photo_url} alt="" className="h-14 w-14 rounded object-cover" />
+                )}
+                <Input
+                  type="file"
+                  accept="image/*"
+                  disabled={uploading}
+                  onChange={(e) => void handlePhoto(e.target.files?.[0])}
+                />
+                {form.photo_url && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setForm((f) => ({ ...f, photo_url: null }))}
+                  >
+                    Odebrat
+                  </Button>
+                )}
+              </div>
+              {uploading && <p className="text-xs text-muted-foreground">Nahrávám…</p>}
             </div>
           </div>
           <DialogFooter>
