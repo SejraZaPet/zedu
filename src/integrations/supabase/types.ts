@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.17"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -1278,6 +1278,7 @@ export type Database = {
           group_id: string | null
           id: string
           room: string | null
+          room_resource_id: string | null
           start_time: string
           subject_id: string | null
           subject_label: string | null
@@ -1300,6 +1301,7 @@ export type Database = {
           group_id?: string | null
           id?: string
           room?: string | null
+          room_resource_id?: string | null
           start_time: string
           subject_id?: string | null
           subject_label?: string | null
@@ -1322,6 +1324,7 @@ export type Database = {
           group_id?: string | null
           id?: string
           room?: string | null
+          room_resource_id?: string | null
           start_time?: string
           subject_id?: string | null
           subject_label?: string | null
@@ -1345,6 +1348,13 @@ export type Database = {
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "subject_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_schedule_slots_room_resource_id_fkey"
+            columns: ["room_resource_id"]
+            isOneToOne: false
+            referencedRelation: "school_resources"
             referencedColumns: ["id"]
           },
           {
@@ -3832,6 +3842,69 @@ export type Database = {
           },
         ]
       }
+      resource_reservations: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          purpose_note: string | null
+          quantity: number
+          recurrence_group_id: string | null
+          reserved_by: string
+          resource_id: string
+          returned_at: string | null
+          schedule_entry_id: string | null
+          time_from: string
+          time_to: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          purpose_note?: string | null
+          quantity?: number
+          recurrence_group_id?: string | null
+          reserved_by: string
+          resource_id: string
+          returned_at?: string | null
+          schedule_entry_id?: string | null
+          time_from: string
+          time_to: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          purpose_note?: string | null
+          quantity?: number
+          recurrence_group_id?: string | null
+          reserved_by?: string
+          resource_id?: string
+          returned_at?: string | null
+          schedule_entry_id?: string | null
+          time_from?: string
+          time_to?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resource_reservations_resource_id_fkey"
+            columns: ["resource_id"]
+            isOneToOne: false
+            referencedRelation: "school_resources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "resource_reservations_schedule_entry_id_fkey"
+            columns: ["schedule_entry_id"]
+            isOneToOne: false
+            referencedRelation: "class_schedule_slots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rubric_criteria: {
         Row: {
           created_at: string
@@ -4429,6 +4502,81 @@ export type Database = {
           },
           {
             foreignKeyName: "school_meetings_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      school_resources: {
+        Row: {
+          buffer_minutes: number
+          building: string | null
+          condition_status: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          floor: string | null
+          id: string
+          is_active: boolean
+          location_note: string | null
+          name: string
+          photo_url: string | null
+          room_number: string | null
+          school_id: string
+          total_quantity: number
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          buffer_minutes?: number
+          building?: string | null
+          condition_status?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          floor?: string | null
+          id?: string
+          is_active?: boolean
+          location_note?: string | null
+          name: string
+          photo_url?: string | null
+          room_number?: string | null
+          school_id: string
+          total_quantity?: number
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          buffer_minutes?: number
+          building?: string | null
+          condition_status?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          floor?: string | null
+          id?: string
+          is_active?: boolean
+          location_note?: string | null
+          name?: string
+          photo_url?: string | null
+          room_number?: string | null
+          school_id?: string
+          total_quantity?: number
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "school_resources_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "school_resources_school_id_fkey"
             columns: ["school_id"]
             isOneToOne: false
             referencedRelation: "schools_public"
@@ -7056,6 +7204,10 @@ export type Database = {
         Args: { _profile_id: string }
         Returns: boolean
       }
+      can_manage_reservation: {
+        Args: { _reservation_id: string }
+        Returns: boolean
+      }
       can_manage_school_meeting: {
         Args: { _meeting_id: string }
         Returns: boolean
@@ -7358,6 +7510,10 @@ export type Database = {
       reset_class_leaderboard: {
         Args: { _class_id: string }
         Returns: undefined
+      }
+      resource_in_my_school: {
+        Args: { _resource_id: string }
+        Returns: boolean
       }
       school_license_usage: {
         Args: { _school_id: string }

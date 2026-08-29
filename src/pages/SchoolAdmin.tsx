@@ -22,6 +22,7 @@ import SchoolBulkImportCard from "@/components/school/SchoolBulkImportCard";
 import SchoolCreatorSalesCard from "@/components/school/SchoolCreatorSalesCard";
 import SchoolLeadershipCard from "@/components/school/SchoolLeadershipCard";
 import SchoolLicenseCard from "@/components/school/SchoolLicenseCard";
+import SchoolResourcesManager from "@/components/school/SchoolResourcesManager";
 
 interface SchoolRow { id: string; name: string; registration_code: string | null; }
 interface MemberRow {
@@ -378,6 +379,7 @@ const SchoolAdmin = () => {
             <TabsTrigger value="teachers"><GraduationCap className="w-4 h-4 mr-1" /> Učitelé ({teachers.length})</TabsTrigger>
             <TabsTrigger value="students"><Users className="w-4 h-4 mr-1" /> Studenti ({students.length})</TabsTrigger>
             <TabsTrigger value="import"><Upload className="w-4 h-4 mr-1" /> Hromadný import</TabsTrigger>
+            <TabsTrigger value="resources">Místnosti a inventář</TabsTrigger>
             <TabsTrigger value="license">Licence</TabsTrigger>
             <TabsTrigger value="sales">Tvorba a prodej</TabsTrigger>
             <TabsTrigger value="branding"><Palette className="w-4 h-4 mr-1" /> Branding</TabsTrigger>
@@ -393,6 +395,10 @@ const SchoolAdmin = () => {
 
           <TabsContent value="import">
             <SchoolBulkImportCard onImported={load} />
+          </TabsContent>
+
+          <TabsContent value="resources">
+            <SchoolResourcesManager schoolId={school.id} />
           </TabsContent>
 
           <TabsContent value="license">

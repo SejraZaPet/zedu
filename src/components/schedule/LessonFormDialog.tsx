@@ -38,6 +38,8 @@ import { useTeacherClasses } from "@/hooks/useTeacherClasses";
 import { useSubjectGroups } from "@/hooks/useSubjectGroups";
 import { useTeachingUnits } from "@/hooks/useTeachingUnits";
 import { supabase } from "@/integrations/supabase/client";
+import { useMySchool } from "@/hooks/useMySchool";
+import { useSchoolResources } from "@/hooks/useSchoolResources";
 
 import {
   SUBJECT_COLORS,
@@ -50,6 +52,7 @@ const DAYS_SHORT = ["Po", "Út", "St", "Čt", "Pá"];
 
 const NO_CLASS = "__none__";
 const CUSTOM_SUBJECT = "__custom__";
+const NO_ROOM = "__no_room__";
 
 export interface LessonFormPeriod {
   period: number;
@@ -78,6 +81,8 @@ export interface LessonFormValue {
   groupId?: string | null;
   groupName?: string;
   room: string;
+  /** Volitelná vazba na školní místnost (`school_resources`) pro rezervaci. */
+  roomResourceId?: string | null;
   validFrom: string | null; // YYYY-MM-DD
   validTo: string | null;
   weekParity: "every" | "odd" | "even";
@@ -137,6 +142,12 @@ export default function LessonFormDialog({
   const { classes } = useTeacherClasses();
   const { groups } = useSubjectGroups();
   const { units, refetch: refetchUnits } = useTeachingUnits();
+  const { schoolId } = useMySchool();
+  const { resources } = useSchoolResources(schoolId);
+  const rooms = useMemo(
+    () => resources.filter((r) => r.type === "room" && r.is_active),
+    [resources],
+  );
 
   const defaultPeriod = useMemo(
     () => initial?.period ?? periods[0]?.period ?? 1,
@@ -154,6 +165,7 @@ export default function LessonFormDialog({
   const [target, setTarget] = useState<"class" | "group">("class");
   const [groupSel, setGroupSel] = useState<string>(NO_CLASS);
   const [room, setRoom] = useState("");
+  const [roomResourceId, setRoomResourceId] = useState<string | null>(null);
 
   const [validFrom, setValidFrom] = useState<Date | undefined>();
   const [validTo, setValidTo] = useState<Date | undefined>();
@@ -198,6 +210,7 @@ export default function LessonFormDialog({
     setGroupSel(initial?.groupId ?? NO_CLASS);
     setTarget(initial?.groupId ? "group" : "class");
     setRoom(initial?.room ?? "");
+    setRoomResourceId(initial?.roomResourceId ?? null);
 
     setValidFrom(initial?.validFrom ? new Date(initial.validFrom) : undefined);
     setValidTo(initial?.validTo ? new Date(initial.validTo) : undefined);
@@ -306,6 +319,7 @@ export default function LessonFormDialog({
       groupId: useGroup ? groupSel : null,
       groupName: useGroup ? (selectedGroup?.name ?? "") : "",
       room: room.trim(),
+      roomResourceId,
       validFrom: validFrom ? format(validFrom, "yyyy-MM-dd") : null,
       validTo: validTo ? format(validTo, "yyyy-MM-dd") : null,
       mirrorBoth,
@@ -618,14 +632,46 @@ export default function LessonFormDialog({
           </div>
 
           {/* ----- Room ----- */}
-          <div className="space-y-1.5">
-            <Label>Místnost</Label>
-            <Input
-              value={room}
-              onChange={(e) => setRoom(e.target.value)}
-              placeholder="Např. 204"
-            />
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1.5">
+              <Label>Místnost (text)</Label>
+              <Input
+                value={room}
+                onChange={(e) => setRoom(e.target.value)}
+                placeholder="Např. 204"
+              />
+            </div>
+            {rooms.length > 0 && (
+              <div className="space-y-1.5">
+                <Label>Školní místnost (rezervace)</Label>
+                <Select
+                  value={roomResourceId ?? NO_ROOM}
+                  onValueChange={(v) => {
+                    setRoomResourceId(v === NO_ROOM ? null : v);
+                    const picked = rooms.find((r) => r.id === v);
+                    if (picked && !room.trim()) setRoom(picked.room_number || picked.name);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Bez rezervace" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NO_ROOM}>Bez rezervace</SelectItem>
+                    {rooms.map((r) => (
+                      <SelectItem key={r.id} value={r.id}>
+                        {r.name}
+                        {r.room_number ? ` (${r.room_number})` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Vybraná místnost se automaticky rezervuje na pravidelné hodiny.
+                </p>
+              </div>
+            )}
           </div>
+
 
           {/* ----- Validity ----- */}
           <div className="grid grid-cols-2 gap-2">

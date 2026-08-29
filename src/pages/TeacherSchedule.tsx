@@ -63,6 +63,7 @@ import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import LessonFormDialog from "@/components/schedule/LessonFormDialog";
+import { createRecurringReservations } from "@/lib/school-resources";
 import { downloadICS, buildScheduleRrule, type CalendarExportEvent } from "@/lib/calendar-export";
 import { Download } from "lucide-react";
 
@@ -1098,6 +1099,7 @@ export default function TeacherSchedule() {
               abbreviation: value.abbreviation || null,
               color: value.color || null,
               room: value.room || null,
+              room_resource_id: value.roomResourceId ?? null,
               valid_from: value.validFrom,
               valid_to: value.validTo,
               week_parity: value.mirrorBoth ? "every" : value.weekParity,
@@ -1106,10 +1108,21 @@ export default function TeacherSchedule() {
               end_time: s.end,
               created_by: user?.id ?? null,
             }));
-            const { error } = await supabase.from("class_schedule_slots" as any).insert(rows as any);
+            const { data: inserted, error } = await supabase
+              .from("class_schedule_slots" as any)
+              .insert(rows as any)
+              .select("id, day_of_week, start_time, end_time");
             if (error) {
               toast({ title: "Chyba", description: error.message, variant: "destructive" });
               return;
+            }
+            if (value.roomResourceId && user?.id) {
+              await reserveRoomForSlots(
+                value.roomResourceId,
+                (inserted ?? []) as any[],
+                value,
+                user.id,
+              );
             }
             toast({
               title: rows.length > 1 ? `Přidáno do ${rows.length} dnů` : "Přidáno do rozvrhu skupiny",
@@ -1167,6 +1180,7 @@ export default function TeacherSchedule() {
                   className: editingClassSlot.classes?.name ?? "",
 
                   room: editingClassSlot.room ?? "",
+                  roomResourceId: (editingClassSlot as any).room_resource_id ?? null,
                   validFrom: editingClassSlot.valid_from ?? null,
                   validTo: editingClassSlot.valid_to ?? null,
                   weekParity: editingClassSlot.week_parity ?? "every",
@@ -1207,6 +1221,7 @@ export default function TeacherSchedule() {
               abbreviation: value.abbreviation || null,
               color: value.color || null,
               room: value.room,
+              room_resource_id: value.roomResourceId ?? null,
               valid_from: value.validFrom,
               valid_to: value.validTo,
               week_parity: value.mirrorBoth ? "every" : value.weekParity,
@@ -1218,6 +1233,21 @@ export default function TeacherSchedule() {
           if (error) {
             toast({ title: "Chyba", description: error.message, variant: "destructive" });
             return;
+          }
+          if (value.roomResourceId && user?.id) {
+            await reserveRoomForSlots(
+              value.roomResourceId,
+              [
+                {
+                  id: editingClassSlot.id,
+                  day_of_week: s.day + 1,
+                  start_time: s.start,
+                  end_time: s.end,
+                },
+              ],
+              value,
+              user.id,
+            );
           }
           toast({ title: "Uloženo" });
           setEditingClassSlot(null);
@@ -1661,4 +1691,43 @@ function BreakSettingRow({
       )}
     </div>
   );
+}
+
+/**
+ * Založí pravidelné rezervace místnosti pro uložené hodiny rozvrhu.
+ * Kolize hlásí trigger v databázi – ty pouze vypíšeme učiteli.
+ */
+async function reserveRoomForSlots(
+  roomResourceId: string,
+  slots: Array<{ id: string; day_of_week: number; start_time: string; end_time: string }>,
+  value: { validFrom: string | null; validTo: string | null; weekParity?: "every" | "odd" | "even"; mirrorBoth?: boolean; subject: string; className?: string; groupName?: string },
+  userId: string,
+) {
+  let created = 0;
+  const conflicts: string[] = [];
+  for (const slot of slots) {
+    const res = await createRecurringReservations({
+      resourceId: roomResourceId,
+      reservedBy: userId,
+      dayOfWeek: slot.day_of_week,
+      timeFrom: (slot.start_time || "").slice(0, 5),
+      timeTo: (slot.end_time || "").slice(0, 5),
+      validFrom: value.validFrom,
+      validTo: value.validTo,
+      weekParity: value.mirrorBoth ? "every" : (value.weekParity ?? "every"),
+      purposeNote: [value.subject, value.className || value.groupName].filter(Boolean).join(" – "),
+      scheduleEntryId: slot.id,
+    });
+    created += res.created;
+    res.conflicts.forEach((c) => conflicts.push(c.date));
+  }
+  if (conflicts.length > 0) {
+    toast({
+      title: `Místnost rezervována ${created}×, ${conflicts.length} termínů koliduje`,
+      description: `Obsazeno: ${conflicts.slice(0, 5).join(", ")}${conflicts.length > 5 ? "…" : ""}. Zvolte jinou místnost nebo rezervaci vyřešte v sekci Rezervace.`,
+      variant: "destructive",
+    });
+  } else if (created > 0) {
+    toast({ title: `Místnost rezervována na ${created} hodin` });
+  }
 }
