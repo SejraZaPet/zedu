@@ -308,6 +308,48 @@ export async function createRecurringReservations(input: SeriesInput): Promise<S
   return { recurrenceGroupId, created, conflicts };
 }
 
+/**
+ * Atomicky přegeneruje sérii rezervací místnosti pro hodinu rozvrhu:
+ * na serveru se nejdřív zruší budoucí rezervace staré série téže hodiny,
+ * pak se zkontrolují kolize (bez vlastní série) a teprve pak vznikne nová série.
+ * Při skutečné kolizi se celá operace vrátí zpět a vyhodí chybu.
+ */
+export async function reserveRoomSeries(input: SeriesInput): Promise<{
+  recurrenceGroupId: string;
+  created: number;
+  requiresApproval: boolean;
+}> {
+  const { data, error } = await supabase.rpc("reserve_room_series" as any, {
+    p_resource_id: input.resourceId,
+    p_schedule_entry_id: input.scheduleEntryId ?? null,
+    p_day_of_week: input.dayOfWeek,
+    p_time_from: input.timeFrom,
+    p_time_to: input.timeTo,
+    p_valid_from: input.validFrom ?? null,
+    p_valid_to: input.validTo ?? null,
+    p_week_parity: input.weekParity ?? "every",
+    p_purpose_note: input.purposeNote ?? null,
+  } as any);
+  if (error) throw error;
+  const res = (data ?? {}) as any;
+  return {
+    recurrenceGroupId: res.recurrence_group_id,
+    created: res.created ?? 0,
+    requiresApproval: !!res.requires_approval,
+  };
+}
+
+/** Zruší budoucí rezervace navázané na hodinu rozvrhu (např. při odebrání místnosti). */
+export async function deleteFutureReservationsForEntry(scheduleEntryId: string) {
+  const today = iso(new Date());
+  const { error } = await supabase
+    .from("resource_reservations" as any)
+    .delete()
+    .eq("schedule_entry_id", scheduleEntryId)
+    .gte("date", today);
+  if (error) throw error;
+}
+
 /** Nahraje fotku položky do bucketu `school-logos` (cesta začíná ID školy kvůli RLS). */
 export async function uploadResourcePhoto(schoolId: string, file: File): Promise<string> {
   const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
