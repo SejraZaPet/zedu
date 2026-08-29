@@ -62,13 +62,13 @@ export function useSchoolColleagues(schoolId: string | null) {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const { data } = await supabase
-        .from("profiles")
-        .select("id, first_name, last_name, email")
-        .eq("school_id", schoolId)
-        .order("last_name", { ascending: true });
+      // Kontaktní údaje kolegů nejsou čitelné — používáme bezpečný adresář školy.
+      const { data } = await supabase.rpc("school_directory");
       if (cancelled) return;
-      setColleagues(((data ?? []) as SchoolColleague[]).filter((p) => p.id !== user?.id));
+      const list = ((data ?? []) as any[])
+        .map((p) => ({ id: p.id, first_name: p.first_name, last_name: p.last_name, email: null }))
+        .sort((a, b) => (a.last_name ?? "").localeCompare(b.last_name ?? "", "cs"));
+      setColleagues((list as SchoolColleague[]).filter((p) => p.id !== user?.id));
       setLoading(false);
     })();
     return () => {
