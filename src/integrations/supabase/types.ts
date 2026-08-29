@@ -1278,6 +1278,7 @@ export type Database = {
           group_id: string | null
           id: string
           room: string | null
+          room_resource_id: string | null
           start_time: string
           subject_id: string | null
           subject_label: string | null
@@ -1300,6 +1301,7 @@ export type Database = {
           group_id?: string | null
           id?: string
           room?: string | null
+          room_resource_id?: string | null
           start_time: string
           subject_id?: string | null
           subject_label?: string | null
@@ -1322,6 +1324,7 @@ export type Database = {
           group_id?: string | null
           id?: string
           room?: string | null
+          room_resource_id?: string | null
           start_time?: string
           subject_id?: string | null
           subject_label?: string | null
@@ -1345,6 +1348,13 @@ export type Database = {
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "subject_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_schedule_slots_room_resource_id_fkey"
+            columns: ["room_resource_id"]
+            isOneToOne: false
+            referencedRelation: "school_resources"
             referencedColumns: ["id"]
           },
           {
