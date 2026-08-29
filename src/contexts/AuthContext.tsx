@@ -8,6 +8,9 @@ interface AuthState {
   session: Session | null;
   user: User | null;
   role: AppRole;
+  /** All roles assigned to the user in user_roles */
+  roles: string[];
+  preferredView: "school_admin" | "teacher" | null;
   status: string | null;
   isLoggedIn: boolean;
   loading: boolean;
@@ -21,6 +24,10 @@ interface AuthContextValue extends AuthState {
   /** Admin-only: temporarily view the app as another role. null = no override */
   viewAsRole: AppRole;
   setViewAsRole: (role: AppRole) => void;
+  /** True when the user is both school_admin and teacher — allows a persistent view switch */
+  canSwitchSchoolView: boolean;
+  /** Persist the chosen view (school administration vs. own teaching) on the account */
+  setPreferredView: (view: "school_admin" | "teacher") => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -49,11 +56,16 @@ const resolveBestRole = (roles: string[]): AppRole => {
   return (best as AppRole) || "user";
 };
 
-const fetchRoleAndStatus = async (userId: string): Promise<{ role: AppRole; status: string | null }> => {
+type RoleInfo = { role: AppRole; roles: string[]; status: string | null; preferredView: "school_admin" | "teacher" | null };
+
+const normalizeView = (v: unknown): "school_admin" | "teacher" | null =>
+  v === "school_admin" || v === "teacher" ? v : null;
+
+const fetchRoleAndStatus = async (userId: string): Promise<RoleInfo> => {
   try {
     const [rolesRes, profileRes] = await Promise.all([
       supabase.from("user_roles").select("role").eq("user_id", userId),
-      supabase.from("profiles").select("status").eq("id", userId).single(),
+      supabase.from("profiles").select("status, preferred_view").eq("id", userId).single(),
     ]);
 
     if (rolesRes.error || profileRes.error) {
@@ -63,7 +75,9 @@ const fetchRoleAndStatus = async (userId: string): Promise<{ role: AppRole; stat
     const roles = (rolesRes.data ?? []).map((r: any) => r.role as string);
     return {
       role: resolveBestRole(roles),
+      roles,
       status: profileRes.data?.status ?? null,
+      preferredView: normalizeView((profileRes.data as any)?.preferred_view),
     };
   } catch {
     const { data, error } = await supabase.functions.invoke("get-user-auth-info", {
@@ -71,13 +85,15 @@ const fetchRoleAndStatus = async (userId: string): Promise<{ role: AppRole; stat
     });
 
     if (error) {
-      return { role: null, status: null };
+      return { role: null, roles: [], status: null, preferredView: null };
     }
 
     const roles = Array.isArray(data?.roles) ? data.roles.filter((role: unknown): role is string => typeof role === "string") : [];
     return {
       role: resolveBestRole(roles),
+      roles,
       status: typeof data?.profile?.status === "string" ? data.profile.status : null,
+      preferredView: normalizeView(data?.profile?.preferred_view),
     };
   }
 };
@@ -87,6 +103,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     session: null,
     user: null,
     role: null,
+    roles: [],
+    preferredView: null,
     status: null,
     isLoggedIn: false,
     loading: true,
@@ -107,13 +125,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           loading: false,
           error: null,
         }));
-        fetchRoleAndStatus(session.user.id).then(({ role, status }) => {
+        fetchRoleAndStatus(session.user.id).then(({ role, roles, status, preferredView }) => {
           if (mounted) {
-            setState(prev => ({ ...prev, role, status }));
+            setState(prev => ({ ...prev, role, roles, status, preferredView }));
           }
         });
       } else {
-        setState({ session: null, user: null, role: null, status: null, isLoggedIn: false, loading: false, error: null });
+        setState({ session: null, user: null, role: null, roles: [], preferredView: null, status: null, isLoggedIn: false, loading: false, error: null });
       }
     };
 
@@ -152,7 +170,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const isAdmin = state.role === "admin";
-  const effectiveRole: AppRole = isAdmin && viewAsRole ? viewAsRole : state.role;
+  const canSwitchSchoolView =
+    state.roles.includes("school_admin") &&
+    (state.roles.includes("teacher") || state.roles.includes("lektor"));
+
+  const setPreferredView = async (view: "school_admin" | "teacher") => {
+    if (!state.user) return;
+    setState(prev => ({ ...prev, preferredView: view }));
+    await supabase.from("profiles").update({ preferred_view: view }).eq("id", state.user.id);
+  };
+
+  // Trvalá volba pohledu pro člověka, který je zároveň školní admin i učitel.
+  const switchedRole: AppRole =
+    canSwitchSchoolView && state.preferredView === "teacher"
+      ? (state.roles.includes("teacher") ? "teacher" : "lektor")
+      : state.role;
+
+  const effectiveRole: AppRole = isAdmin && viewAsRole ? viewAsRole : switchedRole;
 
   return (
     <AuthContext.Provider value={{
@@ -161,6 +195,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       realRole: state.role,
       viewAsRole: isAdmin ? viewAsRole : null,
       setViewAsRole,
+      canSwitchSchoolView,
+      setPreferredView,
       signOut,
     }}>
       {children}
