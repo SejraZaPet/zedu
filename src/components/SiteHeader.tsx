@@ -86,6 +86,16 @@ const ACADEMY_BY_ROLE: Record<string, string> = {
   rodic: "/rodic/akademie",
 };
 
+/** Položky žáka přesunuté z hlavní lišty do rozbalovacího Menu (odlehčení lišty). */
+const STUDENT_EXTRA_ITEMS: TeacherExtraNavItem[] = [
+  { label: "Studijní metody", href: "/student/metody", icon: Brain },
+  { label: "Portfolio", href: "/student/portfolio", icon: FolderOpen },
+  { label: "Moje knihy", href: "/student/knihy", icon: BookMarked },
+  { label: "Můj sešit", href: "/student/sesit", icon: NotebookPen },
+  { label: "Nápověda", href: "/napoveda", icon: HelpCircle },
+];
+
+
 
 const SiteHeader = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -157,12 +167,7 @@ const SiteHeader = () => {
         { label: "Přehled", href: "/student", icon: LayoutDashboard },
         { label: "Moje učebnice", href: "/student/ucebnice", icon: BookOpen },
         { label: "Rozvrh", href: "/student/rozvrh", icon: CalendarDays },
-        { label: "Studijní metody", href: "/student/metody", icon: Brain },
-        { label: "Portfolio", href: "/student/portfolio", icon: FolderOpen },
-        { label: "Moje knihy", href: "/student/knihy", icon: BookMarked },
-        { label: "Můj sešit", href: "/student/sesit", icon: NotebookPen },
         { label: "Připojit se do hry", href: "/hra/pripojit", icon: Gamepad2 },
-        { label: "Nápověda", href: "/napoveda", icon: HelpCircle },
       ];
     }
     return [
@@ -296,6 +301,28 @@ const SiteHeader = () => {
                       <DropdownMenuSeparator />
                     </>
                   )}
+                  {userRole === "user" && STUDENT_EXTRA_ITEMS.length > 0 && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuLabel className="text-xs uppercase tracking-wide text-muted-foreground">
+                        Více
+                      </DropdownMenuLabel>
+                      {STUDENT_EXTRA_ITEMS.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                          <DropdownMenuItem
+                            key={item.href}
+                            onClick={() => navigate(item.href)}
+                            className="gap-2 cursor-pointer"
+                          >
+                            <Icon size={16} />
+                            {item.label}
+                          </DropdownMenuItem>
+                        );
+                      })}
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
                   {ACADEMY_BY_ROLE[userRole ?? ""] && (
                     <DropdownMenuItem onClick={() => navigate(ACADEMY_BY_ROLE[userRole ?? ""])} className="gap-2 cursor-pointer">
                       <Award size={16} />
@@ -350,6 +377,26 @@ const SiteHeader = () => {
             })}
             {(userRole === "teacher" || userRole === "lektor") && (
               teacherExtraItems.map((item) => {
+                const Icon = item.icon;
+                const active = location.pathname.startsWith(item.href);
+                return (
+                  <button
+                    key={item.href}
+                    onClick={() => { setMenuOpen(false); navigate(item.href); }}
+                    className={`flex items-center gap-3 pl-6 py-2 rounded-lg text-sm font-medium transition-colors text-left ${
+                      active
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:text-primary hover:bg-muted/50"
+                    }`}
+                  >
+                    <Icon size={16} />
+                    {item.label}
+                  </button>
+                );
+              })
+            )}
+            {userRole === "user" && STUDENT_EXTRA_ITEMS.length > 0 && (
+              STUDENT_EXTRA_ITEMS.map((item) => {
                 const Icon = item.icon;
                 const active = location.pathname.startsWith(item.href);
                 return (
