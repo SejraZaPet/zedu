@@ -3676,6 +3676,7 @@ export type Database = {
           last_name: string
           parent_email: string | null
           parent_email_notifications: boolean
+          preferred_view: string | null
           school: string
           school_id: string | null
           status: Database["public"]["Enums"]["account_status"]
@@ -3695,6 +3696,7 @@ export type Database = {
           last_name?: string
           parent_email?: string | null
           parent_email_notifications?: boolean
+          preferred_view?: string | null
           school?: string
           school_id?: string | null
           status?: Database["public"]["Enums"]["account_status"]
@@ -3714,6 +3716,7 @@ export type Database = {
           last_name?: string
           parent_email?: string | null
           parent_email_notifications?: boolean
+          preferred_view?: string | null
           school?: string
           school_id?: string | null
           status?: Database["public"]["Enums"]["account_status"]
@@ -7538,6 +7541,7 @@ export type Database = {
           teachers_used: number
         }[]
       }
+      school_overview_stats: { Args: { _school_id: string }; Returns: Json }
       send_admin_notification: {
         Args: {
           _body: string
