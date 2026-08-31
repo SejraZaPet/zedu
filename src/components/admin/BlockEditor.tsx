@@ -639,7 +639,10 @@ const AddBlockMenu = ({ onPick }: { onPick: (type: Block["type"]) => void }) => 
 };
 
 
-const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryChange }: Props) => {
+const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryChange, aiSuggestedIds, onBlockEdited }: Props) => {
+  const aiSuggestedSet = useMemo(() => new Set(aiSuggestedIds ?? []), [aiSuggestedIds]);
+  const onBlockEditedRef = useRef(onBlockEdited);
+  onBlockEditedRef.current = onBlockEdited;
   const normalizedBlocks = useMemo(() => normalizeBlocks(blocks), [blocks]);
 
   useEffect(() => {
