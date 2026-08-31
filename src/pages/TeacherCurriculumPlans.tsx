@@ -308,6 +308,14 @@ function EditCurriculumDialog({ teacherId, subject, plan, onClose, onSaved }: Di
   };
 
   const handleSave = async () => {
+    if (!title.trim()) {
+      toast({
+        title: "Chybí název",
+        description: "Zadejte název ŠVP.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (!content.trim() && !file && !fileUrl) {
       toast({
         title: "Chybí obsah",
@@ -319,16 +327,17 @@ function EditCurriculumDialog({ teacherId, subject, plan, onClose, onSaved }: Di
     setBusy(true);
     try {
       const { url, name } = await uploadFileIfAny();
-      const payload = {
-        teacher_id: teacherId,
-        subject,
+      const fields = {
+        title: title.trim(),
         content: content.trim() || null,
         file_url: url,
         file_name: name,
       };
-      const { error } = await supabase
-        .from("teacher_curriculum_plans")
-        .upsert(payload, { onConflict: "teacher_id,subject" });
+      const { error } = plan
+        ? await supabase.from("teacher_curriculum_plans").update(fields).eq("id", plan.id)
+        : await supabase
+            .from("teacher_curriculum_plans")
+            .insert({ teacher_id: teacherId, subject, ...fields });
       if (error) throw error;
       toast({ title: "ŠVP uloženo" });
       onSaved();
@@ -338,6 +347,7 @@ function EditCurriculumDialog({ teacherId, subject, plan, onClose, onSaved }: Di
       setBusy(false);
     }
   };
+
 
   const handleDelete = async () => {
     if (!plan) return;
