@@ -386,6 +386,16 @@ function EditCurriculumDialog({ teacherId, subject, plan, onClose, onSaved }: Di
 
         <div className="space-y-4">
           <div className="space-y-2">
+            <Label htmlFor="svp-title">Název ŠVP</Label>
+            <Input
+              id="svp-title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Např. ŠVP – 1. ročník"
+            />
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="svp-content">Text ŠVP</Label>
             <Textarea
               id="svp-content"
