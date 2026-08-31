@@ -180,7 +180,7 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
       }
       const { data: rows } = await supabase
         .from("avatar_items")
-        .select("id, slug, category, name, image_url, image_url_back, icon_name, color_value, is_neutral_color, rarity, layer_offset_x, layer_offset_y, layer_scale, updated_at")
+        .select("id, slug, category, name, image_url, image_url_back, icon_name, color_value, is_neutral_color, rarity, layer_slot, layer_offset_x, layer_offset_y, layer_scale, updated_at")
         .in("id", ids);
       if (!mounted) return;
       const m = new Map<string, AvatarItem>();
@@ -190,14 +190,6 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
     })();
     return () => { mounted = false; };
   }, [userId, reloadKey]);
-
-  const tintFor = (category: string): string | null => {
-    if (!profile) return null;
-    if (!isTintable(category)) return null;
-    const col = CATEGORY_COLOR_COLUMN[category as TintableCategory];
-    const val = (profile as any)[col] as string | null | undefined;
-    return val ?? null;
-  };
 
   const stackLayers: StackLayer[] = [];
   if (profile) {
@@ -210,7 +202,7 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
       if (!item) continue;
       if (l.sub === "back" && !item.image_url_back) continue;
       if (l.sub === "front" && !item.image_url) continue;
-      stackLayers.push({ item, sub: l.sub, tintColor: tintFor(item.category) });
+      stackLayers.push({ item, sub: l.sub, tintColor: avatarTintFor(profile as any, item) });
     }
   }
 
