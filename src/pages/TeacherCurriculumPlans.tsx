@@ -431,13 +431,22 @@ function EditCurriculumDialog({ teacherId, subject, plan, onClose, onSaved }: Di
     setFileUrl(null);
   };
 
+  const handlePdf = async () => {
+    try {
+      await downloadCurriculumPdf({ title: title.trim() || subject, subject, blocks });
+    } catch (e: any) {
+      toast({ title: "Export selhal", description: e?.message ?? String(e), variant: "destructive" });
+    }
+  };
+
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>ŠVP – {subject}</DialogTitle>
           <DialogDescription>
-            Vložte text ŠVP nebo nahrajte soubor (PDF/DOC/DOCX). Můžete použít obojí zároveň.
+            Skládejte ŠVP z bloků (nadpisy, odstavce, tabulky). Bloky lze přetahovat, skrývat
+            i mazat. Volitelně můžete nahrát i původní soubor (PDF/DOC/DOCX).
           </DialogDescription>
         </DialogHeader>
 
@@ -453,32 +462,39 @@ function EditCurriculumDialog({ teacherId, subject, plan, onClose, onSaved }: Di
           </div>
 
           <div className="space-y-2">
-            <div className="flex items-center justify-between gap-2">
-              <Label htmlFor="svp-content">Text ŠVP</Label>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="gap-2"
-                onClick={() => {
-                  if (
-                    content.trim() &&
-                    !confirm("Textové pole není prázdné. Přepsat jeho obsah šablonou?")
-                  )
-                    return;
-                  setContent(CURRICULUM_PLAN_TEMPLATE);
-                }}
-              >
-                <LayoutTemplate className="w-4 h-4" /> Použít šablonu
-              </Button>
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <Label>Obsah ŠVP</Label>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => void handlePdf()}
+                >
+                  <Download className="w-4 h-4" /> Stáhnout PDF
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => {
+                    if (
+                      blocks.length > 0 &&
+                      !confirm("Obsah není prázdný. Přepsat ho strukturovanou šablonou ŠVP?")
+                    )
+                      return;
+                    setBlocks(buildCurriculumBlocks());
+                  }}
+                >
+                  <LayoutTemplate className="w-4 h-4" /> Použít šablonu
+                </Button>
+              </div>
             </div>
-            <Textarea
-              id="svp-content"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Vložte nebo vepište obsah školního vzdělávacího plánu…"
-              rows={10}
-            />
+            <div className="rounded-lg border border-border p-2">
+              <BlockEditor blocks={blocks} onChange={setBlocks} />
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -527,6 +543,7 @@ function EditCurriculumDialog({ teacherId, subject, plan, onClose, onSaved }: Di
             </Button>
           </div>
         </DialogFooter>
+
       </DialogContent>
     </Dialog>
   );
