@@ -23,6 +23,7 @@ import SchoolCreatorSalesCard from "@/components/school/SchoolCreatorSalesCard";
 import SchoolLeadershipCard from "@/components/school/SchoolLeadershipCard";
 import SchoolLicenseCard from "@/components/school/SchoolLicenseCard";
 import SchoolResourcesManager from "@/components/school/SchoolResourcesManager";
+import SchoolCurriculumManager from "@/components/school/SchoolCurriculumManager";
 import SchoolOverviewTab from "@/components/school/SchoolOverviewTab";
 import SchoolEngagementTab from "@/components/school/SchoolEngagementTab";
 import SchoolViewSwitcher from "@/components/school/SchoolViewSwitcher";
