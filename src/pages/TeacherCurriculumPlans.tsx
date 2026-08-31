@@ -8,7 +8,6 @@ import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -19,9 +18,27 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { BookMarked, FileText, LayoutTemplate, Loader2, Pencil, Plus, Trash2, Upload, ExternalLink } from "lucide-react";
+import {
+  BookMarked,
+  Download,
+  FileText,
+  LayoutTemplate,
+  Loader2,
+  Pencil,
+  Plus,
+  Trash2,
+  Upload,
+  ExternalLink,
+} from "lucide-react";
 import CurriculumTopicsSection from "@/components/teacher/CurriculumTopicsSection";
-import { CURRICULUM_PLAN_TEMPLATE } from "@/lib/curriculum-template";
+import BlockEditor from "@/components/admin/BlockEditor";
+import type { Block } from "@/lib/textbook-config";
+import {
+  buildCurriculumBlocks,
+  curriculumBlocksToText,
+  legacyContentToBlocks,
+} from "@/lib/curriculum-template";
+import { downloadCurriculumPdf } from "@/lib/curriculum-pdf-export";
 
 interface CurriculumPlan {
   id: string;
@@ -29,6 +46,7 @@ interface CurriculumPlan {
   subject: string;
   title: string;
   content: string | null;
+  content_blocks: Block[] | null;
   file_url: string | null;
   file_name: string | null;
   updated_at: string;
@@ -37,6 +55,15 @@ interface CurriculumPlan {
 const BUCKET = "curriculum-plans";
 const MAX_BYTES = 20 * 1024 * 1024;
 const ALLOWED_EXT = ["pdf", "doc", "docx"];
+
+/** Bloky plánu – z content_blocks, jinak fallback ze starého textu. */
+function planBlocks(plan: CurriculumPlan | null): Block[] {
+  if (!plan) return [];
+  const raw = plan.content_blocks;
+  if (Array.isArray(raw) && raw.length > 0) return raw as Block[];
+  return legacyContentToBlocks(plan.content);
+}
+
 
 export default function TeacherCurriculumPlans() {
   const { user } = useAuth();
@@ -52,7 +79,7 @@ export default function TeacherCurriculumPlans() {
       .from("teacher_curriculum_plans")
       .select("*")
       .eq("teacher_id", user.id);
-    if (!error) setPlans((data as CurriculumPlan[]) ?? []);
+    if (!error) setPlans((data as unknown as CurriculumPlan[]) ?? []);
     setLoading(false);
   };
 
@@ -181,15 +208,39 @@ export default function TeacherCurriculumPlans() {
                             Aktualizováno {new Date(plan.updated_at).toLocaleDateString("cs-CZ")}
                           </p>
                         </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="gap-1 shrink-0"
-                          onClick={() => setEditing({ subject: row.label, plan })}
-                        >
-                          <Pencil className="w-3.5 h-3.5" /> Upravit
-                        </Button>
+                        <div className="flex gap-1 shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="gap-1"
+                            title="Stáhnout PDF"
+                            onClick={() =>
+                              void downloadCurriculumPdf({
+                                title: plan.title || row.label,
+                                subject: row.label,
+                                blocks: planBlocks(plan),
+                              }).catch((e: any) =>
+                                toast({
+                                  title: "Export selhal",
+                                  description: e?.message ?? String(e),
+                                  variant: "destructive",
+                                }),
+                              )
+                            }
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-1"
+                            onClick={() => setEditing({ subject: row.label, plan })}
+                          >
+                            <Pencil className="w-3.5 h-3.5" /> Upravit
+                          </Button>
+                        </div>
                       </div>
+
 
                       {plan.content && (
                         <p className="text-sm text-foreground/80 whitespace-pre-line line-clamp-4">
@@ -269,7 +320,8 @@ interface DialogProps {
 
 function EditCurriculumDialog({ teacherId, subject, plan, onClose, onSaved }: DialogProps) {
   const [title, setTitle] = useState(plan?.title?.trim() || subject);
-  const [content, setContent] = useState(plan?.content ?? "");
+  const [blocks, setBlocks] = useState<Block[]>(() => planBlocks(plan));
+
   const [fileName, setFileName] = useState<string | null>(plan?.file_name ?? null);
   const [fileUrl, setFileUrl] = useState<string | null>(plan?.file_url ?? null);
   const [file, setFile] = useState<File | null>(null);
@@ -317,10 +369,11 @@ function EditCurriculumDialog({ teacherId, subject, plan, onClose, onSaved }: Di
       });
       return;
     }
-    if (!content.trim() && !file && !fileUrl) {
+    const summary = curriculumBlocksToText(blocks);
+    if (!summary.trim() && !file && !fileUrl) {
       toast({
         title: "Chybí obsah",
-        description: "Vyplňte text nebo nahrajte soubor.",
+        description: "Vyplňte alespoň jeden blok nebo nahrajte soubor.",
         variant: "destructive",
       });
       return;
@@ -330,7 +383,9 @@ function EditCurriculumDialog({ teacherId, subject, plan, onClose, onSaved }: Di
       const { url, name } = await uploadFileIfAny();
       const fields = {
         title: title.trim(),
-        content: content.trim() || null,
+        // starý textový sloupec držíme jako souhrn pro zpětnou kompatibilitu
+        content: summary || null,
+        content_blocks: blocks.length ? (blocks as unknown as any) : null,
         file_url: url,
         file_name: name,
       };
@@ -339,6 +394,7 @@ function EditCurriculumDialog({ teacherId, subject, plan, onClose, onSaved }: Di
         : await supabase
             .from("teacher_curriculum_plans")
             .insert({ teacher_id: teacherId, subject, ...fields });
+
       if (error) throw error;
       toast({ title: "ŠVP uloženo" });
       onSaved();
@@ -375,13 +431,22 @@ function EditCurriculumDialog({ teacherId, subject, plan, onClose, onSaved }: Di
     setFileUrl(null);
   };
 
+  const handlePdf = async () => {
+    try {
+      await downloadCurriculumPdf({ title: title.trim() || subject, subject, blocks });
+    } catch (e: any) {
+      toast({ title: "Export selhal", description: e?.message ?? String(e), variant: "destructive" });
+    }
+  };
+
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>ŠVP – {subject}</DialogTitle>
           <DialogDescription>
-            Vložte text ŠVP nebo nahrajte soubor (PDF/DOC/DOCX). Můžete použít obojí zároveň.
+            Skládejte ŠVP z bloků (nadpisy, odstavce, tabulky). Bloky lze přetahovat, skrývat
+            i mazat. Volitelně můžete nahrát i původní soubor (PDF/DOC/DOCX).
           </DialogDescription>
         </DialogHeader>
 
@@ -397,32 +462,39 @@ function EditCurriculumDialog({ teacherId, subject, plan, onClose, onSaved }: Di
           </div>
 
           <div className="space-y-2">
-            <div className="flex items-center justify-between gap-2">
-              <Label htmlFor="svp-content">Text ŠVP</Label>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="gap-2"
-                onClick={() => {
-                  if (
-                    content.trim() &&
-                    !confirm("Textové pole není prázdné. Přepsat jeho obsah šablonou?")
-                  )
-                    return;
-                  setContent(CURRICULUM_PLAN_TEMPLATE);
-                }}
-              >
-                <LayoutTemplate className="w-4 h-4" /> Použít šablonu
-              </Button>
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <Label>Obsah ŠVP</Label>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => void handlePdf()}
+                >
+                  <Download className="w-4 h-4" /> Stáhnout PDF
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => {
+                    if (
+                      blocks.length > 0 &&
+                      !confirm("Obsah není prázdný. Přepsat ho strukturovanou šablonou ŠVP?")
+                    )
+                      return;
+                    setBlocks(buildCurriculumBlocks());
+                  }}
+                >
+                  <LayoutTemplate className="w-4 h-4" /> Použít šablonu
+                </Button>
+              </div>
             </div>
-            <Textarea
-              id="svp-content"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Vložte nebo vepište obsah školního vzdělávacího plánu…"
-              rows={10}
-            />
+            <div className="rounded-lg border border-border p-2">
+              <BlockEditor blocks={blocks} onChange={setBlocks} />
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -471,6 +543,7 @@ function EditCurriculumDialog({ teacherId, subject, plan, onClose, onSaved }: Di
             </Button>
           </div>
         </DialogFooter>
+
       </DialogContent>
     </Dialog>
   );

@@ -1,0 +1,1 @@
+ALTER TABLE public.teacher_curriculum_plans ADD COLUMN IF NOT EXISTS content_blocks jsonb;

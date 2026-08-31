@@ -5919,6 +5919,7 @@ export type Database = {
         Row: {
           class_id: string | null
           content: string | null
+          content_blocks: Json | null
           created_at: string
           file_name: string | null
           file_url: string | null
@@ -5934,6 +5935,7 @@ export type Database = {
         Insert: {
           class_id?: string | null
           content?: string | null
+          content_blocks?: Json | null
           created_at?: string
           file_name?: string | null
           file_url?: string | null
@@ -5949,6 +5951,7 @@ export type Database = {
         Update: {
           class_id?: string | null
           content?: string | null
+          content_blocks?: Json | null
           created_at?: string
           file_name?: string | null
           file_url?: string | null
