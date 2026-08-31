@@ -63,7 +63,7 @@ import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import LessonFormDialog from "@/components/schedule/LessonFormDialog";
-import { reserveRoomSeries, deleteFutureReservationsForEntry } from "@/lib/school-resources";
+import { reserveRoomSeries, deleteFutureReservationsForEntry, describeSeriesResult } from "@/lib/school-resources";
 import { downloadICS, buildScheduleRrule, type CalendarExportEvent } from "@/lib/calendar-export";
 import { Download } from "lucide-react";
 
