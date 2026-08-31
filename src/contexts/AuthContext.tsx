@@ -202,7 +202,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       ...state,
       role: effectiveRole,
       realRole: state.role,
-      viewAsRole: isAdmin ? viewAsRole : null,
+      viewAsRole: isGlobalAdmin ? viewAsRole : null,
       setViewAsRole,
       canSwitchSchoolView,
       setPreferredView,
