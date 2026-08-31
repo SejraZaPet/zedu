@@ -883,6 +883,22 @@ function HeroImageSlot({
  */
 const PROMOTE_THRESHOLD = 5;
 
+/**
+ * Je daný `contenteditable` prvek právě v režimu editace textu?
+ * Pokud ano, tažení myší uvnitř znamená OZNAČOVÁNÍ TEXTU – drag bloku
+ * se v takovém případě nesmí spustit vůbec. Blok se pak posouvá jen
+ * za okraj / rukojeti nebo po kliknutí mimo text (odfokusování).
+ */
+function isTextEditingActive(editableTarget: HTMLElement | null): boolean {
+  if (!editableTarget) return false;
+  if (typeof document === "undefined") return false;
+  const active = document.activeElement as HTMLElement | null;
+  if (!active) return false;
+  return active === editableTarget || editableTarget.contains(active);
+}
+
+
+
 const HANDLES: { handle: FrameHandle; className: string; cursor: string }[] = [
   { handle: "nw", className: "left-0 top-0 -translate-x-1/2 -translate-y-1/2", cursor: "nwse-resize" },
   { handle: "n", className: "left-1/2 top-0 -translate-x-1/2 -translate-y-1/2", cursor: "ns-resize" },
