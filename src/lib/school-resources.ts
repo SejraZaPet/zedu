@@ -309,14 +309,18 @@ export async function createRecurringReservations(input: SeriesInput): Promise<S
 }
 
 /**
- * Atomicky přegeneruje sérii rezervací místnosti pro hodinu rozvrhu:
- * na serveru se nejdřív zruší budoucí rezervace staré série téže hodiny,
- * pak se zkontrolují kolize (bez vlastní série) a teprve pak vznikne nová série.
- * Při skutečné kolizi se celá operace vrátí zpět a vyhodí chybu.
+ * Přegeneruje sérii rezervací místnosti pro hodinu rozvrhu.
+ * Server sám pozná, že se nemění den/čas/místnost – v takovém případě
+ * existující (i schválené) rezervace nechá být. Při skutečné změně vytvoří
+ * rezervace pro všechny volné termíny a obsazené jen přeskočí (viz `skippedDates`).
  */
 export async function reserveRoomSeries(input: SeriesInput): Promise<{
   recurrenceGroupId: string;
   created: number;
+  kept: number;
+  total: number;
+  unchanged: boolean;
+  skippedDates: string[];
   requiresApproval: boolean;
 }> {
   const { data, error } = await supabase.rpc("reserve_room_series" as any, {
@@ -335,9 +339,43 @@ export async function reserveRoomSeries(input: SeriesInput): Promise<{
   return {
     recurrenceGroupId: res.recurrence_group_id,
     created: res.created ?? 0,
+    kept: res.kept ?? 0,
+    total: res.total ?? res.created ?? 0,
+    unchanged: !!res.unchanged,
+    skippedDates: Array.isArray(res.skipped_dates) ? res.skipped_dates : [],
     requiresApproval: !!res.requires_approval,
   };
 }
+
+/** Lidsky čitelný souhrn výsledku hromadné rezervace pro toast učiteli. */
+export function describeSeriesResult(result: {
+  created: number;
+  total: number;
+  unchanged: boolean;
+  skippedDates: string[];
+  requiresApproval: boolean;
+}): { title: string; description?: string; variant?: "default" | "destructive" } {
+  if (result.unchanged) {
+    return { title: "Hodina upravena", description: "Rezervace místnosti zůstávají bez změny." };
+  }
+  const approvalNote = result.requiresApproval
+    ? " Nové termíny čekají na schválení."
+    : "";
+  if (result.skippedDates.length === 0) {
+    return {
+      title: `Rezervováno ${result.created} hodin`,
+      description: `Místnost je zamluvená pro všechny termíny.${approvalNote}`.trim(),
+    };
+  }
+  const list = result.skippedDates.slice(0, 6).join(", ");
+  const more = result.skippedDates.length > 6 ? ` a ${result.skippedDates.length - 6} dalších` : "";
+  return {
+    title: `Rezervováno ${result.created} z ${result.total} hodin`,
+    description:
+      `Obsazené termíny: ${list}${more}. Pro tyto dny zvolte jiný čas nebo místnost.${approvalNote}`.trim(),
+  };
+}
+
 
 /** Zruší budoucí rezervace navázané na hodinu rozvrhu (např. při odebrání místnosti). */
 export async function deleteFutureReservationsForEntry(scheduleEntryId: string) {
