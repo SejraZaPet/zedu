@@ -396,7 +396,25 @@ function EditCurriculumDialog({ teacherId, subject, plan, onClose, onSaved }: Di
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="svp-content">Text ŠVP</Label>
+            <div className="flex items-center justify-between gap-2">
+              <Label htmlFor="svp-content">Text ŠVP</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => {
+                  if (
+                    content.trim() &&
+                    !confirm("Textové pole není prázdné. Přepsat jeho obsah šablonou?")
+                  )
+                    return;
+                  setContent(CURRICULUM_PLAN_TEMPLATE);
+                }}
+              >
+                <LayoutTemplate className="w-4 h-4" /> Použít šablonu
+              </Button>
+            </div>
             <Textarea
               id="svp-content"
               value={content}
