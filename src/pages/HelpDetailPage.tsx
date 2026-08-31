@@ -7,6 +7,7 @@ import { LessonBlock } from "@/components/LessonBlockRenderer";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import type { Block } from "@/lib/textbook-config";
+import HelpNotFound from "@/components/help/HelpNotFound";
 
 const HelpDetailPage = () => {
   const { guideId } = useParams();
