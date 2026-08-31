@@ -23,6 +23,7 @@ import SchoolCreatorSalesCard from "@/components/school/SchoolCreatorSalesCard";
 import SchoolLeadershipCard from "@/components/school/SchoolLeadershipCard";
 import SchoolLicenseCard from "@/components/school/SchoolLicenseCard";
 import SchoolResourcesManager from "@/components/school/SchoolResourcesManager";
+import SchoolCurriculumManager from "@/components/school/SchoolCurriculumManager";
 import SchoolOverviewTab from "@/components/school/SchoolOverviewTab";
 import SchoolEngagementTab from "@/components/school/SchoolEngagementTab";
 import SchoolViewSwitcher from "@/components/school/SchoolViewSwitcher";
@@ -385,6 +386,7 @@ const SchoolAdmin = () => {
             <TabsTrigger value="students"><Users className="w-4 h-4 mr-1" /> Studenti ({students.length})</TabsTrigger>
             <TabsTrigger value="import"><Upload className="w-4 h-4 mr-1" /> Hromadný import</TabsTrigger>
             <TabsTrigger value="resources">Místnosti a inventář</TabsTrigger>
+            <TabsTrigger value="curriculum">Celoškolní ŠVP</TabsTrigger>
             <TabsTrigger value="license">Licence</TabsTrigger>
             <TabsTrigger value="sales">Tvorba a prodej</TabsTrigger>
             <TabsTrigger value="branding"><Palette className="w-4 h-4 mr-1" /> Branding</TabsTrigger>
@@ -412,6 +414,10 @@ const SchoolAdmin = () => {
 
           <TabsContent value="resources">
             <SchoolResourcesManager schoolId={school.id} />
+          </TabsContent>
+
+          <TabsContent value="curriculum">
+            <SchoolCurriculumManager schoolId={school.id} />
           </TabsContent>
 
           <TabsContent value="license">

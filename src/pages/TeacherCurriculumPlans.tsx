@@ -19,8 +19,9 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { BookMarked, FileText, Loader2, Pencil, Plus, Trash2, Upload, ExternalLink } from "lucide-react";
+import { BookMarked, FileText, LayoutTemplate, Loader2, Pencil, Plus, Trash2, Upload, ExternalLink } from "lucide-react";
 import CurriculumTopicsSection from "@/components/teacher/CurriculumTopicsSection";
+import { CURRICULUM_PLAN_TEMPLATE } from "@/lib/curriculum-template";
 
 interface CurriculumPlan {
   id: string;
@@ -396,7 +397,25 @@ function EditCurriculumDialog({ teacherId, subject, plan, onClose, onSaved }: Di
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="svp-content">Text ŠVP</Label>
+            <div className="flex items-center justify-between gap-2">
+              <Label htmlFor="svp-content">Text ŠVP</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => {
+                  if (
+                    content.trim() &&
+                    !confirm("Textové pole není prázdné. Přepsat jeho obsah šablonou?")
+                  )
+                    return;
+                  setContent(CURRICULUM_PLAN_TEMPLATE);
+                }}
+              >
+                <LayoutTemplate className="w-4 h-4" /> Použít šablonu
+              </Button>
+            </div>
             <Textarea
               id="svp-content"
               value={content}
