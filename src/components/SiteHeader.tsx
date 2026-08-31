@@ -129,6 +129,10 @@ const SiteHeader = () => {
       return [
         { label: "Přehled", href: "/admin", icon: LayoutDashboard },
         { label: "Uživatelé", href: "/admin?tab=users", icon: Users },
+        // Admin, který je zároveň školním adminem, se dostane do administrace školy přímo.
+        ...(roles.includes("school_admin")
+          ? [{ label: "Správa školy", href: "/skola", icon: School }]
+          : []),
         { label: "Nápověda", href: "/napoveda", icon: HelpCircle },
       ];
     }
