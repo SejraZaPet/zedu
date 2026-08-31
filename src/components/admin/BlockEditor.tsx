@@ -381,6 +381,7 @@ const SortableBlock = React.memo(({
   onReplace,
   onAiReplace,
   replaceLoading,
+  aiSuggested,
 }: {
   block: Block;
   onUpdate: (id: string, props: Record<string, any>) => void;
@@ -390,6 +391,7 @@ const SortableBlock = React.memo(({
   onReplace: (id: string, target: Block["type"]) => void;
   onAiReplace: (id: string, target: "activity" | "hierarchy") => void;
   replaceLoading: boolean;
+  aiSuggested?: boolean;
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: block.id });
 
