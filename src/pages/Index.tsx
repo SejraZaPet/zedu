@@ -23,6 +23,7 @@ import PodcastSection from "@/components/PodcastSection";
 import FinalCTA from "@/components/landing/FinalCTA";
 import LicensePlansSection from "@/components/LicensePlansSection";
 import SiteFooter from "@/components/SiteFooter";
+import Seo from "@/components/Seo";
 import { useLandingSections, useAllLandingSections, type LandingSectionRow, type LandingSectionType } from "@/hooks/useLandingSections";
 import { LandingEditModeProvider, useLandingEditMode } from "@/contexts/LandingEditModeContext";
 import AdminEditToggle from "@/components/landing-edit/AdminEditToggle";
@@ -243,6 +244,29 @@ const Index = () => {
   return (
     <LandingEditModeProvider>
       <div className="min-h-screen bg-background">
+        <Seo
+          title="Bezli – digitální nástroje pro moderní výuku"
+          description="Bezli je česká vzdělávací platforma: digitální učebnice, interaktivní aktivity, prezentace a živé hodiny pro učitele, školy a žáky."
+          path="/"
+          jsonLd={[
+            {
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              name: "Bezli",
+              url: "https://www.bezli.cz",
+              description:
+                "Česká vzdělávací platforma s digitálními učebnicemi, interaktivními aktivitami a nástroji pro moderní výuku.",
+              email: "info@bezli.cz",
+            },
+            {
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              name: "Bezli",
+              url: "https://www.bezli.cz",
+              inLanguage: "cs-CZ",
+            },
+          ]}
+        />
         <SiteHeader />
         <main>
           <LandingSections />

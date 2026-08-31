@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import SiteHeader from "@/components/SiteHeader";
+import Seo from "@/components/Seo";
 import SiteFooter from "@/components/SiteFooter";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -100,6 +101,11 @@ const HelpPage = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <Seo
+        title="Nápověda a návody | Bezli"
+        description="Návody, interaktivní průvodci a odpovědi na časté otázky k platformě Bezli – pro učitele, žáky i školní administrátory."
+        path="/napoveda"
+      />
       <SiteHeader />
       <main className="flex-1 pb-16" style={{ paddingTop: "calc(70px + 1.5rem)" }}>
         <div className="container mx-auto max-w-4xl px-4">
