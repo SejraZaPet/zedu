@@ -74,7 +74,10 @@ const TEACHER_MENU_GROUPS: TeacherMenuGroup[] = [
   },
   {
     title: "Škola",
-    items: [{ label: "Porady školy", href: "/ucitel/porady", icon: ClipboardList }],
+    items: [
+      { label: "Rezervace", href: "/ucitel/rezervace", icon: CalendarDays },
+      { label: "Porady školy", href: "/ucitel/porady", icon: ClipboardList },
+    ],
   },
 ];
 
