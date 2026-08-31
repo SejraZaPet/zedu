@@ -94,6 +94,9 @@ verify_jwt = false
 [functions.parse-curriculum-topics]
 verify_jwt = false
 
+[functions.parse-curriculum-document]
+verify_jwt = false
+
 [functions.crm-bulk-email]
 verify_jwt = false
 
