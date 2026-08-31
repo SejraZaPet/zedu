@@ -8,7 +8,6 @@ import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -19,9 +18,27 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { BookMarked, FileText, LayoutTemplate, Loader2, Pencil, Plus, Trash2, Upload, ExternalLink } from "lucide-react";
+import {
+  BookMarked,
+  Download,
+  FileText,
+  LayoutTemplate,
+  Loader2,
+  Pencil,
+  Plus,
+  Trash2,
+  Upload,
+  ExternalLink,
+} from "lucide-react";
 import CurriculumTopicsSection from "@/components/teacher/CurriculumTopicsSection";
-import { CURRICULUM_PLAN_TEMPLATE } from "@/lib/curriculum-template";
+import BlockEditor from "@/components/admin/BlockEditor";
+import type { Block } from "@/lib/textbook-config";
+import {
+  buildCurriculumBlocks,
+  curriculumBlocksToText,
+  legacyContentToBlocks,
+} from "@/lib/curriculum-template";
+import { downloadCurriculumPdf } from "@/lib/curriculum-pdf-export";
 
 interface CurriculumPlan {
   id: string;
@@ -29,6 +46,7 @@ interface CurriculumPlan {
   subject: string;
   title: string;
   content: string | null;
+  content_blocks: Block[] | null;
   file_url: string | null;
   file_name: string | null;
   updated_at: string;
@@ -37,6 +55,15 @@ interface CurriculumPlan {
 const BUCKET = "curriculum-plans";
 const MAX_BYTES = 20 * 1024 * 1024;
 const ALLOWED_EXT = ["pdf", "doc", "docx"];
+
+/** Bloky plánu – z content_blocks, jinak fallback ze starého textu. */
+function planBlocks(plan: CurriculumPlan | null): Block[] {
+  if (!plan) return [];
+  const raw = plan.content_blocks;
+  if (Array.isArray(raw) && raw.length > 0) return raw as Block[];
+  return legacyContentToBlocks(plan.content);
+}
+
 
 export default function TeacherCurriculumPlans() {
   const { user } = useAuth();
