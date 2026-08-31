@@ -779,6 +779,7 @@ const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryC
   }, [commit]);
 
   const updateBlock = useCallback((id: string, props: Record<string, any>) => {
+    onBlockEditedRef.current?.(id);
     commit(blocksRef.current.map((b) => (b.id === id ? { ...b, props } : b)));
   }, [commit]);
 
