@@ -101,3 +101,26 @@ export function paletteFor(category: TintableCategory): string[] {
 export function isTintable(category: string): category is TintableCategory {
   return (TINTABLE_CATEGORIES as string[]).includes(category);
 }
+
+/**
+ * Single source of truth for resolving the tint color of an avatar layer.
+ *
+ * Slot-based items (new clothing model) each have their own color column
+ * (`SLOT_COLOR_COLUMN`); legacy items without a slot fall back to the
+ * category-based column (`CATEGORY_COLOR_COLUMN`).
+ */
+export function avatarTintFor(
+  profile: Record<string, unknown> | null | undefined,
+  item: { category: string; layer_slot?: string | null } | null | undefined,
+): string | null {
+  if (!profile || !item) return null;
+  if (item.layer_slot) {
+    const col = SLOT_COLOR_COLUMN[item.layer_slot as LayerSlot];
+    if (!col) return null;
+    return (profile[col] as string | null | undefined) ?? null;
+  }
+  if (!isTintable(item.category)) return null;
+  const col = CATEGORY_COLOR_COLUMN[item.category as TintableCategory];
+  return (profile[col] as string | null | undefined) ?? null;
+}
+
