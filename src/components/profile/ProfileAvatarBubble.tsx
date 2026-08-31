@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 import BadgeOverlay from "@/components/avatar/BadgeOverlay";
 import AvatarLayerStack, { type AvatarStackItem, type StackLayer } from "@/components/avatar/AvatarLayerStack";
-import { isTintable, CATEGORY_COLOR_COLUMN, type TintableCategory } from "@/lib/avatar-palettes";
+import { avatarTintFor } from "@/lib/avatar-palettes";
 import { SLOT_PROFILE_COLUMN, type LayerSlot } from "@/lib/avatar-slots";
 
 interface AvatarItem extends AvatarStackItem {
@@ -14,6 +14,7 @@ interface AvatarItem extends AvatarStackItem {
   icon_name: string | null;
   rarity: "common" | "uncommon" | "rare" | "epic" | "legendary" | "mythic";
   is_neutral_color: boolean | null;
+  layer_slot: LayerSlot | null;
 }
 
 interface AvatarProfile {
