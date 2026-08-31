@@ -15,6 +15,7 @@ import {
   FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Seo from "@/components/Seo";
 
 const categories = [
   { id: "all", label: "Všechny aktivity" },
@@ -262,6 +263,11 @@ const ActivitiesPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Seo
+        title="Interaktivní aktivity pro výuku | Bezli"
+        description="Kvízy, spojovačky, seřazování, otevřené otázky i vizuální aktivity. Prohlédněte si typy interaktivních aktivit, které v Bezli přidáte do lekce."
+        path="/aktivity"
+      />
       <SiteHeader />
       <main className="pb-16" style={{ paddingTop: "calc(70px + 1.5rem)" }}>
         {/* Header */}
@@ -296,6 +302,9 @@ const ActivitiesPage = () => {
 
         {/* Grid */}
         <div className="container mx-auto px-4 md:px-8">
+          <h2 className="font-heading text-xl md:text-2xl font-semibold text-foreground mb-4">
+            {categories.find((c) => c.id === activeCategory)?.label ?? "Všechny aktivity"}
+          </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {filtered.map((activity) => {
               const Icon = activity.icon;
