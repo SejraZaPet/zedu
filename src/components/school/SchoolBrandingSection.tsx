@@ -47,31 +47,87 @@ const SchoolBrandingSection = ({ schoolId, schoolName }: Props) => {
     setLoading(false);
   };
 
+  const LOGO_SIZE = 400;
+  const MIN_DIM = 100;
+  const MAX_DIM = 4000;
+
+  /** Center-crop to square and downscale to 400×400 PNG. */
+  const normalizeLogo = async (file: File): Promise<Blob | null> => {
+    const url = URL.createObjectURL(file);
+    try {
+      const img = await new Promise<HTMLImageElement | null>((resolve) => {
+        const i = new Image();
+        i.onload = () => resolve(i);
+        i.onerror = () => resolve(null);
+        i.src = url;
+      });
+      if (!img) return null;
+      const w = img.naturalWidth || img.width;
+      const h = img.naturalHeight || img.height;
+      if (w < MIN_DIM || h < MIN_DIM) {
+        toast({
+          title: "Příliš malé rozlišení",
+          description: `Logo musí mít alespoň ${MIN_DIM}×${MIN_DIM} px (nahráno ${w}×${h}).`,
+          variant: "destructive",
+        });
+        return null;
+      }
+      if (w > MAX_DIM || h > MAX_DIM) {
+        toast({
+          title: "Příliš velké rozlišení",
+          description: `Maximum je ${MAX_DIM}×${MAX_DIM} px (nahráno ${w}×${h}).`,
+          variant: "destructive",
+        });
+        return null;
+      }
+      const side = Math.min(w, h);
+      const sx = (w - side) / 2;
+      const sy = (h - side) / 2;
+      const canvas = document.createElement("canvas");
+      canvas.width = LOGO_SIZE;
+      canvas.height = LOGO_SIZE;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return null;
+      ctx.imageSmoothingQuality = "high";
+      ctx.clearRect(0, 0, LOGO_SIZE, LOGO_SIZE);
+      ctx.drawImage(img, sx, sy, side, side, 0, 0, LOGO_SIZE, LOGO_SIZE);
+      return await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob((b) => resolve(b), "image/png", 0.92),
+      );
+    } catch {
+      return null;
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  };
+
   const handleLogoUpload = async (file: File) => {
     if (file.size > 1024 * 1024) {
       toast({ title: "Soubor je příliš velký", description: "Maximum je 1 MB.", variant: "destructive" });
       return;
     }
-    // Validate dimensions
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    const dimsOk = await new Promise<boolean>((resolve) => {
-      img.onload = () => resolve(img.width <= 400 && img.height <= 400);
-      img.onerror = () => resolve(false);
-      img.src = url;
-    });
-    URL.revokeObjectURL(url);
-    if (!dimsOk) {
-      toast({ title: "Příliš velké rozměry", description: "Logo musí být max. 400×400 px.", variant: "destructive" });
-      return;
+
+    const isSvg = file.type === "image/svg+xml";
+    let uploadBody: Blob = file;
+    let ext = file.name.split(".").pop()?.toLowerCase() || "png";
+
+    if (!isSvg) {
+      setUploading(true);
+      const normalized = await normalizeLogo(file);
+      if (!normalized) {
+        setUploading(false);
+        return;
+      }
+      uploadBody = normalized;
+      ext = "png";
     }
 
     setUploading(true);
-    const ext = file.name.split(".").pop()?.toLowerCase() || "png";
     const path = `${schoolId}/logo-${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from("school-logos").upload(path, file, {
+    const { error } = await supabase.storage.from("school-logos").upload(path, uploadBody, {
       cacheControl: "3600",
       upsert: true,
+      contentType: isSvg ? "image/svg+xml" : "image/png",
     });
     if (error) {
       setUploading(false);
@@ -81,8 +137,14 @@ const SchoolBrandingSection = ({ schoolId, schoolName }: Props) => {
     const { data: pub } = supabase.storage.from("school-logos").getPublicUrl(path);
     setLogoUrl(pub.publicUrl);
     setUploading(false);
-    toast({ title: "Logo nahráno", description: "Nezapomeňte uložit změny." });
+    toast({
+      title: "Logo nahráno",
+      description: isSvg
+        ? "Nezapomeňte uložit změny."
+        : "Automaticky zmenšeno na 400×400 px. Nezapomeňte uložit změny.",
+    });
   };
+
 
   const removeLogo = () => setLogoUrl(null);
 
@@ -150,7 +212,7 @@ const SchoolBrandingSection = ({ schoolId, schoolName }: Props) => {
           </div>
 
           <div>
-            <Label>Logo školy (max. 400×400 px, 1 MB)</Label>
+            <Label>Logo školy (max. 1 MB — automaticky zmenšíme na 400×400 px)</Label>
             <div className="flex items-center gap-3 mt-2">
               {logoUrl ? (
                 <img src={logoUrl} alt="Logo" className="h-16 w-16 object-contain rounded border border-border bg-muted/30" />
