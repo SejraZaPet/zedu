@@ -102,15 +102,13 @@ export default function TeacherCurriculumPlans() {
       value={null}
       onChange={({ name }) => {
         void refetchSubjects();
-        const existing = plans.find(
-          (p) => p.subject.toLowerCase() === name.trim().toLowerCase(),
-        ) ?? null;
-        setEditing({ subject: name.trim(), plan: existing });
+        setEditing({ subject: name.trim(), plan: null });
       }}
       placeholder="Vybrat nebo vytvořit předmět"
       className="max-w-sm"
     />
   );
+
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
