@@ -19,8 +19,9 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { BookMarked, FileText, Loader2, Pencil, Plus, Trash2, Upload, ExternalLink } from "lucide-react";
+import { BookMarked, FileText, LayoutTemplate, Loader2, Pencil, Plus, Trash2, Upload, ExternalLink } from "lucide-react";
 import CurriculumTopicsSection from "@/components/teacher/CurriculumTopicsSection";
+import { CURRICULUM_PLAN_TEMPLATE } from "@/lib/curriculum-template";
 
 interface CurriculumPlan {
   id: string;
