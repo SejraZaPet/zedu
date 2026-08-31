@@ -63,7 +63,7 @@ import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import LessonFormDialog from "@/components/schedule/LessonFormDialog";
-import { reserveRoomSeries, deleteFutureReservationsForEntry } from "@/lib/school-resources";
+import { reserveRoomSeries, deleteFutureReservationsForEntry, describeSeriesResult } from "@/lib/school-resources";
 import { downloadICS, buildScheduleRrule, type CalendarExportEvent } from "@/lib/calendar-export";
 import { Download } from "lucide-react";
 
@@ -1703,9 +1703,9 @@ function BreakSettingRow({
 
 /**
  * Založí/přegeneruje pravidelné rezervace místnosti pro uložené hodiny rozvrhu.
- * Serverová funkce nejdřív zruší budoucí rezervace staré série té samé hodiny,
- * takže úprava hodiny nikdy nekoliduje sama se sebou. Skutečná kolize s cizí
- * rezervací celou operaci vrátí zpět (stará série zůstane).
+ * Když se u hodiny nemění den, čas ani místnost, server existující (i schválené)
+ * rezervace ponechá. Jinak vytvoří rezervace pro všechny volné termíny a obsazené
+ * termíny jen přeskočí – učitel dostane souhrn.
  */
 async function reserveRoomForSlots(
   roomResourceId: string,
@@ -1714,7 +1714,10 @@ async function reserveRoomForSlots(
   userId: string,
 ) {
   let created = 0;
+  let total = 0;
   let needsApproval = false;
+  let allUnchanged = true;
+  const skipped: string[] = [];
   const errors: string[] = [];
   for (const slot of slots) {
     try {
@@ -1731,25 +1734,40 @@ async function reserveRoomForSlots(
         scheduleEntryId: slot.id,
       });
       created += res.created;
+      total += res.total;
+      skipped.push(...res.skippedDates);
       needsApproval = needsApproval || res.requiresApproval;
+      if (!res.unchanged) allUnchanged = false;
     } catch (e: any) {
       errors.push(e?.message ?? "Rezervaci místnosti nepodařilo uložit");
     }
   }
+
   if (errors.length > 0) {
     toast({
       title: "Místnost nelze rezervovat",
-      description: `${errors[0]} Původní rezervace zůstaly nezměněné – zvolte jinou místnost nebo čas.`,
+      description: `${errors[0]} Zvolte jinou místnost nebo čas.`,
       variant: "destructive",
     });
-  } else if (created > 0) {
-    toast(
-      needsApproval
-        ? {
-            title: `Odesláno ${created} žádostí o místnost`,
-            description: "Celá série čeká na schválení administrátora školy.",
-          }
-        : { title: `Místnost rezervována na ${created} hodin` },
-    );
+    return;
   }
+
+  if (allUnchanged) {
+    toast({
+      title: "Hodina upravena",
+      description: "Rezervace místnosti zůstávají bez změny.",
+    });
+    return;
+  }
+
+  toast(
+    describeSeriesResult({
+      created,
+      total,
+      unchanged: false,
+      skippedDates: skipped,
+      requiresApproval: needsApproval,
+    }),
+  );
 }
+

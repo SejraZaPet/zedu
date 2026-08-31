@@ -883,6 +883,22 @@ function HeroImageSlot({
  */
 const PROMOTE_THRESHOLD = 5;
 
+/**
+ * Je daný `contenteditable` prvek právě v režimu editace textu?
+ * Pokud ano, tažení myší uvnitř znamená OZNAČOVÁNÍ TEXTU – drag bloku
+ * se v takovém případě nesmí spustit vůbec. Blok se pak posouvá jen
+ * za okraj / rukojeti nebo po kliknutí mimo text (odfokusování).
+ */
+function isTextEditingActive(editableTarget: HTMLElement | null): boolean {
+  if (!editableTarget) return false;
+  if (typeof document === "undefined") return false;
+  const active = document.activeElement as HTMLElement | null;
+  if (!active) return false;
+  return active === editableTarget || editableTarget.contains(active);
+}
+
+
+
 const HANDLES: { handle: FrameHandle; className: string; cursor: string }[] = [
   { handle: "nw", className: "left-0 top-0 -translate-x-1/2 -translate-y-1/2", cursor: "nwse-resize" },
   { handle: "n", className: "left-1/2 top-0 -translate-x-1/2 -translate-y-1/2", cursor: "ns-resize" },
@@ -997,11 +1013,18 @@ function FreeFrameBlock({
       return;
     }
     const editableTarget = target.closest('[contenteditable="true"]') as HTMLElement | null;
+    // Kurzor už je v textu → uživatel označuje text, nikoliv táhne blok.
+    if (isTextEditingActive(editableTarget)) {
+      e.stopPropagation();
+      onSelect?.();
+      return;
+    }
     startDrag("move", 5, () => {
       editableTarget?.blur();
       window.getSelection?.()?.removeAllRanges();
     })(e);
   };
+
 
 
   const nudge = (e: React.KeyboardEvent) => {
@@ -1268,6 +1291,12 @@ export function SlideBody({
       return;
     }
     const editableTarget = targetEl?.closest("[contenteditable='true']") as HTMLElement | null;
+    // Text už je v editaci → tažení myší je označování textu, drag nespouštíme.
+    if (isTextEditingActive(editableTarget)) {
+      onSelectBlock?.(b.id);
+      return;
+    }
+
     const el = e.currentTarget as HTMLElement;
     const dragTarget = slideRootRef.current;
     if (!dragTarget) return;

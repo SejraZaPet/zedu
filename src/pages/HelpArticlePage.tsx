@@ -7,6 +7,18 @@ import MarkdownContent from "@/components/MarkdownContent";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft } from "lucide-react";
+import HelpNotFound from "@/components/help/HelpNotFound";
+
+/** Zjednodušený slug z názvu – pro dohledání starých odkazů na průvodce. */
+const slugify = (v: string) =>
+  v
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 interface Article {
   title: string;
@@ -30,7 +42,32 @@ const HelpArticlePage = () => {
         .select("title, category, content, cover_image_url, is_published")
         .eq("slug", slug)
         .maybeSingle();
-      setArticle(data as Article | null);
+      if (data) {
+        setArticle(data as Article);
+        setLoading(false);
+        return;
+      }
+
+      // Starý odkaz? Zkusíme dohledat průvodce (help_guides) a přesměrovat na jeho nové umístění.
+      if (UUID_RE.test(slug)) {
+        const { data: byId } = await supabase
+          .from("help_guides")
+          .select("id")
+          .eq("id", slug)
+          .maybeSingle();
+        if (byId?.id) {
+          navigate(`/napoveda/pruvodce/${byId.id}`, { replace: true });
+          return;
+        }
+      }
+      const { data: guides } = await supabase.from("help_guides").select("id, title");
+      const match = (guides ?? []).find((g: any) => slugify(g.title ?? "") === slugify(slug));
+      if (match?.id) {
+        navigate(`/napoveda/pruvodce/${match.id}`, { replace: true });
+        return;
+      }
+
+      setArticle(null);
       setLoading(false);
     };
     load();
@@ -48,7 +85,7 @@ const HelpArticlePage = () => {
           {loading ? (
             <p className="text-muted-foreground">Načítání…</p>
           ) : !article ? (
-            <p className="text-muted-foreground">Článek nenalezen.</p>
+            <HelpNotFound />
           ) : (
             <>
               <div className="flex items-center gap-2 mb-2">

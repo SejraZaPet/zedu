@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import HelpPage from "./pages/HelpPage";
 import HelpDetailPage from "./pages/HelpDetailPage";
 import HelpArticlePage from "./pages/HelpArticlePage";
+import LegacyHelpRedirect from "@/components/help/LegacyHelpRedirect";
 import Auth from "./pages/Auth";
 import OAuthConsent from "./pages/OAuthConsent";
 import ResetPassword from "./pages/ResetPassword";
@@ -164,6 +165,13 @@ const App = () => (
             <Route path="/live/pripojit" element={<StudentGameJoin />} />
             <Route path="/live/student/:sessionId" element={<StudentGamePlay />} />
             <Route path="/napoveda" element={<HelpPage />} />
+            {/* Staré adresy nápovědy – ať uložené a sdílené odkazy dál fungují. */}
+            <Route path="/help" element={<Navigate to="/napoveda" replace />} />
+            <Route path="/pomoc" element={<Navigate to="/napoveda" replace />} />
+            <Route path="/napoveda/clanek/:slug" element={<LegacyHelpRedirect />} />
+            <Route path="/help/:slug" element={<LegacyHelpRedirect />} />
+            <Route path="/pomoc/:slug" element={<LegacyHelpRedirect />} />
+            <Route path="/napoveda/guide/:slug" element={<LegacyHelpRedirect />} />
             <Route path="/napoveda/pruvodce/:guideId" element={<HelpDetailPage />} />
             <Route path="/napoveda/:slug" element={<HelpArticlePage />} />
             <Route path="/gdpr" element={<GdprPage />} />

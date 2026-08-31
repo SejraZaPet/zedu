@@ -7,6 +7,7 @@ import { LessonBlock } from "@/components/LessonBlockRenderer";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import type { Block } from "@/lib/textbook-config";
+import HelpNotFound from "@/components/help/HelpNotFound";
 
 const HelpDetailPage = () => {
   const { guideId } = useParams();
@@ -46,12 +47,10 @@ const HelpDetailPage = () => {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <SiteHeader />
-        <main className="flex-1 pb-16 flex flex-col items-center justify-center gap-4" style={{ paddingTop: "calc(70px + 1.5rem)" }}>
-          <p className="text-muted-foreground">Návod nenalezen.</p>
-          <Button variant="outline" onClick={() => navigate("/napoveda")}>
-            <ArrowLeft className="w-4 h-4 mr-1" /> Zpět na nápovědu
-          </Button>
+        <main className="flex-1 pb-16 flex flex-col items-center justify-center gap-4 px-4" style={{ paddingTop: "calc(70px + 1.5rem)" }}>
+          <HelpNotFound title="Tento průvodce jsme nenašli" />
         </main>
+
       </div>
     );
   }
