@@ -6,6 +6,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AccessibilitySettingsSync } from "@/hooks/useAccessibilitySettings";
 import Index from "./pages/Index";
+import SchoolEntry from "./pages/SchoolEntry";
+
 import HelpPage from "./pages/HelpPage";
 import HelpDetailPage from "./pages/HelpDetailPage";
 import HelpArticlePage from "./pages/HelpArticlePage";
@@ -115,6 +117,8 @@ const App = () => (
           <PublicSiteAssistant />
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/s/:slug" element={<SchoolEntry />} />
+
 
 
            <Route path="/auth" element={<Auth />} />

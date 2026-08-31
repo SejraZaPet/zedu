@@ -183,7 +183,10 @@ const SchoolBrandingSection = ({ schoolId, schoolName }: Props) => {
     return <Card><CardContent className="py-8 text-center text-muted-foreground text-sm">Načítání…</CardContent></Card>;
   }
 
-  const previewUrl = subdomain ? `https://${subdomain}.bezli.cz` : null;
+  const sub = subdomain.trim().toLowerCase();
+  const subdomainUrl = sub ? `https://${sub}.bezli.cz` : null;
+  const pathUrl = sub ? `https://bezli.cz/s/${sub}` : null;
+
 
   return (
     <div className="grid gap-4 md:grid-cols-2">
@@ -279,14 +282,36 @@ const SchoolBrandingSection = ({ schoolId, schoolName }: Props) => {
             />
           </div>
 
-          <div className="flex items-center justify-between pt-2 border-t border-border">
-            <div className="text-xs text-muted-foreground">
-              {previewUrl ? <>Náhled URL: <span className="font-mono">{previewUrl}</span></> : "Subdoména není nastavena"}
+          <div className="space-y-3 pt-2 border-t border-border">
+            {pathUrl ? (
+              <div className="space-y-2 text-xs">
+                <div className="flex items-start gap-2">
+                  <span className="mt-0.5 shrink-0 rounded bg-primary/10 px-1.5 py-0.5 font-medium text-primary">
+                    Funguje vždy
+                  </span>
+                  <span className="font-mono break-all">{pathUrl}</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="mt-0.5 shrink-0 rounded bg-muted px-1.5 py-0.5 font-medium text-muted-foreground">
+                    Zatím nefunguje
+                  </span>
+                  <span className="font-mono break-all text-muted-foreground">{subdomainUrl}</span>
+                </div>
+                <p className="text-muted-foreground">
+                  Adresa se subdoménou se dnes přesměrovává na hlavní web (nastavení primární domény
+                  hostingu). Používejte proto odkaz „Funguje vždy“; branding školy je u obou stejný.
+                </p>
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">Subdoména není nastavena</p>
+            )}
+            <div className="flex justify-end">
+              <Button onClick={save} disabled={saving}>
+                <Save className="w-4 h-4 mr-1" /> {saving ? "Ukládám…" : "Uložit"}
+              </Button>
             </div>
-            <Button onClick={save} disabled={saving}>
-              <Save className="w-4 h-4 mr-1" /> {saving ? "Ukládám…" : "Uložit"}
-            </Button>
           </div>
+
         </CardContent>
       </Card>
 
