@@ -26,6 +26,7 @@ interface CurriculumPlan {
   id: string;
   teacher_id: string;
   subject: string;
+  title: string;
   content: string | null;
   file_url: string | null;
   file_name: string | null;
