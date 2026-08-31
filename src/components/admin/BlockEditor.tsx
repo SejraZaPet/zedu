@@ -1110,6 +1110,7 @@ const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryC
                 onReplace={replaceBlock}
                 onAiReplace={aiReplaceBlock}
                 replaceLoading={replacingId === block.id}
+                aiSuggested={aiSuggestedSet.has(block.id)}
               />
               {idx < normalizedBlocks.length - 1 && (
                 <InsertButton afterId={block.id} onInsert={insertBlockAfter} />
