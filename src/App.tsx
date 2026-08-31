@@ -115,6 +115,8 @@ const App = () => (
           <PublicSiteAssistant />
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/s/:slug" element={<SchoolEntry />} />
+
 
 
            <Route path="/auth" element={<Auth />} />
