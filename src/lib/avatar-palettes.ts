@@ -1,4 +1,6 @@
+import { SLOT_COLOR_COLUMN, type LayerSlot } from "@/lib/avatar-slots";
 /**
+
  * Per-category color palettes for the avatar editor.
  * Each entry is a HEX string (#RRGGBB) OR a special sentinel value.
  *
