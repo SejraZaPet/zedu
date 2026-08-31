@@ -26,6 +26,7 @@ import {
   Loader2,
   Pencil,
   Plus,
+  Sparkles,
   Trash2,
   Upload,
   ExternalLink,
@@ -35,9 +36,14 @@ import BlockEditor from "@/components/admin/BlockEditor";
 import type { Block } from "@/lib/textbook-config";
 import {
   buildCurriculumBlocks,
+  buildCurriculumBlocksFromAi,
   curriculumBlocksToText,
   legacyContentToBlocks,
 } from "@/lib/curriculum-template";
+import {
+  CURRICULUM_AI_MAX_CHARS,
+  extractDocumentText,
+} from "@/lib/curriculum-file-extract";
 import { downloadCurriculumPdf } from "@/lib/curriculum-pdf-export";
 
 interface CurriculumPlan {
