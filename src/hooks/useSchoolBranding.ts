@@ -84,44 +84,51 @@ function hexToHslString(hex: string): string | null {
   return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
 }
 
-let cached: SchoolBranding | null | undefined = undefined;
+const cache = new Map<string, SchoolBranding | null>();
 
 export function useSchoolBranding() {
-  const [branding, setBranding] = useState<SchoolBranding | null>(cached ?? null);
-  const [loading, setLoading] = useState(cached === undefined);
+  const slug = detectSchoolSlug();
+  const initial = slug ? cache.get(slug) : null;
+  const [branding, setBranding] = useState<SchoolBranding | null>(initial ?? null);
+  const [loading, setLoading] = useState(!!slug && initial === undefined);
 
   useEffect(() => {
-    if (cached !== undefined) {
-      setBranding(cached);
+    if (!slug) {
+      setBranding(null);
       setLoading(false);
       return;
     }
-    const sub = detectSubdomain();
-    if (!sub) {
-      cached = null;
+    const applyTint = (b: SchoolBranding | null) => {
+      if (b?.custom_primary_color) {
+        const hsl = hexToHslString(b.custom_primary_color);
+        if (hsl) document.documentElement.style.setProperty("--primary", hsl);
+      }
+    };
+    if (cache.has(slug)) {
+      const hit = cache.get(slug) ?? null;
+      setBranding(hit);
       setLoading(false);
+      applyTint(hit);
       return;
     }
     let active = true;
+    setLoading(true);
     (async () => {
       const { data } = await supabase
         .from("schools_public" as any)
         .select("id, name, subdomain, custom_logo_url, custom_primary_color, custom_welcome_text, registration_code")
-        .eq("subdomain", sub)
+        .eq("subdomain", slug)
         .maybeSingle();
+      const result = (data as unknown as SchoolBranding) ?? null;
+      cache.set(slug, result);
       if (!active) return;
-      cached = (data as unknown as SchoolBranding) ?? null;
-      setBranding(cached);
+      setBranding(result);
       setLoading(false);
-      if (cached?.custom_primary_color) {
-        const hsl = hexToHslString(cached.custom_primary_color);
-        if (hsl) {
-          document.documentElement.style.setProperty("--primary", hsl);
-        }
-      }
+      applyTint(result);
     })();
     return () => { active = false; };
-  }, []);
+  }, [slug]);
+
 
   return { branding, loading };
 }
