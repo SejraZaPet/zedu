@@ -121,6 +121,12 @@ ${bodyHtml || "<p>Dokument neobsahuje žádný obsah.</p>"}
 </body>
 </html>`;
 
+  return html;
+}
+
+export async function downloadCurriculumPdf(opts: CurriculumPdfOptions): Promise<void> {
+  const html = buildCurriculumPdfHtml(opts);
   const safe = (opts.title || "svp").replace(/[^\p{L}\p{N}\-_ ]/gu, "").trim() || "svp";
   await downloadHtmlAsPdf({ html, filename: `${safe}.pdf` });
 }
+
