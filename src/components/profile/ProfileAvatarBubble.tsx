@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 import BadgeOverlay from "@/components/avatar/BadgeOverlay";
 import AvatarLayerStack, { type AvatarStackItem, type StackLayer } from "@/components/avatar/AvatarLayerStack";
-import { isTintable, CATEGORY_COLOR_COLUMN, type TintableCategory } from "@/lib/avatar-palettes";
+import { avatarTintFor } from "@/lib/avatar-palettes";
 import { SLOT_PROFILE_COLUMN, type LayerSlot } from "@/lib/avatar-slots";
 
 interface AvatarItem extends AvatarStackItem {
@@ -14,6 +14,7 @@ interface AvatarItem extends AvatarStackItem {
   icon_name: string | null;
   rarity: "common" | "uncommon" | "rare" | "epic" | "legendary" | "mythic";
   is_neutral_color: boolean | null;
+  layer_slot: LayerSlot | null;
 }
 
 interface AvatarProfile {
@@ -37,6 +38,16 @@ interface AvatarProfile {
   face_accessory_color: string | null;
   head_accessory_color: string | null;
   background_color: string | null;
+  clothing_top_color: string | null;
+  clothing_bottom_color: string | null;
+  clothing_full_color: string | null;
+  clothing_shoes_color: string | null;
+  clothing_head_color: string | null;
+  clothing_face_color: string | null;
+  clothing_neck_color: string | null;
+  clothing_hands_color: string | null;
+  clothing_bag_color: string | null;
+  hair_accessory_color: string | null;
   clothing_top_id: string | null;
   clothing_bottom_id: string | null;
   clothing_full_id: string | null;
@@ -48,6 +59,7 @@ interface AvatarProfile {
   clothing_bag_id: string | null;
   hair_accessory_id: string | null;
 }
+
 
 // Same order as AvatarEditor: bottom → top.
 // Entries reference either a legacy category field on AvatarProfile
@@ -145,7 +157,7 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
     (async () => {
       const { data: prof } = await supabase
         .from("avatar_profiles")
-        .select("base_id, skin_tone_id, hairstyle_id, hair_color_id, eyes_id, eyebrow_id, mouth_id, outfit_id, face_accessory_id, head_accessory_id, background_id, frame_id, effect_id, badge_id, base_color, hairstyle_color, outfit_color, face_accessory_color, head_accessory_color, background_color, clothing_top_id, clothing_bottom_id, clothing_full_id, clothing_shoes_id, clothing_head_id, clothing_face_id, clothing_neck_id, clothing_hands_id, clothing_bag_id, hair_accessory_id")
+        .select("base_id, skin_tone_id, hairstyle_id, hair_color_id, eyes_id, eyebrow_id, mouth_id, outfit_id, face_accessory_id, head_accessory_id, background_id, frame_id, effect_id, badge_id, base_color, hairstyle_color, outfit_color, face_accessory_color, head_accessory_color, background_color, clothing_top_color, clothing_bottom_color, clothing_full_color, clothing_shoes_color, clothing_head_color, clothing_face_color, clothing_neck_color, clothing_hands_color, clothing_bag_color, hair_accessory_color, clothing_top_id, clothing_bottom_id, clothing_full_id, clothing_shoes_id, clothing_head_id, clothing_face_id, clothing_neck_id, clothing_hands_id, clothing_bag_id, hair_accessory_id")
         .eq("user_id", userId)
         .maybeSingle();
 
@@ -168,7 +180,7 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
       }
       const { data: rows } = await supabase
         .from("avatar_items")
-        .select("id, slug, category, name, image_url, image_url_back, icon_name, color_value, is_neutral_color, rarity, layer_offset_x, layer_offset_y, layer_scale, updated_at")
+        .select("id, slug, category, name, image_url, image_url_back, icon_name, color_value, is_neutral_color, rarity, layer_slot, layer_offset_x, layer_offset_y, layer_scale, updated_at")
         .in("id", ids);
       if (!mounted) return;
       const m = new Map<string, AvatarItem>();
@@ -178,14 +190,6 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
     })();
     return () => { mounted = false; };
   }, [userId, reloadKey]);
-
-  const tintFor = (category: string): string | null => {
-    if (!profile) return null;
-    if (!isTintable(category)) return null;
-    const col = CATEGORY_COLOR_COLUMN[category as TintableCategory];
-    const val = (profile as any)[col] as string | null | undefined;
-    return val ?? null;
-  };
 
   const stackLayers: StackLayer[] = [];
   if (profile) {
@@ -198,7 +202,7 @@ export default function ProfileAvatarBubble({ userId, size = 56, className, edit
       if (!item) continue;
       if (l.sub === "back" && !item.image_url_back) continue;
       if (l.sub === "front" && !item.image_url) continue;
-      stackLayers.push({ item, sub: l.sub, tintColor: tintFor(item.category) });
+      stackLayers.push({ item, sub: l.sub, tintColor: avatarTintFor(profile as any, item) });
     }
   }
 

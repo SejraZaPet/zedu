@@ -37,7 +37,7 @@ import {
 
 import { cn } from "@/lib/utils";
 import ColorPalette from "@/components/avatar/ColorPalette";
-import { isTintable, CATEGORY_COLOR_COLUMN, paletteFor, isGradientValue, BRAND_GRADIENT_CSS, type TintableCategory } from "@/lib/avatar-palettes";
+import { isTintable, CATEGORY_COLOR_COLUMN, avatarTintFor, paletteFor, isGradientValue, BRAND_GRADIENT_CSS, type TintableCategory } from "@/lib/avatar-palettes";
 import {
   SLOT_PROFILE_COLUMN, SLOT_COLOR_COLUMN, SLOT_LABEL, CLOTHING_SLOTS, SLOT_CONFLICTS, SLOT_LAYER_ORDER,
   type LayerSlot,
@@ -562,19 +562,11 @@ function AvatarPreview({
   const legacySkin = profile.skin_tone_id ? itemsById.get(profile.skin_tone_id)?.color_value ?? null : null;
 
   const tintFor = (item: AvatarItem): string | null => {
-    // Slot-based items (new clothing model) — each slot has its own color column.
-    if (item.layer_slot) {
-      const col = SLOT_COLOR_COLUMN[item.layer_slot];
-      const val = (profile as any)[col] as string | null | undefined;
-      return val ?? null;
-    }
-    const category = item.category;
-    if (!isTintable(category)) return null;
-    const col = CATEGORY_COLOR_COLUMN[category as TintableCategory];
-    const val = (profile as any)[col] as string | null | undefined;
+    const val = avatarTintFor(profile as any, item);
     if (val) return val;
-    if (category === "hairstyle") return legacyHair;
-    if (category === "base") return legacySkin;
+    if (item.layer_slot) return null;
+    if (item.category === "hairstyle") return legacyHair;
+    if (item.category === "base") return legacySkin;
     return null;
   };
 
