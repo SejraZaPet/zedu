@@ -73,7 +73,9 @@ export interface CurriculumPdfOptions {
   blocks: Block[];
 }
 
-export async function downloadCurriculumPdf(opts: CurriculumPdfOptions): Promise<void> {
+/** Sestaví HTML dokument ŠVP (exportováno kvůli testovatelnosti). */
+export function buildCurriculumPdfHtml(opts: CurriculumPdfOptions): string {
+
   const bodyHtml = opts.blocks.map(blockToHtml).filter(Boolean).join("\n");
   const dateStr = new Date().toLocaleDateString("cs-CZ");
 
