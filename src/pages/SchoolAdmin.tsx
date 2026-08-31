@@ -416,6 +416,10 @@ const SchoolAdmin = () => {
             <SchoolResourcesManager schoolId={school.id} />
           </TabsContent>
 
+          <TabsContent value="curriculum">
+            <SchoolCurriculumManager schoolId={school.id} />
+          </TabsContent>
+
           <TabsContent value="license">
             <SchoolLicenseCard schoolId={school.id} />
           </TabsContent>
