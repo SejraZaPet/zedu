@@ -386,6 +386,7 @@ const SchoolAdmin = () => {
             <TabsTrigger value="students"><Users className="w-4 h-4 mr-1" /> Studenti ({students.length})</TabsTrigger>
             <TabsTrigger value="import"><Upload className="w-4 h-4 mr-1" /> Hromadný import</TabsTrigger>
             <TabsTrigger value="resources">Místnosti a inventář</TabsTrigger>
+            <TabsTrigger value="curriculum">Celoškolní ŠVP</TabsTrigger>
             <TabsTrigger value="license">Licence</TabsTrigger>
             <TabsTrigger value="sales">Tvorba a prodej</TabsTrigger>
             <TabsTrigger value="branding"><Palette className="w-4 h-4 mr-1" /> Branding</TabsTrigger>
