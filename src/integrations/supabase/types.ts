@@ -7464,6 +7464,23 @@ export type Database = {
         Args: { _code: string; _user_id: string }
         Returns: string
       }
+      link_parent_by_student_code: {
+        Args: { _code: string }
+        Returns: {
+          first_name: string
+          id: string
+          last_name: string
+        }[]
+      }
+      log_audit_event: {
+        Args: {
+          _action: string
+          _details?: Json
+          _target_id?: string
+          _target_type?: string
+        }
+        Returns: undefined
+      }
       marketplace_current_commission: { Args: never; Returns: number }
       marketplace_phase_metrics: {
         Args: never
