@@ -38,6 +38,16 @@ interface AvatarProfile {
   face_accessory_color: string | null;
   head_accessory_color: string | null;
   background_color: string | null;
+  clothing_top_color: string | null;
+  clothing_bottom_color: string | null;
+  clothing_full_color: string | null;
+  clothing_shoes_color: string | null;
+  clothing_head_color: string | null;
+  clothing_face_color: string | null;
+  clothing_neck_color: string | null;
+  clothing_hands_color: string | null;
+  clothing_bag_color: string | null;
+  hair_accessory_color: string | null;
   clothing_top_id: string | null;
   clothing_bottom_id: string | null;
   clothing_full_id: string | null;
@@ -49,6 +59,7 @@ interface AvatarProfile {
   clothing_bag_id: string | null;
   hair_accessory_id: string | null;
 }
+
 
 // Same order as AvatarEditor: bottom → top.
 // Entries reference either a legacy category field on AvatarProfile
