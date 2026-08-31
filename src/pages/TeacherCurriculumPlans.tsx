@@ -79,7 +79,7 @@ export default function TeacherCurriculumPlans() {
       .from("teacher_curriculum_plans")
       .select("*")
       .eq("teacher_id", user.id);
-    if (!error) setPlans((data as CurriculumPlan[]) ?? []);
+    if (!error) setPlans((data as unknown as CurriculumPlan[]) ?? []);
     setLoading(false);
   };
 
