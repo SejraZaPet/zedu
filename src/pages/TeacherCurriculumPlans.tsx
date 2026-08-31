@@ -208,15 +208,39 @@ export default function TeacherCurriculumPlans() {
                             Aktualizováno {new Date(plan.updated_at).toLocaleDateString("cs-CZ")}
                           </p>
                         </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="gap-1 shrink-0"
-                          onClick={() => setEditing({ subject: row.label, plan })}
-                        >
-                          <Pencil className="w-3.5 h-3.5" /> Upravit
-                        </Button>
+                        <div className="flex gap-1 shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="gap-1"
+                            title="Stáhnout PDF"
+                            onClick={() =>
+                              void downloadCurriculumPdf({
+                                title: plan.title || row.label,
+                                subject: row.label,
+                                blocks: planBlocks(plan),
+                              }).catch((e: any) =>
+                                toast({
+                                  title: "Export selhal",
+                                  description: e?.message ?? String(e),
+                                  variant: "destructive",
+                                }),
+                              )
+                            }
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-1"
+                            onClick={() => setEditing({ subject: row.label, plan })}
+                          >
+                            <Pencil className="w-3.5 h-3.5" /> Upravit
+                          </Button>
+                        </div>
                       </div>
+
 
                       {plan.content && (
                         <p className="text-sm text-foreground/80 whitespace-pre-line line-clamp-4">
