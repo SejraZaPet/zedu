@@ -148,29 +148,26 @@ const ParentDashboard = () => {
     if (!code) return;
     setLinking(true);
     try {
-      const { data: matches, error } = await supabase
-        .rpc("find_student_by_code" as any, { _code: code });
+      // Propojení vzniká výhradně na serveru (ověřený kód žáka) – přímý zápis
+      // do parent_student_links je z bezpečnostních důvodů zakázaný.
+      const { data: linked, error } = await supabase
+        .rpc("link_parent_by_student_code" as any, { _code: code });
 
-      if (error) throw error;
-      const profile = (matches as any[])?.[0];
-      if (!profile) {
-        toast({ title: "Žák nenalezen", description: `Kód ${code} neodpovídá žádnému žáku.`, variant: "destructive" });
-        return;
-      }
-
-      const { error: linkErr } = await supabase
-        .from("parent_student_links" as any)
-        .insert({ parent_id: user.id, student_id: profile.id });
-
-      if (linkErr) {
-        if ((linkErr as any).code === "23505") {
-          toast({ title: "Již propojeno", description: "Toto dítě již máte ve svém přehledu." });
-        } else {
-          throw linkErr;
+      if (error) {
+        if (/neexistuje/i.test(error.message)) {
+          toast({ title: "Žák nenalezen", description: `Kód ${code} neodpovídá žádnému žáku.`, variant: "destructive" });
+          return;
         }
-      } else {
-        toast({ title: "Dítě přidáno", description: `${profile.first_name} ${profile.last_name} byl propojen s vaším účtem.` });
+        throw error;
       }
+
+      const profile = (linked as any[])?.[0];
+      toast({
+        title: "Dítě přidáno",
+        description: profile
+          ? `${profile.first_name ?? ""} ${profile.last_name ?? ""}`.trim() + " byl propojen s vaším účtem."
+          : "Dítě bylo propojeno s vaším účtem.",
+      });
       setChildCode("");
       setAddOpen(false);
       await loadAll();
