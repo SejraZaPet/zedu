@@ -183,7 +183,10 @@ const SchoolBrandingSection = ({ schoolId, schoolName }: Props) => {
     return <Card><CardContent className="py-8 text-center text-muted-foreground text-sm">Načítání…</CardContent></Card>;
   }
 
-  const previewUrl = subdomain ? `https://${subdomain}.bezli.cz` : null;
+  const sub = subdomain.trim().toLowerCase();
+  const subdomainUrl = sub ? `https://${sub}.bezli.cz` : null;
+  const pathUrl = sub ? `https://bezli.cz/s/${sub}` : null;
+
 
   return (
     <div className="grid gap-4 md:grid-cols-2">
