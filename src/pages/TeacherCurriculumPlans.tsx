@@ -60,11 +60,23 @@ export default function TeacherCurriculumPlans() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
-  const planBySubject = useMemo(() => {
-    const map = new Map<string, CurriculumPlan>();
-    for (const p of plans) map.set(p.subject.toLowerCase(), p);
+  const plansBySubject = useMemo(() => {
+    const map = new Map<string, CurriculumPlan[]>();
+    for (const p of plans) {
+      const k = p.subject.toLowerCase();
+      const list = map.get(k) ?? [];
+      list.push(p);
+      map.set(k, list);
+    }
+    for (const list of map.values()) {
+      list.sort((a, b) =>
+        (a.title || "").localeCompare(b.title || "", "cs") ||
+        a.updated_at.localeCompare(b.updated_at),
+      );
+    }
     return map;
   }, [plans]);
+
 
   // Předměty učitele (vlastní + použité u jeho tříd) + ty, ke kterým už ŠVP existuje
   const subjectRows = useMemo(() => {
