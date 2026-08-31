@@ -333,6 +333,81 @@ function EditCurriculumDialog({ teacherId, subject, plan, onClose, onSaved }: Di
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
 
+  // AI návrh obsahu ŠVP (Fáze 2) – výsledek se NEUKLÁDÁ automaticky.
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiStep, setAiStep] = useState<string>("");
+  const [aiBlockIds, setAiBlockIds] = useState<string[]>([]);
+  const aiInputRef = useRef<HTMLInputElement>(null);
+
+  const markBlockEdited = (id: string) =>
+    setAiBlockIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : prev));
+
+  const handleAiFile = async (f: File | null) => {
+    if (!f) return;
+    const err = validateFile(f);
+    if (err) {
+      toast({ title: "Soubor zamítnut", description: err, variant: "destructive" });
+      return;
+    }
+    if (
+      blocks.length > 0 &&
+      !confirm("Obsah editoru není prázdný. Přepsat ho návrhem od AI?")
+    )
+      return;
+
+    setAiBusy(true);
+    try {
+      setAiStep("Načítám text ze souboru…");
+      const text = await extractDocumentText(f);
+
+      if (text.length > CURRICULUM_AI_MAX_CHARS) {
+        toast({
+          title: "Dokument je delší než limit AI",
+          description: `Dokument má ${text.length} znaků, AI zpracuje jen prvních ${CURRICULUM_AI_MAX_CHARS}. Zbytek prosím doplňte ručně.`,
+        });
+      }
+
+      setAiStep("AI navrhuje obsah ŠVP…");
+      const { data, error } = await supabase.functions.invoke("parse-curriculum-document", {
+        body: { extractedText: text, subject },
+      });
+      if (error) throw new Error((error as any)?.message || "AI služba není dostupná.");
+      const res = data as any;
+      if (res?.error) throw new Error(res.error);
+
+      const sections = Array.isArray(res?.sections) ? res.sections : [];
+      const years = Array.isArray(res?.years) ? res.years : [];
+      const filled =
+        sections.filter((s: any) => String(s?.text ?? "").trim().length > 20).length +
+        years.length;
+      if (filled === 0) {
+        throw new Error(
+          "AI z dokumentu nevytěžila použitelný obsah. Zkuste jiný soubor nebo vyplňte ŠVP ručně.",
+        );
+      }
+
+      const built = buildCurriculumBlocksFromAi({ sections, years });
+      setBlocks(built.blocks);
+      setAiBlockIds(built.aiBlockIds);
+      toast({
+        title: "AI návrh připraven",
+        description: res?.truncated
+          ? "Pozor: dlouhý dokument byl pro AI zkrácen. Zkontrolujte návrh a uložte ho."
+          : "Zkontrolujte označené bloky a uložte je tlačítkem Uložit.",
+      });
+    } catch (e: any) {
+      toast({
+        title: "AI návrh se nepovedl",
+        description: e?.message ?? String(e),
+        variant: "destructive",
+      });
+    } finally {
+      setAiBusy(false);
+      setAiStep("");
+      if (aiInputRef.current) aiInputRef.current.value = "";
+    }
+  };
+
   const validateFile = (f: File): string | null => {
     if (f.size > MAX_BYTES) return "Soubor je větší než 20 MB.";
     const ext = f.name.split(".").pop()?.toLowerCase() || "";
