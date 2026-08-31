@@ -471,6 +471,14 @@ const SortableBlock = React.memo(({
             AI
           </span>
         )}
+        {aiSuggested && (
+          <span
+            title="Tento obsah navrhla umělá inteligence. Zkontrolujte ho a upravte."
+            className="inline-flex items-center gap-1 rounded-full bg-primary-subtle px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-dark whitespace-nowrap"
+          >
+            <span aria-hidden="true">🤖</span> Navrženo AI – zkontrolujte
+          </span>
+        )}
         <ReplaceMenu
           block={block}
           loading={replaceLoading}
