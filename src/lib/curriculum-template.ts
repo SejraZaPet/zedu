@@ -179,3 +179,92 @@ export function curriculumBlocksToText(blocks: Block[]): string {
   }
   return parts.join("\n\n").trim();
 }
+
+// ───────────────────── AI návrh obsahu ŠVP (Fáze 2) ─────────────────────
+
+export interface AiCurriculumSection {
+  heading: string;
+  text: string;
+}
+export interface AiCurriculumYear {
+  year: number;
+  rows: { results: string; content: string; timing: string }[];
+}
+
+/**
+ * Vygeneruje stejnou strukturu jako `buildCurriculumBlocks`, ale s obsahem
+ * navrženým AI. Vrací i seznam id bloků, které vznikly z AI výstupu –
+ * ty se v editoru označí badge „Navrženo AI – zkontrolujte“.
+ */
+export function buildCurriculumBlocksFromAi(input: {
+  sections: AiCurriculumSection[];
+  years: AiCurriculumYear[];
+}): { blocks: Block[]; aiBlockIds: string[] } {
+  const blocks: Block[] = [];
+  const aiBlockIds: string[] = [];
+
+  const sections = Array.isArray(input.sections) ? input.sections : [];
+
+  CURRICULUM_SECTIONS.forEach((section, i) => {
+    const ai =
+      sections.find(
+        (s) => (s.heading ?? "").trim().toLowerCase() === section.heading.toLowerCase(),
+      ) ?? sections[i];
+    const text = (ai?.text ?? "").trim();
+
+    const headingBlock: Block = {
+      id: uid(),
+      type: "heading",
+      visible: true,
+      props: { level: 2, text: section.heading },
+    };
+    const paragraphBlock: Block = {
+      id: uid(),
+      type: "paragraph",
+      visible: true,
+      props: { text, placeholder: section.placeholder },
+    };
+    blocks.push(headingBlock, paragraphBlock);
+    if (text) aiBlockIds.push(paragraphBlock.id);
+  });
+
+  blocks.push({
+    id: uid(),
+    type: "heading",
+    visible: true,
+    props: { level: 2, text: "Rozpis učiva a výsledků vzdělávání" },
+  });
+
+  const years =
+    Array.isArray(input.years) && input.years.length > 0
+      ? input.years
+      : [1, 2, 3].map((year) => ({ year, rows: [] as AiCurriculumYear["rows"] }));
+
+  years.forEach((y, idx) => {
+    const yearNo = Number(y?.year) > 0 ? Number(y.year) : idx + 1;
+    blocks.push({
+      id: uid(),
+      type: "heading",
+      visible: true,
+      props: { level: 3, text: `${yearNo}. ročník` },
+    });
+    const rows = (y?.rows ?? []).map((r) => [
+      (r?.results ?? "").trim(),
+      (r?.content ?? "").trim(),
+      (r?.timing ?? "").trim(),
+    ]);
+    const tableBlock: Block = {
+      id: uid(),
+      type: "table",
+      visible: true,
+      props: {
+        headers: [...CURRICULUM_TABLE_HEADERS],
+        rows: rows.length ? rows : emptyRows(),
+      },
+    };
+    blocks.push(tableBlock);
+    if (rows.length) aiBlockIds.push(tableBlock.id);
+  });
+
+  return { blocks, aiBlockIds };
+}

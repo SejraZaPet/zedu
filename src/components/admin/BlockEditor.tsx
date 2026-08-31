@@ -170,6 +170,10 @@ interface Props {
   hideToolbar?: boolean;
   /** Exposes undo/redo controls so they can be rendered in an external toolbar. */
   onHistoryChange?: (history: BlockEditorHistory) => void;
+  /** Id bloků navržených AI – zobrazí se u nich badge „Navrženo AI – zkontrolujte“. */
+  aiSuggestedIds?: string[];
+  /** Voláno, když uživatel blok ručně upraví (badge pak zmizí). */
+  onBlockEdited?: (id: string) => void;
 }
 
 
@@ -377,6 +381,7 @@ const SortableBlock = React.memo(({
   onReplace,
   onAiReplace,
   replaceLoading,
+  aiSuggested,
 }: {
   block: Block;
   onUpdate: (id: string, props: Record<string, any>) => void;
@@ -386,6 +391,7 @@ const SortableBlock = React.memo(({
   onReplace: (id: string, target: Block["type"]) => void;
   onAiReplace: (id: string, target: "activity" | "hierarchy") => void;
   replaceLoading: boolean;
+  aiSuggested?: boolean;
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: block.id });
 
@@ -463,6 +469,14 @@ const SortableBlock = React.memo(({
             }}
           >
             AI
+          </span>
+        )}
+        {aiSuggested && (
+          <span
+            title="Tento obsah navrhla umělá inteligence. Zkontrolujte ho a upravte."
+            className="inline-flex items-center gap-1 rounded-full bg-primary-subtle px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-dark whitespace-nowrap"
+          >
+            <span aria-hidden="true">🤖</span> Navrženo AI – zkontrolujte
           </span>
         )}
         <ReplaceMenu
@@ -625,7 +639,10 @@ const AddBlockMenu = ({ onPick }: { onPick: (type: Block["type"]) => void }) => 
 };
 
 
-const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryChange }: Props) => {
+const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryChange, aiSuggestedIds, onBlockEdited }: Props) => {
+  const aiSuggestedSet = useMemo(() => new Set(aiSuggestedIds ?? []), [aiSuggestedIds]);
+  const onBlockEditedRef = useRef(onBlockEdited);
+  onBlockEditedRef.current = onBlockEdited;
   const normalizedBlocks = useMemo(() => normalizeBlocks(blocks), [blocks]);
 
   useEffect(() => {
@@ -762,6 +779,7 @@ const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryC
   }, [commit]);
 
   const updateBlock = useCallback((id: string, props: Record<string, any>) => {
+    onBlockEditedRef.current?.(id);
     commit(blocksRef.current.map((b) => (b.id === id ? { ...b, props } : b)));
   }, [commit]);
 
@@ -1092,6 +1110,7 @@ const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryC
                 onReplace={replaceBlock}
                 onAiReplace={aiReplaceBlock}
                 replaceLoading={replacingId === block.id}
+                aiSuggested={aiSuggestedSet.has(block.id)}
               />
               {idx < normalizedBlocks.length - 1 && (
                 <InsertButton afterId={block.id} onInsert={insertBlockAfter} />
