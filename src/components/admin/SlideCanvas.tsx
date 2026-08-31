@@ -1013,11 +1013,18 @@ function FreeFrameBlock({
       return;
     }
     const editableTarget = target.closest('[contenteditable="true"]') as HTMLElement | null;
+    // Kurzor už je v textu → uživatel označuje text, nikoliv táhne blok.
+    if (isTextEditingActive(editableTarget)) {
+      e.stopPropagation();
+      onSelect?.();
+      return;
+    }
     startDrag("move", 5, () => {
       editableTarget?.blur();
       window.getSelection?.()?.removeAllRanges();
     })(e);
   };
+
 
 
   const nudge = (e: React.KeyboardEvent) => {
