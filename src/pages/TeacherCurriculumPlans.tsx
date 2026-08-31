@@ -369,10 +369,11 @@ function EditCurriculumDialog({ teacherId, subject, plan, onClose, onSaved }: Di
       });
       return;
     }
-    if (!content.trim() && !file && !fileUrl) {
+    const summary = curriculumBlocksToText(blocks);
+    if (!summary.trim() && !file && !fileUrl) {
       toast({
         title: "Chybí obsah",
-        description: "Vyplňte text nebo nahrajte soubor.",
+        description: "Vyplňte alespoň jeden blok nebo nahrajte soubor.",
         variant: "destructive",
       });
       return;
@@ -382,7 +383,9 @@ function EditCurriculumDialog({ teacherId, subject, plan, onClose, onSaved }: Di
       const { url, name } = await uploadFileIfAny();
       const fields = {
         title: title.trim(),
-        content: content.trim() || null,
+        // starý textový sloupec držíme jako souhrn pro zpětnou kompatibilitu
+        content: summary || null,
+        content_blocks: blocks.length ? (blocks as unknown as any) : null,
         file_url: url,
         file_name: name,
       };
@@ -391,6 +394,7 @@ function EditCurriculumDialog({ teacherId, subject, plan, onClose, onSaved }: Di
         : await supabase
             .from("teacher_curriculum_plans")
             .insert({ teacher_id: teacherId, subject, ...fields });
+
       if (error) throw error;
       toast({ title: "ŠVP uloženo" });
       onSaved();
