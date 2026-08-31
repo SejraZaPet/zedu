@@ -17,7 +17,9 @@ const SchoolViewSwitcher = ({ className }: { className?: string }) => {
 
   if (!canSwitchSchoolView) return null;
 
-  const inTeacherView = (preferredView ?? "school_admin") === "teacher" || role === "teacher" || role === "lektor";
+  const inTeacherView = preferredView
+    ? preferredView === "teacher"
+    : role === "teacher" || role === "lektor";
 
   const switchTo = async (view: "school_admin" | "teacher") => {
     setSaving(true);
@@ -27,11 +29,12 @@ const SchoolViewSwitcher = ({ className }: { className?: string }) => {
         title: view === "teacher" ? "Přepnuto na Moje výuka" : "Přepnuto na Administraci školy",
         description: "Nastavení jsme uložili k vašemu účtu.",
       });
-      navigate(view === "teacher" ? "/ucitel" : "/skola");
+      navigate(view === "teacher" ? "/ucitel" : "/skola", { replace: true });
     } finally {
       setSaving(false);
     }
   };
+
 
   return (
     <Button
