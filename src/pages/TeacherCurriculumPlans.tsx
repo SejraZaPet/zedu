@@ -267,6 +267,7 @@ interface DialogProps {
 }
 
 function EditCurriculumDialog({ teacherId, subject, plan, onClose, onSaved }: DialogProps) {
+  const [title, setTitle] = useState(plan?.title?.trim() || subject);
   const [content, setContent] = useState(plan?.content ?? "");
   const [fileName, setFileName] = useState<string | null>(plan?.file_name ?? null);
   const [fileUrl, setFileUrl] = useState<string | null>(plan?.file_url ?? null);
