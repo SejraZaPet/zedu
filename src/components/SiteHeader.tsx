@@ -74,7 +74,10 @@ const TEACHER_MENU_GROUPS: TeacherMenuGroup[] = [
   },
   {
     title: "Škola",
-    items: [{ label: "Porady školy", href: "/ucitel/porady", icon: ClipboardList }],
+    items: [
+      { label: "Rezervace", href: "/ucitel/rezervace", icon: CalendarDays },
+      { label: "Porady školy", href: "/ucitel/porady", icon: ClipboardList },
+    ],
   },
 ];
 
@@ -148,7 +151,6 @@ const SiteHeader = () => {
         { label: "Přehled", href: "/ucitel", icon: LayoutDashboard },
         { label: "Výuka", href: "/ucitel/predmety", icon: GraduationCap },
         { label: "Rozvrh", href: "/ucitel/rozvrh", icon: CalendarDays },
-        { label: "Rezervace", href: "/ucitel/rezervace", icon: CalendarDays },
         { label: "Kalendář", href: "/ucitel/kalendar", icon: CalendarDays },
         { label: "Třídy", href: "/ucitel/tridy", icon: FolderOpen },
         { label: "Můj sešit", href: "/ucitel/sesit", icon: NotebookPen },
