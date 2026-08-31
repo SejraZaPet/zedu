@@ -11,7 +11,10 @@ export interface SchoolBranding {
   registration_code: string | null;
 }
 
-const RESERVED = new Set(["www", "app", "id-preview", "preview", "Bezli", "lovable", "staging"]);
+const RESERVED = new Set(["www", "app", "id-preview", "preview", "bezli", "lovable", "staging"]);
+
+const SLUG_RE = /^[a-z0-9]([a-z0-9-]{0,30}[a-z0-9])?$/;
+const STORAGE_KEY = "bezli-school-slug";
 
 export function detectSubdomain(hostname: string = window.location.hostname): string | null {
   if (!hostname || hostname === "localhost" || /^\d+\.\d+\.\d+\.\d+$/.test(hostname)) return null;
@@ -22,9 +25,41 @@ export function detectSubdomain(hostname: string = window.location.hostname): st
   if (RESERVED.has(sub)) return null;
   // Lovable preview hosts often start with id-preview-- — skip
   if (sub.includes("--") || sub.startsWith("id-preview")) return null;
-  if (!/^[a-z0-9]([a-z0-9-]{0,30}[a-z0-9])?$/.test(sub)) return null;
+  if (!SLUG_RE.test(sub)) return null;
   return sub;
 }
+
+/** Slug z cesty /s/:slug (funguje na jakékoli doméně). */
+export function detectPathSlug(pathname: string = window.location.pathname): string | null {
+  const m = pathname.match(/^\/s\/([^/?#]+)/i);
+  if (!m) return null;
+  const slug = decodeURIComponent(m[1]).toLowerCase();
+  return SLUG_RE.test(slug) ? slug : null;
+}
+
+/** Uloží slug školy pro zbytek session (přežije navigaci mimo /s/:slug). */
+export function rememberSchoolSlug(slug: string) {
+  try {
+    if (SLUG_RE.test(slug)) sessionStorage.setItem(STORAGE_KEY, slug);
+  } catch {
+    /* ignore */
+  }
+}
+
+function storedSchoolSlug(): string | null {
+  try {
+    const s = sessionStorage.getItem(STORAGE_KEY);
+    return s && SLUG_RE.test(s) ? s : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Priorita: subdoména → cesta /s/:slug → zapamatovaný slug ze session. */
+export function detectSchoolSlug(): string | null {
+  return detectSubdomain() ?? detectPathSlug() ?? storedSchoolSlug();
+}
+
 
 // Convert "#rrggbb" to "h s% l%" string usable in CSS HSL var
 function hexToHslString(hex: string): string | null {
