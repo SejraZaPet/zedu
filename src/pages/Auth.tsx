@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import Seo from "@/components/Seo";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -533,7 +534,13 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
+      <Seo
+        title="Přihlášení do Bezli"
+        description="Přihlaste se do Bezli – učitelé, žáci, rodiče i školní administrátoři. Registrace i přihlášení PINem."
+        path="/auth"
+      />
       <div className="w-full max-w-md">
+
         {branding && (
           <div className="mb-6 rounded-xl border border-border bg-card p-4 text-center">
             {branding.custom_logo_url && (

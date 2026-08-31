@@ -57,7 +57,13 @@ const Hero = ({ props }: HeroProps) => {
             style={{ animationDelay: "0.1s" }}
           >
             <img src={logoUrl} alt="Bezli" className="h-24 sm:h-32 md:h-40 lg:h-52 w-auto object-contain block mb-6" />
-            <h1 className="text-white font-heading font-bold text-4xl sm:text-5xl md:text-6xl lg:text-7xl mb-3"></h1>
+            {/* Vizuálně nese titulek logo výše – H1 zůstává pro čtečky a SEO. */}
+            <h1 className="sr-only">Bezli – digitální nástroje pro moderní výuku</h1>
+            <div
+              aria-hidden="true"
+              className="font-heading font-bold text-4xl sm:text-5xl md:text-6xl lg:text-7xl mb-3"
+            />
+
             <p className="text-white/90 font-heading text-xl sm:text-2xl md:text-3xl lg:text-4xl flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
               {["Tvoř", "inspiruj", "sdílej", "uč"].map((word, i) => (
                 <span key={i} className="inline-flex items-center gap-2">
