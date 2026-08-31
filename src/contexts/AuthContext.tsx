@@ -169,15 +169,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setViewAsRoleState(role);
   };
 
-  const isAdmin = state.role === "admin";
+  // Systémový admin se nikdy nesmí "degradovat" trvalou volbou školního pohledu —
+  // pro přepínání rolí má vlastní mechanismus "Prohlížíš jako".
+  const isGlobalAdmin = state.roles.includes("admin") || state.role === "admin";
   const canSwitchSchoolView =
+    !isGlobalAdmin &&
     state.roles.includes("school_admin") &&
     (state.roles.includes("teacher") || state.roles.includes("lektor"));
 
   const setPreferredView = async (view: "school_admin" | "teacher") => {
     if (!state.user) return;
-    // Trvalá volba pohledu má přednost před dočasným admin "view as".
-    setViewAsRole(null);
+    // Trvalá volba pohledu má přednost před dočasným admin "view as" (jen u ne-adminů).
+    if (!isGlobalAdmin) setViewAsRole(null);
     setState(prev => ({ ...prev, preferredView: view }));
     await supabase.from("profiles").update({ preferred_view: view }).eq("id", state.user.id);
   };
@@ -192,7 +195,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         : state.role;
 
 
-  const effectiveRole: AppRole = isAdmin && viewAsRole ? viewAsRole : switchedRole;
+  const effectiveRole: AppRole = isGlobalAdmin && viewAsRole ? viewAsRole : switchedRole;
 
   return (
     <AuthContext.Provider value={{
