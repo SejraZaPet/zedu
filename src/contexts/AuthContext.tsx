@@ -176,15 +176,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const setPreferredView = async (view: "school_admin" | "teacher") => {
     if (!state.user) return;
+    // Trvalá volba pohledu má přednost před dočasným admin "view as".
+    setViewAsRole(null);
     setState(prev => ({ ...prev, preferredView: view }));
     await supabase.from("profiles").update({ preferred_view: view }).eq("id", state.user.id);
   };
 
   // Trvalá volba pohledu pro člověka, který je zároveň školní admin i učitel.
-  const switchedRole: AppRole =
-    canSwitchSchoolView && state.preferredView === "teacher"
+  const switchedRole: AppRole = !canSwitchSchoolView
+    ? state.role
+    : state.preferredView === "teacher"
       ? (state.roles.includes("teacher") ? "teacher" : "lektor")
-      : state.role;
+      : state.preferredView === "school_admin"
+        ? "school_admin"
+        : state.role;
+
 
   const effectiveRole: AppRole = isAdmin && viewAsRole ? viewAsRole : switchedRole;
 
