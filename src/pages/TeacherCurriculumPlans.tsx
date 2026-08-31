@@ -567,14 +567,53 @@ function EditCurriculumDialog({ teacherId, subject, plan, onClose, onSaved }: Di
                     )
                       return;
                     setBlocks(buildCurriculumBlocks());
+                    setAiBlockIds([]);
                   }}
                 >
                   <LayoutTemplate className="w-4 h-4" /> Použít šablonu
                 </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  disabled={aiBusy}
+                  onClick={() => aiInputRef.current?.click()}
+                >
+                  {aiBusy ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="w-4 h-4" />
+                  )}
+                  Nahrát a nechat AI navrhnout
+                </Button>
+                <input
+                  ref={aiInputRef}
+                  type="file"
+                  className="hidden"
+                  accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                  onChange={(e) => void handleAiFile(e.target.files?.[0] ?? null)}
+                />
               </div>
             </div>
+            {aiBusy && (
+              <p className="text-xs text-muted-foreground flex items-center gap-2">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" /> {aiStep}
+              </p>
+            )}
+            {aiBlockIds.length > 0 && !aiBusy && (
+              <p className="text-xs text-muted-foreground">
+                🤖 Obsah navrhla AI – zkontrolujte označené bloky. Nic není uloženo, dokud
+                nekliknete na <strong>Uložit</strong>.
+              </p>
+            )}
             <div className="rounded-lg border border-border p-2">
-              <BlockEditor blocks={blocks} onChange={setBlocks} />
+              <BlockEditor
+                blocks={blocks}
+                onChange={setBlocks}
+                aiSuggestedIds={aiBlockIds}
+                onBlockEdited={markBlockEdited}
+              />
             </div>
           </div>
 
