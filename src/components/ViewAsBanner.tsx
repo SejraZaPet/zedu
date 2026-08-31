@@ -4,6 +4,7 @@ import { Eye, X } from "lucide-react";
 
 const LABELS: Record<string, string> = {
   admin: "Administrátor",
+  school_admin: "Admin školy",
   teacher: "Učitel",
   user: "Žák",
 };

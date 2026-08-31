@@ -33,7 +33,7 @@ interface AuthContextValue extends AuthState {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 const VIEW_AS_KEY = "Bezli:view-as-role";
-const VALID_VIEW_ROLES: AppRole[] = ["admin", "teacher", "user"];
+const VALID_VIEW_ROLES: AppRole[] = ["admin", "school_admin", "teacher", "user"];
 
 const readViewAs = (): AppRole => {
   if (typeof window === "undefined") return null;

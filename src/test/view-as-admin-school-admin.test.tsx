@@ -32,6 +32,7 @@ const Probe = () => {
       <span data-testid="viewas">{viewAsRole ?? "-"}</span>
       <span data-testid="canswitch">{String(canSwitchSchoolView)}</span>
       <button onClick={() => setViewAsRole("teacher")}>as-teacher</button>
+      <button onClick={() => setViewAsRole("school_admin")}>as-school-admin</button>
     </div>
   );
 };
@@ -57,5 +58,30 @@ describe("view-as pro admin + school_admin + teacher", () => {
 
     expect(screen.getByTestId("viewas").textContent).toBe("teacher");
     expect(screen.getByTestId("role").textContent).toBe("teacher");
+  });
+
+  it("umí view-as school_admin a přežije reload (localStorage)", async () => {
+    const { unmount } = render(
+      <AuthProvider>
+        <Probe />
+      </AuthProvider>
+    );
+
+    await waitFor(() => expect(screen.getByTestId("real").textContent).toBe("admin"));
+
+    await act(async () => {
+      screen.getByText("as-school-admin").click();
+    });
+
+    expect(screen.getByTestId("viewas").textContent).toBe("school_admin");
+    expect(screen.getByTestId("role").textContent).toBe("school_admin");
+
+    unmount();
+    render(
+      <AuthProvider>
+        <Probe />
+      </AuthProvider>
+    );
+    await waitFor(() => expect(screen.getByTestId("role").textContent).toBe("school_admin"));
   });
 });

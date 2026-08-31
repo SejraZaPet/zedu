@@ -103,7 +103,7 @@ const STUDENT_EXTRA_ITEMS: TeacherExtraNavItem[] = [
 const SiteHeader = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const { isLoggedIn, role: userRole, signOut } = useAuth();
+  const { isLoggedIn, role: userRole, roles, signOut } = useAuth();
   const { isStaff } = useStaffPermissions();
   const { branding } = useSchoolBranding();
   const { hasSchool } = useMySchool();
@@ -129,6 +129,10 @@ const SiteHeader = () => {
       return [
         { label: "Přehled", href: "/admin", icon: LayoutDashboard },
         { label: "Uživatelé", href: "/admin?tab=users", icon: Users },
+        // Admin, který je zároveň školním adminem, se dostane do administrace školy přímo.
+        ...(roles.includes("school_admin")
+          ? [{ label: "Správa školy", href: "/skola", icon: School }]
+          : []),
         { label: "Nápověda", href: "/napoveda", icon: HelpCircle },
       ];
     }
