@@ -170,6 +170,10 @@ interface Props {
   hideToolbar?: boolean;
   /** Exposes undo/redo controls so they can be rendered in an external toolbar. */
   onHistoryChange?: (history: BlockEditorHistory) => void;
+  /** Id bloků navržených AI – zobrazí se u nich badge „Navrženo AI – zkontrolujte“. */
+  aiSuggestedIds?: string[];
+  /** Voláno, když uživatel blok ručně upraví (badge pak zmizí). */
+  onBlockEdited?: (id: string) => void;
 }
 
 
