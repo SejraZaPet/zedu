@@ -152,7 +152,7 @@ export default function TeacherCurriculumPlans() {
           <div className="grid gap-3 sm:grid-cols-2">
 
             {subjectRows.map((row) => {
-              const plan = planBySubject.get(row.label.toLowerCase()) ?? null;
+              const subjectPlans = plansBySubject.get(row.label.toLowerCase()) ?? [];
               return (
                 <article
                   key={row.label}
@@ -161,70 +161,82 @@ export default function TeacherCurriculumPlans() {
                   <header className="flex items-start justify-between gap-2">
                     <div>
                       <h3 className="font-semibold">{row.label}</h3>
-                      {plan ? (
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          Aktualizováno {new Date(plan.updated_at).toLocaleDateString("cs-CZ")}
-                        </p>
-                      ) : (
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          Zatím bez ŠVP
-                        </p>
-                      )}
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {subjectPlans.length === 0
+                          ? "Zatím bez ŠVP"
+                          : `${subjectPlans.length} ŠVP`}
+                      </p>
                     </div>
                   </header>
 
-                  {plan?.content && (
-                    <p className="text-sm text-foreground/80 whitespace-pre-line line-clamp-4">
-                      {plan.content}
-                    </p>
-                  )}
-                  {plan?.file_name && (
-                    <div className="flex items-center gap-2 text-xs bg-muted/40 rounded-md px-2 py-1.5">
-                      <FileText className="w-3.5 h-3.5 shrink-0" />
-                      <span className="truncate flex-1">{plan.file_name}</span>
-                      {plan.file_url && (
-                        <a
-                          href={plan.file_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-primary hover:underline shrink-0 inline-flex items-center gap-0.5"
+                  {subjectPlans.map((plan) => (
+                    <div key={plan.id} className="rounded-lg border border-border/70 p-3 space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">
+                            {plan.title || row.label}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            Aktualizováno {new Date(plan.updated_at).toLocaleDateString("cs-CZ")}
+                          </p>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1 shrink-0"
+                          onClick={() => setEditing({ subject: row.label, plan })}
                         >
-                          <ExternalLink className="w-3 h-3" /> Otevřít
-                        </a>
+                          <Pencil className="w-3.5 h-3.5" /> Upravit
+                        </Button>
+                      </div>
+
+                      {plan.content && (
+                        <p className="text-sm text-foreground/80 whitespace-pre-line line-clamp-4">
+                          {plan.content}
+                        </p>
+                      )}
+                      {plan.file_name && (
+                        <div className="flex items-center gap-2 text-xs bg-muted/40 rounded-md px-2 py-1.5">
+                          <FileText className="w-3.5 h-3.5 shrink-0" />
+                          <span className="truncate flex-1">{plan.file_name}</span>
+                          {plan.file_url && (
+                            <a
+                              href={plan.file_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-primary hover:underline shrink-0 inline-flex items-center gap-0.5"
+                            >
+                              <ExternalLink className="w-3 h-3" /> Otevřít
+                            </a>
+                          )}
+                        </div>
+                      )}
+
+                      {user && (
+                        <CurriculumTopicsSection
+                          planId={plan.id}
+                          planContent={plan.content}
+                          teacherId={user.id}
+                          subject={row.label}
+                        />
                       )}
                     </div>
-                  )}
+                  ))}
 
                   <div className="pt-1">
                     <Button
-                      variant={plan ? "outline" : "default"}
+                      variant={subjectPlans.length ? "outline" : "default"}
                       size="sm"
                       className="w-full gap-2"
-                      onClick={() => setEditing({ subject: row.label, plan })}
+                      onClick={() => setEditing({ subject: row.label, plan: null })}
                     >
-                      {plan ? (
-                        <>
-                          <Pencil className="w-4 h-4" /> Upravit ŠVP
-                        </>
-                      ) : (
-                        <>
-                          <Plus className="w-4 h-4" /> Přidat ŠVP
-                        </>
-                      )}
+                      <Plus className="w-4 h-4" /> Přidat ŠVP
                     </Button>
                   </div>
-
-                  {plan && user && (
-                    <CurriculumTopicsSection
-                      planId={plan.id}
-                      planContent={plan.content}
-                      teacherId={user.id}
-                      subject={row.label}
-                    />
-                  )}
                 </article>
               );
             })}
+
           </div>
         )}
       </main>
