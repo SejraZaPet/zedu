@@ -1291,6 +1291,12 @@ export function SlideBody({
       return;
     }
     const editableTarget = targetEl?.closest("[contenteditable='true']") as HTMLElement | null;
+    // Text už je v editaci → tažení myší je označování textu, drag nespouštíme.
+    if (isTextEditingActive(editableTarget)) {
+      onSelectBlock?.(b.id);
+      return;
+    }
+
     const el = e.currentTarget as HTMLElement;
     const dragTarget = slideRootRef.current;
     if (!dragTarget) return;
