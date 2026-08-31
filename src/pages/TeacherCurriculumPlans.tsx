@@ -26,6 +26,7 @@ interface CurriculumPlan {
   id: string;
   teacher_id: string;
   subject: string;
+  title: string;
   content: string | null;
   file_url: string | null;
   file_name: string | null;
@@ -59,11 +60,23 @@ export default function TeacherCurriculumPlans() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
-  const planBySubject = useMemo(() => {
-    const map = new Map<string, CurriculumPlan>();
-    for (const p of plans) map.set(p.subject.toLowerCase(), p);
+  const plansBySubject = useMemo(() => {
+    const map = new Map<string, CurriculumPlan[]>();
+    for (const p of plans) {
+      const k = p.subject.toLowerCase();
+      const list = map.get(k) ?? [];
+      list.push(p);
+      map.set(k, list);
+    }
+    for (const list of map.values()) {
+      list.sort((a, b) =>
+        (a.title || "").localeCompare(b.title || "", "cs") ||
+        a.updated_at.localeCompare(b.updated_at),
+      );
+    }
     return map;
   }, [plans]);
+
 
   // Předměty učitele (vlastní + použité u jeho tříd) + ty, ke kterým už ŠVP existuje
   const subjectRows = useMemo(() => {
@@ -89,15 +102,13 @@ export default function TeacherCurriculumPlans() {
       value={null}
       onChange={({ name }) => {
         void refetchSubjects();
-        const existing = plans.find(
-          (p) => p.subject.toLowerCase() === name.trim().toLowerCase(),
-        ) ?? null;
-        setEditing({ subject: name.trim(), plan: existing });
+        setEditing({ subject: name.trim(), plan: null });
       }}
       placeholder="Vybrat nebo vytvořit předmět"
       className="max-w-sm"
     />
   );
+
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -141,7 +152,7 @@ export default function TeacherCurriculumPlans() {
           <div className="grid gap-3 sm:grid-cols-2">
 
             {subjectRows.map((row) => {
-              const plan = planBySubject.get(row.label.toLowerCase()) ?? null;
+              const subjectPlans = plansBySubject.get(row.label.toLowerCase()) ?? [];
               return (
                 <article
                   key={row.label}
@@ -150,70 +161,82 @@ export default function TeacherCurriculumPlans() {
                   <header className="flex items-start justify-between gap-2">
                     <div>
                       <h3 className="font-semibold">{row.label}</h3>
-                      {plan ? (
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          Aktualizováno {new Date(plan.updated_at).toLocaleDateString("cs-CZ")}
-                        </p>
-                      ) : (
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          Zatím bez ŠVP
-                        </p>
-                      )}
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {subjectPlans.length === 0
+                          ? "Zatím bez ŠVP"
+                          : `${subjectPlans.length} ŠVP`}
+                      </p>
                     </div>
                   </header>
 
-                  {plan?.content && (
-                    <p className="text-sm text-foreground/80 whitespace-pre-line line-clamp-4">
-                      {plan.content}
-                    </p>
-                  )}
-                  {plan?.file_name && (
-                    <div className="flex items-center gap-2 text-xs bg-muted/40 rounded-md px-2 py-1.5">
-                      <FileText className="w-3.5 h-3.5 shrink-0" />
-                      <span className="truncate flex-1">{plan.file_name}</span>
-                      {plan.file_url && (
-                        <a
-                          href={plan.file_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-primary hover:underline shrink-0 inline-flex items-center gap-0.5"
+                  {subjectPlans.map((plan) => (
+                    <div key={plan.id} className="rounded-lg border border-border/70 p-3 space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">
+                            {plan.title || row.label}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            Aktualizováno {new Date(plan.updated_at).toLocaleDateString("cs-CZ")}
+                          </p>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1 shrink-0"
+                          onClick={() => setEditing({ subject: row.label, plan })}
                         >
-                          <ExternalLink className="w-3 h-3" /> Otevřít
-                        </a>
+                          <Pencil className="w-3.5 h-3.5" /> Upravit
+                        </Button>
+                      </div>
+
+                      {plan.content && (
+                        <p className="text-sm text-foreground/80 whitespace-pre-line line-clamp-4">
+                          {plan.content}
+                        </p>
+                      )}
+                      {plan.file_name && (
+                        <div className="flex items-center gap-2 text-xs bg-muted/40 rounded-md px-2 py-1.5">
+                          <FileText className="w-3.5 h-3.5 shrink-0" />
+                          <span className="truncate flex-1">{plan.file_name}</span>
+                          {plan.file_url && (
+                            <a
+                              href={plan.file_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-primary hover:underline shrink-0 inline-flex items-center gap-0.5"
+                            >
+                              <ExternalLink className="w-3 h-3" /> Otevřít
+                            </a>
+                          )}
+                        </div>
+                      )}
+
+                      {user && (
+                        <CurriculumTopicsSection
+                          planId={plan.id}
+                          planContent={plan.content}
+                          teacherId={user.id}
+                          subject={row.label}
+                        />
                       )}
                     </div>
-                  )}
+                  ))}
 
                   <div className="pt-1">
                     <Button
-                      variant={plan ? "outline" : "default"}
+                      variant={subjectPlans.length ? "outline" : "default"}
                       size="sm"
                       className="w-full gap-2"
-                      onClick={() => setEditing({ subject: row.label, plan })}
+                      onClick={() => setEditing({ subject: row.label, plan: null })}
                     >
-                      {plan ? (
-                        <>
-                          <Pencil className="w-4 h-4" /> Upravit ŠVP
-                        </>
-                      ) : (
-                        <>
-                          <Plus className="w-4 h-4" /> Přidat ŠVP
-                        </>
-                      )}
+                      <Plus className="w-4 h-4" /> Přidat ŠVP
                     </Button>
                   </div>
-
-                  {plan && user && (
-                    <CurriculumTopicsSection
-                      planId={plan.id}
-                      planContent={plan.content}
-                      teacherId={user.id}
-                      subject={row.label}
-                    />
-                  )}
                 </article>
               );
             })}
+
           </div>
         )}
       </main>
@@ -244,6 +267,7 @@ interface DialogProps {
 }
 
 function EditCurriculumDialog({ teacherId, subject, plan, onClose, onSaved }: DialogProps) {
+  const [title, setTitle] = useState(plan?.title?.trim() || subject);
   const [content, setContent] = useState(plan?.content ?? "");
   const [fileName, setFileName] = useState<string | null>(plan?.file_name ?? null);
   const [fileUrl, setFileUrl] = useState<string | null>(plan?.file_url ?? null);
@@ -284,6 +308,14 @@ function EditCurriculumDialog({ teacherId, subject, plan, onClose, onSaved }: Di
   };
 
   const handleSave = async () => {
+    if (!title.trim()) {
+      toast({
+        title: "Chybí název",
+        description: "Zadejte název ŠVP.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (!content.trim() && !file && !fileUrl) {
       toast({
         title: "Chybí obsah",
@@ -295,16 +327,17 @@ function EditCurriculumDialog({ teacherId, subject, plan, onClose, onSaved }: Di
     setBusy(true);
     try {
       const { url, name } = await uploadFileIfAny();
-      const payload = {
-        teacher_id: teacherId,
-        subject,
+      const fields = {
+        title: title.trim(),
         content: content.trim() || null,
         file_url: url,
         file_name: name,
       };
-      const { error } = await supabase
-        .from("teacher_curriculum_plans")
-        .upsert(payload, { onConflict: "teacher_id,subject" });
+      const { error } = plan
+        ? await supabase.from("teacher_curriculum_plans").update(fields).eq("id", plan.id)
+        : await supabase
+            .from("teacher_curriculum_plans")
+            .insert({ teacher_id: teacherId, subject, ...fields });
       if (error) throw error;
       toast({ title: "ŠVP uloženo" });
       onSaved();
@@ -314,6 +347,7 @@ function EditCurriculumDialog({ teacherId, subject, plan, onClose, onSaved }: Di
       setBusy(false);
     }
   };
+
 
   const handleDelete = async () => {
     if (!plan) return;
@@ -351,6 +385,16 @@ function EditCurriculumDialog({ teacherId, subject, plan, onClose, onSaved }: Di
         </DialogHeader>
 
         <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="svp-title">Název ŠVP</Label>
+            <Input
+              id="svp-title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Např. ŠVP – 1. ročník"
+            />
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="svp-content">Text ŠVP</Label>
             <Textarea
