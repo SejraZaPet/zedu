@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import HelpPage from "./pages/HelpPage";
 import HelpDetailPage from "./pages/HelpDetailPage";
 import HelpArticlePage from "./pages/HelpArticlePage";
+import LegacyHelpRedirect from "@/components/help/LegacyHelpRedirect";
 import Auth from "./pages/Auth";
 import OAuthConsent from "./pages/OAuthConsent";
 import ResetPassword from "./pages/ResetPassword";
