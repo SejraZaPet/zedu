@@ -342,9 +342,16 @@ const Admin = () => {
   );
 };
 
+const VIEW_AS_TARGETS: Record<string, string> = {
+  school_admin: "/skola",
+  teacher: "/ucitel",
+  user: "/student",
+};
+
 const ViewAsSwitcher = () => {
-  const { realRole, viewAsRole, setViewAsRole } = useAuth();
+  const { realRole, roles, viewAsRole, setViewAsRole } = useAuth();
   if (realRole !== "admin") return null;
+  const canSchoolAdmin = roles.includes("school_admin");
   const value = viewAsRole ?? "admin";
   return (
     <div className="flex items-center gap-1.5">
@@ -355,17 +362,18 @@ const ViewAsSwitcher = () => {
           if (v === "admin") {
             setViewAsRole(null);
           } else {
-            setViewAsRole(v as "teacher" | "user");
+            setViewAsRole(v as "school_admin" | "teacher" | "user");
             // Navigate to that role's dashboard so admin immediately sees it
-            window.location.href = v === "teacher" ? "/ucitel" : "/student";
+            window.location.href = VIEW_AS_TARGETS[v] ?? "/";
           }
         }}
       >
-        <SelectTrigger className="h-8 w-[150px] text-sm">
+        <SelectTrigger className="h-8 w-[190px] text-sm">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="admin">Admin (já)</SelectItem>
+          {canSchoolAdmin && <SelectItem value="school_admin">Zobrazit jako admin školy</SelectItem>}
           <SelectItem value="teacher">Zobrazit jako učitel</SelectItem>
           <SelectItem value="user">Zobrazit jako žák</SelectItem>
         </SelectContent>
