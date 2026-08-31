@@ -32,6 +32,7 @@ const Probe = () => {
       <span data-testid="viewas">{viewAsRole ?? "-"}</span>
       <span data-testid="canswitch">{String(canSwitchSchoolView)}</span>
       <button onClick={() => setViewAsRole("teacher")}>as-teacher</button>
+      <button onClick={() => setViewAsRole("school_admin")}>as-school-admin</button>
     </div>
   );
 };
