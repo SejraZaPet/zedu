@@ -1,8 +1,14 @@
 import { supabase } from "@/integrations/supabase/client";
 
 /**
- * Records an administrative action into the audit_log table.
- * Fire-and-forget: errors are logged to console but never thrown.
+ * Zapíše administrativní akci do auditu.
+ *
+ * Zápis probíhá výhradně přes serverovou funkci `log_audit_event`, která
+ * záznam vždy podepíše skutečným přihlášeným uživatelem a povolí ho jen
+ * adminovi, školnímu adminovi nebo učiteli. Přímý INSERT z klienta je
+ * zakázaný (jinak by šlo falšovat i „systémové“ záznamy bez autora).
+ *
+ * Fire-and-forget: chyby se jen logují do konzole.
  */
 export async function logAudit(
   action: string,
@@ -11,15 +17,11 @@ export async function logAudit(
   details?: Record<string, any>
 ): Promise<void> {
   try {
-    const { data: auth } = await supabase.auth.getUser();
-    const actorId = auth?.user?.id ?? null;
-
-    const { error } = await supabase.from("audit_log" as any).insert({
-      actor_id: actorId,
-      action,
-      target_type: targetType,
-      target_id: targetId,
-      details: details ?? {},
+    const { error } = await supabase.rpc("log_audit_event" as any, {
+      _action: action,
+      _target_type: targetType,
+      _target_id: targetId,
+      _details: details ?? {},
     });
 
     if (error) {
