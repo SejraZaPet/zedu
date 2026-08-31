@@ -4171,6 +4171,60 @@ export type Database = {
           },
         ]
       }
+      school_curriculum_documents: {
+        Row: {
+          content: string | null
+          created_at: string
+          field_of_study: string
+          file_name: string | null
+          file_url: string | null
+          id: string
+          school_id: string
+          title: string
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          field_of_study?: string
+          file_name?: string | null
+          file_url?: string | null
+          id?: string
+          school_id: string
+          title?: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          field_of_study?: string
+          file_name?: string | null
+          file_url?: string | null
+          id?: string
+          school_id?: string
+          title?: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "school_curriculum_documents_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "school_curriculum_documents_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       school_join_requests: {
         Row: {
           created_at: string
@@ -5870,6 +5924,7 @@ export type Database = {
           file_url: string | null
           group_id: string | null
           id: string
+          source_school_curriculum_id: string | null
           subject: string
           subject_id: string | null
           teacher_id: string
@@ -5884,6 +5939,7 @@ export type Database = {
           file_url?: string | null
           group_id?: string | null
           id?: string
+          source_school_curriculum_id?: string | null
           subject: string
           subject_id?: string | null
           teacher_id: string
@@ -5898,6 +5954,7 @@ export type Database = {
           file_url?: string | null
           group_id?: string | null
           id?: string
+          source_school_curriculum_id?: string | null
           subject?: string
           subject_id?: string | null
           teacher_id?: string
@@ -5917,6 +5974,13 @@ export type Database = {
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "subject_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_curriculum_plans_source_school_curriculum_id_fkey"
+            columns: ["source_school_curriculum_id"]
+            isOneToOne: false
+            referencedRelation: "school_curriculum_documents"
             referencedColumns: ["id"]
           },
           {
