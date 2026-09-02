@@ -143,7 +143,7 @@ const TeacherTextbooks = () => {
   // Topic management
   const [createTopicOpen, setCreateTopicOpen] = useState(false);
   const [newTopicTitle, setNewTopicTitle] = useState("");
-  const [newTopicGrade, setNewTopicGrade] = useState<number>(1);
+  const [newTopicGrade, setNewTopicGrade] = useState<number>(0);
   const [editingTopic, setEditingTopic] = useState<{ id: string; title: string; grade?: number } | null>(null);
 
   // Presentation editor (extracted to hook)
