@@ -10,7 +10,7 @@ Cher,P1.B,
 
 describe("parseImportFile – Bakaláři", () => {
   it("rozdělí jméno a odvodí ročník", async () => {
-    const f = new File([csv], "bakalari.csv", { type: "text/csv" });
+    const f = { name: "bakalari.csv", type: "text/csv", text: async () => csv } as unknown as File;
     const rows = await parseImportFile(f);
     expect(rows).toHaveLength(4);
     expect(rows[0]).toMatchObject({ prijmeni: "Balogová", jmeno: "Natálie", trida: "Č1.A", rocnik: "1" });
