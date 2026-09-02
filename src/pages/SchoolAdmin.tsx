@@ -538,4 +538,129 @@ const MembersTable = ({
   );
 };
 
+/**
+ * Panel pro uživatele s rolí school_admin/admin, který zatím nemá profiles.school_id.
+ * Umožní se napojit registračním kódem; systémový admin si školu vybere ze seznamu.
+ */
+const NoSchoolPanel = ({
+  isSystemAdmin,
+  userId,
+  onAssigned,
+}: {
+  isSystemAdmin: boolean;
+  userId: string;
+  onAssigned: () => void;
+}) => {
+  const { toast } = useToast();
+  const [code, setCode] = useState("");
+  const [joining, setJoining] = useState(false);
+  const [schools, setSchools] = useState<{ id: string; name: string }[]>([]);
+  const [selected, setSelected] = useState("");
+  const [assigning, setAssigning] = useState(false);
+
+  useEffect(() => {
+    if (!isSystemAdmin) return;
+    void (async () => {
+      const { data } = await supabase.from("schools").select("id, name").order("name");
+      setSchools((data as any[])?.map((s) => ({ id: s.id, name: s.name })) ?? []);
+    })();
+  }, [isSystemAdmin]);
+
+  const joinByCode = async () => {
+    if (!code.trim()) return;
+    setJoining(true);
+    const { data, error } = await supabase.rpc("join_school_by_code", {
+      _code: code.trim(),
+      _user_id: userId,
+    });
+    setJoining(false);
+    if (error) {
+      toast({ title: "Napojení selhalo", description: error.message, variant: "destructive" });
+      return;
+    }
+    if (!data) {
+      toast({
+        title: "Kód nenalezen",
+        description: "Zkontrolujte registrační kód školy a zkuste to znovu.",
+        variant: "destructive",
+      });
+      return;
+    }
+    toast({ title: "Napojeno", description: "Škola byla přiřazena k vašemu účtu." });
+    onAssigned();
+  };
+
+  const assignSelected = async () => {
+    if (!selected) return;
+    setAssigning(true);
+    const { error } = await supabase.from("profiles").update({ school_id: selected }).eq("id", userId);
+    setAssigning(false);
+    if (error) {
+      toast({ title: "Přiřazení selhalo", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Škola přiřazena" });
+    onAssigned();
+  };
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <KeyRound className="w-4 h-4 text-primary" /> Registrační kód školy
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col sm:flex-row sm:items-end gap-3">
+          <div className="flex-1">
+            <Label htmlFor="school-join-code">Kód od vaší školy</Label>
+            <Input
+              id="school-join-code"
+              value={code}
+              onChange={(e) => setCode(e.target.value.toUpperCase())}
+              placeholder="např. ABC12345"
+              className="font-mono tracking-widest mt-1"
+            />
+          </div>
+          <Button onClick={joinByCode} disabled={joining || !code.trim()}>
+            {joining && <Loader2 className="w-4 h-4 mr-1 animate-spin" />} Napojit se
+          </Button>
+        </CardContent>
+      </Card>
+
+      {isSystemAdmin && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <SchoolIcon className="w-4 h-4 text-primary" /> Vybrat existující školu
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col sm:flex-row sm:items-end gap-3">
+            <div className="flex-1">
+              <Label htmlFor="school-select">Škola</Label>
+              <select
+                id="school-select"
+                value={selected}
+                onChange={(e) => setSelected(e.target.value)}
+                className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="">— vyberte školu —</option>
+                {schools.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <Button onClick={assignSelected} disabled={assigning || !selected}>
+              {assigning && <Loader2 className="w-4 h-4 mr-1 animate-spin" />} Přiřadit
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+};
+
 export default SchoolAdmin;
+
