@@ -141,7 +141,7 @@ export default function LessonFormDialog({
   title,
 }: Props) {
   const { subjects } = useTeacherSubjects();
-  const { classes } = useTeacherClasses();
+  const { classes, myClasses, schoolClasses, refetch: refetchClasses } = useTeacherClasses();
   const { groups } = useSubjectGroups();
   const { units, refetch: refetchUnits } = useTeachingUnits();
   const { schoolId } = useMySchool();
