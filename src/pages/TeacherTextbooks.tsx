@@ -86,6 +86,7 @@ interface TopicItem {
   id: string;
   title: string;
   sort_order: number;
+  grade?: number;
   lessons: LessonItem[];
 }
 
@@ -143,7 +144,7 @@ const TeacherTextbooks = () => {
   const [createTopicOpen, setCreateTopicOpen] = useState(false);
   const [newTopicTitle, setNewTopicTitle] = useState("");
   const [newTopicGrade, setNewTopicGrade] = useState<number>(1);
-  const [editingTopic, setEditingTopic] = useState<{ id: string; title: string } | null>(null);
+  const [editingTopic, setEditingTopic] = useState<{ id: string; title: string; grade?: number } | null>(null);
 
   // Presentation editor (extracted to hook)
   const {
@@ -314,7 +315,7 @@ const TeacherTextbooks = () => {
         if (!allLessons.some(l => l.id === pl.id)) allLessons.push(pl);
       }
 
-      return { id: t.id, title: t.title, sort_order: t.sort_order ?? 0, lessons: allLessons };
+      return { id: t.id, title: t.title, sort_order: t.sort_order ?? 0, grade: typeof t.grade === "number" ? t.grade : 0, lessons: allLessons };
     };
 
     const knownGrades = matchedSubject?.grades ?? [];
@@ -335,7 +336,9 @@ const TeacherTextbooks = () => {
         const key = typeof t.grade === "number" ? t.grade : 0;
         byGrade.set(key, [...(byGrade.get(key) ?? []), t]);
       }
-      for (const [grade, list] of [...byGrade.entries()].sort((a, b) => a[0] - b[0])) {
+      // "Bez ročníku" (0) vždy na konec seznamu skupin
+      const orphanKey = (g: number) => (g === 0 ? Number.MAX_SAFE_INTEGER : g);
+      for (const [grade, list] of [...byGrade.entries()].sort((a, b) => orphanKey(a[0]) - orphanKey(b[0]))) {
         groups.push({
           grade,
           label: knownGrades.length === 0
