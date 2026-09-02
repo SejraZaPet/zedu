@@ -48,6 +48,7 @@ export const useTeacherSubjects = () => {
       const { data, error } = await supabase
         .from("teacher_textbooks")
         .select("id, title, subject, subject_id")
+        .eq("teacher_id", user!.id)
         .order("title", { ascending: true });
       if (error) throw error;
       return data ?? [];
