@@ -351,9 +351,13 @@ const VIEW_AS_TARGETS: Record<string, string> = {
 const ViewAsSwitcher = () => {
   const { realRole, roles, viewAsRole, setViewAsRole } = useAuth();
   if (realRole !== "admin") return null;
-  const canSchoolAdmin = roles.includes("school_admin");
+  // Systémový admin má přístup ke školnímu pohledu vždy; roli school_admin jen
+  // zvýrazníme. Dřívější tvrdá podmínka nabídku skrývala, když se seznam rolí
+  // ještě nedonačetl (nebo se donačetl přes fallback), a možnost tak chyběla.
+  const hasSchoolAdminRole = roles.includes("school_admin");
   const value = viewAsRole ?? "admin";
   return (
+
     <div className="flex items-center gap-1.5">
       <Eye className="w-4 h-4 text-muted-foreground" />
       <Select
@@ -373,7 +377,10 @@ const ViewAsSwitcher = () => {
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="admin">Admin (já)</SelectItem>
-          {canSchoolAdmin && <SelectItem value="school_admin">Zobrazit jako admin školy</SelectItem>}
+          <SelectItem value="school_admin">
+            Zobrazit jako admin školy{hasSchoolAdminRole ? "" : " (bez vlastní školy)"}
+          </SelectItem>
+
           <SelectItem value="teacher">Zobrazit jako učitel</SelectItem>
           <SelectItem value="user">Zobrazit jako žák</SelectItem>
         </SelectContent>
