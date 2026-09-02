@@ -515,8 +515,10 @@ const TeacherTextbooks = () => {
       .eq("id", editingTopic.id)
       .maybeSingle();
     const original = current as { grade: number | null } | null;
+    const newGrade = editingTopic.grade ?? 0;
 
     const patch: Record<string, unknown> = { title: editingTopic.title.trim(), grade: newGrade };
+
 
     // Při přesunu do jiné ročníkové skupiny dej téma na konec cílové skupiny
     if (original && (original.grade ?? 0) !== newGrade) {
