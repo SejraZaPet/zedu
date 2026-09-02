@@ -74,10 +74,13 @@ serve(async (req) => {
       });
     }
 
+    // role_label předáváme do metadat, aby trigger handle_new_user rovnou založil
+    // správnou roli a nevznikala zbytková 'user' u učitelů/lektorů/rodičů.
     const { data: created, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
+      user_metadata: { role_label: roleLabelFor(typeof role === "string" ? role : "") },
     });
 
     if (createError || !created.user) {

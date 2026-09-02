@@ -244,6 +244,10 @@ Deno.serve(async (req) => {
     const roleError = await assignPrimaryRole(admin, userId, role);
     if (roleError) {
       results.push({ row_ref: rowRef, name, ok: false, error: `Role: ${roleError}` });
+      continue;
+    }
+
+
 
     // Přihlašovací údaje pro tisk/PIN — RPC se autorizují přes auth.uid() volajícího,
     // proto se volají jeho JWT (profil už je ve stejné škole, takže projdou).
