@@ -183,7 +183,7 @@ const TeacherClassDetail = () => {
     const globalIds = (ctData ?? []).filter((r: any) => r.textbook_type !== "teacher").map((r: any) => r.textbook_id);
     const tbList: TextbookItem[] = [];
     if (teacherIds.length > 0) {
-      const { data } = await supabase.from("teacher_textbooks").select("id,title,subject").in("id", teacherIds);
+      const { data } = await supabase.from("teacher_textbooks").select("id,title,subject").in("id", teacherIds).is("deleted_at", null);
       data?.forEach((t: any) => tbList.push({ id: t.id, title: t.title, subject: t.subject, textbook_type: "teacher" }));
     }
     if (globalIds.length > 0) {
