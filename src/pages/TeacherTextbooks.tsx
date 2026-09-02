@@ -207,18 +207,29 @@ const TeacherTextbooks = () => {
   const fetchTextbooks = async () => {
     if (!user) {
       setTextbooks([]);
+      setTrashedTextbooks([]);
       setLoading(false);
       return;
     }
     // „Moje učebnice“ = výhradně vlastní obsah. Filtr na vlastníka je zde nutný,
     // protože RLS pouští adminům čtení všech učitelských učebnic.
-    const { data } = await supabase
-      .from("teacher_textbooks")
-      .select("*")
-      .eq("teacher_id", user.id)
-      .is("deleted_at", null)
-      .order("created_at", { ascending: false });
+    // Smazané učebnice (deleted_at) se zobrazují jen v Koši.
+    const [{ data }, { data: trashed }] = await Promise.all([
+      supabase
+        .from("teacher_textbooks")
+        .select("*")
+        .eq("teacher_id", user.id)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("teacher_textbooks")
+        .select("*")
+        .eq("teacher_id", user.id)
+        .not("deleted_at", "is", null)
+        .order("deleted_at", { ascending: false }),
+    ]);
     if (data) setTextbooks(data as Textbook[]);
+    setTrashedTextbooks((trashed ?? []) as Textbook[]);
     setLoading(false);
   };
 
