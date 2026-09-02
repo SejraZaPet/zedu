@@ -316,6 +316,16 @@ const SchoolBulkImportCard = ({ onImported }: { onImported: () => void }) => {
                         {r.ok ? [r.student_code, r.pin].filter(Boolean).join(" / ") : "—"}
                       </TableCell>
                       <TableCell className="text-xs">
+                        {r.class_name ? (
+                          <Badge variant="outline">{r.class_name}</Badge>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                        {r.class_warning && (
+                          <span className="block text-destructive">{r.class_warning}</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-xs">
                         {r.ok ? (
                           <Badge>Vytvořeno</Badge>
                         ) : (
