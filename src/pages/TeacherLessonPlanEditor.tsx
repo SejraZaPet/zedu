@@ -239,6 +239,7 @@ export default function TeacherLessonPlanEditor() {
       const { data, error } = await supabase
         .from("teacher_textbooks")
         .select("id, title, subject")
+        .eq("teacher_id", user!.id)
         .order("title", { ascending: true });
 
       if (cancelled) return;
