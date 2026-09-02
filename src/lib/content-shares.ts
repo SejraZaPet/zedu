@@ -258,18 +258,24 @@ export async function listPublicShares(
   return items;
 }
 
+/** Minimální délka hledaného textu — musí odpovídat i DB funkci a dialogu. */
+export const TEACHER_SEARCH_MIN_LENGTH = 2;
+
 export async function searchTeachers(query: string) {
   const q = query.trim();
-  if (q.length < 3) return [];
-  // Kontaktní údaje kolegů nejsou čitelné — hledáme jen podle jména přes bezpečnou funkci.
+  if (q.length < TEACHER_SEARCH_MIN_LENGTH) return [];
+  // Bezpečná funkce: jméno bez ohledu na diakritiku, e-mail pouze jako přesná shoda.
   const { data, error } = await supabase.rpc("search_teacher_directory", { _term: q });
   if (error) throw error;
   return ((data ?? []) as any[]).map((p) => ({
     id: p.id as string,
     label: [p.first_name, p.last_name].filter(Boolean).join(" ").trim() || p.id,
-    email: null as string | null,
+    // E-mail vrací DB jen u kolegů ze stejné školy, jinak null.
+    email: (p.email as string | null) ?? null,
+    sameSchool: !!p.same_school,
   }));
 }
+
 
 
 // ------------------------- Copy helpers -------------------------
