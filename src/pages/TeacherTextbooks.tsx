@@ -922,9 +922,9 @@ const TeacherTextbooks = () => {
         <AlertDialog open={deleteTextbookOpen} onOpenChange={setDeleteTextbookOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Smazat učebnici</AlertDialogTitle>
+              <AlertDialogTitle>Přesunout učebnici do koše</AlertDialogTitle>
               <AlertDialogDescription>
-                Opravdu chcete smazat učebnici „{selectedTextbook?.title}"? Smaže se včetně všech lekcí. Tuto akci nelze vrátit.
+                Učebnice „{selectedTextbook?.title}" se přesune do koše. Zůstane tam 30 dnů a můžete ji kdykoli obnovit v sekci Koš.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
