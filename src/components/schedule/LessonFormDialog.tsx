@@ -36,7 +36,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
 import SubjectPicker from "@/components/subjects/SubjectPicker";
-import { useTeacherClasses } from "@/hooks/useTeacherClasses";
+import { useTeacherClasses, claimSchoolClass } from "@/hooks/useTeacherClasses";
 import { useSubjectGroups } from "@/hooks/useSubjectGroups";
 import { useTeachingUnits } from "@/hooks/useTeachingUnits";
 import { supabase } from "@/integrations/supabase/client";
