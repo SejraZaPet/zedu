@@ -201,6 +201,10 @@ const SchoolBulkImportCard = ({ onImported }: { onImported: () => void }) => {
             {classSummary.length > 0 && (
               <div className="border border-border rounded-lg p-3 space-y-2">
                 <p className="text-sm font-medium">Rozpoznané třídy</p>
+                <p className="text-xs text-muted-foreground">
+                  Pro každou třídu použijeme existující třídu školy se stejným názvem, jinak ji
+                  založíme — a žáky do ní hned zařadíme.
+                </p>
                 {classSummary.map((c) => {
                   const year = c.rocnik ?? (yearOverrides[c.trida] ? parseInt(yearOverrides[c.trida], 10) : null);
                   return (
