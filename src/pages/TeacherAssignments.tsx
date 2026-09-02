@@ -67,7 +67,8 @@ const TeacherAssignments = () => {
   const prefillLessonType = (searchParams.get("lessonType") as "global" | "teacher" | null) || "teacher";
   const prefillWorksheetId = searchParams.get("worksheetId");
   const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [classes, setClasses] = useState<{ id: string; name: string }[]>([]);
+  // Třídy bereme z hooku – nabízí nejdřív moje třídy, pak existující třídy školy
+  const { classes, myClasses, schoolClasses, refetch: refetchClasses } = useTeacherClasses();
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
