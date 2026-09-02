@@ -42,6 +42,7 @@ import {
 import ReviewButton from "@/components/sharing/ReviewButton";
 import CoursePathMap from "@/components/textbook/CoursePathMap";
 import { LANGUAGE_OPTIONS, DIFFICULTY_OPTIONS } from "@/lib/content-shares";
+import { useAuth } from "@/contexts/AuthContext";
 
 
 interface Textbook {
