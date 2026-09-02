@@ -888,7 +888,7 @@ const TeacherTextbooksManager = () => {
                   <Button size="sm" variant="outline" onClick={() => setSelectedTextbook(tb)} className="gap-1">
                     <Pencil className="w-4 h-4" />Otevřít
                   </Button>
-                  <Button size="sm" variant="ghost" onClick={() => handleDelete(tb.id)}>
+                  <Button size="sm" variant="ghost" onClick={() => handleDelete(tb.id, tb.title)} title="Přesunout do koše">
                     <Trash2 className="w-4 h-4 text-destructive" />
                   </Button>
                 </div>
@@ -897,6 +897,69 @@ const TeacherTextbooksManager = () => {
           })}
         </div>
       )}
+
+      {/* === Koš === */}
+      <div className="border border-border rounded-lg bg-card">
+        <button
+          type="button"
+          onClick={() => setShowTrash(v => !v)}
+          className="w-full flex items-center justify-between px-4 py-3 text-left"
+        >
+          <span className="font-heading font-semibold flex items-center gap-2">
+            <Trash2 className="w-4 h-4 text-muted-foreground" /> Koš
+            {trashedTextbooks.length > 0 && (
+              <Badge variant="secondary" className="text-[10px]">{trashedTextbooks.length}</Badge>
+            )}
+          </span>
+          <span className="text-xs text-muted-foreground">{showTrash ? "Skrýt" : "Zobrazit"}</span>
+        </button>
+        {showTrash && (
+          <div className="border-t border-border">
+            <p className="px-4 py-2 text-xs text-muted-foreground bg-muted/40">
+              Smazané učebnice se po 30 dnech odstraní natrvalo.
+            </p>
+            {trashedTextbooks.length === 0 ? (
+              <p className="px-4 py-6 text-sm text-muted-foreground text-center">Koš je prázdný.</p>
+            ) : trashedTextbooks.map((tb) => (
+              <div key={tb.id} className="flex flex-wrap items-center gap-3 px-4 py-3 border-b border-border last:border-b-0">
+                <div className="flex-1 min-w-[180px]">
+                  <div className="font-medium truncate">{tb.title}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {tb.subject} · smazáno {tb.deleted_at ? new Date(tb.deleted_at).toLocaleString("cs-CZ") : "—"}
+                  </p>
+                </div>
+                <Badge variant="outline" className="text-[10px]">
+                  {daysLeftInTrash(tb.deleted_at) > 0 ? `Zbývá ${daysLeftInTrash(tb.deleted_at)} dnů` : "Ke smazání"}
+                </Badge>
+                <Button size="sm" variant="outline" className="gap-1" onClick={() => handleRestore(tb)}>
+                  <RotateCcw className="w-4 h-4" /> Obnovit
+                </Button>
+                <Button size="sm" variant="ghost" className="gap-1 text-destructive" onClick={() => setPurgeTarget(tb)}>
+                  <Trash2 className="w-4 h-4" /> Smazat natrvalo
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <AlertDialog open={!!purgeTarget} onOpenChange={(open) => { if (!open) setPurgeTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Smazat natrvalo</AlertDialogTitle>
+            <AlertDialogDescription>
+              Učebnice „{purgeTarget?.title}" se smaže včetně všech lekcí. Tato akce je nevratná.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Zrušit</AlertDialogCancel>
+            <AlertDialogAction onClick={handlePurge} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Smazat natrvalo
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
 
       {/* === Create new textbook dialog === */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
