@@ -203,15 +203,26 @@ const TeacherTextbooks = () => {
 
 
   const fetchTextbooks = async () => {
+    if (!user) {
+      setTextbooks([]);
+      setLoading(false);
+      return;
+    }
+    // „Moje učebnice“ = výhradně vlastní obsah. Filtr na vlastníka je zde nutný,
+    // protože RLS pouští adminům čtení všech učitelských učebnic.
     const { data } = await supabase
       .from("teacher_textbooks")
       .select("*")
+      .eq("teacher_id", user.id)
       .order("created_at", { ascending: false });
     if (data) setTextbooks(data as Textbook[]);
     setLoading(false);
   };
 
-  useEffect(() => { fetchTextbooks(); }, []);
+  useEffect(() => {
+    if (authLoading) return;
+    fetchTextbooks();
+  }, [authLoading, user?.id]);
 
   const fetchDetail = useCallback(async (tb: Textbook) => {
     setDetailLoading(true);
