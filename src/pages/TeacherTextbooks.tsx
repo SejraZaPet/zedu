@@ -43,6 +43,7 @@ import ReviewButton from "@/components/sharing/ReviewButton";
 import CoursePathMap from "@/components/textbook/CoursePathMap";
 import { LANGUAGE_OPTIONS, DIFFICULTY_OPTIONS } from "@/lib/content-shares";
 import { useAuth } from "@/contexts/AuthContext";
+import { softDeleteTextbook } from "@/lib/textbook-trash";
 
 
 interface Textbook {
@@ -101,6 +102,7 @@ const TeacherTextbooks = () => {
   const { user, loading: authLoading } = useAuth();
   const { data: subjects } = useSubjects(true);
   const [textbooks, setTextbooks] = useState<Textbook[]>([]);
+  const [trashedTextbooks, setTrashedTextbooks] = useState<Textbook[]>([]);
   const [createOpen, setCreateOpen] = useState(false);
   const [shareTarget, setShareTarget] = useState<{ id: string; title: string } | null>(null);
   const [createFromTemplateOpen, setCreateFromTemplateOpen] = useState(false);
@@ -1026,6 +1028,7 @@ const TeacherTextbooks = () => {
 
         <TextbookList
           textbooks={textbooks}
+          trashedTextbooks={trashedTextbooks}
           loading={loading}
           subjects={subjects?.map(s => s) || []}
           onOpen={openDetail}
