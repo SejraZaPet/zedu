@@ -7336,6 +7336,10 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      claim_school_class_as_teacher: {
+        Args: { _class_id: string }
+        Returns: boolean
+      }
       class_engagement_stats: { Args: { _class_id: string }; Returns: Json }
       clear_player_hand: { Args: { _player_id: string }; Returns: undefined }
       creator_payout_target: {
@@ -7531,6 +7535,7 @@ export type Database = {
         Args: { _student_id: string; _user_id: string }
         Returns: boolean
       }
+      is_teaching_staff: { Args: { _user_id: string }; Returns: boolean }
       is_teaching_unit_collaborator: {
         Args: {
           _class_id: string
