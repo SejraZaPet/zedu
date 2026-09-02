@@ -7540,6 +7540,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_worksheet_in_direct_shared_textbook: {
+        Args: { _user_id: string; _worksheet_id: string }
+        Returns: boolean
+      }
       join_class_as_teacher: {
         Args: { _code: string; _user_id: string }
         Returns: string
