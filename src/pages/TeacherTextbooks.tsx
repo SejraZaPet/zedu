@@ -821,6 +821,7 @@ const TeacherTextbooks = () => {
                 <Select value={String(newTopicGrade)} onValueChange={(v) => setNewTopicGrade(Number(v))}>
                   <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="0">Bez ročníku</SelectItem>
                     {(matchedSubject?.grades?.length ?? 0) > 0
                       ? matchedSubject!.grades.map(g => (
                         <SelectItem key={g.grade_number} value={String(g.grade_number)}>{g.label}</SelectItem>
@@ -829,6 +830,7 @@ const TeacherTextbooks = () => {
                         <SelectItem key={n} value={String(n)}>{n}. ročník</SelectItem>
                       ))}
                   </SelectContent>
+
 
                 </Select>
               </div>
