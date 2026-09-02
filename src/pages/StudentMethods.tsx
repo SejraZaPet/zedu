@@ -112,7 +112,8 @@ const StudentMethods = () => {
         const { data: tbs } = await supabase
           .from("teacher_textbooks")
           .select("id, title")
-          .in("id", missingTitles);
+          .in("id", missingTitles)
+          .is("deleted_at", null);
         for (const t of (tbs ?? []) as any[]) tbTitleById.set(t.id, t.title);
       }
 

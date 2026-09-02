@@ -43,6 +43,7 @@ import ReviewButton from "@/components/sharing/ReviewButton";
 import CoursePathMap from "@/components/textbook/CoursePathMap";
 import { LANGUAGE_OPTIONS, DIFFICULTY_OPTIONS } from "@/lib/content-shares";
 import { useAuth } from "@/contexts/AuthContext";
+import { softDeleteTextbook } from "@/lib/textbook-trash";
 
 
 interface Textbook {
@@ -101,6 +102,7 @@ const TeacherTextbooks = () => {
   const { user, loading: authLoading } = useAuth();
   const { data: subjects } = useSubjects(true);
   const [textbooks, setTextbooks] = useState<Textbook[]>([]);
+  const [trashedTextbooks, setTrashedTextbooks] = useState<Textbook[]>([]);
   const [createOpen, setCreateOpen] = useState(false);
   const [shareTarget, setShareTarget] = useState<{ id: string; title: string } | null>(null);
   const [createFromTemplateOpen, setCreateFromTemplateOpen] = useState(false);
@@ -205,17 +207,29 @@ const TeacherTextbooks = () => {
   const fetchTextbooks = async () => {
     if (!user) {
       setTextbooks([]);
+      setTrashedTextbooks([]);
       setLoading(false);
       return;
     }
     // „Moje učebnice“ = výhradně vlastní obsah. Filtr na vlastníka je zde nutný,
     // protože RLS pouští adminům čtení všech učitelských učebnic.
-    const { data } = await supabase
-      .from("teacher_textbooks")
-      .select("*")
-      .eq("teacher_id", user.id)
-      .order("created_at", { ascending: false });
+    // Smazané učebnice (deleted_at) se zobrazují jen v Koši.
+    const [{ data }, { data: trashed }] = await Promise.all([
+      supabase
+        .from("teacher_textbooks")
+        .select("*")
+        .eq("teacher_id", user.id)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("teacher_textbooks")
+        .select("*")
+        .eq("teacher_id", user.id)
+        .not("deleted_at", "is", null)
+        .order("deleted_at", { ascending: false }),
+    ]);
     if (data) setTextbooks(data as Textbook[]);
+    setTrashedTextbooks((trashed ?? []) as Textbook[]);
     setLoading(false);
   };
 
@@ -426,11 +440,12 @@ const TeacherTextbooks = () => {
 
   const handleDeleteTextbook = async () => {
     if (!selectedTextbook) return;
-    const { error } = await supabase.from("teacher_textbooks").delete().eq("id", selectedTextbook.id);
+    // Soft delete – učebnice se přesune do Koše (30 dní obnovitelná).
+    const { error } = await softDeleteTextbook(selectedTextbook.id, selectedTextbook.title);
     if (error) {
       toast({ title: "Chyba", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Učebnice smazána" });
+      toast({ title: "Učebnice přesunuta do koše", description: "Najdete ji v sekci Koš, obnovit lze do 30 dnů." });
       setDeleteTextbookOpen(false);
       setSelectedTextbook(null);
       navigate("/ucitel/ucebnice");
@@ -907,9 +922,9 @@ const TeacherTextbooks = () => {
         <AlertDialog open={deleteTextbookOpen} onOpenChange={setDeleteTextbookOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Smazat učebnici</AlertDialogTitle>
+              <AlertDialogTitle>Přesunout učebnici do koše</AlertDialogTitle>
               <AlertDialogDescription>
-                Opravdu chcete smazat učebnici „{selectedTextbook?.title}"? Smaže se včetně všech lekcí. Tuto akci nelze vrátit.
+                Učebnice „{selectedTextbook?.title}" se přesune do koše. Zůstane tam 30 dnů a můžete ji kdykoli obnovit v sekci Koš.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -1025,6 +1040,7 @@ const TeacherTextbooks = () => {
 
         <TextbookList
           textbooks={textbooks}
+          trashedTextbooks={trashedTextbooks}
           loading={loading}
           subjects={subjects?.map(s => s) || []}
           onOpen={openDetail}

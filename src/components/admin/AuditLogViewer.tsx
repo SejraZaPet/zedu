@@ -30,6 +30,9 @@ const ACTION_LABELS: Record<string, string> = {
   class_deleted: "Smazání třídy",
   class_archived: "Archivace třídy",
   assignment_created: "Vytvoření úkolu",
+  textbook_soft_deleted: "Učebnice přesunuta do koše",
+  textbook_restored: "Obnovení učebnice z koše",
+  textbook_permanently_deleted: "Trvalé smazání učebnice",
 };
 
 const actionTone = (action: string): "create" | "delete" | "update" | "neutral" => {

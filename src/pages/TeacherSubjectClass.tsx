@@ -541,6 +541,7 @@ export default function TeacherSubjectClass() {
         .from("teacher_textbooks")
         .select("id, title, subject, description")
         .eq("teacher_id", user.id)
+        .is("deleted_at", null)
         .order("title", { ascending: true });
       if (error) {
         toast({

@@ -79,7 +79,7 @@ const ClassTextbooksDialog = ({ classId, className, open, onOpenChange }: Props)
         ? supabase.from("textbook_subjects").select("id, label, abbreviation, description").in("id", globalIds)
         : Promise.resolve({ data: [] as any[] }),
       teacherIds.length > 0
-        ? supabase.from("teacher_textbooks").select("id, title, subject, description").in("id", teacherIds)
+        ? supabase.from("teacher_textbooks").select("id, title, subject, description").in("id", teacherIds).is("deleted_at", null)
         : Promise.resolve({ data: [] as any[] }),
     ]);
 
@@ -117,6 +117,7 @@ const ClassTextbooksDialog = ({ classId, className, open, onOpenChange }: Props)
       .from("teacher_textbooks")
       .select("id, title, subject")
       .eq("teacher_id", session.user.id)
+      .is("deleted_at", null)
       .order("title");
     const teacherSet = new Set(teacherIds);
     setAvailableTeacher(

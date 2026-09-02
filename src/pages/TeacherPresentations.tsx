@@ -210,6 +210,7 @@ const TeacherPresentations = () => {
         .from("teacher_textbooks")
         .select("id, title, updated_at, teacher_textbook_lessons(count)")
         .eq("teacher_id", user.id)
+        .is("deleted_at", null)
         .order("updated_at", { ascending: false });
       if (error) throw error;
       setTextbookOptions(((data ?? []) as any[]).map((t) => ({

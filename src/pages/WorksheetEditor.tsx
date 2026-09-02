@@ -342,7 +342,8 @@ export default function WorksheetEditor() {
       const { data, error } = await (supabase as any)
         .from("teacher_textbooks")
         .select("subject")
-        .eq("teacher_id", user!.id);
+        .eq("teacher_id", user!.id)
+        .is("deleted_at", null);
       if (error) throw error;
       const set = new Set<string>();
       for (const row of (data ?? []) as { subject: string | null }[]) {

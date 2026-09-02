@@ -79,7 +79,7 @@ const StudentTextbooks = () => {
         ? supabase.from("textbook_subjects").select("id, slug, label, abbreviation, description").in("id", globalIds)
         : Promise.resolve({ data: [] as any[] }),
       teacherIdsFromClasses.length > 0
-        ? supabase.from("teacher_textbooks").select("id, title, subject, description").in("id", teacherIdsFromClasses)
+        ? supabase.from("teacher_textbooks").select("id, title, subject, description").in("id", teacherIdsFromClasses).is("deleted_at", null)
         : Promise.resolve({ data: [] as any[] }),
     ]);
 

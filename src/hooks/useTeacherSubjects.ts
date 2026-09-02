@@ -49,6 +49,7 @@ export const useTeacherSubjects = () => {
         .from("teacher_textbooks")
         .select("id, title, subject, subject_id")
         .eq("teacher_id", user!.id)
+        .is("deleted_at", null)
         .order("title", { ascending: true });
       if (error) throw error;
       return data ?? [];
