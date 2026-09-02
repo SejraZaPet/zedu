@@ -530,6 +530,48 @@ const TeacherSubjectGroups = () => {
               <Label>Školní rok</Label>
               <Input value={newYear} onChange={(e) => setNewYear(e.target.value)} placeholder="2026/2027" />
             </div>
+            <div className="space-y-2">
+              <Label>Spojená skupina z tříd (volitelné)</Label>
+              <p className="text-xs text-muted-foreground">
+                Vyberte existující třídy — do skupiny se rovnou přidají všichni jejich žáci
+                (např. „Č1.A + Č2.A – Anglický jazyk“). Žáky pak můžete ručně upravit.
+              </p>
+              <div className="max-h-40 overflow-y-auto rounded-md border border-border divide-y">
+                {classes.length === 0 ? (
+                  <p className="p-3 text-xs text-muted-foreground">Žádné dostupné třídy.</p>
+                ) : classes.map((c) => (
+                  <label key={c.id} className="flex items-center gap-3 px-3 py-2 cursor-pointer text-sm">
+                    <Checkbox
+                      checked={seedClassIds.includes(c.id)}
+                      onCheckedChange={(v) =>
+                        setSeedClassIds((prev) => (v ? [...prev, c.id] : prev.filter((id) => id !== c.id)))
+                      }
+                    />
+                    <span className="flex-1">{c.name}</span>
+                    {c.source === "school" && (
+                      <Badge variant="outline" className="text-[10px]">třída školy</Badge>
+                    )}
+                  </label>
+                ))}
+              </div>
+              {seedClassIds.length > 1 && !newName.trim() && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() =>
+                    setNewName(
+                      `${seedClassIds
+                        .map((id) => classes.find((c) => c.id === id)?.name)
+                        .filter(Boolean)
+                        .join(" + ")} – ${subjectName}`,
+                    )
+                  }
+                >
+                  Doplnit název podle vybraných tříd
+                </Button>
+              )}
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCreateOpen(false)}>Zrušit</Button>
