@@ -19,7 +19,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { useTeacherClasses } from "@/hooks/useTeacherClasses";
+import { useTeacherClasses, claimSchoolClass } from "@/hooks/useTeacherClasses";
 import SubjectPicker from "@/components/subjects/SubjectPicker";
 
 import { ArrowLeft, Plus, Trash2, Users, Archive, Loader2, Search, Link2 } from "lucide-react";
@@ -62,6 +62,8 @@ const TeacherSubjectGroups = () => {
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState("");
   const [newYear, setNewYear] = useState(currentSchoolYear());
+  // Spojená skupina: třídy, ze kterých se do nové skupiny nabere celý seznam žáků
+  const [seedClassIds, setSeedClassIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
   // přidávání žáků
