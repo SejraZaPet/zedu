@@ -235,9 +235,10 @@ const TeacherTextbooks = () => {
       .order("enrolled_at", { ascending: false });
     if (enrollData) setEnrollments(enrollData as unknown as Enrollment[]);
 
-    // Load grade structure
+    // Load grade structure. POZOR: učebnice může mít předmět, který nemá
+    // v katalogu textbook_subjects definované ročníky (nebo tam vůbec není).
+    // Témata se pak musí zobrazit i tak – jinak insert „zmizí“.
     const matchedSubject = subjects?.find(s => s.slug === tb.subject);
-    if (!matchedSubject) { setGradeGroups([]); setDetailLoading(false); return; }
 
     const { data: topics } = await supabase
       .from("textbook_topics")
@@ -262,48 +263,74 @@ const TeacherTextbooks = () => {
       .select("*, teacher_textbook_lessons(id, title, status, blocks, sort_order, hero_image_url, scheduled_publish_at)")
       .eq("subject_slug", tb.subject);
 
-    const groups: GradeGroup[] = matchedSubject.grades.map(g => {
-      const gradeTopics = (topics ?? [])
+    const buildTopic = (t: any, gradeNumber: number | null): TopicItem => {
+      const topicLessons: LessonItem[] = tbLessons
+        .filter((l: any) => l.topic_id === t.id)
+        .map((l: any) => ({
+          id: l.id,
+          title: l.title,
+          sort_order: l.sort_order ?? 0,
+          status: l.status ?? "draft",
+          blocks: (l.blocks as Block[]) ?? [],
+          source: "textbook_lessons" as const,
+          topic_id: t.id,
+          hero_image_url: l.hero_image_url ?? null,
+          scheduled_publish_at: l.scheduled_publish_at ?? null,
+        }));
+
+      const placedLessons: LessonItem[] = (placementData ?? [])
+        .filter((p: any) =>
+          p.topic_id === t.id &&
+          (gradeNumber === null || p.grade_number === gradeNumber) &&
+          p.teacher_textbook_lessons)
+        .map((p: any) => ({
+          id: p.teacher_textbook_lessons.id,
+          title: p.teacher_textbook_lessons.title,
+          sort_order: p.teacher_textbook_lessons.sort_order ?? 0,
+          status: p.teacher_textbook_lessons.status ?? "draft",
+          blocks: (p.teacher_textbook_lessons.blocks as Block[]) ?? [],
+          source: "teacher_textbook_lessons" as const,
+          topic_id: t.id,
+          hero_image_url: p.teacher_textbook_lessons.hero_image_url ?? null,
+          scheduled_publish_at: p.teacher_textbook_lessons.scheduled_publish_at ?? null,
+        }));
+
+      const allLessons = [...topicLessons];
+      for (const pl of placedLessons) {
+        if (!allLessons.some(l => l.id === pl.id)) allLessons.push(pl);
+      }
+
+      return { id: t.id, title: t.title, sort_order: t.sort_order ?? 0, lessons: allLessons };
+    };
+
+    const knownGrades = matchedSubject?.grades ?? [];
+    const groups: GradeGroup[] = knownGrades.map(g => ({
+      grade: g.grade_number,
+      label: g.label,
+      topics: (topics ?? [])
         .filter((t: any) => t.grade === g.grade_number)
-        .map((t: any) => {
-          const topicLessons: LessonItem[] = tbLessons
-            .filter((l: any) => l.topic_id === t.id)
-            .map((l: any) => ({
-              id: l.id,
-              title: l.title,
-              sort_order: l.sort_order ?? 0,
-              status: l.status ?? "draft",
-              blocks: (l.blocks as Block[]) ?? [],
-              source: "textbook_lessons" as const,
-              topic_id: t.id,
-              hero_image_url: l.hero_image_url ?? null,
-              scheduled_publish_at: l.scheduled_publish_at ?? null,
-            }));
+        .map((t: any) => buildTopic(t, g.grade_number)),
+    }));
 
-          const placedLessons: LessonItem[] = (placementData ?? [])
-            .filter((p: any) => p.topic_id === t.id && p.grade_number === g.grade_number && p.teacher_textbook_lessons)
-            .map((p: any) => ({
-              id: p.teacher_textbook_lessons.id,
-              title: p.teacher_textbook_lessons.title,
-              sort_order: p.teacher_textbook_lessons.sort_order ?? 0,
-              status: p.teacher_textbook_lessons.status ?? "draft",
-              blocks: (p.teacher_textbook_lessons.blocks as Block[]) ?? [],
-              source: "teacher_textbook_lessons" as const,
-              topic_id: t.id,
-              hero_image_url: p.teacher_textbook_lessons.hero_image_url ?? null,
-              scheduled_publish_at: p.teacher_textbook_lessons.scheduled_publish_at ?? null,
-            }));
-
-          const allLessons = [...topicLessons];
-          for (const pl of placedLessons) {
-            if (!allLessons.some(l => l.id === pl.id)) allLessons.push(pl);
-          }
-
-          return { id: t.id, title: t.title, sort_order: t.sort_order ?? 0, lessons: allLessons } as TopicItem;
+    // Témata, jejichž ročník není v katalogu (nebo předmět ročníky vůbec nemá)
+    const knownNumbers = new Set(knownGrades.map(g => g.grade_number));
+    const orphanTopics = (topics ?? []).filter((t: any) => !knownNumbers.has(t.grade));
+    if (orphanTopics.length > 0) {
+      const byGrade = new Map<number, any[]>();
+      for (const t of orphanTopics) {
+        const key = typeof t.grade === "number" ? t.grade : 0;
+        byGrade.set(key, [...(byGrade.get(key) ?? []), t]);
+      }
+      for (const [grade, list] of [...byGrade.entries()].sort((a, b) => a[0] - b[0])) {
+        groups.push({
+          grade,
+          label: knownGrades.length === 0
+            ? (grade > 0 ? `${grade}. ročník` : "Bez ročníku")
+            : (grade > 0 ? `${grade}. ročník (mimo strukturu předmětu)` : "Bez ročníku"),
+          topics: list.map((t: any) => buildTopic(t, null)),
         });
-
-      return { grade: g.grade_number, label: g.label, topics: gradeTopics };
-    });
+      }
+    }
 
     setGradeGroups(groups);
     setDetailLoading(false);
@@ -426,15 +453,22 @@ const TeacherTextbooks = () => {
 
     const nextOrder = existingTopics && existingTopics.length > 0 ? (existingTopics[0] as any).sort_order + 1 : 0;
 
-    const { error } = await supabase.from("textbook_topics").insert({
+    const { data: inserted, error } = await supabase.from("textbook_topics").insert({
       title: newTopicTitle.trim(),
       subject: selectedTextbook.subject,
       grade: newTopicGrade,
       sort_order: nextOrder,
-    });
+    }).select("id");
 
     if (error) {
       toast({ title: "Chyba", description: error.message, variant: "destructive" });
+    } else if (!inserted || inserted.length === 0) {
+      // Insert prošel, ale řádek se nevrátil (typicky RLS) – nehlásit falešný úspěch.
+      toast({
+        title: "Téma se nepodařilo uložit",
+        description: "Nemáte oprávnění vytvořit téma v tomto předmětu. Kontaktujte správce.",
+        variant: "destructive",
+      });
     } else {
       toast({ title: "Téma vytvořeno" });
       setNewTopicTitle("");
@@ -772,10 +806,15 @@ const TeacherTextbooks = () => {
                 <Select value={String(newTopicGrade)} onValueChange={(v) => setNewTopicGrade(Number(v))}>
                   <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {matchedSubject?.grades.map(g => (
-                      <SelectItem key={g.grade_number} value={String(g.grade_number)}>{g.label}</SelectItem>
-                    ))}
+                    {(matchedSubject?.grades?.length ?? 0) > 0
+                      ? matchedSubject!.grades.map(g => (
+                        <SelectItem key={g.grade_number} value={String(g.grade_number)}>{g.label}</SelectItem>
+                      ))
+                      : [1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => (
+                        <SelectItem key={n} value={String(n)}>{n}. ročník</SelectItem>
+                      ))}
                   </SelectContent>
+
                 </Select>
               </div>
               <Button onClick={handleCreateTopic} disabled={saving || !newTopicTitle.trim()} className="w-full">
