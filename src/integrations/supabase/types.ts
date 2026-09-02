@@ -6309,6 +6309,8 @@ export type Database = {
           commission_rate_locked: number | null
           copied_from_textbook_id: string | null
           created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
           description: string
           difficulty_level: string | null
           grade_level: string[] | null
@@ -6331,6 +6333,8 @@ export type Database = {
           commission_rate_locked?: number | null
           copied_from_textbook_id?: string | null
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           description?: string
           difficulty_level?: string | null
           grade_level?: string[] | null
@@ -6353,6 +6357,8 @@ export type Database = {
           commission_rate_locked?: number | null
           copied_from_textbook_id?: string | null
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           description?: string
           difficulty_level?: string | null
           grade_level?: string[] | null
@@ -6383,6 +6389,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "textbook_marketplace_stats"
             referencedColumns: ["textbook_id"]
+          },
+          {
+            foreignKeyName: "teacher_textbooks_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "teacher_textbooks_subject_id_fkey"
@@ -7587,6 +7600,10 @@ export type Database = {
       publish_due_assignments: { Args: never; Returns: number }
       publish_due_lessons: { Args: never; Returns: number }
       publish_due_worksheets: { Args: never; Returns: number }
+      purge_deleted_textbooks: {
+        Args: { _older_than_days?: number }
+        Returns: number
+      }
       raise_hand: {
         Args: { _join_token: string; _raised: boolean }
         Returns: undefined
