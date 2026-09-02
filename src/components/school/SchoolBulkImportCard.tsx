@@ -41,6 +41,8 @@ interface ResultRow {
   student_code?: string;
   pin?: string;
   role?: string;
+  class_name?: string;
+  class_warning?: string;
 }
 
 const SchoolBulkImportCard = ({ onImported }: { onImported: () => void }) => {
@@ -120,9 +122,15 @@ const SchoolBulkImportCard = ({ onImported }: { onImported: () => void }) => {
     const list = ((data as any)?.results ?? []) as ResultRow[];
     setResults(list);
     const created = list.filter((r) => r.ok).length;
+    const classesCreated = Number((data as any)?.classes_created ?? 0);
+    const membersAdded = Number((data as any)?.class_members_added ?? 0);
+    const parts = [
+      membersAdded ? `Zařazeno ${membersAdded} žáků do tříd (nově vytvořeno ${classesCreated}).` : null,
+      skipped.length ? `Přeskočeno ${skipped.length} řádků s nepovolenou rolí.` : null,
+    ].filter(Boolean);
     toast({
       title: `Vytvořeno ${created} z ${valid.length}`,
-      description: skipped.length ? `Přeskočeno ${skipped.length} řádků s nepovolenou rolí.` : undefined,
+      description: parts.length ? parts.join(" ") : undefined,
     });
     onImported();
   };
