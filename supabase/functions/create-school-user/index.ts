@@ -155,7 +155,21 @@ Deno.serve(async (req) => {
     if (p.username) takenUsernames.add(String(p.username));
   }
 
+  // Název školy (jen pro doplnění textového pole `classes.school`)
+  const { data: schoolRow } = await admin
+    .from("schools")
+    .select("name")
+    .eq("id", schoolId)
+    .maybeSingle();
+  const schoolName = (schoolRow?.name as string | undefined) ?? "";
+
+  // Cache tříd v rámci jednoho importu: název třídy → id
+  const classIdByName = new Map<string, string>();
+  let classesCreated = 0;
+  let membersAdded = 0;
+
   const results: ResultRow[] = [];
+
 
   for (const raw of incoming) {
     const first = asText(raw.first_name);
@@ -249,6 +263,41 @@ Deno.serve(async (req) => {
       results.push({ row_ref: rowRef, name, ok: false, error: `Role: ${roleError}` });
       continue;
     }
+
+    // Zařazení žáka do reálné třídy (classes + class_members) podle zkratky třídy.
+    // Bez tohoto kroku by žák existoval jen s textovým popiskem třídy v profilu.
+    const classCode = asText(raw.field_of_study);
+    let className: string | undefined;
+    let classWarning: string | undefined;
+    if (role === "user" && classCode) {
+      let classId = classIdByName.get(classCode);
+      if (!classId) {
+        const ensured = await ensureClass(admin, {
+          schoolId,
+          name: classCode,
+          year: Number.isFinite(yearNum) ? yearNum : classYearFromCode(classCode),
+          createdBy: auth.userId,
+          schoolName,
+        });
+        if (ensured.id) {
+          classId = ensured.id;
+          classIdByName.set(classCode, ensured.id);
+          if (ensured.created) classesCreated += 1;
+        } else {
+          classWarning = `Třídu „${classCode}“ se nepodařilo připravit: ${ensured.error}`;
+        }
+      }
+      if (classId) {
+        const memberError = await addClassMember(admin, classId, userId);
+        if (memberError) classWarning = `Zařazení do třídy „${classCode}“ selhalo: ${memberError}`;
+        else {
+          className = classCode;
+          membersAdded += 1;
+        }
+      }
+    }
+
+
 
 
 
