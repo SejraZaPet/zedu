@@ -507,19 +507,36 @@ const TeacherTextbooks = () => {
     }
   };
 
-  const handleRenameTopic = async () => {
-    if (!editingTopic || !editingTopic.title.trim()) return;
+  const handleUpdateTopic = async () => {
+    if (!editingTopic || !editingTopic.title.trim() || !selectedTextbook) return;
+    const original = allTopicsRaw.find((t) => t.id === editingTopic.id);
+    const newGrade = editingTopic.grade ?? 0;
+    const patch: Record<string, unknown> = { title: editingTopic.title.trim(), grade: newGrade };
+
+    // Při přesunu do jiné ročníkové skupiny dej téma na konec cílové skupiny
+    if (original && (original.grade ?? 0) !== newGrade) {
+      const { data: last } = await supabase
+        .from("textbook_topics")
+        .select("sort_order")
+        .eq("subject", selectedTextbook.subject)
+        .eq("grade", newGrade)
+        .order("sort_order", { ascending: false })
+        .limit(1);
+      patch.sort_order = last && last.length > 0 ? ((last[0] as any).sort_order ?? 0) + 1 : 0;
+    }
+
     const { error } = await supabase.from("textbook_topics")
-      .update({ title: editingTopic.title.trim() })
+      .update(patch)
       .eq("id", editingTopic.id);
     if (error) {
       toast({ title: "Chyba", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Téma přejmenováno" });
+      toast({ title: "Téma upraveno" });
       setEditingTopic(null);
       refreshDetail();
     }
   };
+
 
   // === Create lesson ===
   const handleCreateLesson = async () => {
