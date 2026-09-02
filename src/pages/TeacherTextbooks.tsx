@@ -214,6 +214,7 @@ const TeacherTextbooks = () => {
       .from("teacher_textbooks")
       .select("*")
       .eq("teacher_id", user.id)
+      .is("deleted_at", null)
       .order("created_at", { ascending: false });
     if (data) setTextbooks(data as Textbook[]);
     setLoading(false);

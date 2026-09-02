@@ -169,6 +169,7 @@ const TeacherTextbooksManager = () => {
         .select("id")
         .eq("teacher_id", session.user.id)
         .eq("subject", subjectSlug)
+        .is("deleted_at", null)
         .maybeSingle();
       if (existing) {
         toast({
@@ -209,6 +210,7 @@ const TeacherTextbooksManager = () => {
     const { data } = await supabase
       .from("teacher_textbooks")
       .select("*")
+      .is("deleted_at", null)
       .order("created_at", { ascending: false });
     if (data) setTextbooks(data as Textbook[]);
     setLoading(false);

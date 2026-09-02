@@ -240,6 +240,7 @@ export default function TeacherLessonPlanEditor() {
         .from("teacher_textbooks")
         .select("id, title, subject")
         .eq("teacher_id", user!.id)
+        .is("deleted_at", null)
         .order("title", { ascending: true });
 
       if (cancelled) return;

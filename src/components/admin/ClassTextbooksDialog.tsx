@@ -117,6 +117,7 @@ const ClassTextbooksDialog = ({ classId, className, open, onOpenChange }: Props)
       .from("teacher_textbooks")
       .select("id, title, subject")
       .eq("teacher_id", session.user.id)
+      .is("deleted_at", null)
       .order("title");
     const teacherSet = new Set(teacherIds);
     setAvailableTeacher(

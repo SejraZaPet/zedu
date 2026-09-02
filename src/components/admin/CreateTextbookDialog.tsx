@@ -70,6 +70,7 @@ const CreateTextbookDialog = ({ open, onOpenChange, onCreated }: Props) => {
         .select("id")
         .eq("teacher_id", session.user.id)
         .eq("subject", subjectSlug)
+        .is("deleted_at", null)
         .maybeSingle();
       if (existing) {
         toast({
