@@ -346,9 +346,17 @@ Deno.serve(async (req) => {
       pin,
       role,
       user_id: userId,
+      class_name: className,
+      class_warning: classWarning,
     });
   }
 
   const created = results.filter((r) => r.ok).length;
-  return json({ created, failed: results.length - created, results });
+  return json({
+    created,
+    failed: results.length - created,
+    classes_created: classesCreated,
+    class_members_added: membersAdded,
+    results,
+  });
 });
