@@ -453,15 +453,22 @@ const TeacherTextbooks = () => {
 
     const nextOrder = existingTopics && existingTopics.length > 0 ? (existingTopics[0] as any).sort_order + 1 : 0;
 
-    const { error } = await supabase.from("textbook_topics").insert({
+    const { data: inserted, error } = await supabase.from("textbook_topics").insert({
       title: newTopicTitle.trim(),
       subject: selectedTextbook.subject,
       grade: newTopicGrade,
       sort_order: nextOrder,
-    });
+    }).select("id");
 
     if (error) {
       toast({ title: "Chyba", description: error.message, variant: "destructive" });
+    } else if (!inserted || inserted.length === 0) {
+      // Insert prošel, ale řádek se nevrátil (typicky RLS) – nehlásit falešný úspěch.
+      toast({
+        title: "Téma se nepodařilo uložit",
+        description: "Nemáte oprávnění vytvořit téma v tomto předmětu. Kontaktujte správce.",
+        variant: "destructive",
+      });
     } else {
       toast({ title: "Téma vytvořeno" });
       setNewTopicTitle("");
