@@ -19,7 +19,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { useTeacherClasses } from "@/hooks/useTeacherClasses";
+import { useTeacherClasses, claimSchoolClass } from "@/hooks/useTeacherClasses";
 import SubjectPicker from "@/components/subjects/SubjectPicker";
 
 import { ArrowLeft, Plus, Trash2, Users, Archive, Loader2, Search, Link2 } from "lucide-react";
@@ -62,6 +62,8 @@ const TeacherSubjectGroups = () => {
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState("");
   const [newYear, setNewYear] = useState(currentSchoolYear());
+  // Spojená skupina: třídy, ze kterých se do nové skupiny nabere celý seznam žáků
+  const [seedClassIds, setSeedClassIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
   // přidávání žáků
@@ -185,21 +187,56 @@ const TeacherSubjectGroups = () => {
       return;
     }
     setSaving(true);
-    const { error } = await supabase.from("subject_groups").insert({
-      subject_id: subjectId,
-      name: newName.trim(),
-      school_year: newYear.trim() || currentSchoolYear(),
-      created_by: user.id,
-    });
-    setSaving(false);
-    if (error) {
-      toast({ title: "Nepodařilo se vytvořit skupinu", description: error.message, variant: "destructive" });
+    // Spojená skupina: učitel vybere existující třídy a všichni jejich žáci se vloží do skupiny
+    for (const classId of seedClassIds) {
+      if (classes.find((c) => c.id === classId)?.source === "school") {
+        await claimSchoolClass(classId);
+      }
+    }
+    const { data: createdGroup, error } = await supabase
+      .from("subject_groups")
+      .insert({
+        subject_id: subjectId,
+        name: newName.trim(),
+        school_year: newYear.trim() || currentSchoolYear(),
+        created_by: user.id,
+      })
+      .select("id")
+      .single();
+    if (error || !createdGroup?.id) {
+      setSaving(false);
+      toast({ title: "Nepodařilo se vytvořit skupinu", description: error?.message, variant: "destructive" });
       return;
     }
-    toast({ title: "Skupina vytvořena" });
+
+    let seeded = 0;
+    if (seedClassIds.length) {
+      const { data: cm } = await supabase
+        .from("class_members")
+        .select("user_id")
+        .in("class_id", seedClassIds);
+      const studentIds = Array.from(new Set(((cm as any[]) ?? []).map((r) => r.user_id).filter(Boolean)));
+      if (studentIds.length) {
+        const { error: memberError } = await supabase
+          .from("subject_group_members")
+          .insert(studentIds.map((sid) => ({ group_id: createdGroup.id, student_id: sid })));
+        if (memberError) {
+          toast({ title: "Žáky se nepodařilo přidat", description: memberError.message, variant: "destructive" });
+        } else {
+          seeded = studentIds.length;
+        }
+      }
+    }
+    setSaving(false);
+    toast({
+      title: "Skupina vytvořena",
+      description: seeded ? `Přidáno ${seeded} žáků z ${seedClassIds.length} tříd.` : undefined,
+    });
     setCreateOpen(false);
     setNewName("");
+    setSeedClassIds([]);
     void loadGroups();
+    void loadStudents();
   };
 
   const deleteGroup = async (g: GroupRow) => {
@@ -492,6 +529,48 @@ const TeacherSubjectGroups = () => {
             <div>
               <Label>Školní rok</Label>
               <Input value={newYear} onChange={(e) => setNewYear(e.target.value)} placeholder="2026/2027" />
+            </div>
+            <div className="space-y-2">
+              <Label>Spojená skupina z tříd (volitelné)</Label>
+              <p className="text-xs text-muted-foreground">
+                Vyberte existující třídy — do skupiny se rovnou přidají všichni jejich žáci
+                (např. „Č1.A + Č2.A – Anglický jazyk“). Žáky pak můžete ručně upravit.
+              </p>
+              <div className="max-h-40 overflow-y-auto rounded-md border border-border divide-y">
+                {classes.length === 0 ? (
+                  <p className="p-3 text-xs text-muted-foreground">Žádné dostupné třídy.</p>
+                ) : classes.map((c) => (
+                  <label key={c.id} className="flex items-center gap-3 px-3 py-2 cursor-pointer text-sm">
+                    <Checkbox
+                      checked={seedClassIds.includes(c.id)}
+                      onCheckedChange={(v) =>
+                        setSeedClassIds((prev) => (v ? [...prev, c.id] : prev.filter((id) => id !== c.id)))
+                      }
+                    />
+                    <span className="flex-1">{c.name}</span>
+                    {c.source === "school" && (
+                      <Badge variant="outline" className="text-[10px]">třída školy</Badge>
+                    )}
+                  </label>
+                ))}
+              </div>
+              {seedClassIds.length > 1 && !newName.trim() && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() =>
+                    setNewName(
+                      `${seedClassIds
+                        .map((id) => classes.find((c) => c.id === id)?.name)
+                        .filter(Boolean)
+                        .join(" + ")} – ${subjectName}`,
+                    )
+                  }
+                >
+                  Doplnit název podle vybraných tříd
+                </Button>
+              )}
             </div>
           </div>
           <DialogFooter>

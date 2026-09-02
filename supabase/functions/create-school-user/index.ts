@@ -13,6 +13,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { requireAuth } from "../_shared/auth.ts";
 import { buildWelcomeEmail } from "./welcome-email.ts";
 import { assignPrimaryRole } from "../_shared/assign-primary-role.ts";
+import { ensureClass, addClassMember, classYearFromCode } from "../_shared/ensure-class.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -51,6 +52,8 @@ interface ResultRow {
   pin?: string;
   role?: string;
   user_id?: string;
+  class_name?: string;
+  class_warning?: string;
 }
 
 const asText = (v: unknown) => String(v ?? "").trim();
@@ -152,7 +155,21 @@ Deno.serve(async (req) => {
     if (p.username) takenUsernames.add(String(p.username));
   }
 
+  // Název školy (jen pro doplnění textového pole `classes.school`)
+  const { data: schoolRow } = await admin
+    .from("schools")
+    .select("name")
+    .eq("id", schoolId)
+    .maybeSingle();
+  const schoolName = (schoolRow?.name as string | undefined) ?? "";
+
+  // Cache tříd v rámci jednoho importu: název třídy → id
+  const classIdByName = new Map<string, string>();
+  let classesCreated = 0;
+  let membersAdded = 0;
+
   const results: ResultRow[] = [];
+
 
   for (const raw of incoming) {
     const first = asText(raw.first_name);
@@ -247,6 +264,41 @@ Deno.serve(async (req) => {
       continue;
     }
 
+    // Zařazení žáka do reálné třídy (classes + class_members) podle zkratky třídy.
+    // Bez tohoto kroku by žák existoval jen s textovým popiskem třídy v profilu.
+    const classCode = asText(raw.field_of_study);
+    let className: string | undefined;
+    let classWarning: string | undefined;
+    if (role === "user" && classCode) {
+      let classId = classIdByName.get(classCode);
+      if (!classId) {
+        const ensured = await ensureClass(admin, {
+          schoolId,
+          name: classCode,
+          year: Number.isFinite(yearNum) ? yearNum : classYearFromCode(classCode),
+          createdBy: auth.userId,
+          schoolName,
+        });
+        if (ensured.id) {
+          classId = ensured.id;
+          classIdByName.set(classCode, ensured.id);
+          if (ensured.created) classesCreated += 1;
+        } else {
+          classWarning = `Třídu „${classCode}“ se nepodařilo připravit: ${ensured.error}`;
+        }
+      }
+      if (classId) {
+        const memberError = await addClassMember(admin, classId, userId);
+        if (memberError) classWarning = `Zařazení do třídy „${classCode}“ selhalo: ${memberError}`;
+        else {
+          className = classCode;
+          membersAdded += 1;
+        }
+      }
+    }
+
+
+
 
 
     // Přihlašovací údaje pro tisk/PIN — RPC se autorizují přes auth.uid() volajícího,
@@ -294,9 +346,17 @@ Deno.serve(async (req) => {
       pin,
       role,
       user_id: userId,
+      class_name: className,
+      class_warning: classWarning,
     });
   }
 
   const created = results.filter((r) => r.ok).length;
-  return json({ created, failed: results.length - created, results });
+  return json({
+    created,
+    failed: results.length - created,
+    classes_created: classesCreated,
+    class_members_added: membersAdded,
+    results,
+  });
 });

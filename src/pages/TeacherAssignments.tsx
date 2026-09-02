@@ -24,6 +24,7 @@ import RemindButton from "@/components/notifications/RemindButton";
 import TeacherAssignmentAttachments from "@/components/assignments/TeacherAssignmentAttachments";
 import { ExamTypeBadge } from "@/components/assignments/ExamTypeBadge";
 import { EXAM_TYPE_OPTIONS, type ExamType } from "@/lib/exam-types";
+import { useTeacherClasses, claimSchoolClass } from "@/hooks/useTeacherClasses";
 import { useSubjectGroups } from "@/hooks/useSubjectGroups";
 
 
@@ -67,7 +68,8 @@ const TeacherAssignments = () => {
   const prefillLessonType = (searchParams.get("lessonType") as "global" | "teacher" | null) || "teacher";
   const prefillWorksheetId = searchParams.get("worksheetId");
   const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [classes, setClasses] = useState<{ id: string; name: string }[]>([]);
+  // Třídy bereme z hooku – nabízí nejdřív moje třídy, pak existující třídy školy
+  const { classes, myClasses, schoolClasses, refetch: refetchClasses } = useTeacherClasses();
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
@@ -106,9 +108,8 @@ const TeacherAssignments = () => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (user) setUserId(user.id);
-    const [assignmentsRes, classesRes, worksheetsRes] = await Promise.all([
+    const [assignmentsRes, worksheetsRes] = await Promise.all([
       supabase.from("assignments" as any).select("*").order("created_at", { ascending: false }),
-      supabase.from("classes").select("id, name").eq("archived", false),
       supabase
         .from("worksheets" as any)
         .select("id, title, status, updated_at")
@@ -116,7 +117,6 @@ const TeacherAssignments = () => {
         .order("updated_at", { ascending: false }),
     ]);
     if (assignmentsRes.data) setAssignments(assignmentsRes.data as any);
-    if (classesRes.data) setClasses(classesRes.data);
     if (worksheetsRes.data) setWorksheets(worksheetsRes.data as any);
     setLoading(false);
   };
@@ -397,7 +397,7 @@ const TeacherAssignments = () => {
                           ? `class:${selectedClassId}`
                           : "__all__"
                     }
-                    onValueChange={(v) => {
+                    onValueChange={async (v) => {
                       if (v === "__all__") {
                         setSelectedClassId("");
                         setSelectedGroupId("");
@@ -405,17 +405,34 @@ const TeacherAssignments = () => {
                         setSelectedGroupId(v.slice(6));
                         setSelectedClassId("");
                       } else {
-                        setSelectedClassId(v.slice(6));
+                        const classId = v.slice(6);
+                        setSelectedClassId(classId);
                         setSelectedGroupId("");
+                        // Existující třída školy: učitel se k ní přihlásí jako vyučující
+                        if (classes.find((c) => c.id === classId)?.source === "school") {
+                          await claimSchoolClass(classId);
+                          refetchClasses();
+                        }
                       }
                     }}
                   >
                     <SelectTrigger className="mt-1"><SelectValue placeholder="Všichni žáci" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="__all__">Všichni žáci</SelectItem>
-                      {classes.map((c) => (
+                      {myClasses.map((c) => (
                         <SelectItem key={c.id} value={`class:${c.id}`}>{c.name}</SelectItem>
                       ))}
+                      {schoolClasses.length > 0 && (
+                        <>
+                          <div className="px-2 py-1.5 text-xs text-muted-foreground">Třídy školy</div>
+                          {schoolClasses.map((c) => (
+                            <SelectItem key={c.id} value={`class:${c.id}`}>
+                              {c.name}
+                              {c.year ? ` · ${c.year}. ročník` : ""}
+                            </SelectItem>
+                          ))}
+                        </>
+                      )}
                       {groups.length > 0 && (
                         <>
                           <div className="px-2 py-1.5 text-xs text-muted-foreground">Skupiny předmětu</div>

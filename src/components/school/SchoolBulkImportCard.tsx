@@ -41,6 +41,8 @@ interface ResultRow {
   student_code?: string;
   pin?: string;
   role?: string;
+  class_name?: string;
+  class_warning?: string;
 }
 
 const SchoolBulkImportCard = ({ onImported }: { onImported: () => void }) => {
@@ -120,9 +122,15 @@ const SchoolBulkImportCard = ({ onImported }: { onImported: () => void }) => {
     const list = ((data as any)?.results ?? []) as ResultRow[];
     setResults(list);
     const created = list.filter((r) => r.ok).length;
+    const classesCreated = Number((data as any)?.classes_created ?? 0);
+    const membersAdded = Number((data as any)?.class_members_added ?? 0);
+    const parts = [
+      membersAdded ? `Zařazeno ${membersAdded} žáků do tříd (nově vytvořeno ${classesCreated}).` : null,
+      skipped.length ? `Přeskočeno ${skipped.length} řádků s nepovolenou rolí.` : null,
+    ].filter(Boolean);
     toast({
       title: `Vytvořeno ${created} z ${valid.length}`,
-      description: skipped.length ? `Přeskočeno ${skipped.length} řádků s nepovolenou rolí.` : undefined,
+      description: parts.length ? parts.join(" ") : undefined,
     });
     onImported();
   };
@@ -193,6 +201,10 @@ const SchoolBulkImportCard = ({ onImported }: { onImported: () => void }) => {
             {classSummary.length > 0 && (
               <div className="border border-border rounded-lg p-3 space-y-2">
                 <p className="text-sm font-medium">Rozpoznané třídy</p>
+                <p className="text-xs text-muted-foreground">
+                  Pro každou třídu použijeme existující třídu školy se stejným názvem, jinak ji
+                  založíme — a žáky do ní hned zařadíme.
+                </p>
                 {classSummary.map((c) => {
                   const year = c.rocnik ?? (yearOverrides[c.trida] ? parseInt(yearOverrides[c.trida], 10) : null);
                   return (
@@ -280,6 +292,7 @@ const SchoolBulkImportCard = ({ onImported }: { onImported: () => void }) => {
                     <TableHead>Přihlášení</TableHead>
                     <TableHead>Heslo</TableHead>
                     <TableHead>Kód / PIN</TableHead>
+                    <TableHead>Třída</TableHead>
                     <TableHead>Stav</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -301,6 +314,16 @@ const SchoolBulkImportCard = ({ onImported }: { onImported: () => void }) => {
                       <TableCell className="font-mono text-xs">{r.password ?? "—"}</TableCell>
                       <TableCell className="font-mono text-xs">
                         {r.ok ? [r.student_code, r.pin].filter(Boolean).join(" / ") : "—"}
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {r.class_name ? (
+                          <Badge variant="outline">{r.class_name}</Badge>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                        {r.class_warning && (
+                          <span className="block text-destructive">{r.class_warning}</span>
+                        )}
                       </TableCell>
                       <TableCell className="text-xs">
                         {r.ok ? (
