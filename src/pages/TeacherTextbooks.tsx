@@ -98,6 +98,7 @@ const TeacherTextbooks = () => {
   const navigate = useNavigate();
   const { textbookId } = useParams<{ textbookId?: string }>();
   const { toast } = useToast();
+  const { user, loading: authLoading } = useAuth();
   const { data: subjects } = useSubjects(true);
   const [textbooks, setTextbooks] = useState<Textbook[]>([]);
   const [createOpen, setCreateOpen] = useState(false);
