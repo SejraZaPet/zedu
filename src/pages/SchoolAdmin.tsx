@@ -386,7 +386,7 @@ const SchoolAdmin = () => {
         )}
 
         <Tabs defaultValue="overview">
-          <TabsList className="flex-wrap h-auto">
+          <TabsList className="flex w-full flex-nowrap justify-start overflow-x-auto">
             <TabsTrigger value="overview"><LayoutDashboard className="w-4 h-4 mr-1" /> Přehled</TabsTrigger>
             <TabsTrigger value="engagement">Žáci – statistiky</TabsTrigger>
             <TabsTrigger value="teachers"><GraduationCap className="w-4 h-4 mr-1" /> Učitelé ({teachers.length})</TabsTrigger>
