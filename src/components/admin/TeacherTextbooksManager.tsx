@@ -18,8 +18,11 @@ import {
 } from "@/components/ui/dialog";
 import {
   Plus, Pencil, Trash2, Copy, ArrowLeft, BookOpen,
-  ChevronRight, FolderOpen, Unlink,
+  ChevronRight, FolderOpen, Unlink, RotateCcw,
 } from "lucide-react";
+import {
+  softDeleteTextbook, restoreTextbook, permanentlyDeleteTextbook, daysLeftInTrash,
+} from "@/lib/textbook-trash";
 import LessonEditorSheet from "@/components/LessonEditorSheet";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
