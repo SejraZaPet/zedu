@@ -292,6 +292,7 @@ const SchoolBulkImportCard = ({ onImported }: { onImported: () => void }) => {
                     <TableHead>Přihlášení</TableHead>
                     <TableHead>Heslo</TableHead>
                     <TableHead>Kód / PIN</TableHead>
+                    <TableHead>Třída</TableHead>
                     <TableHead>Stav</TableHead>
                   </TableRow>
                 </TableHeader>
