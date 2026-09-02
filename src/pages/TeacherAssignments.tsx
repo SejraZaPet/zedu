@@ -397,7 +397,7 @@ const TeacherAssignments = () => {
                           ? `class:${selectedClassId}`
                           : "__all__"
                     }
-                    onValueChange={(v) => {
+                    onValueChange={async (v) => {
                       if (v === "__all__") {
                         setSelectedClassId("");
                         setSelectedGroupId("");
@@ -405,17 +405,34 @@ const TeacherAssignments = () => {
                         setSelectedGroupId(v.slice(6));
                         setSelectedClassId("");
                       } else {
-                        setSelectedClassId(v.slice(6));
+                        const classId = v.slice(6);
+                        setSelectedClassId(classId);
                         setSelectedGroupId("");
+                        // Existující třída školy: učitel se k ní přihlásí jako vyučující
+                        if (classes.find((c) => c.id === classId)?.source === "school") {
+                          await claimSchoolClass(classId);
+                          refetchClasses();
+                        }
                       }
                     }}
                   >
                     <SelectTrigger className="mt-1"><SelectValue placeholder="Všichni žáci" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="__all__">Všichni žáci</SelectItem>
-                      {classes.map((c) => (
+                      {myClasses.map((c) => (
                         <SelectItem key={c.id} value={`class:${c.id}`}>{c.name}</SelectItem>
                       ))}
+                      {schoolClasses.length > 0 && (
+                        <>
+                          <div className="px-2 py-1.5 text-xs text-muted-foreground">Třídy školy</div>
+                          {schoolClasses.map((c) => (
+                            <SelectItem key={c.id} value={`class:${c.id}`}>
+                              {c.name}
+                              {c.year ? ` · ${c.year}. ročník` : ""}
+                            </SelectItem>
+                          ))}
+                        </>
+                      )}
                       {groups.length > 0 && (
                         <>
                           <div className="px-2 py-1.5 text-xs text-muted-foreground">Skupiny předmětu</div>
