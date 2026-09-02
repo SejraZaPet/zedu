@@ -585,17 +585,44 @@ export default function LessonFormDialog({
               </div>
               {target === "class" ? (
                 <>
-                  <Select value={classSel} onValueChange={setClassSel}>
+                  <Select
+                    value={classSel}
+                    onValueChange={async (v) => {
+                      setClassSel(v);
+                      // Existující třída školy: učitel se k ní rovnou přihlásí jako vyučující
+                      const picked = classes.find((c) => c.id === v);
+                      if (picked?.source === "school") {
+                        await claimSchoolClass(v);
+                        refetchClasses();
+                      }
+                    }}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="—" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value={NO_CLASS}>— Bez třídy —</SelectItem>
-                      {classes.map((c) => (
-                        <SelectItem key={c.id} value={c.id}>
-                          {c.name}
-                        </SelectItem>
-                      ))}
+                      {myClasses.length > 0 && (
+                        <SelectGroup>
+                          <SelectLabel>Moje třídy</SelectLabel>
+                          {myClasses.map((c) => (
+                            <SelectItem key={c.id} value={c.id}>
+                              {c.name}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      )}
+                      {schoolClasses.length > 0 && (
+                        <SelectGroup>
+                          <SelectLabel>Třídy školy</SelectLabel>
+                          {schoolClasses.map((c) => (
+                            <SelectItem key={c.id} value={c.id}>
+                              {c.name}
+                              {c.year ? ` · ${c.year}. ročník` : ""}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      )}
                     </SelectContent>
                   </Select>
                   {classes.length === 0 && (
