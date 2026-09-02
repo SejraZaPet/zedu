@@ -7751,7 +7751,6 @@ export type Database = {
         Args: { _join_token: string; _question_id: string }
         Returns: boolean
       }
-      unaccent: { Args: { "": string }; Returns: string }
       verify_academy_certificate: {
         Args: { _cert_number: string }
         Returns: {
