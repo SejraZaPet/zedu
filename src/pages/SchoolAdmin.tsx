@@ -272,16 +272,21 @@ const SchoolAdmin = () => {
     return (
       <div className="min-h-screen bg-background">
         <Header onLogout={async () => { await signOut(); navigate("/"); }} />
-        <main className="container mx-auto max-w-3xl px-4 py-12 text-center">
-          <SchoolIcon className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-          <h2 className="font-heading text-xl mb-2">Nemáte přiřazenou školu</h2>
-          <p className="text-muted-foreground">
-            Kontaktujte systémového administrátora, aby vás napojil na školu.
-          </p>
+        <main className="container mx-auto max-w-2xl px-4 py-12">
+          <div className="text-center mb-6">
+            <SchoolIcon className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+            <h2 className="font-heading text-xl mb-2">Nemáte přiřazenou školu</h2>
+            <p className="text-muted-foreground text-sm">
+              Zadejte registrační kód školy{isSystemAdmin ? " nebo si školu vyberte ze seznamu" : ""} a panel se
+              ihned otevře.
+            </p>
+          </div>
+          <NoSchoolPanel isSystemAdmin={isSystemAdmin} userId={user!.id} onAssigned={load} />
         </main>
       </div>
     );
   }
+
 
   const teachers = members.filter((m) => m.roles.includes("teacher"));
   const students = members.filter((m) => m.roles.includes("user") && !m.roles.includes("teacher"));
