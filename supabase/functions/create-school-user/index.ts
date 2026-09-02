@@ -13,6 +13,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { requireAuth } from "../_shared/auth.ts";
 import { buildWelcomeEmail } from "./welcome-email.ts";
 import { assignPrimaryRole } from "../_shared/assign-primary-role.ts";
+import { ensureClass, addClassMember, classYearFromCode } from "../_shared/ensure-class.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -51,6 +52,8 @@ interface ResultRow {
   pin?: string;
   role?: string;
   user_id?: string;
+  class_name?: string;
+  class_warning?: string;
 }
 
 const asText = (v: unknown) => String(v ?? "").trim();
