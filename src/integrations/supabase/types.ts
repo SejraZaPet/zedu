@@ -7482,6 +7482,14 @@ export type Database = {
         Args: { _class_id: string; _user_id: string }
         Returns: boolean
       }
+      is_direct_shared_textbook: {
+        Args: { _textbook_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_direct_shared_textbook_with_worksheets: {
+        Args: { _textbook_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_enrolled_in_textbook: {
         Args: { _student_id: string; _textbook_id: string }
         Returns: boolean
