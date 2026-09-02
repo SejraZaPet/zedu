@@ -1,12 +1,14 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/components/ui/use-toast";
-import { Upload, FileSpreadsheet, Loader2, AlertTriangle } from "lucide-react";
+import { Upload, FileSpreadsheet, Loader2, AlertTriangle, Download } from "lucide-react";
 import { parseImportFile, resolveImportRole } from "@/components/admin/UsersManager";
+import { summarizeClasses, downloadImportTemplate } from "@/lib/import-users";
 
 /** Role, které smí správce školy zakládat. Ostatní řádky se přeskočí. */
 const SCHOOL_ALLOWED_ROLES = ["user", "teacher"] as const;
@@ -16,6 +18,7 @@ const ROLE_LABELS: Record<SchoolRole, string> = { user: "Žák", teacher: "Učit
 
 interface PreviewRow {
   __rowNum: number;
+  __nameProblem?: string;
   jmeno: string;
   prijmeni: string;
   email?: string;
@@ -25,6 +28,7 @@ interface PreviewRow {
   resolved: SchoolRole | null;
   problem?: string;
 }
+
 
 interface ResultRow {
   row_ref: number | string | null;
@@ -47,11 +51,15 @@ const SchoolBulkImportCard = ({ onImported }: { onImported: () => void }) => {
   const [parseError, setParseError] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
   const [results, setResults] = useState<ResultRow[] | null>(null);
+  const [classesConfirmed, setClassesConfirmed] = useState(false);
+  const [yearOverrides, setYearOverrides] = useState<Record<string, string>>({});
 
   const handleFile = async (file: File) => {
     setFileName(file.name);
     setParseError(null);
     setResults(null);
+    setClassesConfirmed(false);
+    setYearOverrides({});
     try {
       const parsed = await parseImportFile(file);
       setRows(
@@ -65,7 +73,9 @@ const SchoolBulkImportCard = ({ onImported }: { onImported: () => void }) => {
               ? `Neznámá role „${r.role ?? ""}“ – řádek bude přeskočen.`
               : !allowed
                 ? `Roli „${r.role}“ nesmí zakládat správce školy – řádek bude přeskočen.`
-                : undefined,
+                : r.__nameProblem
+                  ? `${r.__nameProblem}`
+                  : undefined,
           } as PreviewRow;
         }),
       );
@@ -77,6 +87,7 @@ const SchoolBulkImportCard = ({ onImported }: { onImported: () => void }) => {
 
   const valid = rows.filter((r) => r.resolved);
   const skipped = rows.filter((r) => !r.resolved);
+  const classSummary = useMemo(() => summarizeClasses(rows), [rows]);
 
   const runImport = async () => {
     if (valid.length === 0) return;
@@ -88,12 +99,13 @@ const SchoolBulkImportCard = ({ onImported }: { onImported: () => void }) => {
           last_name: r.prijmeni,
           email: r.email || undefined,
           role: r.resolved,
-          year: r.rocnik || undefined,
+          year: r.rocnik || yearOverrides[String(r.trida ?? "").trim()] || undefined,
           field_of_study: r.trida || undefined,
           row_ref: r.__rowNum,
         })),
       },
     });
+
     setImporting(false);
 
     if (error || (data as any)?.error) {
@@ -132,9 +144,12 @@ const SchoolBulkImportCard = ({ onImported }: { onImported: () => void }) => {
         <CardDescription>
           Nahrajte Excel nebo CSV se sloupci <strong>Jméno</strong>, <strong>Příjmení</strong> a
           volitelně <strong>E-mail</strong>, <strong>Role</strong>, <strong>Ročník</strong>,{" "}
-          <strong>Třída</strong>. Bez uvedené role se zakládá žák. Zakládat lze pouze žáky a učitele
+          <strong>Třída</strong>. Podporujeme i export z Bakalářů se sloučeným sloupcem
+          „Příjmení a jméno“ a zkratkou třídy (např. Č1.A) — ročník odvodíme automaticky.
+          Bez uvedené role se zakládá žák. Zakládat lze pouze žáky a učitele
           — a vždy jen do vaší školy.
         </CardDescription>
+
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex flex-wrap items-center gap-2">
@@ -151,7 +166,11 @@ const SchoolBulkImportCard = ({ onImported }: { onImported: () => void }) => {
           <Button variant="outline" onClick={() => inputRef.current?.click()}>
             <Upload className="w-4 h-4 mr-1" /> Vybrat soubor
           </Button>
+          <Button variant="ghost" onClick={() => void downloadImportTemplate()}>
+            <Download className="w-4 h-4 mr-1" /> Stáhnout šablonu
+          </Button>
           {fileName && <span className="text-sm text-muted-foreground">{fileName}</span>}
+
           {rows.length > 0 && (
             <Button variant="ghost" size="sm" onClick={reset}>
               Vyčistit
@@ -171,6 +190,43 @@ const SchoolBulkImportCard = ({ onImported }: { onImported: () => void }) => {
               Náhled: {valid.length} k založení
               {skipped.length > 0 && `, ${skipped.length} bude přeskočeno`}
             </div>
+            {classSummary.length > 0 && (
+              <div className="border border-border rounded-lg p-3 space-y-2">
+                <p className="text-sm font-medium">Rozpoznané třídy</p>
+                {classSummary.map((c) => {
+                  const year = c.rocnik ?? (yearOverrides[c.trida] ? parseInt(yearOverrides[c.trida], 10) : null);
+                  return (
+                    <div
+                      key={c.trida}
+                      className={`flex items-center gap-2 text-sm rounded px-2 py-1 ${c.rocnik == null ? "bg-amber-500/10 border border-amber-500/30" : ""}`}
+                    >
+                      <span className="font-medium">{c.trida}</span>
+                      <span className="text-muted-foreground">
+                        → ročník {year ?? "neurčen"}, {c.count} žáků
+                        {c.obor_zkratka && ` · obor ${c.obor_zkratka}${c.skupina ? `/${c.skupina}` : ""}`}
+                      </span>
+                      {c.rocnik == null && (
+                        <Input
+                          type="number"
+                          min={1}
+                          max={13}
+                          placeholder="ročník"
+                          className="h-7 w-24 ml-auto"
+                          value={yearOverrides[c.trida] ?? ""}
+                          onChange={(e) => setYearOverrides((prev) => ({ ...prev, [c.trida]: e.target.value }))}
+                        />
+                      )}
+                    </div>
+                  );
+                })}
+                {!classesConfirmed && (
+                  <Button size="sm" onClick={() => setClassesConfirmed(true)}>
+                    Vypadá to správně, importovat
+                  </Button>
+                )}
+              </div>
+            )}
+
             <div className="border border-border rounded-lg overflow-hidden max-h-80 overflow-y-auto">
               <Table>
                 <TableHeader>
@@ -207,7 +263,7 @@ const SchoolBulkImportCard = ({ onImported }: { onImported: () => void }) => {
                 </TableBody>
               </Table>
             </div>
-            <Button onClick={runImport} disabled={importing || valid.length === 0}>
+            <Button onClick={runImport} disabled={importing || valid.length === 0 || (classSummary.length > 0 && !classesConfirmed)}>
               {importing && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}
               Importovat {valid.length} uživatelů
             </Button>

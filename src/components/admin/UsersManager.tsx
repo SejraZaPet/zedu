@@ -25,6 +25,14 @@ import { printLoginCards, type LoginCardData } from "@/lib/generate-login-cards"
 import { sendWelcomeEmail } from "@/lib/send-email";
 import ExcelJS from "exceljs";
 import {
+  splitFullName,
+  parseClassCode,
+  summarizeClasses,
+  downloadImportTemplate,
+  type ClassSummaryEntry,
+} from "@/lib/import-users";
+
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -166,6 +174,10 @@ export function resolveImportRole(raw: unknown): ImportRole | null {
 const IMPORT_KEY_MAP: Record<string, string> = {
   "jmeno": "jmeno", "jméno": "jmeno", "krestni jmeno": "jmeno", "křestní jméno": "jmeno",
   "prijmeni": "prijmeni", "příjmení": "prijmeni",
+  "prijmeni a jmeno": "cele_jmeno", "příjmení a jméno": "cele_jmeno",
+  "jmeno a prijmeni": "cele_jmeno", "jméno a příjmení": "cele_jmeno",
+  "cele jmeno": "cele_jmeno", "celé jméno": "cele_jmeno",
+  "zak": "cele_jmeno", "žák": "cele_jmeno", "student": "cele_jmeno",
   "e-mail": "email", "email": "email", "e-mail žáka": "email", "email zaka": "email",
   "e-mail_rodice": "email_rodice", "email_rodice": "email_rodice",
   "e-mail rodice": "email_rodice", "email rodice": "email_rodice",
@@ -188,17 +200,17 @@ export async function parseImportFile(file: File): Promise<any[]> {
     name.endsWith(".xlsx") || name.endsWith(".xls") ||
     file.type.includes("spreadsheet") || file.type.includes("excel");
 
-  /** Najde index řádku s hlavičkou (Jméno + Příjmení) v prvních 15 řádcích. */
+  /** Najde index řádku s hlavičkou (Jméno + Příjmení nebo sloučené jméno) v prvních 15 řádcích. */
   const findHeaderIdx = (rows: string[][]) => {
     for (let i = 0; i < Math.min(rows.length, 15); i++) {
       const norm = rows[i].map(normImportHeader);
-      if (
-        norm.some((h) => IMPORT_KEY_MAP[h] === "jmeno") &&
-        norm.some((h) => IMPORT_KEY_MAP[h] === "prijmeni")
-      ) return i;
+      const keys = norm.map((h) => IMPORT_KEY_MAP[h]);
+      if (keys.includes("jmeno") && keys.includes("prijmeni")) return i;
+      if (keys.includes("cele_jmeno")) return i;
     }
     return -1;
   };
+
 
   let rawRows: string[][] = [];
   let headerIdx = -1;
@@ -253,17 +265,36 @@ export async function parseImportFile(file: File): Promise<any[]> {
         const key = IMPORT_KEY_MAP[h] || h;
         obj[key] = (values[i] ?? "").toString().trim();
       });
+      // Bakaláři: sloučený sloupec „Příjmení a jméno“ – rozděl podle posledního mezerníku
+      if (obj.cele_jmeno && (!obj.jmeno || !obj.prijmeni)) {
+        const split = splitFullName(obj.cele_jmeno);
+        obj.jmeno = obj.jmeno || split.jmeno;
+        obj.prijmeni = obj.prijmeni || split.prijmeni;
+        if (split.problem) obj.__nameProblem = split.problem;
+      }
+      // Bakaláři: zkratka třídy (Č1.A) → odvozený ročník, pokud sloupec rocnik chybí
+      if (obj.trida && !obj.rocnik) {
+        const parsed = parseClassCode(obj.trida);
+        if (parsed.rocnik != null) {
+          obj.rocnik = String(parsed.rocnik);
+          obj.__rocnikDerived = true;
+        }
+        obj.__oborZkratka = parsed.obor_zkratka;
+        obj.__skupina = parsed.skupina;
+      }
       return obj;
     })
     .filter((r: any) => {
-      if (!r.jmeno || !r.prijmeni) return false;
-      const j = r.jmeno.toLowerCase();
+      if (!r.prijmeni) return false;
+      if (!r.jmeno && !r.__nameProblem) return false;
+      const j = String(r.jmeno || r.prijmeni).toLowerCase();
       // vyhoď hlavičkové zbytky a ukázkové řádky ze šablony
       if (["křestní", "krestni", "vzorový", "vzorovy", "vzorová", "vzorova"].some((s) => j.includes(s))) return false;
       if ((r.email || "").toLowerCase().includes("@example.")) return false;
       if ((r.poznamka || "").toLowerCase().includes("příklad řádku")) return false;
       return true;
     });
+
 }
 
 
@@ -305,23 +336,45 @@ const UsersManager = () => {
   const [importErrors, setImportErrors] = useState<string[]>([]);
   const [importedUsers, setImportedUsers] = useState<LoginCardData[]>([]);
   const [parentLinkMap, setParentLinkMap] = useState<Map<string, string>>(new Map());
+  const [classesConfirmed, setClassesConfirmed] = useState(false);
+  const [yearOverrides, setYearOverrides] = useState<Record<string, string>>({});
+  const [importSchool, setImportSchool] = useState<string>("");
+
+  const classSummary: ClassSummaryEntry[] = useMemo(
+    () => summarizeClasses(importPreview),
+    [importPreview],
+  );
+  const fileHasSchoolColumn = useMemo(
+    () => importPreview.some((r) => String(r.skola ?? "").trim() !== ""),
+    [importPreview],
+  );
+  const nameProblemRows = useMemo(
+    () => importPreview.filter((r) => r.__nameProblem),
+    [importPreview],
+  );
 
   /** Společné zpracování vybraného souboru (Excel i CSV) pro obě nahrávací cesty. */
   const handleImportFileSelected = async (file: File, openDialog = false) => {
     setImportFile(file);
     setImportErrors([]);
+    setClassesConfirmed(false);
+    setYearOverrides({});
     if (openDialog) setImportOpen(true);
     try {
       const rows = await parseImportFile(file);
       const roleErrors = rows
         .filter((r) => resolveImportRole(r.role) === null)
         .map((r) => `Řádek ${r.__rowNum} (${r.jmeno} ${r.prijmeni}): neznámá role „${r.role}“ – řádek bude přeskočen.`);
-      setImportErrors(roleErrors);
+      const nameErrors = rows
+        .filter((r) => r.__nameProblem)
+        .map((r) => `Řádek ${r.__rowNum} („${r.prijmeni}“): ${r.__nameProblem}`);
+      setImportErrors([...roleErrors, ...nameErrors]);
       setImportPreview(rows);
     } catch (err: any) {
       console.error("Chyba při zpracování souboru:", err);
       setImportErrors([`Chyba při čtení souboru: ${err.message}`]);
     }
+
   };
 
 
@@ -1124,7 +1177,7 @@ const UsersManager = () => {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={importOpen} onOpenChange={(o) => { setImportOpen(o); if (!o) { setImportPreview([]); setImportFile(null); setImportErrors([]); } }}>
+      <Dialog open={importOpen} onOpenChange={(o) => { setImportOpen(o); if (!o) { setImportPreview([]); setImportFile(null); setImportErrors([]); setClassesConfirmed(false); setYearOverrides({}); } }}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>Hromadný import uživatelů</DialogTitle>
@@ -1132,8 +1185,13 @@ const UsersManager = () => {
           {!importPreview.length ? (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Nahrajte soubor Excel (.xlsx) nebo CSV (.csv) se sloupci: jmeno, prijmeni, email, email_rodice, skola, trida, rocnik, role
+                Nahrajte soubor Excel (.xlsx) nebo CSV (.csv) se sloupci: jmeno, prijmeni, email, email_rodice, skola, trida, rocnik, role.
+                Podporujeme i export z Bakalářů se sloučeným sloupcem „Příjmení a jméno“ a zkratkou třídy (např. Č1.A).
               </p>
+              <Button variant="outline" size="sm" onClick={() => void downloadImportTemplate()}>
+                Stáhnout šablonu
+              </Button>
+
               <label
                 htmlFor="Bezli-import-file"
                 className="flex flex-col items-center justify-center border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:bg-muted/50 transition-colors"
@@ -1168,7 +1226,71 @@ const UsersManager = () => {
                   Nahrát jiný soubor
                 </Button>
               </div>
+              {classSummary.length > 0 && (
+                <div className="border border-border rounded-lg p-3 space-y-2">
+                  <p className="text-sm font-medium">Rozpoznané třídy</p>
+                  <div className="space-y-1">
+                    {classSummary.map((c) => {
+                      const year = c.rocnik ?? (yearOverrides[c.trida] ? parseInt(yearOverrides[c.trida], 10) : null);
+                      return (
+                        <div
+                          key={c.trida}
+                          className={`flex items-center gap-2 text-sm rounded px-2 py-1 ${c.rocnik == null ? "bg-amber-500/10 border border-amber-500/30" : ""}`}
+                        >
+                          <span className="font-medium">{c.trida}</span>
+                          <span className="text-muted-foreground">
+                            → ročník {year ?? "neurčen"}, {c.count} žáků
+                            {c.obor_zkratka && ` · obor ${c.obor_zkratka}${c.skupina ? `/${c.skupina}` : ""}`}
+                          </span>
+                          {c.rocnik == null && (
+                            <Input
+                              type="number"
+                              min={1}
+                              max={13}
+                              placeholder="ročník"
+                              className="h-7 w-24 ml-auto"
+                              value={yearOverrides[c.trida] ?? ""}
+                              onChange={(e) =>
+                                setYearOverrides((prev) => ({ ...prev, [c.trida]: e.target.value }))
+                              }
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {!classesConfirmed && (
+                    <Button size="sm" onClick={() => setClassesConfirmed(true)}>
+                      Vypadá to správně, importovat
+                    </Button>
+                  )}
+                </div>
+              )}
+              {!fileHasSchoolColumn && (
+                <div className="space-y-1">
+                  <Label className="text-sm">Škola pro celý import</Label>
+                  <Select value={importSchool} onValueChange={setImportSchool}>
+                    <SelectTrigger className="w-full sm:w-[320px]">
+                      <SelectValue placeholder="Vyberte školu (použije se pro všechny řádky)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {schools.map((s) => (
+                        <SelectItem key={s} value={s as string}>{s as string}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Soubor neobsahuje sloupec „skola“ — vybraná škola se přiřadí všem importovaným uživatelům.
+                  </p>
+                </div>
+              )}
+              {nameProblemRows.length > 0 && (
+                <p className="text-xs text-amber-500">
+                  {nameProblemRows.length} řádků má nerozdělitelné jméno — zkontrolujte je ručně po importu.
+                </p>
+              )}
               <div className="border border-border rounded-lg overflow-x-auto max-h-96 overflow-y-auto">
+
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -1232,7 +1354,8 @@ const UsersManager = () => {
             </Button>
             {importPreview.length > 0 && (
               <Button
-                disabled={importing}
+                disabled={importing || (classSummary.length > 0 && !classesConfirmed)}
+
                 onClick={async () => {
                   setImporting(true);
                   const errors: string[] = [];
@@ -1284,8 +1407,13 @@ const UsersManager = () => {
                         first_name: row.jmeno || "",
                         last_name: row.prijmeni || "",
                         email: email,
-                        school: row.skola || "",
-                        year: row.rocnik ? parseInt(String(row.rocnik)) : null,
+                        school: row.skola || importSchool || "",
+                        year: (() => {
+                          const raw = row.rocnik || yearOverrides[String(row.trida ?? "").trim()] || "";
+                          const parsed = parseInt(String(raw), 10);
+                          return Number.isFinite(parsed) ? parsed : null;
+                        })(),
+
                         field_of_study: row.trida || row.obor || "",
                         status: "approved" as any,
                         username: username,
