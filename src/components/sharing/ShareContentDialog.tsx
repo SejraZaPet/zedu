@@ -17,8 +17,10 @@ import { useToast } from "@/hooks/use-toast";
 import {
   createShare,
   searchTeachers,
+  TEACHER_SEARCH_MIN_LENGTH,
   type ShareTargetKind,
 } from "@/lib/content-shares";
+
 import SchoolSalesStatusNotice from "@/components/school/SchoolSalesStatusNotice";
 
 interface Props {
@@ -48,12 +50,13 @@ export default function ShareContentDialog({
   const [includePresentations, setIncludePresentations] = useState(false);
   const [teacherQuery, setTeacherQuery] = useState("");
   const [teacherResults, setTeacherResults] = useState<
-    { id: string; label: string; email: string | null }[]
+    { id: string; label: string; email: string | null; sameSchool?: boolean }[]
   >([]);
   const [selectedTeacher, setSelectedTeacher] = useState<
     { id: string; label: string } | null
   >(null);
   const [searching, setSearching] = useState(false);
+  const [searched, setSearched] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -64,6 +67,7 @@ export default function ShareContentDialog({
       setTeacherQuery("");
       setTeacherResults([]);
       setSelectedTeacher(null);
+      setSearched(false);
     }
   }, [open]);
 
@@ -71,8 +75,9 @@ export default function ShareContentDialog({
     if (mode !== "direct") return;
     if (selectedTeacher) return;
     const q = teacherQuery.trim();
-    if (q.length < 2) {
+    if (q.length < TEACHER_SEARCH_MIN_LENGTH) {
       setTeacherResults([]);
+      setSearched(false);
       return;
     }
     let cancel = false;
@@ -81,8 +86,13 @@ export default function ShareContentDialog({
       try {
         const r = await searchTeachers(q);
         if (!cancel) setTeacherResults(r);
+      } catch (e: any) {
+        if (!cancel) setTeacherResults([]);
       } finally {
-        if (!cancel) setSearching(false);
+        if (!cancel) {
+          setSearching(false);
+          setSearched(true);
+        }
       }
     }, 250);
     return () => {
@@ -90,6 +100,7 @@ export default function ShareContentDialog({
       clearTimeout(t);
     };
   }, [teacherQuery, mode, selectedTeacher]);
+
 
   async function handleSubmit() {
     if (mode === "direct" && !selectedTeacher) {
@@ -184,13 +195,21 @@ export default function ShareContentDialog({
               ) : (
                 <>
                   <Input
-                    placeholder="Jméno, příjmení nebo e-mail…"
+                    placeholder="Jméno, příjmení nebo celý e-mail"
                     value={teacherQuery}
                     onChange={(e) => setTeacherQuery(e.target.value)}
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Stačí {TEACHER_SEARCH_MIN_LENGTH} znaky jména. E-mail musí být zadaný celý.
+                  </p>
                   {searching && (
                     <div className="text-xs text-muted-foreground flex items-center gap-2">
                       <Loader2 className="w-3 h-3 animate-spin" /> Hledám…
+                    </div>
+                  )}
+                  {!searching && searched && teacherResults.length === 0 && (
+                    <div className="rounded-md border border-dashed border-border px-3 py-2 text-xs text-muted-foreground">
+                      Nikdo nenalezen. Zkuste jiné jméno nebo zadejte celý e-mail kolegy.
                     </div>
                   )}
                   {teacherResults.length > 0 && (
@@ -201,7 +220,14 @@ export default function ShareContentDialog({
                           className="w-full text-left px-3 py-2 text-sm hover:bg-muted/60"
                           onClick={() => setSelectedTeacher(r)}
                         >
-                          <div className="font-medium">{r.label}</div>
+                          <div className="font-medium">
+                            {r.label}
+                            {r.sameSchool && (
+                              <span className="ml-2 text-xs font-normal text-primary">
+                                vaše škola
+                              </span>
+                            )}
+                          </div>
                           {r.email && (
                             <div className="text-xs text-muted-foreground">
                               {r.email}
@@ -211,6 +237,7 @@ export default function ShareContentDialog({
                       ))}
                     </div>
                   )}
+
                 </>
               )}
             </div>

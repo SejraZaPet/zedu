@@ -7662,9 +7662,11 @@ export type Database = {
       search_teacher_directory: {
         Args: { _term: string }
         Returns: {
+          email: string
           first_name: string
           id: string
           last_name: string
+          same_school: boolean
         }[]
       }
       send_admin_notification: {
