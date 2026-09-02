@@ -42,6 +42,7 @@ import {
 import ReviewButton from "@/components/sharing/ReviewButton";
 import CoursePathMap from "@/components/textbook/CoursePathMap";
 import { LANGUAGE_OPTIONS, DIFFICULTY_OPTIONS } from "@/lib/content-shares";
+import { useAuth } from "@/contexts/AuthContext";
 
 
 interface Textbook {
@@ -97,6 +98,7 @@ const TeacherTextbooks = () => {
   const navigate = useNavigate();
   const { textbookId } = useParams<{ textbookId?: string }>();
   const { toast } = useToast();
+  const { user, loading: authLoading } = useAuth();
   const { data: subjects } = useSubjects(true);
   const [textbooks, setTextbooks] = useState<Textbook[]>([]);
   const [createOpen, setCreateOpen] = useState(false);
@@ -201,15 +203,26 @@ const TeacherTextbooks = () => {
 
 
   const fetchTextbooks = async () => {
+    if (!user) {
+      setTextbooks([]);
+      setLoading(false);
+      return;
+    }
+    // „Moje učebnice“ = výhradně vlastní obsah. Filtr na vlastníka je zde nutný,
+    // protože RLS pouští adminům čtení všech učitelských učebnic.
     const { data } = await supabase
       .from("teacher_textbooks")
       .select("*")
+      .eq("teacher_id", user.id)
       .order("created_at", { ascending: false });
     if (data) setTextbooks(data as Textbook[]);
     setLoading(false);
   };
 
-  useEffect(() => { fetchTextbooks(); }, []);
+  useEffect(() => {
+    if (authLoading) return;
+    fetchTextbooks();
+  }, [authLoading, user?.id]);
 
   const fetchDetail = useCallback(async (tb: Textbook) => {
     setDetailLoading(true);
