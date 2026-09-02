@@ -440,11 +440,12 @@ const TeacherTextbooks = () => {
 
   const handleDeleteTextbook = async () => {
     if (!selectedTextbook) return;
-    const { error } = await supabase.from("teacher_textbooks").delete().eq("id", selectedTextbook.id);
+    // Soft delete – učebnice se přesune do Koše (30 dní obnovitelná).
+    const { error } = await softDeleteTextbook(selectedTextbook.id, selectedTextbook.title);
     if (error) {
       toast({ title: "Chyba", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Učebnice smazána" });
+      toast({ title: "Učebnice přesunuta do koše", description: "Najdete ji v sekci Koš, obnovit lze do 30 dnů." });
       setDeleteTextbookOpen(false);
       setSelectedTextbook(null);
       navigate("/ucitel/ucebnice");
