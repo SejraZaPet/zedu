@@ -806,10 +806,15 @@ const TeacherTextbooks = () => {
                 <Select value={String(newTopicGrade)} onValueChange={(v) => setNewTopicGrade(Number(v))}>
                   <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {matchedSubject?.grades.map(g => (
-                      <SelectItem key={g.grade_number} value={String(g.grade_number)}>{g.label}</SelectItem>
-                    ))}
+                    {(matchedSubject?.grades?.length ?? 0) > 0
+                      ? matchedSubject!.grades.map(g => (
+                        <SelectItem key={g.grade_number} value={String(g.grade_number)}>{g.label}</SelectItem>
+                      ))
+                      : [1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => (
+                        <SelectItem key={n} value={String(n)}>{n}. ročník</SelectItem>
+                      ))}
                   </SelectContent>
+
                 </Select>
               </div>
               <Button onClick={handleCreateTopic} disabled={saving || !newTopicTitle.trim()} className="w-full">
