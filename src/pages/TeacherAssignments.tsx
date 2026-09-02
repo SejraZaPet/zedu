@@ -24,6 +24,7 @@ import RemindButton from "@/components/notifications/RemindButton";
 import TeacherAssignmentAttachments from "@/components/assignments/TeacherAssignmentAttachments";
 import { ExamTypeBadge } from "@/components/assignments/ExamTypeBadge";
 import { EXAM_TYPE_OPTIONS, type ExamType } from "@/lib/exam-types";
+import { useTeacherClasses, claimSchoolClass } from "@/hooks/useTeacherClasses";
 import { useSubjectGroups } from "@/hooks/useSubjectGroups";
 
 
@@ -107,9 +108,8 @@ const TeacherAssignments = () => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (user) setUserId(user.id);
-    const [assignmentsRes, classesRes, worksheetsRes] = await Promise.all([
+    const [assignmentsRes, worksheetsRes] = await Promise.all([
       supabase.from("assignments" as any).select("*").order("created_at", { ascending: false }),
-      supabase.from("classes").select("id, name").eq("archived", false),
       supabase
         .from("worksheets" as any)
         .select("id, title, status, updated_at")
@@ -117,7 +117,6 @@ const TeacherAssignments = () => {
         .order("updated_at", { ascending: false }),
     ]);
     if (assignmentsRes.data) setAssignments(assignmentsRes.data as any);
-    if (classesRes.data) setClasses(classesRes.data);
     if (worksheetsRes.data) setWorksheets(worksheetsRes.data as any);
     setLoading(false);
   };
