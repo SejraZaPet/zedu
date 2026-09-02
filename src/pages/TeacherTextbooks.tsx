@@ -839,19 +839,39 @@ const TeacherTextbooks = () => {
           </DialogContent>
         </Dialog>
 
-        {/* === Rename Topic Dialog === */}
+        {/* === Edit Topic Dialog === */}
         <Dialog open={!!editingTopic} onOpenChange={(open) => { if (!open) setEditingTopic(null); }}>
           <DialogContent>
-            <DialogHeader><DialogTitle>Přejmenovat téma</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>Upravit téma</DialogTitle></DialogHeader>
             <div className="space-y-4 mt-2">
               <div>
                 <Label>Název tématu</Label>
                 <Input value={editingTopic?.title ?? ""} onChange={(e) => setEditingTopic(editingTopic ? { ...editingTopic, title: e.target.value } : null)} className="mt-1" />
               </div>
-              <Button onClick={handleRenameTopic} disabled={!editingTopic?.title.trim()} className="w-full">Uložit</Button>
+              <div>
+                <Label>Ročník</Label>
+                <Select
+                  value={String(editingTopic?.grade ?? 0)}
+                  onValueChange={(v) => setEditingTopic(editingTopic ? { ...editingTopic, grade: Number(v) } : null)}
+                >
+                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0">Bez ročníku</SelectItem>
+                    {(matchedSubject?.grades?.length ?? 0) > 0
+                      ? matchedSubject!.grades.map(g => (
+                        <SelectItem key={g.grade_number} value={String(g.grade_number)}>{g.label}</SelectItem>
+                      ))
+                      : [1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => (
+                        <SelectItem key={n} value={String(n)}>{n}. ročník</SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button onClick={handleUpdateTopic} disabled={!editingTopic?.title.trim()} className="w-full">Uložit</Button>
             </div>
           </DialogContent>
         </Dialog>
+
 
         {/* === Create Lesson Dialog === */}
         <Dialog open={createLessonOpen} onOpenChange={setCreateLessonOpen}>
