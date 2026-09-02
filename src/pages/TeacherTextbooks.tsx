@@ -509,8 +509,13 @@ const TeacherTextbooks = () => {
 
   const handleUpdateTopic = async () => {
     if (!editingTopic || !editingTopic.title.trim() || !selectedTextbook) return;
-    const original = allTopicsRaw.find((t) => t.id === editingTopic.id);
-    const newGrade = editingTopic.grade ?? 0;
+    const { data: current } = await supabase
+      .from("textbook_topics")
+      .select("grade")
+      .eq("id", editingTopic.id)
+      .maybeSingle();
+    const original = current as { grade: number | null } | null;
+
     const patch: Record<string, unknown> = { title: editingTopic.title.trim(), grade: newGrade };
 
     // Při přesunu do jiné ročníkové skupiny dej téma na konec cílové skupiny
