@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { logAudit } from "@/lib/audit";
 import { assignPrimaryRole } from "@/lib/assign-primary-role";
+import { ImportClassCache, addImportClassMember } from "@/lib/import-classes";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -1356,6 +1357,16 @@ const UsersManager = () => {
                   const errors: string[] = [];
                   let successCount = 0;
                   const importedUsersList: LoginCardData[] = [];
+                  // Zařazení do reálných tříd (classes + class_members) podle zkratky třídy
+                  const { data: { session: importSession } } = await supabase.auth.getSession();
+                  const classCache = importSession
+                    ? new ImportClassCache({
+                        createdBy: importSession.user.id,
+                        schoolId: null,
+                        schoolName: importSchool || "",
+                      })
+                    : null;
+                  let classMembersAdded = 0;
                   const existingEmails = users.map(u => u.email);
                   const usedEmails: string[] = [...existingEmails];
                    const existingUsernames = users.map(u => u.username).filter(Boolean) as string[];
