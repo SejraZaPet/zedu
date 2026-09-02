@@ -13,20 +13,43 @@ const SubjectPage = () => {
   const { data: subjects = [], isLoading: subjectsLoading } = useSubjects(true);
   const subject = getSubjectBySlug(subjects, subjectId ?? "");
   const grades = subject ? getGradeNumbers(subject) : [];
-  const hasMultipleGrades = grades.length > 1;
 
   const [selectedGrade, setSelectedGrade] = useState<number | null>(null);
+
+  // Existují u předmětu témata bez ročníku (grade = 0)?
+  const { data: hasUngraded = false } = useQuery({
+    queryKey: ["textbook-topics-ungraded", subjectId],
+    queryFn: async () => {
+      if (!subjectId) return false;
+      const { data, error } = await supabase
+        .from("textbook_topics")
+        .select("id")
+        .eq("subject", subjectId)
+        .eq("grade", 0)
+        .limit(1);
+      if (error) throw error;
+      return (data ?? []).length > 0;
+    },
+    enabled: !!subjectId,
+  });
+
+  // "Bez ročníku" je vždy poslední volba
+  const gradeOptions = [
+    ...grades.map((g) => ({ value: g, label: `${g}. ročník` })),
+    ...(hasUngraded ? [{ value: 0, label: "Bez ročníku" }] : []),
+  ];
+  const hasMultipleGrades = gradeOptions.length > 1;
 
   // Auto-select grade when subject loads
   useEffect(() => {
     if (subject) {
-      if (grades.length === 1) {
-        setSelectedGrade(grades[0]);
+      if (gradeOptions.length === 1) {
+        setSelectedGrade(gradeOptions[0].value);
       } else {
         setSelectedGrade(null);
       }
     }
-  }, [subject?.slug]);
+  }, [subject?.slug, hasUngraded]);
 
   // Load topics
   const { data: topics, isLoading: topicsLoading } = useQuery({
@@ -135,7 +158,7 @@ const SubjectPage = () => {
                 Vyberte ročník
               </p>
               <div className="flex flex-wrap gap-3">
-                {grades.map((g) => (
+                {gradeOptions.map(({ value: g, label }) => (
                   <button
                     key={g}
                     onClick={() => setSelectedGrade(g)}
@@ -145,7 +168,7 @@ const SubjectPage = () => {
                         : "bg-card text-muted-foreground border-border hover:border-primary/40 hover:text-foreground"
                     }`}
                   >
-                    {g}. ročník
+                    {label}
                   </button>
                 ))}
               </div>

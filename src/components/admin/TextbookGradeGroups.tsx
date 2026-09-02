@@ -35,6 +35,7 @@ interface TopicItem {
   id: string;
   title: string;
   sort_order: number;
+  grade?: number;
   lessons: LessonItem[];
 }
 
@@ -51,7 +52,7 @@ interface Props {
   onEditLesson: (lesson: LessonItem) => void;
   onDeleteLesson: (lesson: LessonItem) => void;
   onAddLesson: (topicId: string) => void;
-  onEditTopic: (topic: { id: string; title: string }) => void;
+  onEditTopic: (topic: { id: string; title: string; grade?: number }) => void;
   onDeleteTopic: (topicId: string, lessonCount: number) => void;
   onOpenPresentation: (lesson: LessonItem) => void;
   onOpenWorksheet: (lesson: LessonItem) => void;
@@ -222,7 +223,7 @@ const SortableTopic = ({
   onEditLesson: (l: LessonItem) => void;
   onDeleteLesson: (l: LessonItem) => void;
   onAddLesson: (topicId: string) => void;
-  onEditTopic: (t: { id: string; title: string }) => void;
+  onEditTopic: (t: { id: string; title: string; grade?: number }) => void;
   onDeleteTopic: (topicId: string, lessonCount: number) => void;
   onOpenPresentation: (l: LessonItem) => void;
   onOpenWorksheet: (l: LessonItem) => void;
@@ -253,7 +254,7 @@ const SortableTopic = ({
         <Badge variant="secondary" className="text-[10px]">
           {topic.lessons.length} {topic.lessons.length === 1 ? "lekce" : "lekcí"}
         </Badge>
-        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onEditTopic({ id: topic.id, title: topic.title })}>
+        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onEditTopic({ id: topic.id, title: topic.title, grade: topic.grade ?? 0 })}>
           <Pencil className="w-3.5 h-3.5" />
         </Button>
         <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onDeleteTopic(topic.id, topic.lessons.length)}>

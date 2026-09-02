@@ -98,7 +98,7 @@ const TopicPage = () => {
               <div className="flex items-center gap-3 mb-2">
                 <BookOpen className="w-6 h-6 text-primary" />
                 <span className="text-sm font-medium uppercase tracking-widest text-primary">
-                  {grade}. ročník
+                  {gradeNum > 0 ? `${grade}. ročník` : "Bez ročníku"}
                 </span>
               </div>
               <h1 className="font-heading text-4xl md:text-5xl font-bold mb-10 text-foreground">

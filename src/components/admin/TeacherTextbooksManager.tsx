@@ -92,8 +92,8 @@ const TeacherTextbooksManager = () => {
   // Topic management
   const [createTopicOpen, setCreateTopicOpen] = useState(false);
   const [newTopicTitle, setNewTopicTitle] = useState("");
-  const [newTopicGrade, setNewTopicGrade] = useState<number>(1);
-  const [editingTopic, setEditingTopic] = useState<{ id: string; title: string } | null>(null);
+  const [newTopicGrade, setNewTopicGrade] = useState<number>(0);
+  const [editingTopic, setEditingTopic] = useState<{ id: string; title: string; grade?: number } | null>(null);
   const [saving, setSaving] = useState(false);
 
   // Global lesson editor (LessonEditorSheet for textbook_lessons)
@@ -326,6 +326,44 @@ const TeacherTextbooksManager = () => {
       return { grade: g.grade_number, label: g.label, topics: gradeTopics };
     });
 
+    // Témata mimo ročníkovou strukturu (grade = 0 => "Bez ročníku") – vždy na konec
+    const knownNumbers = new Set(grades.map(g => g.grade_number));
+    const orphanTopics = (topics ?? []).filter((t: any) => !knownNumbers.has(typeof t.grade === "number" ? t.grade : 0));
+    if (orphanTopics.length > 0) {
+      const byGrade = new Map<number, any[]>();
+      for (const t of orphanTopics) {
+        const key = typeof t.grade === "number" ? t.grade : 0;
+        byGrade.set(key, [...(byGrade.get(key) ?? []), t]);
+      }
+      const orphanKey = (g: number) => (g === 0 ? Number.MAX_SAFE_INTEGER : g);
+      for (const [grade, list] of [...byGrade.entries()].sort((a, b) => orphanKey(a[0]) - orphanKey(b[0]))) {
+        groups.push({
+          grade,
+          label: grade > 0 ? `${grade}. ročník (mimo strukturu předmětu)` : "Bez ročníku",
+          topics: list.map((t: any) => ({
+            id: t.id,
+            title: t.title,
+            grade: typeof t.grade === "number" ? t.grade : 0,
+            sort_order: t.sort_order ?? 0,
+            lessons: [
+              ...tbLessons.filter((l: any) => l.topic_id === t.id).map((l: any) => ({
+                id: l.id, title: l.title, sort_order: l.sort_order ?? 0,
+                status: l.status ?? "draft", blocks: (l.blocks as Block[]) ?? [], topic_id: t.id,
+              })),
+              ...assignmentLessons
+                .filter((a: any) => a.topic_id === t.id && a.textbook_lessons)
+                .map((a: any) => ({
+                  id: a.textbook_lessons.id, title: a.textbook_lessons.title,
+                  sort_order: a.sort_order ?? a.textbook_lessons.sort_order ?? 0,
+                  status: a.textbook_lessons.status ?? "draft",
+                  blocks: (a.textbook_lessons.blocks as Block[]) ?? [], topic_id: t.id,
+                })),
+            ].filter((l, i, arr) => arr.findIndex(x => x.id === l.id) === i) as GlobalLesson[],
+          })) as TopicWithLessons[],
+        });
+      }
+    }
+
     setGradeGroups(groups);
     setDetailLoading(false);
   }, [selectedTextbook, subjects]);
@@ -413,15 +451,32 @@ const TeacherTextbooksManager = () => {
     }
   };
 
-  const handleRenameTopic = async () => {
-    if (!editingTopic || !editingTopic.title.trim()) return;
+  const handleUpdateTopic = async () => {
+    if (!editingTopic || !editingTopic.title.trim() || !selectedTextbook) return;
+    const newGrade = editingTopic.grade ?? 0;
+    const { data: current } = await supabase
+      .from("textbook_topics")
+      .select("grade")
+      .eq("id", editingTopic.id)
+      .maybeSingle();
+    const patch: Record<string, unknown> = { title: editingTopic.title.trim(), grade: newGrade };
+    if (current && ((current as any).grade ?? 0) !== newGrade) {
+      const { data: last } = await supabase
+        .from("textbook_topics")
+        .select("sort_order")
+        .eq("subject", selectedTextbook.subject)
+        .eq("grade", newGrade)
+        .order("sort_order", { ascending: false })
+        .limit(1);
+      patch.sort_order = last && last.length > 0 ? ((last[0] as any).sort_order ?? 0) + 1 : 0;
+    }
     const { error } = await supabase.from("textbook_topics")
-      .update({ title: editingTopic.title.trim() })
+      .update(patch)
       .eq("id", editingTopic.id);
     if (error) {
       toast({ title: "Chyba", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Téma přejmenováno" });
+      toast({ title: "Téma upraveno" });
       setEditingTopic(null);
       fetchDetail();
     }
@@ -640,7 +695,7 @@ const TeacherTextbooksManager = () => {
                               <Badge variant="secondary" className="text-[10px]">
                                 {topic.lessons.length} {topic.lessons.length === 1 ? "lekce" : "lekcí"}
                               </Badge>
-                              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditingTopic({ id: topic.id, title: topic.title })}>
+                              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditingTopic({ id: topic.id, title: topic.title, grade: (topic as any).grade ?? 0 })}>
                                 <Pencil className="w-3.5 h-3.5" />
                               </Button>
                               <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleDeleteTopic(topic.id, topic.lessons.length)}>
@@ -710,9 +765,14 @@ const TeacherTextbooksManager = () => {
                 <Select value={String(newTopicGrade)} onValueChange={(v) => setNewTopicGrade(Number(v))}>
                   <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {matchedSubject?.grades.map(g => (
-                      <SelectItem key={g.grade_number} value={String(g.grade_number)}>{g.label}</SelectItem>
-                    ))}
+                    <SelectItem value="0">Bez ročníku</SelectItem>
+                    {(matchedSubject?.grades?.length ?? 0) > 0
+                      ? matchedSubject!.grades.map(g => (
+                        <SelectItem key={g.grade_number} value={String(g.grade_number)}>{g.label}</SelectItem>
+                      ))
+                      : [1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => (
+                        <SelectItem key={n} value={String(n)}>{n}. ročník</SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -726,13 +786,32 @@ const TeacherTextbooksManager = () => {
         {/* Rename topic dialog */}
         <Dialog open={!!editingTopic} onOpenChange={(open) => { if (!open) setEditingTopic(null); }}>
           <DialogContent>
-            <DialogHeader><DialogTitle>Přejmenovat téma</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>Upravit téma</DialogTitle></DialogHeader>
             <div className="space-y-4 mt-2">
               <div>
                 <Label>Název tématu</Label>
                 <Input value={editingTopic?.title ?? ""} onChange={(e) => setEditingTopic(editingTopic ? { ...editingTopic, title: e.target.value } : null)} className="mt-1" />
               </div>
-              <Button onClick={handleRenameTopic} disabled={!editingTopic?.title.trim()} className="w-full">Uložit</Button>
+              <div>
+                <Label>Ročník</Label>
+                <Select
+                  value={String(editingTopic?.grade ?? 0)}
+                  onValueChange={(v) => setEditingTopic(editingTopic ? { ...editingTopic, grade: Number(v) } : null)}
+                >
+                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0">Bez ročníku</SelectItem>
+                    {(matchedSubject?.grades?.length ?? 0) > 0
+                      ? matchedSubject!.grades.map(g => (
+                        <SelectItem key={g.grade_number} value={String(g.grade_number)}>{g.label}</SelectItem>
+                      ))
+                      : [1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => (
+                        <SelectItem key={n} value={String(n)}>{n}. ročník</SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button onClick={handleUpdateTopic} disabled={!editingTopic?.title.trim()} className="w-full">Uložit</Button>
             </div>
           </DialogContent>
         </Dialog>

@@ -86,6 +86,7 @@ interface TopicItem {
   id: string;
   title: string;
   sort_order: number;
+  grade?: number;
   lessons: LessonItem[];
 }
 
@@ -142,8 +143,8 @@ const TeacherTextbooks = () => {
   // Topic management
   const [createTopicOpen, setCreateTopicOpen] = useState(false);
   const [newTopicTitle, setNewTopicTitle] = useState("");
-  const [newTopicGrade, setNewTopicGrade] = useState<number>(1);
-  const [editingTopic, setEditingTopic] = useState<{ id: string; title: string } | null>(null);
+  const [newTopicGrade, setNewTopicGrade] = useState<number>(0);
+  const [editingTopic, setEditingTopic] = useState<{ id: string; title: string; grade?: number } | null>(null);
 
   // Presentation editor (extracted to hook)
   const {
@@ -314,7 +315,7 @@ const TeacherTextbooks = () => {
         if (!allLessons.some(l => l.id === pl.id)) allLessons.push(pl);
       }
 
-      return { id: t.id, title: t.title, sort_order: t.sort_order ?? 0, lessons: allLessons };
+      return { id: t.id, title: t.title, sort_order: t.sort_order ?? 0, grade: typeof t.grade === "number" ? t.grade : 0, lessons: allLessons };
     };
 
     const knownGrades = matchedSubject?.grades ?? [];
@@ -335,7 +336,9 @@ const TeacherTextbooks = () => {
         const key = typeof t.grade === "number" ? t.grade : 0;
         byGrade.set(key, [...(byGrade.get(key) ?? []), t]);
       }
-      for (const [grade, list] of [...byGrade.entries()].sort((a, b) => a[0] - b[0])) {
+      // "Bez ročníku" (0) vždy na konec seznamu skupin
+      const orphanKey = (g: number) => (g === 0 ? Number.MAX_SAFE_INTEGER : g);
+      for (const [grade, list] of [...byGrade.entries()].sort((a, b) => orphanKey(a[0]) - orphanKey(b[0]))) {
         groups.push({
           grade,
           label: knownGrades.length === 0
@@ -507,19 +510,43 @@ const TeacherTextbooks = () => {
     }
   };
 
-  const handleRenameTopic = async () => {
-    if (!editingTopic || !editingTopic.title.trim()) return;
+  const handleUpdateTopic = async () => {
+    if (!editingTopic || !editingTopic.title.trim() || !selectedTextbook) return;
+    const { data: current } = await supabase
+      .from("textbook_topics")
+      .select("grade")
+      .eq("id", editingTopic.id)
+      .maybeSingle();
+    const original = current as { grade: number | null } | null;
+    const newGrade = editingTopic.grade ?? 0;
+
+    const patch: Record<string, unknown> = { title: editingTopic.title.trim(), grade: newGrade };
+
+
+    // Při přesunu do jiné ročníkové skupiny dej téma na konec cílové skupiny
+    if (original && (original.grade ?? 0) !== newGrade) {
+      const { data: last } = await supabase
+        .from("textbook_topics")
+        .select("sort_order")
+        .eq("subject", selectedTextbook.subject)
+        .eq("grade", newGrade)
+        .order("sort_order", { ascending: false })
+        .limit(1);
+      patch.sort_order = last && last.length > 0 ? ((last[0] as any).sort_order ?? 0) + 1 : 0;
+    }
+
     const { error } = await supabase.from("textbook_topics")
-      .update({ title: editingTopic.title.trim() })
+      .update(patch)
       .eq("id", editingTopic.id);
     if (error) {
       toast({ title: "Chyba", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Téma přejmenováno" });
+      toast({ title: "Téma upraveno" });
       setEditingTopic(null);
       refreshDetail();
     }
   };
+
 
   // === Create lesson ===
   const handleCreateLesson = async () => {
@@ -821,6 +848,7 @@ const TeacherTextbooks = () => {
                 <Select value={String(newTopicGrade)} onValueChange={(v) => setNewTopicGrade(Number(v))}>
                   <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="0">Bez ročníku</SelectItem>
                     {(matchedSubject?.grades?.length ?? 0) > 0
                       ? matchedSubject!.grades.map(g => (
                         <SelectItem key={g.grade_number} value={String(g.grade_number)}>{g.label}</SelectItem>
@@ -829,6 +857,7 @@ const TeacherTextbooks = () => {
                         <SelectItem key={n} value={String(n)}>{n}. ročník</SelectItem>
                       ))}
                   </SelectContent>
+
 
                 </Select>
               </div>
@@ -839,19 +868,39 @@ const TeacherTextbooks = () => {
           </DialogContent>
         </Dialog>
 
-        {/* === Rename Topic Dialog === */}
+        {/* === Edit Topic Dialog === */}
         <Dialog open={!!editingTopic} onOpenChange={(open) => { if (!open) setEditingTopic(null); }}>
           <DialogContent>
-            <DialogHeader><DialogTitle>Přejmenovat téma</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>Upravit téma</DialogTitle></DialogHeader>
             <div className="space-y-4 mt-2">
               <div>
                 <Label>Název tématu</Label>
                 <Input value={editingTopic?.title ?? ""} onChange={(e) => setEditingTopic(editingTopic ? { ...editingTopic, title: e.target.value } : null)} className="mt-1" />
               </div>
-              <Button onClick={handleRenameTopic} disabled={!editingTopic?.title.trim()} className="w-full">Uložit</Button>
+              <div>
+                <Label>Ročník</Label>
+                <Select
+                  value={String(editingTopic?.grade ?? 0)}
+                  onValueChange={(v) => setEditingTopic(editingTopic ? { ...editingTopic, grade: Number(v) } : null)}
+                >
+                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0">Bez ročníku</SelectItem>
+                    {(matchedSubject?.grades?.length ?? 0) > 0
+                      ? matchedSubject!.grades.map(g => (
+                        <SelectItem key={g.grade_number} value={String(g.grade_number)}>{g.label}</SelectItem>
+                      ))
+                      : [1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => (
+                        <SelectItem key={n} value={String(n)}>{n}. ročník</SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button onClick={handleUpdateTopic} disabled={!editingTopic?.title.trim()} className="w-full">Uložit</Button>
             </div>
           </DialogContent>
         </Dialog>
+
 
         {/* === Create Lesson Dialog === */}
         <Dialog open={createLessonOpen} onOpenChange={setCreateLessonOpen}>
