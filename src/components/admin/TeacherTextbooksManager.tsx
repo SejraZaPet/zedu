@@ -34,6 +34,7 @@ interface Textbook {
   access_code: string;
   visibility: string;
   created_at: string;
+  deleted_at?: string | null;
 }
 
 interface GlobalLesson {
@@ -64,6 +65,9 @@ const TeacherTextbooksManager = () => {
   const queryClient = useQueryClient();
   const { data: subjects } = useSubjects(true);
   const [textbooks, setTextbooks] = useState<Textbook[]>([]);
+  const [trashedTextbooks, setTrashedTextbooks] = useState<Textbook[]>([]);
+  const [showTrash, setShowTrash] = useState(false);
+  const [purgeTarget, setPurgeTarget] = useState<Textbook | null>(null);
   const [loading, setLoading] = useState(true);
 
   // === New textbook dialog state ===
@@ -207,12 +211,20 @@ const TeacherTextbooksManager = () => {
 
   const fetchTextbooks = async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from("teacher_textbooks")
-      .select("*")
-      .is("deleted_at", null)
-      .order("created_at", { ascending: false });
+    const [{ data }, { data: trashed }] = await Promise.all([
+      supabase
+        .from("teacher_textbooks")
+        .select("*")
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("teacher_textbooks")
+        .select("*")
+        .not("deleted_at", "is", null)
+        .order("deleted_at", { ascending: false }),
+    ]);
     if (data) setTextbooks(data as Textbook[]);
+    setTrashedTextbooks((trashed ?? []) as Textbook[]);
     setLoading(false);
   };
 
@@ -317,16 +329,31 @@ const TeacherTextbooksManager = () => {
 
   useEffect(() => { if (selectedTextbook) fetchDetail(); }, [fetchDetail, selectedTextbook]);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Opravdu smazat tuto učebnici?")) return;
-    const { error } = await supabase.from("teacher_textbooks").delete().eq("id", id);
+  // Mazání = soft delete do koše. Nevratné DELETE jen z koše (handlePurge).
+  const handleDelete = async (id: string, title?: string) => {
+    if (!confirm("Přesunout tuto učebnici do koše? Obnovit ji lze do 30 dnů.")) return;
+    const { error } = await softDeleteTextbook(id, title);
     if (error) {
       toast({ title: "Chyba", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Smazáno" });
+      toast({ title: "Přesunuto do koše" });
       if (selectedTextbook?.id === id) setSelectedTextbook(null);
       fetchTextbooks();
     }
+  };
+
+  const handleRestore = async (tb: Textbook) => {
+    const { error } = await restoreTextbook(tb.id, tb.title);
+    if (error) toast({ title: "Chyba", description: error.message, variant: "destructive" });
+    else { toast({ title: "Učebnice obnovena" }); fetchTextbooks(); }
+  };
+
+  const handlePurge = async () => {
+    if (!purgeTarget) return;
+    const { error } = await permanentlyDeleteTextbook(purgeTarget.id, purgeTarget.title);
+    if (error) toast({ title: "Chyba", description: error.message, variant: "destructive" });
+    else { toast({ title: "Smazáno natrvalo" }); fetchTextbooks(); }
+    setPurgeTarget(null);
   };
 
   const copyCode = (code: string) => {
