@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { roleLabelFor } from "../_shared/assign-primary-role.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -16,7 +17,7 @@ serve(async (req) => {
   }
 
   try {
-    const { email, password } = await req.json();
+    const { email, password, role } = await req.json();
 
     if (!email || !password) {
       return new Response(JSON.stringify({ error: "Email and password required" }), {
@@ -74,10 +75,13 @@ serve(async (req) => {
       });
     }
 
+    // role_label předáváme do metadat, aby trigger handle_new_user rovnou založil
+    // správnou roli a nevznikala zbytková 'user' u učitelů/lektorů/rodičů.
     const { data: created, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
+      user_metadata: { role_label: roleLabelFor(typeof role === "string" ? role : "") },
     });
 
     if (createError || !created.user) {

@@ -12,6 +12,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { requireAuth } from "../_shared/auth.ts";
 import { buildWelcomeEmail } from "./welcome-email.ts";
+import { assignPrimaryRole } from "../_shared/assign-primary-role.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -239,17 +240,14 @@ Deno.serve(async (req) => {
       continue;
     }
 
-    // Role — trigger handle_new_user zakládá výchozí 'user'; učiteli ji vymění.
-    if (role === "teacher") {
-      await admin.from("user_roles").delete().eq("user_id", userId).eq("role", "user");
-    }
-    const { error: roleError } = await admin
-      .from("user_roles")
-      .upsert({ user_id: userId, role }, { onConflict: "user_id,role", ignoreDuplicates: true });
+    // Role — helper zbytkovou 'user' u učitele odstraní (viz _shared/assign-primary-role.ts).
+    const roleError = await assignPrimaryRole(admin, userId, role);
     if (roleError) {
-      results.push({ row_ref: rowRef, name, ok: false, error: `Role: ${roleError.message}` });
+      results.push({ row_ref: rowRef, name, ok: false, error: `Role: ${roleError}` });
       continue;
     }
+
+
 
     // Přihlašovací údaje pro tisk/PIN — RPC se autorizují přes auth.uid() volajícího,
     // proto se volají jeho JWT (profil už je ve stejné škole, takže projdou).

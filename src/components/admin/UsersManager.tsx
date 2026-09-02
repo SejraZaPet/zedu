@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { logAudit } from "@/lib/audit";
+import { assignPrimaryRole } from "@/lib/assign-primary-role";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -1049,10 +1050,7 @@ const UsersManager = () => {
 
                   await supabase.rpc("set_login_password", { _profile_id: userId, _password: password });
 
-                  await supabase.from("user_roles").upsert({
-                    user_id: userId,
-                    role: newUser.role as any,
-                  }, { onConflict: "user_id,role", ignoreDuplicates: true });
+                  await assignPrimaryRole(supabase, userId, newUser.role);
 
                   if (email && !email.includes("@bezli-student.cz") && !email.includes("@bezli-lektor.cz") && !email.includes("@bezli-rodic.cz")) {
                     const notifyEmailFailure = (detail?: unknown) => {
@@ -1121,10 +1119,7 @@ const UsersManager = () => {
 
                       await supabase.rpc("set_login_password", { _profile_id: parentUserId, _password: parentPassword });
 
-                      await supabase.from("user_roles").upsert({
-                        user_id: parentUserId,
-                        role: "rodic" as any,
-                      }, { onConflict: "user_id,role", ignoreDuplicates: true });
+                      await assignPrimaryRole(supabase, parentUserId, "rodic");
 
                       await supabase.from("parent_student_links" as any).insert({
                         parent_id: parentUserId,
@@ -1432,7 +1427,7 @@ const UsersManager = () => {
                       }
 
 
-                      await supabase.from("user_roles").upsert({ user_id: userId, role: role as any }, { onConflict: "user_id,role", ignoreDuplicates: true });
+                      await assignPrimaryRole(supabase, userId, role);
 
                       logAudit("user_created", "user", userId, { name: `${row.jmeno} ${row.prijmeni}`, role, source: "import" });
 
@@ -1496,7 +1491,7 @@ const UsersManager = () => {
                                   parent_email: parentEmailValue || null,
                                 });
                                 await supabase.rpc("set_login_password", { _profile_id: parentId, _password: parentPassword });
-                                await supabase.from("user_roles").upsert({ user_id: parentId, role: "rodic" as any }, { onConflict: "user_id,role", ignoreDuplicates: true });
+                                await assignPrimaryRole(supabase, parentId, "rodic");
                                 importedUsersList.push({
                                   firstName: "Rodič",
                                   lastName: `${row.jmeno} ${row.prijmeni}`,
