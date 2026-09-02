@@ -326,6 +326,44 @@ const TeacherTextbooksManager = () => {
       return { grade: g.grade_number, label: g.label, topics: gradeTopics };
     });
 
+    // Témata mimo ročníkovou strukturu (grade = 0 => "Bez ročníku") – vždy na konec
+    const knownNumbers = new Set(grades.map(g => g.grade_number));
+    const orphanTopics = (topics ?? []).filter((t: any) => !knownNumbers.has(typeof t.grade === "number" ? t.grade : 0));
+    if (orphanTopics.length > 0) {
+      const byGrade = new Map<number, any[]>();
+      for (const t of orphanTopics) {
+        const key = typeof t.grade === "number" ? t.grade : 0;
+        byGrade.set(key, [...(byGrade.get(key) ?? []), t]);
+      }
+      const orphanKey = (g: number) => (g === 0 ? Number.MAX_SAFE_INTEGER : g);
+      for (const [grade, list] of [...byGrade.entries()].sort((a, b) => orphanKey(a[0]) - orphanKey(b[0]))) {
+        groups.push({
+          grade,
+          label: grade > 0 ? `${grade}. ročník (mimo strukturu předmětu)` : "Bez ročníku",
+          topics: list.map((t: any) => ({
+            id: t.id,
+            title: t.title,
+            grade: typeof t.grade === "number" ? t.grade : 0,
+            sort_order: t.sort_order ?? 0,
+            lessons: [
+              ...tbLessons.filter((l: any) => l.topic_id === t.id).map((l: any) => ({
+                id: l.id, title: l.title, sort_order: l.sort_order ?? 0,
+                status: l.status ?? "draft", blocks: (l.blocks as Block[]) ?? [], topic_id: t.id,
+              })),
+              ...assignmentLessons
+                .filter((a: any) => a.topic_id === t.id && a.textbook_lessons)
+                .map((a: any) => ({
+                  id: a.textbook_lessons.id, title: a.textbook_lessons.title,
+                  sort_order: a.sort_order ?? a.textbook_lessons.sort_order ?? 0,
+                  status: a.textbook_lessons.status ?? "draft",
+                  blocks: (a.textbook_lessons.blocks as Block[]) ?? [], topic_id: t.id,
+                })),
+            ].filter((l, i, arr) => arr.findIndex(x => x.id === l.id) === i) as GlobalLesson[],
+          })) as TopicWithLessons[],
+        });
+      }
+    }
+
     setGradeGroups(groups);
     setDetailLoading(false);
   }, [selectedTextbook, subjects]);
