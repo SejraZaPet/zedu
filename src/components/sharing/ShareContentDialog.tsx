@@ -195,13 +195,21 @@ export default function ShareContentDialog({
               ) : (
                 <>
                   <Input
-                    placeholder="Jméno, příjmení nebo e-mail…"
+                    placeholder="Jméno, příjmení nebo celý e-mail"
                     value={teacherQuery}
                     onChange={(e) => setTeacherQuery(e.target.value)}
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Stačí {TEACHER_SEARCH_MIN_LENGTH} znaky jména. E-mail musí být zadaný celý.
+                  </p>
                   {searching && (
                     <div className="text-xs text-muted-foreground flex items-center gap-2">
                       <Loader2 className="w-3 h-3 animate-spin" /> Hledám…
+                    </div>
+                  )}
+                  {!searching && searched && teacherResults.length === 0 && (
+                    <div className="rounded-md border border-dashed border-border px-3 py-2 text-xs text-muted-foreground">
+                      Nikdo nenalezen. Zkuste jiné jméno nebo zadejte celý e-mail kolegy.
                     </div>
                   )}
                   {teacherResults.length > 0 && (
@@ -212,7 +220,14 @@ export default function ShareContentDialog({
                           className="w-full text-left px-3 py-2 text-sm hover:bg-muted/60"
                           onClick={() => setSelectedTeacher(r)}
                         >
-                          <div className="font-medium">{r.label}</div>
+                          <div className="font-medium">
+                            {r.label}
+                            {r.sameSchool && (
+                              <span className="ml-2 text-xs font-normal text-primary">
+                                vaše škola
+                              </span>
+                            )}
+                          </div>
                           {r.email && (
                             <div className="text-xs text-muted-foreground">
                               {r.email}
@@ -222,6 +237,7 @@ export default function ShareContentDialog({
                       ))}
                     </div>
                   )}
+
                 </>
               )}
             </div>
