@@ -17,8 +17,10 @@ import { useToast } from "@/hooks/use-toast";
 import {
   createShare,
   searchTeachers,
+  TEACHER_SEARCH_MIN_LENGTH,
   type ShareTargetKind,
 } from "@/lib/content-shares";
+
 import SchoolSalesStatusNotice from "@/components/school/SchoolSalesStatusNotice";
 
 interface Props {
