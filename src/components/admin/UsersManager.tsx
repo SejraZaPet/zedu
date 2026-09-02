@@ -1440,6 +1440,27 @@ const UsersManager = () => {
 
                       await assignPrimaryRole(supabase, userId, role);
 
+                      // Reálná třída: najdi nebo vytvoř a zařaď žáka
+                      const classCode = String(row.trida ?? "").trim();
+                      if (role === "user" && classCode && classCache) {
+                        const yearRaw = row.rocnik || yearOverrides[classCode] || "";
+                        const parsedYear = parseInt(String(yearRaw), 10);
+                        const ensured = await classCache.resolve(
+                          classCode,
+                          Number.isFinite(parsedYear) ? parsedYear : null,
+                        );
+                        if (ensured.id) {
+                          const memberError = await addImportClassMember(ensured.id, userId);
+                          if (memberError) {
+                            errors.push(`${row.jmeno} ${row.prijmeni}: zařazení do třídy ${classCode} selhalo – ${memberError}`);
+                          } else {
+                            classMembersAdded++;
+                          }
+                        } else if (ensured.error) {
+                          errors.push(`Třídu ${classCode} se nepodařilo připravit: ${ensured.error}`);
+                        }
+                      }
+
                       logAudit("user_created", "user", userId, { name: `${row.jmeno} ${row.prijmeni}`, role, source: "import" });
 
                       successCount++;
@@ -1552,7 +1573,7 @@ const UsersManager = () => {
 
                   setImportErrors(errors);
                   if (successCount > 0) {
-                    toast({ title: "Import dokončen", description: `${successCount} účtů bylo vytvořeno.${errors.length ? ` ${errors.length} chyb.` : ""}` });
+                    toast({ title: "Import dokončen", description: `${successCount} účtů bylo vytvořeno.${classMembersAdded ? ` ${classMembersAdded} žáků zařazeno do tříd.` : ""}${errors.length ? ` ${errors.length} chyb.` : ""}` });
                     fetchUsers();
                   }
                   if (errors.length === 0) {
