@@ -377,7 +377,10 @@ const ViewAsSwitcher = () => {
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="admin">Admin (já)</SelectItem>
-          {canSchoolAdmin && <SelectItem value="school_admin">Zobrazit jako admin školy</SelectItem>}
+          <SelectItem value="school_admin">
+            Zobrazit jako admin školy{hasSchoolAdminRole ? "" : " (bez vlastní školy)"}
+          </SelectItem>
+
           <SelectItem value="teacher">Zobrazit jako učitel</SelectItem>
           <SelectItem value="user">Zobrazit jako žák</SelectItem>
         </SelectContent>
