@@ -40,7 +40,9 @@ interface MemberRow {
 
 const SchoolAdmin = () => {
   const navigate = useNavigate();
-  const { user, role, status, loading: authLoading, signOut } = useAuth();
+  const { user, role, realRole, status, loading: authLoading, signOut } = useAuth();
+  const isSystemAdmin = realRole === "admin" || role === "admin";
+
   const { toast } = useToast();
 
   const [school, setSchool] = useState<SchoolRow | null>(null);
