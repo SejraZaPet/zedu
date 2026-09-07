@@ -90,6 +90,12 @@ const TeacherAssignments = () => {
   const [selectedWorksheetId, setSelectedWorksheetId] = useState<string>(prefillWorksheetId || "");
   const [lockdownMode, setLockdownMode] = useState(false);
   const [isPortfolioTask, setIsPortfolioTask] = useState(false);
+
+  /** Portfoliový úkol a lockdown se vylučují — zapnutí portfolia lockdown vypne. */
+  const togglePortfolioTask = (next: boolean) => {
+    setIsPortfolioTask(next);
+    if (next) setLockdownMode(false);
+  };
   const [examType, setExamType] = useState<ExamType | "ukol">("ukol");
   const [filterExamType, setFilterExamType] = useState<string>("__all__");
   // Naplánované zveřejnění – appka úlohu zpřístupní žákům sama v daný čas.
