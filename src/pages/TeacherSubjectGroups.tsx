@@ -551,7 +551,13 @@ const TeacherSubjectGroups = () => {
             <div>
               <Label>Název skupiny</Label>
               <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Skupina 1" />
+              {nameClashesWithClass && (
+                <p className="mt-1 text-xs text-amber-600 dark:text-amber-500">
+                  Pozor, tenhle název má i existující třída – může to působit zmatek.
+                </p>
+              )}
             </div>
+
             <div>
               <Label>Školní rok</Label>
               <Input value={newYear} onChange={(e) => setNewYear(e.target.value)} placeholder="2026/2027" />
