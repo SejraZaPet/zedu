@@ -63,6 +63,8 @@ const TodayWidget = ({ role }: Props) => {
   const { schoolId } = useMySchool();
   const { colleagues } = useSchoolColleagues(role === "teacher" ? schoolId : null);
   const [todayLessons, setTodayLessons] = useState<CalendarEvent[]>([]);
+  // Cíl kliknutí na dnešní hodinu: podle slotu víme předmět a třídu/skupinu.
+  const [lessonTargets, setLessonTargets] = useState<Record<string, string>>({});
   const [upcomingAssignments, setUpcomingAssignments] = useState<UpcomingAssignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [reloadKey, setReloadKey] = useState(0);
@@ -115,6 +117,17 @@ const TodayWidget = ({ role }: Props) => {
         .select("*, classes(name)");
 
       const slots = (slotsRes.data ?? []) as any[];
+      const targets: Record<string, string> = {};
+      for (const slot of slots) {
+        const subject = slot.subject_id || (slot.subject_label ? encodeURIComponent(slot.subject_label) : null);
+        if (!subject) continue;
+        if (role === "student") {
+          if (slot.class_id) targets[slot.id] = `/student/predmet/${subject}/trida/${slot.class_id}`;
+          continue;
+        }
+        if (slot.group_id) targets[slot.id] = `/ucitel/vyuka/${subject}/skupina/${slot.group_id}`;
+        else if (slot.class_id) targets[slot.id] = `/ucitel/vyuka/${subject}/trida/${slot.class_id}`;
+      }
       const lessons = expandScheduleSlots(slots, from, to).sort(
         (a, b) => a.start.getTime() - b.start.getTime(),
       );
@@ -173,6 +186,7 @@ const TodayWidget = ({ role }: Props) => {
 
       if (!mounted) return;
       setTodayLessons(lessons);
+      setLessonTargets(targets);
       setUpcomingAssignments(combined);
       setLoading(false);
     };
@@ -235,12 +249,28 @@ const TodayWidget = ({ role }: Props) => {
               const status = lessonStatus(ev);
               const isCurrent = status === "current";
               const isPast = status === "past";
+              const target = lessonTargets[ev.id.replace(/-\d{4}-\d{2}-\d{2}$/, "")];
               return (
                 <li
                   key={ev.id}
+                  role={target ? "button" : undefined}
+                  tabIndex={target ? 0 : undefined}
+                  onClick={target ? () => navigate(target) : undefined}
+                  onKeyDown={
+                    target
+                      ? (e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            navigate(target);
+                          }
+                        }
+                      : undefined
+                  }
                   className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
                     isCurrent ? "bg-primary/10 font-medium" : ""
-                  } ${isPast ? "opacity-60" : ""}`}
+                  } ${isPast ? "opacity-60" : ""} ${
+                    target ? "cursor-pointer hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring" : ""
+                  }`}
                 >
                   <span className="font-mono text-xs w-24 shrink-0 text-muted-foreground">
                     {formatTime(ev.start)} – {formatTime(ev.end)}

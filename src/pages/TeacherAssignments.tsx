@@ -73,7 +73,7 @@ const TeacherAssignments = () => {
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
-  const [showForm, setShowForm] = useState(!!prefillLessonId);
+  const [showForm, setShowForm] = useState(!!prefillLessonId || !!searchParams.get("classId") || !!searchParams.get("groupId"));
 
   // Form state
   const [title, setTitle] = useState(prefillLessonTitle ? `Pracovní list – ${prefillLessonTitle}` : "");
@@ -82,9 +82,12 @@ const TeacherAssignments = () => {
   const [maxAttempts, setMaxAttempts] = useState(1);
   const [randomizeChoices, setRandomizeChoices] = useState(false);
   const [randomizeOrder, setRandomizeOrder] = useState(false);
-  const [selectedClassId, setSelectedClassId] = useState<string>("");
+  // Cíl zadání se předvyplní z Výuky (?classId=… nebo ?groupId=…), nikdy obojí.
+  const prefillGroupId = searchParams.get("groupId") || "";
+  const prefillClassId = prefillGroupId ? "" : (searchParams.get("classId") || "");
+  const [selectedClassId, setSelectedClassId] = useState<string>(prefillClassId);
   // Zadání lze nově směrovat i na skupinu předmětu (vedle třídy, nikdy obojí).
-  const [selectedGroupId, setSelectedGroupId] = useState<string>(searchParams.get("groupId") || "");
+  const [selectedGroupId, setSelectedGroupId] = useState<string>(prefillGroupId);
 
   const [worksheets, setWorksheets] = useState<WorksheetOption[]>([]);
   const [selectedWorksheetId, setSelectedWorksheetId] = useState<string>(prefillWorksheetId || "");
@@ -131,6 +134,13 @@ const TeacherAssignments = () => {
     if (!title.trim()) {
       toast({ title: "Chyba", description: "Zadej název úlohy.", variant: "destructive" });
       return;
+    }
+    // Bez třídy i skupiny se úloha nikomu nezobrazí u předmětu – radši se zeptáme.
+    if (!selectedClassId && !selectedGroupId) {
+      const ok = window.confirm(
+        "Úkol bude bez přiřazené třídy nebo skupiny – žákům se u předmětu nezobrazí. Opravdu pokračovat?",
+      );
+      if (!ok) return;
     }
     setCreating(true);
     try {
@@ -205,6 +215,16 @@ const TeacherAssignments = () => {
     }
   };
 
+  // Když Výuka předá třídu školy, ke které učitel ještě není přihlášený, přihlásíme ho.
+  useEffect(() => {
+    if (!prefillClassId) return;
+    if (!schoolClasses.some((c) => c.id === prefillClassId)) return;
+    (async () => {
+      await claimSchoolClass(prefillClassId);
+      await refetchClasses();
+    })();
+  }, [prefillClassId, schoolClasses]);
+
   const resetForm = () => {
     setTitle("");
     setDescription("");
@@ -212,8 +232,8 @@ const TeacherAssignments = () => {
     setMaxAttempts(1);
     setRandomizeChoices(false);
     setRandomizeOrder(false);
-    setSelectedClassId("");
-    setSelectedGroupId("");
+    setSelectedClassId(prefillClassId);
+    setSelectedGroupId(prefillGroupId);
 
     setSelectedWorksheetId("");
     setLockdownMode(false);
