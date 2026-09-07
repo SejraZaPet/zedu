@@ -215,6 +215,16 @@ const TeacherAssignments = () => {
     }
   };
 
+  // Když Výuka předá třídu školy, ke které učitel ještě není přihlášený, přihlásíme ho.
+  useEffect(() => {
+    if (!prefillClassId) return;
+    if (!schoolClasses.some((c) => c.id === prefillClassId)) return;
+    (async () => {
+      await claimSchoolClass(prefillClassId);
+      await refetchClasses();
+    })();
+  }, [prefillClassId, schoolClasses]);
+
   const resetForm = () => {
     setTitle("");
     setDescription("");
