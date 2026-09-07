@@ -65,6 +65,12 @@ const TeacherSubjectGroups = () => {
   // Spojená skupina: třídy, ze kterých se do nové skupiny nabere celý seznam žáků
   const [seedClassIds, setSeedClassIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  // Upozornění (neblokující): název skupiny se shoduje s názvem existující třídy
+  const nameClashesWithClass = useMemo(() => {
+    const n = newName.trim().toLocaleLowerCase("cs");
+    if (!n) return false;
+    return classes.some((c) => (c.name ?? "").trim().toLocaleLowerCase("cs") === n);
+  }, [newName, classes]);
 
   // přidávání žáků
   const [rosterGroup, setRosterGroup] = useState<GroupRow | null>(null);
