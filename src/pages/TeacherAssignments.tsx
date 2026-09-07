@@ -135,6 +135,13 @@ const TeacherAssignments = () => {
       toast({ title: "Chyba", description: "Zadej název úlohy.", variant: "destructive" });
       return;
     }
+    // Bez třídy i skupiny se úloha nikomu nezobrazí u předmětu – radši se zeptáme.
+    if (!selectedClassId && !selectedGroupId) {
+      const ok = window.confirm(
+        "Úkol bude bez přiřazené třídy nebo skupiny – žákům se u předmětu nezobrazí. Opravdu pokračovat?",
+      );
+      if (!ok) return;
+    }
     setCreating(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
