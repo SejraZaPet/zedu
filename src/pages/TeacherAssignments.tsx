@@ -330,14 +330,24 @@ const TeacherAssignments = () => {
 
               {/* Scheduled publishing */}
               <div className="rounded-lg border border-border p-3 space-y-3">
-                <div className="flex items-center justify-between gap-3">
+                <div
+                  className="flex items-center justify-between gap-3 cursor-pointer"
+                  onClick={() => setScheduleEnabled(!scheduleEnabled)}
+                >
                   <div>
-                    <Label className="text-sm">Naplánovat zveřejnění</Label>
+                    <Label htmlFor="assignment-schedule" className="text-sm cursor-pointer">
+                      Naplánovat zveřejnění
+                    </Label>
                     <p className="text-xs text-muted-foreground">
                       Úloha zůstane žákům skrytá a appka ji zpřístupní sama ve zvolený čas.
                     </p>
                   </div>
-                  <Switch checked={scheduleEnabled} onCheckedChange={setScheduleEnabled} />
+                  <Switch
+                    id="assignment-schedule"
+                    checked={scheduleEnabled}
+                    onCheckedChange={setScheduleEnabled}
+                    onClick={(e) => e.stopPropagation()}
+                  />
                 </div>
                 {scheduleEnabled && (
                   <div className="grid grid-cols-2 gap-4">
