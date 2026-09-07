@@ -406,31 +406,65 @@ const TeacherSubjects = () => {
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               {units.map((u) => (
-                <button
-                  key={u.key}
-                  type="button"
-                  onClick={() => navigate(u.path)}
-                  title={`Výuka: ${u.subjectName} · ${u.targetName}`}
-                  className="text-left rounded-xl border border-border p-4 hover:border-primary/50 hover:shadow-sm transition-all bg-card"
-                >
-                  <div className="flex items-center gap-2 mb-3">
-                    <span
-                      className="text-xs font-bold text-white px-2 py-1 rounded"
-                      style={{ backgroundColor: u.color }}
-                    >
-                      {u.abbreviation}
-                    </span>
-                    <span className="text-xs font-medium text-muted-foreground truncate">
-                      {u.targetName}
-                    </span>
-                  </div>
-                  <div className="text-sm font-medium truncate">{u.subjectName}</div>
-                  {u.kind === "group" && (
-                    <Badge variant="secondary" className="mt-1 text-[10px] px-1.5 py-0 h-4 font-normal">
-                      skupina
-                    </Badge>
-                  )}
-                </button>
+                <div key={u.key} className="relative">
+                  <button
+                    type="button"
+                    onClick={() => navigate(u.path)}
+                    title={`Výuka: ${u.subjectName} · ${u.targetName}`}
+                    className="w-full text-left rounded-xl border border-border p-4 pr-10 hover:border-primary/50 hover:shadow-sm transition-all bg-card"
+                  >
+                    <div className="flex items-center gap-2 mb-3">
+                      <span
+                        className="text-xs font-bold text-white px-2 py-1 rounded"
+                        style={{ backgroundColor: u.color }}
+                      >
+                        {u.abbreviation}
+                      </span>
+                      <span className="text-xs font-medium text-muted-foreground truncate">
+                        {u.targetName}
+                      </span>
+                    </div>
+                    <div className="text-sm font-medium truncate">{u.subjectName}</div>
+                    {u.kind === "group" && (
+                      <Badge variant="secondary" className="mt-1 text-[10px] px-1.5 py-0 h-4 font-normal">
+                        skupina
+                      </Badge>
+                    )}
+                    {u.fromScheduleOnly && (
+                      <Badge variant="outline" className="mt-1 ml-1 text-[10px] px-1.5 py-0 h-4 font-normal">
+                        z rozvrhu
+                      </Badge>
+                    )}
+                  </button>
+
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        aria-label={`Možnosti Výuky ${u.subjectName} ${u.targetName}`}
+                        className="absolute top-2 right-2 h-7 w-7 rounded-md inline-flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground"
+                      >
+                        <MoreVertical className="h-4 w-4" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {u.fromScheduleOnly ? (
+                        <DropdownMenuItem onClick={() => navigate("/ucitel/rozvrh")}>
+                          <CalendarClock className="h-4 w-4 mr-2" />
+                          Upravit v rozvrhu
+                        </DropdownMenuItem>
+                      ) : (
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => setUnitToRemove(u)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Odebrat tuto Výuku
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               ))}
             </div>
           )}
