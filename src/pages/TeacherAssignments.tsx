@@ -215,8 +215,8 @@ const TeacherAssignments = () => {
     setMaxAttempts(1);
     setRandomizeChoices(false);
     setRandomizeOrder(false);
-    setSelectedClassId("");
-    setSelectedGroupId("");
+    setSelectedClassId(prefillClassId);
+    setSelectedGroupId(prefillGroupId);
 
     setSelectedWorksheetId("");
     setLockdownMode(false);
