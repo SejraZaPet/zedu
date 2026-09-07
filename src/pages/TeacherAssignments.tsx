@@ -82,9 +82,12 @@ const TeacherAssignments = () => {
   const [maxAttempts, setMaxAttempts] = useState(1);
   const [randomizeChoices, setRandomizeChoices] = useState(false);
   const [randomizeOrder, setRandomizeOrder] = useState(false);
-  const [selectedClassId, setSelectedClassId] = useState<string>("");
+  // Cíl zadání se předvyplní z Výuky (?classId=… nebo ?groupId=…), nikdy obojí.
+  const prefillGroupId = searchParams.get("groupId") || "";
+  const prefillClassId = prefillGroupId ? "" : (searchParams.get("classId") || "");
+  const [selectedClassId, setSelectedClassId] = useState<string>(prefillClassId);
   // Zadání lze nově směrovat i na skupinu předmětu (vedle třídy, nikdy obojí).
-  const [selectedGroupId, setSelectedGroupId] = useState<string>(searchParams.get("groupId") || "");
+  const [selectedGroupId, setSelectedGroupId] = useState<string>(prefillGroupId);
 
   const [worksheets, setWorksheets] = useState<WorksheetOption[]>([]);
   const [selectedWorksheetId, setSelectedWorksheetId] = useState<string>(prefillWorksheetId || "");
