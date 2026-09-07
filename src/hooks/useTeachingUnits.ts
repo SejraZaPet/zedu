@@ -22,6 +22,8 @@ export interface TeachingUnit {
   targetId: string;
   targetName: string;
   schoolYear?: string | null;
+  /** id řádku `class_subjects` (u kind="class"), když vazba existuje mimo rozvrh */
+  linkRowId?: string;
   /** true když vazba existuje jen díky rozvrhu (není v class_subjects) */
   fromScheduleOnly?: boolean;
   path: string;
@@ -53,7 +55,7 @@ export const useTeachingUnits = () => {
         classIds.length
           ? supabase
               .from("class_subjects")
-              .select("class_id, subject_id, school_year, archived, subjects(id, name, abbreviation, color, archived)")
+              .select("id, class_id, subject_id, school_year, archived, subjects(id, name, abbreviation, color, archived)")
               .in("class_id", classIds)
               .eq("archived", false)
           : Promise.resolve({ data: [] as any[], error: null }),
@@ -102,6 +104,7 @@ export const useTeachingUnits = () => {
         if (!subj || subj.archived) continue;
         push({
           ...mk(subj, "class", row.class_id, classNames.get(row.class_id) ?? ""),
+          linkRowId: row.id,
           schoolYear: row.school_year ?? null,
         });
       }
@@ -111,6 +114,7 @@ export const useTeachingUnits = () => {
         if (!subj || subj.archived) continue;
         push({
           ...mk(subj, "group", row.id, row.name),
+          linkRowId: row.id,
           schoolYear: row.school_year ?? null,
         });
       }
