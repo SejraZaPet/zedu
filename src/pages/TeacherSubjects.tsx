@@ -494,6 +494,36 @@ const TeacherSubjects = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog open={!!unitToRemove} onOpenChange={(o) => !o && setUnitToRemove(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Odebrat „{unitToRemove?.subjectName} – {unitToRemove?.kind === "group" ? "skupina" : "třída"}{" "}
+              {unitToRemove?.targetName}"?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {unitToRemove?.kind === "group"
+                ? "Smaže se pouze tato skupina včetně zařazení jejích žáků. Předmět ani ostatní Výuky u stejného předmětu se nemění."
+                : "Odebere se pouze vazba tohoto předmětu na tuto třídu. Předmět, třída ani ostatní Výuky u stejného předmětu se nemění."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={removingUnit}>Zrušit</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={removingUnit}
+              onClick={(e) => {
+                e.preventDefault();
+                void handleRemoveUnit();
+              }}
+            >
+              {removingUnit && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Odebrat tuto Výuku
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
