@@ -353,6 +353,22 @@ export default function LessonFormDialog({
       }
     }
 
+    // Skupina: pokud je navázaná na jiný (nebo žádný) předmět, srovnáme ji
+    // s vybraným předmětem — jinak by se Výuka ve přehledu neobjevila.
+    if (useGroup && subjectId && selectedGroup && selectedGroup.subject_id !== subjectId) {
+      try {
+        await supabase
+          .from("subject_groups")
+          .update({ subject_id: subjectId } as any)
+          .eq("id", selectedGroup.id);
+        void refetchUnits();
+      } catch {
+        // vazba je jen doplňková – chyba nesmí zablokovat uložení hodiny
+      }
+    }
+
+
+
     await onSave({ value, slots });
   }
 
