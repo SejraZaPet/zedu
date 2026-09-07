@@ -47,7 +47,7 @@ const TeacherSubjectGroups = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
-  const { classes } = useTeacherClasses();
+  const { classes, myClasses, schoolClasses, refetch: refetchClasses } = useTeacherClasses();
 
   const [subjects, setSubjects] = useState<SubjectRow[]>([]);
   const [subjectId, setSubjectId] = useState<string>("");
