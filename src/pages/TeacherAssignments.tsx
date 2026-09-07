@@ -73,7 +73,7 @@ const TeacherAssignments = () => {
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
-  const [showForm, setShowForm] = useState(!!prefillLessonId);
+  const [showForm, setShowForm] = useState(!!prefillLessonId || !!searchParams.get("classId") || !!searchParams.get("groupId"));
 
   // Form state
   const [title, setTitle] = useState(prefillLessonTitle ? `Pracovní list – ${prefillLessonTitle}` : "");
