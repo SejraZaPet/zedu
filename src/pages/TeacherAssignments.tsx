@@ -475,49 +475,103 @@ const TeacherAssignments = () => {
 
               {/* Randomization */}
               <div className="flex flex-col gap-3 p-3 border border-border rounded-lg bg-muted/30">
-                <div className="flex items-center justify-between">
+                <div
+                  className="flex items-center justify-between cursor-pointer"
+                  onClick={() => setRandomizeOrder(!randomizeOrder)}
+                >
                   <div className="flex items-center gap-2">
                     <Shuffle className="w-4 h-4 text-muted-foreground" />
-                    <Label className="text-sm">Zamíchat pořadí otázek</Label>
+                    <Label htmlFor="assignment-randomize-order" className="text-sm cursor-pointer">
+                      Zamíchat pořadí otázek
+                    </Label>
                   </div>
-                  <Switch checked={randomizeOrder} onCheckedChange={setRandomizeOrder} />
+                  <Switch
+                    id="assignment-randomize-order"
+                    checked={randomizeOrder}
+                    onCheckedChange={setRandomizeOrder}
+                    onClick={(e) => e.stopPropagation()}
+                  />
                 </div>
-                <div className="flex items-center justify-between">
+                <div
+                  className="flex items-center justify-between cursor-pointer"
+                  onClick={() => setRandomizeChoices(!randomizeChoices)}
+                >
                   <div className="flex items-center gap-2">
                     <Shuffle className="w-4 h-4 text-muted-foreground" />
-                  <Label className="text-sm">Zamíchat volby u otázek</Label>
+                    <Label htmlFor="assignment-randomize-choices" className="text-sm cursor-pointer">
+                      Zamíchat volby u otázek
+                    </Label>
+                  </div>
+                  <Switch
+                    id="assignment-randomize-choices"
+                    checked={randomizeChoices}
+                    onCheckedChange={setRandomizeChoices}
+                    onClick={(e) => e.stopPropagation()}
+                  />
                 </div>
-                <Switch checked={randomizeChoices} onCheckedChange={setRandomizeChoices} />
               </div>
-            </div>
 
-            {/* Portfolio task */}
-            <div className="flex items-start justify-between gap-3 p-3 border border-border rounded-lg bg-muted/30">
-              <div className="flex items-start gap-2">
-                <FileText className="w-4 h-4 text-muted-foreground mt-0.5" />
-                <div>
-                  <Label className="text-sm">Portfoliový úkol</Label>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Místo kvízu žáci nahrají výstup (soubor/foto/PDF). Odevzdání se automaticky přidá do jejich portfolia.
-                  </p>
+              {/* Portfolio task */}
+              <div
+                className="flex items-start justify-between gap-3 p-3 border border-border rounded-lg bg-muted/30 cursor-pointer"
+                onClick={() => togglePortfolioTask(!isPortfolioTask)}
+              >
+                <div className="flex items-start gap-2">
+                  <FileText className="w-4 h-4 text-muted-foreground mt-0.5" />
+                  <div>
+                    <Label htmlFor="assignment-portfolio" className="text-sm cursor-pointer">
+                      Portfoliový úkol
+                    </Label>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Místo kvízu žáci nahrají výstup (soubor/foto/PDF). Odevzdání se automaticky přidá do jejich portfolia.
+                    </p>
+                  </div>
                 </div>
+                <Switch
+                  id="assignment-portfolio"
+                  checked={isPortfolioTask}
+                  onCheckedChange={togglePortfolioTask}
+                  onClick={(e) => e.stopPropagation()}
+                />
               </div>
-              <Switch checked={isPortfolioTask} onCheckedChange={setIsPortfolioTask} />
-            </div>
 
-            {/* Lockdown mode */}
-            <div className="flex items-start justify-between gap-3 p-3 border border-border rounded-lg bg-muted/30">
-              <div className="flex items-start gap-2">
-                <Lock className="w-4 h-4 text-muted-foreground mt-0.5" />
-                <div>
-                  <Label className="text-sm">Lockdown mód (bezpečný test)</Label>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Žák píše test ve fullscreenu, kopírování a vkládání jsou blokovány. Opuštění stránky se zaznamenává a uvidíte ho ve výsledcích.
-                  </p>
+              {/* Lockdown mode */}
+              <div
+                className={cn(
+                  "flex items-start justify-between gap-3 p-3 border border-border rounded-lg bg-muted/30",
+                  isPortfolioTask ? "opacity-70" : "cursor-pointer",
+                )}
+                onClick={() => {
+                  if (!isPortfolioTask) setLockdownMode(!lockdownMode);
+                }}
+              >
+                <div className="flex items-start gap-2">
+                  <Lock className="w-4 h-4 text-muted-foreground mt-0.5" />
+                  <div>
+                    <Label
+                      htmlFor="assignment-lockdown"
+                      className={cn("text-sm", !isPortfolioTask && "cursor-pointer")}
+                    >
+                      Lockdown mód (bezpečný test)
+                    </Label>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Žák píše test ve fullscreenu, kopírování a vkládání jsou blokovány. Opuštění stránky se zaznamenává a uvidíte ho ve výsledcích.
+                    </p>
+                    {isPortfolioTask && (
+                      <p className="text-xs text-amber-600 dark:text-amber-500 mt-1">
+                        Nelze kombinovat s portfoliovým úkolem — žáci jen nahrávají výstup, netestují se.
+                      </p>
+                    )}
+                  </div>
                 </div>
+                <Switch
+                  id="assignment-lockdown"
+                  checked={lockdownMode}
+                  onCheckedChange={setLockdownMode}
+                  disabled={isPortfolioTask}
+                  onClick={(e) => e.stopPropagation()}
+                />
               </div>
-              <Switch checked={lockdownMode} onCheckedChange={setLockdownMode} disabled={isPortfolioTask} />
-            </div>
 
 
 
