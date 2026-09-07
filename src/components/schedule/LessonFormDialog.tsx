@@ -182,6 +182,10 @@ export default function LessonFormDialog({
   // Reset when opening. Runs only once per open — jinak by pozdější dotažení
   // předmětů/tříd přepsalo hodnoty, které si učitel právě vybral (např. z Výuky).
   const initializedRef = useRef(false);
+  // Poslední předmět, ze kterého se automaticky doplnila zkratka a barva.
+  // Bez toho by se barva vybraná učitelem přepsala barvou předmětu při každém
+  // dalším dotažení katalogu předmětů.
+  const autoFilledSubjectRef = useRef<string | null>(null);
   useEffect(() => {
     if (!open) {
       initializedRef.current = false;
@@ -206,6 +210,7 @@ export default function LessonFormDialog({
       setCustomSubject("");
     }
     setUnitKey("");
+    autoFilledSubjectRef.current = subj && known ? known.label : subj ? CUSTOM_SUBJECT : null;
     setAbbreviation(initial?.abbreviation ?? "");
     setColor(initial?.color ?? colorForSubject(subj));
     setClassSel(initial?.classId ?? NO_CLASS);
@@ -240,8 +245,12 @@ export default function LessonFormDialog({
   // When subject changes via select → auto-fill abbreviation/color from registry
   useEffect(() => {
     if (subjectChoice === CUSTOM_SUBJECT || !subjectChoice) return;
+    // Doplňujeme jen při skutečné změně předmětu — jinak bychom přebili
+    // barvu/zkratku, kterou si učitel právě nastavil ručně.
+    if (autoFilledSubjectRef.current === subjectChoice) return;
     const found = subjects.find((s) => s.label === subjectChoice);
     if (!found) return;
+    autoFilledSubjectRef.current = subjectChoice;
     if (found.abbreviation) setAbbreviation(found.abbreviation.toUpperCase());
     else setAbbreviation((cur) => cur || found.label.slice(0, 3).toUpperCase());
     if (found.color) setColor(found.color);
