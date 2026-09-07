@@ -17,7 +17,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Library, Archive, ArchiveRestore, Trash2, Loader2 } from "lucide-react";
+import { ArrowLeft, Library, Archive, ArchiveRestore, Trash2, Loader2, MoreVertical, CalendarClock } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import type { TeachingUnit } from "@/hooks/useTeachingUnits";
 import { toast } from "sonner";
 import { useTeacherClasses } from "@/hooks/useTeacherClasses";
 import { useTeachingUnits } from "@/hooks/useTeachingUnits";
@@ -56,12 +63,15 @@ const TeacherSubjects = () => {
 
   // Management of the canonical `subjects` catalog
   const { allSubjects, loading: loadingCatalog } = useSubjectCatalog({ includeArchived: true });
-  const { units, loading: loadingUnits } = useTeachingUnits();
+  const { units, loading: loadingUnits, refetch: refetchUnits } = useTeachingUnits();
   const invalidateCatalog = useInvalidateSubjectCatalog();
   const [showArchived, setShowArchived] = useState(false);
   const [deps, setDeps] = useState<Record<string, { groups: number; classSubjects: number }>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
   const [toDelete, setToDelete] = useState<SubjectCatalogItem | null>(null);
+  // Odebrání JEDNÉ Výuky (jedné karty) — nikdy nezasahuje do předmětu samotného.
+  const [unitToRemove, setUnitToRemove] = useState<TeachingUnit | null>(null);
+  const [removingUnit, setRemovingUnit] = useState(false);
 
   useEffect(() => {
     if (loadingClasses) return;
@@ -151,6 +161,38 @@ const TeacherSubjects = () => {
       toast.error(e?.message ?? "Předmět se nepodařilo smazat.");
     } finally {
       setBusyId(null);
+    }
+  };
+
+  const handleRemoveUnit = async () => {
+    const u = unitToRemove;
+    if (!u) return;
+    setRemovingUnit(true);
+    try {
+      if (u.kind === "group") {
+        // Členství žáků odpadne kaskádou přes subject_group_members.
+        const { data, error } = await supabase
+          .from("subject_groups")
+          .delete()
+          .eq("id", u.targetId)
+          .select("id");
+        if (error) throw error;
+        if (!data || data.length === 0) throw new Error("Skupinu nelze odebrat – nemáte k ní oprávnění.");
+      } else {
+        const query = supabase.from("class_subjects").delete();
+        const { data, error } = u.linkRowId
+          ? await query.eq("id", u.linkRowId).select("id")
+          : await query.eq("class_id", u.targetId).eq("subject_id", u.subjectId).select("id");
+        if (error) throw error;
+        if (!data || data.length === 0) throw new Error("Vazbu nelze odebrat – nemáte k ní oprávnění.");
+      }
+      toast.success(`Výuka „${u.subjectName} – ${u.kind === "group" ? "skupina" : "třída"} ${u.targetName}" byla odebrána.`);
+      setUnitToRemove(null);
+      await refetchUnits();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Výuku se nepodařilo odebrat.");
+    } finally {
+      setRemovingUnit(false);
     }
   };
 
