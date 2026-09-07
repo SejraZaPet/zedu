@@ -65,6 +65,12 @@ const TeacherSubjectGroups = () => {
   // Spojená skupina: třídy, ze kterých se do nové skupiny nabere celý seznam žáků
   const [seedClassIds, setSeedClassIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  // Upozornění (neblokující): název skupiny se shoduje s názvem existující třídy
+  const nameClashesWithClass = useMemo(() => {
+    const n = newName.trim().toLocaleLowerCase("cs");
+    if (!n) return false;
+    return classes.some((c) => (c.name ?? "").trim().toLocaleLowerCase("cs") === n);
+  }, [newName, classes]);
 
   // přidávání žáků
   const [rosterGroup, setRosterGroup] = useState<GroupRow | null>(null);
@@ -551,7 +557,13 @@ const TeacherSubjectGroups = () => {
             <div>
               <Label>Název skupiny</Label>
               <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Skupina 1" />
+              {nameClashesWithClass && (
+                <p className="mt-1 text-xs text-amber-600 dark:text-amber-500">
+                  Pozor, tenhle název má i existující třída – může to působit zmatek.
+                </p>
+              )}
             </div>
+
             <div>
               <Label>Školní rok</Label>
               <Input value={newYear} onChange={(e) => setNewYear(e.target.value)} placeholder="2026/2027" />

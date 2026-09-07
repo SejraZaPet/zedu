@@ -17,7 +17,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Library, Archive, ArchiveRestore, Trash2, Loader2 } from "lucide-react";
+import { ArrowLeft, Library, Archive, ArchiveRestore, Trash2, Loader2, MoreVertical, CalendarClock } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import type { TeachingUnit } from "@/hooks/useTeachingUnits";
 import { toast } from "sonner";
 import { useTeacherClasses } from "@/hooks/useTeacherClasses";
 import { useTeachingUnits } from "@/hooks/useTeachingUnits";
@@ -56,12 +63,15 @@ const TeacherSubjects = () => {
 
   // Management of the canonical `subjects` catalog
   const { allSubjects, loading: loadingCatalog } = useSubjectCatalog({ includeArchived: true });
-  const { units, loading: loadingUnits } = useTeachingUnits();
+  const { units, loading: loadingUnits, refetch: refetchUnits } = useTeachingUnits();
   const invalidateCatalog = useInvalidateSubjectCatalog();
   const [showArchived, setShowArchived] = useState(false);
   const [deps, setDeps] = useState<Record<string, { groups: number; classSubjects: number }>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
   const [toDelete, setToDelete] = useState<SubjectCatalogItem | null>(null);
+  // Odebrání JEDNÉ Výuky (jedné karty) — nikdy nezasahuje do předmětu samotného.
+  const [unitToRemove, setUnitToRemove] = useState<TeachingUnit | null>(null);
+  const [removingUnit, setRemovingUnit] = useState(false);
 
   useEffect(() => {
     if (loadingClasses) return;
@@ -151,6 +161,38 @@ const TeacherSubjects = () => {
       toast.error(e?.message ?? "Předmět se nepodařilo smazat.");
     } finally {
       setBusyId(null);
+    }
+  };
+
+  const handleRemoveUnit = async () => {
+    const u = unitToRemove;
+    if (!u) return;
+    setRemovingUnit(true);
+    try {
+      if (u.kind === "group") {
+        // Členství žáků odpadne kaskádou přes subject_group_members.
+        const { data, error } = await supabase
+          .from("subject_groups")
+          .delete()
+          .eq("id", u.targetId)
+          .select("id");
+        if (error) throw error;
+        if (!data || data.length === 0) throw new Error("Skupinu nelze odebrat – nemáte k ní oprávnění.");
+      } else {
+        const query = supabase.from("class_subjects").delete();
+        const { data, error } = u.linkRowId
+          ? await query.eq("id", u.linkRowId).select("id")
+          : await query.eq("class_id", u.targetId).eq("subject_id", u.subjectId).select("id");
+        if (error) throw error;
+        if (!data || data.length === 0) throw new Error("Vazbu nelze odebrat – nemáte k ní oprávnění.");
+      }
+      toast.success(`Výuka „${u.subjectName} – ${u.kind === "group" ? "skupina" : "třída"} ${u.targetName}" byla odebrána.`);
+      setUnitToRemove(null);
+      await refetchUnits();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Výuku se nepodařilo odebrat.");
+    } finally {
+      setRemovingUnit(false);
     }
   };
 
@@ -364,31 +406,65 @@ const TeacherSubjects = () => {
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               {units.map((u) => (
-                <button
-                  key={u.key}
-                  type="button"
-                  onClick={() => navigate(u.path)}
-                  title={`Výuka: ${u.subjectName} · ${u.targetName}`}
-                  className="text-left rounded-xl border border-border p-4 hover:border-primary/50 hover:shadow-sm transition-all bg-card"
-                >
-                  <div className="flex items-center gap-2 mb-3">
-                    <span
-                      className="text-xs font-bold text-white px-2 py-1 rounded"
-                      style={{ backgroundColor: u.color }}
-                    >
-                      {u.abbreviation}
-                    </span>
-                    <span className="text-xs font-medium text-muted-foreground truncate">
-                      {u.targetName}
-                    </span>
-                  </div>
-                  <div className="text-sm font-medium truncate">{u.subjectName}</div>
-                  {u.kind === "group" && (
-                    <Badge variant="secondary" className="mt-1 text-[10px] px-1.5 py-0 h-4 font-normal">
-                      skupina
-                    </Badge>
-                  )}
-                </button>
+                <div key={u.key} className="relative">
+                  <button
+                    type="button"
+                    onClick={() => navigate(u.path)}
+                    title={`Výuka: ${u.subjectName} · ${u.targetName}`}
+                    className="w-full text-left rounded-xl border border-border p-4 pr-10 hover:border-primary/50 hover:shadow-sm transition-all bg-card"
+                  >
+                    <div className="flex items-center gap-2 mb-3">
+                      <span
+                        className="text-xs font-bold text-white px-2 py-1 rounded"
+                        style={{ backgroundColor: u.color }}
+                      >
+                        {u.abbreviation}
+                      </span>
+                      <span className="text-xs font-medium text-muted-foreground truncate">
+                        {u.targetName}
+                      </span>
+                    </div>
+                    <div className="text-sm font-medium truncate">{u.subjectName}</div>
+                    {u.kind === "group" && (
+                      <Badge variant="secondary" className="mt-1 text-[10px] px-1.5 py-0 h-4 font-normal">
+                        skupina
+                      </Badge>
+                    )}
+                    {u.fromScheduleOnly && (
+                      <Badge variant="outline" className="mt-1 ml-1 text-[10px] px-1.5 py-0 h-4 font-normal">
+                        z rozvrhu
+                      </Badge>
+                    )}
+                  </button>
+
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        aria-label={`Možnosti Výuky ${u.subjectName} ${u.targetName}`}
+                        className="absolute top-2 right-2 h-7 w-7 rounded-md inline-flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground"
+                      >
+                        <MoreVertical className="h-4 w-4" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {u.fromScheduleOnly ? (
+                        <DropdownMenuItem onClick={() => navigate("/ucitel/rozvrh")}>
+                          <CalendarClock className="h-4 w-4 mr-2" />
+                          Upravit v rozvrhu
+                        </DropdownMenuItem>
+                      ) : (
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => setUnitToRemove(u)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Odebrat tuto Výuku
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               ))}
             </div>
           )}
@@ -414,6 +490,36 @@ const TeacherSubjects = () => {
               }}
             >
               Smazat nevratně
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!unitToRemove} onOpenChange={(o) => !o && setUnitToRemove(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Odebrat „{unitToRemove?.subjectName} – {unitToRemove?.kind === "group" ? "skupina" : "třída"}{" "}
+              {unitToRemove?.targetName}"?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {unitToRemove?.kind === "group"
+                ? "Smaže se pouze tato skupina včetně zařazení jejích žáků. Předmět ani ostatní Výuky u stejného předmětu se nemění."
+                : "Odebere se pouze vazba tohoto předmětu na tuto třídu. Předmět, třída ani ostatní Výuky u stejného předmětu se nemění."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={removingUnit}>Zrušit</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={removingUnit}
+              onClick={(e) => {
+                e.preventDefault();
+                void handleRemoveUnit();
+              }}
+            >
+              {removingUnit && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Odebrat tuto Výuku
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
