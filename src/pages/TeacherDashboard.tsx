@@ -74,13 +74,6 @@ const DEFAULT_ORDER = [
 
 const FULL_WIDTH_IDS = new Set(["today", "profile"]);
 
-const colorForLabel = (s: string) => {
-  const palette = ["#6EC6D9", "#9B6CFF", "#F472B6", "#F87171", "#FB923C", "#FBBF24", "#34D399", "#60A5FA", "#A3A3A3"];
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
-  return palette[h % palette.length];
-};
-
 interface SortableWrapperProps {
   id: string;
   fullWidth?: boolean;
