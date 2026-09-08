@@ -489,6 +489,13 @@ function EditableBlock({
       );
     }
 
+    const addItemAfter = (index: number) =>
+      update((b) => {
+        const cur: string[] = Array.isArray(b.props?.items) ? [...b.props.items] : [];
+        cur.splice(index + 1, 0, "");
+        return { ...b, props: { ...b.props, items: cur } };
+      });
+
     return (
       <div className={asCard ? "bg-white/10 rounded-[var(--slide-radius,0.75rem)] p-4 border border-white/15" : ""}>
         {revealToggle}
@@ -511,24 +518,39 @@ function EditableBlock({
             <li key={i} className="flex items-start gap-3 text-2xl">
               <span className="mt-1 flex-shrink-0" style={{ color: "var(--slide-primary, currentColor)" }}>•</span>
               <div className="flex-1 flex items-center gap-2">
-                <EditableText
-                  editable={editable}
-                  value={item}
-                  placeholder={BLOCK_PLACEHOLDER}
-                  className="flex-1"
-                  onCommit={(v) => {
-                    const next = [...items];
-                    next[i] = v;
-                    update((b) => ({ ...b, props: { ...b.props, items: next } }));
-                  }}
-                />
+                <div className="flex-1" onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    // Enter potvrdí text (blur) a hned přidá další odrážku.
+                    setTimeout(() => addItemAfter(i), 0);
+                  }
+                }}>
+                  <EditableText
+                    editable={editable}
+                    value={item}
+                    placeholder={BLOCK_PLACEHOLDER}
+                    className="flex-1"
+                    onCommit={(v) =>
+                      update((b) => {
+                        const cur: string[] = Array.isArray(b.props?.items) ? [...b.props.items] : [];
+                        cur[i] = v;
+                        return { ...b, props: { ...b.props, items: cur } };
+                      })
+                    }
+                  />
+                </div>
                 {editable && items.length > 1 && (
                   <button
                     type="button"
+                    data-no-block-drag
                     onClick={() =>
                       update((b) => ({
                         ...b,
-                        props: { ...b.props, items: items.filter((_, j) => j !== i) },
+                        props: {
+                          ...b.props,
+                          items: (Array.isArray(b.props?.items) ? b.props.items : []).filter(
+                            (_: string, j: number) => j !== i,
+                          ),
+                        },
                       }))
                     }
                     className="opacity-40 hover:opacity-100 text-sm"
@@ -544,9 +566,8 @@ function EditableBlock({
             <li>
               <button
                 type="button"
-                onClick={() =>
-                  update((b) => ({ ...b, props: { ...b.props, items: [...items, ""] } }))
-                }
+                data-no-block-drag
+                onClick={() => addItemAfter(items.length - 1)}
                 className="text-xs text-purple-300 hover:text-purple-200 ml-6"
               >
                 + Přidat odrážku
@@ -556,6 +577,7 @@ function EditableBlock({
         </ul>
       </div>
     );
+
   }
 
   if (block.type === "quote") {
