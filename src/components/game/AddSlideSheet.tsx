@@ -358,6 +358,79 @@ export function AddSlideSheet({
     appendMany(stamped);
   };
 
+  /** Vloží slide s aktivitou podle předpřipraveného typu (stejné presety jako editor prezentací). */
+  const insertPreset = (preset: ActivityPreset) => appendAndJump(preset.build());
+
+  /** Načte lekce učitele (učebnicové i vlastní) pro převzetí obsahu do hry. */
+  const openLessonPicker = async () => {
+    setKind("lesson");
+    setLessonsLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error("Nejste přihlášeni.");
+      const { data, error } = await supabase
+        .from("teacher_textbook_lessons")
+        .select("id, title, blocks")
+        .order("sort_order", { ascending: true });
+      if (error) throw error;
+      setLessonOptions(
+        ((data as any[]) || []).map((l) => ({
+          id: l.id,
+          title: l.title || "Bez názvu",
+          blocks: Array.isArray(l.blocks) ? l.blocks : [],
+        })),
+      );
+    } catch (e: any) {
+      toast.error(e?.message || "Nepodařilo se načíst lekce.");
+    } finally {
+      setLessonsLoading(false);
+    }
+  };
+
+  /** Převezme obsah lekce jako slidy hry (stejný převod jako u „Spustit živě“ u lekce). */
+  const insertLesson = (lesson: LessonOption) => {
+    const built = blocksToSlides(lesson.blocks, lesson.title)
+      .filter((s: any) => s.type !== "intro")
+      .map((s: any, i: number) => ({ ...s, slideId: `lesson-${Date.now()}-${i}` }));
+    if (built.length === 0) {
+      toast.error("Tato lekce neobsahuje obsah, který lze převést na slidy.");
+      return;
+    }
+    appendMany(built);
+  };
+
+  /** Z vloženého textu (prezentace, učebnice, vlastní příprava) vytvoří AI kvízovou aktivitu. */
+  const runAiFromText = async () => {
+    if (aiText.trim().length < 20) {
+      toast.error("Vložte alespoň krátký odstavec textu.");
+      return;
+    }
+    setAiLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-activity-from-text", {
+        body: { text: aiText.trim() },
+      });
+      if (error) throw error;
+      const quiz = (data as any)?.activity?.quiz;
+      const answers = Array.isArray(quiz?.answers) ? quiz.answers : [];
+      if (!quiz?.question || answers.length < 2) throw new Error("AI nevrátila platnou aktivitu.");
+      const correctIdx = Math.max(0, answers.findIndex((a: any) => a?.correct));
+      await appendMany([
+        buildMcqSlide(
+          String(quiz.question),
+          answers.map((a: any) => String(a?.text ?? "")),
+          correctIdx,
+        ),
+      ]);
+    } catch (e: any) {
+      toast.error(e?.message || "Nepodařilo se vygenerovat aktivitu.");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+
+
 
   const fetchBezliStartPrompts = async (): Promise<BezliStartPrompt[]> => {
     const { data, error } = await supabase
