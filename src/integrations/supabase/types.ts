@@ -7323,6 +7323,15 @@ export type Database = {
         Returns: boolean
       }
       can_access_textbooks: { Args: { _user_id: string }; Returns: boolean }
+      can_assign_to_target: {
+        Args: {
+          _class_id: string
+          _group_id: string
+          _subject_id: string
+          _user_id: string
+        }
+        Returns: boolean
+      }
       can_creator_sell: { Args: { _creator_id: string }; Returns: boolean }
       can_manage_credentials: {
         Args: { _profile_id: string }
