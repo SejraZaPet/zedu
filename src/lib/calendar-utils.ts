@@ -86,11 +86,16 @@ export function expandScheduleSlots(
       const start = parseTime(date, slot.start_time);
       const end = parseTime(date, slot.end_time);
       const className = slot.classes?.name ?? "";
-      const title = slot.subject_label?.trim() || className || "Hodina";
+      // Katalog má přednost při názvu, hodina při barvě/zkratce (sjednocené pravidlo).
+      const subjectName = getSubjectName(slot, slot.subjects, "");
+      const title = subjectName || className || "Hodina";
 
-      const subjectKey = (slot.subject_label || "").trim();
-      const color = slot.color || (subjectKey ? colorForSubject(subjectKey) : undefined);
-      const abbreviation = slot.abbreviation || (subjectKey ? subjectKey.slice(0, 3).toUpperCase() : undefined);
+      const color = subjectName
+        ? getSubjectColor(slot, slot.subjects, subjectName)
+        : slot.color || undefined;
+      const abbreviation = subjectName
+        ? getSubjectAbbreviation(slot, slot.subjects, subjectName)
+        : slot.abbreviation || undefined;
 
       events.push({
         id: `${slot.id}-${date.toISOString().slice(0, 10)}`,
@@ -101,9 +106,10 @@ export function expandScheduleSlots(
         classId: slot.class_id,
         className,
         room: slot.room || undefined,
-        subject: slot.subject_label || undefined,
+        subject: subjectName || slot.subject_label || undefined,
         color,
         abbreviation,
+
         weekParity: slot.week_parity,
       });
     }
