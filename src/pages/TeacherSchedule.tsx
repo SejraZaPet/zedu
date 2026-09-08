@@ -1453,11 +1453,11 @@ function PersonalCard({
 }
 
 function ClassCard({ slot, conflict, onClick }: { slot: ClassSlot; conflict?: boolean; onClick: () => void }) {
-  // Jeden předmět = jedna zkratka a barva: přednost má katalog `subjects`,
-  // hodnoty zapsané do konkrétní hodiny slouží jen jako fallback.
+  // Zkratka se drží katalogu `subjects`, ale barva zvolená u konkrétní hodiny
+  // má vždy přednost – učitel si ji nastavuje ručně v dialogu hodiny.
   const canonical = slot.subjects;
   const subject = canonical?.name || slot.subject_label || "Hodina";
-  const color = canonical?.color || slot.color || colorForSubject(subject);
+  const color = slot.color || canonical?.color || colorForSubject(subject);
   const abbr = (canonical?.abbreviation || slot.abbreviation || subject.slice(0, 3)).toUpperCase();
   const isGroup = !!slot.group_id;
   const className = isGroup ? (slot.subject_groups?.name ?? "Skupina") : (slot.classes?.name ?? "");
