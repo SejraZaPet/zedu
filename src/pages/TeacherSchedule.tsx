@@ -1301,24 +1301,27 @@ export default function TeacherSchedule() {
         }}
         onSave={async ({ value, slots }) => {
           if (!editingClassSlot) return;
-          const s = slots[0];
+          const [s, ...rest] = slots;
           if (!s) return;
+          const shared = {
+            // Hodina má buď třídu, nebo skupinu – nikdy obojí (DB constraint).
+            class_id: value.groupId ? null : (value.classId ?? editingClassSlot.class_id),
+            group_id: value.groupId ?? null,
+
+            subject_label: value.subject,
+            subject_id: value.subjectId ?? null,
+            abbreviation: value.abbreviation || null,
+            color: value.color || null,
+            room: value.room,
+            room_resource_id: value.roomResourceId ?? null,
+            valid_from: value.validFrom,
+            valid_to: value.validTo,
+            week_parity: value.mirrorBoth ? "every" : value.weekParity,
+          };
           const { error } = await supabase
             .from("class_schedule_slots" as any)
             .update({
-              // Hodina má buď třídu, nebo skupinu – nikdy obojí (DB constraint).
-              class_id: value.groupId ? null : (value.classId ?? editingClassSlot.class_id),
-              group_id: value.groupId ?? null,
-
-              subject_label: value.subject,
-              subject_id: value.subjectId ?? null,
-              abbreviation: value.abbreviation || null,
-              color: value.color || null,
-              room: value.room,
-              room_resource_id: value.roomResourceId ?? null,
-              valid_from: value.validFrom,
-              valid_to: value.validTo,
-              week_parity: value.mirrorBoth ? "every" : value.weekParity,
+              ...shared,
               day_of_week: s.day + 1,
               start_time: s.start,
               end_time: s.end,
@@ -1327,6 +1330,27 @@ export default function TeacherSchedule() {
           if (error) {
             toast({ title: "Chyba", description: error.message, variant: "destructive" });
             return;
+          }
+          // Zaškrtnuté další dny → vznikají jako nové hodiny se stejným předmětem.
+          let insertedRest: any[] = [];
+          if (rest.length > 0) {
+            const { data: ins, error: insErr } = await supabase
+              .from("class_schedule_slots" as any)
+              .insert(
+                rest.map((r) => ({
+                  ...shared,
+                  day_of_week: r.day + 1,
+                  start_time: r.start,
+                  end_time: r.end,
+                  created_by: user?.id ?? null,
+                })) as any,
+              )
+              .select("id, day_of_week, start_time, end_time");
+            if (insErr) {
+              toast({ title: "Chyba", description: insErr.message, variant: "destructive" });
+              return;
+            }
+            insertedRest = (ins ?? []) as any[];
           }
           if (!value.roomResourceId) {
             // Místnost byla odebrána → uklidit budoucí rezervace staré série.
@@ -1346,15 +1370,21 @@ export default function TeacherSchedule() {
                   start_time: s.start,
                   end_time: s.end,
                 },
+                ...insertedRest,
               ],
               value,
               user.id,
             );
           }
-          toast({ title: "Uloženo" });
+          toast({
+            title: "Uloženo",
+            description:
+              rest.length > 0 ? `Hodina přidána i do dalších ${rest.length} dnů.` : undefined,
+          });
           setEditingClassSlot(null);
           fetchClassSlots();
         }}
+
       />
     </div>
   );
