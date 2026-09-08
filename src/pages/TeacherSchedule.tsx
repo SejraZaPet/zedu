@@ -407,14 +407,27 @@ export default function TeacherSchedule() {
     for (const k of allKeys) {
       const ps = personalByCell.get(k) ?? [];
       const cs = classByDayPeriod.get(k) ?? [];
-      const total = ps.length + cs.length;
-      if (total > 1) {
-        ps.forEach((p) => conflictPersonalIds.add(p.id));
-        cs.forEach((c) => conflictClassIds.add(c.id));
+      // Hodiny v různých týdnech (lichý vs. sudý) nekolidují.
+      const items: { id: string; parity: "every" | "odd" | "even"; kind: "p" | "c" }[] = [
+        ...ps.map((p) => ({ id: p.id, parity: (p.weekParity ?? "every") as any, kind: "p" as const })),
+        ...cs.map((c) => ({
+          id: c.id,
+          parity: (c.week_parity === "odd" || c.week_parity === "even" ? c.week_parity : "every") as any,
+          kind: "c" as const,
+        })),
+      ];
+      const clashing = items.filter((a) =>
+        items.some((b) => b !== a && parityOverlaps(a.parity, b.parity)),
+      );
+      if (clashing.length > 1) {
+        clashing.forEach((it) =>
+          it.kind === "p" ? conflictPersonalIds.add(it.id) : conflictClassIds.add(it.id),
+        );
         const [d, p] = k.split("-").map((x) => parseInt(x, 10));
-        conflictCells.push({ day: d, period: p, total });
+        conflictCells.push({ day: d, period: p, total: clashing.length });
       }
     }
+
     return { conflictPersonalIds, conflictClassIds, conflictCells };
   }, [currentLessons, classByDayPeriod, visiblePeriods]);
 
