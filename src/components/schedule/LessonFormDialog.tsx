@@ -892,7 +892,11 @@ export default function LessonFormDialog({
                   <button
                     key={opt.v}
                     type="button"
-                    onClick={() => setWeekParity(opt.v as "every" | "odd" | "even")}
+                    onClick={() => {
+                      parityTouchedRef.current = true;
+                      setWeekParity(opt.v as "every" | "odd" | "even");
+                    }}
+
                     className={`px-3 py-1.5 text-xs rounded-md border transition-colors flex-1 ${
                       active
                         ? "bg-primary text-primary-foreground border-primary"
