@@ -15,6 +15,9 @@ export interface GameTemplate {
   subject: string | null;
   curriculum_topic_id: string | null;
   textbook_lesson_id: string | null;
+  /** Pozadí pro celou hru (URL z game_backgrounds nebo vlastní obrázek). */
+  background_url?: string | null;
+
   created_at: string;
   updated_at: string;
 }
