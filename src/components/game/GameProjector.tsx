@@ -10,6 +10,7 @@ import { GameModeOverlay } from "@/components/game/GameModeOverlay";
 import { getVisualTheme, playRecipe } from "@/lib/game-themes";
 import { cn } from "@/lib/utils";
 import { resolveGameMode } from "@/lib/game-slide-settings";
+import { gameBackgroundStyle, sessionBackgroundUrl } from "@/lib/game-backgrounds";
 
 interface Props {
   session: GameSession;
@@ -142,7 +143,7 @@ export const GameProjector = ({ session, players, responses, countdown, onShowRe
         )}
 
         {/* Question */}
-        <h2 className="text-3xl md:text-5xl font-heading font-bold text-foreground text-center max-w-4xl leading-tight">
+        <h2 className={cn("text-3xl md:text-5xl font-heading font-bold text-center max-w-4xl leading-tight", hasBackdrop ? "text-white drop-shadow-lg" : "text-foreground")}>
           {question.question}
         </h2>
 
