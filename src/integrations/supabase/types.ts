@@ -2857,6 +2857,42 @@ export type Database = {
           },
         ]
       }
+      lesson_plan_curriculum_coverage: {
+        Row: {
+          created_at: string
+          curriculum_topic_id: string
+          id: string
+          lesson_plan_id: string
+        }
+        Insert: {
+          created_at?: string
+          curriculum_topic_id: string
+          id?: string
+          lesson_plan_id: string
+        }
+        Update: {
+          created_at?: string
+          curriculum_topic_id?: string
+          id?: string
+          lesson_plan_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_plan_curriculum_coverage_curriculum_topic_id_fkey"
+            columns: ["curriculum_topic_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_topics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lesson_plan_curriculum_coverage_lesson_plan_id_fkey"
+            columns: ["lesson_plan_id"]
+            isOneToOne: false
+            referencedRelation: "lesson_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lesson_plan_phases: {
         Row: {
           content: string | null

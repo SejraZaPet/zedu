@@ -274,6 +274,9 @@ export default function TeacherCurriculumPlans() {
                         <CurriculumTopicsSection
                           planId={plan.id}
                           planContent={plan.content}
+                          planBlocks={planBlocks(plan)}
+                          fileUrl={plan.file_url}
+                          fileName={plan.file_name}
                           teacherId={user.id}
                           subject={row.label}
                         />
