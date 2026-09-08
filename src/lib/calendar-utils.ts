@@ -4,6 +4,12 @@ import {
   endOfISOWeek,
   getISOWeek,
 } from "date-fns";
+import {
+  getSubjectAbbreviation,
+  getSubjectColor,
+  getSubjectName,
+} from "./subject-appearance";
+
 
 export type CalendarEvent = {
   id: string;
