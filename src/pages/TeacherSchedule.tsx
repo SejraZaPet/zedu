@@ -217,7 +217,50 @@ export default function TeacherSchedule() {
       .order("day_of_week", { ascending: true })
       .order("start_time", { ascending: true });
     setClassSlots((slots as any) || []);
+    await fetchGroupClasses(((slots as any) || []) as ClassSlot[]);
   };
+
+  /**
+   * Skupiny předmětu neevidují třídy, jen žáky – názvy tříd proto odvodíme
+   * ze členství žáků skupiny (`subject_group_members` → `class_members`).
+   */
+  const fetchGroupClasses = async (slots: ClassSlot[]) => {
+    const groupIds = Array.from(
+      new Set(slots.map((s) => s.group_id).filter((g): g is string => !!g)),
+    );
+    if (groupIds.length === 0) {
+      setGroupClasses({});
+      return;
+    }
+    const { data: members } = await supabase
+      .from("subject_group_members")
+      .select("group_id, student_id")
+      .in("group_id", groupIds);
+    const studentIds = Array.from(new Set((members ?? []).map((m: any) => m.student_id)));
+    if (studentIds.length === 0) {
+      setGroupClasses({});
+      return;
+    }
+    const { data: cm } = await supabase
+      .from("class_members")
+      .select("user_id, classes(name)")
+      .in("user_id", studentIds);
+    const classByStudent = new Map<string, string>();
+    for (const r of (cm ?? []) as any[]) {
+      const name = r.classes?.name;
+      if (name && !classByStudent.has(r.user_id)) classByStudent.set(r.user_id, name);
+    }
+    const map: Record<string, string[]> = {};
+    for (const m of (members ?? []) as any[]) {
+      const name = classByStudent.get(m.student_id);
+      if (!name) continue;
+      const list = (map[m.group_id] ??= []);
+      if (!list.includes(name)) list.push(name);
+    }
+    for (const k of Object.keys(map)) map[k].sort((a, b) => a.localeCompare(b, "cs"));
+    setGroupClasses(map);
+  };
+
 
   useEffect(() => {
     fetchClassSlots();
