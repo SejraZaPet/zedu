@@ -65,6 +65,7 @@ import { toast } from "@/hooks/use-toast";
 import { useTeacherClasses } from "@/hooks/useTeacherClasses";
 import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
 import SubjectPicker from "@/components/subjects/SubjectPicker";
+import LessonCurriculumTopicsPicker from "@/components/teacher/LessonCurriculumTopicsPicker";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import AiContentBadge from "@/components/ai/AiContentBadge";
@@ -1321,6 +1322,15 @@ export default function TeacherLessonPlanEditor() {
               rows={2}
             />
           </div>
+          {id && id !== "novy" ? (
+            <div className="rounded-lg border border-border bg-muted/20 p-3">
+              <LessonCurriculumTopicsPicker lessonPlanId={id} subject={subject} />
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Témata ŠVP půjde k plánu napárovat po prvním uložení.
+            </p>
+          )}
           {id && id !== "novy" && (
             <p className="text-xs text-muted-foreground">
               ID plánu: <span className="font-mono">{id}</span>
