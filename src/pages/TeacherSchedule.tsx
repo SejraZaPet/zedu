@@ -1535,7 +1535,7 @@ function ClassCard({
       onClick={onClick}
       className={`w-full text-left rounded-md p-2 transition-all hover:shadow-md hover:-translate-y-0.5 border-l-4 group ${conflict ? "ring-2 ring-destructive ring-offset-1" : ""}`}
       style={{ backgroundColor: `${color}26`, borderLeftColor: color }}
-      title={`${conflict ? "⚠ Konflikt v rozvrhu · " : ""}${subject}${className ? ` · ${className}` : ""}${slot.room ? ` · ${slot.room}` : ""} · ${fmtTime(slot.start_time)}–${fmtTime(slot.end_time)}${slot.week_parity !== "every" ? ` (${slot.week_parity === "odd" ? "lichý" : "sudý"} týden)` : ""}`}
+      title={`${conflict ? "⚠ Konflikt v rozvrhu · " : ""}${subject}${className ? ` · ${className}` : ""}${groupTitle}${slot.room ? ` · ${slot.room}` : ""} · ${fmtTime(slot.start_time)}–${fmtTime(slot.end_time)}${slot.week_parity !== "every" ? ` (${slot.week_parity === "odd" ? "lichý" : "sudý"} týden)` : ""}`}
     >
       <div className="flex items-center gap-1 text-[11px] text-muted-foreground tabular-nums">
         <Clock className="w-3 h-3" />
@@ -1556,7 +1556,7 @@ function ClassCard({
       <div className="text-xs text-muted-foreground truncate flex items-center gap-1 mt-0.5">
         <Users className="w-2.5 h-2.5 shrink-0" />
         <span className="truncate">{className}</span>
-        {isGroup && (
+        {isGroup && groupNames.length === 0 && (
           <span className="shrink-0 text-[9px] uppercase tracking-wide bg-muted px-1 rounded">
             skupina
           </span>
