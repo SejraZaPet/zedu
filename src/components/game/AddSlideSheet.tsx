@@ -289,7 +289,10 @@ export function AddSlideSheet({
       { clue: "", code: "" },
       { clue: "", code: "" },
     ]);
+    setAiText("");
+    setAiLoading(false);
   };
+
 
   const close = () => {
     onOpenChange(false);
