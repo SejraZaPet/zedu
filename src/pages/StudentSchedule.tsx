@@ -7,10 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Clock, Users, BookOpen, Printer, CalendarDays } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { DEFAULT_PERIOD_TIMES } from "@/lib/teacher-schedule-store";
 import {
-  DEFAULT_PERIOD_TIMES,
-  colorForSubject,
-} from "@/lib/teacher-schedule-store";
+  getSubjectAbbreviation,
+  getSubjectColor,
+  getSubjectName,
+} from "@/lib/subject-appearance";
 
 const DAYS = ["Pondělí", "Úterý", "Středa", "Čtvrtek", "Pátek"];
 const DAYS_SHORT = ["Po", "Út", "St", "Čt", "Pá"];
@@ -30,6 +32,7 @@ interface ClassSlot {
   room: string | null;
   textbook_id: string | null;
   classes?: { name: string } | null;
+  subjects?: { name?: string | null; color?: string | null; abbreviation?: string | null } | null;
 }
 
 const fmtTime = (t: string) => {
@@ -280,9 +283,10 @@ function ReadOnlyClassCard({
   slot: ClassSlot;
   navigate: (path: string) => void;
 }) {
-  const subject = slot.subject_label || "Hodina";
-  const color = slot.color || colorForSubject(subject);
-  const abbr = (slot.abbreviation || subject.slice(0, 3)).toUpperCase();
+  const canonical = slot.subjects ?? null;
+  const subject = getSubjectName(slot, canonical, "Hodina");
+  const color = getSubjectColor(slot, canonical, subject);
+  const abbr = getSubjectAbbreviation(slot, canonical, subject);
   const className = slot.classes?.name ?? "";
   const canNavigate = !!slot.subject_label;
   return (

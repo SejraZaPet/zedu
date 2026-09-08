@@ -1,7 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { CalendarDays, Clock } from "lucide-react";
-import { DEFAULT_PERIOD_TIMES, colorForSubject } from "@/lib/teacher-schedule-store";
+import { DEFAULT_PERIOD_TIMES } from "@/lib/teacher-schedule-store";
+import {
+  getSubjectAbbreviation,
+  getSubjectColor,
+  getSubjectName,
+} from "@/lib/subject-appearance";
 
 const DAYS_SHORT = ["Po", "Út", "St", "Čt", "Pá"];
 
@@ -67,7 +72,7 @@ const ChildScheduleWidget = ({ studentIds, studentNames }: Props) => {
       }
       const { data: rows } = await supabase
         .from("class_schedule_slots" as any)
-        .select("id, class_id, day_of_week, start_time, end_time, week_parity, subject_label, abbreviation, color, subjects(name)")
+        .select("id, class_id, day_of_week, start_time, end_time, week_parity, subject_label, abbreviation, color, subjects(name, color, abbreviation)")
         .in("class_id", classIds)
         .order("day_of_week", { ascending: true })
         .order("start_time", { ascending: true });
@@ -198,9 +203,10 @@ const ChildScheduleWidget = ({ studentIds, studentNames }: Props) => {
                         {list.length > 0 ? (
                           <div className="w-full flex flex-col gap-0.5">
                             {list.map((slot) => {
-                              const subject = (slot as any).subjects?.name || slot.subject_label || "—";
-                              const color = slot.color || colorForSubject(subject);
-                              const abbr = (slot.abbreviation || subject.slice(0, 3)).toUpperCase();
+                              const canonical = (slot as any).subjects;
+                              const subject = getSubjectName(slot as any, canonical, "—");
+                              const color = getSubjectColor(slot as any, canonical, subject);
+                              const abbr = getSubjectAbbreviation(slot as any, canonical, subject);
                               return (
                                 <div
                                   key={slot.id}
