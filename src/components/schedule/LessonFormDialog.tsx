@@ -228,6 +228,15 @@ export default function LessonFormDialog({
     setSlotPairs([{ day: startDay, period: initial?.period ?? defaultPeriod }]);
   }, [open, isNew, initial, subjects, defaultPeriod]);
 
+  // Předvyplnění týdne (lichý/sudý/každý) u uložené hodiny. Data se mohou
+  // dotáhnout až po otevření dialogu, proto hodnotu doplníme i později –
+  // ale jen dokud si uživatel týden sám nezvolil.
+  useEffect(() => {
+    if (!open || parityTouchedRef.current) return;
+    const p = initial?.weekParity;
+    if (p && p !== weekParity) setWeekParity(p);
+  }, [open, initial?.weekParity, weekParity]);
+
   // Dohledání ID předmětu, když se katalog dotáhne až po otevření dialogu
   // (u editace uložené hodiny, která má jen textový název).
   useEffect(() => {
@@ -235,6 +244,7 @@ export default function LessonFormDialog({
     const known = subjects.find((s) => s.label.toLowerCase() === subjectChoice.toLowerCase());
     if (known?.id) setSubjectId(known.id);
   }, [open, subjectId, subjectChoice, subjects]);
+
 
   // Předvyplnění „Vybrat existující Výuku" u uložené hodiny. Výuky se dotahují
   // asynchronně, takže odpovídající kombinaci předmět × třída/skupina hledáme
