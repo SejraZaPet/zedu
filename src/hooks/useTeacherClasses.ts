@@ -95,8 +95,17 @@ export const useTeacherClasses = () => {
 /**
  * Přihlásí učitele k výuce existující třídy školy (zapíše ho do class_teachers).
  * Volá se ve chvíli, kdy si třídu školy vybere pro úkol / hodinu / učebnici.
+ * Vrací chybovou hlášku nebo null; při úspěchu ukáže potvrzení podle role
+ * (vlastník = třídu zatím nikdo neučil, spoluučitel = někdo ji už učí).
  */
 export const claimSchoolClass = async (classId: string): Promise<string | null> => {
-  const { error } = await supabase.rpc("claim_school_class_as_teacher", { _class_id: classId });
-  return error ? error.message : null;
+  const { data: role, error } = await supabase.rpc("claim_school_class_as_teacher", { _class_id: classId });
+  if (error) return error.message;
+
+  const { data: cls } = await supabase.from("classes").select("name").eq("id", classId).maybeSingle();
+  const className = cls?.name ?? "";
+  toast({
+    title: role === "owner" ? `Nyní učíte třídu ${className}` : `Přihlášeni jako spoluučitel třídy ${className}`,
+  });
+  return null;
 };
