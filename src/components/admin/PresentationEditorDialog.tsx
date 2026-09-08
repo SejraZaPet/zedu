@@ -407,6 +407,35 @@ export const PresentationEditorDialog = ({
     setSelectedBlockId(id);
   };
 
+  /** Přesun snímku na jinou pozici (drag & drop i šipky). */
+  const moveSlide = (from: number, to: number) => {
+    if (from === to || from < 0 || to < 0 || from >= pendingSlides.length || to >= pendingSlides.length) return;
+    const updated = [...pendingSlides];
+    const [moved] = updated.splice(from, 1);
+    updated.splice(to, 0, moved);
+    setPendingSlides(updated);
+    setEditingSlideIndex(to);
+    setSelectedBlockId(null);
+  };
+
+  /** Vložení snímků na konkrétní pozici (index = kam se vloží první z nich). */
+  const insertSlidesAt = (index: number, newSlides: any[]) => {
+    if (!newSlides.length) return;
+    const at = Math.max(0, Math.min(index, pendingSlides.length));
+    const updated = [...pendingSlides];
+    updated.splice(at, 0, ...newSlides);
+    setPendingSlides(updated);
+    setEditingSlideIndex(at);
+    setSelectedBlockId(null);
+  };
+
+  /** Otevře výběr layoutu s předvolenou pozicí vložení. */
+  const openAddSlideAt = (index: number | null) => {
+    setInsertAtIndex(index);
+    setAddSlideOpen(true);
+  };
+
+
   /** ČÁST 4a – vložení předpřipravené aktivity za aktuální slide. */
   const insertActivityPreset = (preset: ActivityPreset) => {
     const updated = [...pendingSlides];
