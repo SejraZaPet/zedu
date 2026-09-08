@@ -1639,6 +1639,7 @@ export function SlideBody({
               key={block.id}
               block={block}
               frame={frame}
+              rotation={getBlockRotation(block)}
               zIndex={typeof block.zIndex === "number" ? block.zIndex : frameIndex + 1}
               editable={editable}
               selected={selectedBlockId === block.id}
@@ -1647,6 +1648,15 @@ export function SlideBody({
               onChangeFrame={
                 onChangeBlock
                   ? (next) => onChangeBlock(block.id, (b: Block) => ({ ...b, frame: next }))
+                  : undefined
+              }
+              onChangeRotation={
+                onChangeBlock
+                  ? (deg) =>
+                      onChangeBlock(block.id, (b: Block) => ({
+                        ...b,
+                        props: { ...(b.props || {}), rotation: deg },
+                      }))
                   : undefined
               }
               onDelete={onDeleteBlock ? () => onDeleteBlock(block.id) : undefined}
