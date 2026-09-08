@@ -1157,6 +1157,8 @@ export default function TeacherSchedule() {
             validFrom: value.validFrom ?? undefined,
             validTo: value.validTo ?? undefined,
             mirrorBoth: value.mirrorBoth,
+            weekParity: value.mirrorBoth ? "every" : value.weekParity,
+
           };
           applyLessonResult(slots, base);
           toast({
