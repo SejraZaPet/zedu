@@ -12,15 +12,37 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { FileText, HelpCircle, MessageSquare, Cloud, DoorOpen, ArrowLeft, Loader2, Users2, SplitSquareHorizontal, Sparkles, Plus, Trash2, KeyRound, Library, Zap, Square } from "lucide-react";
+import { FileText, HelpCircle, MessageSquare, Cloud, DoorOpen, ArrowLeft, Loader2, Users2, SplitSquareHorizontal, Sparkles, Plus, Trash2, KeyRound, Library, Zap, Square, Puzzle, BookOpen, Wand2 } from "lucide-react";
+import * as LucideIcons from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { fetchGameTemplates, purposeLabel, type GameTemplate } from "@/lib/game-templates";
+import { ACTIVITY_PRESETS, type ActivityPreset } from "@/lib/activity-slide-presets";
+import { blocksToSlides } from "@/lib/blocks-to-slides";
 
-type AddKind = "menu" | "text" | "mcq" | "wall" | "wordcloud" | "exit" | "teams" | "differentiated" | "escape" | "library" | "bezlistart";
+type AddKind =
+  | "menu" | "text" | "mcq" | "wall" | "wordcloud" | "exit" | "teams"
+  | "differentiated" | "escape" | "library" | "bezlistart"
+  | "presets" | "lesson" | "fromtext";
+
+/** Typy aktivit, které mají v tomto panelu vlastní formulář – v „dalších typech“ se neopakují. */
+const PRESETS_WITH_OWN_FORM = new Set([
+  "mcq", "wall", "wordcloud", "teams", "differentiated", "escape",
+]);
+
+const EXTRA_ACTIVITY_PRESETS: ActivityPreset[] = ACTIVITY_PRESETS.filter(
+  (p) => !PRESETS_WITH_OWN_FORM.has(p.id),
+);
+
+interface LessonOption {
+  id: string;
+  title: string;
+  blocks: any[];
+}
 
 const BEZLISTART_TAGLINE = "Krátká aktivita na rozproudění myšlení";
+
 
 const BEZLISTART_CATEGORY_LABELS: Record<string, string> = {
   vizualni: "Vizuální",
