@@ -103,6 +103,8 @@ export const GameTemplateEditorDialog = ({ open, onOpenChange, template, onSaved
         subject: subject === NONE ? null : subject,
         curriculum_topic_id: topicId === NONE ? null : topicId,
         textbook_lesson_id: lessonId === NONE ? null : lessonId,
+        background_url: backgroundUrl.trim() || null,
+
       };
       if (template) {
         const { error } = await supabase
