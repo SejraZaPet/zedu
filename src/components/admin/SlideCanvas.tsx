@@ -978,8 +978,17 @@ function FreeFrameBlock({
           onActivate?.();
         }
         ev.preventDefault();
-        const dx = (px / rect.width) * 100;
-        const dy = (py / rect.height) * 100;
+        // U rotovaného bloku je potřeba převést pohyb myši do lokálních osí rámce,
+        // aby úchyty resize táhly tam, kam uživatel míří.
+        let mx = px;
+        let my = py;
+        if (handle !== "move" && rotation) {
+          const rad = (-rotation * Math.PI) / 180;
+          mx = px * Math.cos(rad) - py * Math.sin(rad);
+          my = px * Math.sin(rad) + py * Math.cos(rad);
+        }
+        const dx = (mx / rect.width) * 100;
+        const dy = (my / rect.height) * 100;
         onChangeFrame(applyFrameDrag(startFrame, handle, dx, dy));
       };
       const cleanup = () => {
