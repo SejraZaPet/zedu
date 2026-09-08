@@ -1347,9 +1347,16 @@ function PersonalCard({
       {lesson.room && (
         <div className="text-[11px] text-muted-foreground truncate">📍 {lesson.room}</div>
       )}
+      {lesson.weekParity === "odd" && (
+        <div className="text-[10px] text-muted-foreground">(lichý týden)</div>
+      )}
+      {lesson.weekParity === "even" && (
+        <div className="text-[10px] text-muted-foreground">(sudý týden)</div>
+      )}
       {lesson.mirrorBoth && parityMode !== "both" && (
         <div className="text-[10px] text-muted-foreground">↔ oba týdny</div>
       )}
+
     </button>
   );
 }
