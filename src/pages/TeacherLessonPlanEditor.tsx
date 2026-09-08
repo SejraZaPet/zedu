@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { addDays, format, getISOWeek, startOfDay } from "date-fns";
+import { addDays, format, getISOWeek, startOfDay, subDays } from "date-fns";
 import { cs } from "date-fns/locale";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
@@ -11,7 +11,9 @@ import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -160,6 +162,10 @@ export default function TeacherLessonPlanEditor() {
       ? `${searchParams.get("start")}-${searchParams.get("end") ?? ""}`
       : "",
   );
+  /** Ruční zadání termínu mimo rozvrh (i v minulosti). */
+  const [manualMode, setManualMode] = useState(false);
+  const [manualStart, setManualStart] = useState("08:00");
+  const [manualEnd, setManualEnd] = useState("08:45");
   const [textbookId, setTextbookId] = useState<string>("");
   const [lessonId, setLessonId] = useState<string>("");
   const [aiInstructions, setAiInstructions] = useState("");
@@ -413,8 +419,10 @@ export default function TeacherLessonPlanEditor() {
   /** Schedule occurrences for the chosen subject */
   const occurrences = useMemo<(ScheduledOccurrence & { classId?: string })[]>(() => {
     if (!subject) return [];
-    const from = startOfDay(new Date());
-    const to = addDays(from, 8 * 7);
+    const today = startOfDay(new Date());
+    // 8 týdnů zpět i dopředu – plán hodiny lze doplnit i zpětně
+    const from = subDays(today, 8 * 7);
+    const to = addDays(today, 8 * 7);
     const personal = expandTeacherSchedule(loadSchedule(), from, to);
     const dbExpanded = expandScheduleSlots(dbSlots as any, from, to);
     const all = [...personal, ...dbExpanded].filter(
@@ -448,6 +456,16 @@ export default function TeacherLessonPlanEditor() {
     for (const o of filteredOccurrences) if (!set.has(o.date)) set.set(o.date, o);
     return Array.from(set.keys());
   }, [filteredOccurrences]);
+
+  const todayKey = format(new Date(), "yyyy-MM-dd");
+  const pastDates = useMemo(
+    () => availableDates.filter((d) => d < todayKey),
+    [availableDates, todayKey],
+  );
+  const upcomingDates = useMemo(
+    () => availableDates.filter((d) => d >= todayKey),
+    [availableDates, todayKey],
+  );
 
   const timeSlotsForDate = useMemo(
     () => filteredOccurrences.filter((o) => o.date === linkedDate),
@@ -1159,71 +1177,160 @@ export default function TeacherLessonPlanEditor() {
           {subject && (
             <div className="space-y-4">
 
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="plan-date" className="flex items-center gap-1.5">
-                    <CalendarDays className="w-3.5 h-3.5" />
-                    Datum hodiny
-                  </Label>
-                  <Select
-                    value={linkedDate || undefined}
-                    onValueChange={(v) => {
-                      setLinkedDate(v);
-                      setLinkedTime("");
-                    }}
-                  >
-                    <SelectTrigger id="plan-date">
-                      <SelectValue
-                        placeholder={
-                          availableDates.length
-                            ? "Vyber datum…"
-                            : classId
-                              ? "Žádné nadcházející hodiny pro tuto třídu"
-                              : "Žádné nadcházející hodiny v rozvrhu"
-                        }
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableDates.map((d) => {
-                        const dateObj = new Date(d);
-                        const week = getISOWeek(dateObj);
-                        return (
-                          <SelectItem key={d} value={d}>
-                            {format(dateObj, "EEEE d. M. yyyy", { locale: cs })} (t. {week})
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
-                </div>
+              {(() => {
+                const manual = manualMode || availableDates.length === 0;
+                return (
+                  <>
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="plan-date" className="flex items-center gap-1.5">
+                          <CalendarDays className="w-3.5 h-3.5" />
+                          Datum hodiny
+                        </Label>
+                        {manual ? (
+                          <Input
+                            id="plan-date"
+                            type="date"
+                            value={linkedDate}
+                            onChange={(e) => {
+                              setLinkedDate(e.target.value);
+                              setLinkedTime(
+                                e.target.value ? `${manualStart}-${manualEnd}` : "",
+                              );
+                            }}
+                          />
+                        ) : (
+                          <Select
+                            value={linkedDate || undefined}
+                            onValueChange={(v) => {
+                              setLinkedDate(v);
+                              setLinkedTime("");
+                            }}
+                          >
+                            <SelectTrigger id="plan-date">
+                              <SelectValue placeholder="Vyber datum…" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {pastDates.length > 0 && (
+                                <SelectGroup>
+                                  <SelectLabel>Proběhlé</SelectLabel>
+                                  {pastDates.map((d) => {
+                                    const dateObj = new Date(d);
+                                    return (
+                                      <SelectItem key={d} value={d}>
+                                        <span className="text-muted-foreground">
+                                          {format(dateObj, "EEEE d. M. yyyy", { locale: cs })} (t.{" "}
+                                          {getISOWeek(dateObj)})
+                                        </span>
+                                      </SelectItem>
+                                    );
+                                  })}
+                                </SelectGroup>
+                              )}
+                              {upcomingDates.length > 0 && (
+                                <SelectGroup>
+                                  <SelectLabel>Nadcházející</SelectLabel>
+                                  {upcomingDates.map((d) => {
+                                    const dateObj = new Date(d);
+                                    return (
+                                      <SelectItem key={d} value={d}>
+                                        {format(dateObj, "EEEE d. M. yyyy", { locale: cs })} (t.{" "}
+                                        {getISOWeek(dateObj)})
+                                      </SelectItem>
+                                    );
+                                  })}
+                                </SelectGroup>
+                              )}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      </div>
 
-                <div className="space-y-1.5">
-                  <Label htmlFor="plan-time">Čas hodiny</Label>
-                  <Select
-                    value={linkedTime || undefined}
-                    onValueChange={setLinkedTime}
-                    disabled={!linkedDate}
-                  >
-                    <SelectTrigger id="plan-time">
-                      <SelectValue
-                        placeholder={linkedDate ? "Vyber čas…" : "Nejprve vyber datum"}
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {timeSlotsForDate.map((o) => {
-                        const v = `${o.start}-${o.end}`;
-                        const meta = [o.className, o.room].filter(Boolean).join(" · ");
-                        return (
-                          <SelectItem key={v} value={v}>
-                            {o.start} – {o.end}
-                            {meta ? ` · ${meta}` : ""}
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="plan-time">Čas hodiny</Label>
+                        {manual ? (
+                          <div className="flex items-center gap-2">
+                            <Input
+                              id="plan-time"
+                              type="time"
+                              value={manualStart}
+                              onChange={(e) => {
+                                setManualStart(e.target.value);
+                                if (linkedDate)
+                                  setLinkedTime(`${e.target.value}-${manualEnd}`);
+                              }}
+                            />
+                            <span className="text-muted-foreground text-sm">–</span>
+                            <Input
+                              type="time"
+                              value={manualEnd}
+                              onChange={(e) => {
+                                setManualEnd(e.target.value);
+                                if (linkedDate)
+                                  setLinkedTime(`${manualStart}-${e.target.value}`);
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          <Select
+                            value={linkedTime || undefined}
+                            onValueChange={setLinkedTime}
+                            disabled={!linkedDate}
+                          >
+                            <SelectTrigger id="plan-time">
+                              <SelectValue
+                                placeholder={linkedDate ? "Vyber čas…" : "Nejprve vyber datum"}
+                              />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {timeSlotsForDate.map((o) => {
+                                const v = `${o.start}-${o.end}`;
+                                const meta = [o.className, o.room].filter(Boolean).join(" · ");
+                                return (
+                                  <SelectItem key={v} value={v}>
+                                    {o.start} – {o.end}
+                                    {meta ? ` · ${meta}` : ""}
+                                  </SelectItem>
+                                );
+                              })}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                      {availableDates.length === 0 ? (
+                        <span>
+                          {classId
+                            ? "Pro tuto třídu nejsou v rozvrhu hodiny (8 týdnů zpět ani dopředu) — zadejte datum a čas ručně."
+                            : "V rozvrhu nejsou hodiny tohoto předmětu (8 týdnů zpět ani dopředu) — zadejte datum a čas ručně."}
+                        </span>
+                      ) : (
+                        <>
+                          <span>
+                            Nabídka zahrnuje 8 týdnů zpět i dopředu ({pastDates.length} proběhlých).
+                          </span>
+                          <Button
+                            type="button"
+                            variant="link"
+                            size="sm"
+                            className="h-auto p-0 text-xs"
+                            onClick={() => {
+                              setManualMode((m) => !m);
+                              setLinkedTime(
+                                !manualMode && linkedDate ? `${manualStart}-${manualEnd}` : "",
+                              );
+                            }}
+                          >
+                            {manualMode ? "Vybrat z rozvrhu" : "Zadat datum ručně"}
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </>
+                );
+              })()}
 
               {/* Linked slots (multi-assignment) */}
               <div className="rounded-lg border border-dashed border-border bg-muted/20 p-3 space-y-2">
