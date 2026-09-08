@@ -47,6 +47,7 @@ import { SLIDE_TRANSITIONS, transitionFromSlides, applyTransitionToSlides, type 
 import { exportSlidesToPdf } from "@/lib/presentation-pdf-export";
 import ShapePickerPopover from "@/components/admin/ShapePickerPopover";
 import ColorPicker from "@/components/admin/ColorPicker";
+import GradientPicker from "@/components/admin/GradientPicker";
 import type { DrawingStroke } from "@/components/admin/SlideDrawingLayer";
 import AiBlockTextButton from "@/components/admin/AiBlockTextButton";
 import SlideFloatingFormatToolbar from "@/components/admin/SlideFloatingFormatToolbar";
