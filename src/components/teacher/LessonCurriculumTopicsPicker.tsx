@@ -146,17 +146,22 @@ export default function LessonCurriculumTopicsPicker({
     setSaving(topicId);
     try {
       if (selectedIds.has(topicId)) {
-        const { error } = lessonPlanId
-          ? await supabase
-              .from("lesson_plan_curriculum_coverage")
-              .delete()
-              .eq("lesson_plan_id", targetId)
-              .eq("curriculum_topic_id", topicId)
-          : await supabase
-              .from("lesson_curriculum_coverage")
-              .delete()
-              .eq("lesson_id", targetId)
-              .eq("curriculum_topic_id", topicId);
+        let error: { message: string } | null = null;
+        if (lessonPlanId) {
+          const r = await supabase
+            .from("lesson_plan_curriculum_coverage")
+            .delete()
+            .eq("lesson_plan_id", targetId)
+            .eq("curriculum_topic_id", topicId);
+          error = r.error;
+        } else {
+          const r = await supabase
+            .from("lesson_curriculum_coverage")
+            .delete()
+            .eq("lesson_id", targetId)
+            .eq("curriculum_topic_id", topicId);
+          error = r.error;
+        }
         if (error) throw error;
         setSelectedIds((prev) => {
           const next = new Set(prev);
@@ -164,13 +169,18 @@ export default function LessonCurriculumTopicsPicker({
           return next;
         });
       } else {
-        const { error } = lessonPlanId
-          ? await supabase
-              .from("lesson_plan_curriculum_coverage")
-              .insert({ lesson_plan_id: targetId, curriculum_topic_id: topicId })
-          : await supabase
-              .from("lesson_curriculum_coverage")
-              .insert({ lesson_id: targetId, curriculum_topic_id: topicId });
+        let error: { message: string } | null = null;
+        if (lessonPlanId) {
+          const r = await supabase
+            .from("lesson_plan_curriculum_coverage")
+            .insert({ lesson_plan_id: targetId, curriculum_topic_id: topicId });
+          error = r.error;
+        } else {
+          const r = await supabase
+            .from("lesson_curriculum_coverage")
+            .insert({ lesson_id: targetId, curriculum_topic_id: topicId });
+          error = r.error;
+        }
         if (error) throw error;
         setSelectedIds((prev) => {
           const next = new Set(prev);
