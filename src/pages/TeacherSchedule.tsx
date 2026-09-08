@@ -1093,6 +1093,8 @@ export default function TeacherSchedule() {
                 validFrom: editing.validFrom ?? null,
                 validTo: editing.validTo ?? null,
                 mirrorBoth: editing.mirrorBoth,
+                weekParity: editing.weekParity ?? "every",
+
               }
             : null
         }
