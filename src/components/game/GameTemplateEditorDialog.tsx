@@ -48,7 +48,9 @@ export const GameTemplateEditorDialog = ({ open, onOpenChange, template, onSaved
   const [subject, setSubject] = useState<string>(NONE);
   const [topicId, setTopicId] = useState<string>(NONE);
   const [lessonId, setLessonId] = useState<string>(NONE);
+  const [backgroundUrl, setBackgroundUrl] = useState("");
   const [addOpen, setAddOpen] = useState(false);
+
   const [saving, setSaving] = useState(false);
 
   const [topics, setTopics] = useState<{ id: string; title: string }[]>([]);
