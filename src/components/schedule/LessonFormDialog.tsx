@@ -236,6 +236,27 @@ export default function LessonFormDialog({
     if (known?.id) setSubjectId(known.id);
   }, [open, subjectId, subjectChoice, subjects]);
 
+  // Předvyplnění „Vybrat existující Výuku" u uložené hodiny. Výuky se dotahují
+  // asynchronně, takže odpovídající kombinaci předmět × třída/skupina hledáme
+  // až když je seznam k dispozici (a jen dokud si uživatel nevybral sám).
+  useEffect(() => {
+    if (!open || unitKey || units.length === 0) return;
+    const targetId = target === "group" ? groupSel : classSel;
+    if (!targetId || targetId === NO_CLASS) return;
+    const name = (subjectChoice === CUSTOM_SUBJECT ? customSubject : subjectChoice)
+      .trim()
+      .toLowerCase();
+    const match = units.find(
+      (u) =>
+        u.kind === target &&
+        u.targetId === targetId &&
+        (subjectId ? u.subjectId === subjectId : u.subjectName.trim().toLowerCase() === name),
+    );
+    if (match) setUnitKey(match.key);
+  }, [open, unitKey, units, target, classSel, groupSel, subjectId, subjectChoice, customSubject]);
+
+
+
 
   const selectedDays = useMemo(
     () => Array.from(new Set(slotPairs.map((s) => s.day))).sort(),
