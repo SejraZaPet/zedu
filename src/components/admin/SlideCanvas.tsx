@@ -452,6 +452,16 @@ function EditableBlock({
       </label>
     ) : null;
     if (block.props?.html) {
+      const addHtmlBullet = () =>
+        update((b) => {
+          const cur = String(b.props?.html || "");
+          const next = /<\/ul>\s*$/i.test(cur)
+            ? cur.replace(/<\/ul>\s*$/i, "<li><br></li></ul>")
+            : /<li[\s>]/i.test(cur)
+              ? `${cur}<li><br></li>`
+              : `<ul>${cur ? `<li>${cur}</li>` : ""}<li><br></li></ul>`;
+          return { ...b, props: { ...b.props, html: next } };
+        });
       return (
         <div className={asCard ? "bg-white/10 rounded-[var(--slide-radius,0.75rem)] p-4 border border-white/15" : ""}>
           {revealToggle}
@@ -465,9 +475,20 @@ function EditableBlock({
             style={slideTextStyle(block.props)}
             onCommit={(v) => update((b) => ({ ...b, props: { ...b.props, html: v } }))}
           />
+          {editable && (
+            <button
+              type="button"
+              data-no-block-drag
+              onClick={addHtmlBullet}
+              className="ml-6 text-xs text-purple-300 hover:text-purple-200"
+            >
+              + Přidat odrážku
+            </button>
+          )}
         </div>
       );
     }
+
     return (
       <div className={asCard ? "bg-white/10 rounded-[var(--slide-radius,0.75rem)] p-4 border border-white/15" : ""}>
         {revealToggle}
