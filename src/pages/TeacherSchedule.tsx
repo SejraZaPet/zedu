@@ -490,9 +490,19 @@ export default function TeacherSchedule() {
 
     setData((dState) => {
       const newEntries = buildEntries();
+      // Stejný slot obsazený jinou hodinou se přepíše JEN když se týdny
+      // opravdu překrývají — třída A v lichém a třída B v sudém týdnu
+      // ve stejné hodině musí zůstat obě.
+      const clashes = (x: LessonEntry, list: LessonEntry[]) =>
+        list.some(
+          (n) =>
+            n.day === x.day &&
+            n.period === x.period &&
+            parityOverlaps(n.weekParity, x.weekParity),
+        );
       if (dState.parityMode === "both") {
         const cleaned = dState.lessonsBoth.filter(
-          (x) => x.id !== base.id && !newEntries.some((n) => n.day === x.day && n.period === x.period),
+          (x) => x.id !== base.id && !clashes(x, newEntries),
         );
         return { ...dState, lessonsBoth: [...cleaned, ...newEntries] };
       }
@@ -506,10 +516,10 @@ export default function TeacherSchedule() {
         const thisEntries = newEntries.map((n) => ({ ...n, mirrorBoth: true, mirrorKey }));
         const twins = thisEntries.map((n) => ({ ...n, id: newId() }));
         const cleanedThis = dState[thisListKey].filter(
-          (x) => x.id !== base.id && !thisEntries.some((n) => n.day === x.day && n.period === x.period),
+          (x) => x.id !== base.id && !clashes(x, thisEntries),
         );
         const cleanedOther = dState[otherListKey].filter(
-          (x) => x.mirrorKey !== mirrorKey && !twins.some((n) => n.day === x.day && n.period === x.period),
+          (x) => x.mirrorKey !== mirrorKey && !clashes(x, twins),
         );
         return {
           ...dState,
@@ -523,8 +533,9 @@ export default function TeacherSchedule() {
         : dState[otherListKey];
       const cleanedThisEntries = newEntries.map((n) => ({ ...n, mirrorBoth: false, mirrorKey: undefined }));
       const cleanedThis = dState[thisListKey].filter(
-        (x) => x.id !== base.id && !cleanedThisEntries.some((n) => n.day === x.day && n.period === x.period),
+        (x) => x.id !== base.id && !clashes(x, cleanedThisEntries),
       );
+
       return {
         ...dState,
         [thisListKey]: [...cleanedThis, ...cleanedThisEntries],
