@@ -954,8 +954,9 @@ export function AddSlideSheet({
                     <div className="text-left">
                       <p className="font-medium">{l.title}</p>
                       <p className="text-xs text-muted-foreground">
-                        {l.blocks.length} bloků obsahu
+                        {l.source ? `${l.source} · ` : ""}{l.blocks.length} bloků obsahu
                       </p>
+
                     </div>
                   </Button>
                 ))
