@@ -398,17 +398,30 @@ const StudentAssignmentPlayer = () => {
                     if (!attempt) return;
                     setSubmitting(true);
                     try {
-                      await supabase
-                        .from("assignment_attempts" as any)
-                        .update({
-                          status: "submitted",
-                          submitted_at: new Date().toISOString(),
-                        } as any)
-                        .eq("id", attempt.id);
+                      const { data, error } = await supabase.rpc("submit_portfolio_assignment", {
+                        _attempt_id: attempt.id,
+                      });
+                      if (error) throw error;
+
+                      const result = data as {
+                        status?: string;
+                        submitted_at?: string;
+                        portfolio_item_id?: string;
+                      } | null;
+                      if (result?.status !== "submitted" || !result.portfolio_item_id) {
+                        throw new Error("Odevzdání se nepodařilo úplně uložit. Zkuste to prosím znovu.");
+                      }
                       setAttempt({ ...attempt, status: "submitted" });
-                      toast({ title: "Odevzdáno!", description: "Portfoliový úkol byl odevzdán." });
+                      toast({
+                        title: "Odevzdáno!",
+                        description: "Úkol je označený jako odevzdaný a přílohy jsou uložené v portfoliu.",
+                      });
                     } catch (e: any) {
-                      toast({ title: "Chyba", description: e.message, variant: "destructive" });
+                      toast({
+                        title: "Úkol se nepodařilo odevzdat",
+                        description: e.message,
+                        variant: "destructive",
+                      });
                     } finally {
                       setSubmitting(false);
                     }

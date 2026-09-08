@@ -168,7 +168,24 @@ const TodayWidget = ({ role }: Props) => {
         todosQuery ?? Promise.resolve({ data: [] as any[] }),
       ]);
 
-      const assignments: UpcomingAssignment[] = ((assignmentsRes.data ?? []) as any[]).map(
+      let visibleAssignmentRows = (assignmentsRes.data ?? []) as any[];
+      if (role === "student" && user && visibleAssignmentRows.length > 0) {
+        const assignmentIds = visibleAssignmentRows.map((assignment) => assignment.id);
+        const { data: submittedAttempts } = await supabase
+          .from("assignment_attempts")
+          .select("assignment_id")
+          .eq("student_id", user.id)
+          .eq("status", "submitted")
+          .in("assignment_id", assignmentIds);
+        const submittedAssignmentIds = new Set(
+          (submittedAttempts ?? []).map((attempt) => attempt.assignment_id),
+        );
+        visibleAssignmentRows = visibleAssignmentRows.filter(
+          (assignment) => !submittedAssignmentIds.has(assignment.id),
+        );
+      }
+
+      const assignments: UpcomingAssignment[] = visibleAssignmentRows.map(
         (a: any) => ({ id: a.id, title: a.title, deadline: a.deadline, kind: "assignment" as const }),
       );
       const todos: UpcomingAssignment[] = (((todosRes as any).data ?? []) as any[]).map(
