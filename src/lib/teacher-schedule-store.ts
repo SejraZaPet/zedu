@@ -271,8 +271,13 @@ export function expandTeacherSchedule(
 
     for (const l of pool) {
       if (l.day !== dayIdx) continue;
+      // Lichý/sudý týden u konkrétní hodiny
+      const wp = l.weekParity ?? "every";
+      if (wp === "odd" && !isOdd) continue;
+      if (wp === "even" && isOdd) continue;
       const t = schedule.periodTimes[l.period];
       if (!t) continue;
+
       // Respect validity window
       if (l.validFrom) {
         const vf = new Date(l.validFrom);
