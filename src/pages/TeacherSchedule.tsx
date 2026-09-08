@@ -1119,12 +1119,14 @@ export default function TeacherSchedule() {
         onDelete={!isNew ? deleteLesson : undefined}
         onSave={async ({ value, slots }) => {
           if (!editing) return;
-          // Nově: hodina směrovaná na SKUPINU předmětu se ukládá do databáze
-          // (aby ji viděli i žáci skupiny). Osobní/třídní tok zůstává beze změny.
-          if (value.groupId) {
+          // Hodina směrovaná na SKUPINU předmětu NEBO na TŘÍDU se ukládá do databáze
+          // (class_schedule_slots), aby ji viděli i žáci. Bez přiřazené třídy/skupiny
+          // zůstává hodina jen v osobním rozvrhu učitele.
+          if (value.groupId || value.classId) {
             const rows = slots.map((s) => ({
-              class_id: null,
-              group_id: value.groupId,
+              class_id: value.groupId ? null : value.classId,
+              group_id: value.groupId ?? null,
+
               subject_label: value.subject,
               subject_id: value.subjectId ?? null,
               abbreviation: value.abbreviation || null,
@@ -1155,13 +1157,35 @@ export default function TeacherSchedule() {
                 user.id,
               );
             }
+            // Hodina teď žije v rozvrhu třídy/skupiny – odstraň případnou
+            // starší osobní kopii, aby se nezobrazovala dvakrát.
+            const personalId = editing.id;
+            const personalMirror = editing.mirrorKey;
+            setData((d) => ({
+              ...d,
+              lessonsBoth: d.lessonsBoth.filter(
+                (x) => x.id !== personalId && (!personalMirror || x.mirrorKey !== personalMirror),
+              ),
+              lessonsOdd: d.lessonsOdd.filter(
+                (x) => x.id !== personalId && (!personalMirror || x.mirrorKey !== personalMirror),
+              ),
+              lessonsEven: d.lessonsEven.filter(
+                (x) => x.id !== personalId && (!personalMirror || x.mirrorKey !== personalMirror),
+              ),
+            }));
             toast({
-              title: rows.length > 1 ? `Přidáno do ${rows.length} dnů` : "Přidáno do rozvrhu skupiny",
+              title:
+                rows.length > 1
+                  ? `Přidáno do ${rows.length} dnů`
+                  : value.groupId
+                    ? "Přidáno do rozvrhu skupiny"
+                    : "Přidáno do rozvrhu třídy",
             });
             setEditing(null);
             fetchClassSlots();
             return;
           }
+
           const base: LessonEntry = {
             ...editing,
             subject: value.subject,
