@@ -1498,7 +1498,18 @@ function PersonalCard({
   );
 }
 
-function ClassCard({ slot, conflict, onClick }: { slot: ClassSlot; conflict?: boolean; onClick: () => void }) {
+function ClassCard({
+  slot,
+  groupClassNames,
+  conflict,
+  onClick,
+}: {
+  slot: ClassSlot;
+  /** Třídy, ze kterých je skupina složená (odvozeno ze žáků skupiny). */
+  groupClassNames?: string[];
+  conflict?: boolean;
+  onClick: () => void;
+}) {
   // Zkratka se drží katalogu `subjects`, ale barva zvolená u konkrétní hodiny
   // má vždy přednost – učitel si ji nastavuje ručně v dialogu hodiny.
   const canonical = slot.subjects;
@@ -1506,7 +1517,18 @@ function ClassCard({ slot, conflict, onClick }: { slot: ClassSlot; conflict?: bo
   const color = slot.color || canonical?.color || colorForSubject(subject);
   const abbr = (canonical?.abbreviation || slot.abbreviation || subject.slice(0, 3)).toUpperCase();
   const isGroup = !!slot.group_id;
-  const className = isGroup ? (slot.subject_groups?.name ?? "Skupina") : (slot.classes?.name ?? "");
+  const groupNames = groupClassNames ?? [];
+  // U skupiny ukazujeme třídy jejích žáků; při větším počtu zkrátíme na 2 + „…“.
+  const groupLabel =
+    groupNames.length > 0
+      ? groupNames.slice(0, 2).join(" + ") + (groupNames.length > 2 ? " +…" : "")
+      : (slot.subject_groups?.name ?? "Skupina");
+  const className = isGroup ? groupLabel : (slot.classes?.name ?? "");
+  const groupTitle =
+    isGroup && groupNames.length > 0
+      ? ` · třídy: ${groupNames.join(", ")}`
+      : "";
+
 
   return (
     <button
