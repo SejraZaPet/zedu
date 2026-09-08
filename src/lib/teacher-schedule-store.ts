@@ -37,26 +37,16 @@ export function parityOverlaps(
 }
 
 
-/** Predefined palette for subject color picker. */
-export const SUBJECT_COLORS: { value: string; label: string }[] = [
-  { value: "#6EC6D9", label: "Tyrkysová" },
-  { value: "#9B6CFF", label: "Fialová" },
-  { value: "#F472B6", label: "Růžová" },
-  { value: "#F87171", label: "Červená" },
-  { value: "#FB923C", label: "Oranžová" },
-  { value: "#FBBF24", label: "Žlutá" },
-  { value: "#34D399", label: "Zelená" },
-  { value: "#60A5FA", label: "Modrá" },
-  { value: "#A3A3A3", label: "Šedá" },
-];
+// Barva/zkratka předmětu má jediný zdroj pravdy: `@/lib/subject-appearance`.
+// Re-export drží zpětnou kompatibilitu importů v celé aplikaci.
+export {
+  SUBJECT_COLORS,
+  colorForSubject,
+  getSubjectColor,
+  getSubjectAbbreviation,
+} from "./subject-appearance";
+import { SUBJECT_COLORS, colorForSubject } from "./subject-appearance";
 
-/** Stable color for an unspecified subject (deterministic by name). */
-export function colorForSubject(subject: string): string {
-  if (!subject) return SUBJECT_COLORS[0].value;
-  let hash = 0;
-  for (let i = 0; i < subject.length; i++) hash = (hash * 31 + subject.charCodeAt(i)) >>> 0;
-  return SUBJECT_COLORS[hash % SUBJECT_COLORS.length].value;
-}
 
 /** Build a map subject → { color, abbreviation } across all lesson lists.
  *  Same subject keeps the same visual identity everywhere. First occurrence wins. */
