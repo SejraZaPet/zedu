@@ -471,6 +471,23 @@ export default function TeacherSchedule() {
     return rows;
   }, [visiblePeriods, breakRowAfterPeriods]);
 
+  /** Který týden je v daném slotu ještě volný (aby se druhá hodina ve stejném
+   *  slotu nabídla rovnou pro opačný týden a nepřepsala tu první). */
+  function suggestParityForCell(day: number, period: number): "every" | "odd" | "even" {
+    const parities = new Set<string>();
+    for (const l of currentLessons) {
+      if (l.day === day && l.period === period) parities.add(l.weekParity ?? "every");
+    }
+    for (const c of classByDayPeriod.get(`${day}-${period}`) ?? []) {
+      parities.add(c.week_parity ?? "every");
+    }
+    if (parities.size === 0) return "every";
+    if (parities.has("every")) return "every";
+    if (parities.has("odd") && !parities.has("even")) return "even";
+    if (parities.has("even") && !parities.has("odd")) return "odd";
+    return "every";
+  }
+
   function openNewLesson(day: number, presetPeriod?: number) {
     const used = new Set(currentLessons.filter((l) => l.day === day).map((l) => l.period));
     const period =
@@ -484,13 +501,22 @@ export default function TeacherSchedule() {
       color: SUBJECT_COLORS[0].value,
       className: "",
       room: "",
+      weekParity: suggestParityForCell(day, period),
     });
     setIsNew(true);
   }
   function openEditLesson(entry: LessonEntry) {
-    setEditing({ ...entry });
+    // Osobní hodiny uložené v seznamu lichého/sudého týdne nemusí mít
+    // weekParity zapsanou – doplníme ji podle seznamu, ze kterého pochází,
+    // aby se výběr týdne v dialogu předvyplnil a při uložení nezmizel.
+    const fallback: "every" | "odd" | "even" =
+      data.parityMode !== "both" && (activeTab === "odd" || activeTab === "even")
+        ? activeTab
+        : "every";
+    setEditing({ ...entry, weekParity: entry.weekParity ?? fallback });
     setIsNew(false);
   }
+
 
   function applyLessonResult(slots: { day: number; period: number }[], base: LessonEntry) {
     const buildEntries = (): LessonEntry[] =>
@@ -912,7 +938,18 @@ export default function TeacherSchedule() {
                                     onClick={() => setEditingClassSlot(cls)}
                                   />
                                 ))}
+                                {/* Další hodina do stejného slotu (např. jiná
+                                    třída v opačném týdnu) – bez přepsání té první. */}
+                                <button
+                                  onClick={() => openNewLesson(dayIdx, row.period)}
+                                  className="w-full rounded-md border border-dashed border-border/70 hover:border-primary hover:bg-primary/5 text-muted-foreground/60 hover:text-primary text-[10px] flex items-center justify-center gap-1 transition-colors py-1 print-hide"
+                                  title={`Přidat další hodinu do ${row.period}. hodiny`}
+                                >
+                                  <Plus className="w-3 h-3" />
+                                  <span>Další týden</span>
+                                </button>
                               </div>
+
                             ) : (
                               <button
                                 onClick={() => openNewLesson(dayIdx, row.period)}
