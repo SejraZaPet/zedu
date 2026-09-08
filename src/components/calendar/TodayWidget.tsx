@@ -114,7 +114,7 @@ const TodayWidget = ({ role }: Props) => {
 
       const slotsRes = await supabase
         .from("class_schedule_slots" as any)
-        .select("*, classes(name)");
+        .select("*, classes(name), subjects(name, color, abbreviation)");
 
       const slots = (slotsRes.data ?? []) as any[];
       const targets: Record<string, string> = {};

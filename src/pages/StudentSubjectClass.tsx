@@ -141,7 +141,7 @@ export default function StudentSubjectClass() {
           .maybeSingle(),
         supabase
           .from("class_schedule_slots" as any)
-          .select("*")
+          .select("*, subjects(name, color, abbreviation)")
           .eq("class_id", classId),
         supabase
           .from("assignments")

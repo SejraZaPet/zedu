@@ -84,7 +84,7 @@ export default function StudentSchedule() {
 
       const { data: rows } = await supabase
         .from("class_schedule_slots" as any)
-        .select("*, classes(name)")
+        .select("*, classes(name), subjects(name, color, abbreviation)")
         .in("class_id", classIds)
         .order("day_of_week", { ascending: true })
         .order("start_time", { ascending: true });
