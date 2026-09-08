@@ -264,23 +264,47 @@ const SchoolCalendarPanel = ({ schoolId, schoolName, canDismissForAll }: Props) 
             Sdílené události {schoolName ? `školy ${schoolName}` : "vaší školy"} – vidí je všichni kolegové.
           </p>
         </div>
-        <Button size="sm" onClick={openNew}>
-          <CalendarPlus className="mr-2 h-4 w-4" /> Nová školní událost
-        </Button>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Switch id="sce-show-done" checked={showDismissed} onCheckedChange={setShowDismissed} />
+            <Label htmlFor="sce-show-done" className="cursor-pointer text-xs text-muted-foreground">
+              Zobrazit i vyřízené
+            </Label>
+          </div>
+          <Button size="sm" onClick={openNew}>
+            <CalendarPlus className="mr-2 h-4 w-4" /> Nová školní událost
+          </Button>
+        </div>
       </div>
 
       {loading ? (
         <p className="text-sm text-muted-foreground">Načítání…</p>
-      ) : events.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Ve školním kalendáři zatím nic není.</p>
+      ) : visibleEvents.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          {events.length === 0
+            ? "Ve školním kalendáři zatím nic není."
+            : "Všechny události máte vyřízené. Zapněte „Zobrazit i vyřízené“."}
+        </p>
       ) : (
         <ul className="divide-y divide-border rounded-md border border-border">
-          {events.map((e) => {
+          {visibleEvents.map((e) => {
             const mine = e.created_by === user?.id;
+            const doneForAll = !!e.dismissed_for_all_at;
+            const doneMine = dismissed.has(e.id);
+            const done = doneMine || doneForAll;
+            const canForAll = mine || !!canDismissForAll;
             return (
-              <li key={e.id} className="flex flex-wrap items-start gap-3 px-3 py-2.5 text-sm">
+              <li
+                key={e.id}
+                className={`flex flex-wrap items-start gap-3 px-3 py-2.5 text-sm ${done ? "opacity-60" : ""}`}
+              >
                 <div className="min-w-0 flex-1">
-                  <p className="font-medium">{e.title}</p>
+                  <p className={`font-medium ${done ? "line-through" : ""}`}>{e.title}</p>
+                  {done && (
+                    <Badge variant="secondary" className="mt-1 text-[11px]">
+                      {doneForAll ? "Vyřízeno pro celou školu" : "Vyřízeno (jen pro mě)"}
+                    </Badge>
+                  )}
                   <p className="text-xs text-muted-foreground">
                     {e.all_day
                       ? format(new Date(e.start_time), "d. M. yyyy", { locale: cs })
@@ -302,6 +326,24 @@ const SchoolCalendarPanel = ({ schoolId, schoolName, canDismissForAll }: Props) 
                       ))}
                     </p>
                   )}
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <Button size="sm" variant="outline" onClick={() => void toggleMine(e)}>
+                      {doneMine ? (
+                        <>
+                          <Undo2 className="mr-1.5 h-3.5 w-3.5" /> Vrátit zpět
+                        </>
+                      ) : (
+                        <>
+                          <Check className="mr-1.5 h-3.5 w-3.5" /> Označit jako vyřízené
+                        </>
+                      )}
+                    </Button>
+                    {canForAll && (
+                      <Button size="sm" variant="ghost" onClick={() => void toggleForAll(e, !doneForAll)}>
+                        {doneForAll ? "Zrušit vyřízeno pro celou školu" : "Označit jako vyřízené pro celou školu"}
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 {mine && (
                   <div className="flex items-center gap-1">
@@ -318,6 +360,7 @@ const SchoolCalendarPanel = ({ schoolId, schoolName, canDismissForAll }: Props) 
           })}
         </ul>
       )}
+
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-lg">
