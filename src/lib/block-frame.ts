@@ -116,3 +116,16 @@ export function applyFrameDrag(
   }
   return clampBlockFrame({ x, y, w, h });
 }
+
+/** Rotace bloku ve stupních (props.rotation). Normalizuje na 0–359,9. */
+export function normalizeRotation(value: any): number {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return 0;
+  const r = Math.round((((n % 360) + 360) % 360) * 10) / 10;
+  return r === 360 ? 0 : r;
+}
+
+/** Vrátí rotaci bloku (0 = bez rotace). */
+export function getBlockRotation(block: any): number {
+  return normalizeRotation(block?.props?.rotation);
+}

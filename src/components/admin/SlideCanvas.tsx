@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useCallback } from "react";
-import { ArrowUp, ArrowDown, Trash2, ImageIcon, GripVertical, Move, Video as VideoIcon, Music } from "lucide-react";
+import { ArrowUp, ArrowDown, Trash2, ImageIcon, GripVertical, Move, RotateCw, Video as VideoIcon, Music } from "lucide-react";
 import { LessonBlock, CALLOUT_STYLES } from "@/components/LessonBlockRenderer";
 import type { Block } from "@/lib/textbook-config";
 import { MediaPickerDialog } from "@/components/media/MediaPickerDialog";
@@ -13,6 +13,8 @@ import {
   applyFrameDrag,
   clampBlockFrame,
   getBlockFrame,
+  getBlockRotation,
+  normalizeRotation,
   type BlockFrame,
   type FrameHandle,
 } from "@/lib/block-frame";
@@ -914,12 +916,14 @@ const HANDLES: { handle: FrameHandle; className: string; cursor: string }[] = [
 function FreeFrameBlock({
   block,
   frame,
+  rotation = 0,
   zIndex,
   editable,
   selected,
   layerRef,
   onSelect,
   onChangeFrame,
+  onChangeRotation,
   onDelete,
   beginGesture,
   endGesture,
@@ -927,12 +931,15 @@ function FreeFrameBlock({
 }: {
   block: Block;
   frame: BlockFrame;
+  /** Rotace bloku ve stupních (0 = bez rotace). */
+  rotation?: number;
   zIndex: number;
   editable?: boolean;
   selected?: boolean;
   layerRef: React.RefObject<HTMLDivElement>;
   onSelect?: () => void;
   onChangeFrame?: (frame: BlockFrame) => void;
+  onChangeRotation?: (deg: number) => void;
   onDelete?: () => void;
   /** Registrace gesta do sdíleného refu na úrovni slidu (viz SlideBody). */
   beginGesture: (cleanup: () => void) => void;
@@ -942,6 +949,7 @@ function FreeFrameBlock({
   // Lokální ref drží jen *vlastní* běžící gesto kvůli úklidu při unmountu;
   // koordinaci napříč bloky řeší sdílený ref v SlideBody.
   const ownDragCleanupRef = useRef<(() => void) | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => () => ownDragCleanupRef.current?.(), []);
 
@@ -970,8 +978,17 @@ function FreeFrameBlock({
           onActivate?.();
         }
         ev.preventDefault();
-        const dx = (px / rect.width) * 100;
-        const dy = (py / rect.height) * 100;
+        // U rotovaného bloku je potřeba převést pohyb myši do lokálních osí rámce,
+        // aby úchyty resize táhly tam, kam uživatel míří.
+        let mx = px;
+        let my = py;
+        if (handle !== "move" && rotation) {
+          const rad = (-rotation * Math.PI) / 180;
+          mx = px * Math.cos(rad) - py * Math.sin(rad);
+          my = px * Math.sin(rad) + py * Math.cos(rad);
+        }
+        const dx = (mx / rect.width) * 100;
+        const dy = (my / rect.height) * 100;
         onChangeFrame(applyFrameDrag(startFrame, handle, dx, dy));
       };
       const cleanup = () => {
@@ -1027,6 +1044,55 @@ function FreeFrameBlock({
 
 
 
+  /** Tažení za horní úchyt otáčí blok kolem jeho středu. */
+  const startRotate = (e: React.PointerEvent) => {
+    if (!editable || !onChangeRotation) return;
+    if (e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    onSelect?.();
+    const rect = rootRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const angleAt = (x: number, y: number) => (Math.atan2(y - cy, x - cx) * 180) / Math.PI;
+    const startAngle = angleAt(e.clientX, e.clientY);
+    const startRotation = rotation;
+    const pointerId = e.pointerId;
+    const dragTarget = e.currentTarget as HTMLElement;
+
+    const move = (ev: PointerEvent) => {
+      if (ev.pointerId !== pointerId) return;
+      ev.preventDefault();
+      let next = startRotation + (angleAt(ev.clientX, ev.clientY) - startAngle);
+      // Shift = přichytávání po 15°.
+      if (ev.shiftKey) next = Math.round(next / 15) * 15;
+      onChangeRotation(normalizeRotation(next));
+    };
+    const cleanup = () => {
+      dragTarget.removeEventListener("pointermove", move);
+      dragTarget.removeEventListener("pointerup", finish);
+      dragTarget.removeEventListener("pointercancel", finish);
+      dragTarget.removeEventListener("lostpointercapture", finish);
+      window.removeEventListener("blur", cleanup);
+      if (dragTarget.hasPointerCapture?.(pointerId)) dragTarget.releasePointerCapture(pointerId);
+      if (ownDragCleanupRef.current === cleanup) ownDragCleanupRef.current = null;
+      endGesture(cleanup);
+    };
+    const finish = (ev: PointerEvent) => {
+      if (ev.pointerId === pointerId) cleanup();
+    };
+
+    beginGesture(cleanup);
+    ownDragCleanupRef.current = cleanup;
+    dragTarget.setPointerCapture?.(pointerId);
+    dragTarget.addEventListener("pointermove", move);
+    dragTarget.addEventListener("pointerup", finish);
+    dragTarget.addEventListener("pointercancel", finish);
+    dragTarget.addEventListener("lostpointercapture", finish);
+    window.addEventListener("blur", cleanup);
+  };
+
   const nudge = (e: React.KeyboardEvent) => {
     if (!onChangeFrame) return;
     const step = e.shiftKey ? 5 : 1;
@@ -1042,10 +1108,24 @@ function FreeFrameBlock({
     onChangeFrame(applyFrameDrag(frame, "move", delta[0], delta[1]));
   };
 
+  const rotateKeys = (e: React.KeyboardEvent) => {
+    if (!onChangeRotation) return;
+    const step = e.shiftKey ? 15 : 1;
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      onChangeRotation(normalizeRotation(rotation - step));
+    } else if (e.key === "ArrowRight") {
+      e.preventDefault();
+      onChangeRotation(normalizeRotation(rotation + step));
+    }
+  };
+
   return (
     <div
+      ref={rootRef}
       data-slide-block-id={block.id}
       data-free-frame="true"
+      data-rotation={rotation || undefined}
       className={`pointer-events-auto absolute rounded-lg ${
         editable
           ? selected
@@ -1059,6 +1139,8 @@ function FreeFrameBlock({
         width: `${frame.w}%`,
         height: `${frame.h}%`,
         zIndex,
+        transform: rotation ? `rotate(${rotation}deg)` : undefined,
+        transformOrigin: "center center",
       }}
       onPointerDown={editable ? startBodyDrag : undefined}
     >
@@ -1081,7 +1163,22 @@ function FreeFrameBlock({
             </button>
             <span className="px-1 text-[10px] tabular-nums text-muted-foreground">
               {frame.x}% · {frame.y}% · {frame.w}×{frame.h}
+              {rotation ? ` · ${rotation}°` : ""}
             </span>
+            {onChangeRotation && (
+              <button
+                type="button"
+                onPointerDown={startRotate}
+                onKeyDown={rotateKeys}
+                onDoubleClick={() => onChangeRotation(0)}
+                title="Otočit blok (tažením; Shift = po 15°, dvojklik = zrovnat)"
+                aria-label="Otočit volně umístěný blok"
+                data-no-block-drag
+                className="cursor-grab touch-none rounded p-1 hover:bg-muted"
+              >
+                <RotateCw className="h-3.5 w-3.5 text-foreground" />
+              </button>
+            )}
             {onDelete && (
               <button
                 type="button"
@@ -1093,6 +1190,21 @@ function FreeFrameBlock({
               </button>
             )}
           </div>
+
+          {/* Úchyt rotace nad blokem */}
+          {onChangeRotation && (
+            <span
+              role="presentation"
+              data-rotate-handle="true"
+              data-no-block-drag
+              onPointerDown={startRotate}
+              onDoubleClick={() => onChangeRotation(0)}
+              style={{ cursor: "grab" }}
+              className="absolute left-1/2 top-0 flex h-5 w-5 -translate-x-1/2 -translate-y-8 touch-none items-center justify-center rounded-full border-2 border-primary bg-background shadow"
+            >
+              <RotateCw className="h-3 w-3 text-primary" />
+            </span>
+          )}
 
           {HANDLES.map((h) => (
             <span
@@ -1527,6 +1639,7 @@ export function SlideBody({
               key={block.id}
               block={block}
               frame={frame}
+              rotation={getBlockRotation(block)}
               zIndex={typeof block.zIndex === "number" ? block.zIndex : frameIndex + 1}
               editable={editable}
               selected={selectedBlockId === block.id}
@@ -1535,6 +1648,15 @@ export function SlideBody({
               onChangeFrame={
                 onChangeBlock
                   ? (next) => onChangeBlock(block.id, (b: Block) => ({ ...b, frame: next }))
+                  : undefined
+              }
+              onChangeRotation={
+                onChangeBlock
+                  ? (deg) =>
+                      onChangeBlock(block.id, (b: Block) => ({
+                        ...b,
+                        props: { ...(b.props || {}), rotation: deg },
+                      }))
                   : undefined
               }
               onDelete={onDeleteBlock ? () => onDeleteBlock(block.id) : undefined}
