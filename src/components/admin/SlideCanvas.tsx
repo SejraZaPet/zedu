@@ -13,6 +13,8 @@ import {
   applyFrameDrag,
   clampBlockFrame,
   getBlockFrame,
+  getBlockRotation,
+  normalizeRotation,
   type BlockFrame,
   type FrameHandle,
 } from "@/lib/block-frame";
