@@ -142,6 +142,8 @@ export default function TeacherSchedule() {
   const [data, setData] = useState<TeacherScheduleData>(() => loadSchedule());
   const [activeTab, setActiveTab] = useState<ParityTab>(data.parityMode === "both" ? "both" : "odd");
   const [classSlots, setClassSlots] = useState<ClassSlot[]>([]);
+  /** group_id → názvy tříd, ze kterých je skupina složená (odvozeno ze žáků). */
+  const [groupClasses, setGroupClasses] = useState<Record<string, string[]>>({});
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [teacherName, setTeacherName] = useState<string>("");
 
@@ -217,7 +219,50 @@ export default function TeacherSchedule() {
       .order("day_of_week", { ascending: true })
       .order("start_time", { ascending: true });
     setClassSlots((slots as any) || []);
+    await fetchGroupClasses(((slots as any) || []) as ClassSlot[]);
   };
+
+  /**
+   * Skupiny předmětu neevidují třídy, jen žáky – názvy tříd proto odvodíme
+   * ze členství žáků skupiny (`subject_group_members` → `class_members`).
+   */
+  const fetchGroupClasses = async (slots: ClassSlot[]) => {
+    const groupIds = Array.from(
+      new Set(slots.map((s) => s.group_id).filter((g): g is string => !!g)),
+    );
+    if (groupIds.length === 0) {
+      setGroupClasses({});
+      return;
+    }
+    const { data: members } = await supabase
+      .from("subject_group_members")
+      .select("group_id, student_id")
+      .in("group_id", groupIds);
+    const studentIds = Array.from(new Set((members ?? []).map((m: any) => m.student_id)));
+    if (studentIds.length === 0) {
+      setGroupClasses({});
+      return;
+    }
+    const { data: cm } = await supabase
+      .from("class_members")
+      .select("user_id, classes(name)")
+      .in("user_id", studentIds);
+    const classByStudent = new Map<string, string>();
+    for (const r of (cm ?? []) as any[]) {
+      const name = r.classes?.name;
+      if (name && !classByStudent.has(r.user_id)) classByStudent.set(r.user_id, name);
+    }
+    const map: Record<string, string[]> = {};
+    for (const m of (members ?? []) as any[]) {
+      const name = classByStudent.get(m.student_id);
+      if (!name) continue;
+      const list = (map[m.group_id] ??= []);
+      if (!list.includes(name)) list.push(name);
+    }
+    for (const k of Object.keys(map)) map[k].sort((a, b) => a.localeCompare(b, "cs"));
+    setGroupClasses(map);
+  };
+
 
   useEffect(() => {
     fetchClassSlots();
@@ -934,6 +979,7 @@ export default function TeacherSchedule() {
                                   <ClassCard
                                     key={cls.id}
                                     slot={cls}
+                                    groupClassNames={cls.group_id ? groupClasses[cls.group_id] : undefined}
                                     conflict={isConflict}
                                     onClick={() => setEditingClassSlot(cls)}
                                   />
@@ -1452,7 +1498,18 @@ function PersonalCard({
   );
 }
 
-function ClassCard({ slot, conflict, onClick }: { slot: ClassSlot; conflict?: boolean; onClick: () => void }) {
+function ClassCard({
+  slot,
+  groupClassNames,
+  conflict,
+  onClick,
+}: {
+  slot: ClassSlot;
+  /** Třídy, ze kterých je skupina složená (odvozeno ze žáků skupiny). */
+  groupClassNames?: string[];
+  conflict?: boolean;
+  onClick: () => void;
+}) {
   // Zkratka se drží katalogu `subjects`, ale barva zvolená u konkrétní hodiny
   // má vždy přednost – učitel si ji nastavuje ručně v dialogu hodiny.
   const canonical = slot.subjects;
@@ -1460,14 +1517,25 @@ function ClassCard({ slot, conflict, onClick }: { slot: ClassSlot; conflict?: bo
   const color = slot.color || canonical?.color || colorForSubject(subject);
   const abbr = (canonical?.abbreviation || slot.abbreviation || subject.slice(0, 3)).toUpperCase();
   const isGroup = !!slot.group_id;
-  const className = isGroup ? (slot.subject_groups?.name ?? "Skupina") : (slot.classes?.name ?? "");
+  const groupNames = groupClassNames ?? [];
+  // U skupiny ukazujeme třídy jejích žáků; při větším počtu zkrátíme na 2 + „…“.
+  const groupLabel =
+    groupNames.length > 0
+      ? groupNames.slice(0, 2).join(" + ") + (groupNames.length > 2 ? " +…" : "")
+      : (slot.subject_groups?.name ?? "Skupina");
+  const className = isGroup ? groupLabel : (slot.classes?.name ?? "");
+  const groupTitle =
+    isGroup && groupNames.length > 0
+      ? ` · třídy: ${groupNames.join(", ")}`
+      : "";
+
 
   return (
     <button
       onClick={onClick}
       className={`w-full text-left rounded-md p-2 transition-all hover:shadow-md hover:-translate-y-0.5 border-l-4 group ${conflict ? "ring-2 ring-destructive ring-offset-1" : ""}`}
       style={{ backgroundColor: `${color}26`, borderLeftColor: color }}
-      title={`${conflict ? "⚠ Konflikt v rozvrhu · " : ""}${subject}${className ? ` · ${className}` : ""}${slot.room ? ` · ${slot.room}` : ""} · ${fmtTime(slot.start_time)}–${fmtTime(slot.end_time)}${slot.week_parity !== "every" ? ` (${slot.week_parity === "odd" ? "lichý" : "sudý"} týden)` : ""}`}
+      title={`${conflict ? "⚠ Konflikt v rozvrhu · " : ""}${subject}${className ? ` · ${className}` : ""}${groupTitle}${slot.room ? ` · ${slot.room}` : ""} · ${fmtTime(slot.start_time)}–${fmtTime(slot.end_time)}${slot.week_parity !== "every" ? ` (${slot.week_parity === "odd" ? "lichý" : "sudý"} týden)` : ""}`}
     >
       <div className="flex items-center gap-1 text-[11px] text-muted-foreground tabular-nums">
         <Clock className="w-3 h-3" />
@@ -1488,7 +1556,7 @@ function ClassCard({ slot, conflict, onClick }: { slot: ClassSlot; conflict?: bo
       <div className="text-xs text-muted-foreground truncate flex items-center gap-1 mt-0.5">
         <Users className="w-2.5 h-2.5 shrink-0" />
         <span className="truncate">{className}</span>
-        {isGroup && (
+        {isGroup && groupNames.length === 0 && (
           <span className="shrink-0 text-[9px] uppercase tracking-wide bg-muted px-1 rounded">
             skupina
           </span>
