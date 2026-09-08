@@ -6076,6 +6076,7 @@ export type Database = {
       teacher_game_templates: {
         Row: {
           activity_data: Json
+          background_url: string | null
           created_at: string
           curriculum_topic_id: string | null
           default_game_mode: string
@@ -6091,6 +6092,7 @@ export type Database = {
         }
         Insert: {
           activity_data?: Json
+          background_url?: string | null
           created_at?: string
           curriculum_topic_id?: string | null
           default_game_mode?: string
@@ -6106,6 +6108,7 @@ export type Database = {
         }
         Update: {
           activity_data?: Json
+          background_url?: string | null
           created_at?: string
           curriculum_topic_id?: string | null
           default_game_mode?: string
