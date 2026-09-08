@@ -115,6 +115,7 @@ export default function StudentSubjectClass() {
     }
     let cancelled = false;
     setLoading(true);
+    setResolvedLabel(null);
 
     (async () => {
       // Verify membership
