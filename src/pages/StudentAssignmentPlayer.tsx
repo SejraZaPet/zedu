@@ -321,7 +321,9 @@ const StudentAssignmentPlayer = () => {
           {attempt?.status === "submitted" && (
             <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">
               <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-              {attempt.score}/{attempt.max_score}
+              {assignment.is_portfolio_task
+                ? "Odevzdáno"
+                : `${attempt.score}/${attempt.max_score}`}
             </Badge>
           )}
         </div>
@@ -392,43 +394,50 @@ const StudentAssignmentPlayer = () => {
                 </div>
               )}
               <div className="flex justify-end">
-                <Button
-                  disabled={submitting || isReadOnly || !attempt}
-                  onClick={async () => {
-                    if (!attempt) return;
-                    setSubmitting(true);
-                    try {
-                      const { data, error } = await supabase.rpc("submit_portfolio_assignment", {
-                        _attempt_id: attempt.id,
-                      });
-                      if (error) throw error;
+                {attempt?.status === "submitted" ? (
+                  <div className="flex items-center gap-2 text-sm font-medium text-emerald-700 dark:text-emerald-300">
+                    <CheckCircle2 className="h-4 w-4" />
+                    Úkol je odevzdaný a uložený v portfoliu
+                  </div>
+                ) : (
+                  <Button
+                    disabled={submitting || isReadOnly || !attempt}
+                    onClick={async () => {
+                      if (!attempt) return;
+                      setSubmitting(true);
+                      try {
+                        const { data, error } = await supabase.rpc("submit_portfolio_assignment", {
+                          _attempt_id: attempt.id,
+                        });
+                        if (error) throw error;
 
-                      const result = data as {
-                        status?: string;
-                        submitted_at?: string;
-                        portfolio_item_id?: string;
-                      } | null;
-                      if (result?.status !== "submitted" || !result.portfolio_item_id) {
-                        throw new Error("Odevzdání se nepodařilo úplně uložit. Zkuste to prosím znovu.");
+                        const result = data as {
+                          status?: string;
+                          submitted_at?: string;
+                          portfolio_item_id?: string;
+                        } | null;
+                        if (result?.status !== "submitted" || !result.portfolio_item_id) {
+                          throw new Error("Odevzdání se nepodařilo úplně uložit. Zkuste to prosím znovu.");
+                        }
+                        setAttempt({ ...attempt, status: "submitted" });
+                        toast({
+                          title: "Odevzdáno!",
+                          description: "Úkol je označený jako odevzdaný a přílohy jsou uložené v portfoliu.",
+                        });
+                      } catch (e: any) {
+                        toast({
+                          title: "Úkol se nepodařilo odevzdat",
+                          description: e.message,
+                          variant: "destructive",
+                        });
+                      } finally {
+                        setSubmitting(false);
                       }
-                      setAttempt({ ...attempt, status: "submitted" });
-                      toast({
-                        title: "Odevzdáno!",
-                        description: "Úkol je označený jako odevzdaný a přílohy jsou uložené v portfoliu.",
-                      });
-                    } catch (e: any) {
-                      toast({
-                        title: "Úkol se nepodařilo odevzdat",
-                        description: e.message,
-                        variant: "destructive",
-                      });
-                    } finally {
-                      setSubmitting(false);
-                    }
-                  }}
-                >
-                  <Send className="w-4 h-4 mr-1.5" /> Odevzdat úkol
-                </Button>
+                    }}
+                  >
+                    <Send className="w-4 h-4 mr-1.5" /> Odevzdat úkol
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
