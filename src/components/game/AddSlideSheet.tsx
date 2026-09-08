@@ -252,7 +252,16 @@ export function AddSlideSheet({
     { clue: "", code: "" },
   ]);
 
+  // lekce (Vytvořit z lekce)
+  const [lessonOptions, setLessonOptions] = useState<LessonOption[]>([]);
+  const [lessonsLoading, setLessonsLoading] = useState(false);
+
+  // vlastní text → AI aktivita
+  const [aiText, setAiText] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+
   const reset = () => {
+
     setKind("menu");
     setTextHeadline("");
     setTextBody("");
