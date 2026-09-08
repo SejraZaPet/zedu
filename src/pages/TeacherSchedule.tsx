@@ -881,8 +881,11 @@ export default function TeacherSchedule() {
                         const clsListAll =
                           classByDayPeriod.get(`${dayIdx}-${row.period}`) ?? [];
                         const hasAny = personalsAll.length + clsListAll.length > 0;
+                        // Konflikt jen když se hodiny opravdu potkají ve stejném týdnu.
                         const isConflict =
-                          personalsAll.length + clsListAll.length > 1;
+                          personalsAll.some((l) => conflicts.conflictPersonalIds.has(l.id)) ||
+                          clsListAll.some((c) => conflicts.conflictClassIds.has(c.id));
+
                         return (
                           <div
                             key={`c-${rowIdx}-${dayIdx}`}
