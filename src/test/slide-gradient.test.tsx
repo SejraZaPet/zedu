@@ -54,7 +54,9 @@ describe("barevné přechody na slidech", () => {
         }}
       />,
     );
-    const el = [...container.querySelectorAll<HTMLElement>("div")].find((d) => d.textContent === "Bezli")!;
+    const el = [...container.querySelectorAll<HTMLElement>("div")]
+      .filter((d) => d.textContent === "Bezli")
+      .pop()!;
     expect(el.style.color).toBe("transparent");
     expect(el.style.backgroundClip).toBe("text");
   });
