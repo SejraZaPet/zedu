@@ -142,6 +142,8 @@ export default function TeacherSchedule() {
   const [data, setData] = useState<TeacherScheduleData>(() => loadSchedule());
   const [activeTab, setActiveTab] = useState<ParityTab>(data.parityMode === "both" ? "both" : "odd");
   const [classSlots, setClassSlots] = useState<ClassSlot[]>([]);
+  /** group_id → názvy tříd, ze kterých je skupina složená (odvozeno ze žáků). */
+  const [groupClasses, setGroupClasses] = useState<Record<string, string[]>>({});
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [teacherName, setTeacherName] = useState<string>("");
 
@@ -977,6 +979,7 @@ export default function TeacherSchedule() {
                                   <ClassCard
                                     key={cls.id}
                                     slot={cls}
+                                    groupClassNames={cls.group_id ? groupClasses[cls.group_id] : undefined}
                                     conflict={isConflict}
                                     onClick={() => setEditingClassSlot(cls)}
                                   />
