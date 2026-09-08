@@ -38,12 +38,10 @@ import {
   type SubjectCatalogItem,
 } from "@/lib/subjects-catalog";
 
-const colorForLabel = (s: string) => {
-  const palette = ["#6EC6D9", "#9B6CFF", "#F472B6", "#F87171", "#FB923C", "#FBBF24", "#34D399", "#60A5FA", "#A3A3A3"];
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
-  return palette[h % palette.length];
-};
+import {
+  getSubjectAbbreviation,
+  getSubjectColor,
+} from "@/lib/subject-appearance";
 
 interface SubjectClassEntry {
   classId: string;
@@ -213,13 +211,14 @@ const TeacherSubjects = () => {
       const key = `${s.class_id}::${label.toLowerCase()}`;
       if (seen.has(key)) continue;
       const className = classMap.get(s.class_id) || "";
-      const abbr = (canonical?.abbreviation || s.abbreviation || label.slice(0, 3)).toUpperCase();
+      // Sjednocené pravidlo: hodina > katalog > odvozeno z názvu.
+      const abbr = getSubjectAbbreviation(s as any, canonical, label);
       seen.set(key, {
         classId: s.class_id,
         className,
         subjectLabel: label,
         abbreviation: abbr,
-        color: canonical?.color || s.color || colorForLabel(label),
+        color: getSubjectColor(s as any, canonical, label),
         room: s.room || "",
       });
     }

@@ -52,6 +52,9 @@ import {
   buildSubjectStyleMap,
   colorForSubject,
   SUBJECT_COLORS,
+  getSubjectAbbreviation,
+  getSubjectColor,
+  getSubjectName,
   BREAK_KIND_META,
   parityOverlaps,
 
@@ -1513,9 +1516,9 @@ function ClassCard({
   // Zkratka se drží katalogu `subjects`, ale barva zvolená u konkrétní hodiny
   // má vždy přednost – učitel si ji nastavuje ručně v dialogu hodiny.
   const canonical = slot.subjects;
-  const subject = canonical?.name || slot.subject_label || "Hodina";
-  const color = slot.color || canonical?.color || colorForSubject(subject);
-  const abbr = (canonical?.abbreviation || slot.abbreviation || subject.slice(0, 3)).toUpperCase();
+  const subject = getSubjectName(slot, canonical, "Hodina");
+  const color = getSubjectColor(slot, canonical, subject);
+  const abbr = getSubjectAbbreviation(slot, canonical, subject);
   const isGroup = !!slot.group_id;
   const groupNames = groupClassNames ?? [];
   // U skupiny ukazujeme třídy jejích žáků; při větším počtu zkrátíme na 2 + „…“.
