@@ -1,4 +1,5 @@
-import type { CSSProperties } from "react";
+import { useId, type CSSProperties } from "react";
+import { normalizeGradient, type SlideGradient } from "@/lib/slide-gradient";
 
 export type ShapeKind =
   | "rectangle"
@@ -28,6 +29,8 @@ interface Props {
   fillColor?: string;
   strokeColor?: string;
   strokeWidth?: number;
+  /** Barevný přechod výplně; má přednost před `fillColor`. */
+  fillGradient?: SlideGradient | null;
   /** Výška vykreslené plochy v px. */
   height?: number;
   /** Vyplnit celý rodičovský box (100 % × 100 %) – pro volně umístěné tvary. */
@@ -69,12 +72,31 @@ const ShapeRenderer = ({
   fillColor = "#6EC6D9",
   strokeColor = "#9B6CFF",
   strokeWidth = 2,
+  fillGradient,
   height = 160,
   fill,
   style,
 }: Props) => {
   const sw = Math.max(0, Number(strokeWidth) || 0);
-  const polyProps = { fill: fillColor, stroke: strokeColor, strokeWidth: sw };
+  const gradient = normalizeGradient(fillGradient);
+  const rawId = useId().replace(/[^a-zA-Z0-9_-]/g, "");
+  const gradientId = `shape-grad-${rawId}`;
+  // Směr přechodu jako souřadnice SVG (podpora nejběžnějších hodnot z UI).
+  const dir = gradient?.direction || "135deg";
+  const coords =
+    dir === "to right"
+      ? { x1: "0%", y1: "0%", x2: "100%", y2: "0%" }
+      : dir === "to left"
+        ? { x1: "100%", y1: "0%", x2: "0%", y2: "0%" }
+        : dir === "to bottom"
+          ? { x1: "0%", y1: "0%", x2: "0%", y2: "100%" }
+          : dir === "to top"
+            ? { x1: "0%", y1: "100%", x2: "0%", y2: "0%" }
+            : dir === "45deg"
+              ? { x1: "0%", y1: "100%", x2: "100%", y2: "0%" }
+              : { x1: "0%", y1: "0%", x2: "100%", y2: "100%" };
+  const paint = gradient ? `url(#${gradientId})` : fillColor;
+  const polyProps = { fill: paint, stroke: strokeColor, strokeWidth: sw };
 
   return (
     <svg
@@ -86,8 +108,16 @@ const ShapeRenderer = ({
       role="presentation"
       aria-hidden="true"
     >
+      {gradient && (
+        <defs>
+          <linearGradient id={gradientId} {...coords}>
+            <stop offset="0%" stopColor={gradient.from} />
+            <stop offset="100%" stopColor={gradient.to} />
+          </linearGradient>
+        </defs>
+      )}
       {shapeKind === "circle" && (
-        <ellipse cx={100} cy={50} rx={95 - sw} ry={45 - sw} fill={fillColor} stroke={strokeColor} strokeWidth={sw} />
+        <ellipse cx={100} cy={50} rx={95 - sw} ry={45 - sw} fill={paint} stroke={strokeColor} strokeWidth={sw} />
       )}
       {(shapeKind === "rectangle" || shapeKind === "rounded-rect") && (
         <rect
@@ -96,7 +126,7 @@ const ShapeRenderer = ({
           width={200 - sw * 2}
           height={100 - sw * 2}
           rx={shapeKind === "rounded-rect" ? 30 : 6}
-          fill={fillColor}
+          fill={paint}
           stroke={strokeColor}
           strokeWidth={sw}
         />
