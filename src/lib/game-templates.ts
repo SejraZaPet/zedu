@@ -34,13 +34,17 @@ export const purposeLabel = (id?: string | null) =>
   GAME_PURPOSES.find((p) => p.id === id)?.label ?? "Bez účelu";
 
 export async function fetchGameTemplates(): Promise<GameTemplate[]> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user) return [];
   const { data, error } = await supabase
     .from("teacher_game_templates" as any)
     .select("*")
+    .eq("teacher_id", session.user.id)
     .order("created_at", { ascending: false });
   if (error) throw error;
   return ((data as any[]) || []) as GameTemplate[];
 }
+
 
 /**
  * Creates a live session from a game template. Uses the exact same mechanism as

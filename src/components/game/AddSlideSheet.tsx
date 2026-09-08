@@ -437,13 +437,17 @@ export function AddSlideSheet({
 
 
   const fetchBezliStartPrompts = async (): Promise<BezliStartPrompt[]> => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) throw new Error("Nejste přihlášeni.");
     const { data, error } = await supabase
       .from("zedstart_prompts")
       .select("id, category, prompt_text, suggested_duration_minutes")
+      .eq("teacher_id", session.user.id)
       .order("created_at", { ascending: false });
     if (error) throw error;
     return (data as BezliStartPrompt[]) ?? [];
   };
+
 
   const insertBezliStart = (prompt: BezliStartPrompt) =>
     appendAndJump(buildWallSlide(prompt.prompt_text, true));
