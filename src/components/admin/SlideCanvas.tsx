@@ -916,12 +916,14 @@ const HANDLES: { handle: FrameHandle; className: string; cursor: string }[] = [
 function FreeFrameBlock({
   block,
   frame,
+  rotation = 0,
   zIndex,
   editable,
   selected,
   layerRef,
   onSelect,
   onChangeFrame,
+  onChangeRotation,
   onDelete,
   beginGesture,
   endGesture,
@@ -929,12 +931,15 @@ function FreeFrameBlock({
 }: {
   block: Block;
   frame: BlockFrame;
+  /** Rotace bloku ve stupních (0 = bez rotace). */
+  rotation?: number;
   zIndex: number;
   editable?: boolean;
   selected?: boolean;
   layerRef: React.RefObject<HTMLDivElement>;
   onSelect?: () => void;
   onChangeFrame?: (frame: BlockFrame) => void;
+  onChangeRotation?: (deg: number) => void;
   onDelete?: () => void;
   /** Registrace gesta do sdíleného refu na úrovni slidu (viz SlideBody). */
   beginGesture: (cleanup: () => void) => void;
@@ -944,6 +949,7 @@ function FreeFrameBlock({
   // Lokální ref drží jen *vlastní* běžící gesto kvůli úklidu při unmountu;
   // koordinaci napříč bloky řeší sdílený ref v SlideBody.
   const ownDragCleanupRef = useRef<(() => void) | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => () => ownDragCleanupRef.current?.(), []);
 
