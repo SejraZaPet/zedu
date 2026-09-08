@@ -2,7 +2,7 @@ import { BetaBadge } from "@/components/common/BetaBadge";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
-import { CalendarPlus, MapPin, Pencil, Trash2, Users } from "lucide-react";
+import { CalendarPlus, Check, MapPin, Pencil, Trash2, Undo2, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSchoolColleagues, colleagueLabel } from "@/hooks/useMySchool";
@@ -11,6 +11,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
@@ -33,26 +34,33 @@ interface SchoolEvent {
   color: string | null;
   location: string | null;
   created_by: string;
+  dismissed_for_all_at: string | null;
+  dismissed_for_all_by: string | null;
 }
 
 interface Props {
   schoolId: string;
   schoolName?: string | null;
+  /** Může uživatel označovat události jako vyřízené pro celou školu? */
+  canDismissForAll?: boolean;
 }
 
 const toLocalInput = (iso: string) => format(new Date(iso), "yyyy-MM-dd'T'HH:mm");
 
 /** Sdílený kalendář školy – vidí všichni učitelé stejné školy. */
-const SchoolCalendarPanel = ({ schoolId, schoolName }: Props) => {
+const SchoolCalendarPanel = ({ schoolId, schoolName, canDismissForAll }: Props) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { colleagues } = useSchoolColleagues(schoolId);
   const [events, setEvents] = useState<SchoolEvent[]>([]);
   const [attendees, setAttendees] = useState<Record<string, string[]>>({});
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+  const [showDismissed, setShowDismissed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<SchoolEvent | null>(null);
   const [saving, setSaving] = useState(false);
+
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
