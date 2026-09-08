@@ -80,7 +80,7 @@ export async function loadFullPortfolio(studentId: string): Promise<PortfolioIte
       .order("created_at", { ascending: false }),
     supabase
       .from("assignment_attempts")
-      .select("id, assignment_id, score, max_score, submitted_at, status, assignments!inner(title, subject)")
+      .select("id, assignment_id, score, max_score, submitted_at, status, assignments!inner(title, subject_id, subjects(name))")
       .eq("student_id", studentId)
       .eq("status", "submitted")
       .not("score", "is", null)
