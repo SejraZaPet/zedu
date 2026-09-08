@@ -1044,6 +1044,55 @@ function FreeFrameBlock({
 
 
 
+  /** Tažení za horní úchyt otáčí blok kolem jeho středu. */
+  const startRotate = (e: React.PointerEvent) => {
+    if (!editable || !onChangeRotation) return;
+    if (e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    onSelect?.();
+    const rect = rootRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const angleAt = (x: number, y: number) => (Math.atan2(y - cy, x - cx) * 180) / Math.PI;
+    const startAngle = angleAt(e.clientX, e.clientY);
+    const startRotation = rotation;
+    const pointerId = e.pointerId;
+    const dragTarget = e.currentTarget as HTMLElement;
+
+    const move = (ev: PointerEvent) => {
+      if (ev.pointerId !== pointerId) return;
+      ev.preventDefault();
+      let next = startRotation + (angleAt(ev.clientX, ev.clientY) - startAngle);
+      // Shift = přichytávání po 15°.
+      if (ev.shiftKey) next = Math.round(next / 15) * 15;
+      onChangeRotation(normalizeRotation(next));
+    };
+    const cleanup = () => {
+      dragTarget.removeEventListener("pointermove", move);
+      dragTarget.removeEventListener("pointerup", finish);
+      dragTarget.removeEventListener("pointercancel", finish);
+      dragTarget.removeEventListener("lostpointercapture", finish);
+      window.removeEventListener("blur", cleanup);
+      if (dragTarget.hasPointerCapture?.(pointerId)) dragTarget.releasePointerCapture(pointerId);
+      if (ownDragCleanupRef.current === cleanup) ownDragCleanupRef.current = null;
+      endGesture(cleanup);
+    };
+    const finish = (ev: PointerEvent) => {
+      if (ev.pointerId === pointerId) cleanup();
+    };
+
+    beginGesture(cleanup);
+    ownDragCleanupRef.current = cleanup;
+    dragTarget.setPointerCapture?.(pointerId);
+    dragTarget.addEventListener("pointermove", move);
+    dragTarget.addEventListener("pointerup", finish);
+    dragTarget.addEventListener("pointercancel", finish);
+    dragTarget.addEventListener("lostpointercapture", finish);
+    window.addEventListener("blur", cleanup);
+  };
+
   const nudge = (e: React.KeyboardEvent) => {
     if (!onChangeFrame) return;
     const step = e.shiftKey ? 5 : 1;
@@ -1059,10 +1108,24 @@ function FreeFrameBlock({
     onChangeFrame(applyFrameDrag(frame, "move", delta[0], delta[1]));
   };
 
+  const rotateKeys = (e: React.KeyboardEvent) => {
+    if (!onChangeRotation) return;
+    const step = e.shiftKey ? 15 : 1;
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      onChangeRotation(normalizeRotation(rotation - step));
+    } else if (e.key === "ArrowRight") {
+      e.preventDefault();
+      onChangeRotation(normalizeRotation(rotation + step));
+    }
+  };
+
   return (
     <div
+      ref={rootRef}
       data-slide-block-id={block.id}
       data-free-frame="true"
+      data-rotation={rotation || undefined}
       className={`pointer-events-auto absolute rounded-lg ${
         editable
           ? selected
@@ -1076,6 +1139,8 @@ function FreeFrameBlock({
         width: `${frame.w}%`,
         height: `${frame.h}%`,
         zIndex,
+        transform: rotation ? `rotate(${rotation}deg)` : undefined,
+        transformOrigin: "center center",
       }}
       onPointerDown={editable ? startBodyDrag : undefined}
     >
@@ -1098,7 +1163,22 @@ function FreeFrameBlock({
             </button>
             <span className="px-1 text-[10px] tabular-nums text-muted-foreground">
               {frame.x}% · {frame.y}% · {frame.w}×{frame.h}
+              {rotation ? ` · ${rotation}°` : ""}
             </span>
+            {onChangeRotation && (
+              <button
+                type="button"
+                onPointerDown={startRotate}
+                onKeyDown={rotateKeys}
+                onDoubleClick={() => onChangeRotation(0)}
+                title="Otočit blok (tažením; Shift = po 15°, dvojklik = zrovnat)"
+                aria-label="Otočit volně umístěný blok"
+                data-no-block-drag
+                className="cursor-grab touch-none rounded p-1 hover:bg-muted"
+              >
+                <RotateCw className="h-3.5 w-3.5 text-foreground" />
+              </button>
+            )}
             {onDelete && (
               <button
                 type="button"
@@ -1110,6 +1190,21 @@ function FreeFrameBlock({
               </button>
             )}
           </div>
+
+          {/* Úchyt rotace nad blokem */}
+          {onChangeRotation && (
+            <span
+              role="presentation"
+              data-rotate-handle="true"
+              data-no-block-drag
+              onPointerDown={startRotate}
+              onDoubleClick={() => onChangeRotation(0)}
+              style={{ cursor: "grab" }}
+              className="absolute left-1/2 top-0 flex h-5 w-5 -translate-x-1/2 -translate-y-8 touch-none items-center justify-center rounded-full border-2 border-primary bg-background shadow"
+            >
+              <RotateCw className="h-3 w-3 text-primary" />
+            </span>
+          )}
 
           {HANDLES.map((h) => (
             <span
