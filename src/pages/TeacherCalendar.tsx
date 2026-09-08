@@ -320,9 +320,14 @@ const TeacherCalendar = () => {
 
         {hasSchool && schoolId && (
           <div className="mt-8">
-            <SchoolCalendarPanel schoolId={schoolId} schoolName={schoolName} />
+            <SchoolCalendarPanel
+              schoolId={schoolId}
+              schoolName={schoolName}
+              canDismissForAll={role === "school_admin" || role === "admin"}
+            />
           </div>
         )}
+
       </main>
 
       {reflectionEvent && (
