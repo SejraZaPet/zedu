@@ -192,6 +192,40 @@ export const GameTemplateEditorDialog = ({ open, onOpenChange, template, onSaved
               </Select>
             </div>
 
+            {/* Pozadí celé hry */}
+            <div className="space-y-2 pt-2 border-t border-border">
+              <Label>Pozadí celé hry</Label>
+              <div className="flex items-center gap-2">
+                <div
+                  className="h-12 w-20 shrink-0 rounded-md border border-border bg-muted bg-cover bg-center"
+                  style={backgroundUrl ? { backgroundImage: `url("${backgroundUrl}")` } : undefined}
+                  aria-hidden
+                />
+                <GameBackgroundPickerDialog
+                  trigger={
+                    <Button size="sm" variant="outline" className="gap-1.5">
+                      <ImageIcon className="w-3.5 h-3.5" /> Vybrat pozadí
+                    </Button>
+                  }
+                  onPick={(url) => setBackgroundUrl(url)}
+                />
+                <Input
+                  value={backgroundUrl}
+                  onChange={(e) => setBackgroundUrl(e.target.value)}
+                  placeholder="nebo vlastní URL obrázku"
+                  className="h-9"
+                />
+                {backgroundUrl && (
+                  <Button size="sm" variant="ghost" onClick={() => setBackgroundUrl("")}>
+                    Zrušit
+                  </Button>
+                )}
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Použije se pro celou hru. Jednotlivé snímky mohou mít vlastní pozadí níže.
+              </p>
+            </div>
+
             {/* Content builder */}
             <div className="space-y-2 pt-2 border-t border-border">
               <div className="flex items-center justify-between">
@@ -218,6 +252,37 @@ export const GameTemplateEditorDialog = ({ open, onOpenChange, template, onSaved
                           {s.activitySpec?.activityType || s.type || "slide"}
                         </p>
                       </div>
+                      <div
+                        className="h-7 w-10 shrink-0 rounded border border-border bg-cover bg-center"
+                        style={slideBackgroundPreview(s)}
+                        aria-hidden
+                      />
+                      <GameBackgroundPickerDialog
+                        trigger={
+                          <Button size="icon" variant="ghost" className="h-7 w-7" aria-label="Pozadí snímku">
+                            <ImageIcon className="w-3.5 h-3.5" />
+                          </Button>
+                        }
+                        onPick={(url) => setSlideBackground(i, { image: url })}
+                      />
+                      <input
+                        type="color"
+                        aria-label="Barva pozadí snímku"
+                        className="h-7 w-7 cursor-pointer rounded border border-border bg-transparent p-0"
+                        value={s?.backgroundOverride?.color || "#ffffff"}
+                        onChange={(e) => setSlideBackground(i, { color: e.target.value })}
+                      />
+                      {s?.backgroundOverride && (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7"
+                          aria-label="Zrušit pozadí snímku"
+                          onClick={() => setSlideBackground(i, null)}
+                        >
+                          <Eraser className="w-3.5 h-3.5" />
+                        </Button>
+                      )}
                       <Button
                         size="icon"
                         variant="ghost"
@@ -232,6 +297,7 @@ export const GameTemplateEditorDialog = ({ open, onOpenChange, template, onSaved
                 </div>
               )}
             </div>
+
 
             {/* Optional assignment */}
             <Collapsible className="border border-border rounded-lg">
