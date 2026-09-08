@@ -272,6 +272,7 @@ const Index = () => {
         <main>
           <LandingSections />
           <LicensePlansSection />
+          <PwaInstallSection />
         </main>
         <SiteFooter />
         <AdminEditToggle />
