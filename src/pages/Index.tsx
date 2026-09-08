@@ -22,6 +22,7 @@ import PlatformShowcase from "@/components/landing/PlatformShowcase";
 import PodcastSection from "@/components/PodcastSection";
 import FinalCTA from "@/components/landing/FinalCTA";
 import LicensePlansSection from "@/components/LicensePlansSection";
+import PwaInstallSection from "@/components/landing/PwaInstallSection";
 import SiteFooter from "@/components/SiteFooter";
 import Seo from "@/components/Seo";
 import { useLandingSections, useAllLandingSections, type LandingSectionRow, type LandingSectionType } from "@/hooks/useLandingSections";
@@ -271,6 +272,7 @@ const Index = () => {
         <main>
           <LandingSections />
           <LicensePlansSection />
+          <PwaInstallSection />
         </main>
         <SiteFooter />
         <AdminEditToggle />
