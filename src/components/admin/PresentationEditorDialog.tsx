@@ -670,9 +670,28 @@ export const PresentationEditorDialog = ({
 
           {/* 2. NÁHLEDY SLIDŮ – kompaktní vodorovný pruh */}
           <div className="flex shrink-0 items-center gap-2 border-b border-border bg-background/60 px-4 py-2">
-            <div className="flex flex-1 items-stretch gap-2 overflow-x-auto pb-1">
+            <div className="flex flex-1 items-stretch gap-1 overflow-x-auto pb-1">
               {pendingSlides.map((slide, i) => (
-                <div key={slide?.slideId || i} className="flex flex-shrink-0 items-stretch gap-2">
+                <div key={slide?.slideId || i} className="flex flex-shrink-0 items-stretch gap-1">
+                  {/* Vložit nový snímek PŘED tento (funguje i před prvním) */}
+                  <button
+                    type="button"
+                    title={`Vložit nový snímek před snímek ${i + 1}`}
+                    aria-label={`Vložit nový snímek před snímek ${i + 1}`}
+                    onClick={() => openAddSlideAt(i)}
+                    onDragOver={(e) => { e.preventDefault(); setDropSlideIndex(i); }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      if (dragSlideIndex !== null) moveSlide(dragSlideIndex, dragSlideIndex < i ? i - 1 : i);
+                      setDragSlideIndex(null);
+                      setDropSlideIndex(null);
+                    }}
+                    className={`group flex w-4 shrink-0 items-center justify-center rounded transition-colors ${
+                      dropSlideIndex === i ? "bg-primary/70" : "hover:bg-primary/20"
+                    }`}
+                  >
+                    <Plus className="h-3 w-3 text-muted-foreground group-hover:text-primary" />
+                  </button>
                   {slide?.sectionTitle ? (
                     <div className="flex flex-col items-center justify-center border-l-2 border-primary pl-1.5">
                       <span className="max-w-[70px] text-[9px] font-semibold uppercase leading-tight tracking-wide text-primary">
@@ -680,29 +699,88 @@ export const PresentationEditorDialog = ({
                       </span>
                     </div>
                   ) : null}
-                  <button
-                    onClick={() => { setEditingSlideIndex(i); setSelectedBlockId(null); }}
-                    title={slide.projector?.headline || `Slide ${i + 1}`}
-                    className={`relative aspect-video w-20 flex-shrink-0 xl:w-28 overflow-hidden rounded-md border-2 transition-colors ${
-                      i === editingSlideIndex ? "border-primary ring-2 ring-primary/30" : "border-border hover:border-muted-foreground/50"
-                    }`}
-                    style={themeStageStyle(theme)}
+                  <div
+                    draggable
+                    onDragStart={(e) => { setDragSlideIndex(i); e.dataTransfer.effectAllowed = "move"; }}
+                    onDragEnd={() => { setDragSlideIndex(null); setDropSlideIndex(null); }}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      if (dragSlideIndex !== null) moveSlide(dragSlideIndex, i);
+                      setDragSlideIndex(null);
+                      setDropSlideIndex(null);
+                    }}
+                    className={`relative flex-shrink-0 ${dragSlideIndex === i ? "opacity-50" : ""}`}
                   >
-                    <div className="pointer-events-none absolute left-0 top-0 origin-top-left scale-[0.714] xl:scale-100">
-                    <div
-                      className="absolute left-0 top-0 origin-top-left"
-                      style={{ width: STAGE_W, height: STAGE_H, transform: `scale(${112 / STAGE_W})` }}
+                    <button
+                      onClick={() => { setEditingSlideIndex(i); setSelectedBlockId(null); }}
+                      title={slide.projector?.headline || `Slide ${i + 1}`}
+                      className={`relative aspect-video w-20 flex-shrink-0 xl:w-28 cursor-grab overflow-hidden rounded-md border-2 transition-colors ${
+                        i === editingSlideIndex ? "border-primary ring-2 ring-primary/30" : "border-border hover:border-muted-foreground/50"
+                      }`}
+                      style={themeStageStyle(theme)}
                     >
-                      <SlideBody slide={slide} themeId={themeId} />
-                    </div>
-                    </div>
-                    <span className="absolute bottom-0.5 left-0.5 rounded bg-background/85 px-1 text-[9px] font-semibold text-foreground">
-                      {i + 1}
-                    </span>
-                  </button>
+                      <div className="pointer-events-none absolute left-0 top-0 origin-top-left scale-[0.714] xl:scale-100">
+                      <div
+                        className="absolute left-0 top-0 origin-top-left"
+                        style={{ width: STAGE_W, height: STAGE_H, transform: `scale(${112 / STAGE_W})` }}
+                      >
+                        <SlideBody slide={slide} themeId={themeId} />
+                      </div>
+                      </div>
+                      <span className="absolute bottom-0.5 left-0.5 rounded bg-background/85 px-1 text-[9px] font-semibold text-foreground">
+                        {i + 1}
+                      </span>
+                    </button>
+                    {/* Šipky pro přesun (záloha k drag & drop) */}
+                    {pendingSlides.length > 1 && (
+                      <div className="absolute right-0.5 top-0.5 flex gap-0.5">
+                        <button
+                          type="button"
+                          disabled={i === 0}
+                          title="Posunout snímek doleva"
+                          aria-label="Posunout snímek doleva"
+                          onClick={(e) => { e.stopPropagation(); moveSlide(i, i - 1); }}
+                          className="rounded bg-background/85 p-0.5 text-foreground disabled:opacity-30 hover:bg-background"
+                        >
+                          <ChevronLeft className="h-3 w-3" />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={i === pendingSlides.length - 1}
+                          title="Posunout snímek doprava"
+                          aria-label="Posunout snímek doprava"
+                          onClick={(e) => { e.stopPropagation(); moveSlide(i, i + 1); }}
+                          className="rounded bg-background/85 p-0.5 text-foreground disabled:opacity-30 hover:bg-background"
+                        >
+                          <ChevronRight className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               ))}
+              {/* Vložit na konec / přetáhnout na konec */}
+              <button
+                type="button"
+                title="Vložit nový snímek na konec"
+                aria-label="Vložit nový snímek na konec"
+                onClick={() => openAddSlideAt(pendingSlides.length)}
+                onDragOver={(e) => { e.preventDefault(); setDropSlideIndex(pendingSlides.length); }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (dragSlideIndex !== null) moveSlide(dragSlideIndex, pendingSlides.length - 1);
+                  setDragSlideIndex(null);
+                  setDropSlideIndex(null);
+                }}
+                className={`group flex w-5 shrink-0 items-center justify-center rounded transition-colors ${
+                  dropSlideIndex === pendingSlides.length ? "bg-primary/70" : "hover:bg-primary/20"
+                }`}
+              >
+                <Plus className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary" />
+              </button>
             </div>
+
 
             <div className="flex shrink-0 items-center gap-1 border-l border-border pl-2">
               <Button size="sm" variant="outline" className="h-8 gap-1 text-xs" onClick={() => setAddSlideOpen(true)}>
