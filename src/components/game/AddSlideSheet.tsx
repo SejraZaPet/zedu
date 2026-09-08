@@ -618,6 +618,10 @@ export function AddSlideSheet({
               {kind === "teams" && "Rozdělit do skupin"}
               {kind === "differentiated" && "Diferencovaná aktivita"}
               {kind === "escape" && "Úniková hra"}
+              {kind === "presets" && "Další typy aktivit"}
+              {kind === "lesson" && "Vytvořit z lekce"}
+              {kind === "fromtext" && "Aktivita z vlastního textu"}
+
               {kind === "library" && "Vložit z knihovny her"}
               {kind === "bezlistart" && "BezliStart"}
             </SheetTitle>
