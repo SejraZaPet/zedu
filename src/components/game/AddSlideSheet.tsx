@@ -368,11 +368,15 @@ export function AddSlideSheet({
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) throw new Error("Nejste přihlášeni.");
+      // Vždy jen vlastní lekce – filtrujeme podle vlastníka učebnice,
+      // nespoléháme pouze na RLS (u rolí s víc oprávněními pustí vše).
       const { data, error } = await supabase
         .from("teacher_textbook_lessons")
-        .select("id, title, blocks")
+        .select("id, title, blocks, teacher_textbooks!inner(teacher_id)")
+        .eq("teacher_textbooks.teacher_id", session.user.id)
         .order("sort_order", { ascending: true });
       if (error) throw error;
+
       setLessonOptions(
         ((data as any[]) || []).map((l) => ({
           id: l.id,

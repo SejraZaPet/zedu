@@ -74,14 +74,27 @@ export const GameTemplateEditorDialog = ({ open, onOpenChange, template, onSaved
   useEffect(() => {
     if (!open) return;
     (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+      // Nabízíme jen vlastní témata ŠVP a vlastní lekce – explicitní filtr
+      // na vlastníka, nikoli jen RLS.
       const [{ data: topicRows }, { data: lessonRows }] = await Promise.all([
-        supabase.from("curriculum_topics").select("id, title").order("sort_order"),
-        supabase.from("teacher_textbook_lessons").select("id, title").order("sort_order"),
+        supabase
+          .from("curriculum_topics")
+          .select("id, title, teacher_curriculum_plans!inner(teacher_id)")
+          .eq("teacher_curriculum_plans.teacher_id", session.user.id)
+          .order("sort_order"),
+        supabase
+          .from("teacher_textbook_lessons")
+          .select("id, title, teacher_textbooks!inner(teacher_id)")
+          .eq("teacher_textbooks.teacher_id", session.user.id)
+          .order("sort_order"),
       ]);
       setTopics(((topicRows as any[]) || []).map((t) => ({ id: t.id, title: t.title })));
       setLessons(((lessonRows as any[]) || []).map((l) => ({ id: l.id, title: l.title })));
     })();
   }, [open]);
+
 
   /** Nastaví (nebo zruší) pozadí konkrétního snímku hry. */
   const setSlideBackground = (index: number, override: { image?: string; color?: string } | null) => {
