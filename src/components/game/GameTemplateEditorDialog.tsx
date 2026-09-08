@@ -78,17 +78,26 @@ export const GameTemplateEditorDialog = ({ open, onOpenChange, template, onSaved
       if (!session?.user) return;
       // Nabízíme jen vlastní témata ŠVP a vlastní lekce – explicitní filtr
       // na vlastníka, nikoli jen RLS.
+      const { data: books } = await supabase
+        .from("teacher_textbooks")
+        .select("id")
+        .eq("teacher_id", session.user.id)
+        .is("deleted_at", null);
+      const bookIds = ((books as any[]) || []).map((b) => b.id);
+
       const [{ data: topicRows }, { data: lessonRows }] = await Promise.all([
         supabase
           .from("curriculum_topics")
           .select("id, title, teacher_curriculum_plans!inner(teacher_id)")
           .eq("teacher_curriculum_plans.teacher_id", session.user.id)
           .order("sort_order"),
-        supabase
-          .from("teacher_textbook_lessons")
-          .select("id, title, teacher_textbooks!inner(teacher_id)")
-          .eq("teacher_textbooks.teacher_id", session.user.id)
-          .order("sort_order"),
+        bookIds.length
+          ? supabase
+              .from("teacher_textbook_lessons")
+              .select("id, title")
+              .in("textbook_id", bookIds)
+              .order("sort_order")
+          : Promise.resolve({ data: [] as any[] } as any),
       ]);
       setTopics(((topicRows as any[]) || []).map((t) => ({ id: t.id, title: t.title })));
       setLessons(((lessonRows as any[]) || []).map((l) => ({ id: l.id, title: l.title })));
