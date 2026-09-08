@@ -7807,6 +7807,10 @@ export type Database = {
         Args: { _join_token: string; _text: string }
         Returns: string
       }
+      submit_portfolio_assignment: {
+        Args: { _attempt_id: string }
+        Returns: Json
+      }
       sync_avatar_unlocks: {
         Args: { p_student_id: string }
         Returns: undefined
