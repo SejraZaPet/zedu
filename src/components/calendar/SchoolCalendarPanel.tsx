@@ -112,7 +112,7 @@ const SchoolCalendarPanel = ({ schoolId, schoolName, canDismissForAll }: Props) 
         map[a.event_id] = [...(map[a.event_id] ?? []), a.teacher_id];
       });
       setAttendees(map);
-      setDismissed(new Set(((dis ?? []) as { event_id: string }[]).map((d) => d.event_id)));
+      setDismissed(new Set(((dis ?? []) as unknown as { event_id: string }[]).map((d) => d.event_id)));
     } else {
       setAttendees({});
       setDismissed(new Set());
