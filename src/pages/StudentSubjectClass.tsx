@@ -154,10 +154,31 @@ export default function StudentSubjectClass() {
 
       setKlass((classRes.data as ClassRow) ?? null);
       const allSlots = ((slotsRes.data as any[]) ?? []) as ScheduleSlot[];
+
+      // Pokud je parametr UUID, dohledáme název předmětu (ze slotu nebo katalogu).
+      let label = rawSubjectParam;
+      if (UUID_RE.test(rawSubjectParam)) {
+        const fromSlot = allSlots.find(
+          (s: any) => s.subject_id === rawSubjectParam,
+        );
+        if (fromSlot?.subject_label) {
+          label = fromSlot.subject_label;
+        } else {
+          const { data: subj } = await supabase
+            .from("subjects" as any)
+            .select("name")
+            .eq("id", rawSubjectParam)
+            .maybeSingle();
+          if ((subj as any)?.name) label = (subj as any).name;
+        }
+      }
+      if (!cancelled) setResolvedLabel(label);
+
+      const labelKey = label.trim().toLowerCase();
       const filtered = allSlots.filter(
-        (s) =>
-          (s.subject_label || "").trim().toLowerCase() ===
-          subjectLabel.trim().toLowerCase(),
+        (s: any) =>
+          (s.subject_label || "").trim().toLowerCase() === labelKey ||
+          (UUID_RE.test(rawSubjectParam) && s.subject_id === rawSubjectParam),
       );
       setSlots(filtered);
 
