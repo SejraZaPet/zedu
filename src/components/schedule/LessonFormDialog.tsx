@@ -186,11 +186,15 @@ export default function LessonFormDialog({
   // Bez toho by se barva vybraná učitelem přepsala barvou předmětu při každém
   // dalším dotažení katalogu předmětů.
   const autoFilledSubjectRef = useRef<string | null>(null);
+  // Zvolil si týden (lichý/sudý/každý) uživatel sám? Pak ho nepřepisujeme.
+  const parityTouchedRef = useRef(false);
   useEffect(() => {
     if (!open) {
       initializedRef.current = false;
+      parityTouchedRef.current = false;
       return;
     }
+
     if (initializedRef.current) return;
     initializedRef.current = true;
 
