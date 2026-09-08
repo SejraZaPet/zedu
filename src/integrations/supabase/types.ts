@@ -7373,7 +7373,7 @@ export type Database = {
       }
       claim_school_class_as_teacher: {
         Args: { _class_id: string }
-        Returns: boolean
+        Returns: string
       }
       class_engagement_stats: { Args: { _class_id: string }; Returns: Json }
       clear_player_hand: { Args: { _player_id: string }; Returns: undefined }
