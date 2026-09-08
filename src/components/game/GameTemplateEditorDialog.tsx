@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -55,9 +55,14 @@ export const GameTemplateEditorDialog = ({ open, onOpenChange, template, onSaved
 
   const [topics, setTopics] = useState<{ id: string; title: string }[]>([]);
   const [lessons, setLessons] = useState<{ id: string; title: string }[]>([]);
+  /** Zabrání vynulování uložených hodnot při prvním otevření dialogu. */
+  const subjectInitRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      subjectInitRef.current = null;
+      return;
+    }
     setTitle(template?.title ?? "");
     setDescription(template?.description ?? "");
     setPurpose(template?.purpose ?? NONE);
@@ -68,41 +73,102 @@ export const GameTemplateEditorDialog = ({ open, onOpenChange, template, onSaved
     setTopicId(template?.curriculum_topic_id ?? NONE);
     setLessonId(template?.textbook_lesson_id ?? NONE);
     setBackgroundUrl(template?.background_url ?? "");
-
+    subjectInitRef.current = template?.subject ?? NONE;
   }, [open, template]);
 
+  // Témata ŠVP a lekce nabízíme jen z vlastního obsahu a jen k vybranému předmětu.
   useEffect(() => {
     if (!open) return;
+    if (subject === NONE) {
+      setTopics([]);
+      setLessons([]);
+      return;
+    }
+    let cancelled = false;
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) return;
-      // Nabízíme jen vlastní témata ŠVP a vlastní lekce – explicitní filtr
-      // na vlastníka, nikoli jen RLS.
+      const uid = session.user.id;
+      const picked = subjects.find(
+        (s) => s.label.trim().toLowerCase() === subject.trim().toLowerCase(),
+      );
+
+      // 1) Témata ŠVP učitele k danému předmětu.
+      const { data: topicRows } = await supabase
+        .from("curriculum_topics")
+        .select("id, title, sort_order, teacher_curriculum_plans!inner(teacher_id, subject)")
+        .eq("teacher_curriculum_plans.teacher_id", uid)
+        .ilike("teacher_curriculum_plans.subject", subject.trim())
+        .order("sort_order");
+
+      // 2) Vlastní učebnice odpovídající předmětu (podle katalogu, slugu i názvu).
       const { data: books } = await supabase
         .from("teacher_textbooks")
-        .select("id")
-        .eq("teacher_id", session.user.id)
+        .select("id, title, subject, subject_id")
+        .eq("teacher_id", uid)
         .is("deleted_at", null);
-      const bookIds = ((books as any[]) || []).map((b) => b.id);
+      const key = subject.trim().toLowerCase();
+      const bookRows = ((books as any[]) || []).filter(
+        (b) =>
+          (picked?.id && b.subject_id === picked.id) ||
+          (picked?.slug && b.subject === picked.slug) ||
+          String(b.subject || "").toLowerCase() === key ||
+          String(b.title || "").trim().toLowerCase() === key,
+      );
+      const bookIds = bookRows.map((b) => b.id);
+      const slugs = Array.from(
+        new Set([...(picked?.slug ? [picked.slug] : []), ...bookRows.map((b) => b.subject)].filter(Boolean)),
+      ) as string[];
 
-      const [{ data: topicRows }, { data: lessonRows }] = await Promise.all([
-        supabase
-          .from("curriculum_topics")
-          .select("id, title, teacher_curriculum_plans!inner(teacher_id)")
-          .eq("teacher_curriculum_plans.teacher_id", session.user.id)
-          .order("sort_order"),
-        bookIds.length
-          ? supabase
+      const own = bookIds.length
+        ? ((
+            await supabase
               .from("teacher_textbook_lessons")
               .select("id, title")
               .in("textbook_id", bookIds)
               .order("sort_order")
-          : Promise.resolve({ data: [] as any[] } as any),
-      ]);
+          ).data as any[]) || []
+        : [];
+
+      // 3) Lekce z katalogové struktury pro stejný předmět.
+      let catalog: any[] = [];
+      if (slugs.length) {
+        const { data: catTopics } = await supabase
+          .from("textbook_topics" as any)
+          .select("id")
+          .in("subject", slugs);
+        const ids = ((catTopics as any[]) || []).map((t) => t.id);
+        if (ids.length) {
+          const { data: catLessons } = await supabase
+            .from("textbook_lessons" as any)
+            .select("id, title, sort_order")
+            .in("topic_id", ids)
+            .order("sort_order");
+          catalog = ((catLessons as any[]) || []);
+        }
+      }
+
+      if (cancelled) return;
       setTopics(((topicRows as any[]) || []).map((t) => ({ id: t.id, title: t.title })));
-      setLessons(((lessonRows as any[]) || []).map((l) => ({ id: l.id, title: l.title })));
+      const merged = [...own, ...catalog]
+        .filter((l, i, arr) => arr.findIndex((x) => x.id === l.id) === i)
+        .map((l) => ({ id: l.id, title: l.title || "Bez názvu" }));
+      setLessons(merged);
     })();
-  }, [open]);
+    return () => {
+      cancelled = true;
+    };
+  }, [open, subject, subjects]);
+
+  /** Změna předmětu vyprázdní navázané volby (kromě prvního načtení). */
+  const handleSubjectChange = (value: string) => {
+    setSubject(value);
+    if (subjectInitRef.current !== value) {
+      setTopicId(NONE);
+      setLessonId(NONE);
+    }
+  };
+
 
 
   /** Nastaví (nebo zruší) pozadí konkrétního snímku hry. */
@@ -361,7 +427,7 @@ export const GameTemplateEditorDialog = ({ open, onOpenChange, template, onSaved
                 <div className="p-3 border-t border-border space-y-3">
                   <div className="space-y-1.5">
                     <Label className="text-xs">Předmět</Label>
-                    <Select value={subject} onValueChange={setSubject}>
+                    <Select value={subject} onValueChange={handleSubjectChange}>
                       <SelectTrigger><SelectValue placeholder="Nepřiřazeno" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value={NONE}>Nepřiřazeno</SelectItem>
