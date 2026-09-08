@@ -124,7 +124,7 @@ export default function LessonCurriculumTopicsPicker({
     return () => {
       cancelled = true;
     };
-  }, [user, textbookId, lessonId, lessonPlanId, subjectProp, targetId, table, fkCol]);
+  }, [user, textbookId, lessonId, lessonPlanId, subjectProp, targetId]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
