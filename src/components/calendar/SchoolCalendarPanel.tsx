@@ -77,6 +77,15 @@ const SchoolCalendarPanel = ({ schoolId, schoolName, canDismissForAll }: Props) 
     return m;
   }, [colleagues, user]);
 
+  const visibleEvents = useMemo(
+    () =>
+      showDismissed
+        ? events
+        : events.filter((e) => !e.dismissed_for_all_at && !dismissed.has(e.id)),
+    [events, dismissed, showDismissed],
+  );
+
+
   const load = useCallback(async () => {
     setLoading(true);
     const { data } = await supabase
