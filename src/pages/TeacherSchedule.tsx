@@ -938,7 +938,18 @@ export default function TeacherSchedule() {
                                     onClick={() => setEditingClassSlot(cls)}
                                   />
                                 ))}
+                                {/* Další hodina do stejného slotu (např. jiná
+                                    třída v opačném týdnu) – bez přepsání té první. */}
+                                <button
+                                  onClick={() => openNewLesson(dayIdx, row.period)}
+                                  className="w-full rounded-md border border-dashed border-border/70 hover:border-primary hover:bg-primary/5 text-muted-foreground/60 hover:text-primary text-[10px] flex items-center justify-center gap-1 transition-colors py-1 print-hide"
+                                  title={`Přidat další hodinu do ${row.period}. hodiny`}
+                                >
+                                  <Plus className="w-3 h-3" />
+                                  <span>Další týden</span>
+                                </button>
                               </div>
+
                             ) : (
                               <button
                                 onClick={() => openNewLesson(dayIdx, row.period)}
