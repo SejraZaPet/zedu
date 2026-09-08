@@ -68,7 +68,9 @@ const TeacherBezliStart = () => {
     const { data, error } = await supabase
       .from("zedstart_prompts")
       .select("id, category, prompt_text, suggested_duration_minutes, created_at")
+      .eq("teacher_id", user.id)
       .order("created_at", { ascending: false });
+
     if (error) {
       toast({ title: "Nepodařilo se načíst aktivity", description: error.message, variant: "destructive" });
     } else {
