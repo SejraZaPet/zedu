@@ -4102,6 +4102,35 @@ export type Database = {
           },
         ]
       }
+      school_calendar_event_dismissals: {
+        Row: {
+          dismissed_at: string
+          event_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          dismissed_at?: string
+          event_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          dismissed_at?: string
+          event_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "school_calendar_event_dismissals_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "school_calendar_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       school_calendar_events: {
         Row: {
           all_day: boolean
@@ -4109,6 +4138,8 @@ export type Database = {
           created_at: string
           created_by: string
           description: string | null
+          dismissed_for_all_at: string | null
+          dismissed_for_all_by: string | null
           end_time: string
           id: string
           location: string | null
@@ -4126,6 +4157,8 @@ export type Database = {
           created_at?: string
           created_by: string
           description?: string | null
+          dismissed_for_all_at?: string | null
+          dismissed_for_all_by?: string | null
           end_time: string
           id?: string
           location?: string | null
@@ -4143,6 +4176,8 @@ export type Database = {
           created_at?: string
           created_by?: string
           description?: string | null
+          dismissed_for_all_at?: string | null
+          dismissed_for_all_by?: string | null
           end_time?: string
           id?: string
           location?: string | null
@@ -7744,6 +7779,10 @@ export type Database = {
       }
       set_question_answered: {
         Args: { _answered: boolean; _question_id: string }
+        Returns: undefined
+      }
+      set_school_event_dismissed_for_all: {
+        Args: { _dismissed: boolean; _event_id: string }
         Returns: undefined
       }
       set_student_index: {
