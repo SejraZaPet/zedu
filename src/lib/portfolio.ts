@@ -129,7 +129,7 @@ export async function loadFullPortfolio(studentId: string): Promise<PortfolioIte
       type: "worksheet_result",
       title: a.assignments?.title || "Pracovní list",
       description: null,
-      subject: a.assignments?.subject ?? null,
+      subject: a.assignments?.subjects?.name ?? null,
       attachment_url: null,
       content_json: { score: a.score, max_score: a.max_score, attempt_id: a.id },
       created_at: a.submitted_at || new Date().toISOString(),
