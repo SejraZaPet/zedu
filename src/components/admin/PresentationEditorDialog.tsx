@@ -357,7 +357,7 @@ export const PresentationEditorDialog = ({
   const STYLE_KEYS = [
     "fontSize", "fontFamily", "color", "textColor", "align", "alignment", "lineHeight",
     "bold", "italic", "highlightColor", "backgroundOverride", "iconColor",
-    "fillColor", "strokeColor", "strokeWidth", "animation",
+    "fillColor", "strokeColor", "strokeWidth", "animation", "gradient", "fillGradient",
   ] as const;
   const TEXT_ONLY_KEYS = new Set(["fontSize", "fontFamily", "align", "lineHeight", "bold", "italic", "highlightColor"]);
   const COLOR_KEYS = new Set(["fillColor", "strokeColor", "strokeWidth", "iconColor", "color", "textColor"]);
