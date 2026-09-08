@@ -81,26 +81,83 @@ const SchoolCalendarPanel = ({ schoolId, schoolName, canDismissForAll }: Props) 
     setLoading(true);
     const { data } = await supabase
       .from("school_calendar_events")
-      .select("id, school_id, title, description, start_time, end_time, all_day, color, location, created_by")
+      .select("id, school_id, title, description, start_time, end_time, all_day, color, location, created_by, dismissed_for_all_at, dismissed_for_all_by")
       .eq("school_id", schoolId)
       .order("start_time", { ascending: true });
-    const rows = (data ?? []) as SchoolEvent[];
+    const rows = (data ?? []) as unknown as SchoolEvent[];
     setEvents(rows);
     if (rows.length) {
-      const { data: att } = await supabase
-        .from("school_calendar_event_attendees")
-        .select("event_id, teacher_id")
-        .in("event_id", rows.map((r) => r.id));
+      const ids = rows.map((r) => r.id);
+      const [{ data: att }, { data: dis }] = await Promise.all([
+        supabase
+          .from("school_calendar_event_attendees")
+          .select("event_id, teacher_id")
+          .in("event_id", ids),
+        supabase
+          .from("school_calendar_event_dismissals" as any)
+          .select("event_id")
+          .in("event_id", ids),
+      ]);
       const map: Record<string, string[]> = {};
       ((att ?? []) as { event_id: string; teacher_id: string }[]).forEach((a) => {
         map[a.event_id] = [...(map[a.event_id] ?? []), a.teacher_id];
       });
       setAttendees(map);
+      setDismissed(new Set(((dis ?? []) as { event_id: string }[]).map((d) => d.event_id)));
     } else {
       setAttendees({});
+      setDismissed(new Set());
     }
     setLoading(false);
   }, [schoolId]);
+
+  const toggleMine = async (e: SchoolEvent) => {
+    if (!user) return;
+    const isDismissed = dismissed.has(e.id);
+    if (isDismissed) {
+      const { error } = await supabase
+        .from("school_calendar_event_dismissals" as any)
+        .delete()
+        .eq("event_id", e.id)
+        .eq("user_id", user.id);
+      if (error) {
+        toast({ title: "Nepodařilo se vrátit zpět", description: error.message, variant: "destructive" });
+        return;
+      }
+      setDismissed((prev) => {
+        const next = new Set(prev);
+        next.delete(e.id);
+        return next;
+      });
+      toast({ title: "Označení vyřízeno zrušeno" });
+    } else {
+      const { error } = await supabase
+        .from("school_calendar_event_dismissals" as any)
+        .insert({ event_id: e.id, user_id: user.id } as any);
+      if (error) {
+        toast({ title: "Nepodařilo se označit", description: error.message, variant: "destructive" });
+        return;
+      }
+      setDismissed((prev) => new Set(prev).add(e.id));
+      toast({ title: "Označeno jako vyřízené", description: "Jen pro vás – kolegům se nic nemění." });
+    }
+  };
+
+  const toggleForAll = async (e: SchoolEvent, dismissedFlag: boolean) => {
+    const { error } = await supabase.rpc("set_school_event_dismissed_for_all" as any, {
+      _event_id: e.id,
+      _dismissed: dismissedFlag,
+    } as any);
+    if (error) {
+      toast({ title: "Nepodařilo se uložit", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({
+      title: dismissedFlag ? "Vyřízeno pro celou školu" : "Označení pro celou školu zrušeno",
+    });
+    void load();
+  };
+
 
   useEffect(() => {
     void load();
