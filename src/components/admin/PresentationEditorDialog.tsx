@@ -783,9 +783,19 @@ export const PresentationEditorDialog = ({
 
 
             <div className="flex shrink-0 items-center gap-1 border-l border-border pl-2">
-              <Button size="sm" variant="outline" className="h-8 gap-1 text-xs" onClick={() => setAddSlideOpen(true)}>
+              <Button size="sm" variant="outline" className="h-8 gap-1 text-xs" onClick={() => openAddSlideAt(editingSlideIndex + 1)}>
                 <Plus className="h-3.5 w-3.5" /> Slide
               </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 gap-1 text-xs"
+                title="Vložit nový snímek na začátek prezentace"
+                onClick={() => openAddSlideAt(0)}
+              >
+                <Plus className="h-3.5 w-3.5" /> Na začátek
+              </Button>
+
               <Button
                 size="sm"
                 variant="ghost"
@@ -1750,10 +1760,10 @@ export const PresentationEditorDialog = ({
             layoutsOnly
 
             onAddSlides={(newSlides) => {
-              const updated = [...pendingSlides, ...newSlides];
-              setPendingSlides(updated);
-              setEditingSlideIndex(pendingSlides.length);
+              insertSlidesAt(insertAtIndex ?? pendingSlides.length, newSlides);
+              setInsertAtIndex(null);
             }}
+
           />
         </DialogContent>
       </Dialog>
