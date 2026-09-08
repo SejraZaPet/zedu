@@ -5,6 +5,8 @@
  * podle typu bloku a podle vizuálního tématu prezentace.
  */
 
+import { gradientCss, gradientTextStyle, type SlideGradient } from "@/lib/slide-gradient";
+
 /** Standardní bodové velikosti jako ve Wordu / PowerPointu. */
 export const SLIDE_FONT_SIZES = [14, 18, 24, 28, 32, 36, 40, 48, 60, 72, 96, 120] as const;
 
@@ -74,6 +76,8 @@ export interface SlideTextStyleProps {
   align?: "left" | "center" | "right" | null;
   /** Řádkování (násobek, např. 1.2 / 1.5 / 2). */
   lineHeight?: number | null;
+  /** Barevný přechod textu; má přednost před `color`. */
+  gradient?: SlideGradient | null;
 }
 
 /** Paleta barev zvýrazňovače. */
@@ -105,13 +109,17 @@ export function slideTextStyle(props?: SlideTextStyleProps | null): React.CSSPro
     style.lineHeight = props.lineHeight;
   }
 
-  if (props.highlightColor) {
+  const textGradient = gradientTextStyle((props as any).gradient);
+
+  if (props.highlightColor && !textGradient) {
     style.backgroundColor = props.highlightColor;
     style.boxDecorationBreak = "clone" as any;
     (style as any).WebkitBoxDecorationBreak = "clone";
     style.borderRadius = "0.25rem";
     style.padding = "0.05em 0.2em";
   }
+  // Přechod v textu (background-clip: text) má přednost před plnou barvou.
+  if (textGradient) Object.assign(style, textGradient);
   return style;
 }
 
@@ -135,6 +143,8 @@ export function slideBackgroundOverride(slide: any): string | null {
   if (typeof image === "string" && image) {
     return `#000 url("${image.replace(/"/g, "%22")}") center / cover no-repeat`;
   }
+  const gradient = gradientCss(slide?.backgroundOverride?.gradient);
+  if (gradient) return gradient;
   const color = slide?.backgroundOverride?.color;
   return typeof color === "string" && color ? color : null;
 }
@@ -154,6 +164,10 @@ export function slideBackgroundOverrideStyle(slide: any): Record<string, string>
       backgroundRepeat: "no-repeat",
       backgroundColor: "transparent",
     };
+  }
+  const gradient = gradientCss(slide?.backgroundOverride?.gradient);
+  if (gradient) {
+    return { backgroundImage: gradient, backgroundColor: "transparent" };
   }
   const color = slide?.backgroundOverride?.color;
   if (typeof color === "string" && color) {

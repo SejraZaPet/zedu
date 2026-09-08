@@ -47,6 +47,7 @@ import { SLIDE_TRANSITIONS, transitionFromSlides, applyTransitionToSlides, type 
 import { exportSlidesToPdf } from "@/lib/presentation-pdf-export";
 import ShapePickerPopover from "@/components/admin/ShapePickerPopover";
 import ColorPicker from "@/components/admin/ColorPicker";
+import GradientPicker from "@/components/admin/GradientPicker";
 import type { DrawingStroke } from "@/components/admin/SlideDrawingLayer";
 import AiBlockTextButton from "@/components/admin/AiBlockTextButton";
 import SlideFloatingFormatToolbar from "@/components/admin/SlideFloatingFormatToolbar";
@@ -356,7 +357,7 @@ export const PresentationEditorDialog = ({
   const STYLE_KEYS = [
     "fontSize", "fontFamily", "color", "textColor", "align", "alignment", "lineHeight",
     "bold", "italic", "highlightColor", "backgroundOverride", "iconColor",
-    "fillColor", "strokeColor", "strokeWidth", "animation",
+    "fillColor", "strokeColor", "strokeWidth", "animation", "gradient", "fillGradient",
   ] as const;
   const TEXT_ONLY_KEYS = new Set(["fontSize", "fontFamily", "align", "lineHeight", "bold", "italic", "highlightColor"]);
   const COLOR_KEYS = new Set(["fillColor", "strokeColor", "strokeWidth", "iconColor", "color", "textColor"]);
@@ -1099,6 +1100,7 @@ export const PresentationEditorDialog = ({
                       >
                         Podle tématu prezentace
                       </button>
+                      <p className="text-[11px] text-muted-foreground">Plná barva</p>
                       <ColorPicker
                         value={(currentSlide as any).backgroundOverride?.color || null}
                         onChange={(v) =>
@@ -1106,6 +1108,20 @@ export const PresentationEditorDialog = ({
                         }
                         swatches={SLIDE_BACKGROUND_COLORS}
                       />
+                      <p className="text-[11px] text-muted-foreground">Barevný přechod</p>
+                      <GradientPicker
+                        value={(currentSlide as any).backgroundOverride?.gradient || null}
+                        onChange={(v) =>
+                          updateSlide({
+                            backgroundOverride: v
+                              ? { gradient: v }
+                              : (currentSlide as any).backgroundOverride?.gradient
+                                ? null
+                                : (currentSlide as any).backgroundOverride || null,
+                          })
+                        }
+                      />
+
 
                       <div className="grid grid-cols-1 gap-1.5">
                         <MediaPickerDialog

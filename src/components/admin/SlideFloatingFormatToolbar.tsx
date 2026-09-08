@@ -17,6 +17,8 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import IconPickerDialog from "@/components/admin/IconPickerDialog";
 import ColorPicker from "@/components/admin/ColorPicker";
+import GradientPicker from "@/components/admin/GradientPicker";
+import { gradientCss } from "@/lib/slide-gradient";
 import { SHAPE_KINDS } from "@/components/blocks/ShapeRenderer";
 import type { Block } from "@/lib/textbook-config";
 
@@ -240,16 +242,30 @@ export const SlideFloatingFormatToolbar = ({
           <Popover>
             <PopoverTrigger asChild>
               <Button size="sm" variant="ghost" className="h-7 w-7 p-0" title="Barva textu">
-                <Palette className="h-3.5 w-3.5" style={{ color: props.color || undefined }} />
+                {gradientCss((props as any).gradient) ? (
+                  <span
+                    className="inline-block h-3.5 w-3.5 rounded-full border border-border"
+                    style={{ backgroundImage: gradientCss((props as any).gradient) || undefined }}
+                  />
+                ) : (
+                  <Palette className="h-3.5 w-3.5" style={{ color: props.color || undefined }} />
+                )}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-2">
+            <PopoverContent className="w-auto space-y-2 p-2">
               <ColorPicker
                 value={props.color}
-                onChange={(v) => set({ color: v })}
+                onChange={(v) => set({ color: v, gradient: null })}
                 allowNull
                 nullLabel="Výchozí"
               />
+              <div className="border-t border-border pt-2">
+                <p className="mb-1 text-[11px] text-muted-foreground">Barevný přechod textu</p>
+                <GradientPicker
+                  value={(props as any).gradient}
+                  onChange={(v) => set({ gradient: v })}
+                />
+              </div>
             </PopoverContent>
           </Popover>
 
@@ -422,18 +438,31 @@ export const SlideFloatingFormatToolbar = ({
               <Button size="sm" variant="ghost" className="h-7 px-2 text-[11px]" title="Barva výplně">
                 <span
                   className="mr-1 inline-block h-3 w-3 rounded-full border border-border"
-                  style={{ background: props.fillColor && props.fillColor !== "none" ? props.fillColor : "transparent" }}
+                  style={{
+                    backgroundImage: gradientCss((props as any).fillGradient) || undefined,
+                    backgroundColor:
+                      !gradientCss((props as any).fillGradient) && props.fillColor && props.fillColor !== "none"
+                        ? props.fillColor
+                        : "transparent",
+                  }}
                 />
                 Výplň
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-2">
+            <PopoverContent className="w-auto space-y-2 p-2">
               <ColorPicker
                 value={props.fillColor === "none" ? null : props.fillColor}
-                onChange={(v) => set({ fillColor: v ?? "none" })}
+                onChange={(v) => set({ fillColor: v ?? "none", fillGradient: null })}
                 allowNull
                 nullLabel="Bez"
               />
+              <div className="border-t border-border pt-2">
+                <p className="mb-1 text-[11px] text-muted-foreground">Barevný přechod výplně</p>
+                <GradientPicker
+                  value={(props as any).fillGradient}
+                  onChange={(v) => set({ fillGradient: v })}
+                />
+              </div>
             </PopoverContent>
           </Popover>
 

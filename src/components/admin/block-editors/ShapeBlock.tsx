@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ShapeRenderer, { SHAPE_KINDS } from "@/components/blocks/ShapeRenderer";
 import ColorPicker from "@/components/admin/ColorPicker";
+import GradientPicker from "@/components/admin/GradientPicker";
 import type { Block } from "@/lib/textbook-config";
 
 interface Props {
@@ -63,6 +64,14 @@ const ShapeBlock = ({ block, onChange }: Props) => {
         />
       </div>
       <div>
+        <Label className="text-[11px] text-muted-foreground">Přechod výplně</Label>
+        <GradientPicker
+          value={p.fillGradient}
+          onChange={(v) => set({ fillGradient: v })}
+          className="mt-1"
+        />
+      </div>
+      <div>
         <Label className="text-[11px] text-muted-foreground">Obrys</Label>
         <ColorPicker
           value={p.strokeColor === "none" ? null : p.strokeColor}
@@ -79,6 +88,7 @@ const ShapeBlock = ({ block, onChange }: Props) => {
           fillColor={p.fillColor}
           strokeColor={p.strokeColor}
           strokeWidth={p.strokeWidth}
+          fillGradient={p.fillGradient}
           height={Math.min(Number(p.height) || 160, 160)}
         />
       </div>

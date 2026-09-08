@@ -787,6 +787,7 @@ function EditableBlock({
           fillColor={p.fillColor}
           strokeColor={p.strokeColor}
           strokeWidth={p.strokeWidth}
+          fillGradient={p.fillGradient}
           height={Number(p.height) || 160}
           fill={framed}
         />
