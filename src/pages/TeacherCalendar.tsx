@@ -32,7 +32,7 @@ import { useMySchool } from "@/hooks/useMySchool";
 
 const TeacherCalendar = () => {
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const { user, role, loading: authLoading } = useAuth();
   const { schoolId, schoolName, hasSchool } = useMySchool();
   const [weekStart, setWeekStart] = useState<Date>(
     () => getWeekRange(new Date()).start,
