@@ -1119,12 +1119,14 @@ export default function TeacherSchedule() {
         onDelete={!isNew ? deleteLesson : undefined}
         onSave={async ({ value, slots }) => {
           if (!editing) return;
-          // Nově: hodina směrovaná na SKUPINU předmětu se ukládá do databáze
-          // (aby ji viděli i žáci skupiny). Osobní/třídní tok zůstává beze změny.
-          if (value.groupId) {
+          // Hodina směrovaná na SKUPINU předmětu NEBO na TŘÍDU se ukládá do databáze
+          // (class_schedule_slots), aby ji viděli i žáci. Bez přiřazené třídy/skupiny
+          // zůstává hodina jen v osobním rozvrhu učitele.
+          if (value.groupId || value.classId) {
             const rows = slots.map((s) => ({
-              class_id: null,
-              group_id: value.groupId,
+              class_id: value.groupId ? null : value.classId,
+              group_id: value.groupId ?? null,
+
               subject_label: value.subject,
               subject_id: value.subjectId ?? null,
               abbreviation: value.abbreviation || null,
