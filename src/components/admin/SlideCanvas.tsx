@@ -821,7 +821,115 @@ function EditableBlock({
   }
 
   // Tvary vykreslujeme přímo jako SVG – ať jdou upravovat z plovoucí lišty.
+  // Karty (card_grid) – editovatelné přímo na plátně včetně přidání/odebrání karty.
+  if (block.type === "card_grid" && editable) {
+    type CardData = { title?: string; text?: string; mode?: string; items?: string[] };
+    const cards: CardData[] = Array.isArray(block.props?.cards) ? block.props.cards : [];
+    const columns = Number(block.props?.columns) === 3 ? 3 : 2;
+    const patchCards = (fn: (list: CardData[]) => CardData[]) =>
+      update((b) => ({
+        ...b,
+        props: {
+          ...b.props,
+          cards: fn(Array.isArray(b.props?.cards) ? [...b.props.cards] : []),
+        },
+      }));
+
+    return (
+      <div>
+        <div className={`grid gap-4 ${columns === 3 ? "grid-cols-1 md:grid-cols-3" : "grid-cols-1 md:grid-cols-2"}`}>
+          {cards.map((card, i) => (
+            <div key={i} className="relative rounded-lg border border-border bg-card p-5">
+              <button
+                type="button"
+                data-no-block-drag
+                title="Smazat kartu"
+                onClick={() => patchCards((list) => list.filter((_, j) => j !== i))}
+                className="absolute right-1 top-1 rounded px-1 text-sm text-muted-foreground opacity-40 hover:bg-muted hover:opacity-100"
+              >
+                ×
+              </button>
+              <EditableText
+                editable
+                value={card.title || ""}
+                placeholder="Název karty…"
+                className="font-heading mb-2 pr-5 text-lg font-semibold text-card-foreground"
+                onCommit={(v) =>
+                  patchCards((list) => {
+                    list[i] = { ...list[i], title: v };
+                    return list;
+                  })
+                }
+              />
+              {card.mode === "bullets" ? (
+                <ul className="list-inside list-disc space-y-1 text-sm text-muted-foreground">
+                  {(card.items?.length ? card.items : [""]).map((item, ii) => (
+                    <li key={ii} className="flex items-start gap-2">
+                      <span>•</span>
+                      <EditableText
+                        editable
+                        value={item}
+                        placeholder="Položka…"
+                        className="flex-1"
+                        onCommit={(v) =>
+                          patchCards((list) => {
+                            const its = [...(list[i]?.items || [])];
+                            its[ii] = v;
+                            list[i] = { ...list[i], items: its };
+                            return list;
+                          })
+                        }
+                      />
+                    </li>
+                  ))}
+                  <li>
+                    <button
+                      type="button"
+                      data-no-block-drag
+                      className="text-xs text-primary hover:underline"
+                      onClick={() =>
+                        patchCards((list) => {
+                          list[i] = { ...list[i], items: [...(list[i]?.items || []), ""] };
+                          return list;
+                        })
+                      }
+                    >
+                      + Přidat bod
+                    </button>
+                  </li>
+                </ul>
+              ) : (
+                <EditableText
+                  editable
+                  multiline
+                  value={card.text || ""}
+                  placeholder="Text karty…"
+                  className="text-sm text-muted-foreground"
+                  onCommit={(v) =>
+                    patchCards((list) => {
+                      list[i] = { ...list[i], text: v };
+                      return list;
+                    })
+                  }
+                />
+              )}
+            </div>
+          ))}
+          <button
+            type="button"
+            data-no-block-drag
+            onClick={() => patchCards((list) => [...list, { title: "", text: "", mode: "text" }])}
+            className="flex min-h-[100px] items-center justify-center rounded-lg border-2 border-dashed border-border/70 p-5 text-sm text-muted-foreground hover:border-primary hover:text-primary"
+          >
+            + Přidat kartu
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (block.type === "shape") {
+
     const p = (block.props || {}) as Record<string, any>;
     return (
       <div className={framed ? "h-full w-full" : ""}>
