@@ -119,7 +119,11 @@ const TodayWidget = ({ role }: Props) => {
       const slots = (slotsRes.data ?? []) as any[];
       const targets: Record<string, string> = {};
       for (const slot of slots) {
-        const subject = slot.subject_id || (slot.subject_label ? encodeURIComponent(slot.subject_label) : null);
+        // URL nese NÁZEV předmětu (stránka detailu ho používá jako nadpis i filtr).
+        // subject_id (UUID) slouží jen jako poslední fallback.
+        const subject = slot.subject_label
+          ? encodeURIComponent(slot.subject_label)
+          : slot.subject_id || null;
         if (!subject) continue;
         if (role === "student") {
           if (slot.class_id) targets[slot.id] = `/student/predmet/${subject}/trida/${slot.class_id}`;
