@@ -806,9 +806,130 @@ export function AddSlideSheet({
                   </p>
                 </div>
               </Button>
+              <Button
+                variant="outline"
+                className="justify-start h-auto py-3"
+                onClick={() => setKind("presets")}
+              >
+                <Puzzle className="w-5 h-5 mr-3 text-primary" />
+                <div className="text-left">
+                  <p className="font-medium">Další typy aktivit</p>
+                  <p className="text-xs text-muted-foreground">
+                    Doplňovačky, křížovka, pexeso, kartičky, přiřazování a další
+                  </p>
+                </div>
+              </Button>
+              <Button
+                variant="outline"
+                className="justify-start h-auto py-3"
+                onClick={openLessonPicker}
+              >
+                <BookOpen className="w-5 h-5 mr-3 text-primary" />
+                <div className="text-left">
+                  <p className="font-medium">Vytvořit z lekce</p>
+                  <p className="text-xs text-muted-foreground">
+                    Převezmi obsah hotové lekce jako slidy hry
+                  </p>
+                </div>
+              </Button>
+              <Button
+                variant="outline"
+                className="justify-start h-auto py-3"
+                onClick={() => setKind("fromtext")}
+              >
+                <Wand2 className="w-5 h-5 mr-3 text-primary" />
+                <div className="text-left">
+                  <p className="font-medium">Aktivita z vlastního textu</p>
+                  <p className="text-xs text-muted-foreground">
+                    Vlož text z prezentace, učebnice nebo vlastní přípravy
+                  </p>
+                </div>
+              </Button>
 </>)}
             </div>
           )}
+
+          {kind === "presets" && (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Vloží aktivitu s ukázkovým obsahem – doladíte ji v editoru slidu.
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {EXTRA_ACTIVITY_PRESETS.map((preset) => {
+                  const Icon = (LucideIcons as any)[preset.icon] ?? Puzzle;
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      disabled={busy}
+                      onClick={() => insertPreset(preset)}
+                      title={preset.hint}
+                      className="flex flex-col items-start gap-1 rounded-lg border border-border bg-card p-2.5 text-left transition-colors hover:border-primary hover:bg-primary/5 disabled:opacity-50"
+                    >
+                      <Icon className="h-4 w-4 text-primary" />
+                      <span className="text-xs font-medium leading-tight">{preset.label}</span>
+                      <span className="text-[11px] text-muted-foreground leading-tight">{preset.hint}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {kind === "lesson" && (
+            <div className="space-y-2">
+              {lessonsLoading ? (
+                <p className="text-sm text-muted-foreground flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" /> Načítání lekcí…
+                </p>
+              ) : lessonOptions.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Zatím nemáte žádnou lekci s obsahem.
+                </p>
+              ) : (
+                lessonOptions.map((l) => (
+                  <Button
+                    key={l.id}
+                    variant="outline"
+                    className="justify-start h-auto py-3 w-full whitespace-normal"
+                    disabled={busy}
+                    onClick={() => insertLesson(l)}
+                  >
+                    <div className="text-left">
+                      <p className="font-medium">{l.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {l.blocks.length} bloků obsahu
+                      </p>
+                    </div>
+                  </Button>
+                ))
+              )}
+            </div>
+          )}
+
+          {kind === "fromtext" && (
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="ai-text">Vložte text z prezentace, učebnice nebo vlastní přípravy</Label>
+                <Textarea
+                  id="ai-text"
+                  rows={10}
+                  value={aiText}
+                  onChange={(e) => setAiText(e.target.value)}
+                  placeholder="Sem vložte text, ze kterého má AI vytvořit aktivitu…"
+                  disabled={aiLoading || busy}
+                />
+              </div>
+              <Button onClick={runAiFromText} disabled={aiLoading || busy} className="w-full gap-2">
+                {aiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                Vytvořit aktivitu z textu
+              </Button>
+              <p className="text-[11px] text-muted-foreground">
+                Aktivitu vytváří AI – před použitím ji zkontrolujte.
+              </p>
+            </div>
+          )}
+
 
           {kind === "library" && (
             <div className="space-y-2">
