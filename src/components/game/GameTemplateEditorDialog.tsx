@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -427,7 +427,7 @@ export const GameTemplateEditorDialog = ({ open, onOpenChange, template, onSaved
                 <div className="p-3 border-t border-border space-y-3">
                   <div className="space-y-1.5">
                     <Label className="text-xs">Předmět</Label>
-                    <Select value={subject} onValueChange={setSubject}>
+                    <Select value={subject} onValueChange={handleSubjectChange}>
                       <SelectTrigger><SelectValue placeholder="Nepřiřazeno" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value={NONE}>Nepřiřazeno</SelectItem>
