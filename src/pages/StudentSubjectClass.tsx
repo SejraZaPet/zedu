@@ -95,7 +95,11 @@ export default function StudentSubjectClass() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
 
-  const subjectLabel = useMemo(() => decodeSubject(subjectId), [subjectId]);
+  const rawSubjectParam = useMemo(() => decodeSubject(subjectId), [subjectId]);
+  // Parametr trasy může být název předmětu, ale i jeho UUID (starší odkazy).
+  // UUID nejdřív přeložíme na název, aby se neukazovalo jako nadpis stránky.
+  const [resolvedLabel, setResolvedLabel] = useState<string | null>(null);
+  const subjectLabel = resolvedLabel ?? rawSubjectParam;
 
   const [klass, setKlass] = useState<ClassRow | null>(null);
   const [slots, setSlots] = useState<ScheduleSlot[]>([]);
