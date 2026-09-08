@@ -73,7 +73,9 @@ export async function launchTemplateSession(template: GameTemplate): Promise<str
         teamMode: teamKind !== "none",
         teamCount: 2,
         subjectKey: subjectKeyFromLabel(template.subject),
+        backgroundUrl: template.background_url ?? null,
       } as any,
+
       status: "lobby",
       current_question_index: -1,
     })
