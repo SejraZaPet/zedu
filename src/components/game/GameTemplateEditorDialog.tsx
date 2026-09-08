@@ -9,13 +9,23 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, Plus, Trash2, Loader2, Link2 } from "lucide-react";
+import { ChevronDown, Plus, Trash2, Loader2, Link2, Image as ImageIcon, Eraser } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { AddSlideSheet } from "@/components/game/AddSlideSheet";
+import { GameBackgroundPickerDialog } from "@/components/game/GameBackgroundPickerDialog";
 import { GAME_PURPOSES, type GameTemplate } from "@/lib/game-templates";
 import { GAME_MODES } from "@/lib/game-modes";
 import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
+
+/** Náhled pozadí snímku – barva nebo obrázek z per-slide přepisu. */
+const slideBackgroundPreview = (slide: any) => {
+  const image = slide?.backgroundOverride?.image;
+  if (image) return { backgroundImage: `url("${String(image).replace(/"/g, "%22")}")` };
+  const color = slide?.backgroundOverride?.color;
+  return color ? { backgroundColor: color } : { backgroundColor: "hsl(var(--muted))" };
+};
+
 
 const NONE = "__none__";
 
