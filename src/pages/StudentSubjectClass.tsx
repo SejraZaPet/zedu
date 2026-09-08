@@ -79,6 +79,9 @@ const decodeSubject = (raw: string) => {
   }
 };
 
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 type AttemptState = "not_submitted" | "submitted" | "graded";
 
 const stateMeta: Record<AttemptState, { label: string; variant: "default" | "secondary" | "outline" | "destructive" }> = {
