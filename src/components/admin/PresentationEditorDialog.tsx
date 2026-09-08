@@ -1099,6 +1099,7 @@ export const PresentationEditorDialog = ({
                       >
                         Podle tématu prezentace
                       </button>
+                      <p className="text-[11px] text-muted-foreground">Plná barva</p>
                       <ColorPicker
                         value={(currentSlide as any).backgroundOverride?.color || null}
                         onChange={(v) =>
@@ -1106,6 +1107,20 @@ export const PresentationEditorDialog = ({
                         }
                         swatches={SLIDE_BACKGROUND_COLORS}
                       />
+                      <p className="text-[11px] text-muted-foreground">Barevný přechod</p>
+                      <GradientPicker
+                        value={(currentSlide as any).backgroundOverride?.gradient || null}
+                        onChange={(v) =>
+                          updateSlide({
+                            backgroundOverride: v
+                              ? { gradient: v }
+                              : (currentSlide as any).backgroundOverride?.gradient
+                                ? null
+                                : (currentSlide as any).backgroundOverride || null,
+                          })
+                        }
+                      />
+
 
                       <div className="grid grid-cols-1 gap-1.5">
                         <MediaPickerDialog
