@@ -1157,13 +1157,35 @@ export default function TeacherSchedule() {
                 user.id,
               );
             }
+            // Hodina teď žije v rozvrhu třídy/skupiny – odstraň případnou
+            // starší osobní kopii, aby se nezobrazovala dvakrát.
+            const personalId = editing.id;
+            const personalMirror = editing.mirrorKey;
+            setData((d) => ({
+              ...d,
+              lessonsBoth: d.lessonsBoth.filter(
+                (x) => x.id !== personalId && (!personalMirror || x.mirrorKey !== personalMirror),
+              ),
+              lessonsOdd: d.lessonsOdd.filter(
+                (x) => x.id !== personalId && (!personalMirror || x.mirrorKey !== personalMirror),
+              ),
+              lessonsEven: d.lessonsEven.filter(
+                (x) => x.id !== personalId && (!personalMirror || x.mirrorKey !== personalMirror),
+              ),
+            }));
             toast({
-              title: rows.length > 1 ? `Přidáno do ${rows.length} dnů` : "Přidáno do rozvrhu skupiny",
+              title:
+                rows.length > 1
+                  ? `Přidáno do ${rows.length} dnů`
+                  : value.groupId
+                    ? "Přidáno do rozvrhu skupiny"
+                    : "Přidáno do rozvrhu třídy",
             });
             setEditing(null);
             fetchClassSlots();
             return;
           }
+
           const base: LessonEntry = {
             ...editing,
             subject: value.subject,
