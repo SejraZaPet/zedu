@@ -44,6 +44,7 @@ export {
   colorForSubject,
   getSubjectColor,
   getSubjectAbbreviation,
+  getSubjectName,
 } from "./subject-appearance";
 import { SUBJECT_COLORS, colorForSubject } from "./subject-appearance";
 
