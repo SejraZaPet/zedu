@@ -188,10 +188,15 @@ export default function LessonFormDialog({
   const autoFilledSubjectRef = useRef<string | null>(null);
   // Zvolil si týden (lichý/sudý/každý) uživatel sám? Pak ho nepřepisujeme.
   const parityTouchedRef = useRef(false);
+  // Je formulář už naplněný pro AKTUÁLNÍ otevření? Dokud ne, nesmí žádný
+  // doplňovací efekt pracovat s hodnotami z minule otevřené hodiny —
+  // jinak by se do druhé hodiny propsala zkratka/barva/Výuka z té první.
+  const [initDone, setInitDone] = useState(false);
   useEffect(() => {
     if (!open) {
       initializedRef.current = false;
       parityTouchedRef.current = false;
+      setInitDone(false);
       return;
     }
 
@@ -230,31 +235,33 @@ export default function LessonFormDialog({
 
     const startDay = initial?.day ?? 0;
     setSlotPairs([{ day: startDay, period: initial?.period ?? defaultPeriod }]);
+    setInitDone(true);
   }, [open, isNew, initial, subjects, defaultPeriod]);
+
 
   // Předvyplnění týdne (lichý/sudý/každý) u uložené hodiny. Data se mohou
   // dotáhnout až po otevření dialogu, proto hodnotu doplníme i později –
   // ale jen dokud si uživatel týden sám nezvolil.
   useEffect(() => {
-    if (!open || parityTouchedRef.current) return;
+    if (!open || !initDone || parityTouchedRef.current) return;
     const p = initial?.weekParity;
     if (p && p !== weekParity) setWeekParity(p);
-  }, [open, initial?.weekParity, weekParity]);
+  }, [open, initDone, initial?.weekParity, weekParity]);
 
   // Dohledání ID předmětu, když se katalog dotáhne až po otevření dialogu
   // (u editace uložené hodiny, která má jen textový název).
   useEffect(() => {
-    if (!open || subjectId || !subjectChoice || subjectChoice === CUSTOM_SUBJECT) return;
+    if (!open || !initDone || subjectId || !subjectChoice || subjectChoice === CUSTOM_SUBJECT) return;
     const known = subjects.find((s) => s.label.toLowerCase() === subjectChoice.toLowerCase());
     if (known?.id) setSubjectId(known.id);
-  }, [open, subjectId, subjectChoice, subjects]);
+  }, [open, initDone, subjectId, subjectChoice, subjects]);
 
 
   // Předvyplnění „Vybrat existující Výuku" u uložené hodiny. Výuky se dotahují
   // asynchronně, takže odpovídající kombinaci předmět × třída/skupina hledáme
   // až když je seznam k dispozici (a jen dokud si uživatel nevybral sám).
   useEffect(() => {
-    if (!open || unitKey || units.length === 0) return;
+    if (!open || !initDone || unitKey || units.length === 0) return;
     const targetId = target === "group" ? groupSel : classSel;
     if (!targetId || targetId === NO_CLASS) return;
     const name = (subjectChoice === CUSTOM_SUBJECT ? customSubject : subjectChoice)
@@ -267,7 +274,8 @@ export default function LessonFormDialog({
         (subjectId ? u.subjectId === subjectId : u.subjectName.trim().toLowerCase() === name),
     );
     if (match) setUnitKey(match.key);
-  }, [open, unitKey, units, target, classSel, groupSel, subjectId, subjectChoice, customSubject]);
+  }, [open, initDone, unitKey, units, target, classSel, groupSel, subjectId, subjectChoice, customSubject]);
+
 
 
 
@@ -279,6 +287,7 @@ export default function LessonFormDialog({
 
   // When subject changes via select → auto-fill abbreviation/color from registry
   useEffect(() => {
+    if (!initDone) return;
     if (subjectChoice === CUSTOM_SUBJECT || !subjectChoice) return;
     // Doplňujeme jen při skutečné změně předmětu — jinak bychom přebili
     // barvu/zkratku, kterou si učitel právě nastavil ručně.
@@ -289,7 +298,8 @@ export default function LessonFormDialog({
     if (found.abbreviation) setAbbreviation(found.abbreviation.toUpperCase());
     else setAbbreviation((cur) => cur || found.label.slice(0, 3).toUpperCase());
     if (found.color) setColor(found.color);
-  }, [subjectChoice, subjects]);
+  }, [initDone, subjectChoice, subjects]);
+
 
   // When custom subject text changes → derive abbreviation suggestion if empty
   useEffect(() => {
