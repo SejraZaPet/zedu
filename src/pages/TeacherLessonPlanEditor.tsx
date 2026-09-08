@@ -225,7 +225,7 @@ export default function TeacherLessonPlanEditor() {
     if (!user) return;
     supabase
       .from("class_schedule_slots" as any)
-      .select("*, classes(name)")
+      .select("*, classes(name), subjects(name, color, abbreviation)")
       .then(({ data }) => setDbSlots((data as any[]) ?? []));
   }, [user]);
 

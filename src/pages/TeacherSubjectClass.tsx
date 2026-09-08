@@ -53,6 +53,10 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  getSubjectAbbreviation,
+  getSubjectColor,
+} from "@/lib/subject-appearance";
 import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
 import { useSubjectCatalog } from "@/hooks/useSubjectCatalog";
 import { expandScheduleSlots, formatTime } from "@/lib/calendar-utils";
@@ -224,8 +228,14 @@ export default function TeacherSubjectClass() {
           ? supabase.from("subject_groups").select("id, name, school_year, textbook_id, textbook_type").eq("id", groupId).maybeSingle()
           : supabase.from("classes").select("id, name, school, field_of_study, year").eq("id", classId).maybeSingle(),
         isGroup
-          ? supabase.from("class_schedule_slots" as any).select("*").eq("group_id", groupId)
-          : supabase.from("class_schedule_slots" as any).select("*").eq("class_id", classId),
+          ? supabase
+              .from("class_schedule_slots" as any)
+              .select("*, subjects(name, color, abbreviation)")
+              .eq("group_id", groupId)
+          : supabase
+              .from("class_schedule_slots" as any)
+              .select("*, subjects(name, color, abbreviation)")
+              .eq("class_id", classId),
         supabase
           .from("lesson_plans")
           .select("id, title, subject, created_at, updated_at, input_data")
@@ -410,13 +420,14 @@ export default function TeacherSubjectClass() {
     return fromSlot?.textbook_id ?? unitTextbookId ?? null;
   }, [slots, unitTextbookId, unitTextbooks]);
 
-  const subjectColor =
-    catalogSubject?.color || matchedSubject?.color || slots[0]?.color || "hsl(var(--primary))";
-  const abbr =
-    catalogSubject?.abbreviation ||
-    matchedSubject?.abbreviation ||
-    slots[0]?.abbreviation ||
-    subjectLabel.slice(0, 3).toUpperCase();
+  // Sjednocené pravidlo: barva/zkratka hodiny > katalog > odvozeno z názvu.
+  const canonicalAppearance = {
+    name: catalogSubject?.name ?? matchedSubject?.label,
+    color: catalogSubject?.color ?? matchedSubject?.color,
+    abbreviation: catalogSubject?.abbreviation ?? matchedSubject?.abbreviation,
+  };
+  const subjectColor = getSubjectColor(slots[0] as any, canonicalAppearance, subjectLabel);
+  const abbr = getSubjectAbbreviation(slots[0] as any, canonicalAppearance, subjectLabel);
 
   // Build past + upcoming lesson occurrences for next/previous 60 days
   const now = new Date();

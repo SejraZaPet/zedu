@@ -25,7 +25,10 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { expandScheduleSlots, formatTime } from "@/lib/calendar-utils";
-import { colorForSubject } from "@/lib/teacher-schedule-store";
+import {
+  getSubjectAbbreviation,
+  getSubjectColor,
+} from "@/lib/subject-appearance";
 
 interface ClassRow {
   id: string;
@@ -141,7 +144,7 @@ export default function StudentSubjectClass() {
           .maybeSingle(),
         supabase
           .from("class_schedule_slots" as any)
-          .select("*")
+          .select("*, subjects(name, color, abbreviation)")
           .eq("class_id", classId),
         supabase
           .from("assignments")
@@ -207,9 +210,9 @@ export default function StudentSubjectClass() {
     };
   }, [authLoading, user, navigate, classId, rawSubjectParam]);
 
-  const subjectColor = slots[0]?.color || colorForSubject(subjectLabel);
-  const abbr =
-    slots[0]?.abbreviation || subjectLabel.slice(0, 3).toUpperCase();
+  const canonicalSubject = (slots[0] as any)?.subjects ?? null;
+  const subjectColor = getSubjectColor(slots[0] as any, canonicalSubject, subjectLabel);
+  const abbr = getSubjectAbbreviation(slots[0] as any, canonicalSubject, subjectLabel);
   const room = slots[0]?.room || "";
   const linkedTextbookId = useMemo(() => {
     const fromSlot = slots.find((s) => s.textbook_id);

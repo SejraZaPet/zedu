@@ -4,6 +4,12 @@ import {
   endOfISOWeek,
   getISOWeek,
 } from "date-fns";
+import {
+  getSubjectAbbreviation,
+  getSubjectColor,
+  getSubjectName,
+} from "./subject-appearance";
+
 
 export type CalendarEvent = {
   id: string;
@@ -38,15 +44,10 @@ export type ScheduleSlotInput = {
   color?: string | null;
   abbreviation?: string | null;
   classes?: { name: string } | null;
+  /** Kanonický katalog předmětů – zdroj barvy/zkratky, když hodina svou nemá. */
+  subjects?: { name?: string | null; color?: string | null; abbreviation?: string | null } | null;
 };
 
-function colorForSubject(subject: string): string {
-  const palette = ["#6EC6D9","#9B6CFF","#F472B6","#F87171","#FB923C","#FBBF24","#34D399","#60A5FA","#A3A3A3"];
-  if (!subject) return palette[0];
-  let hash = 0;
-  for (let i = 0; i < subject.length; i++) hash = (hash * 31 + subject.charCodeAt(i)) >>> 0;
-  return palette[hash % palette.length];
-}
 
 const parseTime = (date: Date, time: string): Date => {
   const [h, m] = time.split(":").map((x) => parseInt(x, 10));
@@ -91,11 +92,16 @@ export function expandScheduleSlots(
       const start = parseTime(date, slot.start_time);
       const end = parseTime(date, slot.end_time);
       const className = slot.classes?.name ?? "";
-      const title = slot.subject_label?.trim() || className || "Hodina";
+      // Katalog má přednost při názvu, hodina při barvě/zkratce (sjednocené pravidlo).
+      const subjectName = getSubjectName(slot, slot.subjects, "");
+      const title = subjectName || className || "Hodina";
 
-      const subjectKey = (slot.subject_label || "").trim();
-      const color = slot.color || (subjectKey ? colorForSubject(subjectKey) : undefined);
-      const abbreviation = slot.abbreviation || (subjectKey ? subjectKey.slice(0, 3).toUpperCase() : undefined);
+      const color = subjectName
+        ? getSubjectColor(slot, slot.subjects, subjectName)
+        : slot.color || undefined;
+      const abbreviation = subjectName
+        ? getSubjectAbbreviation(slot, slot.subjects, subjectName)
+        : slot.abbreviation || undefined;
 
       events.push({
         id: `${slot.id}-${date.toISOString().slice(0, 10)}`,
@@ -106,9 +112,10 @@ export function expandScheduleSlots(
         classId: slot.class_id,
         className,
         room: slot.room || undefined,
-        subject: slot.subject_label || undefined,
+        subject: subjectName || slot.subject_label || undefined,
         color,
         abbreviation,
+
         weekParity: slot.week_parity,
       });
     }
