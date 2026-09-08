@@ -67,6 +67,8 @@ export const GameTemplateEditorDialog = ({ open, onOpenChange, template, onSaved
     setSubject(template?.subject ?? NONE);
     setTopicId(template?.curriculum_topic_id ?? NONE);
     setLessonId(template?.textbook_lesson_id ?? NONE);
+    setBackgroundUrl(template?.background_url ?? "");
+
   }, [open, template]);
 
   useEffect(() => {
