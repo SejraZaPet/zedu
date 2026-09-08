@@ -12,6 +12,8 @@ import {
   Table as TableIcon, Settings2, Undo2, Redo2, ZoomIn, ZoomOut, Copy, FileDown, Heading as HeadingIcon,
   Quote as QuoteIcon, StickyNote, BarChart3, Sigma, Video as VideoIcon, Music, Loader2, Bookmark,
   Wand2, Settings, Puzzle, ArrowLeft, ExternalLink, Gamepad2, Move, FileUp, ClipboardPaste, Paintbrush,
+  ChevronLeft, ChevronRight,
+
 } from "lucide-react";
 
 import {
@@ -168,6 +170,12 @@ export const PresentationEditorDialog = ({
 
   const [darkPreview, setDarkPreview] = useState(true);
   const [addSlideOpen, setAddSlideOpen] = useState(false);
+  /** Kam se vloží nový snímek z „Přidat snímek“ (null = na konec). */
+  const [insertAtIndex, setInsertAtIndex] = useState<number | null>(null);
+  /** Index snímku, který se právě přetahuje v pruhu náhledů. */
+  const [dragSlideIndex, setDragSlideIndex] = useState<number | null>(null);
+  const [dropSlideIndex, setDropSlideIndex] = useState<number | null>(null);
+
   const [history, setHistory] = useState<BlockEditorHistory | null>(null);
   const [templateOpen, setTemplateOpen] = useState(false);
   const [importPptxOpen, setImportPptxOpen] = useState(false);
