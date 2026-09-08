@@ -2,7 +2,7 @@ import { BetaBadge } from "@/components/common/BetaBadge";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
-import { CalendarPlus, MapPin, Pencil, Trash2, Users } from "lucide-react";
+import { CalendarPlus, Check, MapPin, Pencil, Trash2, Undo2, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSchoolColleagues, colleagueLabel } from "@/hooks/useMySchool";
@@ -11,6 +11,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
@@ -33,26 +34,33 @@ interface SchoolEvent {
   color: string | null;
   location: string | null;
   created_by: string;
+  dismissed_for_all_at: string | null;
+  dismissed_for_all_by: string | null;
 }
 
 interface Props {
   schoolId: string;
   schoolName?: string | null;
+  /** Může uživatel označovat události jako vyřízené pro celou školu? */
+  canDismissForAll?: boolean;
 }
 
 const toLocalInput = (iso: string) => format(new Date(iso), "yyyy-MM-dd'T'HH:mm");
 
 /** Sdílený kalendář školy – vidí všichni učitelé stejné školy. */
-const SchoolCalendarPanel = ({ schoolId, schoolName }: Props) => {
+const SchoolCalendarPanel = ({ schoolId, schoolName, canDismissForAll }: Props) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { colleagues } = useSchoolColleagues(schoolId);
   const [events, setEvents] = useState<SchoolEvent[]>([]);
   const [attendees, setAttendees] = useState<Record<string, string[]>>({});
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+  const [showDismissed, setShowDismissed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<SchoolEvent | null>(null);
   const [saving, setSaving] = useState(false);
+
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -69,30 +77,96 @@ const SchoolCalendarPanel = ({ schoolId, schoolName }: Props) => {
     return m;
   }, [colleagues, user]);
 
+  const visibleEvents = useMemo(
+    () =>
+      showDismissed
+        ? events
+        : events.filter((e) => !e.dismissed_for_all_at && !dismissed.has(e.id)),
+    [events, dismissed, showDismissed],
+  );
+
+
   const load = useCallback(async () => {
     setLoading(true);
     const { data } = await supabase
       .from("school_calendar_events")
-      .select("id, school_id, title, description, start_time, end_time, all_day, color, location, created_by")
+      .select("id, school_id, title, description, start_time, end_time, all_day, color, location, created_by, dismissed_for_all_at, dismissed_for_all_by")
       .eq("school_id", schoolId)
       .order("start_time", { ascending: true });
-    const rows = (data ?? []) as SchoolEvent[];
+    const rows = (data ?? []) as unknown as SchoolEvent[];
     setEvents(rows);
     if (rows.length) {
-      const { data: att } = await supabase
-        .from("school_calendar_event_attendees")
-        .select("event_id, teacher_id")
-        .in("event_id", rows.map((r) => r.id));
+      const ids = rows.map((r) => r.id);
+      const [{ data: att }, { data: dis }] = await Promise.all([
+        supabase
+          .from("school_calendar_event_attendees")
+          .select("event_id, teacher_id")
+          .in("event_id", ids),
+        supabase
+          .from("school_calendar_event_dismissals" as any)
+          .select("event_id")
+          .in("event_id", ids),
+      ]);
       const map: Record<string, string[]> = {};
       ((att ?? []) as { event_id: string; teacher_id: string }[]).forEach((a) => {
         map[a.event_id] = [...(map[a.event_id] ?? []), a.teacher_id];
       });
       setAttendees(map);
+      setDismissed(new Set(((dis ?? []) as unknown as { event_id: string }[]).map((d) => d.event_id)));
     } else {
       setAttendees({});
+      setDismissed(new Set());
     }
     setLoading(false);
   }, [schoolId]);
+
+  const toggleMine = async (e: SchoolEvent) => {
+    if (!user) return;
+    const isDismissed = dismissed.has(e.id);
+    if (isDismissed) {
+      const { error } = await supabase
+        .from("school_calendar_event_dismissals" as any)
+        .delete()
+        .eq("event_id", e.id)
+        .eq("user_id", user.id);
+      if (error) {
+        toast({ title: "Nepodařilo se vrátit zpět", description: error.message, variant: "destructive" });
+        return;
+      }
+      setDismissed((prev) => {
+        const next = new Set(prev);
+        next.delete(e.id);
+        return next;
+      });
+      toast({ title: "Označení vyřízeno zrušeno" });
+    } else {
+      const { error } = await supabase
+        .from("school_calendar_event_dismissals" as any)
+        .insert({ event_id: e.id, user_id: user.id } as any);
+      if (error) {
+        toast({ title: "Nepodařilo se označit", description: error.message, variant: "destructive" });
+        return;
+      }
+      setDismissed((prev) => new Set(prev).add(e.id));
+      toast({ title: "Označeno jako vyřízené", description: "Jen pro vás – kolegům se nic nemění." });
+    }
+  };
+
+  const toggleForAll = async (e: SchoolEvent, dismissedFlag: boolean) => {
+    const { error } = await supabase.rpc("set_school_event_dismissed_for_all" as any, {
+      _event_id: e.id,
+      _dismissed: dismissedFlag,
+    } as any);
+    if (error) {
+      toast({ title: "Nepodařilo se uložit", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({
+      title: dismissedFlag ? "Vyřízeno pro celou školu" : "Označení pro celou školu zrušeno",
+    });
+    void load();
+  };
+
 
   useEffect(() => {
     void load();
@@ -199,23 +273,47 @@ const SchoolCalendarPanel = ({ schoolId, schoolName }: Props) => {
             Sdílené události {schoolName ? `školy ${schoolName}` : "vaší školy"} – vidí je všichni kolegové.
           </p>
         </div>
-        <Button size="sm" onClick={openNew}>
-          <CalendarPlus className="mr-2 h-4 w-4" /> Nová školní událost
-        </Button>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Switch id="sce-show-done" checked={showDismissed} onCheckedChange={setShowDismissed} />
+            <Label htmlFor="sce-show-done" className="cursor-pointer text-xs text-muted-foreground">
+              Zobrazit i vyřízené
+            </Label>
+          </div>
+          <Button size="sm" onClick={openNew}>
+            <CalendarPlus className="mr-2 h-4 w-4" /> Nová školní událost
+          </Button>
+        </div>
       </div>
 
       {loading ? (
         <p className="text-sm text-muted-foreground">Načítání…</p>
-      ) : events.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Ve školním kalendáři zatím nic není.</p>
+      ) : visibleEvents.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          {events.length === 0
+            ? "Ve školním kalendáři zatím nic není."
+            : "Všechny události máte vyřízené. Zapněte „Zobrazit i vyřízené“."}
+        </p>
       ) : (
         <ul className="divide-y divide-border rounded-md border border-border">
-          {events.map((e) => {
+          {visibleEvents.map((e) => {
             const mine = e.created_by === user?.id;
+            const doneForAll = !!e.dismissed_for_all_at;
+            const doneMine = dismissed.has(e.id);
+            const done = doneMine || doneForAll;
+            const canForAll = mine || !!canDismissForAll;
             return (
-              <li key={e.id} className="flex flex-wrap items-start gap-3 px-3 py-2.5 text-sm">
+              <li
+                key={e.id}
+                className={`flex flex-wrap items-start gap-3 px-3 py-2.5 text-sm ${done ? "opacity-60" : ""}`}
+              >
                 <div className="min-w-0 flex-1">
-                  <p className="font-medium">{e.title}</p>
+                  <p className={`font-medium ${done ? "line-through" : ""}`}>{e.title}</p>
+                  {done && (
+                    <Badge variant="secondary" className="mt-1 text-[11px]">
+                      {doneForAll ? "Vyřízeno pro celou školu" : "Vyřízeno (jen pro mě)"}
+                    </Badge>
+                  )}
                   <p className="text-xs text-muted-foreground">
                     {e.all_day
                       ? format(new Date(e.start_time), "d. M. yyyy", { locale: cs })
@@ -237,6 +335,24 @@ const SchoolCalendarPanel = ({ schoolId, schoolName }: Props) => {
                       ))}
                     </p>
                   )}
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <Button size="sm" variant="outline" onClick={() => void toggleMine(e)}>
+                      {doneMine ? (
+                        <>
+                          <Undo2 className="mr-1.5 h-3.5 w-3.5" /> Vrátit zpět
+                        </>
+                      ) : (
+                        <>
+                          <Check className="mr-1.5 h-3.5 w-3.5" /> Označit jako vyřízené
+                        </>
+                      )}
+                    </Button>
+                    {canForAll && (
+                      <Button size="sm" variant="ghost" onClick={() => void toggleForAll(e, !doneForAll)}>
+                        {doneForAll ? "Zrušit vyřízeno pro celou školu" : "Označit jako vyřízené pro celou školu"}
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 {mine && (
                   <div className="flex items-center gap-1">
@@ -253,6 +369,7 @@ const SchoolCalendarPanel = ({ schoolId, schoolName }: Props) => {
           })}
         </ul>
       )}
+
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-lg">

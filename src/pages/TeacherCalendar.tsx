@@ -32,7 +32,7 @@ import { useMySchool } from "@/hooks/useMySchool";
 
 const TeacherCalendar = () => {
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const { user, role, loading: authLoading } = useAuth();
   const { schoolId, schoolName, hasSchool } = useMySchool();
   const [weekStart, setWeekStart] = useState<Date>(
     () => getWeekRange(new Date()).start,
@@ -320,9 +320,14 @@ const TeacherCalendar = () => {
 
         {hasSchool && schoolId && (
           <div className="mt-8">
-            <SchoolCalendarPanel schoolId={schoolId} schoolName={schoolName} />
+            <SchoolCalendarPanel
+              schoolId={schoolId}
+              schoolName={schoolName}
+              canDismissForAll={role === "school_admin" || role === "admin"}
+            />
           </div>
         )}
+
       </main>
 
       {reflectionEvent && (
