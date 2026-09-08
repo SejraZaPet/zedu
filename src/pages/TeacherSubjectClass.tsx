@@ -53,6 +53,10 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  getSubjectAbbreviation,
+  getSubjectColor,
+} from "@/lib/subject-appearance";
 import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
 import { useSubjectCatalog } from "@/hooks/useSubjectCatalog";
 import { expandScheduleSlots, formatTime } from "@/lib/calendar-utils";
