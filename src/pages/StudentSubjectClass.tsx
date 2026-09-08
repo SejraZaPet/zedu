@@ -204,7 +204,7 @@ export default function StudentSubjectClass() {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, user, navigate, classId, subjectLabel]);
+  }, [authLoading, user, navigate, classId, rawSubjectParam]);
 
   const subjectColor = slots[0]?.color || colorForSubject(subjectLabel);
   const abbr =
