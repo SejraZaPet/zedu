@@ -83,7 +83,19 @@ export const GameTemplateEditorDialog = ({ open, onOpenChange, template, onSaved
     })();
   }, [open]);
 
+  /** Nastaví (nebo zruší) pozadí konkrétního snímku hry. */
+  const setSlideBackground = (index: number, override: { image?: string; color?: string } | null) => {
+    setSlides((prev) =>
+      prev.map((s, i) => {
+        if (i !== index) return s;
+        const { backgroundOverride: _drop, ...rest } = s || {};
+        return override ? { ...rest, backgroundOverride: override } : rest;
+      }),
+    );
+  };
+
   const save = async () => {
+
     if (!title.trim()) {
       toast.error("Doplňte název hry.");
       return;
