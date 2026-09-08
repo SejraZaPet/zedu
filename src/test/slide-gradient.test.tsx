@@ -55,7 +55,9 @@ describe("barevné přechody na slidech", () => {
   it("projektor aplikuje přechod na pozadí snímku", () => {
     const { container } = render(
       <ProjectorSlideView
-        slide={{
+        slides={[]}
+        currentIndex={0}
+        currentSlide={{
           projector: { headline: "H" },
           backgroundOverride: { gradient: BEZLI_GRADIENT },
           blocks: [],
