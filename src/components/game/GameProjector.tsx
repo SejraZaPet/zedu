@@ -83,11 +83,16 @@ export const GameProjector = ({ session, players, responses, countdown, onShowRe
   if (!question) return null;
 
   const isThemed = theme.id !== "default";
+  const backgroundUrl = sessionBackgroundUrl(session.settings as any);
+  const hasBackdrop = isThemed || !!backgroundUrl;
 
   return (
     <div
-      className={cn("min-h-screen flex flex-col relative overflow-hidden", theme.bgClass)}
-      style={theme.cssVars as React.CSSProperties}
+      className={cn("min-h-screen flex flex-col relative overflow-hidden", !backgroundUrl && theme.bgClass)}
+      style={{
+        ...(theme.cssVars as React.CSSProperties),
+        ...(backgroundUrl ? gameBackgroundStyle(backgroundUrl) : {}),
+      }}
     >
       {isThemed && theme.decorEmoji && (
         <div className="pointer-events-none absolute inset-0 opacity-10 select-none">
@@ -106,9 +111,10 @@ export const GameProjector = ({ session, players, responses, countdown, onShowRe
           ))}
         </div>
       )}
-      <div className={cn("relative z-10 flex-1 flex flex-col", isThemed && "[&_.bg-card]:bg-card/80 [&_.bg-card]:backdrop-blur-sm")}>
+      <div className={cn("relative z-10 flex-1 flex flex-col", hasBackdrop && "[&_.bg-card]:bg-card/80 [&_.bg-card]:backdrop-blur-sm")}>
       {/* Top bar */}
-      <div className={cn("flex items-center justify-between px-6 py-3 border-b", isThemed ? "bg-black/30 border-white/10 text-white" : "bg-card border-border")}>
+      <div className={cn("flex items-center justify-between px-6 py-3 border-b", hasBackdrop ? "bg-black/30 border-white/10 text-white" : "bg-card border-border")}>
+
         <span className="text-sm font-medium text-muted-foreground">
           {t("projector.questionOf", qi + 1, totalQ)}
         </span>
