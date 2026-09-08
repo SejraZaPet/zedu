@@ -12,15 +12,37 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { FileText, HelpCircle, MessageSquare, Cloud, DoorOpen, ArrowLeft, Loader2, Users2, SplitSquareHorizontal, Sparkles, Plus, Trash2, KeyRound, Library, Zap, Square } from "lucide-react";
+import { FileText, HelpCircle, MessageSquare, Cloud, DoorOpen, ArrowLeft, Loader2, Users2, SplitSquareHorizontal, Sparkles, Plus, Trash2, KeyRound, Library, Zap, Square, Puzzle, BookOpen, Wand2 } from "lucide-react";
+import * as LucideIcons from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { fetchGameTemplates, purposeLabel, type GameTemplate } from "@/lib/game-templates";
+import { ACTIVITY_PRESETS, type ActivityPreset } from "@/lib/activity-slide-presets";
+import { blocksToSlides } from "@/lib/blocks-to-slides";
 
-type AddKind = "menu" | "text" | "mcq" | "wall" | "wordcloud" | "exit" | "teams" | "differentiated" | "escape" | "library" | "bezlistart";
+type AddKind =
+  | "menu" | "text" | "mcq" | "wall" | "wordcloud" | "exit" | "teams"
+  | "differentiated" | "escape" | "library" | "bezlistart"
+  | "presets" | "lesson" | "fromtext";
+
+/** Typy aktivit, které mají v tomto panelu vlastní formulář – v „dalších typech“ se neopakují. */
+const PRESETS_WITH_OWN_FORM = new Set([
+  "mcq", "wall", "wordcloud", "teams", "differentiated", "escape",
+]);
+
+const EXTRA_ACTIVITY_PRESETS: ActivityPreset[] = ACTIVITY_PRESETS.filter(
+  (p) => !PRESETS_WITH_OWN_FORM.has(p.id),
+);
+
+interface LessonOption {
+  id: string;
+  title: string;
+  blocks: any[];
+}
 
 const BEZLISTART_TAGLINE = "Krátká aktivita na rozproudění myšlení";
+
 
 const BEZLISTART_CATEGORY_LABELS: Record<string, string> = {
   vizualni: "Vizuální",
@@ -230,7 +252,16 @@ export function AddSlideSheet({
     { clue: "", code: "" },
   ]);
 
+  // lekce (Vytvořit z lekce)
+  const [lessonOptions, setLessonOptions] = useState<LessonOption[]>([]);
+  const [lessonsLoading, setLessonsLoading] = useState(false);
+
+  // vlastní text → AI aktivita
+  const [aiText, setAiText] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+
   const reset = () => {
+
     setKind("menu");
     setTextHeadline("");
     setTextBody("");
@@ -258,7 +289,10 @@ export function AddSlideSheet({
       { clue: "", code: "" },
       { clue: "", code: "" },
     ]);
+    setAiText("");
+    setAiLoading(false);
   };
+
 
   const close = () => {
     onOpenChange(false);
@@ -323,6 +357,79 @@ export function AddSlideSheet({
     }));
     appendMany(stamped);
   };
+
+  /** Vloží slide s aktivitou podle předpřipraveného typu (stejné presety jako editor prezentací). */
+  const insertPreset = (preset: ActivityPreset) => appendAndJump(preset.build());
+
+  /** Načte lekce učitele (učebnicové i vlastní) pro převzetí obsahu do hry. */
+  const openLessonPicker = async () => {
+    setKind("lesson");
+    setLessonsLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error("Nejste přihlášeni.");
+      const { data, error } = await supabase
+        .from("teacher_textbook_lessons")
+        .select("id, title, blocks")
+        .order("sort_order", { ascending: true });
+      if (error) throw error;
+      setLessonOptions(
+        ((data as any[]) || []).map((l) => ({
+          id: l.id,
+          title: l.title || "Bez názvu",
+          blocks: Array.isArray(l.blocks) ? l.blocks : [],
+        })),
+      );
+    } catch (e: any) {
+      toast.error(e?.message || "Nepodařilo se načíst lekce.");
+    } finally {
+      setLessonsLoading(false);
+    }
+  };
+
+  /** Převezme obsah lekce jako slidy hry (stejný převod jako u „Spustit živě“ u lekce). */
+  const insertLesson = (lesson: LessonOption) => {
+    const built = blocksToSlides(lesson.blocks, lesson.title)
+      .filter((s: any) => s.type !== "intro")
+      .map((s: any, i: number) => ({ ...s, slideId: `lesson-${Date.now()}-${i}` }));
+    if (built.length === 0) {
+      toast.error("Tato lekce neobsahuje obsah, který lze převést na slidy.");
+      return;
+    }
+    appendMany(built);
+  };
+
+  /** Z vloženého textu (prezentace, učebnice, vlastní příprava) vytvoří AI kvízovou aktivitu. */
+  const runAiFromText = async () => {
+    if (aiText.trim().length < 20) {
+      toast.error("Vložte alespoň krátký odstavec textu.");
+      return;
+    }
+    setAiLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-activity-from-text", {
+        body: { text: aiText.trim() },
+      });
+      if (error) throw error;
+      const quiz = (data as any)?.activity?.quiz;
+      const answers = Array.isArray(quiz?.answers) ? quiz.answers : [];
+      if (!quiz?.question || answers.length < 2) throw new Error("AI nevrátila platnou aktivitu.");
+      const correctIdx = Math.max(0, answers.findIndex((a: any) => a?.correct));
+      await appendMany([
+        buildMcqSlide(
+          String(quiz.question),
+          answers.map((a: any) => String(a?.text ?? "")),
+          correctIdx,
+        ),
+      ]);
+    } catch (e: any) {
+      toast.error(e?.message || "Nepodařilo se vygenerovat aktivitu.");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+
 
 
   const fetchBezliStartPrompts = async (): Promise<BezliStartPrompt[]> => {
@@ -511,6 +618,10 @@ export function AddSlideSheet({
               {kind === "teams" && "Rozdělit do skupin"}
               {kind === "differentiated" && "Diferencovaná aktivita"}
               {kind === "escape" && "Úniková hra"}
+              {kind === "presets" && "Další typy aktivit"}
+              {kind === "lesson" && "Vytvořit z lekce"}
+              {kind === "fromtext" && "Aktivita z vlastního textu"}
+
               {kind === "library" && "Vložit z knihovny her"}
               {kind === "bezlistart" && "BezliStart"}
             </SheetTitle>
@@ -695,9 +806,130 @@ export function AddSlideSheet({
                   </p>
                 </div>
               </Button>
+              <Button
+                variant="outline"
+                className="justify-start h-auto py-3"
+                onClick={() => setKind("presets")}
+              >
+                <Puzzle className="w-5 h-5 mr-3 text-primary" />
+                <div className="text-left">
+                  <p className="font-medium">Další typy aktivit</p>
+                  <p className="text-xs text-muted-foreground">
+                    Doplňovačky, křížovka, pexeso, kartičky, přiřazování a další
+                  </p>
+                </div>
+              </Button>
+              <Button
+                variant="outline"
+                className="justify-start h-auto py-3"
+                onClick={openLessonPicker}
+              >
+                <BookOpen className="w-5 h-5 mr-3 text-primary" />
+                <div className="text-left">
+                  <p className="font-medium">Vytvořit z lekce</p>
+                  <p className="text-xs text-muted-foreground">
+                    Převezmi obsah hotové lekce jako slidy hry
+                  </p>
+                </div>
+              </Button>
+              <Button
+                variant="outline"
+                className="justify-start h-auto py-3"
+                onClick={() => setKind("fromtext")}
+              >
+                <Wand2 className="w-5 h-5 mr-3 text-primary" />
+                <div className="text-left">
+                  <p className="font-medium">Aktivita z vlastního textu</p>
+                  <p className="text-xs text-muted-foreground">
+                    Vlož text z prezentace, učebnice nebo vlastní přípravy
+                  </p>
+                </div>
+              </Button>
 </>)}
             </div>
           )}
+
+          {kind === "presets" && (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Vloží aktivitu s ukázkovým obsahem – doladíte ji v editoru slidu.
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {EXTRA_ACTIVITY_PRESETS.map((preset) => {
+                  const Icon = (LucideIcons as any)[preset.icon] ?? Puzzle;
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      disabled={busy}
+                      onClick={() => insertPreset(preset)}
+                      title={preset.hint}
+                      className="flex flex-col items-start gap-1 rounded-lg border border-border bg-card p-2.5 text-left transition-colors hover:border-primary hover:bg-primary/5 disabled:opacity-50"
+                    >
+                      <Icon className="h-4 w-4 text-primary" />
+                      <span className="text-xs font-medium leading-tight">{preset.label}</span>
+                      <span className="text-[11px] text-muted-foreground leading-tight">{preset.hint}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {kind === "lesson" && (
+            <div className="space-y-2">
+              {lessonsLoading ? (
+                <p className="text-sm text-muted-foreground flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" /> Načítání lekcí…
+                </p>
+              ) : lessonOptions.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Zatím nemáte žádnou lekci s obsahem.
+                </p>
+              ) : (
+                lessonOptions.map((l) => (
+                  <Button
+                    key={l.id}
+                    variant="outline"
+                    className="justify-start h-auto py-3 w-full whitespace-normal"
+                    disabled={busy}
+                    onClick={() => insertLesson(l)}
+                  >
+                    <div className="text-left">
+                      <p className="font-medium">{l.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {l.blocks.length} bloků obsahu
+                      </p>
+                    </div>
+                  </Button>
+                ))
+              )}
+            </div>
+          )}
+
+          {kind === "fromtext" && (
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="ai-text">Vložte text z prezentace, učebnice nebo vlastní přípravy</Label>
+                <Textarea
+                  id="ai-text"
+                  rows={10}
+                  value={aiText}
+                  onChange={(e) => setAiText(e.target.value)}
+                  placeholder="Sem vložte text, ze kterého má AI vytvořit aktivitu…"
+                  disabled={aiLoading || busy}
+                />
+              </div>
+              <Button onClick={runAiFromText} disabled={aiLoading || busy} className="w-full gap-2">
+                {aiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                Vytvořit aktivitu z textu
+              </Button>
+              <p className="text-[11px] text-muted-foreground">
+                Aktivitu vytváří AI – před použitím ji zkontrolujte.
+              </p>
+            </div>
+          )}
+
 
           {kind === "library" && (
             <div className="space-y-2">

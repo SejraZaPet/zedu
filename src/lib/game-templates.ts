@@ -15,6 +15,9 @@ export interface GameTemplate {
   subject: string | null;
   curriculum_topic_id: string | null;
   textbook_lesson_id: string | null;
+  /** Pozadí pro celou hru (URL z game_backgrounds nebo vlastní obrázek). */
+  background_url?: string | null;
+
   created_at: string;
   updated_at: string;
 }
@@ -70,7 +73,9 @@ export async function launchTemplateSession(template: GameTemplate): Promise<str
         teamMode: teamKind !== "none",
         teamCount: 2,
         subjectKey: subjectKeyFromLabel(template.subject),
+        backgroundUrl: template.background_url ?? null,
       } as any,
+
       status: "lobby",
       current_question_index: -1,
     })
