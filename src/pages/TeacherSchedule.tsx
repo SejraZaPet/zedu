@@ -53,6 +53,8 @@ import {
   colorForSubject,
   SUBJECT_COLORS,
   BREAK_KIND_META,
+  parityOverlaps,
+
   type LessonEntry,
   type RowBreak,
   type BreakKind,
