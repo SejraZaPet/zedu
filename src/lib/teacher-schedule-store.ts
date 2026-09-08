@@ -22,7 +22,20 @@ export interface LessonEntry {
   mirrorBoth?: boolean;
   /** Stable key linking the two mirrored copies across odd & even lists. */
   mirrorKey?: string;
+  /** Week the lesson happens in. "every" = každý týden (default). */
+  weekParity?: "every" | "odd" | "even";
 }
+
+/** True when two lessons in the same slot really clash (overlapping weeks). */
+export function parityOverlaps(
+  a: "every" | "odd" | "even" | undefined,
+  b: "every" | "odd" | "even" | undefined,
+): boolean {
+  const x = a ?? "every";
+  const y = b ?? "every";
+  return x === "every" || y === "every" || x === y;
+}
+
 
 /** Predefined palette for subject color picker. */
 export const SUBJECT_COLORS: { value: string; label: string }[] = [
@@ -258,8 +271,13 @@ export function expandTeacherSchedule(
 
     for (const l of pool) {
       if (l.day !== dayIdx) continue;
+      // Lichý/sudý týden u konkrétní hodiny
+      const wp = l.weekParity ?? "every";
+      if (wp === "odd" && !isOdd) continue;
+      if (wp === "even" && isOdd) continue;
       const t = schedule.periodTimes[l.period];
       if (!t) continue;
+
       // Respect validity window
       if (l.validFrom) {
         const vf = new Date(l.validFrom);
