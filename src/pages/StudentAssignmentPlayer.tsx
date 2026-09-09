@@ -11,6 +11,9 @@ import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import WorksheetPlayer from "@/components/WorksheetPlayer";
 import AttachmentsUploader from "@/components/assignments/AttachmentsUploader";
+import { Textarea } from "@/components/ui/textarea";
+import AssignmentMaterialsList from "@/components/assignments/AssignmentMaterialsList";
+import { parseMaterials } from "@/lib/assignment-materials";
 import type { WorksheetSpec } from "@/lib/worksheet-spec";
 import { useLockdownMode } from "@/hooks/useLockdownMode";
 import ReadAloudButton from "@/components/a11y/ReadAloudButton";
@@ -29,6 +32,7 @@ interface AssignmentData {
   worksheet_id?: string | null;
   lockdown_mode?: boolean;
   is_portfolio_task?: boolean;
+  materials?: unknown;
 }
 
 
@@ -40,6 +44,7 @@ interface AttemptData {
   progress: { currentIndex: number; completed: number[] };
   score: number | null;
   max_score: number | null;
+  submission_note?: string | null;
 }
 
 // Deterministic shuffle using a seed
@@ -66,6 +71,8 @@ const StudentAssignmentPlayer = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [items, setItems] = useState<any[]>([]);
+  // Nepovinná poznámka žáka k odevzdání (uvidí ji učitel).
+  const [note, setNote] = useState("");
   const [worksheetSpec, setWorksheetSpec] = useState<WorksheetSpec | null>(null);
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedAnswers = useRef<string>("");
@@ -128,6 +135,7 @@ const StudentAssignmentPlayer = () => {
         const attemptData = inProgress as any as AttemptData;
         setAttempt(attemptData);
         setAnswers(attemptData.answers || {});
+        setNote(attemptData.submission_note || "");
         setCurrentIndex(attemptData.progress?.currentIndex || 0);
         lastSavedAnswers.current = JSON.stringify(attemptData.answers || {});
       } else if (existingAttempts.length < assignmentData.max_attempts) {
@@ -155,6 +163,7 @@ const StudentAssignmentPlayer = () => {
         const lastAttempt = existingAttempts[0] as any as AttemptData;
         setAttempt(lastAttempt);
         setAnswers(lastAttempt.answers || {});
+        setNote(lastAttempt.submission_note || "");
         toast({ title: "Vyčerpány pokusy", description: `Použito ${existingAttempts.length}/${assignmentData.max_attempts} pokusů.` });
       }
 
@@ -182,7 +191,7 @@ const StudentAssignmentPlayer = () => {
 
   const doAutosave = async () => {
     if (!attempt || attempt.status !== "in_progress") return;
-    const currentAnswersStr = JSON.stringify(answers);
+    const currentAnswersStr = JSON.stringify({ answers, note });
     if (currentAnswersStr === lastSavedAnswers.current) return;
 
     setSaving(true);
@@ -191,6 +200,7 @@ const StudentAssignmentPlayer = () => {
         .from("assignment_attempts" as any)
         .update({
           answers,
+          submission_note: note.trim() ? note : null,
           progress: { currentIndex, completed: Object.keys(answers).map(Number).filter((k) => answers[k] !== undefined) },
           last_saved_at: new Date().toISOString(),
         } as any)
@@ -228,6 +238,7 @@ const StudentAssignmentPlayer = () => {
         .update({
           status: "submitted",
           answers,
+          submission_note: note.trim() ? note : null,
           score,
           max_score: maxScore,
           submitted_at: new Date().toISOString(),
@@ -366,6 +377,15 @@ const StudentAssignmentPlayer = () => {
           </Card>
         )}
 
+        {/* Materiály od učitele */}
+        {parseMaterials(assignment.materials).length > 0 && (
+          <Card className="mb-4">
+            <CardContent className="p-4">
+              <AssignmentMaterialsList materials={parseMaterials(assignment.materials)} />
+            </CardContent>
+          </Card>
+        )}
+
         {/* Attachments uploader */}
         {userId && assignment && (
           <Card className="mb-4">
@@ -378,6 +398,30 @@ const StudentAssignmentPlayer = () => {
             </CardContent>
           </Card>
         )}
+
+        {/* Nepovinná poznámka / odpověď žáka */}
+        {assignment && (
+          <Card className="mb-4">
+            <CardContent className="p-4 space-y-2">
+              <label htmlFor="submission-note" className="text-sm font-medium">
+                Tvoje poznámka / odpověď (nepovinné)
+              </label>
+              <Textarea
+                id="submission-note"
+                rows={3}
+                value={note}
+                disabled={isReadOnly}
+                onChange={(e) => {
+                  setNote(e.target.value);
+                  scheduleAutosave();
+                }}
+                placeholder="Napiš, co je potřeba doplnit k odevzdání…"
+              />
+              <p className="text-xs text-muted-foreground">Poznámku uvidí tvůj učitel u odevzdání.</p>
+            </CardContent>
+          </Card>
+        )}
+
 
         {/* Portfolio task branch (upload-only, no quiz) */}
         {assignment.is_portfolio_task ? (
@@ -406,6 +450,11 @@ const StudentAssignmentPlayer = () => {
                       if (!attempt) return;
                       setSubmitting(true);
                       try {
+                        // Poznámku uložíme ještě před odevzdáním, aby ji učitel viděl.
+                        await supabase
+                          .from("assignment_attempts" as any)
+                          .update({ submission_note: note.trim() ? note : null } as any)
+                          .eq("id", attempt.id);
                         const { data, error } = await supabase.rpc("submit_portfolio_assignment", {
                           _attempt_id: attempt.id,
                         });

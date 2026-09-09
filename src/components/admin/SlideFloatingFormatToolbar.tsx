@@ -647,6 +647,58 @@ export const SlideFloatingFormatToolbar = ({
       )}
 
 
+      {/* Pozadí celého boxu (bloku) – barva nebo přechod, platí i mimo editor. */}
+      {!isShape && (
+        <>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button size="sm" variant="ghost" className="h-7 px-2 text-[11px]" title="Pozadí boxu">
+                <span
+                  className="mr-1 inline-block h-3 w-3 rounded-sm border border-border"
+                  style={{
+                    backgroundImage: gradientCss((props as any).boxGradient) || undefined,
+                    backgroundColor:
+                      !gradientCss((props as any).boxGradient) &&
+                      props.boxBackground &&
+                      props.boxBackground !== "none"
+                        ? props.boxBackground
+                        : "transparent",
+                  }}
+                />
+                Pozadí boxu
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto space-y-2 p-2">
+              <ColorPicker
+                value={props.boxBackground === "none" ? null : props.boxBackground}
+                onChange={(v) => set({ boxBackground: v ?? "none", boxGradient: null })}
+                allowNull
+                nullLabel="Bez pozadí"
+              />
+              <div className="border-t border-border pt-2">
+                <p className="mb-1 text-[11px] text-muted-foreground">Barevný přechod pozadí</p>
+                <GradientPicker
+                  value={(props as any).boxGradient}
+                  onChange={(v) => set({ boxGradient: v })}
+                />
+              </div>
+              <div className="border-t border-border pt-2">
+                <p className="mb-1 text-[11px] text-muted-foreground">Rámeček boxu</p>
+                <ColorPicker
+                  value={props.boxBorderColor ?? null}
+                  onChange={(v) => set({ boxBorderColor: v ?? null })}
+                  allowNull
+                  nullLabel="Bez rámečku"
+                />
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          <div className="mx-0.5 h-5 w-px bg-border" />
+        </>
+      )}
+
+
       <Select
         value={props.animation || "none"}
         onValueChange={(v) => set({ animation: v === "none" ? null : v })}
