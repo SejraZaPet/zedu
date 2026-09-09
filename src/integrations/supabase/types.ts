@@ -7486,6 +7486,20 @@ export type Database = {
       generate_game_code: { Args: never; Returns: string }
       generate_school_registration_code: { Args: never; Returns: string }
       generate_teacher_join_code: { Args: never; Returns: string }
+      get_activity_responses: {
+        Args: {
+          _join_token?: string
+          _question_index: number
+          _session_id: string
+        }
+        Returns: {
+          answer: Json
+          created_at: string
+          id: string
+          nickname: string
+          player_id: string
+        }[]
+      }
       get_follower_count: { Args: { _creator_id: string }; Returns: number }
       get_internal_secret: { Args: { _name: string }; Returns: string }
       get_login_password: { Args: { _profile_id: string }; Returns: string }

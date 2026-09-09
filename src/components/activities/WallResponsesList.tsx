@@ -15,34 +15,36 @@ interface Props {
   darkMode?: boolean;
   /** When provided, replaces nicknames with stable "Žák N" labels. */
   anonymousLabelMap?: Record<string, string>;
+  /** Guest/student access token – guests cannot read the table directly. */
+  joinToken?: string | null;
 }
 
-const WallResponsesList = ({ sessionId, questionIndex, anonymous, darkMode = false, anonymousLabelMap }: Props) => {
+const WallResponsesList = ({ sessionId, questionIndex, anonymous, darkMode = false, anonymousLabelMap, joinToken }: Props) => {
   const [responses, setResponses] = useState<Response[]>([]);
   const sessionAnonymous = !!anonymousLabelMap;
   const effectiveAnonymous = anonymous || sessionAnonymous;
 
   const load = useCallback(async () => {
     if (!sessionId) return;
-    const { data } = await supabase
-      .from("game_responses")
-      .select("id, answer, created_at, player_id, game_players(nickname)")
-      .eq("session_id", sessionId)
-      .eq("question_index", questionIndex);
+    const { data } = await supabase.rpc("get_activity_responses" as any, {
+      _session_id: sessionId,
+      _question_index: questionIndex,
+      _join_token: joinToken || null,
+    });
 
     if (data) {
       setResponses(
-        data
+        (data as any[])
           .map((r: any) => ({
             id: r.id,
             text: (r.answer as any)?.text || "",
-            nickname: effectiveAnonymous ? undefined : r.game_players?.nickname,
+            nickname: effectiveAnonymous ? undefined : r.nickname,
             player_id: r.player_id,
           }))
           .filter((r) => r.text)
       );
     }
-  }, [sessionId, questionIndex, effectiveAnonymous]);
+  }, [sessionId, questionIndex, effectiveAnonymous, joinToken]);
 
   useEffect(() => {
     load();

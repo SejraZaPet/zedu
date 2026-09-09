@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Lock, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface Props {
   question: string;
@@ -48,7 +49,10 @@ const WallActivity = ({
           },
         })
         .then(({ error }) => {
-          if (error) console.error("Failed to save wall response:", error);
+          if (error) {
+            console.error("Failed to save wall response:", error);
+            toast.error("Odpověď se nepodařilo odeslat. Zkus to prosím znovu.");
+          }
         });
     }
 

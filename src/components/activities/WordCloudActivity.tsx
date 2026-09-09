@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface Props {
   question: string;
@@ -43,7 +44,10 @@ const WordCloudActivity = ({
           },
         })
         .then(({ error }) => {
-          if (error) console.error("Failed to save wordcloud response:", error);
+          if (error) {
+            console.error("Failed to save wordcloud response:", error);
+            toast.error("Slovo se nepodařilo odeslat. Zkus to prosím znovu.");
+          }
         });
     }
 
