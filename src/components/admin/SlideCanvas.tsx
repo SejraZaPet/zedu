@@ -441,6 +441,8 @@ function EditableBlock(props: {
   return (
     <div
       className="h-full w-full rounded-[var(--slide-radius,0.75rem)] p-4"
+      data-box-background={grad ? "gradient" : "solid"}
+      data-box-gradient={grad || undefined}
       style={{
         backgroundImage: grad || undefined,
         backgroundColor: grad ? "transparent" : solid || undefined,
