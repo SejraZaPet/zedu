@@ -14,10 +14,16 @@ import {
   clampBlockFrame,
   getBlockFrame,
   getBlockRotation,
+  getGroupChildren,
   normalizeRotation,
+  snapFrame,
+  snapFrameToGrid,
+  EMPTY_GUIDES,
   type BlockFrame,
   type FrameHandle,
+  type SnapGuides,
 } from "@/lib/block-frame";
+
 
 import {
   slideAnimationClass,
@@ -69,7 +75,12 @@ interface BodyProps {
   onReorderBlock?: (blockId: string, toIndex: number) => void;
   /** ID právě vybraného bloku (viditelný rámeček). */
   selectedBlockId?: string | null;
-  onSelectBlock?: (blockId: string | null) => void;
+  /** Víceprvkový výběr (fáze 3). Když chybí, použije se `selectedBlockId`. */
+  selectedBlockIds?: string[];
+  onSelectBlock?: (blockId: string | null, opts?: { additive?: boolean }) => void;
+  /** Výběr více bloků naráz (rámečkem přes prázdnou plochu). */
+  onSelectBlocks?: (blockIds: string[]) => void;
+
   /**
    * Sdílený ref na cleanup právě aktivního gesta (drag bloku i pan plátna).
    * Předává ho `SlideCanvas`, aby se pan a block-drag vzájemně ukončovaly.
@@ -398,6 +409,38 @@ function EditableBlock({
   onChange?: (patch: Partial<Block> | ((b: Block) => Block)) => void;
 }) {
   const update = (patch: Partial<Block> | ((b: Block) => Block)) => onChange?.(patch);
+
+  // Skupina spojených prvků – potomci mají rámce relativní k rámci skupiny,
+  // takže se s ní posouvají, scalují i otáčejí jako jeden celek.
+  if (block.type === ("group" as Block["type"])) {
+    const children = getGroupChildren(block) as Block[];
+    return (
+      <div className="relative h-full w-full">
+        {children.map((child, i) => {
+          const cf = getBlockFrame(child) || { x: 0, y: 0, w: 100, h: 100 };
+          const rot = getBlockRotation(child);
+          return (
+            <div
+              key={child.id || i}
+              className="absolute overflow-hidden"
+              style={{
+                left: `${cf.x}%`,
+                top: `${cf.y}%`,
+                width: `${cf.w}%`,
+                height: `${cf.h}%`,
+                transform: rot ? `rotate(${rot}deg)` : undefined,
+                transformOrigin: "center center",
+                zIndex: typeof child.zIndex === "number" ? child.zIndex : i + 1,
+              }}
+            >
+              <EditableBlock block={child} framed />
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
 
   if (block.type === "paragraph") {
     const value = block.props?.text || "";
@@ -1079,6 +1122,9 @@ function FreeFrameBlock({
   onDelete,
   beginGesture,
   endGesture,
+  otherFrames = [],
+  onGuides,
+  beginMultiMove,
   children,
 }: {
   block: Block;
@@ -1089,13 +1135,22 @@ function FreeFrameBlock({
   editable?: boolean;
   selected?: boolean;
   layerRef: React.RefObject<HTMLDivElement>;
-  onSelect?: () => void;
+  onSelect?: (opts?: { additive?: boolean }) => void;
   onChangeFrame?: (frame: BlockFrame) => void;
   onChangeRotation?: (deg: number) => void;
   onDelete?: () => void;
   /** Registrace gesta do sdíleného refu na úrovni slidu (viz SlideBody). */
   beginGesture: (cleanup: () => void) => void;
   endGesture: (cleanup: () => void) => void;
+  /** Rámce ostatních bloků slidu – kandidáti na přichycení. */
+  otherFrames?: BlockFrame[];
+  /** Hlášení aktivních vodítek nahoru do SlideBody. */
+  onGuides?: (guides: SnapGuides | null) => void;
+  /**
+   * Zahájí společný posun celého výběru. Vrací funkci, která posune všechny
+   * vybrané bloky o zadaný delta (v % plochy slidu) se zachováním rozestupů.
+   */
+  beginMultiMove?: () => ((dxPct: number, dyPct: number) => void) | null;
   children: React.ReactNode;
 }) {
   // Lokální ref drží jen *vlastní* běžící gesto kvůli úklidu při unmountu;
@@ -1105,13 +1160,14 @@ function FreeFrameBlock({
 
   useEffect(() => () => ownDragCleanupRef.current?.(), []);
 
+
   const startDrag =
     (handle: FrameHandle, threshold = 0, onActivate?: () => void) =>
     (e: React.PointerEvent) => {
       if (!editable || !onChangeFrame) return;
       if (threshold === 0) e.preventDefault();
       e.stopPropagation();
-      onSelect?.();
+      onSelect?.({ additive: e.shiftKey && handle === "move" });
       const rect = layerRef.current?.getBoundingClientRect();
       if (!rect || !rect.width || !rect.height) return;
       const startX = e.clientX;
@@ -1119,6 +1175,8 @@ function FreeFrameBlock({
       const startFrame = frame;
       const pointerId = e.pointerId;
       const dragTarget = e.currentTarget as HTMLElement;
+      // Společný posun výběru (2+ bloků) – zachovává relativní rozestupy.
+      const multiMove = handle === "move" ? beginMultiMove?.() ?? null : null;
       let active = threshold === 0;
       const move = (ev: PointerEvent) => {
         if (ev.pointerId !== pointerId) return;
@@ -1141,7 +1199,27 @@ function FreeFrameBlock({
         }
         const dx = (mx / rect.width) * 100;
         const dy = (my / rect.height) * 100;
-        onChangeFrame(applyFrameDrag(startFrame, handle, dx, dy));
+        if (multiMove) {
+          multiMove(dx, dy);
+          return;
+        }
+        const raw = applyFrameDrag(startFrame, handle, dx, dy);
+        // Alt = volné umístění (bez přichytávání), Shift = mřížka po 1 %,
+        // jinak přichytávání k okrajům/středům slidu i ostatních bloků.
+        // U rotovaného bloku přichytávání nedává smysl (hrany nejsou vodorovné).
+        if (ev.altKey || rotation) {
+          onGuides?.(null);
+          onChangeFrame(raw);
+          return;
+        }
+        if (ev.shiftKey) {
+          onGuides?.(null);
+          onChangeFrame(snapFrameToGrid(raw, handle, 1));
+          return;
+        }
+        const snapped = snapFrame(raw, handle, otherFrames);
+        onGuides?.(snapped.guides.v.length || snapped.guides.h.length ? snapped.guides : null);
+        onChangeFrame(snapped.frame);
       };
       const cleanup = () => {
         dragTarget.removeEventListener("pointermove", move);
@@ -1151,8 +1229,10 @@ function FreeFrameBlock({
         window.removeEventListener("blur", cleanup);
         if (dragTarget.hasPointerCapture?.(pointerId)) dragTarget.releasePointerCapture(pointerId);
         if (ownDragCleanupRef.current === cleanup) ownDragCleanupRef.current = null;
+        onGuides?.(null);
         endGesture(cleanup);
       };
+
       const finish = (ev: PointerEvent) => {
         if (ev.pointerId === pointerId) cleanup();
       };
@@ -1257,8 +1337,15 @@ function FreeFrameBlock({
     const delta = map[e.key];
     if (!delta) return;
     e.preventDefault();
+    // Při výběru více bloků posouváme celý výběr se zachováním rozestupů.
+    const multiMove = beginMultiMove?.();
+    if (multiMove) {
+      multiMove(delta[0], delta[1]);
+      return;
+    }
     onChangeFrame(applyFrameDrag(frame, "move", delta[0], delta[1]));
   };
+
 
   const rotateKeys = (e: React.KeyboardEvent) => {
     if (!onChangeRotation) return;
@@ -1389,7 +1476,10 @@ export function SlideBody({
   onChangeHeroImage,
   onReorderBlock,
   selectedBlockId,
+  selectedBlockIds,
   onSelectBlock,
+  onSelectBlocks,
+
   drawMode,
   drawColor,
   drawWidth,
@@ -1455,6 +1545,88 @@ export function SlideBody({
     .map((b) => ({ block: b, frame: getBlockFrame(b) }))
     .filter((x): x is { block: Block; frame: BlockFrame } => !!x.frame);
   const blocks: Block[] = allBlocks.filter((b) => !getBlockFrame(b));
+
+  /** Aktuální výběr (fáze 3) – pole ID, i pro jediný blok. */
+  const selectedIds = selectedBlockIds && selectedBlockIds.length
+    ? selectedBlockIds
+    : selectedBlockId
+      ? [selectedBlockId]
+      : [];
+
+  /** Aktivní zarovnávací vodítka během tažení. */
+  const [guides, setGuides] = useState<SnapGuides | null>(null);
+  /** Rámeček výběru tažením po prázdné ploše (v % plochy slidu). */
+  const [marquee, setMarquee] = useState<BlockFrame | null>(null);
+
+  /**
+   * Zahájí společný posun všech vybraných bloků. Snapshot rámců se bere
+   * v momentě zahájení gesta, takže se rozestupy nemění.
+   */
+  const beginMultiMove = useCallback(() => {
+    if (selectedIds.length < 2 || !onChangeBlock) return null;
+    const starts = framedBlocks
+      .filter((x) => selectedIds.includes(x.block.id))
+      .map((x) => ({ id: x.block.id, frame: x.frame }));
+    if (starts.length < 2) return null;
+    return (dx: number, dy: number) => {
+      for (const s of starts) {
+        onChangeBlock(s.id, (b: Block) => ({
+          ...b,
+          frame: clampBlockFrame({ ...s.frame, x: s.frame.x + dx, y: s.frame.y + dy }),
+        }) as Block);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(selectedIds), JSON.stringify(framedBlocks.map((x) => [x.block.id, x.frame])), onChangeBlock]);
+
+  /** Tažení rámečku po prázdné ploše slidu = výběr více bloků. */
+  const startMarquee = (e: React.PointerEvent) => {
+    const layer = freeLayerRef.current;
+    if (!editable || !layer || !onSelectBlocks) return;
+    const rect = layer.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const sx = ((e.clientX - rect.left) / rect.width) * 100;
+    const sy = ((e.clientY - rect.top) / rect.height) * 100;
+    let box: BlockFrame | null = null;
+    const move = (ev: PointerEvent) => {
+      const cx = ((ev.clientX - rect.left) / rect.width) * 100;
+      const cy = ((ev.clientY - rect.top) / rect.height) * 100;
+      box = {
+        x: Math.min(sx, cx),
+        y: Math.min(sy, cy),
+        w: Math.abs(cx - sx),
+        h: Math.abs(cy - sy),
+      };
+      setMarquee(box);
+    };
+    const cleanup = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", finish);
+      window.removeEventListener("pointercancel", cleanup);
+      setMarquee(null);
+      endGesture(cleanup);
+    };
+    const finish = () => {
+      const picked = box && box.w > 1 && box.h > 1
+        ? framedBlocks
+            .filter((x) =>
+              x.frame.x < box!.x + box!.w &&
+              x.frame.x + x.frame.w > box!.x &&
+              x.frame.y < box!.y + box!.h &&
+              x.frame.y + x.frame.h > box!.y)
+            .map((x) => x.block.id)
+        : [];
+      cleanup();
+      if (picked.length) onSelectBlocks(picked);
+      else onSelectBlock?.(null);
+    };
+    beginGesture(cleanup);
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", finish);
+    window.addEventListener("pointercancel", cleanup);
+  };
+
+
 
   // Obsah slidu se nikdy nescrolluje – když se nevejde do stage, zmenší se
   // (stejný princip jako živá projekce).
@@ -1753,10 +1925,17 @@ export function SlideBody({
         editable && onSelectBlock
           ? (e) => {
               const target = e.target as HTMLElement;
-              if (!target.closest("[data-slide-block-id]")) onSelectBlock(null);
+              if (target.closest("[data-slide-block-id]")) return;
+              if (drawMode || e.button !== 0) {
+                onSelectBlock(null);
+                return;
+              }
+              // Tažením po prázdné ploše vybereme více prvků; krátký klik zruší výběr.
+              startMarquee(e);
             }
           : undefined
       }
+
     >
 
       <div ref={flowAreaRef} className="flex-1 min-h-0 overflow-hidden px-6 py-6">
@@ -1786,6 +1965,44 @@ export function SlideBody({
       {(
         <div ref={freeLayerRef} className={`pointer-events-none absolute inset-0 ${blockTextScope}`}>
 
+          {/* Zarovnávací vodítka (fialová čárkovaná linka přes celý snímek) */}
+          {editable && guides && (
+            <div className="pointer-events-none absolute inset-0 z-[60]">
+              {guides.v.map((v) => (
+                <span
+                  key={`v-${v}`}
+                  data-snap-guide="v"
+                  className="absolute top-0 h-full border-l border-dashed"
+                  style={{ left: `${v}%`, borderColor: "#9B6CFF" }}
+                />
+              ))}
+              {guides.h.map((h) => (
+                <span
+                  key={`h-${h}`}
+                  data-snap-guide="h"
+                  className="absolute left-0 w-full border-t border-dashed"
+                  style={{ top: `${h}%`, borderColor: "#9B6CFF" }}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Rámeček výběru tažením */}
+          {editable && marquee && (
+            <span
+              data-marquee="true"
+              className="absolute z-[59] rounded-sm border border-dashed"
+              style={{
+                left: `${marquee.x}%`,
+                top: `${marquee.y}%`,
+                width: `${marquee.w}%`,
+                height: `${marquee.h}%`,
+                borderColor: "#9B6CFF",
+                background: "rgba(155,108,255,0.12)",
+              }}
+            />
+          )}
+
           {framedBlocks.map(({ block, frame }, frameIndex) => (
             <FreeFrameBlock
               key={block.id}
@@ -1794,9 +2011,14 @@ export function SlideBody({
               rotation={getBlockRotation(block)}
               zIndex={typeof block.zIndex === "number" ? block.zIndex : frameIndex + 1}
               editable={editable}
-              selected={selectedBlockId === block.id}
+              selected={selectedIds.includes(block.id)}
               layerRef={freeLayerRef}
-              onSelect={() => onSelectBlock?.(block.id)}
+              onSelect={(opts) => onSelectBlock?.(block.id, opts)}
+              otherFrames={framedBlocks
+                .filter((x) => x.block.id !== block.id)
+                .map((x) => x.frame)}
+              onGuides={setGuides}
+              beginMultiMove={beginMultiMove}
               onChangeFrame={
                 onChangeBlock
                   ? (next) => onChangeBlock(block.id, (b: Block) => ({ ...b, frame: next }))
@@ -1823,6 +2045,7 @@ export function SlideBody({
                   framed
                   onChange={(patch) => onChangeBlock?.(block.id, patch)}
                 />
+
               ) : (
                 <div className={`${slideAnimationClass((block.props as any)?.animation)} h-full w-full`}>
                   <EditableBlock block={block} framed />

@@ -11,8 +11,12 @@ import {
 import {
   AlignCenter, AlignLeft, AlignRight, ArrowDown, ArrowUp, Bold, ChevronDown, ChevronUp,
   ChevronsDown, ChevronsUp, Copy, Highlighter, Italic,
+  AlignHorizontalJustifyCenter, AlignHorizontalJustifyEnd, AlignHorizontalJustifyStart,
+  AlignVerticalJustifyCenter, AlignVerticalJustifyEnd, AlignVerticalJustifyStart,
+  AlignHorizontalSpaceBetween, AlignVerticalSpaceBetween, Group, Ungroup, Square,
   Maximize, Minus, Paintbrush, Palette, Plus, Sparkles, Trash2,
 } from "lucide-react";
+
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import IconPickerDialog from "@/components/admin/IconPickerDialog";
@@ -21,6 +25,8 @@ import GradientPicker from "@/components/admin/GradientPicker";
 import { gradientCss } from "@/lib/slide-gradient";
 import { SHAPE_KINDS } from "@/components/blocks/ShapeRenderer";
 import type { Block } from "@/lib/textbook-config";
+import type { AlignMode } from "@/lib/block-frame";
+
 
 interface Props {
   /** Kontejner, ve kterém je plátno slidu (pozice se počítá relativně k němu). */
@@ -43,7 +49,22 @@ interface Props {
   onCopyStyle?: () => void;
   /** Štětec je aktivní (styl je ve schránce a čeká na aplikaci). */
   styleCopied?: boolean;
+  /** FÁZE 2 – zarovnání jednoho prvku vůči snímku. */
+  onAlign?: (mode: AlignMode) => void;
+  /** FÁZE 2 – prvek vyplní celý snímek. */
+  onFillStage?: () => void;
+  /** FÁZE 3 – počet vybraných prvků (>1 = hromadný režim lišty). */
+  selectedCount?: number;
+  /** FÁZE 3 – zarovnání výběru vůči sobě navzájem. */
+  onAlignGroup?: (mode: AlignMode) => void;
+  /** FÁZE 3 – rovnoměrné rozmístění výběru. */
+  onDistribute?: (axis: "h" | "v") => void;
+  /** FÁZE 3 – spojení výběru do skupiny. */
+  onGroup?: () => void;
+  /** FÁZE 3 – rozdělení vybrané skupiny na jednotlivé prvky. */
+  onUngroup?: () => void;
 }
+
 
 
 const TEXT_BLOCK_TYPES = new Set([
@@ -57,7 +78,9 @@ const TEXT_BLOCK_TYPES = new Set([
 export const SlideFloatingFormatToolbar = ({
   containerRef, block, onChangeProps, onMove, onDelete, positionKey, framed, staticBar,
   onChangeLayer, onCopyBlock, onCopyStyle, styleCopied,
+  onAlign, onFillStage, selectedCount = 1, onAlignGroup, onDistribute, onGroup, onUngroup,
 }: Props) => {
+
 
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const props = (block?.props || {}) as Record<string, any>;
@@ -124,17 +147,133 @@ export const SlideFloatingFormatToolbar = ({
 
   if (!block || (!staticBar && !pos)) return null;
 
+  const barClass = staticBar
+    ? "flex max-w-full flex-wrap items-center justify-center gap-1 rounded-lg border border-border bg-popover px-1.5 py-1 shadow-sm"
+    : "absolute z-30 flex max-w-full flex-wrap items-center gap-1 rounded-lg border border-border bg-popover/95 px-1.5 py-1 shadow-lg backdrop-blur";
+
+  const ALIGN_BUTTONS: { mode: AlignMode; Icon: typeof AlignLeft; label: string }[] = [
+    { mode: "left", Icon: AlignHorizontalJustifyStart, label: "Zarovnat vlevo" },
+    { mode: "hcenter", Icon: AlignHorizontalJustifyCenter, label: "Zarovnat vodorovně na střed" },
+    { mode: "right", Icon: AlignHorizontalJustifyEnd, label: "Zarovnat vpravo" },
+    { mode: "top", Icon: AlignVerticalJustifyStart, label: "Zarovnat nahoru" },
+    { mode: "vcenter", Icon: AlignVerticalJustifyCenter, label: "Zarovnat svisle na střed" },
+    { mode: "bottom", Icon: AlignVerticalJustifyEnd, label: "Zarovnat dolů" },
+  ];
+
+  /* ── FÁZE 3 – hromadný režim pro víc vybraných prvků ─────────────── */
+  if (selectedCount > 1) {
+    return (
+      <div
+        data-slide-toolbar="true"
+        className={barClass}
+        style={staticBar ? undefined : { top: pos!.top, left: pos!.left }}
+        onMouseDown={(e) => e.preventDefault()}
+      >
+        <span className="px-1 text-[11px] text-muted-foreground">
+          Vybráno {selectedCount} prvků
+        </span>
+        <div className="mx-0.5 h-5 w-px bg-border" />
+        {ALIGN_BUTTONS.map(({ mode, Icon, label }) => (
+          <Button
+            key={mode}
+            size="sm"
+            variant="ghost"
+            className="h-7 w-7 p-0"
+            title={`${label} (podle výběru)`}
+            onClick={() => onAlignGroup?.(mode)}
+          >
+            <Icon className="h-3.5 w-3.5" />
+          </Button>
+        ))}
+        <div className="mx-0.5 h-5 w-px bg-border" />
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 w-7 p-0"
+          title="Rozmístit vodorovně (stejné mezery)"
+          onClick={() => onDistribute?.("h")}
+        >
+          <AlignHorizontalSpaceBetween className="h-3.5 w-3.5" />
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 w-7 p-0"
+          title="Rozmístit svisle (stejné mezery)"
+          onClick={() => onDistribute?.("v")}
+        >
+          <AlignVerticalSpaceBetween className="h-3.5 w-3.5" />
+        </Button>
+        <div className="mx-0.5 h-5 w-px bg-border" />
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 gap-1 px-2 text-[11px]"
+          title="Spojit vybrané prvky do skupiny"
+          onClick={() => onGroup?.()}
+        >
+          <Group className="h-3.5 w-3.5" /> Spojit
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 w-7 p-0 text-destructive"
+          title="Smazat vybrané prvky"
+          onClick={onDelete}
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div
       data-slide-toolbar="true"
-      className={
-        staticBar
-          ? "flex max-w-full flex-wrap items-center justify-center gap-1 rounded-lg border border-border bg-popover px-1.5 py-1 shadow-sm"
-          : "absolute z-30 flex max-w-full flex-wrap items-center gap-1 rounded-lg border border-border bg-popover/95 px-1.5 py-1 shadow-lg backdrop-blur"
-      }
+      className={barClass}
       style={staticBar ? undefined : { top: pos!.top, left: pos!.left }}
       onMouseDown={(e) => e.preventDefault()}
     >
+      {framed && onAlign && (
+        <>
+          {ALIGN_BUTTONS.map(({ mode, Icon, label }) => (
+            <Button
+              key={mode}
+              size="sm"
+              variant="ghost"
+              className="h-7 w-7 p-0"
+              title={`${label} (podle snímku)`}
+              onClick={() => onAlign(mode)}
+            >
+              <Icon className="h-3.5 w-3.5" />
+            </Button>
+          ))}
+          {onFillStage && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 w-7 p-0"
+              title="Vyplnit celý snímek"
+              onClick={onFillStage}
+            >
+              <Square className="h-3.5 w-3.5" />
+            </Button>
+          )}
+          {block.type === ("group" as Block["type"]) && onUngroup && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 gap-1 px-2 text-[11px]"
+              title="Rozdělit skupinu na jednotlivé prvky"
+              onClick={onUngroup}
+            >
+              <Ungroup className="h-3.5 w-3.5" /> Rozdělit
+            </Button>
+          )}
+          <div className="mx-0.5 h-5 w-px bg-border" />
+        </>
+      )}
+
       {isHeading && (
         <Select
           value={String(props.level || 2)}
