@@ -108,7 +108,15 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
               <span className="text-lg font-medium">Slide {currentIndex + 1} / {slides.length}</span>
             </div>
 
-            <div ref={scrollRef} className="flex-1 flex flex-col items-center justify-start px-6 py-4 gap-4 min-h-0 overflow-y-auto">
+            {(() => {
+              const hasBlocks = !!(currentSlide.blocks && currentSlide.blocks.length > 0);
+              return (
+            <div
+              ref={scrollRef}
+              className={`flex-1 flex flex-col items-center justify-start px-6 py-4 gap-4 min-h-0 ${
+                hasBlocks ? "overflow-hidden" : "overflow-y-auto"
+              }`}
+            >
               <div
                 key={currentIndex}
                 className={`w-full flex-1 min-h-0 flex flex-col items-center gap-4 ${
@@ -121,11 +129,14 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
                 </div>
               )}
 
-              {currentSlide.blocks && currentSlide.blocks.length > 0 ? (
-                <div className="w-full flex-1 min-h-0">
+              {hasBlocks ? (
+                /* Stejný renderer i chování jako v editoru: obsah se vejde do
+                   scény a sám se zmenší, takže se prvky nepřekrývají. */
+                <div className="w-full flex-1 min-h-0 h-full">
                   <SlideBody key={currentIndex} slide={currentSlide} themeId={(currentSlide as any)?.themeId} darkMode revealStep={(session?.settings as any)?.revealStep} />
                 </div>
               ) : (
+
                 <>
                   {currentSlide.projector?.headline && (
                     <h2 className="text-6xl font-bold text-center mb-10 leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-purple-200 shrink-0">
