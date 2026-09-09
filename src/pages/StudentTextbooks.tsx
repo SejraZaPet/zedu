@@ -62,14 +62,8 @@ const StudentTextbooks = () => {
       (memberships ?? []).map((m: any) => [m.class_id, m.classes?.name ?? "Třída"])
     );
 
-    let classBooks: any[] = [];
-    if (classIds.length > 0) {
-      const { data } = await supabase
-        .from("class_textbooks")
-        .select("textbook_id, textbook_type, class_id")
-        .in("class_id", classIds);
-      classBooks = data ?? [];
-    }
+    const classBooks = await fetchStudentClassTextbookLinks(userId, classIds);
+
 
     const globalIds = [...new Set(classBooks.filter(b => b.textbook_type === "global").map(b => b.textbook_id))];
     const teacherIdsFromClasses = [...new Set(classBooks.filter(b => b.textbook_type === "teacher").map(b => b.textbook_id))];
