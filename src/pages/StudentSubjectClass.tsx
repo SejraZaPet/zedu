@@ -216,8 +216,9 @@ export default function StudentSubjectClass() {
   const room = slots[0]?.room || "";
   const linkedTextbookId = useMemo(() => {
     const fromSlot = slots.find((s) => s.textbook_id);
-    return fromSlot?.textbook_id ?? null;
-  }, [slots]);
+    return fromSlot?.textbook_id ?? extraTextbookId;
+  }, [slots, extraTextbookId]);
+
 
   // Past + upcoming occurrences (±60 days)
   const now = new Date();
