@@ -117,6 +117,31 @@ export async function fetchStudentClassTextbookLinks(
     });
   }
 
+  // Učebnice připojené ke skupině předmětu přes vazební tabulku
+  const groupRows = ((groupRes as any).data ?? []) as any[];
+  const groupIds = [...new Set(groupRows.map((r) => r.group_id).filter(Boolean))];
+  const subjectIdByGroup = new Map<string, string | null>(
+    groupRows.map((r) => [r.group_id, r.subject_groups?.subject_id ?? null]),
+  );
+  if (groupIds.length > 0) {
+    const { data: sgt } = await supabase
+      .from("subject_group_textbooks")
+      .select("textbook_id, textbook_type, subject_group_id")
+      .in("subject_group_id", groupIds);
+    for (const row of (sgt ?? []) as any[]) {
+      if (!row.textbook_id) continue;
+      links.push({
+        textbook_id: row.textbook_id,
+        textbook_type: asType(row.textbook_type),
+        class_id: null,
+        subject_id: subjectIdByGroup.get(row.subject_group_id) ?? null,
+        source: "group",
+      });
+    }
+  }
+
+
+
   // Odstraníme duplicity (stejná učebnice ze stejného zdroje pro stejnou třídu).
   const seen = new Set<string>();
   return links.filter((l) => {
