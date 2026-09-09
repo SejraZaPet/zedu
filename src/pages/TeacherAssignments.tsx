@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Loader2, Plus, CalendarIcon, Trash2, Send, Clock, Users, Shuffle, RotateCcw, Eye, EyeOff, BarChart3, FileText, ExternalLink, Lock } from "lucide-react";
+import { Loader2, Plus, CalendarIcon, Trash2, Send, Clock, Users, Shuffle, RotateCcw, Eye, EyeOff, BarChart3, FileText, ExternalLink, Lock, Pencil } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -73,6 +73,9 @@ const TeacherAssignments = () => {
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  /** Když je vyplněné, formulář upravuje existující úlohu místo vytváření nové. */
+  const [editingId, setEditingId] = useState<string | null>(null);
+
   const [showForm, setShowForm] = useState(!!prefillLessonId || !!searchParams.get("classId") || !!searchParams.get("groupId"));
 
   // Form state
@@ -130,7 +133,7 @@ const TeacherAssignments = () => {
     setLoading(false);
   };
 
-  const handleCreate = async () => {
+  const handleSubmit = async () => {
     if (!title.trim()) {
       toast({ title: "Chyba", description: "Zadej název úlohy.", variant: "destructive" });
       return;
@@ -160,10 +163,15 @@ const TeacherAssignments = () => {
         const [h, m] = scheduleTime.split(":").map((n) => parseInt(n, 10));
         const when = new Date(scheduleDate);
         when.setHours(Number.isFinite(h) ? h : 8, Number.isFinite(m) ? m : 0, 0, 0);
-        if (when.getTime() <= Date.now()) {
+        const unchanged =
+          !!editingId &&
+          assignments.find((a) => a.id === editingId)?.scheduled_publish_at ===
+            when.toISOString();
+        if (when.getTime() <= Date.now() && !unchanged) {
           throw new Error("Čas zveřejnění musí být v budoucnosti.");
         }
         scheduledPublishAt = when.toISOString();
+
       }
 
       // Předmět (Výuka) — použije se pro sdílení se spoluučiteli dané Výuky.
@@ -178,36 +186,68 @@ const TeacherAssignments = () => {
         subjectIdForAssignment = (ws as any)?.subject_id ?? null;
       }
 
-      const { error } = await supabase.from("assignments" as any).insert({
-        teacher_id: user.id,
-        title: title.trim(),
-        description: description.trim(),
-        deadline: deadline?.toISOString() || null,
-        max_attempts: maxAttempts,
-        randomize_choices: randomizeChoices,
-        randomize_order: randomizeOrder,
-        class_id: selectedGroupId ? null : (selectedClassId || null),
-        group_id: selectedGroupId || null,
-        subject_id: subjectIdForAssignment,
+      if (editingId) {
+        // Úprava už zadané úlohy: název, popis, termín, cíl i nastavení lze měnit
+        // i po zveřejnění. Stav (koncept/publikováno) měníme jen kvůli plánu.
+        const patch: Record<string, unknown> = {
+          title: title.trim(),
+          description: description.trim(),
+          deadline: deadline?.toISOString() || null,
+          max_attempts: maxAttempts,
+          randomize_choices: randomizeChoices,
+          randomize_order: randomizeOrder,
+          class_id: selectedGroupId ? null : (selectedClassId || null),
+          group_id: selectedGroupId || null,
+          worksheet_id: selectedWorksheetId || null,
+          lockdown_mode: lockdownMode,
+          is_portfolio_task: isPortfolioTask,
+          exam_type: examType === "ukol" ? null : examType,
+        };
+        if (subjectIdForAssignment) patch.subject_id = subjectIdForAssignment;
+        const original = assignments.find((a) => a.id === editingId);
+        if (scheduledPublishAt) {
+          patch.scheduled_publish_at = scheduledPublishAt;
+          if (original?.status !== "published") patch.status = "scheduled";
+        } else {
+          patch.scheduled_publish_at = null;
+          if (original?.status === "scheduled") patch.status = "draft";
+        }
+        const { error } = await supabase
+          .from("assignments" as any)
+          .update(patch as any)
+          .eq("id", editingId);
+        if (error) throw error;
+        toast({ title: "Změny uloženy" });
+      } else {
+        const { error } = await supabase.from("assignments" as any).insert({
+          teacher_id: user.id,
+          title: title.trim(),
+          description: description.trim(),
+          deadline: deadline?.toISOString() || null,
+          max_attempts: maxAttempts,
+          randomize_choices: randomizeChoices,
+          randomize_order: randomizeOrder,
+          class_id: selectedGroupId ? null : (selectedClassId || null),
+          group_id: selectedGroupId || null,
+          subject_id: subjectIdForAssignment,
+          status: scheduledPublishAt ? "scheduled" : "draft",
+          scheduled_publish_at: scheduledPublishAt,
+          activity_data: [] as any,
+          worksheet_id: selectedWorksheetId || null,
+          lockdown_mode: lockdownMode,
+          is_portfolio_task: isPortfolioTask,
+          exam_type: examType === "ukol" ? null : examType,
+        } as any);
 
+        if (error) throw error;
+        toast({
+          title: scheduledPublishAt ? "Úloha naplánována" : "Úloha vytvořena",
+          description: scheduledPublishAt
+            ? `Žákům se zpřístupní ${new Date(scheduledPublishAt).toLocaleString("cs-CZ")}.`
+            : undefined,
+        });
+      }
 
-        status: scheduledPublishAt ? "scheduled" : "draft",
-        scheduled_publish_at: scheduledPublishAt,
-        activity_data: [] as any,
-        worksheet_id: selectedWorksheetId || null,
-        lockdown_mode: lockdownMode,
-        is_portfolio_task: isPortfolioTask,
-        exam_type: examType === "ukol" ? null : examType,
-      } as any);
-
-
-      if (error) throw error;
-      toast({
-        title: scheduledPublishAt ? "Úloha naplánována" : "Úloha vytvořena",
-        description: scheduledPublishAt
-          ? `Žákům se zpřístupní ${new Date(scheduledPublishAt).toLocaleString("cs-CZ")}.`
-          : undefined,
-      });
       setShowForm(false);
       resetForm();
       loadData();
@@ -229,6 +269,7 @@ const TeacherAssignments = () => {
   }, [prefillClassId, schoolClasses]);
 
   const resetForm = () => {
+    setEditingId(null);
     setTitle("");
     setDescription("");
     setDeadline(undefined);
@@ -246,6 +287,38 @@ const TeacherAssignments = () => {
     setScheduleDate(undefined);
     setScheduleTime("08:00");
   };
+
+  /** Otevře formulář s předvyplněnými hodnotami už zadané úlohy. */
+  const startEdit = (a: Assignment) => {
+    setEditingId(a.id);
+    setTitle(a.title ?? "");
+    setDescription(a.description ?? "");
+    setDeadline(a.deadline ? new Date(a.deadline) : undefined);
+    setMaxAttempts(a.max_attempts ?? 1);
+    setRandomizeChoices(!!a.randomize_choices);
+    setRandomizeOrder(!!a.randomize_order);
+    setSelectedGroupId(a.group_id || "");
+    setSelectedClassId(a.group_id ? "" : (a.class_id || ""));
+    setSelectedWorksheetId(a.worksheet_id || "");
+    setIsPortfolioTask(!!a.is_portfolio_task);
+    setLockdownMode(!!a.lockdown_mode && !a.is_portfolio_task);
+    setExamType((a.exam_type as ExamType) || "ukol");
+    if (a.scheduled_publish_at) {
+      const when = new Date(a.scheduled_publish_at);
+      setScheduleEnabled(true);
+      setScheduleDate(when);
+      setScheduleTime(
+        `${String(when.getHours()).padStart(2, "0")}:${String(when.getMinutes()).padStart(2, "0")}`,
+      );
+    } else {
+      setScheduleEnabled(false);
+      setScheduleDate(undefined);
+      setScheduleTime("08:00");
+    }
+    setShowForm(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
 
 
   const handlePublish = async (id: string) => {
@@ -305,7 +378,17 @@ const TeacherAssignments = () => {
                   ))}
                 </SelectContent>
               </Select>
-              <Button onClick={() => setShowForm(!showForm)}>
+              <Button
+                onClick={() => {
+                  if (showForm && !editingId) {
+                    setShowForm(false);
+                    return;
+                  }
+                  resetForm();
+                  setShowForm(true);
+                }}
+              >
+
                 <Plus className="w-4 h-4 mr-2" />
                 Nová úloha
               </Button>
@@ -315,7 +398,7 @@ const TeacherAssignments = () => {
         {showForm && (
           <Card className="mb-6">
             <CardHeader>
-              <CardTitle className="text-lg">Nová úloha</CardTitle>
+              <CardTitle className="text-lg">{editingId ? "Upravit úlohu" : "Nová úloha"}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
@@ -343,7 +426,7 @@ const TeacherAssignments = () => {
                         mode="single"
                         selected={deadline}
                         onSelect={setDeadline}
-                        disabled={(date) => date < new Date()}
+                        disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
                         className={cn("p-3 pointer-events-auto")}
                       />
                     </PopoverContent>
@@ -671,9 +754,10 @@ const TeacherAssignments = () => {
               </div>
 
               <div className="flex gap-2">
-                <Button onClick={handleCreate} disabled={creating}>
-                  {creating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}
-                  Vytvořit
+                <Button onClick={handleSubmit} disabled={creating}>
+                  {creating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : editingId ? <Pencil className="w-4 h-4 mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
+                  {editingId ? "Uložit změny" : "Vytvořit"}
+
                 </Button>
                 <Button variant="outline" onClick={() => { setShowForm(false); resetForm(); }}>Zrušit</Button>
               </div>
@@ -769,7 +853,12 @@ const TeacherAssignments = () => {
                           {a.status === "scheduled" ? "Publikovat hned" : "Publikovat"}
                         </Button>
                       )}
+                      <Button size="sm" variant="outline" onClick={() => startEdit(a)}>
+                        <Pencil className="w-3.5 h-3.5 mr-1" />
+                        Upravit
+                      </Button>
                       <Button size="sm" variant="ghost" className="text-destructive" onClick={() => handleDelete(a.id)}>
+
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
                     </div>
