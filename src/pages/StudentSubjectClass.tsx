@@ -29,6 +29,8 @@ import {
   getSubjectAbbreviation,
   getSubjectColor,
 } from "@/lib/subject-appearance";
+import { fetchStudentClassTextbookLinks } from "@/lib/student-class-textbooks";
+
 
 interface ClassRow {
   id: string;
