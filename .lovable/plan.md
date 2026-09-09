@@ -1,73 +1,41 @@
-# Per-kategorie barvení v Avatar editoru
+# Zarovnávací nástroje v editoru prezentace
 
-## Cíl
-Zrušit samostatné kategorie **Barva pleti** (`skin_tone`) a **Barva vlasů** (`hair_color`) z levého menu. Místo toho u každé barvitelné kategorie (`base`, `hairstyle`, `outfit`, `face_accessory`, `head_accessory`) zobrazit v panelu položek paletu 8–10 předdefinovaných teček + tlačítko „vlastní barva" (nativní `<input type="color">`). Barva se ukládá per-kategorie.
+## Co jsem zjistila (dnešní stav)
 
-## Odpovědi na otázky
+**1. Jak se ukládá pozice a velikost prvku**
+- Prvek má nepovinné pole `frame` = `{ x, y, w, h }` v **procentech plochy snímku** (0–100), zaokrouhleno na jedno desetinné místo.
+- Plocha snímku je pevná 1600 × 900 (16:9), takže procenta jsou jednoznačně přepočitatelná na body.
+- Prvek smí přesahovat okraje (až −100 / +100 %), minimální velikost 5 %.
+- Rotace se ukládá zvlášť jako vlastnost prvku ve stupních.
+- Prvky **bez** `frame` zůstávají v klasickém sloupci pod sebou; do volného umístění se „povýší“ automaticky, když se s nimi táhne.
 
-### 1. DB schéma `avatar_profiles`
-Přidat 5 nullable sloupců `text` (hex `#RRGGBB`), neinvazivní migrace:
+**2. Zárodek zarovnávání**
+- Žádné přichytávání ani vodítka dnes neexistují — umístění je zcela volné.
+- Existuje jen: posun šipkami po 1 % (se Shiftem po 5 %) a přichytávání **rotace** po 15° při držení Shiftu.
+- Zarovnání „vlevo/na střed/vpravo“ v liště se týká pouze textu vnitřku prvku, ne jeho pozice na snímku.
 
-```sql
-ALTER TABLE public.avatar_profiles
-  ADD COLUMN IF NOT EXISTS base_color            text,
-  ADD COLUMN IF NOT EXISTS hairstyle_color       text,
-  ADD COLUMN IF NOT EXISTS outfit_color          text,
-  ADD COLUMN IF NOT EXISTS face_accessory_color  text,
-  ADD COLUMN IF NOT EXISTS head_accessory_color  text;
-```
+**3. Výběr více prvků**
+- Neexistuje. Editor drží jediné vybrané ID prvku; kliknutí jinam výběr přepne.
 
-Backfill ze staré logiky (aby uživatelé nepřišli o vybrané barvy):
+**4. Technický rámec**
+- Souřadnice jsou procentuální vůči vrstvě snímku, jejíž rozměr se zjišťuje z DOM — přepočet myš → procenta už v kódu je, takže výpočet vodítek je přímočarý.
+- Tažení i změna velikosti procházejí jedinou funkcí, která spočítá nový rámec; sem se dá vložit „přichytávací“ krok bez zásahu do zbytku editoru.
 
-- `base_color`   ← `color_value` položky odkazované ze `skin_tone_id`
-- `hairstyle_color` ← `color_value` položky odkazované ze `hair_color_id`
+## Navrhované řešení
 
-Staré sloupce `skin_tone_id` a `hair_color_id` zůstávají v tabulce jako **legacy read-only fallback** (nemažeme, jen na ně přestaneme zapisovat). Riziko rozbití starých dat = 0.
+### Fáze 1 — snadné, doporučuji hned
+- **Přichytávání při tažení a změně velikosti** k: levému/pravému okraji a vodorovnému i svislému středu snímku, k bezpečnému okraji (5 %), a k okrajům + středům ostatních prvků na snímku.
+- **Fialová vodítka** se zobrazí jen v momentě, kdy prvek na linku „padne“ (tolerance ~1 % plochy).
+- **Držení Alt** přichytávání dočasně vypne (volné umístění).
+- **Přichytávání ke mřížce** (krok 1 %) při držení Shiftu.
+- U rotovaného prvku se přichytávání vypne (jeho hrany nejsou vodorovné).
 
-### 2. Osud kategorií `skin_tone` a `hair_color` v `avatar_items`
-Nemazat. Fáze 1: `UPDATE avatar_items SET is_active = false WHERE category IN ('skin_tone','hair_color')` — položky přežijí jako historický seed pro palety (vytáhneme z nich hex hodnoty do defaultních swatchů) a zůstanou pro případný rollback. V UI se přestanou renderovat, protože `CATEGORY_META` je nebude obsahovat a načítací dotaz filtruje `is_active = true`. Případný pozdější `DELETE` může přijít po ověření migrace v produkci.
+### Fáze 2 — středně náročné
+- **Tlačítka zarovnání jednoho prvku vůči snímku**: vlevo / na střed / vpravo, nahoru / na střed / dolů, plus „vyplnit snímek“. Do plovoucí lišty vybraného prvku, jedno kliknutí = přepočet `frame`.
 
-### 3. Dopad na sdílené komponenty
+### Fáze 3 — větší práce
+- **Výběr více prvků** (Shift+klik, tažení rámečku po prázdné ploše) — vyžaduje předělat stav výběru z jednoho ID na seznam a upravit lištu i klávesové zkratky.
+- Nad ním pak **hromadné zarovnání** a **rozmístění (distribute)** s rovnoměrnými rozestupy, a společný posun všech vybraných prvků.
 
-**`AvatarLayerStack.tsx`** — zobecnit: `StackLayer` dostane volitelnou `tintColor: string | null` (místo dnešního specifického `hairColor` / `skinTone`). Rendering podmínku `if (item.category === "hairstyle" && hairColor) … else if (item.category === "base" && skinTone) …` nahradit generickou větví „když `tintColor` != null, použij `hairTintFromHex(tintColor)` (filter + volitelný mask overlay)". `hairTintFromHex` zůstává beze změny — už teď je category-agnostic.
-
-**`AvatarItemsManager.tsx`** (admin) — sjednotit:
-- Odstranit z formuláře speciální UI pro kategorie `skin_tone` / `hair_color` (color picker vázaný na položku). Zůstane základní CRUD pro případné historické editace, ale kategorie se v selectu označí jako `(deprecated)`.
-- Kalibrační živý náhled dál používá `AvatarLayerStack`, takže po jeho zobecnění admin automaticky ukazuje totéž co produkce — bez další práce.
-
-**`ProfileAvatarBubble.tsx`** — čte nové sloupce `*_color` z `avatar_profiles` a předává je jako `tintColor` do odpovídajících vrstev. Legacy fallback: pokud `hairstyle_color` je `null` ale `hair_color_id` existuje, použije `color_value` staré položky (jednorázově dokud backfill nedoběhne).
-
-### 4. Rozsah a rizika
-
-**Rozsah** (5 souborů + 1 migrace + 2 nové soubory):
-
-| Soubor | Změna |
-|---|---|
-| migrace | přidat 5 sloupců, backfill, `is_active=false` |
-| `src/lib/avatar-palettes.ts` | **nový** – definice palet per kategorii |
-| `src/components/avatar/ColorPalette.tsx` | **nový** – swatch grid + `<input type="color">` |
-| `src/components/avatar/AvatarLayerStack.tsx` | `hairColor`+`skinTone` → generic `tintColor` |
-| `src/components/profile/ProfileAvatarBubble.tsx` | číst nové sloupce, mapovat per-kategorie tint |
-| `src/pages/AvatarEditor.tsx` | odebrat `skin_tone`+`hair_color` z `CATEGORY_META`, vložit `<ColorPalette>` panel do každé barvitelné kategorie, ukládat do nových sloupců |
-| `src/components/admin/AvatarItemsManager.tsx` | deprecated labely, cleanup |
-
-**Palety (návrh):**
-- `base` (pleť): 6 tónů od nejsvětlejšího po nejtmavší
-- `hairstyle` (vlasy): černá, tmavě hnědá, hnědá, blond, zrzavá, šedá, + brand tyrkysová + brand fialová (special edition)
-- `outfit`, `face_accessory`, `head_accessory`: neutrální paleta (černá/bílá/šedá + 4 brand akcenty)
-- Vše doplněné tlačítkem „Vlastní barva" → `<input type="color">`
-
-**Rizika:**
-- **Nízké — data:** nové sloupce jsou additive; staré `*_id` sloupce zůstávají. Rollback = přestat zapisovat do nových sloupců.
-- **Střední — UX konzistence:** uživatelé mají dnes zvolenou barvu vlasů globálně; backfill musí proběhnout před nasazením FE, jinak přijdou o výběr. Řešeno v jedné migraci.
-- **Nízké — rendering:** `hairTintFromHex` je už deterministický a category-agnostic; zobecnění `AvatarLayerStack` je čistě refactor beze změny výstupu pro existující kombinace.
-- **Nízké — admin:** kalibrace se nezmění, protože stack komponenta je sdílená.
-
-## Postup implementace
-1. Migrace (sloupce + backfill + deaktivace starých kategorií).
-2. `avatar-palettes.ts` + `ColorPalette.tsx`.
-3. Refaktor `AvatarLayerStack` na `tintColor`.
-4. `ProfileAvatarBubble` – nové sloupce s legacy fallbackem.
-5. `AvatarEditor` – odebrat 2 kategorie z menu, přidat paletu do panelu položek, přepsat `save()` na nové sloupce.
-6. `AvatarItemsManager` – deprecated značky.
-7. Smoke test: nový uživatel, existující uživatel se starou volbou pleti/vlasů, admin kalibrace.
+## Doporučení
+Začít fází 1 + 2 — to pokryje většinu praktické potřeby „aby to bylo srovnané“ a nevyžaduje přestavbu výběru. Fázi 3 zařadit jako samostatný krok.
