@@ -119,10 +119,23 @@ function blocksToText(blocks: any[]): string {
     .map((b: any) => {
       if (!b) return "";
       if (typeof b === "string") return b;
-      if (typeof b.text === "string") return b.text;
-      if (typeof b.content === "string") return b.content;
-      if (typeof b.title === "string") return b.title;
-      return "";
+      const p = b.props ?? b;
+      const parts: string[] = [];
+      for (const key of ["title", "text", "content", "question", "prompt", "caption"]) {
+        if (typeof p?.[key] === "string" && p[key].trim()) parts.push(p[key].trim());
+      }
+      for (const key of ["items", "bullets", "options", "answers"]) {
+        const arr = p?.[key];
+        if (Array.isArray(arr)) {
+          const vals = arr
+            .map((it: any) =>
+              typeof it === "string" ? it : typeof it?.text === "string" ? it.text : "",
+            )
+            .filter(Boolean);
+          if (vals.length) parts.push(vals.map((v: string) => `• ${v}`).join("\n"));
+        }
+      }
+      return parts.join("\n");
     })
     .filter(Boolean)
     .join("\n\n");
