@@ -1724,7 +1724,10 @@ export function SlideBody({
     ? "text-white [&_*]:text-inherit [&_h1]:text-inherit [&_h2]:text-inherit [&_h3]:text-inherit [&_.bg-card]:!bg-white/10 [&_.bg-muted\\/40]:!bg-white/10 [&_.bg-muted\\/30]:!bg-white/10 [&_.border]:!border-white/20"
     : "";
 
-  const headlineEl = (
+  // Mimo editor prázdný nadpis vůbec nerenderujeme – jinak zabírá výšku
+  // a obsah slidu se pak překrývá.
+  const headlineEl = !editable && !headline ? null : (
+
     <EditableText
       editable={!!editable}
       value={headline}
