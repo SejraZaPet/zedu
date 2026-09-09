@@ -572,6 +572,7 @@ export const SlideFloatingFormatToolbar = ({
             </SelectContent>
           </Select>
 
+          {!isStrokeOnlyShape && (
           <Popover>
             <PopoverTrigger asChild>
               <Button size="sm" variant="ghost" className="h-7 px-2 text-[11px]" title="Barva výplně">
@@ -604,15 +605,16 @@ export const SlideFloatingFormatToolbar = ({
               </div>
             </PopoverContent>
           </Popover>
+          )}
 
           <Popover>
             <PopoverTrigger asChild>
-              <Button size="sm" variant="ghost" className="h-7 px-2 text-[11px]" title="Barva obrysu">
+              <Button size="sm" variant="ghost" className="h-7 px-2 text-[11px]" title={isStrokeOnlyShape ? "Barva linky" : "Barva obrysu"}>
                 <span
                   className="mr-1 inline-block h-3 w-3 rounded-full border-2"
                   style={{ borderColor: props.strokeColor && props.strokeColor !== "none" ? props.strokeColor : "hsl(var(--border))" }}
                 />
-                Obrys
+                {isStrokeOnlyShape ? "Barva linky" : "Obrys"}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-2">

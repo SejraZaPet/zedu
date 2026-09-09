@@ -17,6 +17,8 @@ const ShapePickerPopover = ({ onPick }: Props) => {
   const [shapeKind, setShapeKind] = useState<ShapeKind>("rectangle");
   const [fillColor, setFillColor] = useState("#6EC6D9");
   const [strokeColor, setStrokeColor] = useState("#9B6CFF");
+  /** Linka a šipka se kreslí jen barvou obrysu – výplň by u nich nic nedělala. */
+  const strokeOnly = shapeKind === "line" || shapeKind === "arrow";
 
   return (
     <Popover open={open} onOpenChange={setOpen} modal>
@@ -43,18 +45,20 @@ const ShapePickerPopover = ({ onPick }: Props) => {
             </SelectContent>
           </Select>
         </div>
+        {!strokeOnly && (
+          <div>
+            <Label className="text-[11px] text-muted-foreground">Výplň</Label>
+            <ColorPicker
+              value={fillColor === "none" ? null : fillColor}
+              onChange={(v) => setFillColor(v ?? "none")}
+              allowNull
+              nullLabel="Bez"
+              className="mt-1"
+            />
+          </div>
+        )}
         <div>
-          <Label className="text-[11px] text-muted-foreground">Výplň</Label>
-          <ColorPicker
-            value={fillColor === "none" ? null : fillColor}
-            onChange={(v) => setFillColor(v ?? "none")}
-            allowNull
-            nullLabel="Bez"
-            className="mt-1"
-          />
-        </div>
-        <div>
-          <Label className="text-[11px] text-muted-foreground">Obrys</Label>
+          <Label className="text-[11px] text-muted-foreground">{strokeOnly ? "Barva linky" : "Obrys"}</Label>
           <ColorPicker
             value={strokeColor === "none" ? null : strokeColor}
             onChange={(v) => setStrokeColor(v ?? "none")}
