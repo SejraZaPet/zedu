@@ -57,8 +57,12 @@ describe("přidávání odrážek a karet v editoru snímků", () => {
     expect(removed.props.cards).toHaveLength(0);
   });
 
-  it("karty: text karty je editovatelný na plátně", () => {
+  it("karty: text karty je editovatelný na plátně po dvojkliku", () => {
     renderBlock(cardGrid());
-    expect(screen.getByText("Zastaralé nástroje").getAttribute("contenteditable")).toBe("true");
+    const el = screen.getByText("Zastaralé nástroje");
+    // Jeden klik jen vybere blok (kvůli klávesám Delete/Ctrl+C), psaní zapne dvojklik.
+    expect(el.getAttribute("contenteditable")).toBe("false");
+    fireEvent.doubleClick(el);
+    expect(el.getAttribute("contenteditable")).toBe("true");
   });
 });

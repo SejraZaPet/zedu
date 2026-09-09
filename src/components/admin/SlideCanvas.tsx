@@ -128,6 +128,14 @@ function EditableText({
   const ref = useRef<HTMLDivElement>(null);
   const sanitizedValue = html ? DOMPurify.sanitize(value || "") : value || "";
   const [isEmpty, setIsEmpty] = useState(() => !(html ? sanitizedValue : value));
+  /**
+   * Psaní se zapne až dvojklikem (jako v Canvě) – jeden klik jen vybere blok,
+   * takže fungují klávesy Delete a Ctrl+C/Ctrl+V nad celým blokem.
+   */
+  const [typing, setTyping] = useState(false);
+  useEffect(() => {
+    if (typing) ref.current?.focus();
+  }, [typing]);
 
   useEffect(() => {
     setIsEmpty(!(html ? sanitizedValue : value));
@@ -158,15 +166,33 @@ function EditableText({
     <div className="relative">
       <div
         ref={ref}
-        contentEditable
+        contentEditable={typing}
         suppressContentEditableWarning
+        title={typing ? undefined : "Dvojklik = psát text"}
         style={html ? style : { whiteSpace: multiline ? "pre-wrap" : undefined, ...style }}
         onInput={checkEmpty}
+        onDoubleClick={() => setTyping(true)}
+        onPointerDown={(e) => {
+          if (typing) e.stopPropagation();
+        }}
+        onMouseDown={(e) => {
+          // Druhý klik = psaní. Nativní dblclick/click tažení bloku spolkne,
+          // proto se řídíme počítadlem kliknutí na mousedown.
+          if (!typing && e.detail >= 2) {
+            e.stopPropagation();
+            setTyping(true);
+          }
+        }}
         onBlur={(e) => {
           checkEmpty();
+          setTyping(false);
           onCommit(html ? e.currentTarget.innerHTML : e.currentTarget.innerText);
         }}
         onKeyDown={(e) => {
+          if (e.key === "Escape") {
+            (e.currentTarget as HTMLElement).blur();
+            return;
+          }
           if (!multiline && e.key === "Enter") {
             e.preventDefault();
             (e.currentTarget as HTMLElement).blur();
@@ -1261,7 +1287,7 @@ function FreeFrameBlock({
       onSelect?.();
       return;
     }
-    const editableTarget = target.closest('[contenteditable="true"]') as HTMLElement | null;
+    const editableTarget = target.closest('[contenteditable]') as HTMLElement | null;
     // Kurzor už je v textu → uživatel označuje text, nikoliv táhne blok.
     if (isTextEditingActive(editableTarget)) {
       e.stopPropagation();
@@ -1726,7 +1752,7 @@ export function SlideBody({
     if (targetEl?.closest("button, a, input, textarea, select, [data-no-block-drag]")) {
       return;
     }
-    const editableTarget = targetEl?.closest("[contenteditable='true']") as HTMLElement | null;
+    const editableTarget = targetEl?.closest("[contenteditable]") as HTMLElement | null;
     // Text už je v editaci → tažení myší je označování textu, drag nespouštíme.
     if (isTextEditingActive(editableTarget)) {
       onSelectBlock?.(b.id);

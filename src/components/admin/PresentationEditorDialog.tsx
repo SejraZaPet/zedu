@@ -344,7 +344,7 @@ export const PresentationEditorDialog = ({
   const copyBlock = () => {
     if (!selectedBlock) return;
     setCopiedBlock(structuredClone(selectedBlock));
-    toast({ title: "Blok zkopírován", description: "Vložte ho tlačítkem „Vložit kopii“ v horní liště." });
+    toast({ title: "Blok zkopírován", description: "Vložte ho klávesou Ctrl+V nebo tlačítkem „Vložit kopii“." });
   };
 
   const pasteBlock = () => {
@@ -493,6 +493,46 @@ export const PresentationEditorDialog = ({
     setBlocks(blocks.filter((b) => !ids.has(b.id)));
     setSelectedBlockIds([]);
   };
+
+  /**
+   * Klávesové zkratky na plátně: Delete/Backspace smaže vybrané prvky,
+   * Ctrl/Cmd+C kopíruje a Ctrl/Cmd+V vloží kopii. Když uživatel právě píše
+   * (input, textarea, contenteditable), zkratky se ignorují.
+   */
+  useEffect(() => {
+    const isTyping = (target: EventTarget | null) => {
+      const el = target as HTMLElement | null;
+      if (!el || typeof el.closest !== "function") return false;
+      if (el.isContentEditable || el.closest('[contenteditable="true"]')) return true;
+      return !!el.closest("input, textarea, select, [role='textbox']");
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (isTyping(e.target)) return;
+      const meta = e.ctrlKey || e.metaKey;
+      const key = e.key.toLowerCase();
+      if (!meta && (e.key === "Delete" || e.key === "Backspace")) {
+        if (!selectedBlockIds.length) return;
+        e.preventDefault();
+        deleteSelection();
+        return;
+      }
+      if (meta && key === "c") {
+        if (!selectedBlockId) return;
+        e.preventDefault();
+        copyBlock();
+        return;
+      }
+      if (meta && key === "v") {
+        if (!copiedBlock) return;
+        e.preventDefault();
+        pasteBlock();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedBlockIds, blocks, copiedBlock, editingSlideIndex]);
+
 
 
   /** Přesun snímku na jinou pozici (drag & drop i šipky). */

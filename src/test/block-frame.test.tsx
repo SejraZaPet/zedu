@@ -157,7 +157,7 @@ describe("SlideBody – volné umístění", () => {
       />,
     );
     const el = container.querySelector('[data-free-frame="true"]') as HTMLElement;
-    const editableText = el.querySelector('[contenteditable="true"]') as HTMLElement;
+    const editableText = el.querySelector("[contenteditable]") as HTMLElement;
     const blurSpy = vi.spyOn(editableText, "blur");
     const pointerEvent = (type: string, clientX: number) => {
       const event = new MouseEvent(type, { bubbles: true, button: 0, clientX, clientY: 200 });
