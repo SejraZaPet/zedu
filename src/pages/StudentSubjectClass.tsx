@@ -188,6 +188,30 @@ export default function StudentSubjectClass() {
       );
       setSlots(filtered);
 
+      // Učebnice připojená k předmětu třídy / skupině (nejen do rozvrhu)
+      let subjectIdKey: string | null = UUID_RE.test(rawSubjectParam)
+        ? rawSubjectParam
+        : ((filtered.find((s: any) => s.subject_id) as any)?.subject_id ?? null);
+      if (!subjectIdKey) {
+        const { data: subjRow } = await supabase
+          .from("subjects" as any)
+          .select("id")
+          .ilike("name", label)
+          .maybeSingle();
+        subjectIdKey = ((subjRow as any)?.id as string) ?? null;
+      }
+      const links = await fetchStudentClassTextbookLinks(user.id, [classId]);
+      const match =
+        links.find(
+          (l) =>
+            l.textbook_type === "teacher" &&
+            subjectIdKey &&
+            l.subject_id === subjectIdKey,
+        ) ??
+        links.find((l) => l.textbook_type === "teacher" && l.class_id === classId && !l.subject_id);
+      if (!cancelled) setExtraTextbookId(match?.textbook_id ?? null);
+
+
       const _assignments = (assignRes.data as AssignmentRow[]) ?? [];
       setAssignments(_assignments);
 
