@@ -29,6 +29,8 @@ import {
   getSubjectAbbreviation,
   getSubjectColor,
 } from "@/lib/subject-appearance";
+import { fetchStudentClassTextbookLinks } from "@/lib/student-class-textbooks";
+
 
 interface ClassRow {
   id: string;
@@ -108,7 +110,9 @@ export default function StudentSubjectClass() {
   const [slots, setSlots] = useState<ScheduleSlot[]>([]);
   const [assignments, setAssignments] = useState<AssignmentRow[]>([]);
   const [attempts, setAttempts] = useState<AttemptRow[]>([]);
+  const [extraTextbookId, setExtraTextbookId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
 
   useEffect(() => {
     if (authLoading) return;
@@ -186,6 +190,30 @@ export default function StudentSubjectClass() {
       );
       setSlots(filtered);
 
+      // Učebnice připojená k předmětu třídy / skupině (nejen do rozvrhu)
+      let subjectIdKey: string | null = UUID_RE.test(rawSubjectParam)
+        ? rawSubjectParam
+        : ((filtered.find((s: any) => s.subject_id) as any)?.subject_id ?? null);
+      if (!subjectIdKey) {
+        const { data: subjRow } = await supabase
+          .from("subjects" as any)
+          .select("id")
+          .ilike("name", label)
+          .maybeSingle();
+        subjectIdKey = ((subjRow as any)?.id as string) ?? null;
+      }
+      const links = await fetchStudentClassTextbookLinks(user.id, [classId]);
+      const match =
+        links.find(
+          (l) =>
+            l.textbook_type === "teacher" &&
+            subjectIdKey &&
+            l.subject_id === subjectIdKey,
+        ) ??
+        links.find((l) => l.textbook_type === "teacher" && l.class_id === classId && !l.subject_id);
+      if (!cancelled) setExtraTextbookId(match?.textbook_id ?? null);
+
+
       const _assignments = (assignRes.data as AssignmentRow[]) ?? [];
       setAssignments(_assignments);
 
@@ -216,8 +244,9 @@ export default function StudentSubjectClass() {
   const room = slots[0]?.room || "";
   const linkedTextbookId = useMemo(() => {
     const fromSlot = slots.find((s) => s.textbook_id);
-    return fromSlot?.textbook_id ?? null;
-  }, [slots]);
+    return fromSlot?.textbook_id ?? extraTextbookId;
+  }, [slots, extraTextbookId]);
+
 
   // Past + upcoming occurrences (±60 days)
   const now = new Date();

@@ -7590,6 +7590,10 @@ export type Database = {
       is_active_staff: { Args: { _user_id: string }; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
       is_admin_or_teacher: { Args: never; Returns: boolean }
+      is_class_linked_textbook: {
+        Args: { _textbook_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_class_owner: {
         Args: { _class_id: string; _user_id: string }
         Returns: boolean
