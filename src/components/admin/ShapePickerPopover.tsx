@@ -19,13 +19,19 @@ const ShapePickerPopover = ({ onPick }: Props) => {
   const [strokeColor, setStrokeColor] = useState("#9B6CFF");
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={setOpen} modal>
       <PopoverTrigger asChild>
         <Button size="sm" variant="outline" className="h-8 gap-1">
           <Square className="h-3.5 w-3.5" /> Tvar
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-[280px] space-y-3">
+      <PopoverContent
+        align="start"
+        side="right"
+        collisionPadding={12}
+        className="max-h-[min(70vh,520px)] w-[280px] space-y-3 overflow-y-auto"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
         <div>
           <Label className="text-[11px] text-muted-foreground">Typ tvaru</Label>
           <Select value={shapeKind} onValueChange={(v) => setShapeKind(v as ShapeKind)}>
@@ -62,7 +68,7 @@ const ShapePickerPopover = ({ onPick }: Props) => {
         </div>
         <Button
           size="sm"
-          className="w-full"
+          className="sticky bottom-0 w-full"
           onClick={() => {
             onPick({ shapeKind, fillColor, strokeColor, strokeWidth: 2 });
             setOpen(false);

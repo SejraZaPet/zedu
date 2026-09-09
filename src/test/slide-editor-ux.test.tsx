@@ -36,7 +36,7 @@ describe("ČÁST 2 – tažení textového bloku přes celou plochu", () => {
       <SlideBody slide={{ projector: { headline: "H" }, blocks: [textBlock()] }} editable onChangeBlock={onChangeBlock} />,
     );
     const blockEl = container.querySelector("[data-slide-block-id='t1']") as HTMLElement;
-    const editableEl = blockEl.querySelector("[contenteditable='true']") as HTMLElement;
+    const editableEl = blockEl.querySelector("[contenteditable]") as HTMLElement;
     const wrapper = blockEl.closest("div.touch-none") as HTMLElement;
     const root = container.querySelector("[data-slide-root='true']") as HTMLElement;
     return { onChangeBlock, editableEl, wrapper, root };
@@ -89,7 +89,7 @@ describe("ČÁST 2 – tažení textového bloku přes celou plochu", () => {
 
     for (let i = 0; i < 6; i++) {
       const id = ["t1", "t2", "t3"][i % 3];
-      const el = container.querySelector(`[data-slide-block-id='${id}'] [contenteditable='true']`) as HTMLElement;
+      const el = container.querySelector(`[data-slide-block-id='${id}'] [contenteditable]`) as HTMLElement;
       onChangeBlock.mockClear();
       fireEvent(el, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 200, clientY: 200 }));
       fireEvent(root, new MouseEvent("pointermove", { clientX: 260, clientY: 210 } as any));
