@@ -108,7 +108,9 @@ export default function StudentSubjectClass() {
   const [slots, setSlots] = useState<ScheduleSlot[]>([]);
   const [assignments, setAssignments] = useState<AssignmentRow[]>([]);
   const [attempts, setAttempts] = useState<AttemptRow[]>([]);
+  const [extraTextbookId, setExtraTextbookId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
 
   useEffect(() => {
     if (authLoading) return;
