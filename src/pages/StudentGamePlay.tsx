@@ -479,6 +479,7 @@ const StudentGamePlay = () => {
                         anonymous={liveSettings?.wallAnonymous ?? (currentSlideData as any).activitySpec?.anonymous ?? false}
                         anonymousLabelMap={anonymousLabelMap}
                         darkMode={true}
+                        joinToken={joinToken}
                       />
                     </div>
                     {(liveSettings?.wallAllowMultiple ?? (currentSlideData as any).activitySpec?.allowMultiple) ? (
@@ -540,6 +541,7 @@ const StudentGamePlay = () => {
                           sessionId={sessionId || ""}
                           questionIndex={qi}
                           totalPlayers={players.length}
+                          joinToken={joinToken}
                         />
                       </div>
                     );
@@ -580,6 +582,7 @@ const StudentGamePlay = () => {
                             questionIndex={qi}
                             published={true}
                             darkMode={true}
+                            joinToken={joinToken}
                           />
                         </div>
                       )}
