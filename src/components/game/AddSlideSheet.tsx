@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { fetchGameTemplates, purposeLabel, type GameTemplate } from "@/lib/game-templates";
 import { ACTIVITY_PRESETS, type ActivityPreset } from "@/lib/activity-slide-presets";
 import { blocksToSlides } from "@/lib/blocks-to-slides";
+import { loadTeacherLessonOptions } from "@/lib/teacher-lesson-catalog";
 
 type AddKind =
   | "menu" | "text" | "mcq" | "wall" | "wordcloud" | "exit" | "teams"
@@ -375,64 +376,7 @@ export function AddSlideSheet({
       if (!session?.user) throw new Error("Nejste přihlášeni.");
       const uid = session.user.id;
 
-      // 1) Vlastní učebnice učitele + jejich lekce (stejný vzor jako plán hodiny).
-      const { data: books, error: booksErr } = await supabase
-        .from("teacher_textbooks")
-        .select("id, title, subject")
-        .eq("teacher_id", uid)
-        .is("deleted_at", null);
-      if (booksErr) throw booksErr;
-      const bookRows = ((books as any[]) || []);
-      const bookIds = bookRows.map((b) => b.id);
-      const titleByBook = new Map(bookRows.map((b) => [b.id, b.title as string]));
-
-      let own: LessonOption[] = [];
-      if (bookIds.length) {
-        const { data, error } = await supabase
-          .from("teacher_textbook_lessons")
-          .select("id, title, blocks, textbook_id")
-          .in("textbook_id", bookIds)
-          .order("sort_order", { ascending: true });
-        if (error) throw error;
-        own = ((data as any[]) || []).map((l) => ({
-          id: l.id,
-          title: l.title || "Bez názvu",
-          blocks: Array.isArray(l.blocks) ? l.blocks : [],
-          source: titleByBook.get(l.textbook_id) || undefined,
-        }));
-      }
-
-      // 2) Lekce z učebnic předmětů, které učitel má (katalogová struktura
-      //    textbook_topics / textbook_lessons) – tam vzniká většina obsahu.
-      const subjects = Array.from(
-        new Set(bookRows.map((b) => b.subject).filter(Boolean)),
-      ) as string[];
-      let catalog: LessonOption[] = [];
-      if (subjects.length) {
-        const { data: topics } = await supabase
-          .from("textbook_topics" as any)
-          .select("id, title, subject")
-          .in("subject", subjects);
-        const topicRows = ((topics as any[]) || []);
-        if (topicRows.length) {
-          const topicLabel = new Map(topicRows.map((t) => [t.id, t.title as string]));
-          const { data: cl } = await supabase
-            .from("textbook_lessons" as any)
-            .select("id, title, blocks, topic_id, sort_order")
-            .in("topic_id", topicRows.map((t) => t.id))
-            .order("sort_order", { ascending: true });
-          catalog = ((cl as any[]) || []).map((l) => ({
-            id: l.id,
-            title: l.title || "Bez názvu",
-            blocks: Array.isArray(l.blocks) ? l.blocks : [],
-            source: topicLabel.get(l.topic_id) || undefined,
-          }));
-        }
-      }
-
-      const merged = [...own, ...catalog].filter(
-        (l, i, arr) => arr.findIndex((x) => x.id === l.id) === i,
-      );
+      const merged = await loadTeacherLessonOptions(uid);
       setLessonOptions(merged);
     } catch (e: any) {
       toast.error(e?.message || "Nepodařilo se načíst lekce.");
