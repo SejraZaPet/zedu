@@ -39,7 +39,7 @@ describe("pozadí boxu bloku", () => {
       />,
     );
     const el = screen.getByText("Přechod");
-    const wrapper = el.closest("[style*='linear-gradient']");
-    expect(wrapper).toBeTruthy();
+    const wrapper = el.closest("[data-box-background='gradient']") as HTMLElement | null;
+    expect(wrapper?.dataset.boxGradient).toContain("linear-gradient(to right, #6EC6D9, #9B6CFF)");
   });
 });
