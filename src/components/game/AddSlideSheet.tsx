@@ -24,7 +24,7 @@ import { blocksToSlides } from "@/lib/blocks-to-slides";
 type AddKind =
   | "menu" | "text" | "mcq" | "wall" | "wordcloud" | "exit" | "teams"
   | "differentiated" | "escape" | "library" | "bezlistart"
-  | "presets" | "lesson" | "fromtext";
+  | "presets" | "lesson" | "lessonpreview" | "fromtext";
 
 /** Typy aktivit, které mají v tomto panelu vlastní formulář – v „dalších typech“ se neopakují. */
 const PRESETS_WITH_OWN_FORM = new Set([
@@ -257,6 +257,9 @@ export function AddSlideSheet({
   // lekce (Vytvořit z lekce)
   const [lessonOptions, setLessonOptions] = useState<LessonOption[]>([]);
   const [lessonsLoading, setLessonsLoading] = useState(false);
+  /** Lekce vybraná k náhledu + snímky, které se z ní vytvoří. */
+  const [previewLesson, setPreviewLesson] = useState<LessonOption | null>(null);
+  const [previewSlides, setPreviewSlides] = useState<any[]>([]);
 
   // vlastní text → AI aktivita
   const [aiText, setAiText] = useState("");
@@ -439,17 +442,22 @@ export function AddSlideSheet({
   };
 
 
-  /** Převezme obsah lekce jako slidy hry (stejný převod jako u „Spustit živě“ u lekce). */
-  const insertLesson = (lesson: LessonOption) => {
+  /** Připraví snímky z lekce a zobrazí náhled před vložením. */
+  const openLessonPreview = (lesson: LessonOption) => {
     const built = blocksToSlides(lesson.blocks, lesson.title)
       .filter((s: any) => s.type !== "intro")
       .map((s: any, i: number) => ({ ...s, slideId: `lesson-${Date.now()}-${i}` }));
-    if (built.length === 0) {
-      toast.error("Tato lekce neobsahuje obsah, který lze převést na slidy.");
-      return;
-    }
-    appendMany(built);
+    setPreviewLesson(lesson);
+    setPreviewSlides(built);
+    setKind("lessonpreview");
   };
+
+  /** Potvrzené vložení snímků z náhledu lekce do hry. */
+  const confirmInsertLesson = () => {
+    if (previewSlides.length === 0) return;
+    appendMany(previewSlides);
+  };
+
 
   /** Z vloženého textu (prezentace, učebnice, vlastní příprava) vytvoří AI kvízovou aktivitu. */
   const runAiFromText = async () => {
