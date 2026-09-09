@@ -28,8 +28,10 @@ import {
 import {
   slideAnimationClass,
   slideBackgroundOverrideStyle,
+
   slideTextStyle,
 } from "@/lib/slide-typography";
+import { gradientCss } from "@/lib/slide-gradient";
 
 const BLOCK_PLACEHOLDER = "Klikni pro psaní…";
 
@@ -420,7 +422,39 @@ function ResizableSlideImage({
   );
 }
 
-function EditableBlock({
+/**
+ * Obal bloku s vlastním pozadím boxu (barva nebo přechod).
+ * Platí v editoru i v projekci, aby vzhled zůstal stejný všude.
+ */
+function EditableBlock(props: {
+  block: Block;
+  editable?: boolean;
+  asCard?: boolean;
+  framed?: boolean;
+  onChange?: (patch: Partial<Block> | ((b: Block) => Block)) => void;
+}) {
+  const p = (props.block.props || {}) as Record<string, any>;
+  const grad = gradientCss(p.boxGradient);
+  const solid = p.boxBackground && p.boxBackground !== "none" ? p.boxBackground : null;
+  const inner = <EditableBlockInner {...props} />;
+  if (!grad && !solid) return inner;
+  return (
+    <div
+      className="h-full w-full rounded-[var(--slide-radius,0.75rem)] p-4"
+      data-box-background={grad ? "gradient" : "solid"}
+      data-box-gradient={grad || undefined}
+      style={{
+        backgroundImage: grad || undefined,
+        backgroundColor: grad ? "transparent" : solid || undefined,
+        border: p.boxBorderColor ? `2px solid ${p.boxBorderColor}` : undefined,
+      }}
+    >
+      {inner}
+    </div>
+  );
+}
+
+function EditableBlockInner({
   block,
   editable,
   asCard,

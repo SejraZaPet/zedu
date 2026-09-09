@@ -490,6 +490,7 @@ export type Database = {
           started_at: string
           status: string
           student_id: string
+          submission_note: string | null
           submitted_at: string | null
         }
         Insert: {
@@ -505,6 +506,7 @@ export type Database = {
           started_at?: string
           status?: string
           student_id: string
+          submission_note?: string | null
           submitted_at?: string | null
         }
         Update: {
@@ -520,6 +522,7 @@ export type Database = {
           started_at?: string
           status?: string
           student_id?: string
+          submission_note?: string | null
           submitted_at?: string | null
         }
         Relationships: [
@@ -545,6 +548,7 @@ export type Database = {
           is_portfolio_task: boolean
           lesson_plan_id: string | null
           lockdown_mode: boolean
+          materials: Json
           max_attempts: number
           randomize_choices: boolean
           randomize_order: boolean
@@ -569,6 +573,7 @@ export type Database = {
           is_portfolio_task?: boolean
           lesson_plan_id?: string | null
           lockdown_mode?: boolean
+          materials?: Json
           max_attempts?: number
           randomize_choices?: boolean
           randomize_order?: boolean
@@ -593,6 +598,7 @@ export type Database = {
           is_portfolio_task?: boolean
           lesson_plan_id?: string | null
           lockdown_mode?: boolean
+          materials?: Json
           max_attempts?: number
           randomize_choices?: boolean
           randomize_order?: boolean

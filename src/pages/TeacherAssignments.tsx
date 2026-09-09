@@ -26,6 +26,8 @@ import { ExamTypeBadge } from "@/components/assignments/ExamTypeBadge";
 import { EXAM_TYPE_OPTIONS, type ExamType } from "@/lib/exam-types";
 import { useTeacherClasses, claimSchoolClass } from "@/hooks/useTeacherClasses";
 import { useSubjectGroups } from "@/hooks/useSubjectGroups";
+import AssignmentMaterialsEditor from "@/components/assignments/AssignmentMaterialsEditor";
+import { type AssignmentMaterial, parseMaterials } from "@/lib/assignment-materials";
 
 
 
@@ -35,6 +37,7 @@ interface Assignment {
   description: string;
   status: string;
   deadline: string | null;
+  materials?: unknown;
   scheduled_publish_at?: string | null;
   max_attempts: number;
   randomize_choices: boolean;
@@ -82,6 +85,9 @@ const TeacherAssignments = () => {
   const [title, setTitle] = useState(prefillLessonTitle ? `Pracovní list – ${prefillLessonTitle}` : "");
   const [description, setDescription] = useState("");
   const [deadline, setDeadline] = useState<Date | undefined>();
+  // Termín odevzdání má i konkrétní hodinu; výchozí je konec dne.
+  const [deadlineTime, setDeadlineTime] = useState("23:59");
+  const [materials, setMaterials] = useState<AssignmentMaterial[]>([]);
   const [maxAttempts, setMaxAttempts] = useState(1);
   const [randomizeChoices, setRandomizeChoices] = useState(false);
   const [randomizeOrder, setRandomizeOrder] = useState(false);
@@ -186,13 +192,23 @@ const TeacherAssignments = () => {
         subjectIdForAssignment = (ws as any)?.subject_id ?? null;
       }
 
+      // Termín odevzdání = vybraný den + zadaná hodina (výchozí 23:59).
+      let deadlineIso: string | null = null;
+      if (deadline) {
+        const [dh, dm] = deadlineTime.split(":").map((n) => parseInt(n, 10));
+        const due = new Date(deadline);
+        due.setHours(Number.isFinite(dh) ? dh : 23, Number.isFinite(dm) ? dm : 59, 0, 0);
+        deadlineIso = due.toISOString();
+      }
+
       if (editingId) {
         // Úprava už zadané úlohy: název, popis, termín, cíl i nastavení lze měnit
         // i po zveřejnění. Stav (koncept/publikováno) měníme jen kvůli plánu.
         const patch: Record<string, unknown> = {
           title: title.trim(),
           description: description.trim(),
-          deadline: deadline?.toISOString() || null,
+          deadline: deadlineIso,
+          materials: materials as any,
           max_attempts: maxAttempts,
           randomize_choices: randomizeChoices,
           randomize_order: randomizeOrder,
@@ -223,7 +239,8 @@ const TeacherAssignments = () => {
           teacher_id: user.id,
           title: title.trim(),
           description: description.trim(),
-          deadline: deadline?.toISOString() || null,
+          deadline: deadlineIso,
+          materials: materials as any,
           max_attempts: maxAttempts,
           randomize_choices: randomizeChoices,
           randomize_order: randomizeOrder,
@@ -273,6 +290,8 @@ const TeacherAssignments = () => {
     setTitle("");
     setDescription("");
     setDeadline(undefined);
+    setDeadlineTime("23:59");
+    setMaterials([]);
     setMaxAttempts(1);
     setRandomizeChoices(false);
     setRandomizeOrder(false);
@@ -294,6 +313,12 @@ const TeacherAssignments = () => {
     setTitle(a.title ?? "");
     setDescription(a.description ?? "");
     setDeadline(a.deadline ? new Date(a.deadline) : undefined);
+    setDeadlineTime(
+      a.deadline
+        ? `${String(new Date(a.deadline).getHours()).padStart(2, "0")}:${String(new Date(a.deadline).getMinutes()).padStart(2, "0")}`
+        : "23:59",
+    );
+    setMaterials(parseMaterials(a.materials));
     setMaxAttempts(a.max_attempts ?? 1);
     setRandomizeChoices(!!a.randomize_choices);
     setRandomizeOrder(!!a.randomize_order);
@@ -414,24 +439,35 @@ const TeacherAssignments = () => {
                 {/* Deadline */}
                 <div>
                   <Label>Termín odevzdání</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className={cn("w-full mt-1 justify-start text-left font-normal", !deadline && "text-muted-foreground")}>
-                        <CalendarIcon className="w-4 h-4 mr-2" />
-                        {deadline ? format(deadline, "d. M. yyyy", { locale: cs }) : "Bez termínu"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={deadline}
-                        onSelect={setDeadline}
-                        disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
-                        className={cn("p-3 pointer-events-auto")}
-                      />
-                    </PopoverContent>
-                  </Popover>
+                  <div className="mt-1 flex gap-2">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className={cn("flex-1 justify-start text-left font-normal", !deadline && "text-muted-foreground")}>
+                          <CalendarIcon className="w-4 h-4 mr-2" />
+                          {deadline ? format(deadline, "d. M. yyyy", { locale: cs }) : "Bez termínu"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={deadline}
+                          onSelect={setDeadline}
+                          disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                          className={cn("p-3 pointer-events-auto")}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <Input
+                      type="time"
+                      aria-label="Hodina termínu odevzdání"
+                      value={deadlineTime}
+                      onChange={(e) => setDeadlineTime(e.target.value || "23:59")}
+                      disabled={!deadline}
+                      className="w-[112px]"
+                    />
+                  </div>
                 </div>
+
 
                 {/* Max attempts */}
                 <div>
@@ -439,6 +475,16 @@ const TeacherAssignments = () => {
                   <Input type="number" min={1} max={10} value={maxAttempts} onChange={(e) => setMaxAttempts(Number(e.target.value))} className="mt-1" />
                 </div>
               </div>
+
+              {/* Materiály k úkolu (odkazy, dokumenty, obrázky, zvuk, video) */}
+              {userId && (
+                <AssignmentMaterialsEditor
+                  materials={materials}
+                  onChange={setMaterials}
+                  teacherId={userId}
+                />
+              )}
+
 
               {/* Scheduled publishing */}
               <div className="rounded-lg border border-border p-3 space-y-3">

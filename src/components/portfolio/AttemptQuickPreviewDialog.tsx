@@ -31,6 +31,7 @@ interface AttemptRow {
   max_score: number | null;
   submitted_at: string | null;
   answers: Record<string, any>;
+  submission_note?: string | null;
 }
 
 export default function AttemptQuickPreviewDialog({
@@ -49,7 +50,7 @@ export default function AttemptQuickPreviewDialog({
       const [attRes, filesRes] = await Promise.all([
         supabase
           .from("assignment_attempts" as any)
-          .select("id, status, score, max_score, submitted_at, answers")
+          .select("id, status, score, max_score, submitted_at, answers, submission_note")
           .eq("assignment_id", assignmentId)
           .eq("student_id", studentId)
           .order("attempt_number", { ascending: false })
@@ -132,6 +133,16 @@ export default function AttemptQuickPreviewDialog({
                 {answerCount} {answerCount === 1 ? "odpověď" : "odpovědí"}
               </span>
             </div>
+
+            {attempt.submission_note && (
+              <div>
+                <h4 className="text-sm font-semibold mb-1">Poznámka žáka</h4>
+                <p className="whitespace-pre-wrap rounded-md border border-border bg-muted/30 p-2 text-sm">
+                  {attempt.submission_note}
+                </p>
+              </div>
+            )}
+
 
             <div>
               <h4 className="text-sm font-semibold mb-2">Přílohy</h4>
