@@ -149,20 +149,23 @@ function EditableText({
   }, []);
 
   if (!editable) {
+    // Mimo editor se nikdy nekreslí placeholder – prosvítal by přes reálný
+    // obsah v živé projekci jako "duchový" text.
     return (
       html ? (
         <div
           className={className}
           style={style}
-          dangerouslySetInnerHTML={{ __html: sanitizedValue || (placeholder ? `<span class="opacity-40 italic pointer-events-none">${placeholder}</span>` : "") }}
+          dangerouslySetInnerHTML={{ __html: sanitizedValue }}
         />
       ) : (
         <div className={className} style={{ whiteSpace: multiline ? "pre-wrap" : undefined, ...style }}>
-          {value || (placeholder ? <span className="opacity-40 italic pointer-events-none">{placeholder}</span> : null)}
+          {value || null}
         </div>
       )
     );
   }
+
 
   return (
     <div className="relative">
