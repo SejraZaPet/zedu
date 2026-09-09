@@ -13,6 +13,8 @@ interface Props {
   questionIndex: number;
   totalPlayers?: number;
   darkMode?: boolean;
+  /** Guest/student access token – guests cannot read the table directly. */
+  joinToken?: string | null;
 }
 
 const COLORS = ["#14b8a6", "#6366f1", "#f59e0b", "#ef4444", "#8b5cf6", "#10b981"];
@@ -24,26 +26,27 @@ const PollProjectorView = ({
   questionIndex,
   totalPlayers = 0,
   darkMode = false,
+  joinToken,
 }: Props) => {
   const [votes, setVotes] = useState<Record<string, number>>({});
 
   const fetchVotes = useCallback(async () => {
-    const { data } = await supabase
-      .from("game_responses")
-      .select("answer")
-      .eq("session_id", sessionId)
-      .eq("question_index", questionIndex);
+    const { data } = await supabase.rpc("get_activity_responses" as any, {
+      _session_id: sessionId,
+      _question_index: questionIndex,
+      _join_token: joinToken || null,
+    });
 
     const counts: Record<string, number> = {};
     options.forEach((o) => (counts[o.id] = 0));
-    (data || []).forEach((r: any) => {
+    ((data as any[]) || []).forEach((r: any) => {
       const selected: string[] = r.answer?.selectedOptions || [];
       selected.forEach((id) => {
         if (counts[id] !== undefined) counts[id]++;
       });
     });
     setVotes(counts);
-  }, [sessionId, questionIndex, options]);
+  }, [sessionId, questionIndex, options, joinToken]);
 
   useEffect(() => {
     fetchVotes();

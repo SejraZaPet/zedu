@@ -6,6 +6,8 @@ interface Props {
   questionIndex: number;
   published?: boolean;
   darkMode?: boolean;
+  /** Guest/student access token – guests cannot read the table directly. */
+  joinToken?: string | null;
 }
 
 interface WordEntry {
@@ -15,21 +17,21 @@ interface WordEntry {
 
 const normalize = (s: string) => s.trim().toLowerCase().replace(/\s+/g, " ");
 
-const WordCloudView = ({ sessionId, questionIndex, published = true, darkMode = false }: Props) => {
+const WordCloudView = ({ sessionId, questionIndex, published = true, darkMode = false, joinToken }: Props) => {
   const [words, setWords] = useState<WordEntry[]>([]);
   const [totalCount, setTotalCount] = useState(0);
 
   const loadResponses = useCallback(async () => {
-    const { data } = await supabase
-      .from("game_responses")
-      .select("id, answer")
-      .eq("session_id", sessionId)
-      .eq("question_index", questionIndex);
+    const { data } = await supabase.rpc("get_activity_responses" as any, {
+      _session_id: sessionId,
+      _question_index: questionIndex,
+      _join_token: joinToken || null,
+    });
 
     if (data) {
       const counts = new Map<string, { text: string; count: number }>();
       let total = 0;
-      for (const r of data as any[]) {
+      for (const r of (data as any[]) || []) {
         const raw = (r.answer as any)?.text;
         if (typeof raw !== "string") continue;
         const key = normalize(raw);
@@ -42,7 +44,7 @@ const WordCloudView = ({ sessionId, questionIndex, published = true, darkMode = 
       setWords(Array.from(counts.values()).sort((a, b) => b.count - a.count));
       setTotalCount(total);
     }
-  }, [sessionId, questionIndex]);
+  }, [sessionId, questionIndex, joinToken]);
 
   useEffect(() => {
     loadResponses();
