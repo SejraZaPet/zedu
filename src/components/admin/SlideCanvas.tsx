@@ -442,7 +442,8 @@ function EditableBlock(props: {
     <div
       className="h-full w-full rounded-[var(--slide-radius,0.75rem)] p-4"
       style={{
-        background: grad || solid || undefined,
+        backgroundImage: grad || undefined,
+        backgroundColor: grad ? "transparent" : solid || undefined,
         border: p.boxBorderColor ? `2px solid ${p.boxBorderColor}` : undefined,
       }}
     >
