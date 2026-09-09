@@ -666,7 +666,7 @@ export function AddSlideSheet({
                 variant="ghost"
                 size="icon"
                 className="h-7 w-7"
-                onClick={() => setKind("menu")}
+                onClick={() => setKind(kind === "lessonpreview" ? "lesson" : "menu")}
                 disabled={busy}
               >
                 <ArrowLeft className="w-4 h-4" />
@@ -684,6 +684,7 @@ export function AddSlideSheet({
               {kind === "escape" && "Úniková hra"}
               {kind === "presets" && "Další typy aktivit"}
               {kind === "lesson" && "Vytvořit z lekce"}
+              {kind === "lessonpreview" && "Náhled lekce"}
               {kind === "fromtext" && "Aktivita z vlastního textu"}
 
               {kind === "library" && "Vložit z knihovny her"}
