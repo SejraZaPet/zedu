@@ -1039,7 +1039,7 @@ const LiveTeacherScreen = () => {
             <div className="flex items-center gap-2 mb-3 text-xs font-medium text-muted-foreground">
               <Monitor className="w-4 h-4" /> PROJEKTOR
             </div>
-            <h2 className="text-2xl font-bold">{currentSlide.projector.headline}</h2>
+            <h2 className="text-2xl font-bold">{currentSlide.projector?.headline}</h2>
             {(currentSlide as any).blocks && (currentSlide as any).blocks.length > 0 ? (
               <div className="space-y-4 mt-3">
                 {(currentSlide as any).blocks.map((b: any, i: number) => (
@@ -1048,9 +1048,10 @@ const LiveTeacherScreen = () => {
               </div>
             ) : (
               <>
-                {!(currentSlide as any).tableData && !(currentSlide as any).cardData && currentSlide.projector.body && (
+                {!(currentSlide as any).tableData && !(currentSlide as any).cardData && currentSlide.projector?.body && (
                   <p className="text-base text-muted-foreground mt-2 whitespace-pre-wrap">{currentSlide.projector.body}</p>
                 )}
+
                 {(currentSlide as any).tableData && (
                   <div className="overflow-x-auto mt-3">
                     <table className="w-full text-sm border-collapse">
