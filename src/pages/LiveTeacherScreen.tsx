@@ -33,7 +33,6 @@ import RemoteControlButton from "@/components/live/RemoteControlButton";
 import { presenterRemoteChannelName } from "@/pages/PresenterRemote";
 import ProjectorSlideView from "@/components/live/ProjectorSlideView";
 import { useSwipe } from "@/hooks/useSwipe";
-import { LessonBlock } from "@/components/LessonBlockRenderer";
 import { GAME_MODES, getModeDef, type GameMode } from "@/lib/game-modes";
 import type { TeamMode } from "@/lib/game-types";
 import AiClusterButton from "@/components/live/AiClusterButton";
