@@ -32,7 +32,12 @@ import { createDefaultBlock, type Block } from "@/lib/textbook-config";
 import { SLIDE_BACKGROUND_COLORS } from "@/lib/slide-typography";
 import ZoomZonesEditor from "@/components/admin/ZoomZonesEditor";
 import { isZoomableSlide, type ZoomZone } from "@/lib/zoom-zones";
-import { DEFAULT_BLOCK_FRAME, getBlockFrame } from "@/lib/block-frame";
+import {
+  DEFAULT_BLOCK_FRAME, getBlockFrame,
+  alignFrameToStage, fillStageFrame, alignFramesTogether, distributeFrames,
+  makeGroupBlock, ungroupBlock, type AlignMode,
+} from "@/lib/block-frame";
+
 import { Switch } from "@/components/ui/switch";
 import ImportPptxToPresentationDialog from "@/components/admin/ImportPptxToPresentationDialog";
 import ThemeGalleryPopover from "@/components/admin/ThemeGalleryPopover";
@@ -180,7 +185,11 @@ export const PresentationEditorDialog = ({
   const [history, setHistory] = useState<BlockEditorHistory | null>(null);
   const [templateOpen, setTemplateOpen] = useState(false);
   const [importPptxOpen, setImportPptxOpen] = useState(false);
-  const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
+  /** Výběr prvků na plátně – pole ID (fáze 3: víceprvkový výběr). */
+  const [selectedBlockIds, setSelectedBlockIds] = useState<string[]>([]);
+  const selectedBlockId = selectedBlockIds[0] ?? null;
+  const setSelectedBlockId = (id: string | null) => setSelectedBlockIds(id ? [id] : []);
+
   const [copiedBlock, setCopiedBlock] = useState<Block | null>(null);
   const [copiedStyle, setCopiedStyle] = useState<Record<string, unknown> | null>(null);
 
@@ -401,12 +410,90 @@ export const PresentationEditorDialog = ({
   };
 
   /** Výběr bloku na plátně – při aktivním štětci styl hned aplikuje. */
-  const handleSelectBlock = (id: string | null) => {
+  const handleSelectBlock = (id: string | null, opts?: { additive?: boolean }) => {
     if (id && copiedStyle && id !== selectedBlockId) {
       applyCopiedStyle(id);
     }
+    if (id && opts?.additive) {
+      setSelectedBlockIds((prev) =>
+        prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+      );
+      return;
+    }
+    // Klik na už vybraný prvek uvnitř většího výběru výběr nezruší.
+    if (id && selectedBlockIds.length > 1 && selectedBlockIds.includes(id)) return;
     setSelectedBlockId(id);
   };
+
+  /* ── FÁZE 2 + 3 – zarovnání, rozmístění a skupiny ────────────────── */
+
+  /** Rámce vybraných volně umístěných prvků (v pořadí výběru). */
+  const selectedFramed = selectedBlockIds
+    .map((id) => blocks.find((b) => b.id === id))
+    .filter((b): b is Block => !!b && !!getBlockFrame(b));
+
+  const alignSelectedToStage = (mode: AlignMode) => {
+    const target = selectedFramed[0];
+    const frame = target && getBlockFrame(target);
+    if (!target || !frame) return;
+    updateBlock(target.id, (b: Block) => ({ ...b, frame: alignFrameToStage(frame, mode) }));
+  };
+
+  const fillStageWithSelected = () => {
+    const target = selectedFramed[0];
+    if (!target) return;
+    updateBlock(target.id, (b: Block) => ({ ...b, frame: fillStageFrame() }));
+  };
+
+  const alignSelectionTogether = (mode: AlignMode) => {
+    if (selectedFramed.length < 2) return;
+    const frames = selectedFramed.map((b) => getBlockFrame(b)!);
+    const next = alignFramesTogether(frames, mode);
+    selectedFramed.forEach((b, i) => updateBlock(b.id, (prev: Block) => ({ ...prev, frame: next[i] })));
+  };
+
+  const distributeSelection = (axis: "h" | "v") => {
+    if (selectedFramed.length < 3) {
+      toast({
+        title: "Rozmístění potřebuje 3 prvky",
+        description: "Vyberte alespoň tři prvky – krajní zůstanou na místě.",
+      });
+      return;
+    }
+    const frames = selectedFramed.map((b) => getBlockFrame(b)!);
+    const next = distributeFrames(frames, axis);
+    selectedFramed.forEach((b, i) => updateBlock(b.id, (prev: Block) => ({ ...prev, frame: next[i] })));
+  };
+
+  /** Spojí vybrané prvky do jedné skupiny. */
+  const groupSelection = () => {
+    if (selectedFramed.length < 2) return;
+    const ids = new Set(selectedFramed.map((b) => b.id));
+    const group = makeGroupBlock(selectedFramed, crypto.randomUUID());
+    setBlocks([...blocks.filter((b) => !ids.has(b.id)), group as Block]);
+    setSelectedBlockId(group.id);
+    toast({ title: "Prvky spojeny", description: "Skupina se teď posouvá a mění velikost jako jeden celek." });
+  };
+
+  /** Rozpustí vybranou skupinu zpět na jednotlivé prvky. */
+  const ungroupSelection = () => {
+    const group = selectedFramed[0];
+    if (!group || group.type !== ("group" as Block["type"])) return;
+    const parts = ungroupBlock(group) as Block[];
+    if (!parts.length) return;
+    setBlocks([...blocks.filter((b) => b.id !== group.id), ...parts]);
+    setSelectedBlockIds(parts.map((p) => p.id));
+    toast({ title: "Skupina rozdělena" });
+  };
+
+  /** Smaže všechny vybrané prvky. */
+  const deleteSelection = () => {
+    if (!selectedBlockIds.length) return;
+    const ids = new Set(selectedBlockIds);
+    setBlocks(blocks.filter((b) => !ids.has(b.id)));
+    setSelectedBlockIds([]);
+  };
+
 
   /** Přesun snímku na jinou pozici (drag & drop i šipky). */
   const moveSlide = (from: number, to: number) => {
@@ -1649,7 +1736,18 @@ export const PresentationEditorDialog = ({
                         onCopyBlock={copyBlock}
                         onCopyStyle={copyStyle}
                         styleCopied={!!copiedStyle}
+                        selectedCount={selectedBlockIds.length}
+                        onAlign={alignSelectedToStage}
+                        onFillStage={fillStageWithSelected}
+                        onAlignGroup={alignSelectionTogether}
+                        onDistribute={distributeSelection}
+                        onGroup={groupSelection}
+                        onUngroup={ungroupSelection}
                         onDelete={() => {
+                          if (selectedBlockIds.length > 1) {
+                            deleteSelection();
+                            return;
+                          }
                           if (!selectedBlockId) return;
                           deleteBlock(selectedBlockId);
                           setSelectedBlockId(null);
@@ -1659,6 +1757,7 @@ export const PresentationEditorDialog = ({
                     ) : (
                       <p className="text-[11px] text-muted-foreground">
                         Klikněte na blok pro editaci — formátovací lišta se zobrazí zde nad slidem.
+                        Shift+klik vybere víc prvků, tažením po prázdné ploše je vyberete rámečkem.
                       </p>
                     )}
                   </div>
@@ -1678,7 +1777,10 @@ export const PresentationEditorDialog = ({
                     onDeleteBlock={deleteBlock}
                     onChangeHeroImage={(url) => updateSlide({ heroImage: url })}
                     selectedBlockId={selectedBlockId}
+                    selectedBlockIds={selectedBlockIds}
                     onSelectBlock={handleSelectBlock}
+                    onSelectBlocks={setSelectedBlockIds}
+
                     drawMode={drawMode}
                     drawColor={drawColor}
                     drawWidth={drawWidth}
