@@ -130,12 +130,14 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
               )}
 
               {hasBlocks ? (
-                /* Stejný renderer i chování jako v editoru: obsah se vejde do
-                   scény a sám se zmenší, takže se prvky nepřekrývají. */
-                <div className="w-full flex-1 min-h-0 h-full">
-                  <SlideBody key={currentIndex} slide={currentSlide} themeId={(currentSlide as any)?.themeId} darkMode revealStep={(session?.settings as any)?.revealStep} />
+                /* Přesně stejný renderer jako editor: celá scéna 1600×900 se
+                   proporčně zmenší do dostupného místa, takže se prvky
+                   nepřekrývají a rozvržení odpovídá editoru. */
+                <div className="w-full flex-1 min-h-0 flex items-center justify-center">
+                  <SlideCanvas key={currentIndex} slide={currentSlide} themeId={(currentSlide as any)?.themeId} darkMode revealStep={(session?.settings as any)?.revealStep} />
                 </div>
               ) : (
+
 
                 <>
                   {currentSlide.projector?.headline && (
