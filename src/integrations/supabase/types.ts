@@ -2774,21 +2774,44 @@ export type Database = {
       }
       lesson_method_links: {
         Row: {
+          catalog_lesson_id: string | null
           created_at: string
-          lesson_plan_id: string
+          created_by: string | null
+          lesson_id: string | null
+          lesson_plan_id: string | null
           method_id: string
         }
         Insert: {
+          catalog_lesson_id?: string | null
           created_at?: string
-          lesson_plan_id: string
+          created_by?: string | null
+          lesson_id?: string | null
+          lesson_plan_id?: string | null
           method_id: string
         }
         Update: {
+          catalog_lesson_id?: string | null
           created_at?: string
-          lesson_plan_id?: string
+          created_by?: string | null
+          lesson_id?: string | null
+          lesson_plan_id?: string | null
           method_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "lesson_method_links_catalog_lesson_id_fkey"
+            columns: ["catalog_lesson_id"]
+            isOneToOne: false
+            referencedRelation: "textbook_lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lesson_method_links_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_textbook_lessons"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "lesson_method_links_lesson_plan_id_fkey"
             columns: ["lesson_plan_id"]

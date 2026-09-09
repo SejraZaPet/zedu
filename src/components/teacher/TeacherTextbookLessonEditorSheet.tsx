@@ -12,6 +12,7 @@ import LessonPreviewDialog from "@/components/admin/LessonPreviewDialog";
 import LessonPlacementEditor, { savePlacements, type Placement } from "@/components/admin/LessonPlacementEditor";
 import LessonAssignments, { type Assignment } from "@/components/admin/LessonAssignments";
 import LessonCurriculumTopicsPicker from "@/components/teacher/LessonCurriculumTopicsPicker";
+import LessonMethodsPicker from "@/components/teacher/LessonMethodsPicker";
 import { Upload, Save, Loader2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -326,6 +327,10 @@ const TeacherTextbookLessonEditorSheet = ({ lesson, open, onOpenChange, onSaved 
                 </div>
               </div>
             )}
+
+            <div className="border-t border-border pt-4">
+              <LessonMethodsPicker lessonId={draft.id} source={draft.source} />
+            </div>
 
             <div>
               <Label className="mb-2 block">Obsah lekce</Label>

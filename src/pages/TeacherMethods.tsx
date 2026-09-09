@@ -58,27 +58,66 @@ export default function TeacherMethods() {
   useEffect(() => {
     if (!user) return;
     (async () => {
-      // Get teacher's plans, then their method links
-      const { data: plans } = await supabase
-        .from("lesson_plans")
-        .select("id, created_at")
-        .eq("teacher_id", user.id);
-      const planIds = (plans ?? []).map((p: any) => p.id);
-      if (!planIds.length) {
-        setUsage([]);
-        return;
+      // Využití metod počítáme z plánů hodin i z vlastních lekcí učitele.
+      const [plansRes, booksRes] = await Promise.all([
+        supabase.from("lesson_plans").select("id, created_at").eq("teacher_id", user.id),
+        supabase
+          .from("teacher_textbooks")
+          .select("id")
+          .eq("teacher_id", user.id)
+          .is("deleted_at", null),
+      ]);
+
+      const plans = (plansRes.data as any[]) ?? [];
+      const planIds = plans.map((p) => p.id);
+      const planMap = new Map<string, string>(plans.map((p) => [p.id, p.created_at]));
+
+      const bookIds = ((booksRes.data as any[]) ?? []).map((b) => b.id);
+      let lessons: any[] = [];
+      if (bookIds.length) {
+        const { data } = await supabase
+          .from("teacher_textbook_lessons")
+          .select("id, created_at")
+          .in("textbook_id", bookIds);
+        lessons = (data as any[]) ?? [];
       }
-      const planMap = new Map<string, string>(
-        (plans as any[]).map((p) => [p.id, p.created_at]),
-      );
-      const { data: links } = await supabase
-        .from("lesson_method_links")
-        .select("method_id, lesson_plan_id")
-        .in("lesson_plan_id", planIds);
-      const rows: Usage[] = (links ?? []).map((l: any) => ({
-        method_id: l.method_id,
-        created_at: planMap.get(l.lesson_plan_id) || new Date().toISOString(),
-      }));
+      const lessonIds = lessons.map((l) => l.id);
+      const lessonMap = new Map<string, string>(lessons.map((l) => [l.id, l.created_at]));
+
+      const [planLinksRes, lessonLinksRes, catalogLinksRes] = await Promise.all([
+        planIds.length
+          ? supabase
+              .from("lesson_method_links")
+              .select("method_id, lesson_plan_id")
+              .in("lesson_plan_id", planIds)
+          : Promise.resolve({ data: [] as any[] } as any),
+        lessonIds.length
+          ? supabase
+              .from("lesson_method_links")
+              .select("method_id, lesson_id")
+              .in("lesson_id", lessonIds)
+          : Promise.resolve({ data: [] as any[] } as any),
+        supabase
+          .from("lesson_method_links")
+          .select("method_id, catalog_lesson_id, created_at")
+          .not("catalog_lesson_id", "is", null)
+          .eq("created_by", user.id),
+      ]);
+
+      const rows: Usage[] = [
+        ...(((planLinksRes as any).data as any[]) ?? []).map((l) => ({
+          method_id: l.method_id,
+          created_at: planMap.get(l.lesson_plan_id) || new Date().toISOString(),
+        })),
+        ...(((lessonLinksRes as any).data as any[]) ?? []).map((l) => ({
+          method_id: l.method_id,
+          created_at: lessonMap.get(l.lesson_id) || new Date().toISOString(),
+        })),
+        ...(((catalogLinksRes as any).data as any[]) ?? []).map((l) => ({
+          method_id: l.method_id,
+          created_at: l.created_at || new Date().toISOString(),
+        })),
+      ];
       setUsage(rows);
     })();
   }, [user]);

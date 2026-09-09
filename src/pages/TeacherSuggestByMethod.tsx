@@ -23,6 +23,9 @@ import InsertSlidesIntoPresentationDialog from "@/components/presentation/Insert
 import { phasesToSlides } from "@/lib/plan-to-slides";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { extractPdfText } from "@/lib/pdf-page-renderer";
+import { loadTeacherLessonOptions } from "@/lib/teacher-lesson-catalog";
+import { normalizeBlocks, type Block } from "@/lib/textbook-config";
+import { BookOpen } from "lucide-react";
 
 interface LearningMethod {
   id: string;
@@ -34,17 +37,24 @@ interface LearningMethod {
   tips: string | null;
 }
 
-type TeacherSourceKind = "lesson" | "plan" | "worksheet";
+type TeacherSourceKind = "lesson" | "catalog" | "plan" | "worksheet";
 
 interface TeacherSource {
   id: string;
   title: string;
   kind: TeacherSourceKind;
   content: any;
+  /** Popisek zdroje (učebnice / téma) pro seznam a náhled. */
+  source?: string;
+  /** U lekcí: čisté id lekce (bez prefixu). */
+  lessonId?: string;
+  /** Lze do lekce zapisovat obsah (jen vlastní lekce učitele). */
+  editable?: boolean;
 }
 
 const SOURCE_KIND_LABEL: Record<TeacherSourceKind, string> = {
-  lesson: "Lekce z učebnice",
+  lesson: "Vlastní lekce",
+  catalog: "Lekce z katalogu",
   plan: "Plán hodiny",
   worksheet: "Pracovní list",
 };
@@ -109,10 +119,23 @@ function blocksToText(blocks: any[]): string {
     .map((b: any) => {
       if (!b) return "";
       if (typeof b === "string") return b;
-      if (typeof b.text === "string") return b.text;
-      if (typeof b.content === "string") return b.content;
-      if (typeof b.title === "string") return b.title;
-      return "";
+      const p = b.props ?? b;
+      const parts: string[] = [];
+      for (const key of ["title", "text", "content", "question", "prompt", "caption"]) {
+        if (typeof p?.[key] === "string" && p[key].trim()) parts.push(p[key].trim());
+      }
+      for (const key of ["items", "bullets", "options", "answers"]) {
+        const arr = p?.[key];
+        if (Array.isArray(arr)) {
+          const vals = arr
+            .map((it: any) =>
+              typeof it === "string" ? it : typeof it?.text === "string" ? it.text : "",
+            )
+            .filter(Boolean);
+          if (vals.length) parts.push(vals.map((v: string) => `• ${v}`).join("\n"));
+        }
+      }
+      return parts.join("\n");
     })
     .filter(Boolean)
     .join("\n\n");
@@ -152,6 +175,7 @@ export default function TeacherSuggestByMethod() {
   const [uploading, setUploading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [insertingIntoLesson, setInsertingIntoLesson] = useState(false);
   const [insertSlidesOpen, setInsertSlidesOpen] = useState(false);
   const [suggestion, setSuggestion] = useState<Suggestion | null>(null);
   const [thinkingTypes, setThinkingTypes] = useState<ThinkingType[]>([]);
@@ -174,12 +198,10 @@ export default function TeacherSuggestByMethod() {
       setSourcesLoading(true);
       setSourcesError(false);
       const [lessonsRes, plansRes, worksheetsRes] = await Promise.all([
-        supabase
-          .from("teacher_textbook_lessons")
-          .select("id, title, blocks, teacher_textbooks!inner(teacher_id)")
-          .eq("teacher_textbooks.teacher_id", user.id)
-          .order("created_at", { ascending: false })
-          .limit(50),
+        loadTeacherLessonOptions(user.id).then(
+          (data) => ({ data, error: null as any }),
+          (error) => ({ data: [] as Awaited<ReturnType<typeof loadTeacherLessonOptions>>, error }),
+        ),
         supabase
           .from("lesson_plans")
           .select("id, title, slides")
@@ -205,11 +227,14 @@ export default function TeacherSuggestByMethod() {
       }
 
       const sources: TeacherSource[] = [
-        ...((lessonsRes.data as any[]) ?? []).map((l) => ({
+        ...(lessonsRes.data ?? []).map((l) => ({
           id: `lesson:${l.id}`,
           title: l.title || "Bez názvu",
-          kind: "lesson" as const,
+          kind: (l.origin === "own" ? "lesson" : "catalog") as TeacherSourceKind,
           content: l.blocks,
+          source: l.source,
+          lessonId: l.id,
+          editable: true,
         })),
         ...((plansRes.data as any[]) ?? []).map((p) => ({
           id: `plan:${p.id}`,
@@ -313,20 +338,43 @@ export default function TeacherSuggestByMethod() {
     }
   };
 
+  const selectedSource = useMemo(
+    () => teacherLessons.find((x) => x.id === sourceLessonId) ?? null,
+    [teacherLessons, sourceLessonId],
+  );
+
   const resolveSourceText = (): { text: string; title: string } => {
-    if (sourceMode === "lesson" && sourceLessonId) {
-      const l = teacherLessons.find((x) => x.id === sourceLessonId);
-      if (l) {
-        const raw = (l.content as any)?.blocks ?? l.content ?? [];
-        const text =
-          l.kind === "lesson" && Array.isArray(raw)
-            ? blocksToText(raw) || jsonToText(raw)
-            : jsonToText(raw);
-        return { text: (text || "").slice(0, 20000), title: l.title };
-      }
+    if (sourceMode === "lesson" && selectedSource) {
+      const l = selectedSource;
+      const raw = (l.content as any)?.blocks ?? l.content ?? [];
+      const isLesson = l.kind === "lesson" || l.kind === "catalog";
+      const text =
+        isLesson && Array.isArray(raw)
+          ? blocksToText(raw) || jsonToText(raw)
+          : jsonToText(raw);
+      return { text: (text || "").slice(0, 20000), title: l.title };
     }
     return { text: sourceText, title: sourceTitle };
   };
+
+  /** Náhled toho, co se pošle do AI (jen pro vybraný vlastní/katalogový materiál). */
+  const sourcePreview = useMemo(() => {
+    if (sourceMode !== "lesson" || !selectedSource) return null;
+    const raw = (selectedSource.content as any)?.blocks ?? selectedSource.content ?? [];
+    const isLesson = selectedSource.kind === "lesson" || selectedSource.kind === "catalog";
+    const text =
+      (isLesson && Array.isArray(raw)
+        ? blocksToText(raw) || jsonToText(raw)
+        : jsonToText(raw)) || "";
+    return {
+      title: selectedSource.title,
+      kindLabel: SOURCE_KIND_LABEL[selectedSource.kind],
+      source: selectedSource.source,
+      length: text.length,
+      blocks: Array.isArray(raw) ? raw.length : 0,
+      excerpt: text.slice(0, 1200),
+    };
+  }, [sourceMode, selectedSource]);
 
 
   const generate = async () => {
@@ -443,6 +491,90 @@ export default function TeacherSuggestByMethod() {
     }
   };
 
+  /** Doplní navržené fáze a aktivity jako obsah přímo do vybrané vlastní lekce. */
+  const insertIntoLesson = async () => {
+    if (!suggestion || !selectedSource?.lessonId || !selectedSource.editable) return;
+    setInsertingIntoLesson(true);
+    try {
+      const lessonId = selectedSource.lessonId;
+      const table = selectedSource.kind === "lesson" ? "teacher_textbook_lessons" : "textbook_lessons";
+      const linkColumn = selectedSource.kind === "lesson" ? "lesson_id" : "catalog_lesson_id";
+      const { data: current, error: readErr } = await supabase
+        .from(table as any)
+        .select("blocks")
+        .eq("id", lessonId)
+        .single();
+      if (readErr) throw readErr;
+
+      const existing = normalizeBlocks(((current as any)?.blocks ?? []) as Block[]);
+      const added: Block[] = [];
+      const push = (type: Block["type"], props: Record<string, any>) =>
+        added.push({ id: crypto.randomUUID(), type, visible: true, props });
+
+      push("divider", { style: "line" });
+      push("heading", { level: 2, text: `Návrh podle metody: ${suggestion.title}` });
+      if (suggestion.summary) push("paragraph", { text: suggestion.summary });
+
+      for (const [key, label] of Object.entries(PHASE_LABELS)) {
+        const p = suggestion.phases?.[key];
+        if (!p || (!p.description && !(p.activities ?? []).length)) continue;
+        push("heading", { level: 3, text: p.timeMin ? `${label} (${p.timeMin} min)` : label });
+        if (p.description) push("paragraph", { text: p.description });
+        const items = (p.activities ?? [])
+          .map((a) => [a.kind, a.title].filter(Boolean).join(": "))
+          .filter(Boolean);
+        if (items.length) push("bullet_list", { items });
+      }
+
+      if (suggestion.modelSituation?.scenario || suggestion.modelSituation?.task) {
+        push("callout", {
+          calloutType: "note",
+          text: [suggestion.modelSituation?.scenario, suggestion.modelSituation?.task]
+            .filter(Boolean)
+            .join("\n\n"),
+        });
+      }
+
+      if (added.length <= 2) {
+        throw new Error("Návrh neobsahuje žádný obsah k vložení.");
+      }
+
+      const { error: updErr } = await supabase
+        .from(table as any)
+        .update({ blocks: [...existing, ...added] as any })
+        .eq("id", lessonId);
+      if (updErr) throw updErr;
+
+      // Propojení metod přímo s lekcí (duplicity ignorujeme).
+      for (const mid of selectedMethodIds) {
+        const { error } = await supabase
+          .from("lesson_method_links")
+          .insert({
+            [linkColumn]: lessonId,
+            method_id: mid,
+            ...(linkColumn === "catalog_lesson_id" ? { created_by: user?.id } : {}),
+          } as any);
+        if (error && !/duplicate|unique/i.test(error.message)) {
+          console.warn("lesson_method_links insert skipped:", error);
+        }
+      }
+
+      toast({
+        title: "Aktivity vloženy do lekce",
+        description: `Do lekce „${selectedSource.title}" bylo přidáno ${added.length} bloků obsahu.`,
+      });
+    } catch (err: any) {
+      toast({
+        title: "Nepodařilo se vložit obsah do lekce",
+        description: err?.message ?? String(err),
+        variant: "destructive",
+      });
+    } finally {
+      setInsertingIntoLesson(false);
+    }
+  };
+
+
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
@@ -483,7 +615,7 @@ export default function TeacherSuggestByMethod() {
                 size="sm"
                 onClick={() => setSourceMode("lesson")}
               >
-                Vybrat vlastní lekci
+                Vybrat lekci
               </Button>
               <Button
                 variant={sourceMode === "file" ? "default" : "outline"}
@@ -523,7 +655,7 @@ export default function TeacherSuggestByMethod() {
 
             {sourceMode === "lesson" && (
               <div>
-                <Label>Vlastní materiál (lekce, plán hodiny, pracovní list)</Label>
+                <Label>Materiál (vlastní lekce, lekce z katalogu, plán hodiny, pracovní list)</Label>
                 <Select value={sourceLessonId} onValueChange={setSourceLessonId}>
                   <SelectTrigger>
                     <SelectValue placeholder="Vyberte materiál…" />
@@ -532,6 +664,7 @@ export default function TeacherSuggestByMethod() {
                     {teacherLessons.map((l) => (
                       <SelectItem key={l.id} value={l.id}>
                         {SOURCE_KIND_LABEL[l.kind]}: {l.title}
+                        {l.source ? ` · ${l.source}` : ""}
                       </SelectItem>
                     ))}
                     {teacherLessons.length === 0 && (
@@ -549,6 +682,35 @@ export default function TeacherSuggestByMethod() {
                   <p className="text-xs text-destructive mt-1">
                     Nepodařilo se načíst lekce, zkuste to prosím znovu.
                   </p>
+                )}
+
+                {sourcePreview && (
+                  <div className="mt-3 rounded-lg border bg-muted/20 p-3">
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <BookOpen className="w-4 h-4 text-primary" />
+                      <span className="font-medium">{sourcePreview.title}</span>
+                      <Badge variant="secondary" className="text-xs">
+                        {sourcePreview.kindLabel}
+                      </Badge>
+                      {sourcePreview.source && (
+                        <span className="text-xs text-muted-foreground">{sourcePreview.source}</span>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mb-2">
+                      Náhled obsahu, který se pošle asistentovi: {sourcePreview.blocks} bloků,{" "}
+                      {sourcePreview.length} znaků.
+                    </p>
+                    {sourcePreview.excerpt ? (
+                      <pre className="text-xs whitespace-pre-wrap max-h-52 overflow-auto text-foreground/80">
+                        {sourcePreview.excerpt}
+                        {sourcePreview.length > sourcePreview.excerpt.length ? "\n…" : ""}
+                      </pre>
+                    ) : (
+                      <p className="text-xs text-destructive">
+                        Tento materiál neobsahuje žádný text – asistent navrhne obecnou strukturu podle metod.
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
             )}
@@ -838,6 +1000,21 @@ export default function TeacherSuggestByMethod() {
                   <MonitorPlay className="w-4 h-4" />
                   Vložit fáze jako slidy
                 </Button>
+                {selectedSource?.editable && (
+                  <Button
+                    variant="outline"
+                    className="gap-2"
+                    onClick={insertIntoLesson}
+                    disabled={insertingIntoLesson}
+                  >
+                    {insertingIntoLesson ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <BookOpen className="w-4 h-4" />
+                    )}
+                    Vložit navržené aktivity do lekce „{selectedSource.title}"
+                  </Button>
+                )}
                 <Button onClick={createDraft} disabled={creating} className="gap-2">
                   {creating ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
