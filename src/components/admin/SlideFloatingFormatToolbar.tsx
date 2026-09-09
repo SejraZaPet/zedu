@@ -91,6 +91,8 @@ export const SlideFloatingFormatToolbar = ({
   const isIcon = block?.type === "image" && !!props.icon;
   const isImage = block?.type === "image" && !isIcon;
   const isShape = block?.type === "shape";
+  /** Linka a šipka se kreslí jen obrysovou barvou – výplň u nich nemá efekt. */
+  const isStrokeOnlyShape = isShape && ((block?.props as any)?.shapeKind === "line" || (block?.props as any)?.shapeKind === "arrow");
 
 
 
