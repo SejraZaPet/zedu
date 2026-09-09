@@ -11,6 +11,8 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger
 } from "@/components/ui/dialog";
 import { KeyRound, BookOpen, ArrowRight } from "lucide-react";
+import { fetchStudentClassTextbookLinks } from "@/lib/student-class-textbooks";
+
 
 type Source = { kind: "enrollment" } | { kind: "class"; className: string };
 
