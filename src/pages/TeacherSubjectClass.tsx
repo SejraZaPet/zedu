@@ -114,10 +114,12 @@ interface LessonPlanRow {
   id: string;
   title: string;
   subject: string;
+  subject_id?: string | null;
   created_at: string;
   updated_at: string;
   input_data: any;
 }
+
 
 interface AssignmentRow {
   id: string;
@@ -238,7 +240,7 @@ export default function TeacherSubjectClass() {
               .eq("class_id", classId),
         supabase
           .from("lesson_plans")
-          .select("id, title, subject, created_at, updated_at, input_data")
+          .select("id, title, subject, subject_id, created_at, updated_at, input_data")
           .eq("teacher_id", user.id)
           .order("updated_at", { ascending: false }),
         isGroup
@@ -481,9 +483,26 @@ export default function TeacherSubjectClass() {
         return matchesContext && (s.subject || "").trim().toLowerCase() === subjectKey;
       });
       const matchesPrimary = (p.subject || "").trim().toLowerCase() === subjectKey;
-      return matchesLinked || matchesPrimary;
+      // Nové plány mají předmět uložený jako subject_id, ne jen text.
+      const matchesSubjectId = !!resolvedSubjectId && p.subject_id === resolvedSubjectId;
+      return matchesLinked || matchesPrimary || matchesSubjectId;
     });
-  }, [plans, classId, groupId, isGroup, subjectKey]);
+  }, [plans, classId, groupId, isGroup, subjectKey, resolvedSubjectId]);
+
+  /** Termíny (yyyy-MM-dd), na které je plán navázaný v této Výuce. */
+  const planLinkedDates = (p: LessonPlanRow): string[] => {
+    const linked: LinkedSlot[] = p.input_data?.linkedSlots ?? [];
+    return linked
+      .filter((s) =>
+        isGroup
+          ? s.groupId === groupId || (!s.classId && !s.groupId)
+          : s.classId === classId || (!s.classId && !s.groupId),
+      )
+      .map((s) => s.date)
+      .filter((d): d is string => !!d)
+      .sort();
+  };
+
 
   /** Find a plan attached to a specific date (yyyy-MM-dd) for this class/group+subject. */
   function findPlanForDate(dateKey: string): LessonPlanRow | undefined {
@@ -1068,6 +1087,74 @@ export default function TeacherSubjectClass() {
                   </div>
                 )}
               </section>
+            </div>
+
+            {/* Všechny plány hodin této Výuky — i bez přiřazeného termínu */}
+            <section>
+              <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
+                <h2 className="font-semibold flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-muted-foreground" />
+                  Plány hodin ({relevantPlans.length})
+                </h2>
+                <Button size="sm" variant="outline" onClick={() => newLessonPlan()}>
+                  <Plus className="h-3.5 w-3.5 mr-1" />
+                  Nový plán
+                </Button>
+              </div>
+              {relevantPlans.length === 0 ? (
+                <Card className="p-4 text-sm text-muted-foreground">
+                  Pro tento předmět a třídu zatím nemáte žádný plán hodiny.
+                </Card>
+              ) : (
+                <div className="space-y-2">
+                  {relevantPlans.map((p) => {
+                    const dates = planLinkedDates(p);
+                    return (
+                      <Card key={p.id} className="p-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="text-sm font-medium truncate">{p.title}</div>
+                            <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-1.5 mt-1">
+                              {dates.length ? (
+                                dates.map((d) => (
+                                  <Badge key={d} variant="secondary" className="text-[10px] px-1.5 py-0 h-4 font-normal">
+                                    {format(new Date(d), "d. M. yyyy", { locale: cs })}
+                                  </Badge>
+                                ))
+                              ) : (
+                                <span>Bez přiřazeného termínu</span>
+                              )}
+                              {planMethods[p.id] && (
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-normal">
+                                  {planMethods[p.id].name}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <Button size="sm" variant="ghost" onClick={() => openAssignPlanDialog()}>
+                              <Link2 className="h-3.5 w-3.5 mr-1" />
+                              Přiřadit termín
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => navigate(`/ucitel/plany-hodin/${p.id}`)}
+                            >
+                              <FileText className="h-3.5 w-3.5 mr-1" />
+                              Otevřít
+                            </Button>
+                          </div>
+                        </div>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+
+            <div className="grid md:grid-cols-2 gap-6">
+
 
               {user && (
                 <QuickRecognitionCard
