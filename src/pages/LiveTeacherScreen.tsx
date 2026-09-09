@@ -1034,20 +1034,26 @@ const LiveTeacherScreen = () => {
           <div
             ref={projectorPreviewRef}
             onScroll={handleProjectorScroll}
-            className="border border-border rounded-lg p-6 bg-background max-h-[60vh] overflow-y-auto"
+            className="border border-border rounded-lg p-4 bg-background max-h-[60vh] overflow-y-auto"
           >
             <div className="flex items-center gap-2 mb-3 text-xs font-medium text-muted-foreground">
               <Monitor className="w-4 h-4" /> PROJEKTOR
             </div>
-            <h2 className="text-2xl font-bold">{currentSlide.projector?.headline}</h2>
             {(currentSlide as any).blocks && (currentSlide as any).blocks.length > 0 ? (
-              <div className="space-y-4 mt-3">
-                {(currentSlide as any).blocks.map((b: any, i: number) => (
-                  <LessonBlock key={b.id || i} block={b} blockIndex={i} isTeacher />
-                ))}
+              /* Stejný renderer jako v editoru i na projekci – zachová pozice,
+                 pozadí, gradienty i rotaci prvků. */
+              <div className="rounded-lg overflow-hidden">
+                <SlideCanvas
+                  slide={currentSlide}
+                  themeId={(currentSlide as any)?.themeId}
+                  darkMode
+                />
               </div>
             ) : (
               <>
+                {currentSlide.projector?.headline && (
+                  <h2 className="text-2xl font-bold">{currentSlide.projector.headline}</h2>
+                )}
                 {!(currentSlide as any).tableData && !(currentSlide as any).cardData && currentSlide.projector?.body && (
                   <p className="text-base text-muted-foreground mt-2 whitespace-pre-wrap">{currentSlide.projector.body}</p>
                 )}
@@ -1087,6 +1093,7 @@ const LiveTeacherScreen = () => {
               </>
             )}
           </div>
+
 
           {currentSlide.type === "activity" && (currentSlide as any).activitySpec?.activityType === "teams" && (
             <TeamsSlideTeacher session={session} players={players} />
