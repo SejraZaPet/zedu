@@ -1362,13 +1362,16 @@ const LiveTeacherScreen = () => {
             </div>
           )}
 
-          {/* Device preview */}
-          <div className="border border-border rounded-lg p-4 bg-muted/30">
-            <div className="flex items-center gap-2 mb-2 text-xs font-medium text-muted-foreground">
-              <Smartphone className="w-4 h-4" /> ZAŘÍZENÍ ŽÁKA
+          {/* Device preview – jen když snímek má pokyn pro zařízení žáka */}
+          {(currentSlide as any).device?.instructions && (
+            <div className="border border-border rounded-lg p-4 bg-muted/30">
+              <div className="flex items-center gap-2 mb-2 text-xs font-medium text-muted-foreground">
+                <Smartphone className="w-4 h-4" /> ZAŘÍZENÍ ŽÁKA
+              </div>
+              <p className="text-sm whitespace-pre-wrap">{(currentSlide as any).device.instructions}</p>
             </div>
-            <p className="text-sm whitespace-pre-wrap">{currentSlide.device.instructions}</p>
-          </div>
+          )}
+
 
           {/* Teacher notes (blokový model: teacherNotes, AI plány: speakerNotes) */}
           {(currentSlide.teacherNotes || (currentSlide as any).speakerNotes) && (
