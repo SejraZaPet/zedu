@@ -4,7 +4,7 @@ import WallProjectorView from "@/components/activities/WallProjectorView";
 import WordCloudView from "@/components/activities/WordCloudView";
 import ActivityTaskPreview, { hasActivityTaskPreview } from "@/components/live/ActivityTaskPreview";
 
-import { SlideBody } from "@/components/admin/SlideCanvas";
+import SlideCanvas, { SlideBody } from "@/components/admin/SlideCanvas";
 import { slideTransitionClass } from "@/lib/slide-transitions";
 import { getPresentationTheme, themeStageStyle } from "@/lib/presentation-themes";
 import { slideBackgroundOverrideStyle } from "@/lib/slide-typography";
@@ -108,7 +108,15 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
               <span className="text-lg font-medium">Slide {currentIndex + 1} / {slides.length}</span>
             </div>
 
-            <div ref={scrollRef} className="flex-1 flex flex-col items-center justify-start px-6 py-4 gap-4 min-h-0 overflow-y-auto">
+            {(() => {
+              const hasBlocks = !!(currentSlide.blocks && currentSlide.blocks.length > 0);
+              return (
+            <div
+              ref={scrollRef}
+              className={`flex-1 flex flex-col items-center justify-start px-6 py-4 gap-4 min-h-0 ${
+                hasBlocks ? "overflow-hidden" : "overflow-y-auto"
+              }`}
+            >
               <div
                 key={currentIndex}
                 className={`w-full flex-1 min-h-0 flex flex-col items-center gap-4 ${
@@ -121,11 +129,16 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
                 </div>
               )}
 
-              {currentSlide.blocks && currentSlide.blocks.length > 0 ? (
-                <div className="w-full flex-1 min-h-0">
-                  <SlideBody key={currentIndex} slide={currentSlide} themeId={(currentSlide as any)?.themeId} darkMode revealStep={(session?.settings as any)?.revealStep} />
+              {hasBlocks ? (
+                /* Přesně stejný renderer jako editor: celá scéna 1600×900 se
+                   proporčně zmenší do dostupného místa, takže se prvky
+                   nepřekrývají a rozvržení odpovídá editoru. */
+                <div className="w-full flex-1 min-h-0 flex items-center justify-center">
+                  <SlideCanvas key={currentIndex} slide={currentSlide} themeId={(currentSlide as any)?.themeId} darkMode revealStep={(session?.settings as any)?.revealStep} />
                 </div>
               ) : (
+
+
                 <>
                   {currentSlide.projector?.headline && (
                     <h2 className="text-6xl font-bold text-center mb-10 leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-purple-200 shrink-0">
@@ -219,6 +232,9 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
 
               </div>
             </div>
+              );
+            })()}
+
 
 
             <div className="px-12 py-6 border-t border-border flex justify-between items-center text-muted-foreground shrink-0">
