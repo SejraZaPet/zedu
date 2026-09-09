@@ -62,8 +62,15 @@ serve(async (req) => {
     const activityData = (sess?.activity_data as any[]) || [];
     const question = activityData[questionIndex];
 
-    // Idempotency
-    const { data: existing } = await admin
+    // Open-ended activities (wordcloud / wall / open question) are explicitly
+    // multi-entry: one player may send several words or several notes. Applying
+    // the one-response-per-question idempotency there silently dropped every
+    // entry after the first, so the projector showed "no responses".
+    const activityType = String(question?.activitySpec?.activityType || "");
+    const openEnded = ["wordcloud", "wall", "open", "open_question"].includes(activityType);
+
+    // Idempotency (scored activities only)
+    const { data: existing } = openEnded ? { data: null } : await admin
       .from("game_responses")
       .select("id")
       .eq("session_id", sessionId)
