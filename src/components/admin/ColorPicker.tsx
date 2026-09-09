@@ -89,7 +89,12 @@ export const ColorPicker = ({
       </div>
       <Input
         value={hex}
-        onChange={(e) => setHex(e.target.value)}
+        onChange={(e) => {
+          const next = e.target.value;
+          setHex(next);
+          // Platný kód se propíše hned, ať uživatel nemusí mačkat Enter.
+          if (HEX_RE.test(next.trim())) onChange(expandHex(next.trim()));
+        }}
         onBlur={commitHex}
         onKeyDown={(e) => {
           if (e.key === "Enter") {
