@@ -10,6 +10,7 @@ import { MediaPickerDialog } from "@/components/media/MediaPickerDialog";
 import IconPickerDialog from "@/components/admin/IconPickerDialog";
 import { getSlideIcon } from "@/lib/slide-icons";
 import { Shapes } from "lucide-react";
+import { imageAlignClass, imageIconSize, imageWidthClass } from "@/lib/image-block-layout";
 
 interface Props {
   block: Block;
