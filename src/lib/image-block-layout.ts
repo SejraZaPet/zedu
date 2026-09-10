@@ -31,4 +31,6 @@ export const imageIconSize = (width: ImageBlockWidth): number =>
  * Explicitní poměr stran je zásadní: samotné max-height měnilo výřez podle
  * šířky rodičovského kontejneru.
  */
-export const HERO_IMAGE_CLASS = "aspect-[21/9] w-full rounded-lg object-cover";
+// Typické bannery v appce mají poměr ~3,8:1 (např. 1366×357), proto 19/5 = 3,8:1.
+// 16:9 by řezalo boky ještě víc než dosavadní 21:9.
+export const HERO_IMAGE_CLASS = "aspect-[19/5] w-full rounded-lg object-cover";
