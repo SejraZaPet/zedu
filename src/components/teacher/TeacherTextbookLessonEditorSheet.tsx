@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { HERO_IMAGE_CLASS } from "@/lib/image-block-layout";
 import { supabase } from "@/integrations/supabase/client";
 import { normalizeBlocks, type Block } from "@/lib/textbook-config";
 import { Button } from "@/components/ui/button";

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { HERO_IMAGE_CLASS } from "@/lib/image-block-layout";
 import {
   Dialog,
   DialogContent,
