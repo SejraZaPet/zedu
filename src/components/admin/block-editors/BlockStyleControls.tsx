@@ -1,11 +1,13 @@
+import { Palette } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  SLIDE_FONTS, SLIDE_FONT_SIZES, SLIDE_TEXT_COLORS,
+  SLIDE_FONTS, SLIDE_FONT_SIZES,
 } from "@/lib/slide-typography";
-import { BLOCK_BACKGROUNDS } from "@/lib/block-backgrounds";
+import { BLOCK_BACKGROUNDS, getBlockCustomBackground } from "@/lib/block-backgrounds";
+import ColorPalettePopover from "@/components/ui/color-palette-popover";
 
 import type { Block } from "@/lib/textbook-config";
 
@@ -23,6 +25,7 @@ const BlockStyleControls = ({ block, onChange, showText = true, compact = false 
   const p = block.props || {};
   const set = (patch: Record<string, any>) => onChange({ ...p, ...patch });
   const bgKey = (p.backgroundStyle as string) || "none";
+  const customBg = getBlockCustomBackground(p);
 
   return (
     <div
@@ -85,37 +88,6 @@ const BlockStyleControls = ({ block, onChange, showText = true, compact = false 
             </Select>
           </div>
 
-          <div>
-            <Label className="text-[11px] text-muted-foreground">Barva textu</Label>
-            <div className="mt-1 flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => set({ color: null })}
-                title="Podle tématu"
-                className={`h-6 rounded border px-1.5 text-[10px] ${!p.color ? "border-primary text-foreground" : "border-border text-muted-foreground"}`}
-              >
-                Auto
-              </button>
-              {SLIDE_TEXT_COLORS.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => set({ color: c })}
-                  title={c}
-                  aria-label={`Barva ${c}`}
-                  className={`h-6 w-6 rounded-full border-2 transition-transform ${p.color === c ? "border-primary scale-110" : "border-border"}`}
-                  style={{ background: c }}
-                />
-              ))}
-              <input
-                type="color"
-                value={/^#/.test(p.color || "") ? p.color : "#000000"}
-                onChange={(e) => set({ color: e.target.value })}
-                className="h-6 w-9 cursor-pointer rounded border border-border bg-transparent"
-                aria-label="Vlastní barva textu"
-              />
-            </div>
-          </div>
         </>
       )}
 
@@ -123,12 +95,15 @@ const BlockStyleControls = ({ block, onChange, showText = true, compact = false 
         <Label className="text-[11px] text-muted-foreground">Pozadí bloku</Label>
         <div className="mt-1 flex items-center gap-1.5">
           {BLOCK_BACKGROUNDS.map((opt) => {
-            const active = bgKey === opt.key;
+            const active = !customBg && bgKey === opt.key;
             return (
               <button
                 key={opt.key}
                 type="button"
-                onClick={() => set({ backgroundStyle: opt.key === "none" ? null : opt.key })}
+                onClick={() => set({
+                  backgroundStyle: opt.key === "none" ? null : opt.key,
+                  backgroundColor: null,
+                })}
                 title={opt.label}
                 aria-label={`Pozadí ${opt.label}`}
                 aria-pressed={active}
@@ -143,6 +118,25 @@ const BlockStyleControls = ({ block, onChange, showText = true, compact = false 
               </button>
             );
           })}
+
+          <ColorPalettePopover
+            value={customBg}
+            clearLabel="Bez vlastní barvy"
+            onChange={(v) => set({ backgroundColor: v, backgroundStyle: v ? null : bgKey === "none" ? null : bgKey })}
+            trigger={(
+              <button
+                type="button"
+                title="Vlastní barva pozadí"
+                aria-label="Vlastní barva pozadí"
+                aria-pressed={!!customBg}
+                className={`flex h-6 items-center gap-1 rounded border-2 px-1.5 text-[10px] transition-transform ${customBg ? "border-primary scale-105" : "border-border text-muted-foreground"}`}
+                style={customBg ? { background: customBg, color: "#171717" } : undefined}
+              >
+                <Palette className="h-3 w-3" />
+                Vlastní
+              </button>
+            )}
+          />
         </div>
       </div>
     </div>
