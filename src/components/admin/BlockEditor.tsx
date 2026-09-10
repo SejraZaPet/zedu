@@ -73,6 +73,11 @@ import {
   setGroupChildHeight,
   GROUP_CHILD_MIN_HEIGHT,
   GROUP_CHILD_MAX_HEIGHT,
+  GROUP_MIN_HEIGHT,
+  GROUP_MAX_HEIGHT,
+  getGroupMinHeight,
+  setGroupMinHeight,
+
   getGroupChildren,
   getGroupLayout,
   getGroupMode,
