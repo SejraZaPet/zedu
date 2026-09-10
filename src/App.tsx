@@ -1,4 +1,3 @@
-import QaFreeFit from "@/pages/QaFreeFit";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -118,7 +117,6 @@ const App = () => (
           <PublicSiteAssistant />
           <Routes>
             <Route path="/" element={<Index />} />
-            <Route path="/qa-free-fit" element={<QaFreeFit />} />
 
             <Route path="/s/:slug" element={<SchoolEntry />} />
 
