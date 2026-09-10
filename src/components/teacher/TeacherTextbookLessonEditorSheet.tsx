@@ -218,15 +218,16 @@ const TeacherTextbookLessonEditorSheet = ({ lesson, open, onOpenChange, onSaved 
 
         {draft && (
           <div className="space-y-4 mt-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2">
-                <Label>Název lekce</Label>
-                <Input
-                  value={draft.title}
-                  onChange={(e) => setDraft((prev) => (prev ? { ...prev, title: e.target.value } : prev))}
-                  className="mt-1"
-                />
-              </div>
+            <div>
+              <Label>Název lekce</Label>
+              <Input
+                value={draft.title}
+                onChange={(e) => setDraft((prev) => (prev ? { ...prev, title: e.target.value } : prev))}
+                className="mt-1"
+              />
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-3 items-start p-3 border border-border rounded-md bg-muted/20">
               <div>
                 <Label>Stav</Label>
                 <Select
