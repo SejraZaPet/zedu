@@ -1372,16 +1372,11 @@ const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryC
         if (e.currentTarget === e.target) setDragOver(false);
       }}
       onDrop={handleDrop}
-      className={`block-editor-scope relative space-y-3 p-4 rounded-[14px] transition ${dragOver ? "ring-2 ring-offset-2 bg-primary/5" : ""}`}
-      style={{ background: "#FAFAFA" }}
+      className={`block-editor-scope relative w-full max-w-none space-y-2 px-2 py-4 md:px-6 rounded-[14px] transition ${dragOver ? "ring-2 ring-offset-2 bg-primary/5" : ""}`}
+      style={{ background: "hsl(var(--background))" }}
     >
 
       <style>{`
-        .block-editor-scope .be-block:focus-within {
-          border-color: var(--cat-border) !important;
-          border-width: 1.5px !important;
-          box-shadow: 0 0 0 3px rgba(0,0,0,0.04), 0 1px 3px hsl(228 24% 92% / 0.6), 0 4px 16px -4px hsl(228 24% 92% / 0.4) !important;
-        }
         .block-editor-scope .be-block[data-category="interactive"] .be-block__action { color: rgba(255,255,255,0.85); }
         .block-editor-scope .be-block[data-category="interactive"] .be-block__action:hover { color: #FFFFFF; background: rgba(255,255,255,0.12); }
         .block-editor-scope .be-block__action { color: #A3A3A3; }
