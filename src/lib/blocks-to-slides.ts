@@ -1,4 +1,5 @@
 import { blockBackgroundSlideColor } from "@/lib/block-backgrounds";
+import { getGroupChildFrames } from "@/lib/slide-groups";
 
 function stripHtml(html: string): string {
   if (!html) return "";
@@ -172,13 +173,27 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
         headline = "";
       }
 
+      if (props.mode === "free") {
+        // Ve volném režimu zůstávají všechny bloky na plátně včetně nadpisu.
+        headline = "";
+        bodyChildren = visibleChildren;
+      }
+
       const groupSlide = newSlide(headline);
       const groupBg = blockBackgroundSlideColor(props)
         || visibleChildren.map((c) => blockBackgroundSlideColor(c?.props)).find(Boolean)
         || null;
       if (groupBg) groupSlide.backgroundOverride = { color: groupBg };
-      groupSlide.layout = cols === 3 ? "three-cols" : cols === 2 ? "two-cols" : "full";
-      groupSlide.blocks = bodyChildren;
+      const freeMode = props.mode === "free";
+      groupSlide.layout = freeMode
+        ? "free"
+        : cols === 3 ? "three-cols" : cols === 2 ? "two-cols" : "full";
+      if (freeMode) {
+        const frames = getGroupChildFrames(block as any);
+        groupSlide.blocks = bodyChildren.map((c: any) => ({ ...c, frame: c.frame ?? frames[c.id] }));
+      } else {
+        groupSlide.blocks = bodyChildren;
+      }
       const texts: string[] = [];
       for (const child of bodyChildren) {
         const c = blockToBodyText(child);

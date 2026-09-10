@@ -1,4 +1,5 @@
 import type { Block } from "@/lib/textbook-config";
+import { clampBlockFrame, getBlockFrame, type BlockFrame } from "@/lib/block-frame";
 
 /** Počet sloupců, do kterých se dá spojený snímek rozložit. */
 export type SlideGroupLayout = 1 | 2 | 3;
@@ -114,3 +115,77 @@ export const flattenSlideGroups = (blocks: Block[] | null | undefined): Block[] 
   (Array.isArray(blocks) ? blocks : []).flatMap((b) =>
     isSlideGroup(b) ? getGroupChildren(b) : [b],
   );
+
+/* ============================================================================
+ * Režim skupiny: sloupce (výchozí) vs volné rozmístění
+ * ==========================================================================*/
+
+export type SlideGroupMode = "columns" | "free";
+
+/** Režim skupiny; starší skupiny bez pole = "columns" (zpětná kompatibilita). */
+export const getGroupMode = (block: Block | null | undefined): SlideGroupMode =>
+  (block?.props as any)?.mode === "free" ? "free" : "columns";
+
+/** Rovnoměrné rozpočítání rámců do mřížky (max 3 sloupce), v % plochy. */
+export const autoGridFrames = (count: number): BlockFrame[] => {
+  if (count <= 0) return [];
+  const cols = count <= 1 ? 1 : count <= 4 ? 2 : 3;
+  const rows = Math.ceil(count / cols);
+  const pad = 4;
+  const gap = 3;
+  const w = (100 - pad * 2 - gap * (cols - 1)) / cols;
+  const h = (100 - pad * 2 - gap * (rows - 1)) / rows;
+  return Array.from({ length: count }, (_, i) => {
+    const c = i % cols;
+    const r = Math.floor(i / cols);
+    return clampBlockFrame({ x: pad + c * (w + gap), y: pad + r * (h + gap), w, h });
+  });
+};
+
+/**
+ * Přepne režim skupiny. Při přechodu na "free" doplní chybějící rámce dětí
+ * rovnoměrnou mřížkou, ať rozmístění nezačíná jako chaos.
+ */
+export const setGroupMode = (
+  blocks: Block[],
+  groupId: string,
+  mode: SlideGroupMode,
+): Block[] =>
+  blocks.map((b) => {
+    if (b.id !== groupId || !isSlideGroup(b)) return b;
+    let children = getGroupChildren(b);
+    if (mode === "free") {
+      const auto = autoGridFrames(children.length);
+      children = children.map((c, i) => ({
+        ...c,
+        frame: getBlockFrame(c) ?? auto[i],
+      })) as Block[];
+    }
+    return { ...b, props: { ...b.props, mode, children } };
+  });
+
+/** Nastaví rámec jednoho dítěte skupiny (volné rozmístění). */
+export const setGroupChildFrame = (
+  blocks: Block[],
+  groupId: string,
+  childId: string,
+  frame: BlockFrame,
+): Block[] =>
+  blocks.map((b) => {
+    if (b.id !== groupId || !isSlideGroup(b)) return b;
+    const children = getGroupChildren(b).map((c) =>
+      c.id === childId ? ({ ...c, frame: clampBlockFrame(frame) } as Block) : c,
+    );
+    return { ...b, props: { ...b.props, children } };
+  });
+
+/** Rámce dětí skupiny (s doplněním výchozí mřížky pro děti bez rámce). */
+export const getGroupChildFrames = (block: Block | null | undefined): Record<string, BlockFrame> => {
+  const children = getGroupChildren(block);
+  const auto = autoGridFrames(children.length);
+  const out: Record<string, BlockFrame> = {};
+  children.forEach((c, i) => {
+    out[c.id] = getBlockFrame(c) ?? auto[i];
+  });
+  return out;
+};
