@@ -4,7 +4,7 @@ import BlockEditor from "@/components/admin/BlockEditor";
 import type { Block } from "@/lib/textbook-config";
 
 const blocks: Block[] = [
-  { id: "img", type: "image", visible: true, props: { url: "https://x/y.png", caption: "Foto" } },
+  { id: "img", type: "paragraph", visible: true, props: { text: "Text" } },
   { id: "tab", type: "table", visible: true, props: { headers: ["A"], rows: [["1"]] } },
 ];
 
