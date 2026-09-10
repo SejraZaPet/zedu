@@ -60,7 +60,8 @@ const FreeFrameCanvas = ({
     const canvasH = stageRef.current.getBoundingClientRect().height;
     if (!canvasH) return;
     const needed = node.scrollHeight + 12;
-    const h = Math.max(5, Math.min(100 - item.frame.y, (needed / canvasH) * 100));
+    // Karta smí přesáhnout spodní okraj plátna – ať se do ní vejde celý obsah.
+    const h = Math.max(5, (needed / canvasH) * 100);
     onChangeFrame(item.id, { ...item.frame, h });
   };
 
@@ -113,8 +114,10 @@ const FreeFrameCanvas = ({
       ref={stageRef}
       data-free-frame-canvas="true"
       onPointerDown={() => onSelect?.(null)}
-      className={`relative w-full aspect-video overflow-hidden rounded-[10px] ${
-        editable ? "bg-[#FAFAFA] border border-dashed border-border" : ""
+      className={`relative w-full aspect-video rounded-[10px] ${
+        // V editoru nesmíme ořezávat: karta zasahující pod spodní okraj plátna
+        // by měla neviditelný (a nekliknutelný) pruh pro tažení výšky.
+        editable ? "overflow-visible bg-[#FAFAFA] border border-dashed border-border" : "overflow-hidden"
       } ${className}`}
     >
       {items.map((item) => {
