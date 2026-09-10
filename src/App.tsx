@@ -117,6 +117,8 @@ const App = () => (
           <PublicSiteAssistant />
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/qa-free-fit" element={<QaFreeFit />} />
+
             <Route path="/s/:slug" element={<SchoolEntry />} />
 
 
