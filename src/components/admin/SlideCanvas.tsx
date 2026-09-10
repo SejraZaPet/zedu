@@ -1609,6 +1609,19 @@ export function SlideBody({
     .filter((x): x is { block: Block; frame: BlockFrame } => !!x.frame);
   const blocks: Block[] = allBlocks.filter((b) => !getBlockFrame(b));
 
+  /**
+   * V editoru lekce smí volné rozmístění přesahovat pod spodní hranu 16:9 plátna.
+   * Prezentace má pevný poměr 16:9, proto obsah proporčně zmenšíme, aby se celý
+   * vešel (stejné relativní rozmístění, jen menší měřítko) a karty se nepřekrývaly.
+   */
+  const freeFitScale = (() => {
+    if (editable || framedBlocks.length === 0) return 1;
+    const bottom = Math.max(100, ...framedBlocks.map((x) => x.frame.y + x.frame.h));
+    const right = Math.max(100, ...framedBlocks.map((x) => x.frame.x + x.frame.w));
+    return Math.min(1, 100 / bottom, 100 / right);
+  })();
+
+
   /** Aktuální výběr (fáze 3) – pole ID, i pro jediný blok. */
   const selectedIds = selectedBlockIds && selectedBlockIds.length
     ? selectedBlockIds
@@ -2029,7 +2042,23 @@ export function SlideBody({
 
       {/* Vrstva volně umístěných bloků (jen bloky s `frame`) */}
       {(
-        <div ref={freeLayerRef} className={`pointer-events-none absolute inset-0 ${blockTextScope}`}>
+        <div
+          ref={freeLayerRef}
+          data-free-fit-scale={freeFitScale < 1 ? freeFitScale.toFixed(4) : undefined}
+          className={`pointer-events-none absolute inset-0 ${blockTextScope}`}
+          style={
+            freeFitScale < 1
+              ? {
+                  // Rozměry vrstvy zůstávají 16:9; zmenšíme jen měřítko obsahu,
+                  // takže i bloky pod spodní hranou se vejdou do snímku.
+
+                  transform: `scale(${freeFitScale})`,
+                  transformOrigin: "top left",
+                }
+              : undefined
+          }
+        >
+
 
           {/* Zarovnávací vodítka (fialová čárkovaná linka přes celý snímek) */}
           {editable && guides && (
