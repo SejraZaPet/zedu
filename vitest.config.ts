@@ -9,6 +9,9 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
     include: ["src/**/*.{test,spec}.{ts,tsx}"],
+    // Editor lekce je těžká komponenta – při paralelním běhu 5 s nestačí.
+    testTimeout: 20000,
+
   },
   resolve: {
     alias: { "@": path.resolve(__dirname, "./src") },
