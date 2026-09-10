@@ -764,6 +764,35 @@ const SortableSlideGroup = React.memo(({
   const frames = getGroupChildFrames(block);
   const [activeChild, setActiveChild] = useState<string | null>(null);
 
+  // Ruční minimální výška celého snímku (tažení za spodní okraj kontejneru).
+  const savedMinHeight = getGroupMinHeight(block);
+  const groupRef = useRef<HTMLDivElement | null>(null);
+  const [dragMinHeight, setDragMinHeight] = useState<number | null>(null);
+  const minHeight = dragMinHeight ?? savedMinHeight;
+
+  const startGroupResize = (e: React.PointerEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const startY = e.clientY;
+    const startH = groupRef.current?.getBoundingClientRect().height ?? GROUP_MIN_HEIGHT;
+    const clamp = (v: number) =>
+      Math.min(GROUP_MAX_HEIGHT, Math.max(GROUP_MIN_HEIGHT, Math.round(v)));
+    let last = clamp(startH);
+    const move = (ev: PointerEvent) => {
+      last = clamp(startH + (ev.clientY - startY));
+      setDragMinHeight(last);
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      setDragMinHeight(null);
+      onMinHeightChange(block.id, last);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+
+
   const gridClass =
     layout === 3
       ? "grid grid-cols-1 md:grid-cols-3 gap-3"
