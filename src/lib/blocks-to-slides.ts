@@ -194,6 +194,11 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
       } else {
         groupSlide.blocks = bodyChildren;
       }
+      const groupMinHeight = Number(props.groupMinHeight);
+      if (Number.isFinite(groupMinHeight) && groupMinHeight > 0) {
+        (groupSlide as any).groupMinHeight = Math.round(groupMinHeight);
+      }
+
       const texts: string[] = [];
       for (const child of bodyChildren) {
         const c = blockToBodyText(child);
