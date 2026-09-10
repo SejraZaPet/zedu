@@ -353,6 +353,7 @@ const TeacherTextbookLessonEditorSheet = ({ lesson, open, onOpenChange, onSaved 
             </div>
           </div>
         )}
+        </div>
       </SheetContent>
     </Sheet>
   );
