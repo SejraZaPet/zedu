@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSubjects, getGradeNumbers, type SubjectRecord } from "@/hooks/useSubjects";
 import { type Block } from "@/lib/textbook-config";
+import { HERO_IMAGE_CLASS } from "@/lib/image-block-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -308,7 +309,11 @@ const TextbooksManager = () => {
                 </Button>
               </div>
               {editingLesson.hero_image_url && (
-                <img src={editingLesson.hero_image_url} alt="" className="mt-2 max-h-20 rounded border border-border" />
+                <img
+                  src={editingLesson.hero_image_url}
+                  alt=""
+                  className={`mt-2 ${HERO_IMAGE_CLASS}`}
+                />
               )}
             </div>
           </div>
