@@ -25,6 +25,7 @@ const BlockStyleControls = ({ block, onChange, showText = true, compact = false 
   const p = block.props || {};
   const set = (patch: Record<string, any>) => onChange({ ...p, ...patch });
   const bgKey = (p.backgroundStyle as string) || "none";
+  const customBg = getBlockCustomBackground(p);
 
   return (
     <div
