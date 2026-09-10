@@ -38,17 +38,26 @@ export function getBlockBackground(
   return BLOCK_BACKGROUNDS.find((o) => o.key === key) ?? null;
 }
 
+/** Vlastní barva pozadí bloku (hex/HSL string) zvolená z palety. */
+export function getBlockCustomBackground(
+  props?: Record<string, any> | null,
+): string | null {
+  const c = props?.backgroundColor;
+  return typeof c === "string" && c.trim() ? c : null;
+}
+
 /** Inline styl obalu bloku (nebo `undefined`, pokud pozadí není zvolené). */
 export function blockBackgroundStyle(
   props?: Record<string, any> | null,
 ): React.CSSProperties | undefined {
+  const custom = getBlockCustomBackground(props);
   const opt = getBlockBackground(props?.backgroundStyle);
-  if (!opt) return undefined;
+  if (!opt && !custom) return undefined;
   return {
-    background: opt.bg,
+    background: custom ?? opt!.bg,
     borderRadius: 10,
     padding: "12px 16px",
-    borderLeft: opt.accent ? `4px solid ${opt.accent}` : undefined,
+    borderLeft: !custom && opt?.accent ? `4px solid ${opt.accent}` : undefined,
   };
 }
 
@@ -56,6 +65,8 @@ export function blockBackgroundStyle(
 export function blockBackgroundSlideColor(
   props?: Record<string, any> | null,
 ): string | null {
+  const custom = getBlockCustomBackground(props);
+  if (custom) return custom;
   const opt = getBlockBackground(props?.backgroundStyle);
   return opt ? opt.bg : null;
 }
