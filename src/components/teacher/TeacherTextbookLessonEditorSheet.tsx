@@ -274,74 +274,73 @@ const TeacherTextbookLessonEditorSheet = ({ lesson, open, onOpenChange, onSaved 
                   </Button>
                 )}
               </div>
-              <div>
-                <Label>Hero obrázek (banner)</Label>
-                <div className="flex gap-2 mt-1">
-                  <Input
-                    value={draft.hero_image_url ?? ""}
-                    onChange={(e) => setDraft((prev) => (prev ? { ...prev, hero_image_url: e.target.value } : prev))}
-                    placeholder="URL…"
-                    className="flex-1"
+
+              {draft.source === "teacher_textbook_lessons" && (
+                <div className="space-y-3">
+                  <LessonPlacementEditor
+                    lessonId={draft.id}
+                    placements={lessonPlacements}
+                    onChange={setLessonPlacements}
                   />
-                  <Button size="sm" variant="outline" className="relative" disabled={heroUploading}>
-                    <Upload className="w-4 h-4 mr-1" />{heroUploading ? "…" : "Nahrát"}
-                    <input type="file" accept="image/*" onChange={handleHeroUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
-                  </Button>
+                  <LessonCurriculumTopicsPicker lessonId={draft.id} />
                 </div>
-                {draft.hero_image_url && (
-                  <img src={draft.hero_image_url} alt="" className={`mt-2 ${HERO_IMAGE_CLASS}`} />
-                )}
-              </div>
-            </div>
+              )}
 
-            {draft.source === "teacher_textbook_lessons" && (
-              <>
-                <LessonPlacementEditor
-                  lessonId={draft.id}
-                  placements={lessonPlacements}
-                  onChange={setLessonPlacements}
-                />
-                <LessonCurriculumTopicsPicker lessonId={draft.id} />
-              </>
-            )}
-
-            {draft.source === "textbook_lessons" && (
-              <div className="border-t border-border pt-4">
-                <LessonAssignments
-                  lessonId={draft.id}
-                  assignments={lessonAssignments}
-                  onChange={setLessonAssignments}
-                />
-              </div>
-            )}
-
-            {draft.source === "textbook_lessons" && typeof draft.require_activities === "boolean" && (
-              <div className="flex items-start gap-2 p-3 border border-border rounded-md bg-muted/30">
-                <Checkbox
-                  id={`require_activities-${draft.id}`}
-                  checked={draft.require_activities}
-                  onCheckedChange={(v) => setDraft((prev) => (prev ? { ...prev, require_activities: !!v } : prev))}
-                  className="mt-0.5"
-                />
-                <div className="flex-1">
-                  <Label htmlFor={`require_activities-${draft.id}`} className="cursor-pointer text-sm font-medium">
-                    Vyžadovat splnění aktivit před dokončením
-                  </Label>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Student bude moci lekci označit jako dokončenou až po splnění alespoň jedné aktivity.
-                  </p>
+              {draft.source === "textbook_lessons" && (
+                <div>
+                  <LessonAssignments
+                    lessonId={draft.id}
+                    assignments={lessonAssignments}
+                    onChange={setLessonAssignments}
+                  />
                 </div>
-              </div>
-            )}
+              )}
 
-            <div className="border-t border-border pt-4">
-              <LessonMethodsPicker lessonId={draft.id} source={draft.source} />
+              {draft.source === "textbook_lessons" && typeof draft.require_activities === "boolean" && (
+                <div className="flex items-start gap-2">
+                  <Checkbox
+                    id={`require_activities-${draft.id}`}
+                    checked={draft.require_activities}
+                    onCheckedChange={(v) => setDraft((prev) => (prev ? { ...prev, require_activities: !!v } : prev))}
+                    className="mt-0.5"
+                  />
+                  <div className="flex-1">
+                    <Label htmlFor={`require_activities-${draft.id}`} className="cursor-pointer text-sm font-medium">
+                      Vyžadovat splnění aktivit před dokončením
+                    </Label>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Student bude moci lekci označit jako dokončenou až po splnění alespoň jedné aktivity.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div>
-              <Label className="mb-2 block">Obsah lekce</Label>
+              <Label>Hero obrázek (banner)</Label>
+              <div className="flex gap-2 mt-1">
+                <Input
+                  value={draft.hero_image_url ?? ""}
+                  onChange={(e) => setDraft((prev) => (prev ? { ...prev, hero_image_url: e.target.value } : prev))}
+                  placeholder="URL…"
+                  className="flex-1"
+                />
+                <Button size="sm" variant="outline" className="relative" disabled={heroUploading}>
+                  <Upload className="w-4 h-4 mr-1" />{heroUploading ? "…" : "Nahrát"}
+                  <input type="file" accept="image/*" onChange={handleHeroUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
+                </Button>
+              </div>
+              {draft.hero_image_url && (
+                <img src={draft.hero_image_url} alt="" className={`mt-2 ${HERO_IMAGE_CLASS}`} />
+              )}
+            </div>
+
+            <div className="border-t border-border pt-4 space-y-4">
+              <Label className="block text-base font-semibold">Obsah lekce</Label>
+              <LessonMethodsPicker lessonId={draft.id} source={draft.source} />
               <BlockEditor blocks={draft.blocks} onChange={handleBlocksChange} />
             </div>
+
 
             <div className="flex gap-2 pt-2 border-t border-border sticky bottom-0 bg-background pb-4">
               <Button size="sm" onClick={saveLessonEdit} disabled={saving}>
