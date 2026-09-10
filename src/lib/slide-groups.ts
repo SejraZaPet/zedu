@@ -182,6 +182,45 @@ export const setGroupChildFrame = (
     return { ...b, props: { ...b.props, children } };
   });
 
+/* ============================================================================
+ * Režim sloupců: ruční výška jednotlivé karty
+ * ==========================================================================*/
+
+/** Minimální a maximální ruční výška karty v režimu Sloupce (px). */
+export const GROUP_CHILD_MIN_HEIGHT = 80;
+export const GROUP_CHILD_MAX_HEIGHT = 1600;
+
+/** Ruční výška karty ve sloupcích (px) nebo null, pokud je automatická. */
+export const getGroupChildHeight = (child: Block | null | undefined): number | null => {
+  const raw = Number((child?.props as any)?.groupHeight);
+  return Number.isFinite(raw) && raw > 0
+    ? Math.min(GROUP_CHILD_MAX_HEIGHT, Math.max(GROUP_CHILD_MIN_HEIGHT, Math.round(raw)))
+    : null;
+};
+
+/** Nastaví (nebo zruší při null) ruční výšku karty ve sloupcích. */
+export const setGroupChildHeight = (
+  blocks: Block[],
+  groupId: string,
+  childId: string,
+  height: number | null,
+): Block[] =>
+  blocks.map((b) => {
+    if (b.id !== groupId || !isSlideGroup(b)) return b;
+    const children = getGroupChildren(b).map((c) => {
+      if (c.id !== childId) return c;
+      const props = { ...c.props } as Record<string, any>;
+      if (height == null) delete props.groupHeight;
+      else
+        props.groupHeight = Math.min(
+          GROUP_CHILD_MAX_HEIGHT,
+          Math.max(GROUP_CHILD_MIN_HEIGHT, Math.round(height)),
+        );
+      return { ...c, props };
+    });
+    return { ...b, props: { ...b.props, children } };
+  });
+
 /** Rámce dětí skupiny (s doplněním výchozí mřížky pro děti bez rámce). */
 export const getGroupChildFrames = (block: Block | null | undefined): Record<string, BlockFrame> => {
   const children = getGroupChildren(block);
