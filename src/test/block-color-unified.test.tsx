@@ -17,7 +17,7 @@ describe("sjednocená volba barvy", () => {
     const onChange = vi.fn();
     render(<BlockStyleControls block={block({ backgroundStyle: "note" })} onChange={onChange} />);
     fireEvent.click(screen.getByLabelText("Vlastní barva pozadí"));
-    expect(screen.getByText("Neutrální")).toBeTruthy();
+    expect(screen.getAllByText("Neutrální").length).toBeGreaterThan(1);
     expect(screen.getByText("Vlastní barva")).toBeTruthy();
     fireEvent.click(screen.getByLabelText("Modrá"));
     expect(onChange).toHaveBeenCalledWith(
