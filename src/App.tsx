@@ -19,6 +19,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetHeslo from "./pages/ResetHeslo";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
+import QaGroupHeight from "./pages/QaGroupHeight";
 
 import SubjectPage from "./pages/SubjectPage";
 import TopicPage from "./pages/TopicPage";
