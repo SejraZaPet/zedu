@@ -69,6 +69,10 @@ import FreeFrameCanvas from "@/components/blocks/FreeFrameCanvas";
 import type { BlockFrame } from "@/lib/block-frame";
 import {
   getGroupChildFrames,
+  getGroupChildHeight,
+  setGroupChildHeight,
+  GROUP_CHILD_MIN_HEIGHT,
+  GROUP_CHILD_MAX_HEIGHT,
   getGroupChildren,
   getGroupLayout,
   getGroupMode,
@@ -306,6 +310,69 @@ const GroupChildBlock = ({
         </div>
       </div>
     </>
+  );
+};
+
+/**
+ * Karta dítěte v režimu „Sloupce“ – šířku určuje mřížka, výšku lze
+ * ručně nastavit tažením za spodní okraj (uloží se do `props.groupHeight`).
+ */
+const ColumnGroupCard = ({
+  child,
+  onChange,
+  onRemove,
+  onHeightChange,
+}: {
+  child: Block;
+  onChange: (props: Record<string, any>) => void;
+  onRemove: () => void;
+  onHeightChange: (height: number | null) => void;
+}) => {
+  const saved = getGroupChildHeight(child);
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  const [dragHeight, setDragHeight] = useState<number | null>(null);
+  const height = dragHeight ?? saved;
+
+  const startResize = (e: React.PointerEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const startY = e.clientY;
+    const startH = cardRef.current?.getBoundingClientRect().height ?? GROUP_CHILD_MIN_HEIGHT;
+    const clamp = (v: number) =>
+      Math.min(GROUP_CHILD_MAX_HEIGHT, Math.max(GROUP_CHILD_MIN_HEIGHT, Math.round(v)));
+    let last = clamp(startH);
+    const move = (ev: PointerEvent) => {
+      last = clamp(startH + (ev.clientY - startY));
+      setDragHeight(last);
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      setDragHeight(null);
+      onHeightChange(last);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+
+  return (
+    <div
+      ref={cardRef}
+      className="relative rounded-[10px] border border-border bg-[#FAFAFA] p-2 pb-4 min-w-0"
+      style={height ? { height, overflow: "auto" } : undefined}
+    >
+      <GroupChildBlock child={child} onChange={onChange} onRemove={onRemove} />
+      <div
+        role="separator"
+        aria-label="Změnit výšku karty"
+        title="Tažením změníte výšku karty, dvojklikem vrátíte automatickou výšku"
+        onPointerDown={startResize}
+        onDoubleClick={() => onHeightChange(null)}
+        className="absolute bottom-0 left-0 right-0 flex h-3 cursor-ns-resize items-center justify-center rounded-b-[10px] hover:bg-primary/10"
+      >
+        <span className="h-1 w-8 rounded-full bg-border" />
+      </div>
+    </div>
   );
 };
 
@@ -666,6 +733,7 @@ const SortableSlideGroup = React.memo(({
   onLayoutChange,
   onModeChange,
   onChildFrameChange,
+  onChildHeightChange,
   onUngroup,
   onToggle,
   onDelete,
@@ -678,6 +746,7 @@ const SortableSlideGroup = React.memo(({
   onLayoutChange: (groupId: string, layout: SlideGroupLayout) => void;
   onModeChange: (groupId: string, mode: SlideGroupMode) => void;
   onChildFrameChange: (groupId: string, childId: string, frame: BlockFrame) => void;
+  onChildHeightChange: (groupId: string, childId: string, height: number | null) => void;
   onUngroup: (groupId: string) => void;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
@@ -829,18 +898,22 @@ const SortableSlideGroup = React.memo(({
             />
           </div>
         ) : (
-          <div className={gridClass}>
-            {children.map((child) => (
-              <div key={child.id} className="rounded-[10px] border border-border bg-[#FAFAFA] p-2 min-w-0">
-                <GroupChildBlock
+          <div className="space-y-2">
+            <p className="text-[11px] text-muted-foreground">
+              Výšku karty upravíte tažením za její spodní okraj, dvojklik na okraj vrátí automatickou výšku.
+            </p>
+            <div className={`${gridClass} items-start`}>
+              {children.map((child) => (
+                <ColumnGroupCard
+                  key={child.id}
                   child={child}
                   onChange={(props) => onChildUpdate(block.id, child.id, props)}
                   onRemove={() => onChildRemove(block.id, child.id)}
+                  onHeightChange={(h) => onChildHeightChange(block.id, child.id, h)}
                 />
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-
         )}
       </div>
 
@@ -1461,6 +1534,10 @@ const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryC
     commit(setGroupChildFrame(blocksRef.current, groupId, childId, frame));
   }, [commit]);
 
+  const changeChildHeight = useCallback((groupId: string, childId: string, height: number | null) => {
+    commit(setGroupChildHeight(blocksRef.current, groupId, childId, height));
+  }, [commit]);
+
 
   const updateChild = useCallback((groupId: string, childId: string, props: Record<string, any>) => {
     onBlockEditedRef.current?.(childId);
@@ -1600,6 +1677,7 @@ const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryC
                   onLayoutChange={changeGroupLayout}
                   onModeChange={changeGroupMode}
                   onChildFrameChange={changeChildFrame}
+                  onChildHeightChange={changeChildHeight}
 
                   onUngroup={ungroup}
                   onToggle={toggleBlock}

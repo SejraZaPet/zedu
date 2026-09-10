@@ -24,7 +24,7 @@ import ChartRenderer from "@/components/blocks/ChartRenderer";
 import FormulaRenderer from "@/components/blocks/FormulaRenderer";
 import { blockBackgroundStyle } from "@/lib/block-backgrounds";
 import FreeFrameCanvas from "@/components/blocks/FreeFrameCanvas";
-import { getGroupChildFrames } from "@/lib/slide-groups";
+import { getGroupChildFrames, getGroupChildHeight } from "@/lib/slide-groups";
 const extractYouTubeId = (url: string): string | null => {
   if (!url) return null;
   const m = url.match(
@@ -305,9 +305,15 @@ const LessonBlockInner = ({ block, blockIndex, onActivityComplete, isTeacher }: 
             ? "grid grid-cols-1 md:grid-cols-2 gap-6"
             : "space-y-6";
       return (
-        <div className={gridClass}>
-          {visibleChildren.map((child, i) => (
-            <div key={child.id || i} className="space-y-4 min-w-0">
+        <div className={`${gridClass} items-start`}>
+          {visibleChildren.map((child, i) => {
+            const manualHeight = getGroupChildHeight(child);
+            return (
+            <div
+              key={child.id || i}
+              className="space-y-4 min-w-0"
+              style={manualHeight ? { minHeight: manualHeight } : undefined}
+            >
               <LessonBlock
                 block={child}
                 blockIndex={blockIndex}
@@ -315,7 +321,8 @@ const LessonBlockInner = ({ block, blockIndex, onActivityComplete, isTeacher }: 
                 isTeacher={isTeacher}
               />
             </div>
-          ))}
+            );
+          })}
         </div>
       );
     }
