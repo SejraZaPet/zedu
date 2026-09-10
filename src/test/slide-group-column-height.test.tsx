@@ -44,4 +44,21 @@ describe("editor: úchyt výšky karty ve sloupcích", () => {
     const { getAllByLabelText } = render(<BlockEditor blocks={grouped} onChange={() => {}} />);
     expect(getAllByLabelText("Změnit výšku karty").length).toBe(2);
   });
+
+  it("rámeček snímku neořezává obsah a karta roste přes min-height", async () => {
+    const { default: BlockEditor } = await import("@/components/admin/BlockEditor");
+    const grouped = setGroupChildHeight(
+      groupBlocksIntoSlide([b("p1"), b("p2")], ["p1", "p2"], 2),
+      groupBlocksIntoSlide([b("p1"), b("p2")], ["p1", "p2"], 2)[0].id,
+      "p1",
+      420,
+    );
+    const gid = grouped[0].id;
+    const withHeight = setGroupChildHeight(grouped, gid, "p1", 420);
+    const { container } = render(<BlockEditor blocks={withHeight} onChange={() => {}} />);
+    const group = container.querySelector(`[data-block-id="${gid}"]`) as HTMLElement;
+    expect(group.className).toContain("overflow-visible");
+    expect(group.className).not.toContain("overflow-hidden");
+    expect(container.innerHTML).toContain("min-height: 420px");
+  });
 });
