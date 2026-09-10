@@ -815,28 +815,11 @@ const SortableSlideGroup = React.memo(({
                 frame: frames[child.id],
                 node: (
                   <div className="h-full w-full overflow-auto rounded-[8px] border border-border bg-white p-2 min-w-0">
-                    <div className="flex items-center gap-1.5 mb-1.5">
-                      {BLOCK_ICON[child.type] &&
-                        React.createElement(BLOCK_ICON[child.type], { className: "w-3.5 h-3.5 text-muted-foreground" })}
-                      <span className="text-[11px] font-bold text-muted-foreground flex-1">
-                        {BLOCK_TYPES.find((t) => t.type === child.type)?.label ?? child.type}
-                      </span>
-                      <button
-                        type="button"
-                        onPointerDown={(e) => e.stopPropagation()}
-                        onClick={() => onChildRemove(block.id, child.id)}
-                        className="h-6 w-6 inline-flex items-center justify-center rounded hover:bg-muted"
-                        title="Vyjmout ze snímku"
-                      >
-                        <IconX className="w-3.5 h-3.5 text-muted-foreground" />
-                      </button>
-                    </div>
-                    <div onPointerDown={(e) => e.stopPropagation()}>
-                      <BlockRenderer
-                        block={child}
-                        onChange={(props) => onChildUpdate(block.id, child.id, props)}
-                      />
-                    </div>
+                    <GroupChildBlock
+                      child={child}
+                      onChange={(props) => onChildUpdate(block.id, child.id, props)}
+                      onRemove={() => onChildRemove(block.id, child.id)}
+                    />
                   </div>
                 ),
               }))}
@@ -847,31 +830,17 @@ const SortableSlideGroup = React.memo(({
           </div>
         ) : (
           <div className={gridClass}>
-            {children.map((child) => {
-              const childLabel = BLOCK_TYPES.find((t) => t.type === child.type)?.label ?? child.type;
-              const ChildIcon = BLOCK_ICON[child.type];
-              return (
-                <div key={child.id} className="rounded-[10px] border border-border bg-[#FAFAFA] p-2 min-w-0">
-                  <div className="flex items-center gap-1.5 mb-1.5">
-                    {ChildIcon && <ChildIcon className="w-3.5 h-3.5 text-muted-foreground" />}
-                    <span className="text-[11px] font-bold text-muted-foreground flex-1">{childLabel}</span>
-                    <button
-                      type="button"
-                      onClick={() => onChildRemove(block.id, child.id)}
-                      className="h-6 w-6 inline-flex items-center justify-center rounded hover:bg-muted"
-                      title="Vyjmout ze snímku"
-                    >
-                      <IconX className="w-3.5 h-3.5 text-muted-foreground" />
-                    </button>
-                  </div>
-                  <BlockRenderer
-                    block={child}
-                    onChange={(props) => onChildUpdate(block.id, child.id, props)}
-                  />
-                </div>
-              );
-            })}
+            {children.map((child) => (
+              <div key={child.id} className="rounded-[10px] border border-border bg-[#FAFAFA] p-2 min-w-0">
+                <GroupChildBlock
+                  child={child}
+                  onChange={(props) => onChildUpdate(block.id, child.id, props)}
+                  onRemove={() => onChildRemove(block.id, child.id)}
+                />
+              </div>
+            ))}
           </div>
+
         )}
       </div>
 
