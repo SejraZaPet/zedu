@@ -12,7 +12,7 @@ const QaGroupHeight = () => {
       props: {
         layout: 2,
         children: [
-          { id: "c1", type: "paragraph", visible: true, props: { text: `<ul>${long}</ul>`, groupHeight: 700 } },
+          { id: "c1", type: "paragraph", visible: true, props: { text: `<ul>${long}</ul>`, groupHeight: 160 } },
           { id: "c2", type: "paragraph", visible: true, props: { text: "Krátký text" } },
         ],
       },
