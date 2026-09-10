@@ -37,16 +37,32 @@ const FreeFrameCanvas = ({
   selectedId,
   onSelect,
   className = "",
+  heightBar = false,
 }: {
   items: FreeFrameItem[];
   onChangeFrame?: (id: string, frame: BlockFrame) => void;
   selectedId?: string | null;
   onSelect?: (id: string | null) => void;
   className?: string;
+  /** Vždy viditelný pruh na spodním okraji karty pro tažení výšky (jako ve Sloupcích). */
+  heightBar?: boolean;
 }) => {
   const stageRef = useRef<HTMLDivElement>(null);
+  const contentRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [guides, setGuides] = useState<SnapGuides | null>(null);
   const editable = !!onChangeFrame;
+
+  /** Dvojklik na spodní pruh: výška karty podle skutečného obsahu. */
+  const fitHeight = (item: FreeFrameItem) => {
+    if (!onChangeFrame || !stageRef.current) return;
+    const node = contentRefs.current[item.id];
+    if (!node) return;
+    const canvasH = stageRef.current.getBoundingClientRect().height;
+    if (!canvasH) return;
+    const needed = node.scrollHeight + 12;
+    const h = Math.max(5, Math.min(100 - item.frame.y, (needed / canvasH) * 100));
+    onChangeFrame(item.id, { ...item.frame, h });
+  };
 
   const startDrag = useCallback(
     (e: React.PointerEvent, item: FreeFrameItem, handle: FrameHandle) => {
