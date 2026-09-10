@@ -1739,6 +1739,8 @@ const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryC
                   onModeChange={changeGroupMode}
                   onChildFrameChange={changeChildFrame}
                   onChildHeightChange={changeChildHeight}
+                  onMinHeightChange={changeGroupMinHeight}
+
 
                   onUngroup={ungroup}
                   onToggle={toggleBlock}
