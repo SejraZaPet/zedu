@@ -18,6 +18,7 @@ import WallActivity from "@/components/activities/WallActivity";
 import { LiveGameButton } from "@/components/game/LiveGameButton";
 import type { GameQuestion } from "@/lib/game-types";
 import { getSlideIcon } from "@/lib/slide-icons";
+import { imageAlignClass, imageIconSize, imageWidthClass } from "@/lib/image-block-layout";
 import ShapeRenderer from "@/components/blocks/ShapeRenderer";
 import ChartRenderer from "@/components/blocks/ChartRenderer";
 import FormulaRenderer from "@/components/blocks/FormulaRenderer";
