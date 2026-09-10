@@ -244,8 +244,12 @@ const MiniRichEditor = ({
   showHeadings = false,
   showLists = true,
   showAlign = true,
+  bare = false,
 }: Props) => {
   const skipUpdate = useRef(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [focused, setFocused] = useState(false);
+  const isMobile = useIsMobile();
 
   const editor = useEditor({
     extensions: [
