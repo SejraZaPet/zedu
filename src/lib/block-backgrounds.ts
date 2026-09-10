@@ -24,11 +24,11 @@ export interface BlockBackgroundOption {
 
 export const BLOCK_BACKGROUNDS: BlockBackgroundOption[] = [
   { key: "none", label: "Bez pozadí", bg: "transparent" },
-  { key: "note", label: "Poznámka", bg: "hsl(205 100% 96%)", accent: "hsl(205 85% 52%)" },
-  { key: "important", label: "Důležité", bg: "hsl(34 100% 95%)", accent: "hsl(28 92% 53%)" },
-  { key: "example", label: "Příklad", bg: "hsl(146 55% 95%)", accent: "hsl(150 58% 40%)" },
-  { key: "tip", label: "Tip", bg: "hsl(266 100% 96%)", accent: "hsl(266 80% 62%)" },
-  { key: "neutral", label: "Neutrální", bg: "hsl(220 16% 96%)", accent: "hsl(220 10% 66%)" },
+  { key: "note", label: "Poznámka", bg: "hsl(205, 100%, 96%)", accent: "hsl(205, 85%, 52%)" },
+  { key: "important", label: "Důležité", bg: "hsl(34, 100%, 95%)", accent: "hsl(28, 92%, 53%)" },
+  { key: "example", label: "Příklad", bg: "hsl(146, 55%, 95%)", accent: "hsl(150, 58%, 40%)" },
+  { key: "tip", label: "Tip", bg: "hsl(266, 100%, 96%)", accent: "hsl(266, 80%, 62%)" },
+  { key: "neutral", label: "Neutrální", bg: "hsl(220, 16%, 96%)", accent: "hsl(220, 10%, 66%)" },
 ];
 
 export function getBlockBackground(

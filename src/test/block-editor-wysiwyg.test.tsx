@@ -23,7 +23,7 @@ describe("WYSIWYG editor lekce", () => {
     fireEvent.mouseEnter(el);
     expect((el.querySelector("div.absolute") as HTMLElement).className).toContain("opacity-100");
     expect(el.querySelector("input[type='checkbox']")).not.toBeNull();
-    expect(screen.getByLabelText("Možnosti bloku Odstavec")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Možnosti bloku Odstavec" })).toBeTruthy();
   });
 
   it("pozadí bloku se vykreslí v editoru i na žákovské straně", () => {
