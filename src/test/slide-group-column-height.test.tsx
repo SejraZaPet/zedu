@@ -47,12 +47,7 @@ describe("editor: úchyt výšky karty ve sloupcích", () => {
 
   it("rámeček snímku neořezává obsah a karta roste přes min-height", async () => {
     const { default: BlockEditor } = await import("@/components/admin/BlockEditor");
-    const grouped = setGroupChildHeight(
-      groupBlocksIntoSlide([b("p1"), b("p2")], ["p1", "p2"], 2),
-      groupBlocksIntoSlide([b("p1"), b("p2")], ["p1", "p2"], 2)[0].id,
-      "p1",
-      420,
-    );
+    const grouped = groupBlocksIntoSlide([b("p1"), b("p2")], ["p1", "p2"], 2);
     const gid = grouped[0].id;
     const withHeight = setGroupChildHeight(grouped, gid, "p1", 420);
     const { container } = render(<BlockEditor blocks={withHeight} onChange={() => {}} />);
