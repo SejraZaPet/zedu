@@ -2049,8 +2049,9 @@ export function SlideBody({
           style={
             freeFitScale < 1
               ? {
-                  width: `${100 / freeFitScale}%`,
-                  height: `${100 / freeFitScale}%`,
+                  // Rozměry vrstvy zůstávají 16:9; zmenšíme jen měřítko obsahu,
+                  // takže i bloky pod spodní hranou se vejdou do snímku.
+
                   transform: `scale(${freeFitScale})`,
                   transformOrigin: "top left",
                 }
