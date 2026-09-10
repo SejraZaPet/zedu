@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { HERO_IMAGE_CLASS } from "@/lib/image-block-layout";
 import {
   Dialog,
   DialogContent,
@@ -49,7 +50,7 @@ const LessonPreviewDialog = ({ title, heroImageUrl, blocks }: Props) => {
                 <img
                   src={heroImageUrl}
                   alt={title}
-                  className="w-full rounded-lg mb-8 object-cover max-h-80"
+                  className={`mb-8 ${HERO_IMAGE_CLASS}`}
                 />
               )}
               <h1 className="font-heading text-4xl md:text-5xl font-bold mb-10 text-foreground">

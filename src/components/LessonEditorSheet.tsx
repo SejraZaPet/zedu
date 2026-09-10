@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { HERO_IMAGE_CLASS } from "@/lib/image-block-layout";
 import { supabase } from "@/integrations/supabase/client";
 import { normalizeBlocks, type Block } from "@/lib/textbook-config";
 import { Button } from "@/components/ui/button";
@@ -297,7 +298,7 @@ const LessonEditorSheet = ({ lessonId, open, onOpenChange, onSaved }: Props) => 
                     </Button>
                   </div>
                   {lesson.hero_image_url && (
-                    <img src={lesson.hero_image_url} alt="" className="mt-2 max-h-20 rounded border border-border" />
+                    <img src={lesson.hero_image_url} alt="" className={`mt-2 ${HERO_IMAGE_CLASS}`} />
                   )}
                 </div>
               </div>
