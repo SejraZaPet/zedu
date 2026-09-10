@@ -359,7 +359,7 @@ const ColumnGroupCard = ({
     <div
       ref={cardRef}
       className="relative rounded-[10px] border border-border bg-[#FAFAFA] p-2 pb-4 min-w-0"
-      style={height ? { height, overflow: "auto" } : undefined}
+      style={height ? { minHeight: height } : undefined}
     >
       <GroupChildBlock child={child} onChange={onChange} onRemove={onRemove} />
       <div
@@ -789,10 +789,10 @@ const SortableSlideGroup = React.memo(({
       data-be-selectable="true"
       data-category="structure"
       style={wrapperStyle}
-      className={`be-block group/beblock overflow-hidden ${!block.visible ? "opacity-50" : ""}`}
+      className={`be-block group/beblock overflow-visible ${!block.visible ? "opacity-50" : ""}`}
     >
       <div
-        className="be-block__header flex items-center gap-2 px-3 py-2 flex-wrap"
+        className="be-block__header flex items-center gap-2 px-3 py-2 flex-wrap rounded-t-[13px]"
         style={{ background: "hsl(var(--secondary-pastel))", borderBottom: "1px solid #F0F0F0" }}
       >
         <button {...attributes} {...listeners} className="be-block__grip cursor-grab p-0.5" style={{ color: "#737373" }}>
