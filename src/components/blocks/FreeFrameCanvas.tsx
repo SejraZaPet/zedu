@@ -138,11 +138,16 @@ const FreeFrameCanvas = ({
             }}
             onPointerDown={editable ? (e) => startDrag(e, item, "move") : undefined}
           >
-            <div className={`h-full w-full overflow-hidden ${editable ? "p-1.5" : ""}`}>
+            <div
+              ref={(node) => {
+                contentRefs.current[item.id] = node;
+              }}
+              className={`h-full w-full overflow-hidden ${editable ? "p-1.5" : ""}`}
+            >
               {item.node}
             </div>
             {editable &&
-              HANDLES.map((h) => (
+              HANDLES.filter((h) => !(heightBar && h.handle === "s")).map((h) => (
                 <div
                   key={h.handle}
                   role="presentation"
@@ -155,6 +160,22 @@ const FreeFrameCanvas = ({
                   style={{ cursor: h.cursor }}
                 />
               ))}
+            {editable && heightBar && (
+              <div
+                role="separator"
+                aria-label="Změnit výšku karty"
+                title="Tažením změníte výšku karty, dvojklikem ji přizpůsobíte obsahu"
+                data-frame-handle="s"
+                onPointerDown={(e) => startDrag(e, item, "s")}
+                onDoubleClick={(e) => {
+                  e.stopPropagation();
+                  fitHeight(item);
+                }}
+                className="absolute bottom-0 left-0 right-0 flex h-3 cursor-ns-resize items-center justify-center rounded-b-md bg-primary/5 hover:bg-primary/15"
+              >
+                <span className="h-1 w-8 rounded-full bg-primary/50" />
+              </div>
+            )}
           </div>
         );
       })}
