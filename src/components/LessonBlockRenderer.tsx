@@ -18,6 +18,7 @@ import WallActivity from "@/components/activities/WallActivity";
 import { LiveGameButton } from "@/components/game/LiveGameButton";
 import type { GameQuestion } from "@/lib/game-types";
 import { getSlideIcon } from "@/lib/slide-icons";
+import { imageAlignClass, imageIconSize, imageWidthClass } from "@/lib/image-block-layout";
 import ShapeRenderer from "@/components/blocks/ShapeRenderer";
 import ChartRenderer from "@/components/blocks/ChartRenderer";
 import FormulaRenderer from "@/components/blocks/FormulaRenderer";
@@ -102,23 +103,22 @@ const LessonBlockInner = ({ block, blockIndex, onActivityComplete, isTeacher }: 
     case "image": {
       const IconCmp = !p.url && p.icon ? getSlideIcon(p.icon) : null;
       if (IconCmp) {
-        const iconSize = p.width === "small" ? 48 : p.width === "medium" ? 96 : 144;
         return (
-          <figure className={p.alignment === "left" ? "text-left" : p.alignment === "right" ? "text-right" : "text-center"}>
+          <figure className={imageAlignClass(p.alignment ?? "center")}>
             <IconCmp
               className="inline-block"
-              style={{ color: p.iconColor || "currentColor", width: iconSize, height: iconSize }}
+              style={{ color: p.iconColor || "currentColor", width: imageIconSize(p.width), height: imageIconSize(p.width) }}
             />
             {p.caption && <figcaption className="text-sm text-muted-foreground mt-2">{p.caption}</figcaption>}
           </figure>
         );
       }
       return (
-        <figure className={`${p.alignment === "center" ? "text-center" : p.alignment === "right" ? "text-right" : ""}`}>
+        <figure className={imageAlignClass(p.alignment)}>
           <img
             src={p.url}
             alt={p.alt || p.caption || ""}
-            className={`rounded-lg ${p.width === "full" ? "w-full" : p.width === "half" ? "w-1/2 inline-block" : "w-1/3 inline-block"}`}
+            className={`rounded-lg h-auto ${imageWidthClass(p.width)}`}
           />
           {p.caption && <figcaption className="text-sm text-muted-foreground mt-2">{p.caption}</figcaption>}
         </figure>
