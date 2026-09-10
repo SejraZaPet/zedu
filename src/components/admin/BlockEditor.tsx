@@ -1534,6 +1534,10 @@ const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryC
     commit(setGroupChildFrame(blocksRef.current, groupId, childId, frame));
   }, [commit]);
 
+  const changeChildHeight = useCallback((groupId: string, childId: string, height: number | null) => {
+    commit(setGroupChildHeight(blocksRef.current, groupId, childId, height));
+  }, [commit]);
+
 
   const updateChild = useCallback((groupId: string, childId: string, props: Record<string, any>) => {
     onBlockEditedRef.current?.(childId);
