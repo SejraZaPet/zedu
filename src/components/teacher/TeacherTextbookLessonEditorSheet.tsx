@@ -287,7 +287,7 @@ const TeacherTextbookLessonEditorSheet = ({ lesson, open, onOpenChange, onSaved 
                   </Button>
                 </div>
                 {draft.hero_image_url && (
-                  <img src={draft.hero_image_url} alt="" className="mt-2 max-h-24 rounded border border-border" />
+                  <img src={draft.hero_image_url} alt="" className={`mt-2 ${HERO_IMAGE_CLASS}`} />
                 )}
               </div>
             </div>
