@@ -305,9 +305,15 @@ const LessonBlockInner = ({ block, blockIndex, onActivityComplete, isTeacher }: 
             ? "grid grid-cols-1 md:grid-cols-2 gap-6"
             : "space-y-6";
       return (
-        <div className={gridClass}>
-          {visibleChildren.map((child, i) => (
-            <div key={child.id || i} className="space-y-4 min-w-0">
+        <div className={`${gridClass} items-start`}>
+          {visibleChildren.map((child, i) => {
+            const manualHeight = getGroupChildHeight(child);
+            return (
+            <div
+              key={child.id || i}
+              className="space-y-4 min-w-0"
+              style={manualHeight ? { minHeight: manualHeight } : undefined}
+            >
               <LessonBlock
                 block={child}
                 blockIndex={blockIndex}
