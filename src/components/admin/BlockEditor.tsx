@@ -388,6 +388,9 @@ const ReplaceMenu = ({
   );
 };
 
+/** Textové bloky, které se edituji přímo v náhledu. */
+const INLINE_TEXT_TYPES = new Set(["heading", "paragraph", "bullet_list"]);
+
 const SortableBlock = React.memo(({
   block,
   onUpdate,
@@ -414,125 +417,155 @@ const SortableBlock = React.memo(({
   onSelectToggle?: (id: string, shift: boolean) => void;
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: block.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
+  const isMobile = useIsMobile();
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [hover, setHover] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [propsOpen, setPropsOpen] = useState(false);
 
   const typeLabel = BLOCK_TYPES.find((t) => t.type === block.type)?.label ?? block.type;
   const handleUpdate = useCallback((props: Record<string, any>) => onUpdate(block.id, props), [onUpdate, block.id]);
 
-  const category: CategoryKey = CARD_CATEGORY[block.type] ?? "text";
-  const cat = CATEGORY_STYLES[category];
   const Icon = BLOCK_ICON[block.type];
-  const showAiBadge = CARD_AI_BADGE.has(block.type);
+  const isText = INLINE_TEXT_TYPES.has(block.type);
+  const showChrome = hover || !!selected || editing || propsOpen;
+  const showProps = propsOpen || (isText && editing);
+  const bgStyle = blockBackgroundStyle(block.props);
 
   const wrapperStyle: React.CSSProperties = {
-    ...style,
-    borderRadius: 14,
-    borderWidth: selected ? 2 : cat.borderWidth,
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    position: "relative",
+    borderRadius: 10,
+    borderWidth: 1,
     borderStyle: "solid",
-    borderColor: selected ? "hsl(var(--primary))" : cat.border,
-    background: "#FFFFFF",
-    boxShadow: selected
-      ? "0 0 0 3px hsl(var(--primary) / 0.18), 0 4px 16px -4px hsl(228 24% 92% / 0.4)"
-      : "0 1px 3px hsl(228 24% 92% / 0.6), 0 4px 16px -4px hsl(228 24% 92% / 0.4)",
-    transition: (style.transition ?? "") + ", border-color 120ms ease, background-color 120ms ease",
-    ["--cat-border" as any]: cat.border,
-    ["--cat-header-bg" as any]: cat.headerBg,
-    ["--cat-icon" as any]: cat.iconColor,
-    ["--cat-label" as any]: cat.labelColor,
+    borderColor: selected
+      ? "hsl(var(--primary))"
+      : showChrome
+        ? "hsl(var(--border))"
+        : "transparent",
+    background: "transparent",
+    boxShadow: selected ? "0 0 0 3px hsl(var(--primary) / 0.15)" : "none",
   };
-
-  const headerBorderBottom = cat.solid ? "1px solid rgba(255,255,255,0.15)" : "1px solid #F0F0F0";
 
   return (
     <div
-      ref={setNodeRef}
+      ref={(node) => {
+        setNodeRef(node);
+        wrapRef.current = node;
+      }}
       data-block-id={block.id}
       data-be-selectable="true"
-      data-category={category}
       style={wrapperStyle}
-      className={`be-block group/beblock overflow-hidden ${!block.visible ? "opacity-50" : ""}`}
+      className={`be-block group/beblock ${!block.visible ? "opacity-50" : ""}`}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      onFocus={() => setEditing(true)}
+      onBlur={() => {
+        window.setTimeout(() => {
+          const w = wrapRef.current;
+          if (!w) return;
+          if (w.contains(document.activeElement)) return;
+          if (document.querySelector("[data-radix-popper-content-wrapper]")) return;
+          setEditing(false);
+        }, 150);
+      }}
     >
-      <div
-        className="be-block__header flex items-center gap-2 px-3 py-2"
-        style={{ background: cat.headerBg, borderBottom: headerBorderBottom }}
-      >
-        <button
-          {...attributes}
-          {...listeners}
-          className="be-block__grip cursor-grab p-0.5"
-          style={{ color: cat.solid ? "#FFFFFF" : "#737373" }}
+      {/* Plovoucí lišta vedle bloku – jen při hoveru / výběru / editaci. */}
+      {showChrome && (
+        <div
+          className="absolute -top-3.5 right-2 z-30 flex items-center gap-0.5 rounded-md border border-border bg-background px-1 py-0.5 shadow-md"
+          onPointerDown={(e) => e.stopPropagation()}
         >
-          <GripVertical className="w-4 h-4" />
-        </button>
-        <input
-          type="checkbox"
-          checked={!!selected}
-          onChange={(e) => onSelectToggle?.(block.id, (e.nativeEvent as any)?.shiftKey === true)}
-          onClick={(e) => e.stopPropagation()}
-          className="h-3.5 w-3.5 cursor-pointer accent-[hsl(var(--primary))]"
-          title="Vybrat blok (Shift+klik vybere rozsah)"
-          aria-label={`Vybrat blok ${typeLabel}`}
-        />
-        {Icon && (
-          <Icon className="w-4 h-4" style={{ color: cat.iconColor }} />
-        )}
-        <button
-          type="button"
-          onClick={(e) => onSelectToggle?.(block.id, e.shiftKey)}
-          className="be-block__label flex-1 text-left"
-          style={{ color: cat.labelColor, fontWeight: 700, fontSize: 12, letterSpacing: 0.2 }}
-          title="Klikněte pro výběr, Shift+klik pro rozsah"
-        >
-          {typeLabel}
-        </button>
+          {Icon && <Icon className="w-3.5 h-3.5 text-muted-foreground" title={typeLabel} />}
+          <button
+            {...attributes}
+            {...listeners}
+            className="cursor-grab p-0.5 text-muted-foreground hover:text-foreground"
+            title="Přetáhnout blok"
+            aria-label={`Přetáhnout blok ${typeLabel}`}
+          >
+            <GripVertical className="w-3.5 h-3.5" />
+          </button>
+          <input
+            type="checkbox"
+            checked={!!selected}
+            onChange={(e) => onSelectToggle?.(block.id, (e.nativeEvent as any)?.shiftKey === true)}
+            onClick={(e) => e.stopPropagation()}
+            className="h-3.5 w-3.5 cursor-pointer accent-[hsl(var(--primary))]"
+            title="Vybrat blok (Shift+klik vybere rozsah)"
+            aria-label={`Vybrat blok ${typeLabel}`}
+          />
+          <ReplaceMenu
+            block={block}
+            loading={replaceLoading}
+            onReplace={(target) => onReplace(block.id, target)}
+            onAiReplace={(target) => onAiReplace(block.id, target)}
+          />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="be-block__action inline-flex h-6 w-6 items-center justify-center rounded"
+                title="Další možnosti"
+                aria-label={`Možnosti bloku ${typeLabel}`}
+              >
+                <MoreHorizontal className="w-3.5 h-3.5" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuItem onClick={() => setPropsOpen((v) => !v)}>
+                <Palette className="mr-2 h-4 w-4" /> Vlastnosti bloku
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onDuplicate(block.id)}>
+                <Copy className="mr-2 h-4 w-4" /> Duplikovat
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onToggle(block.id)}>
+                {block.visible ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
+                {block.visible ? "Skrýt pro žáky" : "Zobrazit žákům"}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => onDelete(block.id)} className="text-destructive focus:text-destructive">
+                <Trash2 className="mr-2 h-4 w-4" /> Smazat
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
 
-        {showAiBadge && (
-          <span
-            style={{
-              background: "#FFFFFF",
-              color: "hsl(var(--primary-dark))",
-              fontWeight: 700,
-              fontSize: 10,
-              letterSpacing: 0.6,
-              padding: "2px 6px",
-              borderRadius: 999,
-              marginRight: 2,
-            }}
-          >
-            AI
-          </span>
-        )}
-        {aiSuggested && (
-          <span
-            title="Tento obsah navrhla umělá inteligence. Zkontrolujte ho a upravte."
-            className="inline-flex items-center gap-1 rounded-full bg-primary-subtle px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-dark whitespace-nowrap"
-          >
-            <span aria-hidden="true">🤖</span> Navrženo AI – zkontrolujte
-          </span>
-        )}
-        <ReplaceMenu
-          block={block}
-          loading={replaceLoading}
-          onReplace={(target) => onReplace(block.id, target)}
-          onAiReplace={(target) => onAiReplace(block.id, target)}
-        />
-        <Button size="icon" variant="ghost" className="be-block__action h-7 w-7" onClick={() => onToggle(block.id)} title={block.visible ? "Skrýt" : "Zobrazit"}>
-          {block.visible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-        </Button>
-        <Button size="icon" variant="ghost" className="be-block__action h-7 w-7" onClick={() => onDuplicate(block.id)} title="Duplikovat">
-          <Copy className="w-3.5 h-3.5" />
-        </Button>
-        <Button size="icon" variant="ghost" className="be-block__action h-7 w-7" onClick={() => onDelete(block.id)} title="Smazat">
-          <Trash2 className="w-3.5 h-3.5" />
-        </Button>
-      </div>
-      <div className="p-3" style={{ color: "#171717" }}>
-        <BlockRenderer block={block} onChange={handleUpdate} />
+      {aiSuggested && (
+        <span
+          title="Tento obsah navrhla umělá inteligence. Zkontrolujte ho a upravte."
+          className="absolute -top-3 left-2 z-20 inline-flex items-center gap-1 rounded-full bg-primary-subtle px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-dark whitespace-nowrap"
+        >
+          <span aria-hidden="true">🤖</span> Navrženo AI
+        </span>
+      )}
+
+      {/* Lišta vlastností – plovoucí nad blokem, na mobilu přilepená dole. */}
+      {showProps && (
+        <div
+          className={
+            isMobile
+              ? "fixed bottom-[56px] left-0 right-0 z-50 overflow-x-auto border-t border-border bg-background px-3 py-2 shadow-[0_-4px_16px_rgba(0,0,0,0.12)]"
+              : "absolute bottom-full right-0 z-40 mb-10 rounded-md border border-border bg-background p-2 shadow-lg"
+          }
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <BlockStyleControls
+            block={block}
+            onChange={handleUpdate}
+            showText={isText}
+            compact
+          />
+        </div>
+      )}
+
+      <div className="px-1 py-1" style={{ color: "#171717" }}>
+        <div style={bgStyle}>
+          <BlockRenderer block={block} onChange={handleUpdate} />
+        </div>
       </div>
     </div>
   );
