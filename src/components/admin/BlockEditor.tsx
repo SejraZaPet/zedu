@@ -480,12 +480,16 @@ const SortableBlock = React.memo(({
       }}
     >
       {/* Plovoucí lišta vedle bloku – jen při hoveru / výběru / editaci. */}
-      {showChrome && (
+      {(
         <div
-          className="absolute -top-3.5 right-2 z-30 flex items-center gap-0.5 rounded-md border border-border bg-background px-1 py-0.5 shadow-md"
+          className={`absolute -top-3.5 right-2 z-30 flex items-center gap-0.5 rounded-md border border-border bg-background px-1 py-0.5 shadow-md transition-opacity ${showChrome ? "opacity-100" : "opacity-0"}`}
           onPointerDown={(e) => e.stopPropagation()}
         >
-          {Icon && <Icon className="w-3.5 h-3.5 text-muted-foreground" title={typeLabel} />}
+          {Icon && (
+            <span title={typeLabel} className="inline-flex">
+              <Icon className="w-3.5 h-3.5 text-muted-foreground" />
+            </span>
+          )}
           <button
             {...attributes}
             {...listeners}
