@@ -1,11 +1,13 @@
+import { Palette } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  SLIDE_FONTS, SLIDE_FONT_SIZES, SLIDE_TEXT_COLORS,
+  SLIDE_FONTS, SLIDE_FONT_SIZES,
 } from "@/lib/slide-typography";
-import { BLOCK_BACKGROUNDS } from "@/lib/block-backgrounds";
+import { BLOCK_BACKGROUNDS, getBlockCustomBackground } from "@/lib/block-backgrounds";
+import ColorPalettePopover from "@/components/ui/color-palette-popover";
 
 import type { Block } from "@/lib/textbook-config";
 
