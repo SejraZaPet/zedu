@@ -24,7 +24,7 @@ import ChartRenderer from "@/components/blocks/ChartRenderer";
 import FormulaRenderer from "@/components/blocks/FormulaRenderer";
 import { blockBackgroundStyle } from "@/lib/block-backgrounds";
 import FreeFrameCanvas from "@/components/blocks/FreeFrameCanvas";
-import { getGroupChildFrames } from "@/lib/slide-groups";
+import { getGroupChildFrames, getGroupChildHeight } from "@/lib/slide-groups";
 const extractYouTubeId = (url: string): string | null => {
   if (!url) return null;
   const m = url.match(
