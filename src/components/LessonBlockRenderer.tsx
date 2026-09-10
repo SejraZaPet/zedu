@@ -321,7 +321,8 @@ const LessonBlockInner = ({ block, blockIndex, onActivityComplete, isTeacher }: 
                 isTeacher={isTeacher}
               />
             </div>
-          ))}
+            );
+          })}
         </div>
       );
     }
