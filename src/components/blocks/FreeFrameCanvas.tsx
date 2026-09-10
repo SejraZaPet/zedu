@@ -37,16 +37,32 @@ const FreeFrameCanvas = ({
   selectedId,
   onSelect,
   className = "",
+  heightBar = false,
 }: {
   items: FreeFrameItem[];
   onChangeFrame?: (id: string, frame: BlockFrame) => void;
   selectedId?: string | null;
   onSelect?: (id: string | null) => void;
   className?: string;
+  /** Vždy viditelný pruh na spodním okraji karty pro tažení výšky (jako ve Sloupcích). */
+  heightBar?: boolean;
 }) => {
   const stageRef = useRef<HTMLDivElement>(null);
+  const contentRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [guides, setGuides] = useState<SnapGuides | null>(null);
   const editable = !!onChangeFrame;
+
+  /** Dvojklik na spodní pruh: výška karty podle skutečného obsahu. */
+  const fitHeight = (item: FreeFrameItem) => {
+    if (!onChangeFrame || !stageRef.current) return;
+    const node = contentRefs.current[item.id];
+    if (!node) return;
+    const canvasH = stageRef.current.getBoundingClientRect().height;
+    if (!canvasH) return;
+    const needed = node.scrollHeight + 12;
+    const h = Math.max(5, Math.min(100 - item.frame.y, (needed / canvasH) * 100));
+    onChangeFrame(item.id, { ...item.frame, h });
+  };
 
   const startDrag = useCallback(
     (e: React.PointerEvent, item: FreeFrameItem, handle: FrameHandle) => {
@@ -122,11 +138,16 @@ const FreeFrameCanvas = ({
             }}
             onPointerDown={editable ? (e) => startDrag(e, item, "move") : undefined}
           >
-            <div className={`h-full w-full overflow-hidden ${editable ? "p-1.5" : ""}`}>
+            <div
+              ref={(node) => {
+                contentRefs.current[item.id] = node;
+              }}
+              className={`h-full w-full overflow-hidden ${editable ? "p-1.5" : ""}`}
+            >
               {item.node}
             </div>
             {editable &&
-              HANDLES.map((h) => (
+              HANDLES.filter((h) => !(heightBar && h.handle === "s")).map((h) => (
                 <div
                   key={h.handle}
                   role="presentation"
@@ -139,6 +160,22 @@ const FreeFrameCanvas = ({
                   style={{ cursor: h.cursor }}
                 />
               ))}
+            {editable && heightBar && (
+              <div
+                role="separator"
+                aria-label="Změnit výšku karty"
+                title="Tažením změníte výšku karty, dvojklikem ji přizpůsobíte obsahu"
+                data-frame-handle="s"
+                onPointerDown={(e) => startDrag(e, item, "s")}
+                onDoubleClick={(e) => {
+                  e.stopPropagation();
+                  fitHeight(item);
+                }}
+                className="absolute bottom-0 left-0 right-0 flex h-3 cursor-ns-resize items-center justify-center rounded-b-md bg-primary/5 hover:bg-primary/15"
+              >
+                <span className="h-1 w-8 rounded-full bg-primary/50" />
+              </div>
+            )}
           </div>
         );
       })}
