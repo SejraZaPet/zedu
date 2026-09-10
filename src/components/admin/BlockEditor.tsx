@@ -1586,7 +1586,12 @@ const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryC
     commit(setGroupMode(blocksRef.current, groupId, mode));
   }, [commit]);
 
+  const changeGroupMinHeight = useCallback((groupId: string, height: number | null) => {
+    commit(setGroupMinHeight(blocksRef.current, groupId, height));
+  }, [commit]);
+
   const changeChildFrame = useCallback((groupId: string, childId: string, frame: BlockFrame) => {
+
     commit(setGroupChildFrame(blocksRef.current, groupId, childId, frame));
   }, [commit]);
 
