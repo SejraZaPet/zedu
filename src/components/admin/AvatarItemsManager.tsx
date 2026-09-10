@@ -27,6 +27,7 @@ import { toast } from "@/hooks/use-toast";
 import { Loader2, Pencil, Plus, Trash2, ImageOff, RefreshCw, Upload, Layers } from "lucide-react";
 import AvatarLayerStack, { type StackLayer } from "@/components/avatar/AvatarLayerStack";
 import BulkUploadDialog from "@/components/admin/BulkUploadDialog";
+import { CLOTHING_SLOTS, SLOT_LABEL, type LayerSlot } from "@/lib/avatar-slots";
 
 const slugifyName = (input: string): string => {
   return (input || "")
@@ -172,6 +173,7 @@ type AvatarItem = {
   layer_offset_x: number;
   layer_offset_y: number;
   layer_scale: number;
+  layer_slot: LayerSlot | null;
   updated_at?: string;
 };
 
@@ -215,6 +217,7 @@ const emptyForm = (): Partial<AvatarItem> => ({
   layer_offset_x: 0,
   layer_offset_y: 0,
   layer_scale: 1,
+  layer_slot: null,
 });
 
 type HairVariant = {
