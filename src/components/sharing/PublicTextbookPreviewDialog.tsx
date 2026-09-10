@@ -266,7 +266,7 @@ export default function PublicTextbookPreviewDialog({
                       <img
                         src={displayedHero}
                         alt={displayedTitle}
-                        className="w-full rounded-lg mb-6 object-cover max-h-72"
+                        className={`mb-6 ${HERO_IMAGE_CLASS}`}
                       />
                     )}
                     <h1 className="font-heading text-3xl md:text-4xl font-bold mb-8 text-foreground">
