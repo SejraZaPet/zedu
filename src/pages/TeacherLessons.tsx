@@ -242,11 +242,11 @@ const TeacherLessons = () => {
 
       {editingLesson && (
         <Sheet open={!!editingLesson} onOpenChange={(open) => { if (!open) setEditingLesson(null); }}>
-          <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+          <SheetContent side="right" className="w-screen max-w-none sm:max-w-none overflow-y-auto">
             <SheetHeader>
               <SheetTitle>Úprava: {editingLesson.title}</SheetTitle>
             </SheetHeader>
-            <div className="mt-4 space-y-4">
+            <div className="mt-4 space-y-4 mx-auto w-full max-w-[1400px]">
               <LessonCurriculumTopicsPicker lessonId={editingLesson.id} textbookId={textbookId} />
               <BlockEditor blocks={editBlocks} onChange={setEditBlocks} />
               <Button onClick={handleSaveBlocks} className="w-full">Uložit bloky</Button>

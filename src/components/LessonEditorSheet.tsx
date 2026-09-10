@@ -203,7 +203,11 @@ const LessonEditorSheet = ({ lessonId, open, onOpenChange, onSaved }: Props) => 
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-2xl lg:max-w-4xl overflow-y-auto">
+      <SheetContent
+        side="right"
+        className="w-screen max-w-none sm:max-w-none overflow-y-auto"
+      >
+        <div className="mx-auto w-full max-w-[1400px]">
         <SheetHeader>
           <SheetTitle>Upravit lekci</SheetTitle>
         </SheetHeader>
@@ -349,6 +353,7 @@ const LessonEditorSheet = ({ lessonId, open, onOpenChange, onSaved }: Props) => 
             </TabsContent>
           </Tabs>
         )}
+        </div>
       </SheetContent>
     </Sheet>
   );
