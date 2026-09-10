@@ -3,8 +3,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Check, ChevronsUpDown, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface Method {
   id: string;
@@ -81,9 +85,14 @@ const LessonMethodsPicker = ({ lessonId, source }: Props) => {
     }
   };
 
+  const triggerLabel =
+    selected.length === 0
+      ? "Vybrat výukové metody"
+      : `Výukové metody (${selected.length} ${selected.length === 1 ? "vybraná" : "vybrané"})`;
+
   return (
     <div>
-      <Label className="mb-2 block">Výukové metody u této lekce</Label>
+      <Label className="mb-1.5 block">Výukové metody u této lekce</Label>
       <p className="text-xs text-muted-foreground mb-2">
         Označte metody, které v lekci používáte. Zobrazí se ve vašem přehledu Studijních metod.
       </p>
@@ -92,34 +101,63 @@ const LessonMethodsPicker = ({ lessonId, source }: Props) => {
           <Loader2 className="w-4 h-4 animate-spin" /> Načítám metody…
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {methods.map((m) => {
-            const active = selected.includes(m.id);
-            return (
-              <label
-                key={m.id}
-                className={`flex items-center gap-2 p-2 rounded-md border cursor-pointer text-sm ${
-                  active ? "border-primary bg-primary/5" : "border-border hover:bg-muted/40"
-                }`}
-              >
-                <Checkbox
-                  checked={active}
-                  disabled={busyId === m.id}
-                  onCheckedChange={() => toggle(m.id)}
-                />
-                <span className="flex-1">{m.name}</span>
-                {m.category && (
-                  <Badge variant="secondary" className="text-xs">
-                    {m.category}
-                  </Badge>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className="h-10 w-full justify-between px-3 font-normal">
+              <span className="truncate text-left">{triggerLabel}</span>
+              <ChevronsUpDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-80 p-2">
+            <div className="flex items-center justify-between gap-2 px-2 py-1.5">
+              <div className="text-sm font-medium">Výukové metody</div>
+              {selected.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2"
+                  onClick={() => Promise.all(selected.map((id) => toggle(id)))}
+                >
+                  Vymazat
+                </Button>
+              )}
+            </div>
+            <ScrollArea className="max-h-72">
+              <div className="space-y-1 p-1">
+                {methods.map((m) => {
+                  const active = selected.includes(m.id);
+                  return (
+                    <label
+                      key={m.id}
+                      className={cn(
+                        "flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm transition-colors hover:bg-muted/60",
+                        active && "bg-muted/50",
+                      )}
+                    >
+                      <Checkbox
+                        checked={active}
+                        disabled={busyId === m.id}
+                        onCheckedChange={() => toggle(m.id)}
+                      />
+                      <span className="flex-1">{m.name}</span>
+                      {m.category && (
+                        <Badge variant="secondary" className="text-xs">
+                          {m.category}
+                        </Badge>
+                      )}
+                      {active && <Check className="h-4 w-4 text-primary" />}
+                    </label>
+                  );
+                })}
+                {methods.length === 0 && (
+                  <p className="text-sm text-muted-foreground px-2 py-2">
+                    Katalog metod je prázdný.
+                  </p>
                 )}
-              </label>
-            );
-          })}
-          {methods.length === 0 && (
-            <p className="text-sm text-muted-foreground">Katalog metod je prázdný.</p>
-          )}
-        </div>
+              </div>
+            </ScrollArea>
+          </PopoverContent>
+        </Popover>
       )}
     </div>
   );
