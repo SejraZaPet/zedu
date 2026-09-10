@@ -60,7 +60,8 @@ const FreeFrameCanvas = ({
     const canvasH = stageRef.current.getBoundingClientRect().height;
     if (!canvasH) return;
     const needed = node.scrollHeight + 12;
-    const h = Math.max(5, Math.min(100 - item.frame.y, (needed / canvasH) * 100));
+    // Karta smí přesáhnout spodní okraj plátna – ať se do ní vejde celý obsah.
+    const h = Math.max(5, (needed / canvasH) * 100);
     onChangeFrame(item.id, { ...item.frame, h });
   };
 
