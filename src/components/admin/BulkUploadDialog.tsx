@@ -52,11 +52,39 @@ const CATEGORIES: { value: Category; label: string }[] = [
   { value: "base", label: "Postava (base)" },
 ];
 
+/** Keyword → clothing slot guess, so a batch of files lands in the right slot. */
+const SLOT_KEYWORDS: { slot: LayerSlot; words: string[] }[] = [
+  {
+    slot: "clothing_head",
+    words: ["celenka", "cepice", "kulich", "klobouk", "cap", "snap", "kseltovka", "ksiltovka", "beanie", "hat"],
+  },
+  {
+    slot: "clothing_shoes",
+    words: ["boty", "bota", "tenisky", "kopacky", "lakyrky", "pantofle", "papuce", "shoes", "sneakers", "obuv"],
+  },
+  { slot: "clothing_face", words: ["bryle", "glasses"] },
+  { slot: "clothing_neck", words: ["sala", "kravata", "salu", "scarf"] },
+  { slot: "clothing_hands", words: ["rukavice", "hodinky"] },
+  { slot: "clothing_bag", words: ["taska", "batoh", "bag"] },
+  { slot: "clothing_bottom", words: ["kalhoty", "sukne", "kratasy", "teplaky"] },
+  { slot: "clothing_full", words: ["outfit", "overal", "saty"] },
+];
+
+const guessSlot = (baseName: string): LayerSlot => {
+  const key = slugifyName(baseName);
+  for (const { slot, words } of SLOT_KEYWORDS) {
+    if (words.some((w) => key.includes(w))) return slot;
+  }
+  return "clothing_top";
+};
+
 interface Row {
   id: string;
   fileName: string;
   imageUrl: string | null;
+  thumbUrl: string | null;
   uploading: boolean;
+  uploadingThumb: boolean;
   error: string | null;
   name: string;
   category: Category;
@@ -68,6 +96,21 @@ const prettifyName = (fileName: string): string => {
   const base = dot >= 0 ? fileName.slice(0, dot) : fileName;
   const cleaned = base.replace(/[_-]+/g, " ").trim();
   return cleaned ? cleaned.charAt(0).toUpperCase() + cleaned.slice(1) : fileName;
+};
+
+const stripExt = (fileName: string): string => {
+  const dot = fileName.lastIndexOf(".");
+  return dot >= 0 ? fileName.slice(0, dot) : fileName;
+};
+
+/** `boty_1.png` / `boty_2.png` → group key `boty`, index 1 / 2. */
+const parsePair = (fileName: string): { key: string; index: 1 | 2 | null } => {
+  const base = stripExt(fileName);
+  const m = base.match(/^(.*?)[ _-]?([12])$/);
+  if (m && m[1].trim().length > 0) {
+    return { key: slugifyName(m[1]), index: Number(m[2]) as 1 | 2 };
+  }
+  return { key: slugifyName(base), index: null };
 };
 
 interface Props {
@@ -93,56 +136,107 @@ export default function BulkUploadDialog({ open, onOpenChange, onCreated }: Prop
     onOpenChange(next);
   };
 
-  const uploadOne = async (row: Row, file: File) => {
+  const uploadFile = async (file: File): Promise<string> => {
+    const dot = file.name.lastIndexOf(".");
+    const base = dot >= 0 ? file.name.slice(0, dot) : file.name;
+    const ext = dot >= 0 ? file.name.slice(dot + 1).toLowerCase() : "png";
+    const rand = Math.random().toString(36).slice(2, 7);
+    const path = `${Date.now()}_${rand}_${slugifyName(base) || "file"}.${ext}`;
+    const { error } = await supabase.storage
+      .from("avatar-assets")
+      .upload(path, file, { cacheControl: "3600", upsert: false, contentType: file.type });
+    if (error) throw error;
+    const { data } = supabase.storage.from("avatar-assets").getPublicUrl(path);
+    return data.publicUrl;
+  };
+
+  const uploadRow = async (rowId: string, layered: File, thumb: File | null) => {
     try {
-      const dot = file.name.lastIndexOf(".");
-      const base = dot >= 0 ? file.name.slice(0, dot) : file.name;
-      const ext = dot >= 0 ? file.name.slice(dot + 1).toLowerCase() : "png";
-      const path = `${Date.now()}_${slugifyName(base) || "file"}.${ext}`;
-      const { error } = await supabase.storage
-        .from("avatar-assets")
-        .upload(path, file, { cacheControl: "3600", upsert: false, contentType: file.type });
-      if (error) throw error;
-      const { data } = supabase.storage.from("avatar-assets").getPublicUrl(path);
+      const url = await uploadFile(layered);
+      setRows((s) => s.map((r) => (r.id === rowId ? { ...r, uploading: false, imageUrl: url } : r)));
+    } catch (err: any) {
       setRows((s) =>
-        s.map((r) => (r.id === row.id ? { ...r, uploading: false, imageUrl: data.publicUrl } : r)),
+        s.map((r) =>
+          r.id === rowId ? { ...r, uploading: false, error: err?.message ?? String(err) } : r,
+        ),
+      );
+    }
+    if (!thumb) return;
+    try {
+      const url = await uploadFile(thumb);
+      setRows((s) =>
+        s.map((r) => (r.id === rowId ? { ...r, uploadingThumb: false, thumbUrl: url } : r)),
       );
     } catch (err: any) {
       setRows((s) =>
         s.map((r) =>
-          r.id === row.id ? { ...r, uploading: false, error: err?.message ?? String(err) } : r,
+          r.id === rowId
+            ? { ...r, uploadingThumb: false, error: r.error ?? (err?.message ?? String(err)) }
+            : r,
         ),
       );
     }
   };
 
-  const addFiles = (files: FileList | File[]) => {
-    const arr = Array.from(files).filter((f) => f.type.startsWith("image/"));
+  const addFiles = (fileList: FileList | File[]) => {
+    // NOTE: copy the FileList into a real array immediately — a live `input.files`
+    // reference is emptied as soon as the input's value is reset.
+    const arr = Array.from(fileList).filter((f) => f.type.startsWith("image/"));
     if (arr.length === 0) return;
-    const newRows: Row[] = arr.map((f) => ({
-      id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${f.name}`,
-      fileName: f.name,
-      imageUrl: null,
-      uploading: true,
-      error: null,
-      name: prettifyName(f.name),
-      category: "outfit",
-      slot: "clothing_top",
-    }));
-    setRows((s) => [...s, ...newRows]);
-    newRows.forEach((r, i) => uploadOne(r, arr[i]));
+
+    // Group `<name>_1` (catalog thumbnail) with `<name>_2` (layered image).
+    const groups = new Map<string, { thumb: File | null; layered: File | null; label: string }>();
+    const order: string[] = [];
+    for (const f of arr) {
+      const { key, index } = parsePair(f.name);
+      const groupKey = index ? key : `${key}__single_${order.length}`;
+      if (!groups.has(groupKey)) {
+        groups.set(groupKey, { thumb: null, layered: null, label: index ? key : stripExt(f.name) });
+        order.push(groupKey);
+      }
+      const g = groups.get(groupKey)!;
+      if (index === 1) g.thumb = f;
+      else if (index === 2) g.layered = f;
+      else g.layered = f;
+    }
+
+    const pending: { row: Row; layered: File; thumb: File | null }[] = [];
+    for (const groupKey of order) {
+      const g = groups.get(groupKey)!;
+      // Only a `_1` file present → treat it as the layered image.
+      const layered = g.layered ?? g.thumb!;
+      const thumb = g.layered ? g.thumb : null;
+      const label = g.label;
+      const slot = guessSlot(label);
+      const row: Row = {
+        id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${groupKey}`,
+        fileName: thumb ? `${layered.name} + ${thumb.name}` : layered.name,
+        imageUrl: null,
+        thumbUrl: null,
+        uploading: true,
+        uploadingThumb: !!thumb,
+        error: null,
+        name: prettifyName(label),
+        category: "outfit",
+        slot,
+      };
+      pending.push({ row, layered, thumb });
+    }
+
+    setRows((s) => [...s, ...pending.map((p) => p.row)]);
+    pending.forEach((p) => uploadRow(p.row.id, p.layered, p.thumb));
   };
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
+    const picked = e.target.files ? Array.from(e.target.files) : [];
     e.target.value = "";
-    if (files) addFiles(files);
+    if (picked.length) addFiles(picked);
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(false);
-    if (e.dataTransfer.files?.length) addFiles(e.dataTransfer.files);
+    if (e.dataTransfer.files?.length) addFiles(Array.from(e.dataTransfer.files));
   };
 
   const removeRow = (id: string) => {
@@ -156,14 +250,14 @@ export default function BulkUploadDialog({ open, onOpenChange, onCreated }: Prop
   const canSave =
     rows.length > 0 &&
     !saving &&
-    rows.every((r) => !r.uploading && r.imageUrl && r.name.trim().length > 0);
+    rows.every((r) => !r.uploading && !r.uploadingThumb && r.imageUrl && r.name.trim().length > 0);
 
   const handleSaveAll = async () => {
     if (!canSave) return;
     setSaving(true);
     const usedSlugs = new Set<string>();
     const payloads = rows.map((r) => {
-      let slug = slugifyName(r.name) || `item_${Math.random().toString(36).slice(2, 8)}`;
+      const slug = slugifyName(r.name) || `item_${Math.random().toString(36).slice(2, 8)}`;
       let final = slug;
       let n = 2;
       while (usedSlugs.has(final)) final = `${slug}_${n++}`;
@@ -174,6 +268,7 @@ export default function BulkUploadDialog({ open, onOpenChange, onCreated }: Prop
         category: r.category,
         rarity: "common",
         image_url: r.imageUrl,
+        thumbnail_url: r.thumbUrl,
         recommended_for_role: "both",
         unlock_type: "default",
         is_default: false,
@@ -220,8 +315,9 @@ export default function BulkUploadDialog({ open, onOpenChange, onCreated }: Prop
           }`}
         >
           <p className="text-sm text-muted-foreground mb-3">
-            Přetáhněte obrázky sem, nebo vyberte soubory. Kalibrace (offset/scale) se doladí
-            později u konkrétní položky.
+            Přetáhněte obrázky sem, nebo vyberte soubory. Dvojice souborů <strong>nazev_1</strong>{" "}
+            (náhled do výběru) a <strong>nazev_2</strong> (obrázek vrstvený na avatara) se spojí do
+            jedné položky. Kalibrace (offset/scale) se doladí později u konkrétní položky.
           </p>
           <Button type="button" variant="outline" onClick={() => inputRef.current?.click()}>
             <Upload className="w-4 h-4 mr-1" /> Vybrat soubory
@@ -256,6 +352,15 @@ export default function BulkUploadDialog({ open, onOpenChange, onCreated }: Prop
                     <ImageOff className="w-5 h-5 text-muted-foreground" />
                   )}
                 </div>
+                <div className="w-14 h-14 shrink-0 rounded bg-muted/60 flex items-center justify-center overflow-hidden text-[10px] text-muted-foreground">
+                  {r.uploadingThumb ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : r.thumbUrl ? (
+                    <img src={r.thumbUrl} alt={`Náhled ${r.name}`} className="w-full h-full object-contain" />
+                  ) : (
+                    <span>bez náhledu</span>
+                  )}
+                </div>
 
                 <div className="flex-1 grid grid-cols-1 md:grid-cols-[1fr_180px_180px] gap-2">
                   <div>
@@ -265,6 +370,7 @@ export default function BulkUploadDialog({ open, onOpenChange, onCreated }: Prop
                       onChange={(e) => updateRow(r.id, { name: e.target.value })}
                       placeholder="Název položky"
                     />
+                    <p className="text-[11px] text-muted-foreground mt-1 truncate">{r.fileName}</p>
                     {r.error && (
                       <p className="text-xs text-destructive mt-1">Nahrání selhalo: {r.error}</p>
                     )}
