@@ -733,6 +733,7 @@ const SortableSlideGroup = React.memo(({
   onLayoutChange,
   onModeChange,
   onChildFrameChange,
+  onChildHeightChange,
   onUngroup,
   onToggle,
   onDelete,
