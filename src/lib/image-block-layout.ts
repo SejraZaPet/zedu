@@ -28,5 +28,7 @@ export const imageIconSize = (width: ImageBlockWidth): number =>
 /**
  * Jednotný vzhled hero obrázku (banneru) lekce – stejný poměr/ořez
  * v editačním formuláři, v náhledu i v žákovském zobrazení.
+ * Explicitní poměr stran je zásadní: samotné max-height měnilo výřez podle
+ * šířky rodičovského kontejneru.
  */
-export const HERO_IMAGE_CLASS = "w-full rounded-lg object-cover max-h-80";
+export const HERO_IMAGE_CLASS = "aspect-[21/9] w-full rounded-lg object-cover";
