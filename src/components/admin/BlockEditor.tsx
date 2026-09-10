@@ -69,6 +69,10 @@ import FreeFrameCanvas from "@/components/blocks/FreeFrameCanvas";
 import type { BlockFrame } from "@/lib/block-frame";
 import {
   getGroupChildFrames,
+  getGroupChildHeight,
+  setGroupChildHeight,
+  GROUP_CHILD_MIN_HEIGHT,
+  GROUP_CHILD_MAX_HEIGHT,
   getGroupChildren,
   getGroupLayout,
   getGroupMode,
