@@ -2042,7 +2042,22 @@ export function SlideBody({
 
       {/* Vrstva volně umístěných bloků (jen bloky s `frame`) */}
       {(
-        <div ref={freeLayerRef} className={`pointer-events-none absolute inset-0 ${blockTextScope}`}>
+        <div
+          ref={freeLayerRef}
+          data-free-fit-scale={freeFitScale < 1 ? freeFitScale.toFixed(4) : undefined}
+          className={`pointer-events-none absolute inset-0 ${blockTextScope}`}
+          style={
+            freeFitScale < 1
+              ? {
+                  width: `${100 / freeFitScale}%`,
+                  height: `${100 / freeFitScale}%`,
+                  transform: `scale(${freeFitScale})`,
+                  transformOrigin: "top left",
+                }
+              : undefined
+          }
+        >
+
 
           {/* Zarovnávací vodítka (fialová čárkovaná linka přes celý snímek) */}
           {editable && guides && (
