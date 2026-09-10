@@ -386,6 +386,12 @@ export default function AvatarItemsManager() {
       layer_offset_x: Number(editing.layer_offset_x ?? 0),
       layer_offset_y: Number(editing.layer_offset_y ?? 0),
       layer_scale: Number(editing.layer_scale ?? 1),
+      layer_slot:
+        editing.category === "outfit"
+          ? ((editing.layer_slot as LayerSlot | null) ?? "clothing_top")
+          : editing.category === "hairstyle"
+            ? "hair"
+            : null,
     };
 
     const { error } = editing.id
@@ -883,7 +889,16 @@ export default function AvatarItemsManager() {
                 <Label>Kategorie *</Label>
                 <Select
                   value={editing.category as string}
-                  onValueChange={(v) => setEditing({ ...editing, category: v as Category })}
+                  onValueChange={(v) =>
+                    setEditing({
+                      ...editing,
+                      category: v as Category,
+                      layer_slot:
+                        v === "outfit"
+                          ? ((editing.layer_slot as LayerSlot | null) ?? "clothing_top")
+                          : null,
+                    })
+                  }
                 >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -893,6 +908,26 @@ export default function AvatarItemsManager() {
                   </SelectContent>
                 </Select>
               </div>
+
+              {editing.category === "outfit" && (
+                <div>
+                  <Label>Slot (podzáložka v editoru) *</Label>
+                  <Select
+                    value={(editing.layer_slot as string) ?? "clothing_top"}
+                    onValueChange={(v) => setEditing({ ...editing, layer_slot: v as LayerSlot })}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {CLOTHING_SLOTS.map((s) => (
+                        <SelectItem key={s} value={s}>{SLOT_LABEL[s]}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    Určuje, ve které podzáložce Oblečení se položka žákovi zobrazí (Boty, Čepice, …).
+                  </p>
+                </div>
+              )}
 
               <div>
                 <Label>Rarita</Label>
