@@ -813,16 +813,23 @@ const SortableSlideGroup = React.memo(({
     boxShadow: selected
       ? "0 0 0 3px hsl(var(--primary) / 0.18)"
       : "0 1px 3px hsl(228 24% 92% / 0.6), 0 4px 16px -4px hsl(228 24% 92% / 0.4)",
+    ...(minHeight ? { minHeight } : null),
+    position: "relative",
+    paddingBottom: 12,
   };
 
   return (
     <div
-      ref={setNodeRef}
+      ref={(node) => {
+        setNodeRef(node);
+        groupRef.current = node;
+      }}
       data-block-id={block.id}
       data-be-selectable="true"
       data-category="structure"
       style={wrapperStyle}
       className={`be-block group/beblock overflow-visible ${!block.visible ? "opacity-50" : ""}`}
+
     >
       <div
         className="be-block__header flex items-center gap-2 px-3 py-2 flex-wrap rounded-t-[13px]"
