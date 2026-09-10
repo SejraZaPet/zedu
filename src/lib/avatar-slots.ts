@@ -98,8 +98,9 @@ export const SLOT_CONFLICTS: Partial<Record<LayerSlot, LayerSlot[]>> = {
  * `hair` (back/front) and the legacy `outfit_id` are handled by the caller.
  */
 export const SLOT_LAYER_ORDER: LayerSlot[] = [
-  "clothing_bottom",
+  // Shoes render UNDER pants/skirts so trouser legs drape over the footwear.
   "clothing_shoes",
+  "clothing_bottom",
   "clothing_top",
   "clothing_full",
   "clothing_neck",

@@ -174,8 +174,9 @@ const LAYER_ORDER: LayerSpec[] = [
   { category: "eyes" },
   { category: "eyebrow" },
   { category: "mouth" },
-  { slot: "clothing_bottom" },
+  // Shoes render UNDER pants/skirts so trouser legs drape over the footwear.
   { slot: "clothing_shoes" },
+  { slot: "clothing_bottom" },
   { slot: "clothing_top" },
   { slot: "clothing_full" },
   { slot: "clothing_neck" },
@@ -188,7 +189,7 @@ const LAYER_ORDER: LayerSpec[] = [
   { category: "head_accessory" },
   { slot: "clothing_head" },
   { slot: "clothing_face" },
-  
+
   { category: "frame" },
 ];
 
