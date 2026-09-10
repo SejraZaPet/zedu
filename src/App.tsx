@@ -19,6 +19,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetHeslo from "./pages/ResetHeslo";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
+import QaLessonHandles from "./pages/QaLessonHandles";
 
 import SubjectPage from "./pages/SubjectPage";
 import TopicPage from "./pages/TopicPage";
@@ -227,6 +228,7 @@ const App = () => (
             <Route path="/rodic/akademie" element={<ProtectedRoute><ParentAcademy /></ProtectedRoute>} />
             <Route path="/ucitel/z-materialu" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherFromMaterial /></ProtectedRoute>} />
             <Route path="/student/z-materialu" element={<ProtectedRoute><StudentFromMaterial /></ProtectedRoute>} />
+            <Route path="/qa-lesson-handles" element={<QaLessonHandles />} />
             <Route path="*" element={<NotFound />} />
 
           </Routes>
