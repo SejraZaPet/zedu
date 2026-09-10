@@ -921,14 +921,16 @@ const SortableSlideGroup = React.memo(({
         ) : mode === "free" ? (
           <div className="space-y-2">
             <p className="text-[11px] text-muted-foreground">
-              Bloky přesouvejte tažením, velikost změníte tažením za rohy. Alt = mřížka po 1 %.
+              Bloky přesouvejte tažením, výšku změníte tažením za spodní okraj karty (dvojklik = podle
+              obsahu), šířku za rohy. Alt = mřížka po 1 %.
             </p>
             <FreeFrameCanvas
+              heightBar
               items={children.map((child) => ({
                 id: child.id,
                 frame: frames[child.id],
                 node: (
-                  <div className="h-full w-full overflow-auto rounded-[8px] border border-border bg-white p-2 min-w-0">
+                  <div className="h-full w-full overflow-auto rounded-[8px] border border-border bg-white p-2 pb-4 min-w-0">
                     <GroupChildBlock
                       child={child}
                       onChange={(props) => onChildUpdate(block.id, child.id, props)}
