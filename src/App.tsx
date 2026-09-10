@@ -30,7 +30,6 @@ import TextbooksPage from "./pages/TextbooksPage";
 import ProfilePage from "./pages/ProfilePage";
 import TeacherTextbooks from "./pages/TeacherTextbooks";
 import TeacherPresentations from "./pages/TeacherPresentations";
-import QaGroupHeight from "./pages/__QaGroupHeight";
 import TeacherLessons from "./pages/TeacherLessons";
 import StudentTextbooks from "./pages/StudentTextbooks";
 import StudentTextbookDetail from "./pages/StudentTextbookDetail";
@@ -128,7 +127,6 @@ const App = () => (
             <Route path="/zapomenute-heslo" element={<ForgotPassword />} />
             <Route path="/reset-heslo" element={<ResetHeslo />} />
             <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
-            <Route path="/__qa-group-height" element={<QaGroupHeight />} />
             <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
             <Route path="/skola" element={<ProtectedRoute><SchoolAdmin /></ProtectedRoute>} />
             <Route path="/student" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
