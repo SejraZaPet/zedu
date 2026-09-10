@@ -21,6 +21,7 @@ import { getSlideIcon } from "@/lib/slide-icons";
 import ShapeRenderer from "@/components/blocks/ShapeRenderer";
 import ChartRenderer from "@/components/blocks/ChartRenderer";
 import FormulaRenderer from "@/components/blocks/FormulaRenderer";
+import { blockBackgroundStyle } from "@/lib/block-backgrounds";
 const extractYouTubeId = (url: string): string | null => {
   if (!url) return null;
   const m = url.match(
