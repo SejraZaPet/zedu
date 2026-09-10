@@ -55,8 +55,22 @@ import {
   Video as IconVideo,
   ArrowRightLeft,
   Loader2,
+  Group as IconGroup,
+  Ungroup as IconUngroup,
+  X as IconX,
 
 } from "lucide-react";
+import {
+  getGroupChildren,
+  getGroupLayout,
+  groupBlocksIntoSlide,
+  isSlideGroup,
+  removeChildFromGroup,
+  setGroupLayout,
+  ungroupSlideGroup,
+  updateGroupChild,
+  type SlideGroupLayout,
+} from "@/lib/slide-groups";
 import {
   FORMAT_TARGETS,
   convertBlock,
@@ -104,6 +118,7 @@ const CARD_CATEGORY: Record<string, CategoryKey> = {
   card_grid: "structure", table: "structure", two_column: "structure",
   hierarchy: "structure", accordion: "structure", divider: "structure",
   activity: "interactive", lesson_link: "interactive",
+  slide_group: "structure",
 };
 
 const CATEGORY_STYLES: Record<CategoryKey, {
@@ -141,6 +156,7 @@ const BLOCK_ICON: Record<string, React.ComponentType<{ className?: string; style
   formula: IconSigma,
   audio: IconVolume2,
   video: IconVideo,
+  slide_group: IconGroup,
 };
 
 // --- Add-menu grouping (Step 2) ---
@@ -382,6 +398,8 @@ const SortableBlock = React.memo(({
   onAiReplace,
   replaceLoading,
   aiSuggested,
+  selected,
+  onSelectToggle,
 }: {
   block: Block;
   onUpdate: (id: string, props: Record<string, any>) => void;
@@ -392,6 +410,8 @@ const SortableBlock = React.memo(({
   onAiReplace: (id: string, target: "activity" | "hierarchy") => void;
   replaceLoading: boolean;
   aiSuggested?: boolean;
+  selected?: boolean;
+  onSelectToggle?: (id: string, shift: boolean) => void;
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: block.id });
 
@@ -412,11 +432,13 @@ const SortableBlock = React.memo(({
   const wrapperStyle: React.CSSProperties = {
     ...style,
     borderRadius: 14,
-    borderWidth: cat.borderWidth,
+    borderWidth: selected ? 2 : cat.borderWidth,
     borderStyle: "solid",
-    borderColor: cat.border,
+    borderColor: selected ? "hsl(var(--primary))" : cat.border,
     background: "#FFFFFF",
-    boxShadow: "0 1px 3px hsl(228 24% 92% / 0.6), 0 4px 16px -4px hsl(228 24% 92% / 0.4)",
+    boxShadow: selected
+      ? "0 0 0 3px hsl(var(--primary) / 0.18), 0 4px 16px -4px hsl(228 24% 92% / 0.4)"
+      : "0 1px 3px hsl(228 24% 92% / 0.6), 0 4px 16px -4px hsl(228 24% 92% / 0.4)",
     transition: (style.transition ?? "") + ", border-color 120ms ease, background-color 120ms ease",
     ["--cat-border" as any]: cat.border,
     ["--cat-header-bg" as any]: cat.headerBg,
@@ -430,6 +452,7 @@ const SortableBlock = React.memo(({
     <div
       ref={setNodeRef}
       data-block-id={block.id}
+      data-be-selectable="true"
       data-category={category}
       style={wrapperStyle}
       className={`be-block group/beblock overflow-hidden ${!block.visible ? "opacity-50" : ""}`}
@@ -446,15 +469,28 @@ const SortableBlock = React.memo(({
         >
           <GripVertical className="w-4 h-4" />
         </button>
+        <input
+          type="checkbox"
+          checked={!!selected}
+          onChange={(e) => onSelectToggle?.(block.id, (e.nativeEvent as any)?.shiftKey === true)}
+          onClick={(e) => e.stopPropagation()}
+          className="h-3.5 w-3.5 cursor-pointer accent-[hsl(var(--primary))]"
+          title="Vybrat blok (Shift+klik vybere rozsah)"
+          aria-label={`Vybrat blok ${typeLabel}`}
+        />
         {Icon && (
           <Icon className="w-4 h-4" style={{ color: cat.iconColor }} />
         )}
-        <span
-          className="be-block__label flex-1"
+        <button
+          type="button"
+          onClick={(e) => onSelectToggle?.(block.id, e.shiftKey)}
+          className="be-block__label flex-1 text-left"
           style={{ color: cat.labelColor, fontWeight: 700, fontSize: 12, letterSpacing: 0.2 }}
+          title="Klikněte pro výběr, Shift+klik pro rozsah"
         >
           {typeLabel}
-        </span>
+        </button>
+
         {showAiBadge && (
           <span
             style={{
@@ -502,6 +538,160 @@ const SortableBlock = React.memo(({
   );
 });
 SortableBlock.displayName = "SortableBlock";
+
+/** Karta spojených bloků – v prezentaci z nich vznikne jeden snímek. */
+const SortableSlideGroup = React.memo(({
+  block,
+  onChildUpdate,
+  onChildRemove,
+  onLayoutChange,
+  onUngroup,
+  onToggle,
+  onDelete,
+  selected,
+  onSelectToggle,
+}: {
+  block: Block;
+  onChildUpdate: (groupId: string, childId: string, props: Record<string, any>) => void;
+  onChildRemove: (groupId: string, childId: string) => void;
+  onLayoutChange: (groupId: string, layout: SlideGroupLayout) => void;
+  onUngroup: (groupId: string) => void;
+  onToggle: (id: string) => void;
+  onDelete: (id: string) => void;
+  selected?: boolean;
+  onSelectToggle?: (id: string, shift: boolean) => void;
+}) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: block.id });
+  const children = getGroupChildren(block);
+  const layout = getGroupLayout(block);
+
+  const gridClass =
+    layout === 3
+      ? "grid grid-cols-1 md:grid-cols-3 gap-3"
+      : layout === 2
+        ? "grid grid-cols-1 md:grid-cols-2 gap-3"
+        : "space-y-3";
+
+  const wrapperStyle: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    borderRadius: 14,
+    borderWidth: selected ? 2 : 1.5,
+    borderStyle: "solid",
+    borderColor: selected ? "hsl(var(--primary))" : "hsl(var(--secondary-dark))",
+    background: "#FFFFFF",
+    boxShadow: selected
+      ? "0 0 0 3px hsl(var(--primary) / 0.18)"
+      : "0 1px 3px hsl(228 24% 92% / 0.6), 0 4px 16px -4px hsl(228 24% 92% / 0.4)",
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      data-block-id={block.id}
+      data-be-selectable="true"
+      data-category="structure"
+      style={wrapperStyle}
+      className={`be-block group/beblock overflow-hidden ${!block.visible ? "opacity-50" : ""}`}
+    >
+      <div
+        className="be-block__header flex items-center gap-2 px-3 py-2 flex-wrap"
+        style={{ background: "hsl(var(--secondary-pastel))", borderBottom: "1px solid #F0F0F0" }}
+      >
+        <button {...attributes} {...listeners} className="be-block__grip cursor-grab p-0.5" style={{ color: "#737373" }}>
+          <GripVertical className="w-4 h-4" />
+        </button>
+        <input
+          type="checkbox"
+          checked={!!selected}
+          onChange={(e) => onSelectToggle?.(block.id, (e.nativeEvent as any)?.shiftKey === true)}
+          onClick={(e) => e.stopPropagation()}
+          className="h-3.5 w-3.5 cursor-pointer accent-[hsl(var(--primary))]"
+          aria-label="Vybrat snímek"
+        />
+        <IconGroup className="w-4 h-4" style={{ color: "hsl(var(--secondary-dark))" }} />
+        <button
+          type="button"
+          onClick={(e) => onSelectToggle?.(block.id, e.shiftKey)}
+          className="be-block__label text-left"
+          style={{ color: "hsl(var(--secondary-dark))", fontWeight: 700, fontSize: 12 }}
+        >
+          Snímek
+        </button>
+        <span className="text-[11px] text-muted-foreground">
+          {children.length} bloků · jeden snímek prezentace
+        </span>
+
+        <div className="ml-auto flex items-center gap-1">
+          <div className="flex items-center rounded-md border border-border overflow-hidden mr-1" role="group" aria-label="Počet sloupců">
+            {([1, 2, 3] as SlideGroupLayout[]).map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => onLayoutChange(block.id, n)}
+                aria-pressed={layout === n}
+                title={n === 1 ? "Pod sebou" : `${n} sloupce`}
+                className="h-7 w-7 text-xs font-bold transition-colors"
+                style={{
+                  background: layout === n ? "hsl(var(--primary))" : "#FFFFFF",
+                  color: layout === n ? "#FFFFFF" : "#525252",
+                }}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+          <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={() => onUngroup(block.id)} title="Rozdělit na jednotlivé bloky">
+            <IconUngroup className="w-3.5 h-3.5" /> Rozdělit
+          </Button>
+          <Button size="icon" variant="ghost" className="be-block__action h-7 w-7" onClick={() => onToggle(block.id)} title={block.visible ? "Skrýt" : "Zobrazit"}>
+            {block.visible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+          </Button>
+          <Button size="icon" variant="ghost" className="be-block__action h-7 w-7" onClick={() => onDelete(block.id)} title="Smazat celý snímek">
+            <Trash2 className="w-3.5 h-3.5" />
+          </Button>
+        </div>
+      </div>
+
+      <div className="p-3" style={{ color: "#171717" }}>
+        {children.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Snímek je prázdný – rozdělte ho zpět.</p>
+        ) : (
+          <div className={gridClass}>
+            {children.map((child) => {
+              const childLabel = BLOCK_TYPES.find((t) => t.type === child.type)?.label ?? child.type;
+              const ChildIcon = BLOCK_ICON[child.type];
+              return (
+                <div key={child.id} className="rounded-[10px] border border-border bg-[#FAFAFA] p-2 min-w-0">
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    {ChildIcon && <ChildIcon className="w-3.5 h-3.5 text-muted-foreground" />}
+                    <span className="text-[11px] font-bold text-muted-foreground flex-1">{childLabel}</span>
+                    <button
+                      type="button"
+                      onClick={() => onChildRemove(block.id, child.id)}
+                      className="h-6 w-6 inline-flex items-center justify-center rounded hover:bg-muted"
+                      title="Vyjmout ze snímku"
+                    >
+                      <IconX className="w-3.5 h-3.5 text-muted-foreground" />
+                    </button>
+                  </div>
+                  <BlockRenderer
+                    block={child}
+                    onChange={(props) => onChildUpdate(block.id, child.id, props)}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+});
+SortableSlideGroup.displayName = "SortableSlideGroup";
+
+
 
 // Shared grouped/searchable block picker used by both inline "+" and the main "Add block" menu.
 const BlockPicker = ({ onPick }: { onPick: (type: Block["type"]) => void }) => {
@@ -1004,6 +1194,118 @@ const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryC
     return () => document.removeEventListener("paste", handlePaste);
   }, []);
 
+  // --- Multi-výběr bloků (Shift+klik, tažení rámečku) ---
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const lastPickedRef = useRef<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [marquee, setMarquee] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+
+  // Výběr se čistí, když vybraný blok zmizí (smazání, spojení, undo).
+  useEffect(() => {
+    setSelectedIds((prev) => {
+      const alive = prev.filter((id) => normalizedBlocks.some((b) => b.id === id));
+      return alive.length === prev.length ? prev : alive;
+    });
+  }, [normalizedBlocks]);
+
+  const toggleSelect = useCallback((id: string, shift: boolean) => {
+    const cur = blocksRef.current;
+    setSelectedIds((prev) => {
+      if (shift && lastPickedRef.current) {
+        const a = cur.findIndex((b) => b.id === lastPickedRef.current);
+        const b2 = cur.findIndex((b) => b.id === id);
+        if (a >= 0 && b2 >= 0) {
+          const [from, to] = a < b2 ? [a, b2] : [b2, a];
+          const range = cur.slice(from, to + 1).map((b) => b.id);
+          return Array.from(new Set([...prev, ...range]));
+        }
+      }
+      lastPickedRef.current = id;
+      return prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
+    });
+    if (!shift) lastPickedRef.current = id;
+  }, []);
+
+  const clearSelection = useCallback(() => setSelectedIds([]), []);
+
+  /** Tažení rámečku po prázdné ploše editoru vybere bloky, které rámeček protne. */
+  const handleMarqueeStart = useCallback((e: React.PointerEvent) => {
+    if (e.button !== 0) return;
+    const container = containerRef.current;
+    if (!container) return;
+    const target = e.target as HTMLElement;
+    // Startujeme jen na prázdné ploše, ne uvnitř karty bloku ani na tlačítku.
+    if (target.closest("[data-be-selectable='true']") || target.closest("button, input, textarea, a, [contenteditable='true']")) return;
+
+    const rect = container.getBoundingClientRect();
+    const startX = e.clientX;
+    const startY = e.clientY;
+    let moved = false;
+
+    const onMove = (ev: PointerEvent) => {
+      const x = Math.min(startX, ev.clientX);
+      const y = Math.min(startY, ev.clientY);
+      const w = Math.abs(ev.clientX - startX);
+      const h = Math.abs(ev.clientY - startY);
+      if (w > 4 || h > 4) moved = true;
+      if (!moved) return;
+      setMarquee({ x: x - rect.left, y: y - rect.top, w, h });
+
+      const box = { left: x, top: y, right: x + w, bottom: y + h };
+      const hit: string[] = [];
+      container.querySelectorAll("[data-be-selectable='true']").forEach((el) => {
+        const r = (el as HTMLElement).getBoundingClientRect();
+        const overlaps = r.left < box.right && r.right > box.left && r.top < box.bottom && r.bottom > box.top;
+        if (overlaps) {
+          const id = (el as HTMLElement).dataset.blockId;
+          if (id) hit.push(id);
+        }
+      });
+      setSelectedIds(hit);
+    };
+
+    const onUp = () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      setMarquee(null);
+      if (!moved) setSelectedIds([]);
+    };
+
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  }, []);
+
+  // --- Spojování bloků do snímku ---
+  const groupSelected = useCallback(() => {
+    if (selectedIds.length < 2) return;
+    const ordered = blocksRef.current.filter((b) => selectedIds.includes(b.id)).map((b) => b.id);
+    commit(groupBlocksIntoSlide(blocksRef.current, ordered, 2));
+    setSelectedIds([]);
+    lastPickedRef.current = null;
+    toast.success("Bloky spojeny do jednoho snímku.");
+  }, [commit, selectedIds]);
+
+  const ungroup = useCallback((groupId: string) => {
+    commit(ungroupSlideGroup(blocksRef.current, groupId));
+    setSelectedIds([]);
+    toast.success("Snímek rozdělen na jednotlivé bloky.");
+  }, [commit]);
+
+  const changeGroupLayout = useCallback((groupId: string, layout: SlideGroupLayout) => {
+    commit(setGroupLayout(blocksRef.current, groupId, layout));
+  }, [commit]);
+
+  const updateChild = useCallback((groupId: string, childId: string, props: Record<string, any>) => {
+    onBlockEditedRef.current?.(childId);
+    commit(updateGroupChild(blocksRef.current, groupId, childId, props));
+  }, [commit]);
+
+  const removeChild = useCallback((groupId: string, childId: string) => {
+    commit(removeChildFromGroup(blocksRef.current, groupId, childId));
+  }, [commit]);
+
+
+
   const stableBlockIdsRef = useRef<string[]>(normalizedBlocks.map((b) => b.id));
   const blockIds = useMemo(() => {
     const nextIds = normalizedBlocks.map((b) => b.id);
@@ -1022,6 +1324,8 @@ const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryC
 
   return (
     <div
+      ref={containerRef}
+      onPointerDown={handleMarqueeStart}
       onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
       onDragLeave={(e) => {
         // Only clear when leaving the wrapper itself
@@ -1031,6 +1335,7 @@ const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryC
       className={`block-editor-scope relative space-y-3 p-4 rounded-[14px] transition ${dragOver ? "ring-2 ring-offset-2 bg-primary/5" : ""}`}
       style={{ background: "#FAFAFA" }}
     >
+
       <style>{`
         .block-editor-scope .be-block:focus-within {
           border-color: var(--cat-border) !important;
@@ -1089,6 +1394,30 @@ const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryC
       </div>
       )}
 
+      {selectedIds.length > 0 && (
+        <div className="sticky top-12 z-40 flex items-center gap-2 flex-wrap rounded-[12px] border border-primary/30 bg-primary-subtle px-3 py-2">
+          <span className="text-sm font-bold text-primary-dark">
+            Vybráno bloků: {selectedIds.length}
+          </span>
+          <span className="text-xs text-muted-foreground">
+            Shift+klik vybere rozsah, tažením po ploše vyberete rámečkem.
+          </span>
+          <div className="ml-auto flex items-center gap-2">
+            <Button size="sm" className="gap-1.5" onClick={groupSelected} disabled={selectedIds.length < 2}>
+              <IconGroup className="w-4 h-4" /> Spojit do jednoho snímku
+            </Button>
+            <Button size="sm" variant="ghost" onClick={clearSelection}>Zrušit výběr</Button>
+          </div>
+        </div>
+      )}
+
+      {marquee && (
+        <div
+          className="absolute z-50 pointer-events-none rounded-sm border-2 border-primary bg-primary/10"
+          style={{ left: marquee.x, top: marquee.y, width: marquee.w, height: marquee.h }}
+        />
+      )}
+
       {dragOver && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-primary/10 rounded-lg pointer-events-none">
           <p className="text-lg font-medium text-primary">📷 Pusťte obrázek sem</p>
@@ -1101,17 +1430,33 @@ const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryC
         <SortableContext items={blockIds} strategy={verticalListSortingStrategy}>
           {normalizedBlocks.map((block, idx) => (
             <React.Fragment key={block.id}>
-              <SortableBlock
-                block={block}
-                onUpdate={updateBlock}
-                onDuplicate={duplicateBlock}
-                onToggle={toggleBlock}
-                onDelete={deleteBlock}
-                onReplace={replaceBlock}
-                onAiReplace={aiReplaceBlock}
-                replaceLoading={replacingId === block.id}
-                aiSuggested={aiSuggestedSet.has(block.id)}
-              />
+              {isSlideGroup(block) ? (
+                <SortableSlideGroup
+                  block={block}
+                  onChildUpdate={updateChild}
+                  onChildRemove={removeChild}
+                  onLayoutChange={changeGroupLayout}
+                  onUngroup={ungroup}
+                  onToggle={toggleBlock}
+                  onDelete={deleteBlock}
+                  selected={selectedIds.includes(block.id)}
+                  onSelectToggle={toggleSelect}
+                />
+              ) : (
+                <SortableBlock
+                  block={block}
+                  onUpdate={updateBlock}
+                  onDuplicate={duplicateBlock}
+                  onToggle={toggleBlock}
+                  onDelete={deleteBlock}
+                  onReplace={replaceBlock}
+                  onAiReplace={aiReplaceBlock}
+                  replaceLoading={replacingId === block.id}
+                  aiSuggested={aiSuggestedSet.has(block.id)}
+                  selected={selectedIds.includes(block.id)}
+                  onSelectToggle={toggleSelect}
+                />
+              )}
               {idx < normalizedBlocks.length - 1 && (
                 <InsertButton afterId={block.id} onInsert={insertBlockAfter} />
               )}
@@ -1121,6 +1466,7 @@ const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryC
       </DndContext>
 
       {normalizedBlocks.length === 0 && (
+
         <div className="text-center py-8 text-sm text-muted-foreground border border-dashed border-border rounded-lg">
           Zatím žádné bloky. Přidejte první blok níže, nebo přetáhněte obrázek z počítače.
         </div>

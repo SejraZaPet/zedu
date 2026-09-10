@@ -49,7 +49,7 @@ export const LessonBlock = ({ block, blockIndex, onActivityComplete, isTeacher }
   blockIndex?: number;
   onActivityComplete?: (activityIndex: number, activityType: string, score: number, maxScore: number) => void;
   isTeacher?: boolean;
-}) => {
+}): JSX.Element | null => {
   const p = block.props;
 
   switch (block.type) {
@@ -258,7 +258,34 @@ export const LessonBlock = ({ block, blockIndex, onActivityComplete, isTeacher }
       }
       return <hr className="border-border my-2" />;
     }
+    case "slide_group": {
+      const children = Array.isArray(p.children) ? (p.children as Block[]) : [];
+      const visibleChildren = children.filter((c) => c && c.visible !== false);
+      if (visibleChildren.length === 0) return null;
+      const cols = p.layout === 3 ? 3 : p.layout === 1 ? 1 : 2;
+      const gridClass =
+        cols === 3
+          ? "grid grid-cols-1 md:grid-cols-3 gap-6"
+          : cols === 2
+            ? "grid grid-cols-1 md:grid-cols-2 gap-6"
+            : "space-y-6";
+      return (
+        <div className={gridClass}>
+          {visibleChildren.map((child, i) => (
+            <div key={child.id || i} className="space-y-4 min-w-0">
+              <LessonBlock
+                block={child}
+                blockIndex={blockIndex}
+                onActivityComplete={onActivityComplete}
+                isTeacher={isTeacher}
+              />
+            </div>
+          ))}
+        </div>
+      );
+    }
     case "two_column":
+
       return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <SafeHTML
