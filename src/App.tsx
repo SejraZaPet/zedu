@@ -227,7 +227,9 @@ const App = () => (
             <Route path="/rodic/akademie" element={<ProtectedRoute><ParentAcademy /></ProtectedRoute>} />
             <Route path="/ucitel/z-materialu" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherFromMaterial /></ProtectedRoute>} />
             <Route path="/student/z-materialu" element={<ProtectedRoute><StudentFromMaterial /></ProtectedRoute>} />
+            <Route path="/qa-group-height" element={<QaGroupHeight />} />
             <Route path="*" element={<NotFound />} />
+
           </Routes>
         </AuthProvider>
       </BrowserRouter>
