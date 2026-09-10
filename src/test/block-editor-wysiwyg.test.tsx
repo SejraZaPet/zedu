@@ -12,7 +12,7 @@ describe("WYSIWYG editor lekce", () => {
     const { container } = render(<BlockEditor blocks={[para()]} onChange={vi.fn()} />);
     const el = container.querySelector("[data-block-id='p1']") as HTMLElement;
     expect(el.style.borderColor).toBe("transparent");
-    expect(screen.queryByText("Odstavec")).toBeNull();
+    expect(screen.queryByText("Text")).toBeNull();
   });
 
   it("hover zobrazí plovoucí lištu s úchytem, výběrem a menu", () => {
@@ -23,7 +23,7 @@ describe("WYSIWYG editor lekce", () => {
     fireEvent.mouseEnter(el);
     expect((el.querySelector("div.absolute") as HTMLElement).className).toContain("opacity-100");
     expect(el.querySelector("input[type='checkbox']")).not.toBeNull();
-    expect(screen.getByRole("button", { name: "Možnosti bloku Odstavec" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Možnosti bloku Text" })).toBeTruthy();
   });
 
   it("pozadí bloku se vykreslí v editoru i na žákovské straně", () => {
@@ -31,11 +31,11 @@ describe("WYSIWYG editor lekce", () => {
       <BlockEditor blocks={[para("p2", { backgroundStyle: "note" })]} onChange={vi.fn()} />,
     );
     const styled = Array.from(container.querySelectorAll("div")).find(
-      (d) => d.style.background.includes("205"),
+      (d) => d.style.borderLeft.includes("205"),
     );
     expect(styled).toBeTruthy();
 
     const { container: c2 } = render(<LessonBlock block={para("p3", { backgroundStyle: "tip" })} />);
-    expect((c2.firstElementChild as HTMLElement).style.background).toContain("266");
+    expect((c2.firstElementChild as HTMLElement).style.borderLeft).toContain("266");
   });
 });
