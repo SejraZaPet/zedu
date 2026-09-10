@@ -36,3 +36,12 @@ describe("ruční výška karty v režimu Sloupce", () => {
     expect(html).toContain("min-height: 300px");
   });
 });
+
+describe("editor: úchyt výšky karty ve sloupcích", () => {
+  it("karta má úchyt pro změnu výšky", async () => {
+    const { default: BlockEditor } = await import("@/components/admin/BlockEditor");
+    const grouped = groupBlocksIntoSlide([b("p1"), b("p2")], ["p1", "p2"], 2);
+    const { getAllByLabelText } = render(<BlockEditor blocks={grouped} onChange={() => {}} />);
+    expect(getAllByLabelText("Změnit výšku karty").length).toBe(2);
+  });
+});
