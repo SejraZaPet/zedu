@@ -5,6 +5,7 @@ import {
 import {
   SLIDE_FONTS, SLIDE_FONT_SIZES, SLIDE_TEXT_COLORS,
 } from "@/lib/slide-typography";
+import { BLOCK_BACKGROUNDS } from "@/lib/block-backgrounds";
 
 import type { Block } from "@/lib/textbook-config";
 
@@ -13,15 +14,41 @@ interface Props {
   onChange: (props: Record<string, any>) => void;
   /** Barvu/velikost/font nabízet jen u textových bloků. */
   showText?: boolean;
+  /** Kompaktní podoba pro plovoucí lištu nad blokem. */
+  compact?: boolean;
 }
 
-/** Per-blok typografie (velikost, barva, font) pro editor lekce/učebnice. */
-const BlockStyleControls = ({ block, onChange, showText = true }: Props) => {
+/** Per-blok typografie (velikost, barva, font, pozadí) pro editor lekce/učebnice. */
+const BlockStyleControls = ({ block, onChange, showText = true, compact = false }: Props) => {
   const p = block.props || {};
   const set = (patch: Record<string, any>) => onChange({ ...p, ...patch });
+  const bgKey = (p.backgroundStyle as string) || "none";
 
   return (
-    <div className="mt-2 flex flex-wrap items-end gap-3 rounded-md border border-border bg-muted/30 p-2">
+    <div
+      className={
+        compact
+          ? "flex flex-wrap items-end gap-3"
+          : "mt-2 flex flex-wrap items-end gap-3 rounded-md border border-border bg-muted/30 p-2"
+      }
+    >
+      {block.type === "heading" && (
+        <div>
+          <Label className="text-[11px] text-muted-foreground">Úroveň</Label>
+          <Select
+            value={String(p.level ?? 2)}
+            onValueChange={(v) => set({ level: Number(v) })}
+          >
+            <SelectTrigger className="h-8 w-[80px] text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {[1, 2, 3, 4].map((l) => (
+                <SelectItem key={l} value={String(l)}>{`H${l}`}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       {showText && (
         <>
           <div>
@@ -89,9 +116,35 @@ const BlockStyleControls = ({ block, onChange, showText = true }: Props) => {
               />
             </div>
           </div>
-
         </>
       )}
+
+      <div>
+        <Label className="text-[11px] text-muted-foreground">Pozadí bloku</Label>
+        <div className="mt-1 flex items-center gap-1.5">
+          {BLOCK_BACKGROUNDS.map((opt) => {
+            const active = bgKey === opt.key;
+            return (
+              <button
+                key={opt.key}
+                type="button"
+                onClick={() => set({ backgroundStyle: opt.key === "none" ? null : opt.key })}
+                title={opt.label}
+                aria-label={`Pozadí ${opt.label}`}
+                aria-pressed={active}
+                className={`h-6 rounded border-2 px-1.5 text-[10px] transition-transform ${active ? "border-primary scale-105" : "border-border"}`}
+                style={{
+                  background: opt.key === "none" ? "transparent" : opt.bg,
+                  borderLeft: opt.accent ? `4px solid ${opt.accent}` : undefined,
+                  color: "#171717",
+                }}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 };

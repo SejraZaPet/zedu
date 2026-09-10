@@ -1,3 +1,5 @@
+import { blockBackgroundSlideColor } from "@/lib/block-backgrounds";
+
 function stripHtml(html: string): string {
   if (!html) return "";
   return html
@@ -171,6 +173,10 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
       }
 
       const groupSlide = newSlide(headline);
+      const groupBg = blockBackgroundSlideColor(props)
+        || visibleChildren.map((c) => blockBackgroundSlideColor(c?.props)).find(Boolean)
+        || null;
+      if (groupBg) groupSlide.backgroundOverride = { color: groupBg };
       groupSlide.layout = cols === 3 ? "three-cols" : cols === 2 ? "two-cols" : "full";
       groupSlide.blocks = bodyChildren;
       const texts: string[] = [];
@@ -190,6 +196,8 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
       const headline = getText(props);
       if (!headline) continue;
       current = newSlide(headline);
+      const headingBg = blockBackgroundSlideColor(props);
+      if (headingBg) current.backgroundOverride = { color: headingBg };
       continue;
     }
 
@@ -209,6 +217,8 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
       if (converted.text) activitySlide.projector.body = converted.text;
       if (converted.assetRef) activitySlide.projector.assetRefs.push(converted.assetRef);
       activitySlide.device = { instructions: "Odpovězte na svém zařízení." };
+      const activityBg = blockBackgroundSlideColor(props);
+      if (activityBg) activitySlide.backgroundOverride = { color: activityBg };
       current = activitySlide;
       flush();
       continue;
@@ -216,6 +226,8 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
 
     if (!current) current = newSlide("");
     current.blocks.push(block);
+    const blockBg = blockBackgroundSlideColor(props);
+    if (blockBg && !current.backgroundOverride) current.backgroundOverride = { color: blockBg };
 
     appendBody(converted.text);
     if (converted.assetRef) current.projector.assetRefs.push(converted.assetRef);

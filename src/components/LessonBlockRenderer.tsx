@@ -21,6 +21,7 @@ import { getSlideIcon } from "@/lib/slide-icons";
 import ShapeRenderer from "@/components/blocks/ShapeRenderer";
 import ChartRenderer from "@/components/blocks/ChartRenderer";
 import FormulaRenderer from "@/components/blocks/FormulaRenderer";
+import { blockBackgroundStyle } from "@/lib/block-backgrounds";
 const extractYouTubeId = (url: string): string | null => {
   if (!url) return null;
   const m = url.match(
@@ -44,12 +45,23 @@ export const CALLOUT_STYLES: Record<string, { icon: string; border: string; bg: 
   remember: { icon: "🧠", border: "border-primary/40", bg: "bg-primary/10" },
 };
 
-export const LessonBlock = ({ block, blockIndex, onActivityComplete, isTeacher }: { 
-  block: Block; 
+interface LessonBlockProps {
+  block: Block;
   blockIndex?: number;
   onActivityComplete?: (activityIndex: number, activityType: string, score: number, maxScore: number) => void;
   isTeacher?: boolean;
-}): JSX.Element | null => {
+}
+
+/** Obal s volitelným pozadím bloku (Poznámka, Důležité, …). */
+export const LessonBlock = (props: LessonBlockProps): JSX.Element | null => {
+  const inner = LessonBlockInner(props);
+  if (!inner) return null;
+  const bgStyle = blockBackgroundStyle(props.block?.props);
+  if (!bgStyle) return inner;
+  return <div style={bgStyle}>{inner}</div>;
+};
+
+const LessonBlockInner = ({ block, blockIndex, onActivityComplete, isTeacher }: LessonBlockProps): JSX.Element | null => {
   const p = block.props;
 
   switch (block.type) {

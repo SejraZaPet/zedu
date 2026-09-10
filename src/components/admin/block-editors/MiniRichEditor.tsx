@@ -23,6 +23,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useEffect, useRef, useState } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 
 interface Props {
@@ -33,6 +34,11 @@ interface Props {
   showHeadings?: boolean;
   showLists?: boolean;
   showAlign?: boolean;
+  /**
+   * WYSIWYG režim: bez rámečku formuláře, lišta se zobrazí jen při psaní
+   * (plovoucí nad textem, na mobilu přilepená dole).
+   */
+  bare?: boolean;
 }
 
 const TB = ({
@@ -239,8 +245,12 @@ const MiniRichEditor = ({
   showHeadings = false,
   showLists = true,
   showAlign = true,
+  bare = false,
 }: Props) => {
   const skipUpdate = useRef(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [focused, setFocused] = useState(false);
+  const isMobile = useIsMobile();
 
   const editor = useEditor({
     extensions: [
@@ -290,9 +300,34 @@ const MiniRichEditor = ({
     null;
 
 
+  const showToolbar = !bare || focused;
+
   return (
-    <div className="border border-border rounded-md overflow-hidden bg-background">
-      <div className="flex flex-wrap gap-0.5 px-1 py-1 border-b border-border bg-muted/30">
+    <div
+      ref={wrapRef}
+      className={bare ? "relative" : "border border-border rounded-md overflow-hidden bg-background"}
+      onFocus={() => setFocused(true)}
+      onBlur={() => {
+        window.setTimeout(() => {
+          const w = wrapRef.current;
+          if (!w) return;
+          if (w.contains(document.activeElement)) return;
+          // Otevřený popover (barvy, řádkování) se renderuje do portálu.
+          if (document.querySelector("[data-radix-popper-content-wrapper]")) return;
+          setFocused(false);
+        }, 120);
+      }}
+    >
+      {showToolbar && (
+      <div
+        className={
+          bare
+            ? isMobile
+              ? "fixed bottom-0 left-0 right-0 z-50 flex flex-wrap items-center gap-0.5 border-t border-border bg-background px-2 py-2 shadow-[0_-4px_16px_rgba(0,0,0,0.12)]"
+              : "absolute bottom-full left-0 z-40 mb-1 flex flex-wrap items-center gap-0.5 rounded-md border border-border bg-background px-1 py-1 shadow-md"
+            : "flex flex-wrap gap-0.5 px-1 py-1 border-b border-border bg-muted/30"
+        }
+      >
         <TB active={editor.isActive("bold")} onClick={() => editor.chain().focus().toggleBold().run()} title="Tučné">
           <Bold className={sz} />
         </TB>
@@ -386,6 +421,7 @@ const MiniRichEditor = ({
           </SelectContent>
         </Select>
       </div>
+      )}
 
       <EditorContent editor={editor} />
     </div>
