@@ -127,6 +127,7 @@ const App = () => (
             <Route path="/zapomenute-heslo" element={<ForgotPassword />} />
             <Route path="/reset-heslo" element={<ResetHeslo />} />
             <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
+            <Route path="/__qa-group-height" element={<QaGroupHeight />} />
             <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
             <Route path="/skola" element={<ProtectedRoute><SchoolAdmin /></ProtectedRoute>} />
             <Route path="/student" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
