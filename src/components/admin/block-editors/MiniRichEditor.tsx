@@ -420,6 +420,7 @@ const MiniRichEditor = ({
           </SelectContent>
         </Select>
       </div>
+      )}
 
       <EditorContent editor={editor} />
     </div>
