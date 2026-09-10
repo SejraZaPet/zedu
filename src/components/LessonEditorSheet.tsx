@@ -353,6 +353,7 @@ const LessonEditorSheet = ({ lessonId, open, onOpenChange, onSaved }: Props) => 
             </TabsContent>
           </Tabs>
         )}
+        </div>
       </SheetContent>
     </Sheet>
   );
