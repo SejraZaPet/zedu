@@ -33,6 +33,11 @@ interface Props {
   showHeadings?: boolean;
   showLists?: boolean;
   showAlign?: boolean;
+  /**
+   * WYSIWYG režim: bez rámečku formuláře, lišta se zobrazí jen při psaní
+   * (plovoucí nad textem, na mobilu přilepená dole).
+   */
+  bare?: boolean;
 }
 
 const TB = ({
