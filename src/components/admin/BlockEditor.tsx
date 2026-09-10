@@ -313,6 +313,69 @@ const GroupChildBlock = ({
   );
 };
 
+/**
+ * Karta dítěte v režimu „Sloupce“ – šířku určuje mřížka, výšku lze
+ * ručně nastavit tažením za spodní okraj (uloží se do `props.groupHeight`).
+ */
+const ColumnGroupCard = ({
+  child,
+  onChange,
+  onRemove,
+  onHeightChange,
+}: {
+  child: Block;
+  onChange: (props: Record<string, any>) => void;
+  onRemove: () => void;
+  onHeightChange: (height: number | null) => void;
+}) => {
+  const saved = getGroupChildHeight(child);
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  const [dragHeight, setDragHeight] = useState<number | null>(null);
+  const height = dragHeight ?? saved;
+
+  const startResize = (e: React.PointerEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const startY = e.clientY;
+    const startH = cardRef.current?.getBoundingClientRect().height ?? GROUP_CHILD_MIN_HEIGHT;
+    const clamp = (v: number) =>
+      Math.min(GROUP_CHILD_MAX_HEIGHT, Math.max(GROUP_CHILD_MIN_HEIGHT, Math.round(v)));
+    let last = clamp(startH);
+    const move = (ev: PointerEvent) => {
+      last = clamp(startH + (ev.clientY - startY));
+      setDragHeight(last);
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      setDragHeight(null);
+      onHeightChange(last);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+
+  return (
+    <div
+      ref={cardRef}
+      className="relative rounded-[10px] border border-border bg-[#FAFAFA] p-2 pb-4 min-w-0"
+      style={height ? { height, overflow: "auto" } : undefined}
+    >
+      <GroupChildBlock child={child} onChange={onChange} onRemove={onRemove} />
+      <div
+        role="separator"
+        aria-label="Změnit výšku karty"
+        title="Tažením změníte výšku karty, dvojklikem vrátíte automatickou výšku"
+        onPointerDown={startResize}
+        onDoubleClick={() => onHeightChange(null)}
+        className="absolute bottom-0 left-0 right-0 flex h-3 cursor-ns-resize items-center justify-center rounded-b-[10px] hover:bg-primary/10"
+      >
+        <span className="h-1 w-8 rounded-full bg-border" />
+      </div>
+    </div>
+  );
+};
+
 type ReplaceHandler = (
   id: string,
   target: Block["type"],
