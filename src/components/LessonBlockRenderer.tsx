@@ -328,8 +328,9 @@ const LessonBlockInner = ({ block, blockIndex, onActivityComplete, isTeacher }: 
             </div>
             );
           })}
-        </div>
+        </div>,
       );
+
     }
     case "two_column":
 
