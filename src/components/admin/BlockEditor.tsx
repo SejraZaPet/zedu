@@ -65,17 +65,25 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 import { blockBackgroundStyle } from "@/lib/block-backgrounds";
 import BlockStyleControls from "./block-editors/BlockStyleControls";
+import FreeFrameCanvas from "@/components/blocks/FreeFrameCanvas";
+import type { BlockFrame } from "@/lib/block-frame";
 import {
+  getGroupChildFrames,
   getGroupChildren,
   getGroupLayout,
+  getGroupMode,
   groupBlocksIntoSlide,
   isSlideGroup,
   removeChildFromGroup,
+  setGroupChildFrame,
   setGroupLayout,
+  setGroupMode,
   ungroupSlideGroup,
   updateGroupChild,
   type SlideGroupLayout,
+  type SlideGroupMode,
 } from "@/lib/slide-groups";
+
 import {
   FORMAT_TARGETS,
   convertBlock,
@@ -589,6 +597,8 @@ const SortableSlideGroup = React.memo(({
   onChildUpdate,
   onChildRemove,
   onLayoutChange,
+  onModeChange,
+  onChildFrameChange,
   onUngroup,
   onToggle,
   onDelete,
@@ -599,6 +609,8 @@ const SortableSlideGroup = React.memo(({
   onChildUpdate: (groupId: string, childId: string, props: Record<string, any>) => void;
   onChildRemove: (groupId: string, childId: string) => void;
   onLayoutChange: (groupId: string, layout: SlideGroupLayout) => void;
+  onModeChange: (groupId: string, mode: SlideGroupMode) => void;
+  onChildFrameChange: (groupId: string, childId: string, frame: BlockFrame) => void;
   onUngroup: (groupId: string) => void;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
@@ -608,6 +620,9 @@ const SortableSlideGroup = React.memo(({
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: block.id });
   const children = getGroupChildren(block);
   const layout = getGroupLayout(block);
+  const mode = getGroupMode(block);
+  const frames = getGroupChildFrames(block);
+  const [activeChild, setActiveChild] = useState<string | null>(null);
 
   const gridClass =
     layout === 3
@@ -615,6 +630,7 @@ const SortableSlideGroup = React.memo(({
       : layout === 2
         ? "grid grid-cols-1 md:grid-cols-2 gap-3"
         : "space-y-3";
+
 
   const wrapperStyle: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -668,24 +684,44 @@ const SortableSlideGroup = React.memo(({
         </span>
 
         <div className="ml-auto flex items-center gap-1">
-          <div className="flex items-center rounded-md border border-border overflow-hidden mr-1" role="group" aria-label="Počet sloupců">
-            {([1, 2, 3] as SlideGroupLayout[]).map((n) => (
+          <div className="flex items-center rounded-md border border-border overflow-hidden mr-1" role="group" aria-label="Režim rozvržení">
+            {([["columns", "Sloupce"], ["free", "Volné rozmístění"]] as [SlideGroupMode, string][]).map(([m, label]) => (
               <button
-                key={n}
+                key={m}
                 type="button"
-                onClick={() => onLayoutChange(block.id, n)}
-                aria-pressed={layout === n}
-                title={n === 1 ? "Pod sebou" : `${n} sloupce`}
-                className="h-7 w-7 text-xs font-bold transition-colors"
+                onClick={() => onModeChange(block.id, m)}
+                aria-pressed={mode === m}
+                title={label}
+                className="h-7 px-2 text-[11px] font-bold transition-colors"
                 style={{
-                  background: layout === n ? "hsl(var(--primary))" : "#FFFFFF",
-                  color: layout === n ? "#FFFFFF" : "#525252",
+                  background: mode === m ? "hsl(var(--primary))" : "#FFFFFF",
+                  color: mode === m ? "#FFFFFF" : "#525252",
                 }}
               >
-                {n}
+                {label}
               </button>
             ))}
           </div>
+          {mode === "columns" && (
+            <div className="flex items-center rounded-md border border-border overflow-hidden mr-1" role="group" aria-label="Počet sloupců">
+              {([1, 2, 3] as SlideGroupLayout[]).map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => onLayoutChange(block.id, n)}
+                  aria-pressed={layout === n}
+                  title={n === 1 ? "Pod sebou" : `${n} sloupce`}
+                  className="h-7 w-7 text-xs font-bold transition-colors"
+                  style={{
+                    background: layout === n ? "hsl(var(--primary))" : "#FFFFFF",
+                    color: layout === n ? "#FFFFFF" : "#525252",
+                  }}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+          )}
           <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={() => onUngroup(block.id)} title="Rozdělit na jednotlivé bloky">
             <IconUngroup className="w-3.5 h-3.5" /> Rozdělit
           </Button>
@@ -701,6 +737,47 @@ const SortableSlideGroup = React.memo(({
       <div className="p-3" style={{ color: "#171717" }}>
         {children.length === 0 ? (
           <p className="text-sm text-muted-foreground">Snímek je prázdný – rozdělte ho zpět.</p>
+        ) : mode === "free" ? (
+          <div className="space-y-2">
+            <p className="text-[11px] text-muted-foreground">
+              Bloky přesouvejte tažením, velikost změníte tažením za rohy. Alt = mřížka po 1 %.
+            </p>
+            <FreeFrameCanvas
+              items={children.map((child) => ({
+                id: child.id,
+                frame: frames[child.id],
+                node: (
+                  <div className="h-full w-full overflow-auto rounded-[8px] border border-border bg-white p-2 min-w-0">
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      {BLOCK_ICON[child.type] &&
+                        React.createElement(BLOCK_ICON[child.type], { className: "w-3.5 h-3.5 text-muted-foreground" })}
+                      <span className="text-[11px] font-bold text-muted-foreground flex-1">
+                        {BLOCK_TYPES.find((t) => t.type === child.type)?.label ?? child.type}
+                      </span>
+                      <button
+                        type="button"
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onClick={() => onChildRemove(block.id, child.id)}
+                        className="h-6 w-6 inline-flex items-center justify-center rounded hover:bg-muted"
+                        title="Vyjmout ze snímku"
+                      >
+                        <IconX className="w-3.5 h-3.5 text-muted-foreground" />
+                      </button>
+                    </div>
+                    <div onPointerDown={(e) => e.stopPropagation()}>
+                      <BlockRenderer
+                        block={child}
+                        onChange={(props) => onChildUpdate(block.id, child.id, props)}
+                      />
+                    </div>
+                  </div>
+                ),
+              }))}
+              selectedId={activeChild}
+              onSelect={setActiveChild}
+              onChangeFrame={(childId, frame) => onChildFrameChange(block.id, childId, frame)}
+            />
+          </div>
         ) : (
           <div className={gridClass}>
             {children.map((child) => {
@@ -730,6 +807,7 @@ const SortableSlideGroup = React.memo(({
           </div>
         )}
       </div>
+
     </div>
   );
 });
@@ -1339,6 +1417,15 @@ const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryC
     commit(setGroupLayout(blocksRef.current, groupId, layout));
   }, [commit]);
 
+  const changeGroupMode = useCallback((groupId: string, mode: SlideGroupMode) => {
+    commit(setGroupMode(blocksRef.current, groupId, mode));
+  }, [commit]);
+
+  const changeChildFrame = useCallback((groupId: string, childId: string, frame: BlockFrame) => {
+    commit(setGroupChildFrame(blocksRef.current, groupId, childId, frame));
+  }, [commit]);
+
+
   const updateChild = useCallback((groupId: string, childId: string, props: Record<string, any>) => {
     onBlockEditedRef.current?.(childId);
     commit(updateGroupChild(blocksRef.current, groupId, childId, props));
@@ -1475,6 +1562,9 @@ const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryC
                   onChildUpdate={updateChild}
                   onChildRemove={removeChild}
                   onLayoutChange={changeGroupLayout}
+                  onModeChange={changeGroupMode}
+                  onChildFrameChange={changeChildFrame}
+
                   onUngroup={ungroup}
                   onToggle={toggleBlock}
                   onDelete={deleteBlock}

@@ -23,6 +23,8 @@ import ShapeRenderer from "@/components/blocks/ShapeRenderer";
 import ChartRenderer from "@/components/blocks/ChartRenderer";
 import FormulaRenderer from "@/components/blocks/FormulaRenderer";
 import { blockBackgroundStyle } from "@/lib/block-backgrounds";
+import FreeFrameCanvas from "@/components/blocks/FreeFrameCanvas";
+import { getGroupChildFrames } from "@/lib/slide-groups";
 const extractYouTubeId = (url: string): string | null => {
   if (!url) return null;
   const m = url.match(
@@ -274,6 +276,27 @@ const LessonBlockInner = ({ block, blockIndex, onActivityComplete, isTeacher }: 
       const children = Array.isArray(p.children) ? (p.children as Block[]) : [];
       const visibleChildren = children.filter((c) => c && c.visible !== false);
       if (visibleChildren.length === 0) return null;
+      if (p.mode === "free") {
+        const frames = getGroupChildFrames(block);
+        return (
+          <FreeFrameCanvas
+            items={visibleChildren.map((child) => ({
+              id: child.id,
+              frame: frames[child.id],
+              node: (
+                <div className="h-full w-full overflow-hidden min-w-0">
+                  <LessonBlock
+                    block={child}
+                    blockIndex={blockIndex}
+                    onActivityComplete={onActivityComplete}
+                    isTeacher={isTeacher}
+                  />
+                </div>
+              ),
+            }))}
+          />
+        );
+      }
       const cols = p.layout === 3 ? 3 : p.layout === 1 ? 1 : 2;
       const gridClass =
         cols === 3
