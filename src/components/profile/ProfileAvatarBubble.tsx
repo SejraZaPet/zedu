@@ -74,8 +74,9 @@ const LAYER_ORDER: LayerEntry[] = [
   { field: "eyes_id" },
   { field: "eyebrow_id" },
   { field: "mouth_id" },
-  { slot: "clothing_bottom" },
+  // Shoes render UNDER pants/skirts so trouser legs drape over the footwear.
   { slot: "clothing_shoes" },
+  { slot: "clothing_bottom" },
   { slot: "clothing_top" },
   { slot: "clothing_full" },
   { slot: "clothing_neck" },
