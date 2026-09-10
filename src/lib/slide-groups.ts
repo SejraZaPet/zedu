@@ -221,6 +221,40 @@ export const setGroupChildHeight = (
     return { ...b, props: { ...b.props, children } };
   });
 
+/* ============================================================================
+ * Ruční minimální výška celého snímku (skupiny)
+ * ==========================================================================*/
+
+export const GROUP_MIN_HEIGHT = 120;
+export const GROUP_MAX_HEIGHT = 3000;
+
+/** Ruční minimální výška celé skupiny (px) nebo null pro automatickou. */
+export const getGroupMinHeight = (block: Block | null | undefined): number | null => {
+  const raw = Number((block?.props as any)?.groupMinHeight);
+  return Number.isFinite(raw) && raw > 0
+    ? Math.min(GROUP_MAX_HEIGHT, Math.max(GROUP_MIN_HEIGHT, Math.round(raw)))
+    : null;
+};
+
+/** Nastaví (nebo zruší při null) ruční minimální výšku celé skupiny. */
+export const setGroupMinHeight = (
+  blocks: Block[],
+  groupId: string,
+  height: number | null,
+): Block[] =>
+  blocks.map((b) => {
+    if (b.id !== groupId || !isSlideGroup(b)) return b;
+    const props = { ...b.props } as Record<string, any>;
+    if (height == null) delete props.groupMinHeight;
+    else
+      props.groupMinHeight = Math.min(
+        GROUP_MAX_HEIGHT,
+        Math.max(GROUP_MIN_HEIGHT, Math.round(height)),
+      );
+    return { ...b, props };
+  });
+
+
 /** Rámce dětí skupiny (s doplněním výchozí mřížky pro děti bez rámce). */
 export const getGroupChildFrames = (block: Block | null | undefined): Record<string, BlockFrame> => {
   const children = getGroupChildren(block);

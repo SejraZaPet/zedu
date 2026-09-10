@@ -24,7 +24,7 @@ import ChartRenderer from "@/components/blocks/ChartRenderer";
 import FormulaRenderer from "@/components/blocks/FormulaRenderer";
 import { blockBackgroundStyle } from "@/lib/block-backgrounds";
 import FreeFrameCanvas from "@/components/blocks/FreeFrameCanvas";
-import { getGroupChildFrames, getGroupChildHeight } from "@/lib/slide-groups";
+import { getGroupChildFrames, getGroupChildHeight, getGroupMinHeight } from "@/lib/slide-groups";
 const extractYouTubeId = (url: string): string | null => {
   if (!url) return null;
   const m = url.match(
@@ -276,10 +276,14 @@ const LessonBlockInner = ({ block, blockIndex, onActivityComplete, isTeacher }: 
       const children = Array.isArray(p.children) ? (p.children as Block[]) : [];
       const visibleChildren = children.filter((c) => c && c.visible !== false);
       if (visibleChildren.length === 0) return null;
+      const groupMinHeight = getGroupMinHeight(block);
+      const withGroupHeight = (node: React.ReactNode) =>
+        groupMinHeight ? <div style={{ minHeight: groupMinHeight }}>{node}</div> : <>{node}</>;
       if (p.mode === "free") {
         const frames = getGroupChildFrames(block);
-        return (
+        return withGroupHeight(
           <FreeFrameCanvas
+
             items={visibleChildren.map((child) => ({
               id: child.id,
               frame: frames[child.id],
@@ -304,8 +308,9 @@ const LessonBlockInner = ({ block, blockIndex, onActivityComplete, isTeacher }: 
           : cols === 2
             ? "grid grid-cols-1 md:grid-cols-2 gap-6"
             : "space-y-6";
-      return (
+      return withGroupHeight(
         <div className={`${gridClass} items-start`}>
+
           {visibleChildren.map((child, i) => {
             const manualHeight = getGroupChildHeight(child);
             return (
@@ -323,8 +328,9 @@ const LessonBlockInner = ({ block, blockIndex, onActivityComplete, isTeacher }: 
             </div>
             );
           })}
-        </div>
+        </div>,
       );
+
     }
     case "two_column":
 

@@ -73,6 +73,11 @@ import {
   setGroupChildHeight,
   GROUP_CHILD_MIN_HEIGHT,
   GROUP_CHILD_MAX_HEIGHT,
+  GROUP_MIN_HEIGHT,
+  GROUP_MAX_HEIGHT,
+  getGroupMinHeight,
+  setGroupMinHeight,
+
   getGroupChildren,
   getGroupLayout,
   getGroupMode,
@@ -734,6 +739,8 @@ const SortableSlideGroup = React.memo(({
   onModeChange,
   onChildFrameChange,
   onChildHeightChange,
+  onMinHeightChange,
+
   onUngroup,
   onToggle,
   onDelete,
@@ -747,6 +754,8 @@ const SortableSlideGroup = React.memo(({
   onModeChange: (groupId: string, mode: SlideGroupMode) => void;
   onChildFrameChange: (groupId: string, childId: string, frame: BlockFrame) => void;
   onChildHeightChange: (groupId: string, childId: string, height: number | null) => void;
+  onMinHeightChange: (groupId: string, height: number | null) => void;
+
   onUngroup: (groupId: string) => void;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
@@ -759,6 +768,35 @@ const SortableSlideGroup = React.memo(({
   const mode = getGroupMode(block);
   const frames = getGroupChildFrames(block);
   const [activeChild, setActiveChild] = useState<string | null>(null);
+
+  // Ruční minimální výška celého snímku (tažení za spodní okraj kontejneru).
+  const savedMinHeight = getGroupMinHeight(block);
+  const groupRef = useRef<HTMLDivElement | null>(null);
+  const [dragMinHeight, setDragMinHeight] = useState<number | null>(null);
+  const minHeight = dragMinHeight ?? savedMinHeight;
+
+  const startGroupResize = (e: React.PointerEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const startY = e.clientY;
+    const startH = groupRef.current?.getBoundingClientRect().height ?? GROUP_MIN_HEIGHT;
+    const clamp = (v: number) =>
+      Math.min(GROUP_MAX_HEIGHT, Math.max(GROUP_MIN_HEIGHT, Math.round(v)));
+    let last = clamp(startH);
+    const move = (ev: PointerEvent) => {
+      last = clamp(startH + (ev.clientY - startY));
+      setDragMinHeight(last);
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      setDragMinHeight(null);
+      onMinHeightChange(block.id, last);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+
 
   const gridClass =
     layout === 3
@@ -780,16 +818,23 @@ const SortableSlideGroup = React.memo(({
     boxShadow: selected
       ? "0 0 0 3px hsl(var(--primary) / 0.18)"
       : "0 1px 3px hsl(228 24% 92% / 0.6), 0 4px 16px -4px hsl(228 24% 92% / 0.4)",
+    ...(minHeight ? { minHeight } : null),
+    position: "relative",
+    paddingBottom: 12,
   };
 
   return (
     <div
-      ref={setNodeRef}
+      ref={(node) => {
+        setNodeRef(node);
+        groupRef.current = node;
+      }}
       data-block-id={block.id}
       data-be-selectable="true"
       data-category="structure"
       style={wrapperStyle}
       className={`be-block group/beblock overflow-visible ${!block.visible ? "opacity-50" : ""}`}
+
     >
       <div
         className="be-block__header flex items-center gap-2 px-3 py-2 flex-wrap rounded-t-[13px]"
@@ -917,7 +962,18 @@ const SortableSlideGroup = React.memo(({
         )}
       </div>
 
+      <div
+        role="separator"
+        aria-label="Změnit výšku snímku"
+        title="Tažením změníte výšku celého snímku, dvojklikem vrátíte automatickou výšku"
+        onPointerDown={startGroupResize}
+        onDoubleClick={() => onMinHeightChange(block.id, null)}
+        className="absolute bottom-0 left-0 right-0 flex h-3 cursor-ns-resize items-center justify-center rounded-b-[13px] hover:bg-primary/10"
+      >
+        <span className="h-1 w-14 rounded-full bg-[hsl(var(--secondary-dark))]/40" />
+      </div>
     </div>
+
   );
 });
 SortableSlideGroup.displayName = "SortableSlideGroup";
@@ -1530,7 +1586,12 @@ const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryC
     commit(setGroupMode(blocksRef.current, groupId, mode));
   }, [commit]);
 
+  const changeGroupMinHeight = useCallback((groupId: string, height: number | null) => {
+    commit(setGroupMinHeight(blocksRef.current, groupId, height));
+  }, [commit]);
+
   const changeChildFrame = useCallback((groupId: string, childId: string, frame: BlockFrame) => {
+
     commit(setGroupChildFrame(blocksRef.current, groupId, childId, frame));
   }, [commit]);
 
@@ -1678,6 +1739,8 @@ const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryC
                   onModeChange={changeGroupMode}
                   onChildFrameChange={changeChildFrame}
                   onChildHeightChange={changeChildHeight}
+                  onMinHeightChange={changeGroupMinHeight}
+
 
                   onUngroup={ungroup}
                   onToggle={toggleBlock}

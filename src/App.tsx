@@ -228,6 +228,7 @@ const App = () => (
             <Route path="/ucitel/z-materialu" element={<ProtectedRoute allowedRoles={["teacher", "lektor", "school_admin", "admin"]}><TeacherFromMaterial /></ProtectedRoute>} />
             <Route path="/student/z-materialu" element={<ProtectedRoute><StudentFromMaterial /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
+
           </Routes>
         </AuthProvider>
       </BrowserRouter>
