@@ -1,10 +1,11 @@
-# Oprava pořadí vrstev bot
+# Sjednocení hero banneru lekce
 
 ## Postup
-- Potvrdit všechna místa, která skládají vrstvy avatara, a ověřit sdílený zdroj pořadí.
-- Přesunout `clothing_shoes` před `clothing_bottom` v pořadí zdola nahoru; celé outfity ponechat nad botami.
-- Ověřit typy, sestavení a cílený test pořadí.
-- V přihlášeném náhledu zkontrolovat avatara s botami a kalhotami v editoru i sdíleném vykreslení profilu/hry.
+- Dokončit audit všech míst, kde se zobrazuje `hero_image_url`, a rozlišit plný banner od záměrných miniatur.
+- Nahradit současné omezení pouze maximální výškou jednotným poměrem stran 21:9, plnou šířkou a stejným ořezem ve všech plných náhledech.
+- Opravit přehlédnutý administrační formulář, který stále používá malý náhled.
+- Přidat cílený test společného bannerového stylu, ověřit typy, testy a sestavení.
+- V přihlášeném náhledu otevřít stejnou lekci v editoru i ve výsledném zobrazení a pořídit porovnávací snímky.
 
 ## Technické detaily
-Změna má být v jediném sdíleném poli `SLOT_LAYER_ORDER`, pokud průzkum potvrdí, že jej používají všechny renderery. Tím zůstane pořadí shodné v editoru, profilové bublině, administraci i hrách.
+`max-h-80` neurčuje poměr stran: při rozdílné šířce rodiče má obrázek jinou výšku a `object-cover` tedy i jiný výřez. Sdílená třída proto dostane explicitní `aspect-[21/9]`, pevné vyplnění výšky a šířky a `object-cover`. Záměrné malé kartičkové miniatury zůstanou samostatným stylem, pokud audit nějaké najde.
