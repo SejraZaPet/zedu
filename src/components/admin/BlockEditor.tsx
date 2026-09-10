@@ -58,8 +58,13 @@ import {
   Group as IconGroup,
   Ungroup as IconUngroup,
   X as IconX,
+  MoreHorizontal,
+  Palette,
 
 } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { blockBackgroundStyle } from "@/lib/block-backgrounds";
+import BlockStyleControls from "./block-editors/BlockStyleControls";
 import {
   getGroupChildren,
   getGroupLayout,
