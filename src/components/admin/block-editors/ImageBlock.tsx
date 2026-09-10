@@ -65,18 +65,36 @@ const ImageBlock = ({ block, onChange }: Props) => {
           }
         />
       </div>
+      {/* Náhled 1:1 se žákovským zobrazením (stejná šířka, poměr stran i zarovnání). */}
       {block.props.url && (
-        <img src={block.props.url} alt="" className="max-h-32 rounded border border-border object-cover" />
+        <figure className={imageAlignClass(block.props.alignment)}>
+          <img
+            src={block.props.url}
+            alt={block.props.alt || block.props.caption || ""}
+            className={`rounded-lg h-auto ${imageWidthClass(block.props.width)}`}
+          />
+          {block.props.caption && (
+            <figcaption className="text-sm text-muted-foreground mt-2">{block.props.caption}</figcaption>
+          )}
+        </figure>
       )}
       {!block.props.url && block.props.icon && (() => {
         const IconCmp = getSlideIcon(block.props.icon);
         return (
-          <div className="flex items-center gap-2 rounded border border-border p-2">
-            <IconCmp style={{ color: block.props.iconColor || "currentColor", width: 40, height: 40 }} />
-            <span className="text-xs text-muted-foreground">Ikona: {block.props.icon}</span>
-            <Button size="sm" variant="ghost" onClick={() => onChange({ ...block.props, icon: undefined, iconColor: undefined })}>
-              Odebrat
-            </Button>
+          <div className={imageAlignClass(block.props.alignment ?? "center")}>
+            <IconCmp
+              className="inline-block"
+              style={{
+                color: block.props.iconColor || "currentColor",
+                width: imageIconSize(block.props.width),
+                height: imageIconSize(block.props.width),
+              }}
+            />
+            <div className="mt-1">
+              <Button size="sm" variant="ghost" onClick={() => onChange({ ...block.props, icon: undefined, iconColor: undefined })}>
+                Odebrat ikonu
+              </Button>
+            </div>
           </div>
         );
       })()}
