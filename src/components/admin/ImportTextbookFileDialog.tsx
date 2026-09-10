@@ -44,8 +44,12 @@ interface Props {
   onImported: () => void;
 }
 
-const ACCEPT = ".pdf,.docx,.pptx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation";
+const ACCEPT = ".pdf,.docx,.pptx,.jpg,.jpeg,.png,.webp,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation,image/jpeg,image/png,image/webp";
 const MAX_BYTES = 25 * 1024 * 1024;
+/** Přípony, které se odstraňují z názvu souboru při tvorbě názvu lekce. */
+const EXT_RE = /\.(pdf|pptx|docx|jpe?g|png|webp)$/i;
+const isImageFile = (file: File) =>
+  /\.(jpe?g|png|webp)$/i.test(file.name) || file.type.startsWith("image/");
 
 const readFileAsBase64 = (file: File) => new Promise<string>((resolve, reject) => {
   const reader = new FileReader();
@@ -104,6 +108,37 @@ const ImportTextbookFileDialog = ({
     try {
       const base64 = await readFileAsBase64(file);
       const isPdf = /\.pdf$/i.test(file.name) || file.type === "application/pdf";
+      const isImage = isImageFile(file);
+
+      // Fotka / sken: nahrajeme ji do úložiště, ať zůstane v lekci jako obrázek
+      // vedle textu, který z ní AI přečte.
+      const sourceImageBlocks: Block[] = [];
+      if (isImage) {
+        try {
+          setProgress("Nahrávám fotku...");
+          const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+          const path = `photo-import/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+          const { error: upErr } = await supabase.storage
+            .from("lesson-images")
+            .upload(path, file, { contentType: file.type || "image/jpeg", upsert: true });
+          if (!upErr) {
+            const { data: urlData } = supabase.storage.from("lesson-images").getPublicUrl(path);
+            if (urlData?.publicUrl) {
+              sourceImageBlocks.push({
+                id: crypto.randomUUID(),
+                type: "image",
+                visible: true,
+                props: { url: urlData.publicUrl, caption: "", width: "full", alignment: "center" },
+              } as unknown as Block);
+            }
+          } else {
+            console.warn("Upload fotky selhal:", upErr);
+          }
+        } catch (err) {
+          console.warn("Upload fotky selhal:", err);
+        }
+      }
+
 
       // STEP 1: Extract text FIRST so we know per-page quality and can decide
       // which pages need a full-page render fallback (scanned/image-only pages).
@@ -384,7 +419,7 @@ const ImportTextbookFileDialog = ({
       const rawLessons = Array.isArray(response.lessons)
         ? response.lessons
         : response.blocks
-          ? [{ title: file.name.replace(/\.(pdf|pptx|docx)$/i, ""), blocks: response.blocks }]
+          ? [{ title: file.name.replace(EXT_RE, ""), blocks: response.blocks }]
           : [];
 
       const lessons = rawLessons.map((lesson, idx) => {
@@ -406,14 +441,15 @@ const ImportTextbookFileDialog = ({
         const fallbackUrls = idx === 0 ? [...leftoverPdf, ...serverEmbedded] : [];
         const fallbackImages = makeImageBlocks(fallbackUrls);
         const extraLinked = idx === 0 ? linkedBlocks : [];
-        const withGallery = [...placed, ...fallbackImages, ...extraLinked];
+        const photoFirst = idx === 0 ? sourceImageBlocks : [];
+        const withGallery = [...photoFirst, ...placed, ...fallbackImages, ...extraLinked];
         return { ...lesson, blocks: withGallery };
       });
 
       const normalizedLessons = lessons
         .map((lesson, index) => ({
           id: `draft-${index}-${Date.now()}`,
-          title: (lesson.title || file.name.replace(/\.(pdf|pptx|docx)$/i, "")).trim() || `Lekce ${index + 1}`,
+          title: (lesson.title || file.name.replace(EXT_RE, "")).trim() || `Lekce ${index + 1}`,
           blocks: Array.isArray(lesson.blocks) ? lesson.blocks : [],
           include: true,
         }))
@@ -509,7 +545,7 @@ const ImportTextbookFileDialog = ({
             Importovat soubor do učebnice
           </DialogTitle>
           <DialogDescription>
-            Nahrajte PDF, DOCX nebo PPTX. AI přečte soubor a připraví editovatelné bloky, které si můžete před uložením upravit.
+            Nahrajte PDF, Word, PowerPoint nebo fotku (JPG, PNG, WebP). AI přečte soubor a připraví editovatelné bloky, které si můžete před uložením upravit.
           </DialogDescription>
         </DialogHeader>
 
@@ -529,7 +565,7 @@ const ImportTextbookFileDialog = ({
                 </p>
               )}
               <p className="text-xs text-muted-foreground mt-3">
-                Podporované formáty: PDF, DOCX, PPTX. Maximálně 25 MB. Soubor se bezpečně odešle do backendu k AI analýze.
+                Podporované formáty: PDF, DOCX, PPTX, JPG, PNG, WebP. Maximálně 25 MB. Soubor se bezpečně odešle do backendu k AI analýze.
               </p>
             </div>
 
@@ -538,7 +574,7 @@ const ImportTextbookFileDialog = ({
               <p>✅ Nadpisy, odstavce, seznamy, tabulky, citáty</p>
               <p>🖼️ Vložené obrázky (PDF/DOCX/PPTX) se vloží automaticky u odpovídajícího textu / snímku jako samostatné bloky, které můžete v editoru libovolně přesouvat.</p>
               <p className="text-xs">Poznámka: vektorové obrázky ve formátu EMF/WMF (staré PPTX) se přeskočí.</p>
-              <p>📎 Podporované formáty: PDF, DOCX, PPTX (max 25 MB)</p>
+              <p>📎 Podporované formáty: PDF, DOCX, PPTX, JPG, PNG, WebP (max 25 MB)</p>
             </div>
 
             <div className="space-y-2 rounded-lg border border-border p-3">
