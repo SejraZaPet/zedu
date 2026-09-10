@@ -111,12 +111,19 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
   let current: any = null;
 
   const flush = () => {
-    if (current && (current.projector.headline || current.projector.body || (current.projector.assetRefs && current.projector.assetRefs.length))) {
+    if (
+      current &&
+      (current.projector.headline ||
+        current.projector.body ||
+        (current.projector.assetRefs && current.projector.assetRefs.length) ||
+        (current.blocks && current.blocks.length))
+    ) {
       current.slideId = `slide-${slideIndex++}`;
       slides.push(current);
     }
     current = null;
   };
+
 
   const newSlide = (headline = ""): any => ({
     slideId: "",
@@ -144,6 +151,40 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
       continue;
     }
 
+    // Spojené bloky ("Snímek") vytvoří vždy JEDEN snímek s dětmi vedle sebe.
+    if (type === "slide_group") {
+      flush();
+      const children: any[] = Array.isArray(props.children) ? props.children : [];
+      const visibleChildren = children.filter((c) => c && c.visible !== false);
+      if (visibleChildren.length === 0) continue;
+
+      const cols = props.layout === 1 ? 1 : props.layout === 3 ? 3 : 2;
+      let headline = "";
+      let bodyChildren = visibleChildren;
+      if (visibleChildren[0]?.type === "heading") {
+        headline = getText(visibleChildren[0].props || {});
+        bodyChildren = visibleChildren.slice(1);
+      }
+      if (bodyChildren.length === 0) {
+        bodyChildren = visibleChildren;
+        headline = "";
+      }
+
+      const groupSlide = newSlide(headline);
+      groupSlide.layout = cols === 3 ? "three-cols" : cols === 2 ? "two-cols" : "full";
+      groupSlide.blocks = bodyChildren;
+      const texts: string[] = [];
+      for (const child of bodyChildren) {
+        const c = blockToBodyText(child);
+        if (c.text) texts.push(c.text);
+        if (c.assetRef) groupSlide.projector.assetRefs.push(c.assetRef);
+      }
+      groupSlide.projector.body = texts.join("\n\n");
+      current = groupSlide;
+      flush();
+      continue;
+    }
+
     if (type === "heading") {
       flush();
       const headline = getText(props);
@@ -151,6 +192,7 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
       current = newSlide(headline);
       continue;
     }
+
 
     const converted = blockToBodyText(block);
 

@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Loader2, Sparkles, Monitor, Smartphone, StickyNote, ChevronLeft, ChevronRight, Save, Zap, Play, CheckCircle2, User, Users } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { flattenSlideGroups } from "@/lib/slide-groups";
 import ActivitySpecGenerator from "./ActivitySpecGenerator";
 import ExportPanel from "./ExportPanel";
 import WorksheetPanel from "./WorksheetPanel";
@@ -86,7 +87,7 @@ const LessonPlanGenerator = ({ lessonId, lessonTitle, lessonBlocks }: Props) => 
   // Extract source text from lesson blocks
   const extractSourceText = (): string => {
     if (!lessonBlocks || lessonBlocks.length === 0) return "";
-    return lessonBlocks
+    return flattenSlideGroups(lessonBlocks as any)
       .filter((b: any) => ["paragraph", "heading", "bullet_list", "summary", "callout", "two_column"].includes(b.type))
       .map((b: any) => {
         if (b.type === "heading") return b.props?.text || "";

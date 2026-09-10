@@ -33,7 +33,8 @@ export type BlockType =
   | "chart"
   | "formula"
   | "audio"
-  | "video";
+  | "video"
+  | "slide_group";
 
 
 export interface Block {
@@ -112,6 +113,7 @@ export const BLOCK_TYPES: { type: BlockType; label: string; icon: string }[] = [
   { type: "formula", label: "Vzorec", icon: "∑" },
   { type: "audio", label: "Zvuk", icon: "🔊" },
   { type: "video", label: "Video (soubor)", icon: "🎬" },
+  { type: "slide_group", label: "Snímek", icon: "🗂" },
 ];
 
 
@@ -197,6 +199,8 @@ export const createDefaultBlock = (type: BlockType): Block => {
           ],
         },
       };
+    case "slide_group":
+      return { ...base, props: { layout: 2, children: [] } };
     default:
       return { ...base, props: {} };
   }
