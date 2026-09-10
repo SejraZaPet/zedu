@@ -3,7 +3,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  SLIDE_ANIMATIONS, SLIDE_FONTS, SLIDE_FONT_SIZES, SLIDE_HIGHLIGHT_COLORS, SLIDE_TEXT_COLORS,
+  SLIDE_FONTS, SLIDE_FONT_SIZES, SLIDE_TEXT_COLORS,
 } from "@/lib/slide-typography";
 
 import type { Block } from "@/lib/textbook-config";
@@ -15,7 +15,7 @@ interface Props {
   showText?: boolean;
 }
 
-/** Per-blok typografie (velikost, barva, font) a animace vstupu v prezentaci. */
+/** Per-blok typografie (velikost, barva, font) pro editor lekce/učebnice. */
 const BlockStyleControls = ({ block, onChange, showText = true }: Props) => {
   const p = block.props || {};
   const set = (patch: Record<string, any>) => onChange({ ...p, ...patch });
