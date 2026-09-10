@@ -209,7 +209,7 @@ interface Props {
 
 
 
-const BlockRenderer = React.memo(({ block, onChange }: { block: Block; onChange: (props: Record<string, any>) => void }) => {
+const BlockRenderer = React.memo(({ block, onChange, showControls = true }: { block: Block; onChange: (props: Record<string, any>) => void; showControls?: boolean }) => {
   switch (block.type) {
     case "heading": return <HeadingBlock block={block} onChange={onChange} />;
     case "paragraph": return <ParagraphBlock block={block} onChange={onChange} />;
@@ -223,7 +223,7 @@ const BlockRenderer = React.memo(({ block, onChange }: { block: Block; onChange:
     case "lesson_link": return <LessonLinkBlock block={block} onChange={onChange} />;
     case "youtube": return <YouTubeBlock block={block} onChange={onChange} />;
     case "callout": return <CalloutBlock block={block} onChange={onChange} />;
-    case "divider": return <DividerBlock block={block} onChange={onChange} />;
+    case "divider": return <DividerBlock block={block} onChange={onChange} showControls={showControls} />;
     case "two_column": return <TwoColumnBlock block={block} onChange={onChange} />;
     case "gallery": return <GalleryBlock block={block} onChange={onChange} />;
     case "summary": return <SummaryBlock block={block} onChange={onChange} />;
@@ -583,7 +583,7 @@ const SortableBlock = React.memo(({
 
       <div className="px-1 py-1" style={{ color: "#171717" }}>
         <div style={bgStyle}>
-          <BlockRenderer block={block} onChange={handleUpdate} />
+          <BlockRenderer block={block} onChange={handleUpdate} showControls={showChrome} />
         </div>
       </div>
     </div>

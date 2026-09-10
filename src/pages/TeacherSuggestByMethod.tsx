@@ -104,6 +104,22 @@ const THINKING_LABELS: Record<ThinkingType, string> = {
   practical: "Praktické uplatnění",
 };
 
+/** Srozumitelné české popisky druhů aktivit (AI vrací technické konstanty). */
+const ACTIVITY_KIND_LABELS: Record<string, string> = {
+  quiz: "Kvíz",
+  worksheet: "Pracovní list",
+  live_game: "Živá hra",
+  lesson_block: "Blok v lekci",
+  offline_activity: "Aktivita bez počítače",
+  discussion: "Diskuze",
+};
+
+const activityKindLabel = (kind?: string) => {
+  const key = (kind ?? "").trim().toLowerCase();
+  if (!key) return "";
+  return ACTIVITY_KIND_LABELS[key] ?? key.replace(/_/g, " ");
+};
+
 const PHASE_LABELS: Record<string, string> = {
   uvod: "Úvod",
   motivace: "Motivace",
@@ -521,7 +537,7 @@ export default function TeacherSuggestByMethod() {
         push("heading", { level: 3, text: p.timeMin ? `${label} (${p.timeMin} min)` : label });
         if (p.description) push("paragraph", { text: p.description });
         const items = (p.activities ?? [])
-          .map((a) => [a.kind, a.title].filter(Boolean).join(": "))
+          .map((a) => [activityKindLabel(a.kind), a.title].filter(Boolean).join(": "))
           .filter(Boolean);
         if (items.length) push("bullet_list", { items });
       }
@@ -962,15 +978,17 @@ export default function TeacherSuggestByMethod() {
                       {p.activities && p.activities.length > 0 && (
                         <ul className="text-sm space-y-1">
                           {p.activities.map((a, i) => (
-                            <li key={i} className="flex gap-2">
-                              <span className="text-primary">•</span>
-                              <span>
-                                <strong className="text-xs uppercase text-muted-foreground mr-1">
-                                  {a.kind}
-                                </strong>
-                                {a.title}
-                              </span>
-                            </li>
+                             <li key={i} className="flex gap-2">
+                               <span className="text-primary">•</span>
+                               <span className="flex flex-wrap items-center gap-2">
+                                 {a.kind && (
+                                   <Badge variant="secondary" className="text-[11px] font-medium">
+                                     {activityKindLabel(a.kind)}
+                                   </Badge>
+                                 )}
+                                 <span>{a.title}</span>
+                               </span>
+                             </li>
                           ))}
                         </ul>
                       )}

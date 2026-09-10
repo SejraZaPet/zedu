@@ -134,7 +134,10 @@ export const autoGridFrames = (count: number): BlockFrame[] => {
   const pad = 4;
   const gap = 3;
   const w = (100 - pad * 2 - gap * (cols - 1)) / cols;
-  const h = (100 - pad * 2 - gap * (rows - 1)) / rows;
+  // Nižší výchozí výška: rámce nezaberou celou plochu, ať to nepůsobí prázdně.
+  const ROW_HEIGHT = 26;
+  const available = 100 - pad * 2 - gap * (rows - 1);
+  const h = Math.min(ROW_HEIGHT, available / rows);
   return Array.from({ length: count }, (_, i) => {
     const c = i % cols;
     const r = Math.floor(i / cols);
