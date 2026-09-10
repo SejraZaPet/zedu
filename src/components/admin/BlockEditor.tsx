@@ -242,6 +242,73 @@ BlockRenderer.displayName = "BlockRenderer";
 /** Editor jednoho bloku (bez seznamu) – použito v panelu editoru prezentací. */
 export const SingleBlockEditor = BlockRenderer;
 
+/**
+ * Blok uvnitř spojeného snímku (`slide_group`) – hlavička s typem, tlačítkem
+ * vlastností (velikost, font, pozadí) a vyjmutím; obsah respektuje pozadí bloku.
+ * Používá se v obou režimech skupiny (Sloupce i Volné rozmístění).
+ */
+const GroupChildBlock = ({
+  child,
+  onChange,
+  onRemove,
+}: {
+  child: Block;
+  onChange: (props: Record<string, any>) => void;
+  onRemove: () => void;
+}) => {
+  const [propsOpen, setPropsOpen] = useState(false);
+  const ChildIcon = BLOCK_ICON[child.type];
+  const childLabel = BLOCK_TYPES.find((t) => t.type === child.type)?.label ?? child.type;
+  const isText = INLINE_TEXT_TYPES.has(child.type);
+  const bgStyle = blockBackgroundStyle(child.props);
+
+  return (
+    <>
+      <div className="mb-1.5 flex items-center gap-1.5">
+        {ChildIcon && <ChildIcon className="h-3.5 w-3.5 text-muted-foreground" />}
+        <span className="flex-1 text-[11px] font-bold text-muted-foreground">{childLabel}</span>
+        <button
+          type="button"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={() => setPropsOpen((v) => !v)}
+          aria-pressed={propsOpen}
+          aria-label={`Vlastnosti bloku ${childLabel}`}
+          title="Vlastnosti bloku (velikost, font, pozadí)"
+          className={`inline-flex h-6 w-6 items-center justify-center rounded hover:bg-muted ${
+            propsOpen ? "bg-muted text-foreground" : "text-muted-foreground"
+          }`}
+        >
+          <Palette className="h-3.5 w-3.5" />
+        </button>
+        <button
+          type="button"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={onRemove}
+          className="inline-flex h-6 w-6 items-center justify-center rounded hover:bg-muted"
+          title="Vyjmout ze snímku"
+        >
+          <IconX className="h-3.5 w-3.5 text-muted-foreground" />
+        </button>
+      </div>
+
+      {propsOpen && (
+        <div
+          className="mb-2 rounded-md border border-border bg-background p-2 shadow-sm"
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <BlockStyleControls block={child} onChange={onChange} showText={isText} compact />
+        </div>
+      )}
+
+      <div onPointerDown={(e) => e.stopPropagation()}>
+        <div style={bgStyle}>
+          <BlockRenderer block={child} onChange={onChange} />
+        </div>
+      </div>
+    </>
+  );
+};
+
 type ReplaceHandler = (
   id: string,
   target: Block["type"],
