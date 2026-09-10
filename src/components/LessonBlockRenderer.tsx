@@ -276,10 +276,14 @@ const LessonBlockInner = ({ block, blockIndex, onActivityComplete, isTeacher }: 
       const children = Array.isArray(p.children) ? (p.children as Block[]) : [];
       const visibleChildren = children.filter((c) => c && c.visible !== false);
       if (visibleChildren.length === 0) return null;
+      const groupMinHeight = getGroupMinHeight(block);
+      const withGroupHeight = (node: React.ReactNode) =>
+        groupMinHeight ? <div style={{ minHeight: groupMinHeight }}>{node}</div> : <>{node}</>;
       if (p.mode === "free") {
         const frames = getGroupChildFrames(block);
-        return (
+        return withGroupHeight(
           <FreeFrameCanvas
+
             items={visibleChildren.map((child) => ({
               id: child.id,
               frame: frames[child.id],
