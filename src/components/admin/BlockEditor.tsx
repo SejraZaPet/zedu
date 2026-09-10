@@ -957,7 +957,18 @@ const SortableSlideGroup = React.memo(({
         )}
       </div>
 
+      <div
+        role="separator"
+        aria-label="Změnit výšku snímku"
+        title="Tažením změníte výšku celého snímku, dvojklikem vrátíte automatickou výšku"
+        onPointerDown={startGroupResize}
+        onDoubleClick={() => onMinHeightChange(block.id, null)}
+        className="absolute bottom-0 left-0 right-0 flex h-3 cursor-ns-resize items-center justify-center rounded-b-[13px] hover:bg-primary/10"
+      >
+        <span className="h-1 w-14 rounded-full bg-[hsl(var(--secondary-dark))]/40" />
+      </div>
     </div>
+
   );
 });
 SortableSlideGroup.displayName = "SortableSlideGroup";
