@@ -1609,6 +1609,19 @@ export function SlideBody({
     .filter((x): x is { block: Block; frame: BlockFrame } => !!x.frame);
   const blocks: Block[] = allBlocks.filter((b) => !getBlockFrame(b));
 
+  /**
+   * V editoru lekce smí volné rozmístění přesahovat pod spodní hranu 16:9 plátna.
+   * Prezentace má pevný poměr 16:9, proto obsah proporčně zmenšíme, aby se celý
+   * vešel (stejné relativní rozmístění, jen menší měřítko) a karty se nepřekrývaly.
+   */
+  const freeFitScale = (() => {
+    if (editable || framedBlocks.length === 0) return 1;
+    const bottom = Math.max(100, ...framedBlocks.map((x) => x.frame.y + x.frame.h));
+    const right = Math.max(100, ...framedBlocks.map((x) => x.frame.x + x.frame.w));
+    return Math.min(1, 100 / bottom, 100 / right);
+  })();
+
+
   /** Aktuální výběr (fáze 3) – pole ID, i pro jediný blok. */
   const selectedIds = selectedBlockIds && selectedBlockIds.length
     ? selectedBlockIds
