@@ -833,18 +833,22 @@ const SortableSlideGroup = React.memo(({
             />
           </div>
         ) : (
-          <div className={gridClass}>
-            {children.map((child) => (
-              <div key={child.id} className="rounded-[10px] border border-border bg-[#FAFAFA] p-2 min-w-0">
-                <GroupChildBlock
+          <div className="space-y-2">
+            <p className="text-[11px] text-muted-foreground">
+              Výšku karty upravíte tažením za její spodní okraj, dvojklik na okraj vrátí automatickou výšku.
+            </p>
+            <div className={`${gridClass} items-start`}>
+              {children.map((child) => (
+                <ColumnGroupCard
+                  key={child.id}
                   child={child}
                   onChange={(props) => onChildUpdate(block.id, child.id, props)}
                   onRemove={() => onChildRemove(block.id, child.id)}
+                  onHeightChange={(h) => onChildHeightChange(block.id, child.id, h)}
                 />
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-
         )}
       </div>
 
