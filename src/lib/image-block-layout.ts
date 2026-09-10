@@ -24,3 +24,9 @@ export const imageAlignClass = (alignment?: string): string =>
 
 export const imageIconSize = (width: ImageBlockWidth): number =>
   width === "small" || width === "third" ? 48 : width === "medium" || width === "half" ? 96 : 144;
+
+/**
+ * Jednotný vzhled hero obrázku (banneru) lekce – stejný poměr/ořez
+ * v editačním formuláři, v náhledu i v žákovském zobrazení.
+ */
+export const HERO_IMAGE_CLASS = "w-full rounded-lg object-cover max-h-80";
