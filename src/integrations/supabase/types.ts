@@ -7400,15 +7400,6 @@ export type Database = {
         }
         Returns: boolean
       }
-      can_attach_textbook_to_class: {
-        Args: {
-          _class_id: string
-          _textbook_id: string
-          _textbook_type: string
-          _user_id: string
-        }
-        Returns: boolean
-      }
       can_creator_sell: { Args: { _creator_id: string }; Returns: boolean }
       can_manage_credentials: {
         Args: { _profile_id: string }
