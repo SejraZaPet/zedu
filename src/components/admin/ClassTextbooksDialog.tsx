@@ -112,11 +112,12 @@ const ClassTextbooksDialog = ({ classId, className, open, onOpenChange }: Props)
         .map((g) => ({ id: g.id, title: g.label, subtitle: g.abbreviation || "" }))
     );
 
-    // Available teacher (mine)
+    // Available teacher textbooks are scoped by RLS:
+    // admins see all, school admins see textbooks owned within their school,
+    // and teachers retain access to their own textbooks.
     const { data: allTeacher } = await supabase
       .from("teacher_textbooks")
       .select("id, title, subject")
-      .eq("teacher_id", session.user.id)
       .is("deleted_at", null)
       .order("title");
     const teacherSet = new Set(teacherIds);
