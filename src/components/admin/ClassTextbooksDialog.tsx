@@ -117,18 +117,24 @@ const ClassTextbooksDialog = ({ classId, className, open, onOpenChange }: Props)
         .map((g) => ({ id: g.id, title: g.label, subtitle: g.abbreviation || "" }))
     );
 
-    // Available teacher textbooks are scoped by RLS:
-    // admins see all, school admins see textbooks owned within their school,
-    // and teachers retain access to their own textbooks.
+    // Available teacher textbooks are scoped to the SAME SCHOOL as the edited
+    // class. This mirrors the INSERT RLS check (owner_profile.school_id =
+    // class.school_id) so the UI never offers a textbook that would be rejected
+    // on save. For admins (whose RLS SELECT sees everything) this is the only
+    // filter that prevents cross-school textbooks from showing up.
     const { data: allTeacher } = await supabase
       .from("teacher_textbooks")
-      .select("id, title, subject")
+      .select("id, title, subject, teacher_id, owner:teacher_id(school_id)")
       .is("deleted_at", null)
       .order("title");
     const teacherSet = new Set(teacherIds);
     setAvailableTeacher(
       ((allTeacher ?? []) as any[])
         .filter((t) => !teacherSet.has(t.id))
+        .filter((t) => {
+          const ownerSchoolId = (t as any).owner?.school_id ?? null;
+          return ownerSchoolId === classSchoolId;
+        })
         .map((t) => ({ id: t.id, title: t.title, subtitle: t.subject || "" }))
     );
 
