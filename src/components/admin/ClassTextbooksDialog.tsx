@@ -65,14 +65,19 @@ const ClassTextbooksDialog = ({ classId, className, open, onOpenChange }: Props)
       return;
     }
 
-    // Linked
-    const { data: links } = await supabase
-      .from("class_textbooks")
-      .select("textbook_id, textbook_type")
-      .eq("class_id", classId);
+    // Linked + class school (used to scope available teacher textbooks)
+    const [linksRes, classRes] = await Promise.all([
+      supabase
+        .from("class_textbooks")
+        .select("textbook_id, textbook_type")
+        .eq("class_id", classId),
+      supabase.from("classes").select("school_id").eq("id", classId).maybeSingle(),
+    ]);
+    const links = linksRes.data ?? [];
+    const classSchoolId: string | null = (classRes.data as any)?.school_id ?? null;
 
-    const globalIds = (links ?? []).filter(l => l.textbook_type === "global").map(l => l.textbook_id);
-    const teacherIds = (links ?? []).filter(l => l.textbook_type === "teacher").map(l => l.textbook_id);
+    const globalIds = links.filter(l => l.textbook_type === "global").map(l => l.textbook_id);
+    const teacherIds = links.filter(l => l.textbook_type === "teacher").map(l => l.textbook_id);
 
     const [linkedGlobalRes, linkedTeacherRes] = await Promise.all([
       globalIds.length > 0
