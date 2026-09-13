@@ -260,16 +260,20 @@ const GroupChildBlock = ({
   child,
   onChange,
   onRemove,
+  onCreateActivity,
 }: {
   child: Block;
   onChange: (props: Record<string, any>) => void;
   onRemove: () => void;
+  onCreateActivity?: () => void;
 }) => {
   const [propsOpen, setPropsOpen] = useState(false);
   const ChildIcon = BLOCK_ICON[child.type];
   const childLabel = BLOCK_TYPES.find((t) => t.type === child.type)?.label ?? child.type;
   const isText = INLINE_TEXT_TYPES.has(child.type);
   const bgStyle = blockBackgroundStyle(child.props);
+  const canCreateActivity =
+    !!onCreateActivity && child.type !== "activity" && blockHasAiText(child);
 
   return (
     <>
@@ -289,6 +293,26 @@ const GroupChildBlock = ({
         >
           <Palette className="h-3.5 w-3.5" />
         </button>
+        {canCreateActivity && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                onPointerDown={(e) => e.stopPropagation()}
+                aria-label={`Možnosti bloku ${childLabel}`}
+                className="inline-flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted"
+              >
+                <MoreHorizontal className="h-3.5 w-3.5" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem onClick={() => onCreateActivity?.()}>
+                <IconSparkles className="mr-2 h-4 w-4" />
+                Vytvořit aktivitu z tohoto obsahu
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
         <button
           type="button"
           onPointerDown={(e) => e.stopPropagation()}
@@ -299,6 +323,7 @@ const GroupChildBlock = ({
           <IconX className="h-3.5 w-3.5 text-muted-foreground" />
         </button>
       </div>
+
 
       {propsOpen && (
         <div
