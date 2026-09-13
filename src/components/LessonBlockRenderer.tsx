@@ -125,6 +125,8 @@ interface LessonBlockProps {
   blockIndex?: number;
   onActivityComplete?: (activityIndex: number, activityType: string, score: number, maxScore: number) => void;
   isTeacher?: boolean;
+  /** Vzhled aktivity na snímku prezentace (mimo prezentaci se nepoužívá). */
+  activityAppearance?: ActivitySlideAppearance;
 }
 
 /** Obal s volitelným pozadím bloku (Poznámka, Důležité, …). */
@@ -136,7 +138,7 @@ export const LessonBlock = (props: LessonBlockProps): JSX.Element | null => {
   return <div style={bgStyle}>{inner}</div>;
 };
 
-const LessonBlockInner = ({ block, blockIndex, onActivityComplete, isTeacher }: LessonBlockProps): JSX.Element | null => {
+const LessonBlockInner = ({ block, blockIndex, onActivityComplete, isTeacher, activityAppearance }: LessonBlockProps): JSX.Element | null => {
   const p = block.props;
 
   switch (block.type) {
