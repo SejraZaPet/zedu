@@ -51,6 +51,19 @@ const FreeFrameCanvas = ({
   const contentRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [guides, setGuides] = useState<SnapGuides | null>(null);
   const editable = !!onChangeFrame;
+  // V náhledu musí pevná plocha 16:9 pojmout i rámce, které byly v editoru
+  // vytažené pod její spodní nebo pravý okraj. Poměrné zmenšení zachová jejich
+  // vzájemné rozmístění a nevytváří pod plátnem falešnou prázdnou výšku.
+  const readOnlyFitScale = editable
+    ? 1
+    : Math.min(
+        1,
+        100 /
+          Math.max(
+            100,
+            ...items.flatMap((item) => [item.frame.x + item.frame.w, item.frame.y + item.frame.h]),
+          ),
+      );
 
   /** Dvojklik na spodní pruh: výška karty podle skutečného obsahu. */
   const fitHeight = (item: FreeFrameItem) => {
@@ -120,68 +133,74 @@ const FreeFrameCanvas = ({
         editable ? "overflow-visible bg-[#FAFAFA] border border-dashed border-border" : "overflow-hidden"
       } ${className}`}
     >
-      {items.map((item) => {
-        const active = selectedId === item.id;
-        return (
-          <div
-            key={item.id}
-            data-free-frame-item={item.id}
-            className={`absolute ${editable ? "rounded-md" : ""} ${
-              editable
-                ? active
-                  ? "ring-2 ring-primary"
-                  : "ring-1 ring-border hover:ring-primary/50"
-                : ""
-            }`}
-            style={{
-              left: `${item.frame.x}%`,
-              top: `${item.frame.y}%`,
-              width: `${item.frame.w}%`,
-              height: `${item.frame.h}%`,
-            }}
-            onPointerDown={editable ? (e) => startDrag(e, item, "move") : undefined}
-          >
+      <div
+        className="absolute inset-0 origin-top-left"
+        data-free-fit-scale={readOnlyFitScale < 1 ? readOnlyFitScale.toFixed(4) : undefined}
+        style={readOnlyFitScale < 1 ? { transform: `scale(${readOnlyFitScale})` } : undefined}
+      >
+        {items.map((item) => {
+          const active = selectedId === item.id;
+          return (
             <div
-              ref={(node) => {
-                contentRefs.current[item.id] = node;
+              key={item.id}
+              data-free-frame-item={item.id}
+              className={`absolute ${editable ? "rounded-md" : ""} ${
+                editable
+                  ? active
+                    ? "ring-2 ring-primary"
+                    : "ring-1 ring-border hover:ring-primary/50"
+                  : ""
+              }`}
+              style={{
+                left: `${item.frame.x}%`,
+                top: `${item.frame.y}%`,
+                width: `${item.frame.w}%`,
+                height: `${item.frame.h}%`,
               }}
-              className={`h-full w-full overflow-hidden ${editable ? "p-1.5" : ""}`}
+              onPointerDown={editable ? (e) => startDrag(e, item, "move") : undefined}
             >
-              {item.node}
-            </div>
-            {editable &&
-              HANDLES.filter((h) => !(heightBar && h.handle === "s")).map((h) => (
-                <div
-                  key={h.handle}
-                  role="presentation"
-                  aria-label={`Změnit velikost ${h.handle}`}
-                  data-frame-handle={h.handle}
-                  onPointerDown={(e) => startDrag(e, item, h.handle)}
-                  className={`absolute h-2.5 w-2.5 rounded-sm border border-primary bg-white ${h.className} ${
-                    active ? "opacity-100" : "opacity-0 hover:opacity-100"
-                  }`}
-                  style={{ cursor: h.cursor }}
-                />
-              ))}
-            {editable && heightBar && (
               <div
-                role="separator"
-                aria-label="Změnit výšku karty"
-                title="Tažením změníte výšku karty, dvojklikem ji přizpůsobíte obsahu"
-                data-frame-handle="s"
-                onPointerDown={(e) => startDrag(e, item, "s")}
-                onDoubleClick={(e) => {
-                  e.stopPropagation();
-                  fitHeight(item);
+                ref={(node) => {
+                  contentRefs.current[item.id] = node;
                 }}
-                className="absolute bottom-0 left-0 right-0 flex h-3 cursor-ns-resize items-center justify-center rounded-b-md bg-primary/5 hover:bg-primary/15"
+                className={`h-full w-full overflow-hidden ${editable ? "p-1.5" : ""}`}
               >
-                <span className="h-1 w-8 rounded-full bg-primary/50" />
+                {item.node}
               </div>
-            )}
-          </div>
-        );
-      })}
+              {editable &&
+                HANDLES.filter((h) => !(heightBar && h.handle === "s")).map((h) => (
+                  <div
+                    key={h.handle}
+                    role="presentation"
+                    aria-label={`Změnit velikost ${h.handle}`}
+                    data-frame-handle={h.handle}
+                    onPointerDown={(e) => startDrag(e, item, h.handle)}
+                    className={`absolute h-2.5 w-2.5 rounded-sm border border-primary bg-white ${h.className} ${
+                      active ? "opacity-100" : "opacity-0 hover:opacity-100"
+                    }`}
+                    style={{ cursor: h.cursor }}
+                  />
+                ))}
+              {editable && heightBar && (
+                <div
+                  role="separator"
+                  aria-label="Změnit výšku karty"
+                  title="Tažením změníte výšku karty, dvojklikem ji přizpůsobíte obsahu"
+                  data-frame-handle="s"
+                  onPointerDown={(e) => startDrag(e, item, "s")}
+                  onDoubleClick={(e) => {
+                    e.stopPropagation();
+                    fitHeight(item);
+                  }}
+                  className="absolute bottom-0 left-0 right-0 flex h-3 cursor-ns-resize items-center justify-center rounded-b-md bg-primary/5 hover:bg-primary/15"
+                >
+                  <span className="h-1 w-8 rounded-full bg-primary/50" />
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
 
       {editable && guides?.v.map((v) => (
         <div key={`v${v}`} className="pointer-events-none absolute top-0 bottom-0 w-px bg-primary" style={{ left: `${v}%` }} />

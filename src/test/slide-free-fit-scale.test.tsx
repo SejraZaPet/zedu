@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { render } from "@testing-library/react";
 import SlideCanvas from "@/components/admin/SlideCanvas";
+import FreeFrameCanvas from "@/components/blocks/FreeFrameCanvas";
 
 const slide = {
   slideId: "s1",
@@ -27,5 +28,21 @@ describe("volné rozmístění v prezentaci", () => {
     const fits = { ...slide, blocks: [slide.blocks[0]] };
     const { container } = render(<SlideCanvas slide={fits as any} />);
     expect(container.querySelector("[data-free-fit-scale]")).toBeNull();
+  });
+});
+
+describe("volné rozmístění v náhledu lekce", () => {
+  it("obsah přesahující plochu zmenší bez navýšení výšky kontejneru", () => {
+    const { container } = render(
+      <FreeFrameCanvas
+        items={[
+          { id: "a", frame: { x: 4, y: 4, w: 91, h: 20 }, node: <div>A</div> },
+          { id: "b", frame: { x: 4, y: 145, w: 91, h: 31 }, node: <div>B</div> },
+        ]}
+      />,
+    );
+    const layer = container.querySelector("[data-free-fit-scale]") as HTMLElement;
+    expect(Number(layer.dataset.freeFitScale)).toBeCloseTo(100 / 176, 3);
+    expect(container.querySelector("[data-free-frame-canvas]")?.className).toContain("aspect-video");
   });
 });
