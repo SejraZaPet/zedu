@@ -14,6 +14,7 @@ import {
 import {
   BookOpen, Copy, Eye, Search, ArrowUpDown, LayoutGrid, List as ListIcon,
   MoreVertical, GripVertical, Archive, ArchiveRestore, Trash2, Share2, RotateCcw,
+  Globe, Lock, Users,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -43,6 +44,31 @@ export interface Textbook {
   order_index?: number;
   deleted_at?: string | null;
 }
+
+/** Viditelný stav sdílení učebnice — vždy je jasné, kdo ji vidí. */
+export const VisibilityBadge = ({ visibility }: { visibility?: string }) => {
+  const level = visibility === "public" || visibility === "shared" ? visibility : "private";
+  if (level === "public") {
+    return (
+      <Badge className="text-[10px] gap-1" title="Nabízeno všem učitelům v Bezli Marketu">
+        <Globe className="w-3 h-3" /> Veřejné v Marketu
+      </Badge>
+    );
+  }
+  if (level === "shared") {
+    return (
+      <Badge variant="secondary" className="text-[10px] gap-1" title="Sdíleno konkrétním učitelům">
+        <Users className="w-3 h-3" /> Sdíleno učiteli
+      </Badge>
+    );
+  }
+  return (
+    <Badge variant="outline" className="text-[10px] gap-1 text-muted-foreground" title="Nesdíleno — vidíte ji jen vy a vaši žáci">
+      <Lock className="w-3 h-3" /> Jen moje
+    </Badge>
+  );
+};
+
 
 interface Props {
   textbooks: Textbook[];
@@ -230,7 +256,7 @@ const TextbookList = ({ textbooks, trashedTextbooks = [], loading, subjects, onO
         </DropdownMenuItem>
         {onShare && (
           <DropdownMenuItem onClick={() => onShare(tb)}>
-            <Share2 className="w-4 h-4 mr-2" /> Sdílet
+            <Share2 className="w-4 h-4 mr-2" /> Sdílení a viditelnost
           </DropdownMenuItem>
         )}
         {tb.archived
@@ -267,6 +293,7 @@ const TextbookList = ({ textbooks, trashedTextbooks = [], loading, subjects, onO
               )}
               <h3 className="font-heading font-semibold text-lg truncate">{tb.title}</h3>
               {tb.archived && <Badge variant="outline" className="text-[10px]">Archivováno</Badge>}
+              <VisibilityBadge visibility={tb.visibility} />
             </div>
             {matchedSubject && (
               <div className="flex gap-1 mt-1 flex-wrap">
@@ -313,6 +340,7 @@ const TextbookList = ({ textbooks, trashedTextbooks = [], loading, subjects, onO
         <div className="text-sm text-muted-foreground hidden sm:block">{matchedSubject?.label ?? tb.subject}</div>
         <div className="font-mono text-xs bg-primary/10 text-primary px-2 py-1 rounded">{tb.access_code}</div>
         {tb.archived && <Badge variant="outline" className="text-[10px]">Archivováno</Badge>}
+        <VisibilityBadge visibility={tb.visibility} />
         {renderActions(tb)}
       </div>
     );

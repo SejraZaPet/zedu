@@ -867,3 +867,81 @@ export async function deleteReview(reviewId: string): Promise<void> {
   const { error } = await supabase.from("content_reviews" as any).delete().eq("id", reviewId);
   if (error) throw error;
 }
+
+// ------------------------- Úrovně sdílení / zrušení -------------------------
+
+export type ShareLevel = "private" | "shared" | "public";
+
+export interface OutgoingShare {
+  id: string;
+  sharedWith: string | null; // null = veřejně v Bezli Marketu
+  recipientName: string | null;
+  includesWorksheets: boolean;
+  includesPresentations: boolean;
+  createdAt: string;
+}
+
+const KIND_COLUMN: Record<ShareTargetKind, string> = {
+  textbook: "textbook_id",
+  worksheet: "worksheet_id",
+  lesson_plan: "lesson_plan_id",
+};
+
+/** Aktivní sdílení, která uživatel sám vytvořil pro daný obsah. */
+export async function listMyShares(
+  kind: ShareTargetKind,
+  targetId: string,
+): Promise<OutgoingShare[]> {
+  const userId = await requireUserId();
+  const { data, error } = await supabase
+    .from("content_shares" as any)
+    .select(
+      `id, shared_with, includes_worksheets, includes_presentations, created_at,
+       recipient:profiles!content_shares_shared_with_fkey ( first_name, last_name )`,
+    )
+    .eq(KIND_COLUMN[kind], targetId)
+    .eq("shared_by", userId)
+    .eq("status", "active")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return ((data ?? []) as any[]).map((r) => ({
+    id: r.id as string,
+    sharedWith: (r.shared_with as string | null) ?? null,
+    recipientName: r.recipient
+      ? [r.recipient.first_name, r.recipient.last_name].filter(Boolean).join(" ").trim() || null
+      : null,
+    includesWorksheets: !!r.includes_worksheets,
+    includesPresentations: !!r.includes_presentations,
+    createdAt: r.created_at as string,
+  }));
+}
+
+/** Úroveň sdílení podle aktivních sdílení (bez ohledu na to, kdo je vytvořil). */
+export function shareLevelFromShares(shares: OutgoingShare[]): ShareLevel {
+  if (shares.some((s) => s.sharedWith === null)) return "public";
+  if (shares.length > 0) return "shared";
+  return "private";
+}
+
+/** Zruší jedno konkrétní sdílení (přímé i veřejné v Marketu). */
+export async function revokeShare(shareId: string): Promise<void> {
+  const { error } = await supabase.from("content_shares" as any).delete().eq("id", shareId);
+  if (error) throw error;
+}
+
+/** Zruší všechna vlastní aktivní sdílení daného obsahu → obsah je zpět jen můj. */
+export async function revokeAllShares(
+  kind: ShareTargetKind,
+  targetId: string,
+): Promise<number> {
+  const userId = await requireUserId();
+  const { data, error } = await supabase
+    .from("content_shares" as any)
+    .delete()
+    .eq(KIND_COLUMN[kind], targetId)
+    .eq("shared_by", userId)
+    .eq("status", "active")
+    .select("id");
+  if (error) throw error;
+  return (data ?? []).length;
+}

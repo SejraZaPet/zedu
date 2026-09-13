@@ -7580,6 +7580,10 @@ export type Database = {
       }
       class_engagement_stats: { Args: { _class_id: string }; Returns: Json }
       clear_player_hand: { Args: { _player_id: string }; Returns: undefined }
+      compute_textbook_visibility: {
+        Args: { _textbook_id: string }
+        Returns: string
+      }
       creator_payout_target: {
         Args: { _creator_id: string }
         Returns: {
