@@ -719,7 +719,7 @@ const SortableBlock = React.memo(({
                 {block.visible ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
                 {block.visible ? "Skrýt pro žáky" : "Zobrazit žákům"}
               </DropdownMenuItem>
-              {onCreateActivity && block.type !== "activity" && hasAiText && (
+              {onCreateActivity && block.type !== "activity" && blockHasAiText(block) && (
                 <DropdownMenuItem onClick={() => onCreateActivity(block.id)}>
                   <IconSparkles className="mr-2 h-4 w-4" /> Vytvořit aktivitu z tohoto obsahu
                 </DropdownMenuItem>
