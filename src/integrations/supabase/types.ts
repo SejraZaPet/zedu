@@ -3170,38 +3170,64 @@ export type Database = {
       }
       lesson_topic_assignments: {
         Row: {
+          class_id: string | null
           created_at: string
           id: string
           lesson_id: string
           scheduled_publish_at: string | null
+          school_term: string
+          scope_all_grades: boolean
           sort_order: number
           status: string
+          subject_group_id: string | null
           topic_id: string
         }
         Insert: {
+          class_id?: string | null
           created_at?: string
           id?: string
           lesson_id: string
           scheduled_publish_at?: string | null
+          school_term?: string
+          scope_all_grades?: boolean
           sort_order?: number
           status?: string
+          subject_group_id?: string | null
           topic_id: string
         }
         Update: {
+          class_id?: string | null
           created_at?: string
           id?: string
           lesson_id?: string
           scheduled_publish_at?: string | null
+          school_term?: string
+          scope_all_grades?: boolean
           sort_order?: number
           status?: string
+          subject_group_id?: string | null
           topic_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "lesson_topic_assignments_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "lesson_topic_assignments_lesson_id_fkey"
             columns: ["lesson_id"]
             isOneToOne: false
             referencedRelation: "textbook_lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lesson_topic_assignments_subject_group_id_fkey"
+            columns: ["subject_group_id"]
+            isOneToOne: false
+            referencedRelation: "subject_groups"
             referencedColumns: ["id"]
           },
           {
@@ -7430,6 +7456,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      can_manage_lesson_topic_assignment: {
+        Args: {
+          _class_id?: string
+          _subject_group_id?: string
+          _user_id?: string
+        }
+        Returns: boolean
+      }
       can_manage_reservation: {
         Args: { _reservation_id: string }
         Returns: boolean
@@ -7447,7 +7481,15 @@ export type Database = {
         Args: { _placement_id: string; _user_id?: string }
         Returns: boolean
       }
+      can_view_lesson_topic_assignment: {
+        Args: { _assignment_id: string; _user_id?: string }
+        Returns: boolean
+      }
       can_view_teacher_textbook_lesson: {
+        Args: { _lesson_id: string; _user_id?: string }
+        Returns: boolean
+      }
+      can_view_textbook_lesson: {
         Args: { _lesson_id: string; _user_id?: string }
         Returns: boolean
       }
