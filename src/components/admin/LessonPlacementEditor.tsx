@@ -70,7 +70,8 @@ const LessonPlacementEditor = ({ lessonId, placements, onChange }: Props) => {
     fetchTopics();
   }, []);
 
-  // Load existing placements when editing
+  // Load existing placements when editing. An empty result must clear stale
+  // editor state when the sheet switches between lessons.
   useEffect(() => {
     if (!lessonId) return;
     const loadPlacements = async () => {
@@ -78,7 +79,7 @@ const LessonPlacementEditor = ({ lessonId, placements, onChange }: Props) => {
         .from("lesson_placements")
         .select("*")
         .eq("lesson_id", lessonId);
-      if (data && data.length > 0) {
+      if (data) {
         onChange(data.map((p: any) => ({
           id: p.id,
           subject_slug: p.subject_slug,
@@ -360,7 +361,8 @@ export default LessonPlacementEditor;
 export const savePlacements = async (lessonId: string, placements: Placement[]) => {
   const incompleteTarget = placements.find((p) =>
     (p.target_type === "class" && !p.class_id)
-    || (p.target_type === "group" && !p.subject_group_id),
+    || (p.target_type === "group" && !p.subject_group_id)
+    || (!p.target_type && !p.class_id && !p.subject_group_id ? false : p.class_id === null && p.subject_group_id === null),
   );
   if (incompleteTarget) throw new Error("Vyberte konkrétní třídu nebo skupinu.");
 
