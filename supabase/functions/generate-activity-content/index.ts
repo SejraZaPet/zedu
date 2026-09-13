@@ -15,7 +15,7 @@ const json = (body: unknown, status = 200) =>
 
 /** Popis požadovaného JSON tvaru pro každý typ aktivity. */
 const SHAPES: Record<string, string> = {
-  quiz: `{"quiz":{"questions":[{"question":"...","answers":[{"text":"...","correct":true},{"text":"...","correct":false}],"explanation":"..."}]}} – POLE 5 až 8 RŮZNÝCH otázek (nikdy jen jedna!), každá otázka má 4 možnosti a přesně 1 správnou a krátké vysvětlení`,
+  quiz: `{"quiz":{"questions":[{"question":"...","answers":[{"text":"...","correct":true},{"text":"...","correct":false}],"explanation":"..."}]}} – POLE RŮZNÝCH otázek (nikdy jen jedna!), každá otázka má 4 možnosti a přesně 1 správnou a krátké vysvětlení`,
   flashcards: `{"flashcards":[{"front":"pojem","back":"vysvětlení"}]} – 5 až 8 kartiček`,
   matching: `{"matching":{"left":["A1","A2"],"right":["B1","B2"]}} – 5 až 8 párů, položky na stejné pozici tvoří správný pár`,
   memory_game: `{"memoryGame":{"pairs":[{"left":"pojem","right":"definice"}]}} – 5 až 8 párů`,
