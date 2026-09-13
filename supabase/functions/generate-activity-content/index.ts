@@ -110,6 +110,18 @@ vytvoř méně otázek – ale nikdy nezůstávej u zlomku obsahu, když lze pok
         }`
       : "";
 
+    const flashcardsPart = cardCount
+      ? `\n\nPOČET KARTIČEK: vytvoř přesně ${cardCount} různých kartiček (pole "flashcards" má mít ${cardCount} prvků),
+pokud na to podklad látkou stačí.${
+          hasContext
+            ? `
+POKRYTÍ PODKLADU: rozlož kartičky rovnoměrně po CELÉM podkladu – od začátku do konce, ne jen z prvních vět.
+Každá kartička musí pokrývat JINÝ pojem nebo fakt z podkladu. Pokud podklad nabízí méně odlišných pojmů
+než ${cardCount}, vytvoř méně kartiček – ale nikdy nezůstávej u zlomku obsahu, když lze pokrýt více.`
+            : ""
+        }`
+      : "";
+
     const userPrompt = hasContext
       ? `Typ aktivity: ${activityType}
 Požadovaný tvar JSON: ${shape}
