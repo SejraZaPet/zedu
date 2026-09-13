@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { activityMeta, activitySummary, activityMinutes } from "@/lib/activity-meta";
 import { Block } from "@/lib/textbook-config";
+import { getQuizQuestions, emptyQuizQuestion, setQuizQuestions, type QuizQuestion } from "@/lib/quiz-questions";
 import InsertSlidesIntoPresentationDialog from "@/components/presentation/InsertSlidesIntoPresentationDialog";
 import { activityBlockToSlide } from "@/lib/plan-to-slides";
 import { generateCrosswordGrid } from "@/lib/crossword-engine";
