@@ -1441,6 +1441,9 @@ const AiSuggestPanel = ({
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lessonPickerOpen, setLessonPickerOpen] = useState(false);
+  const [sourceNote, setSourceNote] = useState<string | null>(null);
+
 
   const handleGenerate = async () => {
     setLoading(true);
