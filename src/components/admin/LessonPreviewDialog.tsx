@@ -21,12 +21,15 @@ interface Props {
   lessonId?: string;
   /** Zdrojová tabulka pro líné načtení. */
   lessonSource?: "global" | "teacher";
+  /** Kompaktní ikonové tlačítko (pro úzké panely). */
+  compact?: boolean;
 }
 
-const LessonPreviewDialog = ({ title, heroImageUrl, blocks, lessonId, lessonSource = "global" }: Props) => {
+const LessonPreviewDialog = ({ title, heroImageUrl, blocks, lessonId, lessonSource = "global", compact = false }: Props) => {
   const [open, setOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [lazyBlocks, setLazyBlocks] = useState<Block[] | null>(null);
+  const [lazyHero, setLazyHero] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -35,9 +38,10 @@ const LessonPreviewDialog = ({ title, heroImageUrl, blocks, lessonId, lessonSour
     (async () => {
       setLoading(true);
       const table = lessonSource === "teacher" ? "teacher_textbook_lessons" : "textbook_lessons";
-      const { data } = await supabase.from(table as any).select("blocks").eq("id", lessonId).maybeSingle();
+      const { data } = await supabase.from(table as any).select("*").eq("id", lessonId).maybeSingle();
       if (cancelled) return;
       setLazyBlocks(Array.isArray((data as any)?.blocks) ? ((data as any).blocks as Block[]) : []);
+      setLazyHero(typeof (data as any)?.hero_image_url === "string" ? (data as any).hero_image_url : null);
       setLoading(false);
     })();
     return () => {
@@ -47,12 +51,19 @@ const LessonPreviewDialog = ({ title, heroImageUrl, blocks, lessonId, lessonSour
 
   const effectiveBlocks = blocks ?? lazyBlocks ?? [];
   const visibleBlocks = effectiveBlocks.filter((b) => b.visible !== false);
+  const effectiveHero = heroImageUrl ?? lazyHero;
 
   return (
     <>
-      <Button size="sm" variant="outline" onClick={() => setOpen(true)}>
-        <Eye className="w-4 h-4 mr-1" />Náhled
-      </Button>
+      {compact ? (
+        <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0" onClick={() => setOpen(true)} title="Náhled lekce">
+          <Eye className="w-3.5 h-3.5" />
+        </Button>
+      ) : (
+        <Button size="sm" variant="outline" onClick={() => setOpen(true)}>
+          <Eye className="w-4 h-4 mr-1" />Náhled
+        </Button>
+      )}
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-4xl w-[95vw] max-h-[90vh] overflow-y-auto p-0">
