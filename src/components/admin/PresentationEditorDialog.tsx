@@ -183,7 +183,7 @@ export const PresentationEditorDialog = ({
   const [dragSlideIndex, setDragSlideIndex] = useState<number | null>(null);
   const [dropSlideIndex, setDropSlideIndex] = useState<number | null>(null);
 
-  const [history, setHistory] = useState<BlockEditorHistory | null>(null);
+  const history = useValueHistory(pendingSlides, setPendingSlides);
   const [templateOpen, setTemplateOpen] = useState(false);
   const [importPptxOpen, setImportPptxOpen] = useState(false);
   /** Výběr prvků na plátně – pole ID (fáze 3: víceprvkový výběr). */
@@ -1529,15 +1529,6 @@ export const PresentationEditorDialog = ({
                             </p>
                           )}
                         </div>
-                        {/* Skrytý BlockEditor drží historii undo/redo pro celý slide. */}
-                        <div className="hidden" aria-hidden="true">
-                          <BlockEditor
-                            blocks={blocks}
-                            onChange={(b) => setBlocks(b)}
-                            hideToolbar
-                            onHistoryChange={setHistory}
-                          />
-                        </div>
                       </CollapsibleContent>
 
                     </Collapsible>
@@ -1658,8 +1649,8 @@ export const PresentationEditorDialog = ({
                     size="sm"
                     variant="outline"
                     className="h-8 w-8 bg-background/90 p-0"
-                    onClick={() => history?.undo()}
-                    disabled={!history?.canUndo}
+                    onClick={() => history.undo()}
+                    disabled={!history.canUndo}
                     title="Zpět (Ctrl/Cmd+Z)"
                     aria-label="Zpět"
                   >
@@ -1669,8 +1660,8 @@ export const PresentationEditorDialog = ({
                     size="sm"
                     variant="outline"
                     className="h-8 w-8 bg-background/90 p-0"
-                    onClick={() => history?.redo()}
-                    disabled={!history?.canRedo}
+                    onClick={() => history.redo()}
+                    disabled={!history.canRedo}
                     title="Vpřed (Ctrl/Cmd+Shift+Z)"
                     aria-label="Vpřed"
                   >
