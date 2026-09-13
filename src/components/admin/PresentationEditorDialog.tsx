@@ -52,6 +52,7 @@ import { SLIDE_TRANSITIONS, transitionFromSlides, applyTransitionToSlides, type 
 import { exportSlidesToPdf } from "@/lib/presentation-pdf-export";
 import ShapePickerPopover from "@/components/admin/ShapePickerPopover";
 import ColorPicker from "@/components/admin/ColorPicker";
+import ActivityAppearanceControls from "@/components/admin/ActivityAppearanceControls";
 import GradientPicker from "@/components/admin/GradientPicker";
 import type { DrawingStroke } from "@/components/admin/SlideDrawingLayer";
 import AiBlockTextButton from "@/components/admin/AiBlockTextButton";
@@ -1448,6 +1449,19 @@ export const PresentationEditorDialog = ({
                       </div>
                     )}
 
+
+                    {/* Vzhled aktivity na snímku */}
+                    {selectedBlock?.type === "activity" && (
+                      <ActivityAppearanceControls
+                        value={(selectedBlock.props as any)?.slideAppearance}
+                        onChange={(next) =>
+                          updateBlock(selectedBlock.id, (b: Block) => ({
+                            ...b,
+                            props: { ...b.props, slideAppearance: next },
+                          }))
+                        }
+                      />
+                    )}
 
                     {/* Obrázek ve volném rámci – přizpůsobení plochy */}
                     {selectedBlock?.type === "image" && !!getBlockFrame(selectedBlock) && (
