@@ -30,7 +30,9 @@ const SHAPES: Record<string, string> = {
   poll: `{"question":"otázka k hlasování","options":[{"text":"možnost 1"},{"text":"možnost 2"}]} – 3 až 5 možností`,
   image_label: `{"imageLabel":{"markers":[{"label":"popisek","x":50,"y":50}]}} – 4 až 6 popisků, x a y v procentech`,
   image_hotspot: `{"imageHotspot":{"hotspots":[{"label":"otázka nebo název oblasti","x":50,"y":50,"radius":8}]}} – 3 až 5 oblastí`,
+  summary: `{"summary":{"title":"Shrnutí lekce","text":"<ul><li>klíčový bod</li><li>klíčový bod</li></ul>"}} – 4 až 7 krátkých klíčových bodů shrnujících učivo, text jako jednoduché HTML (<ul><li>…</li></ul>, případně <p>), bez nadpisů`,
 };
+
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
