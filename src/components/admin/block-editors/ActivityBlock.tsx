@@ -1493,7 +1493,12 @@ const AiSuggestPanel = ({
   const [error, setError] = useState<string | null>(null);
   const [lessonPickerOpen, setLessonPickerOpen] = useState(false);
   const [sourceNote, setSourceNote] = useState<string | null>(null);
-
+  const isQuiz = activityType === "quiz";
+  const [questionCount, setQuestionCount] = useState<number>(
+    Number.isFinite(Number(p.aiQuestionCount)) && Number(p.aiQuestionCount) > 0
+      ? Math.min(10, Math.max(1, Math.round(Number(p.aiQuestionCount))))
+      : 5,
+  );
 
   const handleGenerate = async () => {
     setLoading(true);
