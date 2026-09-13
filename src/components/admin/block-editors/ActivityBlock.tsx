@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Upload } from "lucide-react";
+import { Plus, Trash2, Upload, Sparkles, Loader2 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -118,7 +118,7 @@ const PollEditor = ({ props, onChange }: { props: any; onChange: (p: any) => voi
 };
 
 const FlashcardsEditor = ({ props, onChange }: { props: any; onChange: (p: any) => void }) => {
-  const cards = props.flashcards || [{ front: "", back: "" }];
+  const cards = Array.isArray(props.flashcards) && props.flashcards.length > 0 ? props.flashcards : [{ front: "", back: "" }];
   const update = (idx: number, field: string, val: string) => {
     const next = cards.map((c: any, i: number) => i === idx ? { ...c, [field]: val } : c);
     onChange({ ...props, flashcards: next });
@@ -147,7 +147,14 @@ const FlashcardsEditor = ({ props, onChange }: { props: any; onChange: (p: any) 
 };
 
 const QuizEditor = ({ props, onChange }: { props: any; onChange: (p: any) => void }) => {
-  const quiz = props.quiz || { question: "", answers: [{ text: "", correct: false }], explanation: "" };
+  const rawQuiz = props.quiz || {};
+  const quiz = {
+    question: rawQuiz.question ?? "",
+    explanation: rawQuiz.explanation ?? "",
+    ...rawQuiz,
+    answers: Array.isArray(rawQuiz.answers) && rawQuiz.answers.length > 0 ? rawQuiz.answers : [{ text: "", correct: false }],
+  };
+
   const updateAnswer = (idx: number, field: string, val: any) => {
     const answers = quiz.answers.map((a: any, i: number) => i === idx ? { ...a, [field]: val } : a);
     onChange({ ...props, quiz: { ...quiz, answers } });
@@ -184,27 +191,47 @@ const QuizEditor = ({ props, onChange }: { props: any; onChange: (p: any) => voi
 };
 
 const MatchingEditor = ({ props, onChange }: { props: any; onChange: (p: any) => void }) => {
-  const matching = props.matching || { left: [""], right: [""], pairs: [[0, 0]] };
+  // Uložená data mohou mít jen levou/pravou stranu (bez „pairs"), případně
+  // strany různé délky – normalizujeme, aby přidání/mazání páru nikdy nespadlo.
+  const raw = props.matching || {};
+  const rawLeft: string[] = Array.isArray(raw.left) ? raw.left : [];
+  const rawRight: string[] = Array.isArray(raw.right) ? raw.right : [];
+  const count = Math.max(rawLeft.length, rawRight.length, 1);
+  const left = Array.from({ length: count }, (_, i) => rawLeft[i] ?? "");
+  const right = Array.from({ length: count }, (_, i) => rawRight[i] ?? "");
+  const pairs: number[][] = Array.isArray(raw.pairs) && raw.pairs.length === count
+    ? raw.pairs
+    : left.map((_, i) => [i, i]);
+  const matching = { ...raw, left, right, pairs };
+
   const updateSide = (side: "left" | "right", idx: number, val: string) => {
     const arr = [...matching[side]];
     arr[idx] = val;
     onChange({ ...props, matching: { ...matching, [side]: arr } });
   };
   const addPair = () => {
-    const left = [...matching.left, ""];
-    const right = [...matching.right, ""];
-    const pairs = [...matching.pairs, [left.length - 1, right.length - 1]];
-    onChange({ ...props, matching: { left, right, pairs } });
+    const nextLeft = [...left, ""];
+    const nextRight = [...right, ""];
+    onChange({
+      ...props,
+      matching: { ...matching, left: nextLeft, right: nextRight, pairs: nextLeft.map((_, i) => [i, i]) },
+    });
   };
   const removePair = (idx: number) => {
-    const left = matching.left.filter((_: any, j: number) => j !== idx);
-    const right = matching.right.filter((_: any, j: number) => j !== idx);
-    const pairs = matching.pairs.filter((_: any, j: number) => j !== idx).map((p: number[]) => [
-      Math.min(p[0], left.length - 1),
-      Math.min(p[1], right.length - 1),
-    ]);
-    onChange({ ...props, matching: { left, right, pairs: pairs.length ? pairs : [[0, 0]] } });
+    const nextLeft = left.filter((_, j) => j !== idx);
+    const nextRight = right.filter((_, j) => j !== idx);
+    const nextPairs = nextLeft.length ? nextLeft.map((_, i) => [i, i]) : [[0, 0]];
+    onChange({
+      ...props,
+      matching: {
+        ...matching,
+        left: nextLeft.length ? nextLeft : [""],
+        right: nextRight.length ? nextRight : [""],
+        pairs: nextPairs,
+      },
+    });
   };
+
   return (
     <div className="space-y-3">
       <p className="text-xs text-muted-foreground">Položky na stejném řádku tvoří správný pár.</p>
@@ -228,7 +255,12 @@ const MatchingEditor = ({ props, onChange }: { props: any; onChange: (p: any) =>
 };
 
 const SortingEditor = ({ props, onChange }: { props: any; onChange: (p: any) => void }) => {
-  const sorting = props.sorting || { groups: ["Skupina 1", "Skupina 2"], items: [{ text: "", group: 0 }] };
+  const rawSorting = props.sorting || {};
+  const sorting = {
+    groups: Array.isArray(rawSorting.groups) && rawSorting.groups.length >= 2 ? rawSorting.groups : ["Skupina 1", "Skupina 2"],
+    items: Array.isArray(rawSorting.items) && rawSorting.items.length > 0 ? rawSorting.items : [{ text: "", group: 0 }],
+  };
+
   const updateGroup = (idx: number, val: string) => {
     const groups = sorting.groups.map((g: string, i: number) => i === idx ? val : g);
     onChange({ ...props, sorting: { ...sorting, groups } });
@@ -296,7 +328,15 @@ const SortingEditor = ({ props, onChange }: { props: any; onChange: (p: any) => 
 };
 
 const ImageLabelEditor = ({ props, onChange }: { props: any; onChange: (p: any) => void }) => {
-  const il = props.imageLabel || { imageUrl: "", markers: [], tolerance: 5, shuffleWords: true };
+  const rawIl = props.imageLabel || {};
+  const il = {
+    imageUrl: rawIl.imageUrl || "",
+    tolerance: typeof rawIl.tolerance === "number" ? rawIl.tolerance : 5,
+    shuffleWords: rawIl.shuffleWords !== false,
+    ...rawIl,
+    markers: Array.isArray(rawIl.markers) ? rawIl.markers : [],
+  };
+
   const imgRef = React.useRef<HTMLDivElement>(null);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -735,7 +775,12 @@ const FillBlanksEditor = ({ props, onChange }: { props: any; onChange: (p: any) 
 };
 
 const OrderingEditor = ({ props, onChange }: { props: any; onChange: (p: any) => void }) => {
-  const ordering = props.ordering || { items: [""] };
+  const rawOrdering = props.ordering || {};
+  const ordering = {
+    ...rawOrdering,
+    items: Array.isArray(rawOrdering.items) && rawOrdering.items.length > 0 ? rawOrdering.items : [""],
+  };
+
   const updateItem = (idx: number, val: string) => {
     const items = ordering.items.map((it: string, i: number) => (i === idx ? val : it));
     onChange({ ...props, ordering: { ...ordering, items } });
@@ -771,7 +816,9 @@ const OrderingEditor = ({ props, onChange }: { props: any; onChange: (p: any) =>
 };
 
 const ImageHotspotEditor = ({ props, onChange }: { props: any; onChange: (p: any) => void }) => {
-  const hs = props.imageHotspot || { imageUrl: "", hotspots: [] };
+  const rawHs = props.imageHotspot || {};
+  const hs = { ...rawHs, imageUrl: rawHs.imageUrl || "", hotspots: Array.isArray(rawHs.hotspots) ? rawHs.hotspots : [] };
+
   const imgRef = React.useRef<HTMLDivElement>(null);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1046,7 +1093,12 @@ const FillChoiceEditor = ({ props, onChange }: { props: any; onChange: (p: any) 
 };
 
 const TrueFalseEditor = ({ props, onChange }: { props: any; onChange: (p: any) => void }) => {
-  const tf = props.trueFalse || { statements: [{ text: "", isTrue: true }] };
+  const rawTf = props.trueFalse || {};
+  const tf = {
+    ...rawTf,
+    statements: Array.isArray(rawTf.statements) && rawTf.statements.length > 0 ? rawTf.statements : [{ text: "", isTrue: true }],
+  };
+
   const updateStatement = (idx: number, field: string, val: any) => {
     const statements = tf.statements.map((s: any, i: number) => (i === idx ? { ...s, [field]: val } : s));
     onChange({ ...props, trueFalse: { ...tf, statements } });
@@ -1086,7 +1138,12 @@ const TrueFalseEditor = ({ props, onChange }: { props: any; onChange: (p: any) =
 };
 
 const RevealCardsEditor = ({ props, onChange }: { props: any; onChange: (p: any) => void }) => {
-  const rc = props.revealCards || { cards: [{ title: "", content: "" }] };
+  const rawRc = props.revealCards || {};
+  const rc = {
+    ...rawRc,
+    cards: Array.isArray(rawRc.cards) && rawRc.cards.length > 0 ? rawRc.cards : [{ title: "", content: "" }],
+  };
+
   const updateCard = (idx: number, field: string, val: string) => {
     const cards = rc.cards.map((c: any, i: number) => (i === idx ? { ...c, [field]: val } : c));
     onChange({ ...props, revealCards: { ...rc, cards } });
@@ -1115,7 +1172,12 @@ const RevealCardsEditor = ({ props, onChange }: { props: any; onChange: (p: any)
 };
 
 const MemoryGameEditor = ({ props, onChange }: { props: any; onChange: (p: any) => void }) => {
-  const mg = props.memoryGame || { pairs: [{ left: "", right: "" }] };
+  const rawMg = props.memoryGame || {};
+  const mg = {
+    ...rawMg,
+    pairs: Array.isArray(rawMg.pairs) && rawMg.pairs.length > 0 ? rawMg.pairs : [{ left: "", right: "" }],
+  };
+
   const updatePair = (idx: number, field: string, val: string) => {
     const pairs = mg.pairs.map((p: any, i: number) => (i === idx ? { ...p, [field]: val } : p));
     onChange({ ...props, memoryGame: { ...mg, pairs } });
@@ -1143,7 +1205,12 @@ const MemoryGameEditor = ({ props, onChange }: { props: any; onChange: (p: any) 
 };
 
 const CrosswordEditor = ({ props, onChange }: { props: any; onChange: (p: any) => void }) => {
-  const cw = props.crossword || { entries: [{ answer: "", clue: "" }] };
+  const rawCw = props.crossword || {};
+  const cw = {
+    ...rawCw,
+    entries: Array.isArray(rawCw.entries) && rawCw.entries.length > 0 ? rawCw.entries : [{ answer: "", clue: "" }],
+  };
+
   const [showPreview, setShowPreview] = React.useState(false);
 
   const updateEntry = (idx: number, field: string, val: string) => {
@@ -1225,10 +1292,110 @@ const CrosswordEditor = ({ props, onChange }: { props: any; onChange: (p: any) =
   );
 };
 
+/** Doplní chybějící tokeny u doplňovaček z textu ve formátu {{slovo}}. */
+const normalizeAiProps = (incoming: Record<string, any>) => {
+  const next = { ...incoming };
+  if (next.fillChoice?.text && !Array.isArray(next.fillChoice.tokens)) {
+    const tokens = legacyTextToTokens(String(next.fillChoice.text)).map((t) =>
+      t.type === "blank" ? { type: "blank", answer: t.answer } : { type: "text", value: t.value },
+    );
+    const answers = tokens.filter((t: any) => t.type === "blank").map((t: any) => t.answer);
+    next.fillChoice = {
+      ...next.fillChoice,
+      tokens,
+      options: [...new Set([...(next.fillChoice.options || []), ...answers])].filter(Boolean),
+    };
+  }
+  if (next.fillBlanks?.text && !Array.isArray(next.fillBlanks.tokens)) {
+    next.fillBlanks = { ...next.fillBlanks, tokens: legacyTextToTokens(String(next.fillBlanks.text)) };
+  }
+  if (next.matching && Array.isArray(next.matching.left)) {
+    next.matching = { ...next.matching, pairs: next.matching.left.map((_: any, i: number) => [i, i]) };
+  }
+  return next;
+};
+
+const AiSuggestPanel = ({
+  props: p,
+  activityType,
+  onChange,
+}: {
+  props: any;
+  activityType: string;
+  onChange: (p: any) => void;
+}) => {
+  const [open, setOpen] = useState(!!p.aiSourceText);
+  const [context, setContext] = useState<string>(p.aiSourceText || "");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleGenerate = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke("generate-activity-content", {
+        body: { activityType, topic: p.title || "", context },
+      });
+      if (fnError) throw fnError;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      const generated = (data as any)?.props;
+      if (!generated || typeof generated !== "object") throw new Error("AI nevrátila obsah aktivity.");
+      onChange({
+        ...p,
+        ...normalizeAiProps(generated),
+        activityType,
+        title: generated.title || p.title || "Aktivita",
+        aiSourceText: context || undefined,
+        ai_generated: true,
+        ai_modified_at: new Date().toISOString(),
+      });
+    } catch (e: any) {
+      console.error("generate-activity-content failed:", e);
+      setError(e?.message || "Návrh se nepodařilo vytvořit. Zkuste to prosím znovu.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-2">
+      {!open ? (
+        <Button type="button" size="sm" variant="outline" className="gap-1.5" onClick={() => setOpen(true)}>
+          <Sparkles className="w-3.5 h-3.5" /> Navrhnout pomocí AI
+        </Button>
+      ) : (
+        <>
+          <Label className="text-xs">Z čeho má AI vycházet (téma, text, poznámky)</Label>
+          <Textarea
+            value={context}
+            onChange={(e) => setContext(e.target.value)}
+            rows={3}
+            placeholder="Např. text o dělení hovězího masa, nebo jen téma Druhy mas a jejich využití."
+          />
+          <div className="flex items-center gap-2">
+            <Button type="button" size="sm" className="gap-1.5" onClick={handleGenerate} disabled={loading}>
+              {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+              {loading ? "Generuji…" : "Navrhnout obsah"}
+            </Button>
+            <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(false)} disabled={loading}>
+              Skrýt
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            🤖 Obsah navrhne AI podle zvoleného typu aktivity. Před uložením ho prosím zkontrolujte.
+          </p>
+          {error && <p className="text-xs text-destructive">{error}</p>}
+        </>
+      )}
+    </div>
+  );
+};
+
 const ActivityBlock = ({ block, onChange }: Props) => {
   const p = block.props;
   const activityType = p.activityType || "flashcards";
   const [insertOpen, setInsertOpen] = useState(false);
+
 
   return (
     <div className="space-y-3">
@@ -1250,8 +1417,11 @@ const ActivityBlock = ({ block, onChange }: Props) => {
         </div>
       </div>
 
+      <AiSuggestPanel props={p} activityType={activityType} onChange={onChange} />
+
       <div>
         <Button
+
           type="button"
           size="sm"
           variant="outline"
