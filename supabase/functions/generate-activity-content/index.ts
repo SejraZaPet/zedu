@@ -88,6 +88,19 @@ Přizpůsob jim formu a znění aktivity i pokyn v "instructions" (např. u koop
 nebo skupiny, u badatelských metod otázky vedoucí k objevování).`
       : "";
 
+    const quizPart = questionCount
+      ? `\n\nPOČET OTÁZEK: vytvoř přesně ${questionCount} různých otázek (pole "questions" má mít ${questionCount} prvků),
+pokud na to podklad látkou stačí. Každá otázka musí mít 4 možnosti a přesně 1 správnou.${
+          hasContext
+            ? `
+POKRYTÍ PODKLADU: rozlož otázky rovnoměrně po CELÉM podkladu – od začátku do konce, ne jen z prvních vět.
+Nejprve si v duchu vypiš všechny odlišné faktické informace v podkladu a ke každé otázce použij JINOU z nich.
+Otázky se nesmí obsahově opakovat. Pokud podklad nabízí méně odlišných faktů než ${questionCount},
+vytvoř méně otázek – ale nikdy nezůstávej u zlomku obsahu, když lze pokrýt více.`
+            : ""
+        }`
+      : "";
+
     const userPrompt = hasContext
       ? `Typ aktivity: ${activityType}
 Požadovaný tvar JSON: ${shape}
