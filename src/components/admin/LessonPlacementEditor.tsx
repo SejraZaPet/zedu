@@ -362,7 +362,6 @@ export const savePlacements = async (lessonId: string, placements: Placement[]) 
   const incompleteTarget = placements.find((p) =>
     (p.target_type === "class" && !p.class_id)
     || (p.target_type === "group" && !p.subject_group_id)
-    || (!p.target_type && !p.class_id && !p.subject_group_id ? false : p.class_id === null && p.subject_group_id === null),
   );
   if (incompleteTarget) throw new Error("Vyberte konkrétní třídu nebo skupinu.");
 
