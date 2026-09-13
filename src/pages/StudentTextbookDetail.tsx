@@ -139,14 +139,25 @@ const StudentTextbookDetail = () => {
       const globalTopicIds = (globalTopics || []).map((t: any) => t.id);
 
       let globalLessons: any[] = [];
+      let globalAssignments: any[] = [];
       if (globalTopicIds.length > 0) {
-        const { data: gl } = await supabase
-          .from("textbook_lessons")
-          .select("id, title, blocks, sort_order, status, topic_id, require_activities")
+        const { data: visibleAssignments } = await supabase
+          .from("lesson_topic_assignments")
+          .select("id, lesson_id, topic_id, sort_order, class_id, subject_group_id, school_term, scope_all_grades, status")
           .in("topic_id", globalTopicIds)
           .eq("status", "published")
           .order("sort_order", { ascending: true });
-        globalLessons = gl || [];
+        globalAssignments = visibleAssignments || [];
+        const globalLessonIds = [...new Set(globalAssignments.map((a: any) => a.lesson_id))];
+        if (globalLessonIds.length > 0) {
+          const { data: gl } = await supabase
+            .from("textbook_lessons")
+            .select("id, title, blocks, sort_order, status, topic_id, require_activities")
+            .in("id", globalLessonIds)
+            .eq("status", "published")
+            .order("sort_order", { ascending: true });
+          globalLessons = gl || [];
+        }
       }
 
       // Topics pro placements + globální topics — společná mapa
@@ -179,14 +190,17 @@ const StudentTextbookDetail = () => {
       }
 
       // b) Globální lekce přes topic_id
-      for (const gl of globalLessons) {
-        const topic = topicsMap.get(gl.topic_id);
+      const globalLessonMap = new Map(globalLessons.map((lesson: any) => [lesson.id, lesson]));
+      for (const assignment of globalAssignments) {
+        const gl: any = globalLessonMap.get(assignment.lesson_id);
+        if (!gl) continue;
+        const topic = topicsMap.get(assignment.topic_id);
         if (!topic) continue;
         const grade = topic.grade;
         if (!gradeMap.has(grade)) gradeMap.set(grade, new Map());
         const gm = gradeMap.get(grade)!;
-        if (!gm.has(gl.topic_id)) gm.set(gl.topic_id, []);
-        gm.get(gl.topic_id)!.push({
+        if (!gm.has(assignment.topic_id)) gm.set(assignment.topic_id, []);
+        gm.get(assignment.topic_id)!.push({
           id: gl.id,
           title: gl.title,
           blocks: gl.blocks || [],

@@ -145,7 +145,7 @@ const TextbooksManager = () => {
   const loadAssignments = useCallback(async (lessonId: string) => {
     const { data } = await supabase
       .from("lesson_topic_assignments")
-      .select("id, topic_id, sort_order, textbook_topics(id, title, subject, grade)")
+      .select("id, topic_id, sort_order, status, scheduled_publish_at, class_id, subject_group_id, school_term, scope_all_grades, textbook_topics(id, title, subject, grade)")
       .eq("lesson_id", lessonId);
 
     if (data) {
@@ -156,6 +156,13 @@ const TextbooksManager = () => {
         grade: row.textbook_topics?.grade ?? 1,
         topic_title: row.textbook_topics?.title ?? "",
         sort_order: row.sort_order,
+        status: row.status ?? "published",
+        scheduled_publish_at: row.scheduled_publish_at ?? null,
+        class_id: row.class_id ?? null,
+        subject_group_id: row.subject_group_id ?? null,
+        school_term: row.school_term ?? "full_year",
+        scope_all_grades: row.scope_all_grades ?? false,
+        target_type: row.class_id ? "class" : row.subject_group_id ? "group" : "grade",
       })));
     }
   }, []);
@@ -216,6 +223,12 @@ const TextbooksManager = () => {
           lesson_id: lessonId,
           topic_id: a.topic_id,
           sort_order: i,
+          status: a.status ?? "published",
+          scheduled_publish_at: a.status === "scheduled" ? a.scheduled_publish_at ?? null : null,
+          class_id: a.class_id ?? null,
+          subject_group_id: a.subject_group_id ?? null,
+          school_term: a.school_term ?? "full_year",
+          scope_all_grades: a.scope_all_grades ?? false,
         }))
       );
     }

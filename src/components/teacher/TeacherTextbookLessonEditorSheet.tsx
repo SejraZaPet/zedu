@@ -71,7 +71,7 @@ const TeacherTextbookLessonEditorSheet = ({ lesson, open, onOpenChange, onSaved 
     const loadAssignments = async () => {
       const { data } = await supabase
         .from("lesson_topic_assignments")
-        .select("id, topic_id, sort_order, status, scheduled_publish_at, textbook_topics(id, title, subject, grade)")
+        .select("id, topic_id, sort_order, status, scheduled_publish_at, class_id, subject_group_id, school_term, scope_all_grades, textbook_topics(id, title, subject, grade)")
         .eq("lesson_id", lesson.id);
 
       if (data) {
@@ -85,6 +85,11 @@ const TeacherTextbookLessonEditorSheet = ({ lesson, open, onOpenChange, onSaved 
             sort_order: row.sort_order,
             status: row.status ?? "published",
             scheduled_publish_at: row.scheduled_publish_at ?? null,
+            class_id: row.class_id ?? null,
+            subject_group_id: row.subject_group_id ?? null,
+            school_term: row.school_term ?? "full_year",
+            scope_all_grades: row.scope_all_grades ?? false,
+            target_type: row.class_id ? "class" : row.subject_group_id ? "group" : "grade",
           })),
         );
       }
@@ -168,6 +173,15 @@ const TeacherTextbookLessonEditorSheet = ({ lesson, open, onOpenChange, onSaved 
 
     if (table === "textbook_lessons") {
       const valid = lessonAssignments.filter((a) => a.topic_id);
+      const incompleteTarget = valid.find((a) =>
+        (a.target_type === "class" && !a.class_id)
+        || (a.target_type === "group" && !a.subject_group_id)
+      );
+      if (incompleteTarget) {
+        toast({ title: "Chybí cílová třída nebo skupina", description: "Vyberte konkrétní třídu nebo skupinu.", variant: "destructive" });
+        setSaving(false);
+        return;
+      }
       const badRow = valid.find((a) => a.status === "scheduled" && (!a.scheduled_publish_at || new Date(a.scheduled_publish_at).getTime() <= Date.now()));
       if (badRow) {
         toast({
@@ -188,6 +202,10 @@ const TeacherTextbookLessonEditorSheet = ({ lesson, open, onOpenChange, onSaved 
             sort_order: i,
             status: a.status ?? "published",
             scheduled_publish_at: a.status === "scheduled" ? a.scheduled_publish_at ?? null : null,
+            class_id: a.class_id ?? null,
+            subject_group_id: a.subject_group_id ?? null,
+            school_term: a.school_term ?? "full_year",
+            scope_all_grades: a.scope_all_grades ?? false,
           })),
         );
 
@@ -287,7 +305,7 @@ const TeacherTextbookLessonEditorSheet = ({ lesson, open, onOpenChange, onSaved 
               )}
 
               {draft.source === "textbook_lessons" && (
-                <div>
+                <div className="md:col-span-2">
                   <LessonAssignments
                     lessonId={draft.id}
                     assignments={lessonAssignments}
