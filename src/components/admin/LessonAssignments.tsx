@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, AlertTriangle } from "lucide-react";
+import LessonPlacementEditor, { savePlacements, type Placement } from "@/components/admin/LessonPlacementEditor";
 
 export interface Assignment {
   id?: string;
@@ -233,6 +234,23 @@ const LessonAssignments = ({ lessonId, assignments, onChange }: Props) => {
       )}
     </div>
   );
+};
+
+export const GlobalLessonPlacementEditor = ({ lessonId }: { lessonId: string }) => {
+  const [placements, setPlacements] = useState<Placement[]>([]);
+
+  useEffect(() => {
+    const load = async () => {
+      const { data } = await supabase
+        .from("lesson_placements")
+        .select("id, subject_slug, grade_number, topic_id, class_id, subject_group_id, school_term, scope_all_grades, status, scheduled_publish_at")
+        .eq("lesson_id", lessonId);
+      setPlacements((data ?? []) as Placement[]);
+    };
+    load();
+  }, [lessonId]);
+
+  return <LessonPlacementEditor lessonId={lessonId} placements={placements} onChange={setPlacements} />;
 };
 
 export default LessonAssignments;
