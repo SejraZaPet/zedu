@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { activityMeta, activitySummary, activityMinutes } from "@/lib/activity-meta";
 import { Block } from "@/lib/textbook-config";
+import { getQuizQuestions, emptyQuizQuestion, setQuizQuestions, type QuizQuestion } from "@/lib/quiz-questions";
 import InsertSlidesIntoPresentationDialog from "@/components/presentation/InsertSlidesIntoPresentationDialog";
 import { activityBlockToSlide } from "@/lib/plan-to-slides";
 import { generateCrosswordGrid } from "@/lib/crossword-engine";
@@ -165,45 +166,87 @@ const FlashcardsEditor = ({ props, onChange }: { props: any; onChange: (p: any) 
 };
 
 const QuizEditor = ({ props, onChange }: { props: any; onChange: (p: any) => void }) => {
-  const rawQuiz = props.quiz || {};
-  const quiz = {
-    question: rawQuiz.question ?? "",
-    explanation: rawQuiz.explanation ?? "",
-    ...rawQuiz,
-    answers: Array.isArray(rawQuiz.answers) && rawQuiz.answers.length > 0 ? rawQuiz.answers : [{ text: "", correct: false }],
-  };
+  const existing = getQuizQuestions(props.quiz);
+  const questions = existing.length > 0 ? existing : [emptyQuizQuestion()];
 
-  const updateAnswer = (idx: number, field: string, val: any) => {
-    const answers = quiz.answers.map((a: any, i: number) => i === idx ? { ...a, [field]: val } : a);
-    onChange({ ...props, quiz: { ...quiz, answers } });
-  };
+  const commit = (next: QuizQuestion[]) => onChange({ ...props, quiz: setQuizQuestions(next) });
+
+  const updateQuestion = (qi: number, patch: Partial<QuizQuestion>) =>
+    commit(questions.map((q, i) => (i === qi ? { ...q, ...patch } : q)));
+
+  const updateAnswer = (qi: number, ai: number, field: "text" | "correct", val: any) =>
+    updateQuestion(qi, {
+      answers: questions[qi].answers.map((a, j) => (j === ai ? { ...a, [field]: val } : a)),
+    });
+
   return (
-    <div className="space-y-3">
-      <div>
-        <Label className="text-xs">Otázka</Label>
-        <Input value={quiz.question} onChange={(e) => onChange({ ...props, quiz: { ...quiz, question: e.target.value } })} />
-      </div>
-      <div className="space-y-2">
-        <Label className="text-xs">Odpovědi</Label>
-        {quiz.answers.map((a: any, i: number) => (
-          <div key={i} className="flex items-center gap-2">
-            <Checkbox checked={a.correct} onCheckedChange={(v) => updateAnswer(i, "correct", !!v)} />
-            <Input className="flex-1" placeholder={`Odpověď ${i + 1}`} value={a.text} onChange={(e) => updateAnswer(i, "text", e.target.value)} />
-            {quiz.answers.length > 1 && (
-              <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => onChange({ ...props, quiz: { ...quiz, answers: quiz.answers.filter((_: any, j: number) => j !== i) } })}>
+    <div className="space-y-4">
+      {questions.map((quiz, qi) => (
+        <div key={qi} className="space-y-3 rounded-lg border border-border p-3">
+          <div className="flex items-center justify-between gap-2">
+            <Label className="text-xs font-semibold">Otázka {qi + 1}</Label>
+            {questions.length > 1 && (
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7 text-destructive"
+                aria-label={`Smazat otázku ${qi + 1}`}
+                onClick={() => commit(questions.filter((_, i) => i !== qi))}
+              >
                 <Trash2 className="w-3 h-3" />
               </Button>
             )}
           </div>
-        ))}
-        <Button variant="outline" size="sm" onClick={() => onChange({ ...props, quiz: { ...quiz, answers: [...quiz.answers, { text: "", correct: false }] } })}>
-          <Plus className="w-3 h-3 mr-1" />Přidat odpověď
-        </Button>
-      </div>
-      <div>
-        <Label className="text-xs">Vysvětlení (volitelné)</Label>
-        <Textarea value={quiz.explanation} onChange={(e) => onChange({ ...props, quiz: { ...quiz, explanation: e.target.value } })} rows={2} />
-      </div>
+          <Input
+            value={quiz.question}
+            placeholder="Text otázky"
+            onChange={(e) => updateQuestion(qi, { question: e.target.value })}
+          />
+          <div className="space-y-2">
+            <Label className="text-xs">Odpovědi</Label>
+            {quiz.answers.map((a, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <Checkbox checked={a.correct} onCheckedChange={(v) => updateAnswer(qi, i, "correct", !!v)} />
+                <Input
+                  className="flex-1"
+                  placeholder={`Odpověď ${i + 1}`}
+                  value={a.text}
+                  onChange={(e) => updateAnswer(qi, i, "text", e.target.value)}
+                />
+                {quiz.answers.length > 1 && (
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7 text-destructive"
+                    aria-label={`Smazat odpověď ${i + 1}`}
+                    onClick={() => updateQuestion(qi, { answers: quiz.answers.filter((_, j) => j !== i) })}
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                )}
+              </div>
+            ))}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => updateQuestion(qi, { answers: [...quiz.answers, { text: "", correct: false }] })}
+            >
+              <Plus className="w-3 h-3 mr-1" />Přidat odpověď
+            </Button>
+          </div>
+          <div>
+            <Label className="text-xs">Vysvětlení (volitelné)</Label>
+            <Textarea
+              value={quiz.explanation ?? ""}
+              onChange={(e) => updateQuestion(qi, { explanation: e.target.value })}
+              rows={2}
+            />
+          </div>
+        </div>
+      ))}
+      <Button variant="outline" size="sm" onClick={() => commit([...questions, emptyQuizQuestion()])}>
+        <Plus className="w-3 h-3 mr-1" />Přidat otázku
+      </Button>
     </div>
   );
 };
@@ -1313,8 +1356,11 @@ const CrosswordEditor = ({ props, onChange }: { props: any; onChange: (p: any) =
 /** Doplní chybějící tokeny u doplňovaček z textu ve formátu {{slovo}}. */
 const normalizeAiProps = (incoming: Record<string, any>) => {
   const next = { ...incoming };
-  // AI někdy vrátí u quizu pole otázek – editor pracuje s jednou otázkou.
-  if (Array.isArray(next.quiz)) next.quiz = next.quiz[0] ?? undefined;
+  // Kvíz sjednotíme na { questions: [...] } – AI může vrátit pole i jednu otázku.
+  if (next.quiz || Array.isArray(next.questions)) {
+    const qs = getQuizQuestions(next.quiz ?? next.questions);
+    if (qs.length > 0) next.quiz = setQuizQuestions(qs);
+  }
   if (next.fillChoice?.text && !Array.isArray(next.fillChoice.tokens)) {
     const tokens = legacyTextToTokens(String(next.fillChoice.text)).map((t) =>
       t.type === "blank" ? { type: "blank", answer: t.answer } : { type: "text", value: t.value },
