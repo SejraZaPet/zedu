@@ -32,8 +32,8 @@ import { activityMeta, activitySummary, activityMinutes } from "@/lib/activity-m
 
 /**
  * Aktivita v lekci pro žáka – barevná hlavička podle typu se souhrnem,
- * povinností a odhadem času. Nepovinné aktivity jsou sbalené, povinné rozbalené,
- * aby žák nepřehlédl, co musí splnit.
+ * povinností a odhadem času. Všechny aktivity jsou při otevření lekce sbalené
+ * a žák je rozbalí kliknutím na hlavičku.
  */
 const StudentActivityShell = ({
   props: p,
@@ -44,7 +44,7 @@ const StudentActivityShell = ({
 }) => {
   const required = p.required === true;
   const meta = activityMeta(p.activityType || "flashcards");
-  const [open, setOpen] = useState(required);
+  const [open, setOpen] = useState(false);
   const minutes = activityMinutes(p);
   const summary = activitySummary(p);
 

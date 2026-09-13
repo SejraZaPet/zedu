@@ -49,7 +49,7 @@ describe("PDF export aktivit", () => {
 });
 
 describe("aktivita u žáka", () => {
-  it("nepovinná je sbalená, povinná rozbalená", () => {
+  it("nepovinná i povinná aktivita jsou při otevření lekce sbalené", () => {
     const { unmount } = render(<LessonBlockRenderer block={quizBlock()} />);
     expect(screen.getByText("Druhy mas")).toBeInTheDocument();
     expect(screen.getByText("Nepovinné")).toBeInTheDocument();
@@ -58,6 +58,6 @@ describe("aktivita u žáka", () => {
 
     render(<LessonBlockRenderer block={quizBlock({ required: true })} />);
     expect(screen.getByText("🔒 Povinné")).toBeInTheDocument();
-    expect(screen.getByText("Které maso je hovězí?")).toBeInTheDocument();
+    expect(screen.queryByText("Které maso je hovězí?")).not.toBeInTheDocument();
   });
 });
