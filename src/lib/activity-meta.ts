@@ -49,8 +49,12 @@ export function activitySummary(props: Record<string, any> | undefined | null): 
   const p = props ?? {};
   const type = p.activityType || "flashcards";
   switch (type) {
-    case "quiz":
-      return p.quiz?.question ? `${count(p.quiz?.answers)} možností` : "bez otázky";
+    case "quiz": {
+      const qs = getQuizQuestions(p.quiz);
+      if (qs.length === 0) return "bez otázky";
+      if (qs.length === 1) return `${count(qs[0].answers)} možností`;
+      return `${qs.length} otázek`;
+    }
     case "flashcards":
       return `${count(p.flashcards)} kartiček`;
     case "reveal_cards":
