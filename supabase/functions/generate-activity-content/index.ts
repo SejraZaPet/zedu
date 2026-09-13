@@ -118,7 +118,7 @@ Požadovaný tvar JSON: ${shape}
 
 Téma / název aktivity: ${topic || "(neuvedeno)"}
 
-Podklad nebyl dodán – vytvoř obsah k uvedenému tématu.${methodsPart}`;
+Podklad nebyl dodán – vytvoř obsah k uvedenému tématu.${methodsPart}${quizPart}`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
