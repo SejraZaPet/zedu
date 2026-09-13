@@ -148,9 +148,8 @@ import {
   LessonContentPickerSheet,
   AiSuggestFromLessonDialog,
 } from "@/components/worksheet/LessonContentTools";
+import type { AiGeneratedItem } from "@/components/worksheet/LessonContentTools";
 import LessonPreviewDialog from "@/components/admin/LessonPreviewDialog";
-  type AiGeneratedItem,
-} from "@/components/worksheet/LessonContentTools";
 import ActivityBlockEditor from "@/components/worksheet/ActivityBlockEditor";
 import {
   Tooltip,
