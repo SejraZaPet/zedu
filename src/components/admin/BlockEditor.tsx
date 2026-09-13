@@ -1712,6 +1712,40 @@ const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryC
     toast.success("Bloky spojeny do jednoho snímku.");
   }, [commit, selectedIds]);
 
+  /** Z více vybraných bloků udělá jeden podklad pro AI a vloží aktivitu za poslední z nich. */
+  const createActivityFromSelection = useCallback(() => {
+    const cur = blocksRef.current;
+    const ordered = cur.filter((b) => selectedIds.includes(b.id));
+    if (ordered.length < 2) return;
+    const text = ordered
+      .map((b) => blockToPlainText(b).trim())
+      .filter(Boolean)
+      .join("\n\n")
+      .trim();
+    if (text.length < 8) {
+      toast.error("Vybrané bloky neobsahují dost textu pro vytvoření aktivity.");
+      return;
+    }
+    const lastIdx = Math.max(...ordered.map((b) => cur.findIndex((x) => x.id === b.id)));
+    const fresh = createDefaultBlock("activity");
+    const newBlock: Block = {
+      ...fresh,
+      props: {
+        ...fresh.props,
+        activityType: "quiz",
+        title: text.slice(0, 60),
+        aiSourceText: text.slice(0, 6000),
+      },
+    };
+    pendingScrollToBlockIdRef.current = newBlock.id;
+    const next = [...cur];
+    next.splice(lastIdx + 1, 0, newBlock);
+    commit(next);
+    setSelectedIds([]);
+    lastPickedRef.current = null;
+    toast.success(`Aktivita vytvořena z ${ordered.length} vybraných bloků. Vygenerujte obsah pomocí AI.`);
+  }, [commit, selectedIds]);
+
   const ungroup = useCallback((groupId: string) => {
     commit(ungroupSlideGroup(blocksRef.current, groupId));
     setSelectedIds([]);
@@ -1845,6 +1879,15 @@ const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryC
           <div className="ml-auto flex items-center gap-2">
             <Button size="sm" className="gap-1.5" onClick={groupSelected} disabled={selectedIds.length < 2}>
               <IconGroup className="w-4 h-4" /> Spojit do jednoho snímku
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              className="gap-1.5"
+              onClick={createActivityFromSelection}
+              disabled={selectedIds.length < 2}
+            >
+              <IconSparkles className="w-4 h-4" /> Vytvořit aktivitu z vybraných bloků
             </Button>
             <Button size="sm" variant="ghost" onClick={clearSelection}>Zrušit výběr</Button>
           </div>
