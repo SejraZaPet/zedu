@@ -24,7 +24,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 import { SLIDE_GAME_MODES } from "@/lib/game-slide-settings";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import BlockEditor, { SingleBlockEditor, type BlockEditorHistory } from "@/components/admin/BlockEditor";
+import { SingleBlockEditor } from "@/components/admin/BlockEditor";
+import { useValueHistory } from "@/hooks/useSlidesHistory";
 import SlideCanvas, { SLIDE_LAYOUTS, type SlideLayout } from "@/components/admin/SlideCanvas";
 import { MediaPickerDialog } from "@/components/media/MediaPickerDialog";
 import { AddSlideSheet } from "@/components/game/AddSlideSheet";
@@ -183,7 +184,7 @@ export const PresentationEditorDialog = ({
   const [dragSlideIndex, setDragSlideIndex] = useState<number | null>(null);
   const [dropSlideIndex, setDropSlideIndex] = useState<number | null>(null);
 
-  const [history, setHistory] = useState<BlockEditorHistory | null>(null);
+  const history = useValueHistory(pendingSlides, setPendingSlides);
   const [templateOpen, setTemplateOpen] = useState(false);
   const [importPptxOpen, setImportPptxOpen] = useState(false);
   /** Výběr prvků na plátně – pole ID (fáze 3: víceprvkový výběr). */
@@ -215,6 +216,24 @@ export const PresentationEditorDialog = ({
     setZoom("fit");
     setPan({ x: 0, y: 0 });
   }, [editingSlideIndex]);
+
+  // Klávesové zkratky Ctrl/Cmd+Z a Ctrl/Cmd+Shift+Z pro Zpět/Vpřed.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      const key = e.key.toLowerCase();
+      if (key === "z") {
+        e.preventDefault();
+        if (e.shiftKey) history.redo();
+        else history.undo();
+      } else if (key === "y") {
+        e.preventDefault();
+        history.redo();
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [history]);
 
   const zoomPct = zoom === "fit" ? 100 : zoom;
   const stepZoom = (delta: number) =>
@@ -1529,15 +1548,6 @@ export const PresentationEditorDialog = ({
                             </p>
                           )}
                         </div>
-                        {/* Skrytý BlockEditor drží historii undo/redo pro celý slide. */}
-                        <div className="hidden" aria-hidden="true">
-                          <BlockEditor
-                            blocks={blocks}
-                            onChange={(b) => setBlocks(b)}
-                            hideToolbar
-                            onHistoryChange={setHistory}
-                          />
-                        </div>
                       </CollapsibleContent>
 
                     </Collapsible>
@@ -1658,8 +1668,8 @@ export const PresentationEditorDialog = ({
                     size="sm"
                     variant="outline"
                     className="h-8 w-8 bg-background/90 p-0"
-                    onClick={() => history?.undo()}
-                    disabled={!history?.canUndo}
+                    onClick={() => history.undo()}
+                    disabled={!history.canUndo}
                     title="Zpět (Ctrl/Cmd+Z)"
                     aria-label="Zpět"
                   >
@@ -1669,8 +1679,8 @@ export const PresentationEditorDialog = ({
                     size="sm"
                     variant="outline"
                     className="h-8 w-8 bg-background/90 p-0"
-                    onClick={() => history?.redo()}
-                    disabled={!history?.canRedo}
+                    onClick={() => history.redo()}
+                    disabled={!history.canRedo}
                     title="Vpřed (Ctrl/Cmd+Shift+Z)"
                     aria-label="Vpřed"
                   >
