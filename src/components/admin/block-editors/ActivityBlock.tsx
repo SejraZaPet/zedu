@@ -1313,6 +1313,8 @@ const CrosswordEditor = ({ props, onChange }: { props: any; onChange: (p: any) =
 /** Doplní chybějící tokeny u doplňovaček z textu ve formátu {{slovo}}. */
 const normalizeAiProps = (incoming: Record<string, any>) => {
   const next = { ...incoming };
+  // AI někdy vrátí u quizu pole otázek – editor pracuje s jednou otázkou.
+  if (Array.isArray(next.quiz)) next.quiz = next.quiz[0] ?? undefined;
   if (next.fillChoice?.text && !Array.isArray(next.fillChoice.tokens)) {
     const tokens = legacyTextToTokens(String(next.fillChoice.text)).map((t) =>
       t.type === "blank" ? { type: "blank", answer: t.answer } : { type: "text", value: t.value },

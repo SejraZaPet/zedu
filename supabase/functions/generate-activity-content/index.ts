@@ -144,6 +144,11 @@ Podklad nebyl dodán – vytvoř obsah k uvedenému tématu.${methodsPart}`;
       return json({ error: "AI nevrátila použitelný výstup. Zkuste to znovu." }, 500);
     }
 
+    // Model občas u quizu vrátí pole otázek – editor čeká jednu otázku.
+    if (Array.isArray((parsed as any).quiz)) {
+      (parsed as any).quiz = (parsed as any).quiz[0] ?? null;
+    }
+
     return json({ props: { ...parsed, activityType } });
   } catch (e) {
     console.error("generate-activity-content error:", e);
