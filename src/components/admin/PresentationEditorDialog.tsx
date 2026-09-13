@@ -24,7 +24,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 import { SLIDE_GAME_MODES } from "@/lib/game-slide-settings";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import BlockEditor, { SingleBlockEditor, type BlockEditorHistory } from "@/components/admin/BlockEditor";
+import { SingleBlockEditor } from "@/components/admin/BlockEditor";
+import { useValueHistory } from "@/hooks/useSlidesHistory";
 import SlideCanvas, { SLIDE_LAYOUTS, type SlideLayout } from "@/components/admin/SlideCanvas";
 import { MediaPickerDialog } from "@/components/media/MediaPickerDialog";
 import { AddSlideSheet } from "@/components/game/AddSlideSheet";
@@ -215,6 +216,24 @@ export const PresentationEditorDialog = ({
     setZoom("fit");
     setPan({ x: 0, y: 0 });
   }, [editingSlideIndex]);
+
+  // Klávesové zkratky Ctrl/Cmd+Z a Ctrl/Cmd+Shift+Z pro Zpět/Vpřed.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      const key = e.key.toLowerCase();
+      if (key === "z") {
+        e.preventDefault();
+        if (e.shiftKey) history.redo();
+        else history.undo();
+      } else if (key === "y") {
+        e.preventDefault();
+        history.redo();
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [history]);
 
   const zoomPct = zoom === "fit" ? 100 : zoom;
   const stepZoom = (delta: number) =>
