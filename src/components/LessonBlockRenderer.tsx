@@ -29,6 +29,10 @@ import { getGroupChildFrames, getGroupChildHeight, getGroupMinHeight } from "@/l
 import { useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { activityMeta, activitySummary, activityMinutes } from "@/lib/activity-meta";
+import {
+  activitySlideAppearanceStyle,
+  type ActivitySlideAppearance,
+} from "@/lib/activity-slide-appearance";
 
 /**
  * Aktivita v lekci pro žáka – barevná hlavička podle typu se souhrnem,
@@ -583,7 +587,17 @@ const LessonBlockInner = ({ block, blockIndex, onActivityComplete, isTeacher, ac
         </div>
       );
 
-      return <StudentActivityShell props={p}>{activityInner}</StudentActivityShell>;
+      const shell = (
+        <StudentActivityShell props={p} appearance={activityAppearance}>
+          {activityInner}
+        </StudentActivityShell>
+      );
+      if (!activityAppearance) return shell;
+      return (
+        <div data-activity-appearance={activityAppearance.look} style={activitySlideAppearanceStyle(activityAppearance)}>
+          {shell}
+        </div>
+      );
     }
     case "hierarchy": {
       const shape: "pyramid" | "layers" | "steps" = p.shape || "pyramid";
