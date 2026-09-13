@@ -10,6 +10,7 @@ import {
   normalizeGradient,
   type SlideGradient,
 } from "@/lib/slide-gradient";
+import MyPalettesSection from "@/components/ui/my-palettes-section";
 
 interface Props {
   value: SlideGradient | null | undefined;
@@ -31,6 +32,13 @@ export const GradientPicker = ({ value, onChange, nullLabel = "Plná barva", cla
 
   return (
     <div className={`space-y-2 ${className || ""}`}>
+      <MyPalettesSection
+        current={g}
+        onPick={(v) => {
+          if (typeof v === "string") onChange({ ...current, from: v });
+          else onChange({ ...v });
+        }}
+      />
       <div className="flex flex-wrap items-center gap-1.5">
         <button
           type="button"

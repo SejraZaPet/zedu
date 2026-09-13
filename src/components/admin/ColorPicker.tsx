@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { SLIDE_TEXT_COLORS } from "@/lib/slide-typography";
+import MyPalettesSection from "@/components/ui/my-palettes-section";
 
 interface Props {
   value: string | null | undefined;
@@ -53,6 +54,13 @@ export const ColorPicker = ({
 
   return (
     <div className={`space-y-2 ${className || ""}`}>
+      <MyPalettesSection
+        current={value && HEX_RE.test(value) ? value : null}
+        allowGradients={false}
+        onPick={(v) => {
+          if (typeof v === "string") onChange(expandHex(v));
+        }}
+      />
       <div className="flex flex-wrap items-center gap-1.5">
         {allowNull && (
           <button

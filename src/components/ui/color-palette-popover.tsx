@@ -4,6 +4,7 @@ import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
 import { COLOR_GROUPS } from "@/lib/color-palette";
+import MyPalettesSection from "@/components/ui/my-palettes-section";
 
 interface Props {
   /** Aktuálně zvolená barva (hex) nebo `null` pro výchozí. */
@@ -50,6 +51,14 @@ const ColorPalettePopover = ({
           <X className="h-3 w-3" />
           <span>{clearLabel}</span>
         </button>
+
+        <MyPalettesSection
+          current={value}
+          allowGradients={false}
+          onPick={(v) => {
+            if (typeof v === "string") apply(v);
+          }}
+        />
 
         {COLOR_GROUPS.map((group) => (
           <div key={group.label}>
