@@ -53,6 +53,13 @@ serve(async (req) => {
           .filter(Boolean)
           .slice(0, 10)
       : [];
+    const rawCount = Number(body?.questionCount);
+    const questionCount =
+      activityType === "quiz" && Number.isFinite(rawCount) && rawCount > 0
+        ? Math.min(10, Math.max(1, Math.round(rawCount)))
+        : activityType === "quiz"
+          ? 5
+          : null;
     const shape = SHAPES[activityType];
 
     if (!shape) return json({ error: `Typ aktivity „${activityType}" není podporován.` }, 400);
