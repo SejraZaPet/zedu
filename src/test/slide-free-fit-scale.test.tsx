@@ -32,7 +32,7 @@ describe("volné rozmístění v prezentaci", () => {
 });
 
 describe("volné rozmístění v náhledu lekce", () => {
-  it("obsah přesahující plochu zmenší bez navýšení výšky kontejneru", () => {
+  it("obsah přesahující plochu zachová plnou šířku a prodlouží výšku plátna", () => {
     const { container } = render(
       <FreeFrameCanvas
         items={[
@@ -41,8 +41,13 @@ describe("volné rozmístění v náhledu lekce", () => {
         ]}
       />,
     );
-    const layer = container.querySelector("[data-free-fit-scale]") as HTMLElement;
-    expect(Number(layer.dataset.freeFitScale)).toBeCloseTo(100 / 176, 3);
-    expect(container.querySelector("[data-free-frame-canvas]")?.className).toContain("aspect-video");
+    const canvas = container.querySelector("[data-free-frame-canvas]") as HTMLElement;
+    const layer = container.querySelector("[data-free-vertical-extent]") as HTMLElement;
+    const second = container.querySelector('[data-free-frame-item="b"]') as HTMLElement;
+    expect(Number(layer.dataset.freeVerticalExtent)).toBe(176);
+    expect(canvas.style.aspectRatio).toBe(`16 / ${9 * 1.76}`);
+    expect(second.style.width).toBe("91%");
+    expect(second.style.left).toBe("4%");
+    expect(Number.parseFloat(second.style.top)).toBeCloseTo((145 / 176) * 100, 3);
   });
 });
