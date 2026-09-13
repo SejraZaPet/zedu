@@ -62,6 +62,13 @@ serve(async (req) => {
         : activityType === "quiz"
           ? 5
           : null;
+    const rawCardCount = Number(body?.cardCount);
+    const cardCount =
+      activityType === "flashcards" && Number.isFinite(rawCardCount) && rawCardCount > 0
+        ? Math.min(15, Math.max(2, Math.round(rawCardCount)))
+        : activityType === "flashcards"
+          ? 6
+          : null;
     const shape = SHAPES[activityType];
 
     if (!shape) return json({ error: `Typ aktivity „${activityType}" není podporován.` }, 400);
