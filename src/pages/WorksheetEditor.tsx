@@ -147,8 +147,9 @@ import { useQuery } from "@tanstack/react-query";
 import {
   LessonContentPickerSheet,
   AiSuggestFromLessonDialog,
-  type AiGeneratedItem,
 } from "@/components/worksheet/LessonContentTools";
+import type { AiGeneratedItem } from "@/components/worksheet/LessonContentTools";
+import LessonPreviewDialog from "@/components/admin/LessonPreviewDialog";
 import ActivityBlockEditor from "@/components/worksheet/ActivityBlockEditor";
 import {
   Tooltip,
@@ -1595,6 +1596,13 @@ export default function WorksheetEditor() {
                     {l.lesson_type === "global" ? "G" : "V"}
                   </Badge>
                   <span className="truncate flex-1" title={l.title}>{l.title}</span>
+                  <LessonPreviewDialog
+                    compact
+                    title={l.title}
+                    heroImageUrl={null}
+                    lessonId={l.lesson_id}
+                    lessonSource={l.lesson_type}
+                  />
                   <button
                     onClick={() => handleRemoveLinkedLesson(l.id)}
                     className="text-muted-foreground hover:text-destructive shrink-0"
@@ -1648,6 +1656,17 @@ export default function WorksheetEditor() {
                 ))}
               </SelectContent>
             </Select>
+
+            {activeLessonId && (
+              <div className="mt-2">
+                <LessonPreviewDialog
+                  title={allLessons.find((l) => l.id === activeLessonId)?.title ?? "Lekce"}
+                  heroImageUrl={null}
+                  lessonId={activeLessonId}
+                  lessonSource={allLessons.find((l) => l.id === activeLessonId)?.type ?? "global"}
+                />
+              </div>
+            )}
 
             {activeLessonId && lessonBlocks.length === 0 && (
               <p className="text-xs text-muted-foreground mt-2">Lekce nemá obsah.</p>
