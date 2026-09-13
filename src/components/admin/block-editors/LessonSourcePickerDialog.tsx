@@ -132,7 +132,7 @@ const LessonSourcePickerDialog = ({
     return () => {
       cancelled = true;
     };
-  }, [open, groups.length, loading]);
+  }, [open]);
 
   const q = search.trim().toLowerCase();
   const visible = groups
