@@ -137,8 +137,23 @@ function EditableText({
    */
   const [typing, setTyping] = useState(false);
   useEffect(() => {
-    if (typing) ref.current?.focus();
+    if (!typing) return;
+    const el = ref.current;
+    if (!el) return;
+    el.focus();
+    // Kurzor se nastaví na konec obsahu, aby byl vždy vidět a šlo hned psát.
+    try {
+      const sel = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      range.collapse(false);
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+    } catch {
+      /* ignore */
+    }
   }, [typing]);
+
 
   useEffect(() => {
     setIsEmpty(!(html ? sanitizedValue : value));
