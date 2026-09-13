@@ -1,0 +1,118 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { requireAuth } from "../_shared/auth.ts";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
+
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+
+/** Popis požadovaného JSON tvaru pro každý typ aktivity. */
+const SHAPES: Record<string, string> = {
+  quiz: `{"quiz":{"question":"...","answers":[{"text":"...","correct":true},{"text":"...","correct":false}],"explanation":"..."}} – 4 možnosti, přesně 1 správná`,
+  flashcards: `{"flashcards":[{"front":"pojem","back":"vysvětlení"}]} – 5 až 8 kartiček`,
+  matching: `{"matching":{"left":["A1","A2"],"right":["B1","B2"]}} – 5 až 8 párů, položky na stejné pozici tvoří správný pár`,
+  memory_game: `{"memoryGame":{"pairs":[{"left":"pojem","right":"definice"}]}} – 5 až 8 párů`,
+  reveal_cards: `{"revealCards":{"cards":[{"title":"název","content":"otázka nebo úkol"}]}} – 4 až 6 kartiček`,
+  true_false: `{"trueFalse":{"statements":[{"text":"tvrzení","isTrue":true}]}} – 6 až 8 tvrzení, mix pravdivých i nepravdivých`,
+  ordering: `{"ordering":{"items":["1. krok","2. krok"]}} – 4 až 7 kroků ve správném pořadí`,
+  sorting: `{"sorting":{"groups":["Skupina A","Skupina B"],"items":[{"text":"položka","group":0}]}} – 2 až 3 skupiny, 6 až 9 položek; group je index skupiny`,
+  crossword: `{"crossword":{"entries":[{"answer":"SLOVO","clue":"nápověda"}]}} – 6 až 10 slov bez diakritiky a mezer, VELKÝMI písmeny`,
+  fill_blanks: `{"fillBlanks":{"text":"Věta s {{doplňovaným}} slovem."}} – 3 až 6 vět, doplňovaná slova ve dvojitých složených závorkách`,
+  fill_choice: `{"fillChoice":{"text":"Věta s {{doplňovaným}} slovem.","options":["chybná možnost 1","chybná možnost 2"]}} – 3 až 6 vět a 3 distraktory`,
+  wall: `{"question":"otevřená otázka pro brainstorming celé třídy"}`,
+  poll: `{"question":"otázka k hlasování","options":[{"text":"možnost 1"},{"text":"možnost 2"}]} – 3 až 5 možností`,
+  image_label: `{"imageLabel":{"markers":[{"label":"popisek","x":50,"y":50}]}} – 4 až 6 popisků, x a y v procentech`,
+  image_hotspot: `{"imageHotspot":{"hotspots":[{"label":"otázka nebo název oblasti","x":50,"y":50,"radius":8}]}} – 3 až 5 oblastí`,
+};
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  const auth = await requireAuth(req);
+  if (!auth.ok) return json(auth.body, auth.status);
+
+  try {
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+
+    const body = await req.json();
+    const activityType = typeof body?.activityType === "string" ? body.activityType : "quiz";
+    const topic = typeof body?.topic === "string" ? body.topic.trim() : "";
+    const context = typeof body?.context === "string" ? body.context.trim() : "";
+    const shape = SHAPES[activityType];
+
+    if (!shape) return json({ error: `Typ aktivity „${activityType}" není podporován.` }, 400);
+    if (topic.length + context.length < 3) {
+      return json({ error: "Doplňte téma nebo krátký podklad, ze kterého má AI vycházet." }, 400);
+    }
+
+    const systemPrompt = `Jsi zkušený český pedagog a tvoříš obsah interaktivních školních aktivit.
+Odpovídáš VÝHRADNĚ jedním platným JSON objektem – bez markdownu, bez komentářů, bez textu okolo.
+Vše piš česky (cs-CZ), věcně správně a přiměřeně střední škole.
+Do JSON přidej i "title" (krátký název aktivity) a "instructions" (1 věta pokynu pro žáka).`;
+
+    const userPrompt = `Typ aktivity: ${activityType}
+Požadovaný tvar JSON: ${shape}
+
+Téma / název aktivity: ${topic || "(neuvedeno)"}
+
+Podklad, ze kterého vycházej:
+${context ? context.slice(0, 6000) : "(bez podkladu – vytvoř obsah k uvedenému tématu)"}`;
+
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-3-flash-preview",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        response_format: { type: "json_object" },
+      }),
+    });
+
+    if (!response.ok) {
+      if (response.status === 429) return json({ error: "Příliš mnoho požadavků, zkuste to za chvíli." }, 429);
+      if (response.status === 402) return json({ error: "Nedostatek kreditů pro AI generování." }, 402);
+      console.error("AI gateway error:", response.status, await response.text());
+      return json({ error: "Chyba AI služby" }, 500);
+    }
+
+    const data = await response.json();
+    const raw = data.choices?.[0]?.message?.content ?? "";
+    let parsed: Record<string, unknown> | null = null;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      const match = typeof raw === "string" ? raw.match(/\{[\s\S]*\}/) : null;
+      if (match) {
+        try {
+          parsed = JSON.parse(match[0]);
+        } catch {
+          parsed = null;
+        }
+      }
+    }
+
+    if (!parsed || typeof parsed !== "object") {
+      console.error("Unparsable AI output:", raw);
+      return json({ error: "AI nevrátila použitelný výstup. Zkuste to znovu." }, 500);
+    }
+
+    return json({ props: { ...parsed, activityType } });
+  } catch (e) {
+    console.error("generate-activity-content error:", e);
+    return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
+  }
+});

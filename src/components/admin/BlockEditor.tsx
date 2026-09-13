@@ -553,6 +553,8 @@ const SortableBlock = React.memo(({
   onDelete,
   onReplace,
   onAiReplace,
+  onCreateActivity,
+
   replaceLoading,
   aiSuggested,
   selected,
@@ -565,10 +567,12 @@ const SortableBlock = React.memo(({
   onDelete: (id: string) => void;
   onReplace: (id: string, target: Block["type"]) => void;
   onAiReplace: (id: string, target: "activity" | "hierarchy") => void;
+  onCreateActivity?: (id: string) => void;
   replaceLoading: boolean;
   aiSuggested?: boolean;
   selected?: boolean;
   onSelectToggle?: (id: string, shift: boolean) => void;
+
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: block.id });
   const isMobile = useIsMobile();
@@ -683,7 +687,13 @@ const SortableBlock = React.memo(({
                 {block.visible ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
                 {block.visible ? "Skrýt pro žáky" : "Zobrazit žákům"}
               </DropdownMenuItem>
+              {onCreateActivity && blockToPlainText(block).trim().length >= 8 && (
+                <DropdownMenuItem onClick={() => onCreateActivity(block.id)}>
+                  <IconSparkles className="mr-2 h-4 w-4" /> Vytvořit aktivitu z tohoto obsahu
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
+
               <DropdownMenuItem onClick={() => onDelete(block.id)} className="text-destructive focus:text-destructive">
                 <Trash2 className="mr-2 h-4 w-4" /> Smazat
               </DropdownMenuItem>
@@ -1306,6 +1316,34 @@ const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryC
 
   const [replacingId, setReplacingId] = useState<string | null>(null);
 
+  /** Z vybraného bloku vytvoří novou aktivitu hned za ním, s textem jako podkladem pro AI. */
+  const createActivityFromBlock = useCallback((id: string) => {
+    const cur = blocksRef.current;
+    const idx = cur.findIndex((b) => b.id === id);
+    if (idx < 0) return;
+    const text = blockToPlainText(cur[idx]).trim();
+    if (text.length < 8) {
+      toast.error("Blok neobsahuje dost textu pro vytvoření aktivity.");
+      return;
+    }
+    const fresh = createDefaultBlock("activity");
+    const newBlock: Block = {
+      ...fresh,
+      props: {
+        ...fresh.props,
+        activityType: "quiz",
+        title: text.slice(0, 60),
+        aiSourceText: text.slice(0, 6000),
+      },
+    };
+    pendingScrollToBlockIdRef.current = newBlock.id;
+    const next = [...cur];
+    next.splice(idx + 1, 0, newBlock);
+    commit(next);
+    toast.success("Aktivita vložena za blok. Vygenerujte obsah pomocí AI.");
+  }, [commit]);
+
+
   const replaceBlock = useCallback((id: string, target: Block["type"]) => {
     const cur = blocksRef.current;
     const idx = cur.findIndex((b) => b.id === id);
@@ -1759,6 +1797,8 @@ const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryC
                   onDelete={deleteBlock}
                   onReplace={replaceBlock}
                   onAiReplace={aiReplaceBlock}
+                  onCreateActivity={createActivityFromBlock}
+
                   replaceLoading={replacingId === block.id}
                   aiSuggested={aiSuggestedSet.has(block.id)}
                   selected={selectedIds.includes(block.id)}
