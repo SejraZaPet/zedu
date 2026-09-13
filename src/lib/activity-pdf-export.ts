@@ -38,13 +38,17 @@ function renderActivityBody(p: Record<string, any>, withSolution: boolean): stri
   const type = p.activityType || "flashcards";
   switch (type) {
     case "quiz": {
-      const answers: any[] = Array.isArray(p.quiz?.answers) ? p.quiz.answers : [];
-      return `
-        <p class="q">${esc(p.quiz?.question)}</p>
-        <ol class="opts">${answers
+      const questions = getQuizQuestions(p.quiz);
+      return questions
+        .map(
+          (q, qi) => `
+        <p class="q">${questions.length > 1 ? `${qi + 1}. ` : ""}${esc(q.question)}</p>
+        <ol class="opts">${q.answers
           .map((a) => `<li>${ok(a?.text, withSolution && a?.correct === true)}</li>`)
           .join("")}</ol>
-        ${withSolution && p.quiz?.explanation ? `<p class="note">Vysvětlení: ${esc(p.quiz.explanation)}</p>` : ""}`;
+        ${withSolution && q.explanation ? `<p class="note">Vysvětlení: ${esc(q.explanation)}</p>` : ""}`,
+        )
+        .join("");
     }
     case "true_false": {
       const st: any[] = Array.isArray(p.trueFalse?.statements) ? p.trueFalse.statements : [];
