@@ -4,6 +4,8 @@
  * i přehled aktivit a jejich PDF export, aby byl vzhled a text všude stejný.
  */
 
+import { getQuizQuestions } from "@/lib/quiz-questions";
+
 export interface ActivityTypeMeta {
   value: string;
   label: string;

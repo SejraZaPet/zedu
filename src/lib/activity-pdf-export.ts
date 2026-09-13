@@ -5,6 +5,7 @@
  */
 
 import type { Block } from "@/lib/textbook-config";
+import { getQuizQuestions } from "@/lib/quiz-questions";
 import { activityMeta, activityMinutes, activitySummary, WORK_MODE_LABELS } from "@/lib/activity-meta";
 
 export type ActivityExportVariant = "student" | "teacher";
