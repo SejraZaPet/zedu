@@ -112,14 +112,16 @@ const StudentTextbookDetail = () => {
           .select("lesson_id, subject_slug, grade_number, topic_id, class_id, subject_group_id, school_term, scope_all_grades, status")
           .in("lesson_id", teacherLessonIds)
           .eq("status", "published");
-        placements = (pl || []).filter((placement: any) => !user || isPlacementVisibleToStudent(
-          placement,
-          {
-            classIds: studentClassIds,
-            subjectGroupIds: studentGroupIds,
-            gradeNumbers: studentGradeNumbers,
-          },
-        ));
+        placements = user
+          ? (pl || []).filter((placement: any) => isPlacementVisibleToStudent(
+              placement,
+              {
+                classIds: studentClassIds,
+                subjectGroupIds: studentGroupIds,
+                gradeNumbers: studentGradeNumbers,
+              },
+            ))
+          : [];
       }
 
       // 2) Lekce z globálního systému (textbook_lessons → topics → subject = slug učebnice)
