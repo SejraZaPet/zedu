@@ -338,6 +338,23 @@ const GroupChildBlock = ({
         <div style={bgStyle}>
           <BlockRenderer block={child} onChange={onChange} />
         </div>
+        {canCreateActivity && (
+          <div className="mt-1 flex">
+            <button
+              type="button"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                onCreateActivity?.();
+              }}
+              title="Vytvořit aktivitu z tohoto obsahu"
+              aria-label={`Vytvořit aktivitu z obsahu bloku ${childLabel}`}
+              className="inline-flex items-center gap-1 rounded-md border border-primary/40 bg-primary/5 px-2 py-0.5 text-[10px] font-semibold text-primary transition-colors hover:bg-primary/10"
+            >
+              <IconSparkles className="h-3 w-3" /> Vytvořit aktivitu
+            </button>
+          </div>
+        )}
       </div>
     </>
   );
