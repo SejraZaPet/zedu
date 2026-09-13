@@ -170,8 +170,8 @@ const LessonPlacementEditor = ({ lessonId, placements, onChange }: Props) => {
                   </Button>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2">
-                  <div>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(12rem,1.25fr)_minmax(9rem,0.8fr)_minmax(14rem,1.5fr)]">
+                  <div className="min-w-0">
                     <Label className="text-[10px] text-muted-foreground">Předmět</Label>
                     <Select value={p.subject_slug} onValueChange={(v) => updatePlacement(i, { subject_slug: v, grade_number: getGradesForSubject(v)[0]?.grade_number ?? 1 })}>
                       <SelectTrigger className="h-8 text-xs mt-0.5"><SelectValue /></SelectTrigger>
@@ -182,7 +182,7 @@ const LessonPlacementEditor = ({ lessonId, placements, onChange }: Props) => {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <Label className="text-[10px] text-muted-foreground">Ročník</Label>
                     <Select value={String(p.grade_number)} onValueChange={(v) => updatePlacement(i, { grade_number: Number(v) })}>
                       <SelectTrigger className="h-8 text-xs mt-0.5"><SelectValue /></SelectTrigger>
@@ -193,7 +193,7 @@ const LessonPlacementEditor = ({ lessonId, placements, onChange }: Props) => {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <Label className="text-[10px] text-muted-foreground">Téma</Label>
                     <Select value={p.topic_id ?? "__none__"} onValueChange={(v) => updatePlacement(i, { topic_id: v === "__none__" ? null : v })}>
                       <SelectTrigger className="h-8 text-xs mt-0.5"><SelectValue placeholder="Volitelné" /></SelectTrigger>
