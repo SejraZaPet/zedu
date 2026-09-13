@@ -73,11 +73,11 @@ export const GradientPicker = ({ value, onChange, nullLabel = "Plná barva", cla
         <div className="space-y-2 rounded-md border border-border p-2">
           <div>
             <Label className="text-[11px] text-muted-foreground">První barva</Label>
-            <ColorPicker value={g.from} onChange={(v) => v && set({ from: v })} compact className="mt-1" />
+            <ColorPicker value={g.from} onChange={(v) => v && set({ from: v })} compact hidePalettes className="mt-1" />
           </div>
           <div>
             <Label className="text-[11px] text-muted-foreground">Druhá barva</Label>
-            <ColorPicker value={g.to} onChange={(v) => v && set({ to: v })} compact className="mt-1" />
+            <ColorPicker value={g.to} onChange={(v) => v && set({ to: v })} compact hidePalettes className="mt-1" />
           </div>
           <div>
             <Label className="text-[11px] text-muted-foreground">Směr</Label>

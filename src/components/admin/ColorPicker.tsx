@@ -12,6 +12,8 @@ interface Props {
   swatches?: string[];
   /** Kompaktní varianta (menší swatche) – např. do plovoucí lišty. */
   compact?: boolean;
+  /** Skrýt sekci „Moje palety“ (např. u vnořených pickerů v přechodu). */
+  hidePalettes?: boolean;
   className?: string;
 }
 
@@ -32,6 +34,7 @@ export const ColorPicker = ({
   nullLabel = "Bez barvy",
   swatches = SLIDE_TEXT_COLORS,
   compact,
+  hidePalettes,
   className,
 }: Props) => {
   const [hex, setHex] = useState(value && HEX_RE.test(value) ? value : "");
@@ -54,6 +57,7 @@ export const ColorPicker = ({
 
   return (
     <div className={`space-y-2 ${className || ""}`}>
+      {!hidePalettes && (
       <MyPalettesSection
         current={value && HEX_RE.test(value) ? value : null}
         allowGradients={false}
@@ -61,6 +65,7 @@ export const ColorPicker = ({
           if (typeof v === "string") onChange(expandHex(v));
         }}
       />
+      )}
       <div className="flex flex-wrap items-center gap-1.5">
         {allowNull && (
           <button
