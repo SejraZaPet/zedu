@@ -1493,7 +1493,12 @@ const AiSuggestPanel = ({
   const [error, setError] = useState<string | null>(null);
   const [lessonPickerOpen, setLessonPickerOpen] = useState(false);
   const [sourceNote, setSourceNote] = useState<string | null>(null);
-
+  const isQuiz = activityType === "quiz";
+  const [questionCount, setQuestionCount] = useState<number>(
+    Number.isFinite(Number(p.aiQuestionCount)) && Number(p.aiQuestionCount) > 0
+      ? Math.min(10, Math.max(1, Math.round(Number(p.aiQuestionCount))))
+      : 5,
+  );
 
   const handleGenerate = async () => {
     setLoading(true);
@@ -1505,6 +1510,7 @@ const AiSuggestPanel = ({
           topic: p.title || "",
           context,
           methods: methodNames,
+          ...(isQuiz ? { questionCount } : {}),
         },
       });
       if (fnError) throw fnError;
@@ -1517,6 +1523,7 @@ const AiSuggestPanel = ({
         activityType,
         title: generated.title || p.title || "Aktivita",
         aiSourceText: context || undefined,
+        aiQuestionCount: isQuiz ? questionCount : p.aiQuestionCount,
         aiMethodIds: methodIds.length > 0 ? methodIds : undefined,
         aiMethodNames: methodNames.length > 0 ? methodNames : undefined,
         ai_generated: true,
@@ -1581,6 +1588,26 @@ const AiSuggestPanel = ({
               setMethodNames(names);
             }}
           />
+          {isQuiz && (
+            <div className="flex items-center gap-2">
+              <Label className="text-xs" htmlFor="ai-question-count">
+                Počet otázek
+              </Label>
+              <Input
+                id="ai-question-count"
+                type="number"
+                min={1}
+                max={10}
+                value={questionCount}
+                onChange={(e) => {
+                  const n = Math.round(Number(e.target.value));
+                  setQuestionCount(Number.isFinite(n) ? Math.min(10, Math.max(1, n)) : 5);
+                }}
+                className="w-20 h-8"
+              />
+              <span className="text-xs text-muted-foreground">1–10 otázek v jednom kvízu</span>
+            </div>
+          )}
           <div className="flex items-center gap-2">
             <Button type="button" size="sm" className="gap-1.5" onClick={handleGenerate} disabled={loading}>
 

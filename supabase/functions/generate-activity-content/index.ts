@@ -15,7 +15,7 @@ const json = (body: unknown, status = 200) =>
 
 /** Popis požadovaného JSON tvaru pro každý typ aktivity. */
 const SHAPES: Record<string, string> = {
-  quiz: `{"quiz":{"questions":[{"question":"...","answers":[{"text":"...","correct":true},{"text":"...","correct":false}],"explanation":"..."}]}} – POLE 5 až 8 RŮZNÝCH otázek (nikdy jen jedna!), každá otázka má 4 možnosti a přesně 1 správnou a krátké vysvětlení`,
+  quiz: `{"quiz":{"questions":[{"question":"...","answers":[{"text":"...","correct":true},{"text":"...","correct":false}],"explanation":"..."}]}} – POLE RŮZNÝCH otázek (nikdy jen jedna!), každá otázka má 4 možnosti a přesně 1 správnou a krátké vysvětlení`,
   flashcards: `{"flashcards":[{"front":"pojem","back":"vysvětlení"}]} – 5 až 8 kartiček`,
   matching: `{"matching":{"left":["A1","A2"],"right":["B1","B2"]}} – 5 až 8 párů, položky na stejné pozici tvoří správný pár`,
   memory_game: `{"memoryGame":{"pairs":[{"left":"pojem","right":"definice"}]}} – 5 až 8 párů`,
@@ -53,6 +53,13 @@ serve(async (req) => {
           .filter(Boolean)
           .slice(0, 10)
       : [];
+    const rawCount = Number(body?.questionCount);
+    const questionCount =
+      activityType === "quiz" && Number.isFinite(rawCount) && rawCount > 0
+        ? Math.min(10, Math.max(1, Math.round(rawCount)))
+        : activityType === "quiz"
+          ? 5
+          : null;
     const shape = SHAPES[activityType];
 
     if (!shape) return json({ error: `Typ aktivity „${activityType}" není podporován.` }, 400);
@@ -81,6 +88,19 @@ Přizpůsob jim formu a znění aktivity i pokyn v "instructions" (např. u koop
 nebo skupiny, u badatelských metod otázky vedoucí k objevování).`
       : "";
 
+    const quizPart = questionCount
+      ? `\n\nPOČET OTÁZEK: vytvoř přesně ${questionCount} různých otázek (pole "questions" má mít ${questionCount} prvků),
+pokud na to podklad látkou stačí. Každá otázka musí mít 4 možnosti a přesně 1 správnou.${
+          hasContext
+            ? `
+POKRYTÍ PODKLADU: rozlož otázky rovnoměrně po CELÉM podkladu – od začátku do konce, ne jen z prvních vět.
+Nejprve si v duchu vypiš všechny odlišné faktické informace v podkladu a ke každé otázce použij JINOU z nich.
+Otázky se nesmí obsahově opakovat. Pokud podklad nabízí méně odlišných faktů než ${questionCount},
+vytvoř méně otázek – ale nikdy nezůstávej u zlomku obsahu, když lze pokrýt více.`
+            : ""
+        }`
+      : "";
+
     const userPrompt = hasContext
       ? `Typ aktivity: ${activityType}
 Požadovaný tvar JSON: ${shape}
@@ -92,13 +112,13 @@ ${context.slice(0, 6000)}
 
 ${topic ? `Pomocný popisek sekce (jen orientační, NENÍ téma k vymýšlení): ${topic.slice(0, 120)}` : ""}
 
-Vytvoř obsah aktivity založený na konkrétních faktech výše. Každá položka musí mít oporu v podkladu.${methodsPart}`
+Vytvoř obsah aktivity založený na konkrétních faktech výše. Každá položka musí mít oporu v podkladu.${methodsPart}${quizPart}`
       : `Typ aktivity: ${activityType}
 Požadovaný tvar JSON: ${shape}
 
 Téma / název aktivity: ${topic || "(neuvedeno)"}
 
-Podklad nebyl dodán – vytvoř obsah k uvedenému tématu.${methodsPart}`;
+Podklad nebyl dodán – vytvoř obsah k uvedenému tématu.${methodsPart}${quizPart}`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
