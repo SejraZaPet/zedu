@@ -26,7 +26,9 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Upload, Sparkles, Loader2 } from "lucide-react";
+import { Plus, Trash2, Upload, Sparkles, Loader2, BookOpen } from "lucide-react";
+import LessonSourcePickerDialog, { MAX_AI_SOURCE_CHARS } from "@/components/admin/block-editors/LessonSourcePickerDialog";
+
 import { Slider } from "@/components/ui/slider";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -1441,6 +1443,9 @@ const AiSuggestPanel = ({
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lessonPickerOpen, setLessonPickerOpen] = useState(false);
+  const [sourceNote, setSourceNote] = useState<string | null>(null);
+
 
   const handleGenerate = async () => {
     setLoading(true);
@@ -1492,6 +1497,35 @@ const AiSuggestPanel = ({
             rows={3}
             placeholder="Např. text o dělení hovězího masa, nebo jen téma Druhy mas a jejich využití."
           />
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="gap-1.5"
+              onClick={() => setLessonPickerOpen(true)}
+            >
+              <BookOpen className="w-3.5 h-3.5" /> Vybrat obsah z lekcí
+            </Button>
+            {sourceNote && <span className="text-xs text-muted-foreground">{sourceNote}</span>}
+          </div>
+          <LessonSourcePickerDialog
+            open={lessonPickerOpen}
+            onOpenChange={setLessonPickerOpen}
+            onPicked={(text, truncated) => {
+              setContext((prev) => {
+                const merged = prev.trim() ? `${prev.trim()}\n\n${text}` : text;
+                return merged.length > MAX_AI_SOURCE_CHARS
+                  ? `${merged.slice(0, MAX_AI_SOURCE_CHARS)}…`
+                  : merged;
+              });
+              setSourceNote(
+                truncated
+                  ? "Obsah lekcí byl zkrácen na maximální délku podkladu pro AI."
+                  : "Obsah vybraných lekcí byl přidán do podkladu.",
+              );
+            }}
+          />
           <AiMethodsPicker
             selectedIds={methodIds}
             onChange={(ids, names) => {
@@ -1501,6 +1535,7 @@ const AiSuggestPanel = ({
           />
           <div className="flex items-center gap-2">
             <Button type="button" size="sm" className="gap-1.5" onClick={handleGenerate} disabled={loading}>
+
               {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
               {loading ? "Generuji…" : "Vygenerovat obsah"}
             </Button>

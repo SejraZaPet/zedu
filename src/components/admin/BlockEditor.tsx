@@ -260,16 +260,20 @@ const GroupChildBlock = ({
   child,
   onChange,
   onRemove,
+  onCreateActivity,
 }: {
   child: Block;
   onChange: (props: Record<string, any>) => void;
   onRemove: () => void;
+  onCreateActivity?: () => void;
 }) => {
   const [propsOpen, setPropsOpen] = useState(false);
   const ChildIcon = BLOCK_ICON[child.type];
   const childLabel = BLOCK_TYPES.find((t) => t.type === child.type)?.label ?? child.type;
   const isText = INLINE_TEXT_TYPES.has(child.type);
   const bgStyle = blockBackgroundStyle(child.props);
+  const canCreateActivity =
+    !!onCreateActivity && child.type !== "activity" && blockHasAiText(child);
 
   return (
     <>
@@ -289,6 +293,26 @@ const GroupChildBlock = ({
         >
           <Palette className="h-3.5 w-3.5" />
         </button>
+        {canCreateActivity && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                onPointerDown={(e) => e.stopPropagation()}
+                aria-label={`Možnosti bloku ${childLabel}`}
+                className="inline-flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted"
+              >
+                <MoreHorizontal className="h-3.5 w-3.5" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem onClick={() => onCreateActivity?.()}>
+                <IconSparkles className="mr-2 h-4 w-4" />
+                Vytvořit aktivitu z tohoto obsahu
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
         <button
           type="button"
           onPointerDown={(e) => e.stopPropagation()}
@@ -299,6 +323,7 @@ const GroupChildBlock = ({
           <IconX className="h-3.5 w-3.5 text-muted-foreground" />
         </button>
       </div>
+
 
       {propsOpen && (
         <div
@@ -327,11 +352,13 @@ const ColumnGroupCard = ({
   onChange,
   onRemove,
   onHeightChange,
+  onCreateActivity,
 }: {
   child: Block;
   onChange: (props: Record<string, any>) => void;
   onRemove: () => void;
   onHeightChange: (height: number | null) => void;
+  onCreateActivity?: () => void;
 }) => {
   const saved = getGroupChildHeight(child);
   const cardRef = useRef<HTMLDivElement | null>(null);
@@ -366,7 +393,12 @@ const ColumnGroupCard = ({
       className="relative rounded-[10px] border border-border bg-[#FAFAFA] p-2 pb-4 min-w-0"
       style={height ? { minHeight: height } : undefined}
     >
-      <GroupChildBlock child={child} onChange={onChange} onRemove={onRemove} />
+      <GroupChildBlock
+        child={child}
+        onChange={onChange}
+        onRemove={onRemove}
+        onCreateActivity={onCreateActivity}
+      />
       <div
         role="separator"
         aria-label="Změnit výšku karty"
@@ -687,7 +719,7 @@ const SortableBlock = React.memo(({
                 {block.visible ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
                 {block.visible ? "Skrýt pro žáky" : "Zobrazit žákům"}
               </DropdownMenuItem>
-              {onCreateActivity && blockToPlainText(block).trim().length >= 8 && (
+              {onCreateActivity && block.type !== "activity" && blockHasAiText(block) && (
                 <DropdownMenuItem onClick={() => onCreateActivity(block.id)}>
                   <IconSparkles className="mr-2 h-4 w-4" /> Vytvořit aktivitu z tohoto obsahu
                 </DropdownMenuItem>
@@ -750,6 +782,7 @@ const SortableSlideGroup = React.memo(({
   onChildFrameChange,
   onChildHeightChange,
   onMinHeightChange,
+  onChildCreateActivity,
 
   onUngroup,
   onToggle,
@@ -765,6 +798,7 @@ const SortableSlideGroup = React.memo(({
   onChildFrameChange: (groupId: string, childId: string, frame: BlockFrame) => void;
   onChildHeightChange: (groupId: string, childId: string, height: number | null) => void;
   onMinHeightChange: (groupId: string, height: number | null) => void;
+  onChildCreateActivity?: (groupId: string, childId: string) => void;
 
   onUngroup: (groupId: string) => void;
   onToggle: (id: string) => void;
@@ -945,6 +979,7 @@ const SortableSlideGroup = React.memo(({
                       child={child}
                       onChange={(props) => onChildUpdate(block.id, child.id, props)}
                       onRemove={() => onChildRemove(block.id, child.id)}
+                      onCreateActivity={() => onChildCreateActivity?.(block.id, child.id)}
                     />
                   </div>
                 ),
@@ -967,6 +1002,7 @@ const SortableSlideGroup = React.memo(({
                   onChange={(props) => onChildUpdate(block.id, child.id, props)}
                   onRemove={() => onChildRemove(block.id, child.id)}
                   onHeightChange={(h) => onChildHeightChange(block.id, child.id, h)}
+                  onCreateActivity={() => onChildCreateActivity?.(block.id, child.id)}
                 />
               ))}
             </div>
@@ -1342,6 +1378,36 @@ const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryC
     commit(next);
     toast.success("Aktivita vložena za blok. Vygenerujte obsah pomocí AI.");
   }, [commit]);
+
+  /** Z karty uvnitř snímku (slide_group) vytvoří aktivitu hned za celým snímkem. */
+  const createActivityFromGroupChild = useCallback((groupId: string, childId: string) => {
+    const cur = blocksRef.current;
+    const idx = cur.findIndex((b) => b.id === groupId);
+    if (idx < 0) return;
+    const child = getGroupChildren(cur[idx]).find((c) => c.id === childId);
+    if (!child) return;
+    const text = blockToPlainText(child).trim();
+    if (text.length < 8) {
+      toast.error("Blok neobsahuje dost textu pro vytvoření aktivity.");
+      return;
+    }
+    const fresh = createDefaultBlock("activity");
+    const newBlock: Block = {
+      ...fresh,
+      props: {
+        ...fresh.props,
+        activityType: "quiz",
+        title: text.slice(0, 60),
+        aiSourceText: text.slice(0, 6000),
+      },
+    };
+    pendingScrollToBlockIdRef.current = newBlock.id;
+    const next = [...cur];
+    next.splice(idx + 1, 0, newBlock);
+    commit(next);
+    toast.success("Aktivita vložena za snímek. Vygenerujte obsah pomocí AI.");
+  }, [commit]);
+
 
 
   const replaceBlock = useCallback((id: string, target: Block["type"]) => {
@@ -1780,6 +1846,7 @@ const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryC
                   onChildFrameChange={changeChildFrame}
                   onChildHeightChange={changeChildHeight}
                   onMinHeightChange={changeGroupMinHeight}
+                  onChildCreateActivity={createActivityFromGroupChild}
 
 
                   onUngroup={ungroup}

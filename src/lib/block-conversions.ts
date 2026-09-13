@@ -147,7 +147,7 @@ export const convertBlock = (
 
 /** Extract a plaintext representation of the block for AI prompts. */
 export const blockToPlainText = (block: Block): string => {
-  const p = block.props || {};
+  const p = (block.props || {}) as Record<string, any>;
   switch (block.type) {
     case "heading":
     case "paragraph":
@@ -161,20 +161,38 @@ export const blockToPlainText = (block: Block): string => {
     case "summary":
       return [stripHtml(p.title), stripHtml(p.text)].filter(Boolean).join("\n\n");
     case "table": {
-      const headers: string[] = Array.isArray(p.headers) ? p.headers.map(String) : [];
+      const headers: string[] = Array.isArray(p.headers)
+        ? p.headers.map((h: unknown) => stripHtml(h))
+        : [];
       const rows: string[][] = Array.isArray(p.rows)
-        ? p.rows.map((r: any) => (Array.isArray(r) ? r.map(String) : []))
+        ? p.rows.map((r: any) => (Array.isArray(r) ? r.map((c: unknown) => stripHtml(c)) : []))
         : [];
       const lines: string[] = [];
-      if (headers.length) lines.push(headers.join("\t"));
-      for (const r of rows) lines.push(r.join("\t"));
+      if (stripHtml(p.title)) lines.push(stripHtml(p.title));
+      if (headers.filter(Boolean).length) lines.push(`Sloupce: ${headers.filter(Boolean).join(", ")}`);
+      for (const r of rows) {
+        const cells = r
+          .map((cell, i) => {
+            const value = cell.trim();
+            if (!value) return "";
+            const head = headers[i]?.trim();
+            return head ? `${head}: ${value}` : value;
+          })
+          .filter(Boolean);
+        if (cells.length) lines.push(`- ${cells.join("; ")}`);
+      }
       return lines.join("\n");
     }
     case "card_grid":
       return (Array.isArray(p.cards) ? p.cards : [])
-        .map((c: any) =>
-          [stripHtml(c?.title), stripHtml(c?.text)].filter(Boolean).join(" — "),
-        )
+        .map((c: any) => {
+          const bullets = Array.isArray(c?.items)
+            ? c.items.map((i: unknown) => stripHtml(i)).filter(Boolean).join("; ")
+            : "";
+          return [stripHtml(c?.title), stripHtml(c?.text) || bullets]
+            .filter(Boolean)
+            .join(" — ");
+        })
         .filter(Boolean)
         .join("\n");
     case "two_column":
@@ -186,11 +204,59 @@ export const blockToPlainText = (block: Block): string => {
         )
         .filter(Boolean)
         .join("\n\n");
-    default:
+    case "image":
+    case "image_text":
+      return [stripHtml(p.title), stripHtml(p.caption), stripHtml(p.alt), stripHtml(p.text)]
+        .filter(Boolean)
+        .join("\n");
+    case "gallery":
+      return (Array.isArray(p.images) ? p.images : [])
+        .map((i: any) => [stripHtml(i?.caption), stripHtml(i?.alt)].filter(Boolean).join(" — "))
+        .filter(Boolean)
+        .join("\n");
+    case "youtube":
+    case "lesson_link":
+      return [stripHtml(p.title), stripHtml(p.caption), stripHtml(p.description)]
+        .filter(Boolean)
+        .join("\n");
+    case "hierarchy": {
+      const levels: any[] = Array.isArray(p.levels) ? p.levels : [];
+      return levels
+        .map((l: any) => {
+          const items = Array.isArray(l?.items)
+            ? l.items.map((i: unknown) => stripHtml(i)).filter(Boolean).join("; ")
+            : "";
+          return [stripHtml(l?.title), items].filter(Boolean).join(": ");
+        })
+        .filter(Boolean)
+        .join("\n");
+    }
+    case "activity":
+      return [stripHtml(p.title), stripHtml(p.instructions)].filter(Boolean).join("\n");
+    case "slide_group": {
+      const children: Block[] = Array.isArray(p.children) ? p.children : [];
+      return children
+        .map((c) => blockToPlainText(c))
+        .map((t) => t.trim())
+        .filter(Boolean)
+        .join("\n\n");
+    }
+    case "divider":
       return "";
+    default: {
+      const generic = [
+        stripHtml(p.title),
+        stripHtml(p.text),
+        stripHtml(p.content),
+        stripHtml(p.caption),
+        stripHtml(p.description),
+      ].filter(Boolean);
+      return generic.join("\n");
+    }
   }
 };
 
 /** True when the block has enough textual content to feed an AI transformation. */
 export const blockHasAiText = (block: Block): boolean =>
   blockToPlainText(block).trim().length > 8;
+
