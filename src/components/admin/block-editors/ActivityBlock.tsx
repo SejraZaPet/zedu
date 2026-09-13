@@ -1588,6 +1588,26 @@ const AiSuggestPanel = ({
               setMethodNames(names);
             }}
           />
+          {isQuiz && (
+            <div className="flex items-center gap-2">
+              <Label className="text-xs" htmlFor="ai-question-count">
+                Počet otázek
+              </Label>
+              <Input
+                id="ai-question-count"
+                type="number"
+                min={1}
+                max={10}
+                value={questionCount}
+                onChange={(e) => {
+                  const n = Math.round(Number(e.target.value));
+                  setQuestionCount(Number.isFinite(n) ? Math.min(10, Math.max(1, n)) : 5);
+                }}
+                className="w-20 h-8"
+              />
+              <span className="text-xs text-muted-foreground">1–10 otázek v jednom kvízu</span>
+            </div>
+          )}
           <div className="flex items-center gap-2">
             <Button type="button" size="sm" className="gap-1.5" onClick={handleGenerate} disabled={loading}>
 
