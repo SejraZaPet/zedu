@@ -1757,13 +1757,12 @@ const ActivityBlock = ({ block, onChange }: Props) => {
   const minutes = activityMinutes(p);
   const aiSuggested = p.ai_generated === true;
 
-  /** Ruční úprava učitelem – zruší štítek „Navrženo AI". */
+  /**
+   * Ruční úprava učitelem – zruší štítek „Navrženo AI".
+   * AI panel zapisuje přímo přes `onChange`, takže sem chodí jen ruční změny.
+   */
   const handleManualChange = useCallback(
     (next: Record<string, any>) => {
-      if (next?.ai_generated === true) {
-        onChange(next);
-        return;
-      }
       onChange(
         p.ai_generated === true
           ? { ...next, ai_generated: false, ai_modified_at: new Date().toISOString() }
