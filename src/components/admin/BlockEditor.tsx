@@ -1379,6 +1379,36 @@ const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryC
     toast.success("Aktivita vložena za blok. Vygenerujte obsah pomocí AI.");
   }, [commit]);
 
+  /** Z karty uvnitř snímku (slide_group) vytvoří aktivitu hned za celým snímkem. */
+  const createActivityFromGroupChild = useCallback((groupId: string, childId: string) => {
+    const cur = blocksRef.current;
+    const idx = cur.findIndex((b) => b.id === groupId);
+    if (idx < 0) return;
+    const child = getGroupChildren(cur[idx]).find((c) => c.id === childId);
+    if (!child) return;
+    const text = blockToPlainText(child).trim();
+    if (text.length < 8) {
+      toast.error("Blok neobsahuje dost textu pro vytvoření aktivity.");
+      return;
+    }
+    const fresh = createDefaultBlock("activity");
+    const newBlock: Block = {
+      ...fresh,
+      props: {
+        ...fresh.props,
+        activityType: "quiz",
+        title: text.slice(0, 60),
+        aiSourceText: text.slice(0, 6000),
+      },
+    };
+    pendingScrollToBlockIdRef.current = newBlock.id;
+    const next = [...cur];
+    next.splice(idx + 1, 0, newBlock);
+    commit(next);
+    toast.success("Aktivita vložena za snímek. Vygenerujte obsah pomocí AI.");
+  }, [commit]);
+
+
 
   const replaceBlock = useCallback((id: string, target: Block["type"]) => {
     const cur = blocksRef.current;
