@@ -137,8 +137,23 @@ function EditableText({
    */
   const [typing, setTyping] = useState(false);
   useEffect(() => {
-    if (typing) ref.current?.focus();
+    if (!typing) return;
+    const el = ref.current;
+    if (!el) return;
+    el.focus();
+    // Kurzor se nastaví na konec obsahu, aby byl vždy vidět a šlo hned psát.
+    try {
+      const sel = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      range.collapse(false);
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+    } catch {
+      /* ignore */
+    }
   }, [typing]);
+
 
   useEffect(() => {
     setIsEmpty(!(html ? sanitizedValue : value));
@@ -174,17 +189,25 @@ function EditableText({
         ref={ref}
         contentEditable={typing}
         suppressContentEditableWarning
-        title={typing ? undefined : "Dvojklik = psát text"}
-        style={html ? style : { whiteSpace: multiline ? "pre-wrap" : undefined, ...style }}
+        tabIndex={typing ? undefined : 0}
+        role={typing ? "textbox" : undefined}
+        title={typing ? undefined : "Klikni pro psaní (Enter také začne psát)"}
+        style={{
+          ...(html ? {} : { whiteSpace: multiline ? "pre-wrap" : undefined }),
+          minHeight: "1.2em",
+          minWidth: isEmpty ? "6ch" : undefined,
+          caretColor: "currentColor",
+          ...style,
+        }}
         onInput={checkEmpty}
         onDoubleClick={() => setTyping(true)}
         onPointerDown={(e) => {
           if (typing) e.stopPropagation();
         }}
         onMouseDown={(e) => {
-          // Druhý klik = psaní. Nativní dblclick/click tažení bloku spolkne,
-          // proto se řídíme počítadlem kliknutí na mousedown.
-          if (!typing && e.detail >= 2) {
+          // Prázdný text jde psát hned prvním klikem; u naplněného textu
+          // stačí druhý klik (první klik vybírá blok kvůli Delete/Ctrl+C).
+          if (!typing && (isEmpty || e.detail >= 2)) {
             e.stopPropagation();
             setTyping(true);
           }
@@ -195,6 +218,14 @@ function EditableText({
           onCommit(html ? e.currentTarget.innerHTML : e.currentTarget.innerText);
         }}
         onKeyDown={(e) => {
+          if (!typing) {
+            if (e.key === "Enter" || e.key === "F2") {
+              e.preventDefault();
+              e.stopPropagation();
+              setTyping(true);
+            }
+            return;
+          }
           if (e.key === "Escape") {
             (e.currentTarget as HTMLElement).blur();
             return;
@@ -209,12 +240,13 @@ function EditableText({
           ? { dangerouslySetInnerHTML: { __html: sanitizedValue } }
           : { children: value || "" })}
       />
-      {isEmpty && placeholder && (
-        <span className="pointer-events-none absolute left-1 top-0 text-white/30 italic text-sm select-none">
+      {isEmpty && !typing && placeholder && (
+        <span className="pointer-events-none absolute left-1 top-0 whitespace-nowrap text-current/40 italic text-sm select-none opacity-50">
           {placeholder}
         </span>
       )}
     </div>
+
   );
 }
 
