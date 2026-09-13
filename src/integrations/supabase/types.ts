@@ -2836,7 +2836,10 @@ export type Database = {
           id: string
           lesson_id: string
           scheduled_publish_at: string | null
+          school_term: string
+          scope_all_grades: boolean
           status: string
+          subject_group_id: string | null
           subject_slug: string
           topic_id: string | null
         }
@@ -2847,7 +2850,10 @@ export type Database = {
           id?: string
           lesson_id: string
           scheduled_publish_at?: string | null
+          school_term?: string
+          scope_all_grades?: boolean
           status?: string
+          subject_group_id?: string | null
           subject_slug: string
           topic_id?: string | null
         }
@@ -2858,7 +2864,10 @@ export type Database = {
           id?: string
           lesson_id?: string
           scheduled_publish_at?: string | null
+          school_term?: string
+          scope_all_grades?: boolean
           status?: string
+          subject_group_id?: string | null
           subject_slug?: string
           topic_id?: string | null
         }
@@ -2875,6 +2884,13 @@ export type Database = {
             columns: ["lesson_id"]
             isOneToOne: false
             referencedRelation: "teacher_textbook_lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lesson_placements_subject_group_id_fkey"
+            columns: ["subject_group_id"]
+            isOneToOne: false
+            referencedRelation: "subject_groups"
             referencedColumns: ["id"]
           },
           {
@@ -7405,6 +7421,15 @@ export type Database = {
         Args: { _profile_id: string }
         Returns: boolean
       }
+      can_manage_lesson_placement: {
+        Args: {
+          _class_id?: string
+          _lesson_id: string
+          _subject_group_id?: string
+          _user_id?: string
+        }
+        Returns: boolean
+      }
       can_manage_reservation: {
         Args: { _reservation_id: string }
         Returns: boolean
@@ -7416,6 +7441,14 @@ export type Database = {
       can_reserve_resources: { Args: { _user_id?: string }; Returns: boolean }
       can_view_class_engagement: {
         Args: { _class_id: string; _user_id: string }
+        Returns: boolean
+      }
+      can_view_lesson_placement: {
+        Args: { _placement_id: string; _user_id?: string }
+        Returns: boolean
+      }
+      can_view_teacher_textbook_lesson: {
+        Args: { _lesson_id: string; _user_id?: string }
         Returns: boolean
       }
       cancel_notification: { Args: { _broadcast_id: string }; Returns: boolean }
