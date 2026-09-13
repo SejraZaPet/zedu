@@ -82,9 +82,9 @@ const LessonPreviewDialog = ({ title, heroImageUrl, blocks, lessonId, lessonSour
           {/* Render preview in frontend styles */}
           <div key={refreshKey} className="bg-background px-4 py-8">
             <div className="mx-auto max-w-3xl">
-              {heroImageUrl && (
+              {effectiveHero && (
                 <img
-                  src={heroImageUrl}
+                  src={effectiveHero}
                   alt={title}
                   className={`mb-8 ${HERO_IMAGE_CLASS}`}
                 />
