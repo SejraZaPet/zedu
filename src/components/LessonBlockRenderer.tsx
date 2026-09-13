@@ -25,6 +25,66 @@ import FormulaRenderer from "@/components/blocks/FormulaRenderer";
 import { blockBackgroundStyle } from "@/lib/block-backgrounds";
 import FreeFrameCanvas from "@/components/blocks/FreeFrameCanvas";
 import { getGroupChildFrames, getGroupChildHeight, getGroupMinHeight } from "@/lib/slide-groups";
+import { useState } from "react";
+import { ChevronDown, ChevronRight } from "lucide-react";
+import { activityMeta, activitySummary, activityMinutes } from "@/lib/activity-meta";
+
+/**
+ * Aktivita v lekci pro žáka – barevná hlavička podle typu se souhrnem,
+ * povinností a odhadem času. Nepovinné aktivity jsou sbalené, povinné rozbalené,
+ * aby žák nepřehlédl, co musí splnit.
+ */
+const StudentActivityShell = ({
+  props: p,
+  children,
+}: {
+  props: Record<string, any>;
+  children: React.ReactNode;
+}) => {
+  const required = p.required === true;
+  const meta = activityMeta(p.activityType || "flashcards");
+  const [open, setOpen] = useState(required);
+  const minutes = activityMinutes(p);
+  const summary = activitySummary(p);
+
+  return (
+    <div
+      className={`rounded-xl border ${required ? "border-secondary/40 bg-gradient-brand-pastel" : "border-border"} ${meta.accent}`}
+    >
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="flex w-full items-start gap-2 p-4 text-left"
+      >
+        {open ? (
+          <ChevronDown className="w-4 h-4 mt-0.5 text-muted-foreground flex-shrink-0" />
+        ) : (
+          <ChevronRight className="w-4 h-4 mt-0.5 text-muted-foreground flex-shrink-0" />
+        )}
+        <span aria-hidden="true" className="text-lg leading-none">{meta.icon}</span>
+        <span className="min-w-0 flex-1">
+          <span className="block font-heading text-base text-primary uppercase tracking-wide truncate">
+            {p.title || "Aktivita"}
+          </span>
+          <span className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+            <span>{meta.label}</span>
+            {summary && <span>· {summary}</span>}
+            {minutes && <span>· ~{minutes} min</span>}
+          </span>
+        </span>
+        <span
+          className={`flex-shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+            required ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+          }`}
+        >
+          {required ? "🔒 Povinné" : "Nepovinné"}
+        </span>
+      </button>
+      {open && <div className="px-4 pb-4">{children}</div>}
+    </div>
+  );
+};
 const extractYouTubeId = (url: string): string | null => {
   if (!url) return null;
   const m = url.match(
@@ -422,8 +482,7 @@ const LessonBlockInner = ({ block, blockIndex, onActivityComplete, isTeacher }: 
 
       const activityInner = (
         <div className="rounded-lg border border-primary/20 bg-card p-5 space-y-3">
-          <div className="flex items-center justify-between gap-2 flex-wrap">
-            {p.title && <h3 className="font-heading text-lg text-primary uppercase tracking-wide">{p.title}</h3>}
+          <div className="flex items-center justify-end gap-2 flex-wrap">
             <span className="inline-flex items-center gap-1 text-xs font-medium text-primary bg-primary/10 rounded-full px-2.5 py-1">
               {workModeLabel}
               {(workMode === "group" || workMode === "pairs") && p.groupSize ? ` · ${p.groupSize}` : ""}
@@ -510,26 +569,7 @@ const LessonBlockInner = ({ block, blockIndex, onActivityComplete, isTeacher }: 
         </div>
       );
 
-      if (p.required === true) {
-        return (
-          <div
-            className="bg-gradient-brand-pastel border-2 border-secondary/40 rounded-xl p-4"
-          >
-            <div className="inline-flex items-center gap-2 mb-3 pb-3 border-b border-primary/30 w-full">
-              <span className="inline-flex items-center gap-1.5 text-xs font-semibold bg-primary text-white rounded-full px-3 py-1">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                </svg>
-                Povinná aktivita
-              </span>
-            </div>
-            {activityInner}
-          </div>
-        );
-      }
-
-      return activityInner;
+      return <StudentActivityShell props={p}>{activityInner}</StudentActivityShell>;
     }
     case "hierarchy": {
       const shape: "pyramid" | "layers" | "steps" = p.shape || "pyramid";

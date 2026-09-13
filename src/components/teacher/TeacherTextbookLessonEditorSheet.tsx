@@ -14,6 +14,8 @@ import LessonPlacementEditor, { savePlacements, type Placement } from "@/compone
 import LessonAssignments, { type Assignment } from "@/components/admin/LessonAssignments";
 import LessonCurriculumTopicsPicker from "@/components/teacher/LessonCurriculumTopicsPicker";
 import LessonMethodsPicker from "@/components/teacher/LessonMethodsPicker";
+import LessonActivitiesPanel from "@/components/teacher/LessonActivitiesPanel";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Upload, Save, Loader2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -354,9 +356,25 @@ const TeacherTextbookLessonEditorSheet = ({ lesson, open, onOpenChange, onSaved 
             </div>
 
             <div className="border-t border-border pt-4 space-y-4">
-              <Label className="block text-base font-semibold">Obsah lekce</Label>
-              <LessonMethodsPicker lessonId={draft.id} source={draft.source} />
-              <BlockEditor blocks={draft.blocks} onChange={handleBlocksChange} />
+              <Tabs defaultValue="content">
+                <TabsList>
+                  <TabsTrigger value="content">Obsah lekce</TabsTrigger>
+                  <TabsTrigger value="activities">
+                    Aktivity ({draft.blocks.filter((b) => b.type === "activity").length})
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="content" className="space-y-4 pt-4">
+                  <LessonMethodsPicker lessonId={draft.id} source={draft.source} />
+                  <BlockEditor blocks={draft.blocks} onChange={handleBlocksChange} />
+                </TabsContent>
+                <TabsContent value="activities" className="pt-4">
+                  <LessonActivitiesPanel
+                    blocks={draft.blocks}
+                    onChange={handleBlocksChange}
+                    lessonTitle={draft.title}
+                  />
+                </TabsContent>
+              </Tabs>
             </div>
 
 
