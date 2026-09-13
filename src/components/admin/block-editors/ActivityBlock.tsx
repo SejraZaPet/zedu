@@ -26,7 +26,9 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Upload, Sparkles, Loader2 } from "lucide-react";
+import { Plus, Trash2, Upload, Sparkles, Loader2, BookOpen } from "lucide-react";
+import LessonSourcePickerDialog, { MAX_AI_SOURCE_CHARS } from "@/components/admin/block-editors/LessonSourcePickerDialog";
+
 import { Slider } from "@/components/ui/slider";
 import { supabase } from "@/integrations/supabase/client";
 
