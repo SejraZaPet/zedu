@@ -50,7 +50,7 @@ describe("nabídka aktivity u karet ve snímku", () => {
     render(<BlockEditor blocks={grouped} onChange={vi.fn()} />);
     const menus = screen.getAllByLabelText("Možnosti bloku Text");
     expect(menus.length).toBe(2);
-    fireEvent.click(menus[0]);
+    fireEvent.keyDown(menus[0], { key: "Enter" });
     expect(await screen.findByText("Vytvořit aktivitu z tohoto obsahu")).toBeTruthy();
   });
 });
