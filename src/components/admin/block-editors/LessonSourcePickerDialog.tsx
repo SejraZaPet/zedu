@@ -84,7 +84,10 @@ const LessonSourcePickerDialog = ({
             .order("sort_order")
             .limit(2000),
         ]);
-        if (cancelled) return;
+        if (cancelled) {
+          loadedRef.current = false;
+          return;
+        }
 
         const topics = (topicsRes.data as any[]) ?? [];
         const globalLessons = (globalRes.data as any[]) ?? [];
