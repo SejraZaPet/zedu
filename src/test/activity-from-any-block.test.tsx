@@ -54,3 +54,28 @@ describe("nabídka aktivity u karet ve snímku", () => {
     expect(await screen.findByText("Vytvořit aktivitu z tohoto obsahu")).toBeTruthy();
   });
 });
+
+describe("viditelné tlačítko Vytvořit aktivitu", () => {
+  it("je vidět u textového bloku i u karty ve snímku bez otevírání menu", async () => {
+    const { default: BlockEditor } = await import("@/components/admin/BlockEditor");
+    const grouped = groupBlocksIntoSlide(
+      [
+        block("p1", "paragraph", { text: "<p>Hovězí maso pochází ze skotu.</p>" }),
+        block("p2", "paragraph", { text: "<p>Vepřové maso pochází z prasat.</p>" }),
+      ],
+      ["p1", "p2"],
+      2,
+    );
+    const { unmount } = render(<BlockEditor blocks={grouped} onChange={vi.fn()} />);
+    expect(screen.getAllByTitle("Vytvořit aktivitu z tohoto obsahu").length).toBe(2);
+    unmount();
+
+    render(
+      <BlockEditor
+        blocks={[block("p9", "paragraph", { text: "<p>Hovězí maso pochází ze skotu.</p>" })]}
+        onChange={vi.fn()}
+      />,
+    );
+    expect(screen.getAllByTitle("Vytvořit aktivitu z tohoto obsahu").length).toBe(1);
+  });
+});
