@@ -352,11 +352,13 @@ const ColumnGroupCard = ({
   onChange,
   onRemove,
   onHeightChange,
+  onCreateActivity,
 }: {
   child: Block;
   onChange: (props: Record<string, any>) => void;
   onRemove: () => void;
   onHeightChange: (height: number | null) => void;
+  onCreateActivity?: () => void;
 }) => {
   const saved = getGroupChildHeight(child);
   const cardRef = useRef<HTMLDivElement | null>(null);
@@ -391,7 +393,12 @@ const ColumnGroupCard = ({
       className="relative rounded-[10px] border border-border bg-[#FAFAFA] p-2 pb-4 min-w-0"
       style={height ? { minHeight: height } : undefined}
     >
-      <GroupChildBlock child={child} onChange={onChange} onRemove={onRemove} />
+      <GroupChildBlock
+        child={child}
+        onChange={onChange}
+        onRemove={onRemove}
+        onCreateActivity={onCreateActivity}
+      />
       <div
         role="separator"
         aria-label="Změnit výšku karty"
@@ -775,6 +782,7 @@ const SortableSlideGroup = React.memo(({
   onChildFrameChange,
   onChildHeightChange,
   onMinHeightChange,
+  onChildCreateActivity,
 
   onUngroup,
   onToggle,
@@ -790,6 +798,7 @@ const SortableSlideGroup = React.memo(({
   onChildFrameChange: (groupId: string, childId: string, frame: BlockFrame) => void;
   onChildHeightChange: (groupId: string, childId: string, height: number | null) => void;
   onMinHeightChange: (groupId: string, height: number | null) => void;
+  onChildCreateActivity?: (groupId: string, childId: string) => void;
 
   onUngroup: (groupId: string) => void;
   onToggle: (id: string) => void;
@@ -970,6 +979,7 @@ const SortableSlideGroup = React.memo(({
                       child={child}
                       onChange={(props) => onChildUpdate(block.id, child.id, props)}
                       onRemove={() => onChildRemove(block.id, child.id)}
+                      onCreateActivity={() => onChildCreateActivity?.(block.id, child.id)}
                     />
                   </div>
                 ),
@@ -992,6 +1002,7 @@ const SortableSlideGroup = React.memo(({
                   onChange={(props) => onChildUpdate(block.id, child.id, props)}
                   onRemove={() => onChildRemove(block.id, child.id)}
                   onHeightChange={(h) => onChildHeightChange(block.id, child.id, h)}
+                  onCreateActivity={() => onChildCreateActivity?.(block.id, child.id)}
                 />
               ))}
             </div>
@@ -1805,6 +1816,7 @@ const BlockEditor = ({ blocks, onChange, toolbarActions, hideToolbar, onHistoryC
                   onChildFrameChange={changeChildFrame}
                   onChildHeightChange={changeChildHeight}
                   onMinHeightChange={changeGroupMinHeight}
+                  onChildCreateActivity={createActivityFromGroupChild}
 
 
                   onUngroup={ungroup}
