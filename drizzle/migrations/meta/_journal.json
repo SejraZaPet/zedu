@@ -15,6 +15,13 @@
       "when": 1789302968261,
       "tag": "0001_target_global_lesson_assignments",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789305348146,
+      "tag": "0002_create_user_color_palettes",
+      "breakpoints": true
     }
   ]
 }

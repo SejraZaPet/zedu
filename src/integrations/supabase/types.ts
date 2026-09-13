@@ -6982,6 +6982,30 @@ export type Database = {
           },
         ]
       }
+      user_color_palettes: {
+        Row: {
+          colors: Json
+          created_at: string
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          colors?: Json
+          created_at?: string
+          id?: string
+          name: string
+          user_id?: string
+        }
+        Update: {
+          colors?: Json
+          created_at?: string
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
