@@ -256,7 +256,7 @@ const TextbookList = ({ textbooks, trashedTextbooks = [], loading, subjects, onO
         </DropdownMenuItem>
         {onShare && (
           <DropdownMenuItem onClick={() => onShare(tb)}>
-            <Share2 className="w-4 h-4 mr-2" /> Sdílet
+            <Share2 className="w-4 h-4 mr-2" /> Sdílení a viditelnost
           </DropdownMenuItem>
         )}
         {tb.archived

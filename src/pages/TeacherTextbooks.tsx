@@ -1104,6 +1104,7 @@ const TeacherTextbooks = () => {
           kind="textbook"
           targetId={shareTarget?.id ?? ""}
           targetTitle={shareTarget?.title}
+          onChanged={fetchTextbooks}
         />
 
         <CreateTextbookDialog
