@@ -445,12 +445,12 @@ const LessonBlockInner = ({ block, blockIndex, onActivityComplete, isTeacher }: 
       let gameQuestions: GameQuestion[] = [];
       if (supportsLiveGame) {
         if (at === "quiz" && p.quiz) {
-          gameQuestions = [{
-            question: p.quiz.question,
-            answers: p.quiz.answers,
-            type: "quiz",
-            explanation: p.quiz.explanation,
-          }];
+          gameQuestions = getQuizQuestions(p.quiz).map((q) => ({
+            question: q.question,
+            answers: q.answers,
+            type: "quiz" as const,
+            explanation: q.explanation,
+          }));
         } else if (at === "true_false" && p.trueFalse?.statements) {
           gameQuestions = p.trueFalse.statements.map((s: any) => ({
             question: s.statement,
