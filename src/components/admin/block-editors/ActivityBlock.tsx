@@ -1523,6 +1523,7 @@ const AiSuggestPanel = ({
         activityType,
         title: generated.title || p.title || "Aktivita",
         aiSourceText: context || undefined,
+        aiQuestionCount: isQuiz ? questionCount : p.aiQuestionCount,
         aiMethodIds: methodIds.length > 0 ? methodIds : undefined,
         aiMethodNames: methodNames.length > 0 ? methodNames : undefined,
         ai_generated: true,
