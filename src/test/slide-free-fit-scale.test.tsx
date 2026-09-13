@@ -48,6 +48,6 @@ describe("volné rozmístění v náhledu lekce", () => {
     expect(canvas.style.aspectRatio).toBe(`16 / ${9 * 1.76}`);
     expect(second.style.width).toBe("91%");
     expect(second.style.left).toBe("4%");
-    expect(second.style.top).toBeCloseToPercent((145 / 176) * 100);
+    expect(Number.parseFloat(second.style.top)).toBeCloseTo((145 / 176) * 100, 3);
   });
 });
