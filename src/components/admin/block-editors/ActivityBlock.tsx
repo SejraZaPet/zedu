@@ -1,5 +1,21 @@
 
-import { MonitorPlay } from "lucide-react";
+import { MonitorPlay, ChevronDown, ChevronRight, MoreHorizontal, BookmarkPlus, LayoutTemplate } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { activityMeta, activitySummary, activityMinutes } from "@/lib/activity-meta";
 import { Block } from "@/lib/textbook-config";
 import InsertSlidesIntoPresentationDialog from "@/components/presentation/InsertSlidesIntoPresentationDialog";
 import { activityBlockToSlide } from "@/lib/plan-to-slides";
@@ -1315,6 +1331,97 @@ const normalizeAiProps = (incoming: Record<string, any>) => {
   return next;
 };
 
+interface LearningMethodOption {
+  id: string;
+  name: string;
+  category: string | null;
+}
+
+/** Multi-select výukových metod, které má AI zohlednit při návrhu aktivity. */
+const AiMethodsPicker = ({
+  selectedIds,
+  onChange,
+}: {
+  selectedIds: string[];
+  onChange: (ids: string[], names: string[]) => void;
+}) => {
+  const [methods, setMethods] = useState<LearningMethodOption[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  const load = async () => {
+    if (loaded || loading) return;
+    setLoading(true);
+    const { data } = await supabase
+      .from("learning_methods")
+      .select("id, name, category")
+      .order("name");
+    setMethods(((data as any[]) ?? []) as LearningMethodOption[]);
+    setLoaded(true);
+    setLoading(false);
+  };
+
+  const selectedNames = methods.filter((m) => selectedIds.includes(m.id)).map((m) => m.name);
+
+  const toggle = (id: string) => {
+    const next = selectedIds.includes(id) ? selectedIds.filter((x) => x !== id) : [...selectedIds, id];
+    onChange(next, methods.filter((m) => next.includes(m.id)).map((m) => m.name));
+  };
+
+  return (
+    <div className="space-y-1">
+      <Label className="text-xs">Zohlednit výukové metody (volitelné)</Label>
+      <Popover onOpenChange={(o) => o && load()}>
+        <PopoverTrigger asChild>
+          <Button type="button" variant="outline" size="sm" className="w-full justify-between font-normal">
+            <span className="truncate text-left">
+              {selectedIds.length === 0
+                ? "Bez metod"
+                : selectedNames.length > 0
+                  ? selectedNames.join(", ")
+                  : `Vybráno metod: ${selectedIds.length}`}
+            </span>
+            <ChevronDown className="w-3.5 h-3.5 ml-2 flex-shrink-0 opacity-60" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[420px] p-0" align="start">
+          <ScrollArea className="h-72">
+            <div className="p-2 space-y-1">
+              {loading && <p className="text-xs text-muted-foreground p-2">Načítám metody…</p>}
+              {!loading && methods.length === 0 && (
+                <p className="text-xs text-muted-foreground p-2">Žádné metody nejsou k dispozici.</p>
+              )}
+              {methods.map((m) => (
+                <label
+                  key={m.id}
+                  className="flex items-start gap-2 rounded-md px-2 py-1.5 hover:bg-muted/60 cursor-pointer"
+                >
+                  <Checkbox
+                    checked={selectedIds.includes(m.id)}
+                    onCheckedChange={() => toggle(m.id)}
+                    className="mt-0.5"
+                  />
+                  <span className="text-xs leading-snug">
+                    {m.name}
+                    {m.category && <span className="text-muted-foreground"> · {m.category}</span>}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </ScrollArea>
+          {selectedIds.length > 0 && (
+            <div className="border-t border-border p-2">
+              <Button type="button" size="sm" variant="ghost" onClick={() => onChange([], [])}>
+                Vymazat výběr
+              </Button>
+            </div>
+          )}
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+};
+
 const AiSuggestPanel = ({
   props: p,
   activityType,
@@ -1326,6 +1433,12 @@ const AiSuggestPanel = ({
 }) => {
   const [open, setOpen] = useState(!!p.aiSourceText);
   const [context, setContext] = useState<string>(p.aiSourceText || "");
+  const [methodIds, setMethodIds] = useState<string[]>(
+    Array.isArray(p.aiMethodIds) ? p.aiMethodIds : [],
+  );
+  const [methodNames, setMethodNames] = useState<string[]>(
+    Array.isArray(p.aiMethodNames) ? p.aiMethodNames : [],
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -1334,7 +1447,12 @@ const AiSuggestPanel = ({
     setError(null);
     try {
       const { data, error: fnError } = await supabase.functions.invoke("generate-activity-content", {
-        body: { activityType, topic: p.title || "", context },
+        body: {
+          activityType,
+          topic: p.title || "",
+          context,
+          methods: methodNames,
+        },
       });
       if (fnError) throw fnError;
       if ((data as any)?.error) throw new Error((data as any).error);
@@ -1346,8 +1464,10 @@ const AiSuggestPanel = ({
         activityType,
         title: generated.title || p.title || "Aktivita",
         aiSourceText: context || undefined,
+        aiMethodIds: methodIds.length > 0 ? methodIds : undefined,
+        aiMethodNames: methodNames.length > 0 ? methodNames : undefined,
         ai_generated: true,
-        ai_modified_at: new Date().toISOString(),
+        ai_modified_at: null,
       });
     } catch (e: any) {
       console.error("generate-activity-content failed:", e);
@@ -1372,17 +1492,25 @@ const AiSuggestPanel = ({
             rows={3}
             placeholder="Např. text o dělení hovězího masa, nebo jen téma Druhy mas a jejich využití."
           />
+          <AiMethodsPicker
+            selectedIds={methodIds}
+            onChange={(ids, names) => {
+              setMethodIds(ids);
+              setMethodNames(names);
+            }}
+          />
           <div className="flex items-center gap-2">
             <Button type="button" size="sm" className="gap-1.5" onClick={handleGenerate} disabled={loading}>
               {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-              {loading ? "Generuji…" : "Navrhnout obsah"}
+              {loading ? "Generuji…" : "Vygenerovat obsah"}
             </Button>
             <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(false)} disabled={loading}>
               Skrýt
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            🤖 Obsah navrhne AI podle zvoleného typu aktivity. Před uložením ho prosím zkontrolujte.
+            🤖 Obsah navrhne AI podle zvoleného typu aktivity a vybraných metod. Před uložením ho prosím
+            zkontrolujte.
           </p>
           {error && <p className="text-xs text-destructive">{error}</p>}
         </>
@@ -1391,7 +1519,11 @@ const AiSuggestPanel = ({
   );
 };
 
-const ActivityBlock = ({ block, onChange }: Props) => {
+const ActivityBlockForm = ({
+  block,
+  onChange,
+  onAiChange,
+}: Props & { onAiChange: (p: any) => void }) => {
   const p = block.props;
   const activityType = p.activityType || "flashcards";
   const [insertOpen, setInsertOpen] = useState(false);
@@ -1399,8 +1531,8 @@ const ActivityBlock = ({ block, onChange }: Props) => {
 
   return (
     <div className="space-y-3">
-      <div className="flex gap-3">
-        <div className="flex-1">
+      <div className="flex gap-3 flex-wrap">
+        <div className="flex-1 min-w-[200px]">
           <Label className="text-xs">Název aktivity</Label>
           <Input value={p.title || ""} onChange={(e) => onChange({ ...p, title: e.target.value })} />
         </div>
@@ -1415,9 +1547,27 @@ const ActivityBlock = ({ block, onChange }: Props) => {
             </SelectContent>
           </Select>
         </div>
+        <div className="w-40">
+          <Label className="text-xs">Odhadovaný čas (min)</Label>
+          <Input
+            type="number"
+            min={1}
+            max={180}
+            placeholder="např. 10"
+            value={p.estimatedMinutes ?? ""}
+            onChange={(e) => {
+              const raw = e.target.value;
+              const n = parseInt(raw, 10);
+              onChange({
+                ...p,
+                estimatedMinutes: raw === "" || !Number.isFinite(n) ? undefined : Math.max(1, Math.min(180, n)),
+              });
+            }}
+          />
+        </div>
       </div>
 
-      <AiSuggestPanel props={p} activityType={activityType} onChange={onChange} />
+      <AiSuggestPanel props={p} activityType={activityType} onChange={onAiChange} />
 
       <div>
         <Button
@@ -1547,6 +1697,250 @@ const ActivityBlock = ({ block, onChange }: Props) => {
           Povinná aktivita – žák musí splnit před dokončením lekce
         </Label>
       </div>
+    </div>
+  );
+};
+
+/** Pole aktivity, která se do šablony neukládají (konkrétní obsah a AI podklad). */
+const TEMPLATE_SKIP_KEYS = new Set([
+  "title",
+  "aiSourceText",
+  "ai_generated",
+  "ai_modified_at",
+  "question",
+  "quiz",
+  "flashcards",
+  "matching",
+  "sorting",
+  "ordering",
+  "imageLabel",
+  "imageHotspot",
+  "fillBlanks",
+  "fillChoice",
+  "trueFalse",
+  "revealCards",
+  "memoryGame",
+  "crossword",
+  "options",
+]);
+
+/** Z aktivity vytvoří kostru šablony – jen typ a nastavení, bez konkrétního obsahu. */
+export const activityPropsToTemplate = (props: Record<string, any>): Record<string, any> => {
+  const out: Record<string, any> = {};
+  Object.entries(props ?? {}).forEach(([k, v]) => {
+    if (!TEMPLATE_SKIP_KEYS.has(k) && v !== undefined) out[k] = v;
+  });
+  return out;
+};
+
+interface ActivityTemplateRow {
+  id: string;
+  name: string;
+  activity_type: string;
+  template_props: any;
+}
+
+/**
+ * Aktivita v editoru lekce – barevná hlavička podle typu, štítky (povinnost,
+ * návrh AI), souhrn a odhad času. Obsah je ve výchozím stavu sbalený.
+ */
+const ActivityBlock = ({ block, onChange }: Props) => {
+  const p = block.props ?? {};
+  const activityType = p.activityType || "flashcards";
+  const meta = activityMeta(activityType);
+  const [open, setOpen] = useState(false);
+  const [saveOpen, setSaveOpen] = useState(false);
+  const [templateName, setTemplateName] = useState("");
+  const [templatesOpen, setTemplatesOpen] = useState(false);
+  const [templates, setTemplates] = useState<ActivityTemplateRow[]>([]);
+  const [busy, setBusy] = useState(false);
+  const minutes = activityMinutes(p);
+  const aiSuggested = p.ai_generated === true;
+
+  /** Ruční úprava učitelem – zruší štítek „Navrženo AI". */
+  const handleManualChange = useCallback(
+    (next: Record<string, any>) => {
+      if (next?.ai_generated === true) {
+        onChange(next);
+        return;
+      }
+      onChange(
+        p.ai_generated === true
+          ? { ...next, ai_generated: false, ai_modified_at: new Date().toISOString() }
+          : next,
+      );
+    },
+    [onChange, p.ai_generated],
+  );
+
+  const saveTemplate = async () => {
+    const name = templateName.trim();
+    if (!name) return;
+    setBusy(true);
+    const { error } = await supabase.from("activity_templates").insert({
+      name,
+      activity_type: activityType,
+      template_props: activityPropsToTemplate(p),
+    } as any);
+    setBusy(false);
+    if (error) {
+      console.error("activity template insert failed:", error);
+      return;
+    }
+    setTemplateName("");
+    setSaveOpen(false);
+  };
+
+  const loadTemplates = async () => {
+    setBusy(true);
+    const { data } = await supabase
+      .from("activity_templates")
+      .select("id, name, activity_type, template_props")
+      .order("created_at", { ascending: false });
+    setTemplates(((data as any[]) ?? []) as ActivityTemplateRow[]);
+    setBusy(false);
+  };
+
+  const applyTemplate = (tpl: ActivityTemplateRow) => {
+    handleManualChange({
+      ...p,
+      ...(typeof tpl.template_props === "object" && tpl.template_props ? tpl.template_props : {}),
+      activityType: tpl.activity_type || activityType,
+    });
+    setTemplatesOpen(false);
+    setOpen(true);
+  };
+
+  const deleteTemplate = async (id: string) => {
+    await supabase.from("activity_templates").delete().eq("id", id);
+    setTemplates((prev) => prev.filter((t) => t.id !== id));
+  };
+
+  return (
+    <div className={`rounded-lg border border-border ${meta.accent}`}>
+      <div className="flex items-start gap-2 p-3">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          className="flex flex-1 items-start gap-2 text-left"
+        >
+          {open ? (
+            <ChevronDown className="w-4 h-4 mt-0.5 text-muted-foreground flex-shrink-0" />
+          ) : (
+            <ChevronRight className="w-4 h-4 mt-0.5 text-muted-foreground flex-shrink-0" />
+          )}
+          <span aria-hidden="true" className="text-base leading-none mt-0.5">{meta.icon}</span>
+          <span className="min-w-0">
+            <span className="block text-sm font-semibold truncate">{p.title || "Aktivita"}</span>
+            <span className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
+              <span>{meta.label}</span>
+              {activitySummary(p) && <span>· {activitySummary(p)}</span>}
+              {minutes && <span>· ~{minutes} min</span>}
+            </span>
+          </span>
+        </button>
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <Badge variant={p.required === true ? "default" : "secondary"} className="text-[10px]">
+            {p.required === true ? "Povinné" : "Nepovinné"}
+          </Badge>
+          {aiSuggested && (
+            <Badge
+              variant="outline"
+              className="text-[10px] whitespace-nowrap"
+              title="Obsah navrhla umělá inteligence. Po ruční úpravě štítek zmizí."
+            >
+              🤖 Navrženo AI – zkontrolujte
+            </Badge>
+          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button type="button" size="icon" variant="ghost" className="h-7 w-7">
+                <MoreHorizontal className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuItem onClick={() => setSaveOpen(true)}>
+                <BookmarkPlus className="mr-2 h-4 w-4" /> Uložit jako šablonu
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  setTemplatesOpen(true);
+                  void loadTemplates();
+                }}
+              >
+                <LayoutTemplate className="mr-2 h-4 w-4" /> Začít ze šablony
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+
+      {open && (
+        <div className="border-t border-border/70 p-3">
+          <ActivityBlockForm block={block} onChange={handleManualChange} onAiChange={onChange} />
+        </div>
+      )}
+
+      <Dialog open={saveOpen} onOpenChange={setSaveOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Uložit aktivitu jako šablonu</DialogTitle>
+          </DialogHeader>
+          <p className="text-xs text-muted-foreground">
+            Uloží se typ aktivity a nastavení (forma práce, instrukce, povinnost, odhad času) – ne konkrétní
+            otázky ani obsah.
+          </p>
+          <Input
+            value={templateName}
+            onChange={(e) => setTemplateName(e.target.value)}
+            placeholder="Název šablony, např. Skupinový kvíz na opakování"
+          />
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={() => setSaveOpen(false)}>
+              Zrušit
+            </Button>
+            <Button type="button" onClick={saveTemplate} disabled={busy || !templateName.trim()}>
+              Uložit šablonu
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={templatesOpen} onOpenChange={setTemplatesOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Začít ze šablony</DialogTitle>
+          </DialogHeader>
+          {busy && <p className="text-xs text-muted-foreground">Načítám šablony…</p>}
+          {!busy && templates.length === 0 && (
+            <p className="text-sm text-muted-foreground">
+              Zatím nemáte uloženou žádnou šablonu. Uložte si ji z menu aktivity.
+            </p>
+          )}
+          <div className="space-y-1.5 max-h-80 overflow-y-auto">
+            {templates.map((t) => (
+              <div key={t.id} className="flex items-center gap-2 rounded-md border border-border p-2">
+                <button type="button" className="flex-1 text-left" onClick={() => applyTemplate(t)}>
+                  <span className="block text-sm font-medium">{t.name}</span>
+                  <span className="block text-[11px] text-muted-foreground">
+                    {activityMeta(t.activity_type).icon} {activityMeta(t.activity_type).label}
+                  </span>
+                </button>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7 text-destructive"
+                  onClick={() => deleteTemplate(t.id)}
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

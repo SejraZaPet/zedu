@@ -395,6 +395,33 @@ export type Database = {
         }
         Relationships: []
       }
+      activity_templates: {
+        Row: {
+          activity_type: string
+          created_at: string
+          id: string
+          name: string
+          template_props: Json
+          user_id: string
+        }
+        Insert: {
+          activity_type: string
+          created_at?: string
+          id?: string
+          name: string
+          template_props?: Json
+          user_id?: string
+        }
+        Update: {
+          activity_type?: string
+          created_at?: string
+          id?: string
+          name?: string
+          template_props?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
       articles: {
         Row: {
           category: string

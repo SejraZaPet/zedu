@@ -46,6 +46,13 @@ serve(async (req) => {
     const activityType = typeof body?.activityType === "string" ? body.activityType : "quiz";
     const topic = typeof body?.topic === "string" ? body.topic.trim() : "";
     const context = typeof body?.context === "string" ? body.context.trim() : "";
+    const methods = Array.isArray(body?.methods)
+      ? body.methods
+          .filter((m: unknown) => typeof m === "string")
+          .map((m: string) => m.trim())
+          .filter(Boolean)
+          .slice(0, 10)
+      : [];
     const shape = SHAPES[activityType];
 
     if (!shape) return json({ error: `Typ aktivity „${activityType}" není podporován.` }, 400);
@@ -58,13 +65,19 @@ Odpovídáš VÝHRADNĚ jedním platným JSON objektem – bez markdownu, bez ko
 Vše piš česky (cs-CZ), věcně správně a přiměřeně střední škole.
 Do JSON přidej i "title" (krátký název aktivity) a "instructions" (1 věta pokynu pro žáka).`;
 
+    const methodsPart = methods.length
+      ? `\n\nVýukové metody, které máš zohlednit: ${methods.join(", ")}.
+Přizpůsob jim formu a znění aktivity i pokyn v "instructions" (např. u kooperativních metod zadání pro dvojice
+nebo skupiny, u badatelských metod otázky vedoucí k objevování).`
+      : "";
+
     const userPrompt = `Typ aktivity: ${activityType}
 Požadovaný tvar JSON: ${shape}
 
 Téma / název aktivity: ${topic || "(neuvedeno)"}
 
 Podklad, ze kterého vycházej:
-${context ? context.slice(0, 6000) : "(bez podkladu – vytvoř obsah k uvedenému tématu)"}`;
+${context ? context.slice(0, 6000) : "(bez podkladu – vytvoř obsah k uvedenému tématu)"}${methodsPart}`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
