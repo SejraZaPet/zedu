@@ -1510,6 +1510,7 @@ const AiSuggestPanel = ({
           topic: p.title || "",
           context,
           methods: methodNames,
+          ...(isQuiz ? { questionCount } : {}),
         },
       });
       if (fnError) throw fnError;
