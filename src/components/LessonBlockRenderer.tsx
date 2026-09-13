@@ -29,6 +29,10 @@ import { getGroupChildFrames, getGroupChildHeight, getGroupMinHeight } from "@/l
 import { useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { activityMeta, activitySummary, activityMinutes } from "@/lib/activity-meta";
+import {
+  activitySlideAppearanceStyle,
+  type ActivitySlideAppearance,
+} from "@/lib/activity-slide-appearance";
 
 /**
  * Aktivita v lekci pro žáka – barevná hlavička podle typu se souhrnem,
@@ -38,15 +42,26 @@ import { activityMeta, activitySummary, activityMinutes } from "@/lib/activity-m
 const StudentActivityShell = ({
   props: p,
   children,
+  appearance,
 }: {
   props: Record<string, any>;
   children: React.ReactNode;
+  appearance?: ActivitySlideAppearance;
 }) => {
   const required = p.required === true;
   const meta = activityMeta(p.activityType || "flashcards");
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(appearance?.expanded === true);
   const minutes = activityMinutes(p);
   const summary = activitySummary(p);
+  const showHeader = appearance ? appearance.showHeader : true;
+
+  if (!showHeader) {
+    return (
+      <div className={`rounded-xl border border-border ${meta.accent}`}>
+        <div className="p-4">{children}</div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -114,6 +129,8 @@ interface LessonBlockProps {
   blockIndex?: number;
   onActivityComplete?: (activityIndex: number, activityType: string, score: number, maxScore: number) => void;
   isTeacher?: boolean;
+  /** Vzhled aktivity na snímku prezentace (mimo prezentaci se nepoužívá). */
+  activityAppearance?: ActivitySlideAppearance;
 }
 
 /** Obal s volitelným pozadím bloku (Poznámka, Důležité, …). */
@@ -125,7 +142,7 @@ export const LessonBlock = (props: LessonBlockProps): JSX.Element | null => {
   return <div style={bgStyle}>{inner}</div>;
 };
 
-const LessonBlockInner = ({ block, blockIndex, onActivityComplete, isTeacher }: LessonBlockProps): JSX.Element | null => {
+const LessonBlockInner = ({ block, blockIndex, onActivityComplete, isTeacher, activityAppearance }: LessonBlockProps): JSX.Element | null => {
   const p = block.props;
 
   switch (block.type) {
@@ -570,7 +587,17 @@ const LessonBlockInner = ({ block, blockIndex, onActivityComplete, isTeacher }: 
         </div>
       );
 
-      return <StudentActivityShell props={p}>{activityInner}</StudentActivityShell>;
+      const shell = (
+        <StudentActivityShell props={p} appearance={activityAppearance}>
+          {activityInner}
+        </StudentActivityShell>
+      );
+      if (!activityAppearance) return shell;
+      return (
+        <div data-activity-appearance={activityAppearance.look} style={activitySlideAppearanceStyle(activityAppearance)}>
+          {shell}
+        </div>
+      );
     }
     case "hierarchy": {
       const shape: "pyramid" | "layers" | "steps" = p.shape || "pyramid";

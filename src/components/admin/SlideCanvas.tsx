@@ -32,6 +32,7 @@ import {
   slideTextStyle,
 } from "@/lib/slide-typography";
 import { gradientCss } from "@/lib/slide-gradient";
+import { getActivitySlideAppearance } from "@/lib/activity-slide-appearance";
 
 const BLOCK_PLACEHOLDER = "Klikni pro psaní…";
 
@@ -1068,7 +1069,16 @@ function EditableBlockInner({
         ...(asCard ? { borderRadius: "var(--slide-radius, 0.75rem)" } : {}),
       }}
     >
-      <LessonBlock block={block} blockIndex={0} isTeacher={false} />
+      <LessonBlock
+        block={block}
+        blockIndex={0}
+        isTeacher={false}
+        activityAppearance={
+          block.type === "activity"
+            ? getActivitySlideAppearance((block.props as any)?.slideAppearance)
+            : undefined
+        }
+      />
       {needsPanelHint && (
         <div className="pointer-events-none absolute inset-0 hidden items-center justify-center rounded-lg bg-black/50 group-hover/panel:flex">
           <span className="rounded-md bg-white/90 px-3 py-1 text-sm font-medium text-slate-900">
