@@ -51,19 +51,12 @@ const FreeFrameCanvas = ({
   const contentRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [guides, setGuides] = useState<SnapGuides | null>(null);
   const editable = !!onChangeFrame;
-  // V náhledu musí pevná plocha 16:9 pojmout i rámce, které byly v editoru
-  // vytažené pod její spodní nebo pravý okraj. Poměrné zmenšení zachová jejich
-  // vzájemné rozmístění a nevytváří pod plátnem falešnou prázdnou výšku.
-  const readOnlyFitScale = editable
-    ? 1
-    : Math.min(
-        1,
-        100 /
-          Math.max(
-            100,
-            ...items.flatMap((item) => [item.frame.x + item.frame.w, item.frame.y + item.frame.h]),
-          ),
-      );
+  // Ve čtecím zobrazení zůstává volná plocha vždy přes celou šířku. Pokud byly
+  // karty v editoru posunuté pod základní 16:9 plochu, prodloužíme výšku plátna
+  // až k poslední kartě místo zmenšení celé skupiny.
+  const readOnlyVerticalExtent = editable
+    ? 100
+    : Math.max(100, ...items.map((item) => item.frame.y + item.frame.h));
 
   /** Dvojklik na spodní pruh: výška karty podle skutečného obsahu. */
   const fitHeight = (item: FreeFrameItem) => {
@@ -127,17 +120,14 @@ const FreeFrameCanvas = ({
       ref={stageRef}
       data-free-frame-canvas="true"
       onPointerDown={() => onSelect?.(null)}
-      className={`relative w-full aspect-video rounded-[10px] ${
+      className={`relative w-full rounded-[10px] ${editable ? "aspect-video" : ""} ${
         // V editoru nesmíme ořezávat: karta zasahující pod spodní okraj plátna
         // by měla neviditelný (a nekliknutelný) pruh pro tažení výšky.
         editable ? "overflow-visible bg-[#FAFAFA] border border-dashed border-border" : "overflow-hidden"
       } ${className}`}
+      style={!editable ? { aspectRatio: `16 / ${9 * (readOnlyVerticalExtent / 100)}` } : undefined}
     >
-      <div
-        className="absolute inset-0 origin-top-left"
-        data-free-fit-scale={readOnlyFitScale < 1 ? readOnlyFitScale.toFixed(4) : undefined}
-        style={readOnlyFitScale < 1 ? { transform: `scale(${readOnlyFitScale})` } : undefined}
-      >
+      <div className="absolute inset-0" data-free-vertical-extent={readOnlyVerticalExtent}>
         {items.map((item) => {
           const active = selectedId === item.id;
           return (
@@ -153,9 +143,9 @@ const FreeFrameCanvas = ({
               }`}
               style={{
                 left: `${item.frame.x}%`,
-                top: `${item.frame.y}%`,
+                top: `${(item.frame.y / readOnlyVerticalExtent) * 100}%`,
                 width: `${item.frame.w}%`,
-                height: `${item.frame.h}%`,
+                height: `${(item.frame.h / readOnlyVerticalExtent) * 100}%`,
               }}
               onPointerDown={editable ? (e) => startDrag(e, item, "move") : undefined}
             >
