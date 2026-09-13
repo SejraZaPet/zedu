@@ -60,10 +60,20 @@ serve(async (req) => {
       return json({ error: "Doplňte téma nebo krátký podklad, ze kterého má AI vycházet." }, 400);
     }
 
+    const hasContext = context.length >= 20;
+
     const systemPrompt = `Jsi zkušený český pedagog a tvoříš obsah interaktivních školních aktivit.
 Odpovídáš VÝHRADNĚ jedním platným JSON objektem – bez markdownu, bez komentářů, bez textu okolo.
 Vše piš česky (cs-CZ), věcně správně a přiměřeně střední škole.
-Do JSON přidej i "title" (krátký název aktivity) a "instructions" (1 věta pokynu pro žáka).`;
+Do JSON přidej i "title" (krátký název aktivity) a "instructions" (1 věta pokynu pro žáka).${
+      hasContext
+        ? `
+DŮLEŽITÉ: Uživatel dodal konkrétní PODKLAD. Veškerý obsah aktivity musí vycházet VÝHRADNĚ z faktů,
+pojmů a formulací v tomto podkladu. Nevymýšlej si vlastní téma ani fakta, která v podkladu nejsou,
+a nedoplňuj obecné učivo. Otázky, tvrzení, páry i kartičky parafrázuj z konkrétních vět podkladu.
+Pokud je podkladu málo, vytvoř méně položek, ale nikdy nepřidávej cizí obsah.`
+        : ""
+    }`;
 
     const methodsPart = methods.length
       ? `\n\nVýukové metody, které máš zohlednit: ${methods.join(", ")}.
@@ -71,13 +81,24 @@ Přizpůsob jim formu a znění aktivity i pokyn v "instructions" (např. u koop
 nebo skupiny, u badatelských metod otázky vedoucí k objevování).`
       : "";
 
-    const userPrompt = `Typ aktivity: ${activityType}
+    const userPrompt = hasContext
+      ? `Typ aktivity: ${activityType}
+Požadovaný tvar JSON: ${shape}
+
+PODKLAD (jediný zdroj obsahu – čerpej pouze z něj):
+"""
+${context.slice(0, 6000)}
+"""
+
+${topic ? `Pomocný popisek sekce (jen orientační, NENÍ téma k vymýšlení): ${topic.slice(0, 120)}` : ""}
+
+Vytvoř obsah aktivity založený na konkrétních faktech výše. Každá položka musí mít oporu v podkladu.${methodsPart}`
+      : `Typ aktivity: ${activityType}
 Požadovaný tvar JSON: ${shape}
 
 Téma / název aktivity: ${topic || "(neuvedeno)"}
 
-Podklad, ze kterého vycházej:
-${context ? context.slice(0, 6000) : "(bez podkladu – vytvoř obsah k uvedenému tématu)"}${methodsPart}`;
+Podklad nebyl dodán – vytvoř obsah k uvedenému tématu.${methodsPart}`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -121,6 +142,11 @@ ${context ? context.slice(0, 6000) : "(bez podkladu – vytvoř obsah k uvedené
     if (!parsed || typeof parsed !== "object") {
       console.error("Unparsable AI output:", raw);
       return json({ error: "AI nevrátila použitelný výstup. Zkuste to znovu." }, 500);
+    }
+
+    // Model občas u quizu vrátí pole otázek – editor čeká jednu otázku.
+    if (Array.isArray((parsed as any).quiz)) {
+      (parsed as any).quiz = (parsed as any).quiz[0] ?? null;
     }
 
     return json({ props: { ...parsed, activityType } });

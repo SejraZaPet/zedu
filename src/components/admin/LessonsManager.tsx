@@ -27,7 +27,6 @@ interface LessonRow {
   sort_order: number;
   topic_id: string;
   hero_image_url: string | null;
-  blocks: Block[];
   assignments: AssignmentInfo[];
 }
 
@@ -56,7 +55,7 @@ const LessonsManager = () => {
 
     let lessonQuery = supabase
       .from("textbook_lessons")
-      .select("id, title, status, sort_order, topic_id, hero_image_url, blocks")
+      .select("id, title, status, sort_order, topic_id, hero_image_url")
       .order("sort_order");
 
     if (filterStatus !== "all") {
@@ -89,7 +88,6 @@ const LessonsManager = () => {
 
     let results: LessonRow[] = lessonData.map((l: any) => ({
       ...l,
-      blocks: (l.blocks as Block[]) ?? [],
       assignments: assignMap[l.id] ?? [],
     }));
 
@@ -263,7 +261,7 @@ const LessonsManager = () => {
                 <Button size="icon" variant="ghost" onClick={() => setEditingLessonId(lesson.id)} title="Upravit">
                   <Pencil className="w-4 h-4" />
                 </Button>
-                <LessonPreviewDialog title={lesson.title} heroImageUrl={lesson.hero_image_url} blocks={lesson.blocks} />
+                <LessonPreviewDialog title={lesson.title} heroImageUrl={lesson.hero_image_url} lessonId={lesson.id} />
                 <Button size="icon" variant="ghost" onClick={() => deleteLesson(lesson.id)} title="Smazat">
                   <Trash2 className="w-4 h-4 text-destructive" />
                 </Button>
