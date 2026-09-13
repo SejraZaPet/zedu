@@ -1,4 +1,5 @@
 import type { Block } from "@/lib/textbook-config";
+import { getQuizQuestions } from "@/lib/quiz-questions";
 import LessonLinkButton from "@/components/LessonLinkButton";
 import DOMPurify from "dompurify";
 import FlashcardsActivity from "@/components/activities/FlashcardsActivity";

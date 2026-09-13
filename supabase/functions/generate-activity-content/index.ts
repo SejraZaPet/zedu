@@ -15,7 +15,7 @@ const json = (body: unknown, status = 200) =>
 
 /** Popis požadovaného JSON tvaru pro každý typ aktivity. */
 const SHAPES: Record<string, string> = {
-  quiz: `{"quiz":{"question":"...","answers":[{"text":"...","correct":true},{"text":"...","correct":false}],"explanation":"..."}} – 4 možnosti, přesně 1 správná`,
+  quiz: `{"quiz":{"questions":[{"question":"...","answers":[{"text":"...","correct":true},{"text":"...","correct":false}],"explanation":"..."}]}} – POLE 5 až 8 RŮZNÝCH otázek (nikdy jen jedna!), každá otázka má 4 možnosti a přesně 1 správnou a krátké vysvětlení`,
   flashcards: `{"flashcards":[{"front":"pojem","back":"vysvětlení"}]} – 5 až 8 kartiček`,
   matching: `{"matching":{"left":["A1","A2"],"right":["B1","B2"]}} – 5 až 8 párů, položky na stejné pozici tvoří správný pár`,
   memory_game: `{"memoryGame":{"pairs":[{"left":"pojem","right":"definice"}]}} – 5 až 8 párů`,
@@ -144,9 +144,14 @@ Podklad nebyl dodán – vytvoř obsah k uvedenému tématu.${methodsPart}`;
       return json({ error: "AI nevrátila použitelný výstup. Zkuste to znovu." }, 500);
     }
 
-    // Model občas u quizu vrátí pole otázek – editor čeká jednu otázku.
-    if (Array.isArray((parsed as any).quiz)) {
-      (parsed as any).quiz = (parsed as any).quiz[0] ?? null;
+    // Sjednocení tvaru kvízu na { questions: [...] } – model může vrátit
+    // pole otázek, jednu otázku, nebo pole pod jiným klíčem.
+    const q = (parsed as any).quiz;
+    if (Array.isArray(q)) (parsed as any).quiz = { questions: q };
+    else if (q && typeof q === "object" && !Array.isArray(q.questions) && q.question) {
+      (parsed as any).quiz = { questions: [q] };
+    } else if (!q && Array.isArray((parsed as any).questions)) {
+      (parsed as any).quiz = { questions: (parsed as any).questions };
     }
 
     return json({ props: { ...parsed, activityType } });
