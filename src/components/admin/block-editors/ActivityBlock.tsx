@@ -1616,6 +1616,26 @@ const AiSuggestPanel = ({
               <span className="text-xs text-muted-foreground">1–10 otázek v jednom kvízu</span>
             </div>
           )}
+          {isFlashcards && (
+            <div className="flex items-center gap-2">
+              <Label className="text-xs" htmlFor="ai-card-count">
+                Počet kartiček
+              </Label>
+              <Input
+                id="ai-card-count"
+                type="number"
+                min={2}
+                max={15}
+                value={cardCount}
+                onChange={(e) => {
+                  const n = Math.round(Number(e.target.value));
+                  setCardCount(Number.isFinite(n) ? Math.min(15, Math.max(2, n)) : 6);
+                }}
+                className="w-20 h-8"
+              />
+              <span className="text-xs text-muted-foreground">2–15 kartiček</span>
+            </div>
+          )}
           <div className="flex items-center gap-2">
             <Button type="button" size="sm" className="gap-1.5" onClick={handleGenerate} disabled={loading}>
 
