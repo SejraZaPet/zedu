@@ -342,7 +342,7 @@ const LessonBlockInner = ({ block, blockIndex, onActivityComplete, isTeacher }: 
         groupMinHeight ? <div style={{ minHeight: groupMinHeight }}>{node}</div> : <>{node}</>;
       if (p.mode === "free") {
         const frames = getGroupChildFrames(block);
-        return withGroupHeight(
+        return (
           <FreeFrameCanvas
 
             items={visibleChildren.map((child) => ({
