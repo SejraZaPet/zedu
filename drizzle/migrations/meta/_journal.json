@@ -8,6 +8,13 @@
       "when": 1789294317061,
       "tag": "0000_secure_targeted_lesson_placements",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789302968261,
+      "tag": "0001_target_global_lesson_assignments",
+      "breakpoints": true
     }
   ]
 }

@@ -61,6 +61,7 @@ const LessonPlacementEditor = ({ lessonId, placements, onChange }: Props) => {
   const { groups } = useSubjectGroups();
   const [allTopics, setAllTopics] = useState<TopicOption[]>([]);
   const [targetPicker, setTargetPicker] = useState<number | null>(null);
+  const menuClass = "min-w-[18rem] max-w-[calc(100vw-2rem)]";
 
   useEffect(() => {
     const fetchTopics = async () => {
@@ -206,7 +207,7 @@ const LessonPlacementEditor = ({ lessonId, placements, onChange }: Props) => {
                     <Label className="text-[10px] text-muted-foreground">Předmět</Label>
                     <Select value={p.subject_slug} onValueChange={(v) => updatePlacement(i, { subject_slug: v, grade_number: getGradesForSubject(v)[0]?.grade_number ?? 1 })}>
                       <SelectTrigger className="h-8 text-xs mt-0.5"><SelectValue /></SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className={menuClass}>
                         {subjects.map(s => (
                           <SelectItem key={s.slug} value={s.slug}>{s.label}</SelectItem>
                         ))}
@@ -217,7 +218,7 @@ const LessonPlacementEditor = ({ lessonId, placements, onChange }: Props) => {
                     <Label className="text-[10px] text-muted-foreground">Ročník</Label>
                     <Select value={String(p.grade_number)} onValueChange={(v) => updatePlacement(i, { grade_number: Number(v) })}>
                       <SelectTrigger className="h-8 text-xs mt-0.5"><SelectValue /></SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className={menuClass}>
                         {availableGrades.map(g => (
                           <SelectItem key={g.grade_number} value={String(g.grade_number)}>{g.label}</SelectItem>
                         ))}
@@ -228,7 +229,7 @@ const LessonPlacementEditor = ({ lessonId, placements, onChange }: Props) => {
                     <Label className="text-[10px] text-muted-foreground">Téma</Label>
                     <Select value={p.topic_id ?? "__none__"} onValueChange={(v) => updatePlacement(i, { topic_id: v === "__none__" ? null : v })}>
                       <SelectTrigger className="h-8 text-xs mt-0.5"><SelectValue placeholder="Volitelné" /></SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className={menuClass}>
                         <SelectItem value="__none__">— Bez tématu —</SelectItem>
                         {availableTopics.map(t => (
                           <SelectItem key={t.id} value={t.id}>{t.title}</SelectItem>
@@ -243,7 +244,7 @@ const LessonPlacementEditor = ({ lessonId, placements, onChange }: Props) => {
                     <Label className="text-[10px] text-muted-foreground">Komu zobrazit</Label>
                     <Select value={audience} onValueChange={(v: Audience) => setAudience(i, v)}>
                       <SelectTrigger className="h-8 text-xs mt-0.5"><SelectValue /></SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className={menuClass}>
                         <SelectItem value="grade">Celému ročníku</SelectItem>
                         <SelectItem value="class">Konkrétní třídě</SelectItem>
                         <SelectItem value="group">Skupině</SelectItem>
@@ -263,7 +264,7 @@ const LessonPlacementEditor = ({ lessonId, placements, onChange }: Props) => {
                             <ChevronsUpDown className="ml-2 h-3.5 w-3.5 shrink-0 opacity-50" />
                           </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                        <PopoverContent className="w-[min(32rem,calc(100vw-2rem))] p-0" align="start">
                           <Command>
                             <CommandInput placeholder={audience === "class" ? "Hledat třídu…" : "Hledat skupinu…"} />
                             <CommandList>
@@ -296,7 +297,7 @@ const LessonPlacementEditor = ({ lessonId, placements, onChange }: Props) => {
                     <Label className="text-[10px] text-muted-foreground">Období</Label>
                     <Select value={p.school_term} onValueChange={(v: Placement["school_term"]) => updatePlacement(i, { school_term: v })}>
                       <SelectTrigger className="h-8 text-xs mt-0.5"><SelectValue /></SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className={menuClass}>
                         <SelectItem value="full_year">Celý školní rok</SelectItem>
                         <SelectItem value="first_half">1. pololetí</SelectItem>
                         <SelectItem value="second_half">2. pololetí</SelectItem>
@@ -308,7 +309,7 @@ const LessonPlacementEditor = ({ lessonId, placements, onChange }: Props) => {
                     <Label className="text-[10px] text-muted-foreground">Rozsah platnosti</Label>
                     <Select value={p.scope_all_grades ? "all" : "single"} onValueChange={(v) => updatePlacement(i, { scope_all_grades: v === "all" })}>
                       <SelectTrigger className="h-8 text-xs mt-0.5"><SelectValue /></SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className={menuClass}>
                         <SelectItem value="single">Jeden ročník</SelectItem>
                         <SelectItem value="all">Celé studium oboru</SelectItem>
                       </SelectContent>
@@ -327,7 +328,7 @@ const LessonPlacementEditor = ({ lessonId, placements, onChange }: Props) => {
                       })}
                     >
                       <SelectTrigger className="h-8 text-xs mt-0.5"><SelectValue /></SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className={menuClass}>
                         <SelectItem value="draft">Koncept</SelectItem>
                         <SelectItem value="scheduled">Naplánováno</SelectItem>
                         <SelectItem value="published">Publikováno</SelectItem>
