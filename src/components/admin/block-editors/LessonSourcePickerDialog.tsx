@@ -33,6 +33,14 @@ type LessonGroup = {
 };
 
 /**
+ * Cache seznamu lekcí mezi otevřeními dialogu – seznam se nemění často,
+ * takže se nestahuje znovu při každém otevření (zdrojem pomalého načítání).
+ */
+let groupsCache: LessonGroup[] | null = null;
+let groupsCacheAt = 0;
+const GROUPS_CACHE_TTL_MS = 5 * 60 * 1000;
+
+/**
  * Výběr obsahu z jiných lekcí (napříč tématy a učebnicemi) jako podklad pro AI.
  * Funguje nezávisle na tom, z jakého bloku či lekce se aktivita zakládá.
  */
@@ -45,7 +53,9 @@ const LessonSourcePickerDialog = ({
   onOpenChange: (open: boolean) => void;
   onPicked: (text: string, truncated: boolean) => void;
 }) => {
-  const [groups, setGroups] = useState<LessonGroup[]>([]);
+  const [groups, setGroups] = useState<LessonGroup[]>(
+    groupsCache && Date.now() - groupsCacheAt < GROUPS_CACHE_TTL_MS ? groupsCache : [],
+  );
   const [loading, setLoading] = useState(false);
   const [collecting, setCollecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,13 +70,14 @@ const LessonSourcePickerDialog = ({
       setError(null);
       try {
         const [topicsRes, globalRes, myBooksRes, myLessonsRes] = await Promise.all([
-          supabase.from("textbook_topics").select("id, title, subject, grade").order("title"),
-          supabase.from("textbook_lessons").select("id, title, topic_id").order("sort_order"),
-          supabase.from("teacher_textbooks").select("id, title").order("title"),
+          supabase.from("textbook_topics").select("id, title, subject, grade").order("title").limit(500),
+          supabase.from("textbook_lessons").select("id, title, topic_id").order("sort_order").limit(2000),
+          supabase.from("teacher_textbooks").select("id, title").is("deleted_at", null).order("title").limit(200),
           supabase
             .from("teacher_textbook_lessons")
             .select("id, title, textbook_id")
-            .order("sort_order"),
+            .order("sort_order")
+            .limit(2000),
         ]);
         if (cancelled) return;
 
@@ -95,6 +106,8 @@ const LessonSourcePickerDialog = ({
           if (lessons.length === 0) continue;
           next.push({ key: `book-${b.id}`, label: `${b.title} (moje učebnice)`, lessons });
         }
+        groupsCache = next;
+        groupsCacheAt = Date.now();
         setGroups(next);
       } catch (e: any) {
         if (!cancelled) setError(e?.message || "Lekce se nepodařilo načíst.");
