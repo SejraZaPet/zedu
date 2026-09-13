@@ -1494,10 +1494,16 @@ const AiSuggestPanel = ({
   const [lessonPickerOpen, setLessonPickerOpen] = useState(false);
   const [sourceNote, setSourceNote] = useState<string | null>(null);
   const isQuiz = activityType === "quiz";
+  const isFlashcards = activityType === "flashcards";
   const [questionCount, setQuestionCount] = useState<number>(
     Number.isFinite(Number(p.aiQuestionCount)) && Number(p.aiQuestionCount) > 0
       ? Math.min(10, Math.max(1, Math.round(Number(p.aiQuestionCount))))
       : 5,
+  );
+  const [cardCount, setCardCount] = useState<number>(
+    Number.isFinite(Number(p.aiCardCount)) && Number(p.aiCardCount) > 0
+      ? Math.min(15, Math.max(2, Math.round(Number(p.aiCardCount))))
+      : 6,
   );
 
   const handleGenerate = async () => {
@@ -1511,6 +1517,7 @@ const AiSuggestPanel = ({
           context,
           methods: methodNames,
           ...(isQuiz ? { questionCount } : {}),
+          ...(isFlashcards ? { cardCount } : {}),
         },
       });
       if (fnError) throw fnError;
@@ -1524,6 +1531,7 @@ const AiSuggestPanel = ({
         title: generated.title || p.title || "Aktivita",
         aiSourceText: context || undefined,
         aiQuestionCount: isQuiz ? questionCount : p.aiQuestionCount,
+        aiCardCount: isFlashcards ? cardCount : p.aiCardCount,
         aiMethodIds: methodIds.length > 0 ? methodIds : undefined,
         aiMethodNames: methodNames.length > 0 ? methodNames : undefined,
         ai_generated: true,
@@ -1606,6 +1614,26 @@ const AiSuggestPanel = ({
                 className="w-20 h-8"
               />
               <span className="text-xs text-muted-foreground">1–10 otázek v jednom kvízu</span>
+            </div>
+          )}
+          {isFlashcards && (
+            <div className="flex items-center gap-2">
+              <Label className="text-xs" htmlFor="ai-card-count">
+                Počet kartiček
+              </Label>
+              <Input
+                id="ai-card-count"
+                type="number"
+                min={2}
+                max={15}
+                value={cardCount}
+                onChange={(e) => {
+                  const n = Math.round(Number(e.target.value));
+                  setCardCount(Number.isFinite(n) ? Math.min(15, Math.max(2, n)) : 6);
+                }}
+                className="w-20 h-8"
+              />
+              <span className="text-xs text-muted-foreground">2–15 kartiček</span>
             </div>
           )}
           <div className="flex items-center gap-2">

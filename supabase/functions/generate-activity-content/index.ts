@@ -62,6 +62,13 @@ serve(async (req) => {
         : activityType === "quiz"
           ? 5
           : null;
+    const rawCardCount = Number(body?.cardCount);
+    const cardCount =
+      activityType === "flashcards" && Number.isFinite(rawCardCount) && rawCardCount > 0
+        ? Math.min(15, Math.max(2, Math.round(rawCardCount)))
+        : activityType === "flashcards"
+          ? 6
+          : null;
     const shape = SHAPES[activityType];
 
     if (!shape) return json({ error: `Typ aktivity „${activityType}" není podporován.` }, 400);
@@ -103,6 +110,18 @@ vytvoř méně otázek – ale nikdy nezůstávej u zlomku obsahu, když lze pok
         }`
       : "";
 
+    const flashcardsPart = cardCount
+      ? `\n\nPOČET KARTIČEK: vytvoř přesně ${cardCount} různých kartiček (pole "flashcards" má mít ${cardCount} prvků),
+pokud na to podklad látkou stačí.${
+          hasContext
+            ? `
+POKRYTÍ PODKLADU: rozlož kartičky rovnoměrně po CELÉM podkladu – od začátku do konce, ne jen z prvních vět.
+Každá kartička musí pokrývat JINÝ pojem nebo fakt z podkladu. Pokud podklad nabízí méně odlišných pojmů
+než ${cardCount}, vytvoř méně kartiček – ale nikdy nezůstávej u zlomku obsahu, když lze pokrýt více.`
+            : ""
+        }`
+      : "";
+
     const userPrompt = hasContext
       ? `Typ aktivity: ${activityType}
 Požadovaný tvar JSON: ${shape}
@@ -114,13 +133,13 @@ ${context.slice(0, 6000)}
 
 ${topic ? `Pomocný popisek sekce (jen orientační, NENÍ téma k vymýšlení): ${topic.slice(0, 120)}` : ""}
 
-Vytvoř obsah aktivity založený na konkrétních faktech výše. Každá položka musí mít oporu v podkladu.${methodsPart}${quizPart}`
+Vytvoř obsah aktivity založený na konkrétních faktech výše. Každá položka musí mít oporu v podkladu.${methodsPart}${quizPart}${flashcardsPart}`
       : `Typ aktivity: ${activityType}
 Požadovaný tvar JSON: ${shape}
 
 Téma / název aktivity: ${topic || "(neuvedeno)"}
 
-Podklad nebyl dodán – vytvoř obsah k uvedenému tématu.${methodsPart}${quizPart}`;
+Podklad nebyl dodán – vytvoř obsah k uvedenému tématu.${methodsPart}${quizPart}${flashcardsPart}`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
