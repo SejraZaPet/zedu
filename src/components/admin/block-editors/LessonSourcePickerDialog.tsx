@@ -62,8 +62,13 @@ const LessonSourcePickerDialog = ({
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Record<string, LessonRef>>({});
 
+  const loadedRef = useRef(false);
+
   useEffect(() => {
-    if (!open || groups.length > 0 || loading) return;
+    if (!open) return;
+    // Cache jen z úspěšného (neprázdného) načtení; jinak zkusit znovu.
+    if (loadedRef.current || groups.length > 0) return;
+    loadedRef.current = true;
     let cancelled = false;
     (async () => {
       setLoading(true);
