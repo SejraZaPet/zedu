@@ -38,15 +38,26 @@ import { activityMeta, activitySummary, activityMinutes } from "@/lib/activity-m
 const StudentActivityShell = ({
   props: p,
   children,
+  appearance,
 }: {
   props: Record<string, any>;
   children: React.ReactNode;
+  appearance?: ActivitySlideAppearance;
 }) => {
   const required = p.required === true;
   const meta = activityMeta(p.activityType || "flashcards");
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(appearance?.expanded === true);
   const minutes = activityMinutes(p);
   const summary = activitySummary(p);
+  const showHeader = appearance ? appearance.showHeader : true;
+
+  if (!showHeader) {
+    return (
+      <div className={`rounded-xl border border-border ${meta.accent}`}>
+        <div className="p-4">{children}</div>
+      </div>
+    );
+  }
 
   return (
     <div
