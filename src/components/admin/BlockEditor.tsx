@@ -766,6 +766,23 @@ const SortableBlock = React.memo(({
         <div style={bgStyle}>
           <BlockRenderer block={block} onChange={handleUpdate} showControls={showChrome} />
         </div>
+        {onCreateActivity && block.type !== "activity" && blockHasAiText(block) && (
+          <div className="mt-1 flex">
+            <button
+              type="button"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                onCreateActivity(block.id);
+              }}
+              title="Vytvořit aktivitu z tohoto obsahu"
+              aria-label={`Vytvořit aktivitu z obsahu bloku ${typeLabel}`}
+              className="inline-flex items-center gap-1 rounded-md border border-primary/40 bg-primary/5 px-2 py-1 text-[11px] font-semibold text-primary transition-colors hover:bg-primary/10"
+            >
+              <IconSparkles className="h-3.5 w-3.5" /> Vytvořit aktivitu
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
