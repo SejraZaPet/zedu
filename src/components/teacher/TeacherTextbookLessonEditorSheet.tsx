@@ -156,7 +156,7 @@ const TeacherTextbookLessonEditorSheet = ({ lesson, open, onOpenChange, onSaved 
       return;
     }
 
-    if (table === "teacher_textbook_lessons" && lessonPlacements.length > 0) {
+    if (table === "teacher_textbook_lessons") {
       try {
         await savePlacements(draft.id, lessonPlacements);
       } catch (err: any) {

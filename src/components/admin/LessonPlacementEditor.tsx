@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSubjects } from "@/hooks/useSubjects";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, MapPin } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { useTeacherClasses } from "@/hooks/useTeacherClasses";
+import { useSubjectGroups } from "@/hooks/useSubjectGroups";
+import { Check, ChevronsUpDown, Plus, Trash2, MapPin } from "lucide-react";
 
 export interface Placement {
   id?: string;
@@ -14,6 +18,10 @@ export interface Placement {
   grade_number: number;
   topic_id: string | null;
   class_id: string | null;
+  subject_group_id: string | null;
+  school_term: "full_year" | "first_half" | "second_half";
+  scope_all_grades: boolean;
+  target_type?: Audience;
   status?: string;
   scheduled_publish_at?: string | null;
 }
@@ -39,10 +47,7 @@ interface TopicOption {
   subject: string;
 }
 
-interface ClassOption {
-  id: string;
-  name: string;
-}
+type Audience = "grade" | "class" | "group";
 
 interface Props {
   lessonId: string | null; // null for new lessons
@@ -52,19 +57,17 @@ interface Props {
 
 const LessonPlacementEditor = ({ lessonId, placements, onChange }: Props) => {
   const { data: subjects = [] } = useSubjects(true);
+  const { myClasses } = useTeacherClasses();
+  const { groups } = useSubjectGroups();
   const [allTopics, setAllTopics] = useState<TopicOption[]>([]);
-  const [classes, setClasses] = useState<ClassOption[]>([]);
+  const [targetPicker, setTargetPicker] = useState<number | null>(null);
 
   useEffect(() => {
-    const fetchTopicsAndClasses = async () => {
-      const [topicsRes, classesRes] = await Promise.all([
-        supabase.from("textbook_topics").select("id, title, grade, subject").order("sort_order"),
-        supabase.from("classes").select("id, name").eq("archived", false).order("name"),
-      ]);
+    const fetchTopics = async () => {
+      const topicsRes = await supabase.from("textbook_topics").select("id, title, grade, subject").order("sort_order");
       if (topicsRes.data) setAllTopics(topicsRes.data as TopicOption[]);
-      if (classesRes.data) setClasses(classesRes.data as ClassOption[]);
     };
-    fetchTopicsAndClasses();
+    fetchTopics();
   }, []);
 
   // Load existing placements when editing
@@ -82,6 +85,10 @@ const LessonPlacementEditor = ({ lessonId, placements, onChange }: Props) => {
           grade_number: p.grade_number,
           topic_id: p.topic_id,
           class_id: p.class_id,
+          subject_group_id: p.subject_group_id ?? null,
+          school_term: p.school_term ?? "full_year",
+          scope_all_grades: p.scope_all_grades ?? false,
+          target_type: p.class_id ? "class" : p.subject_group_id ? "group" : "grade",
           status: p.status ?? "published",
           scheduled_publish_at: p.scheduled_publish_at ?? null,
         })));
@@ -99,6 +106,10 @@ const LessonPlacementEditor = ({ lessonId, placements, onChange }: Props) => {
       grade_number: firstGrade?.grade_number ?? 1,
       topic_id: null,
       class_id: null,
+      subject_group_id: null,
+      school_term: "full_year",
+      scope_all_grades: false,
+      target_type: "grade",
       status: "published",
       scheduled_publish_at: null,
     }]);
@@ -126,6 +137,21 @@ const LessonPlacementEditor = ({ lessonId, placements, onChange }: Props) => {
     return allTopics.filter(t => t.subject === slug && t.grade === grade);
   };
 
+  const getAudience = (placement: Placement): Audience => {
+    if (placement.target_type) return placement.target_type;
+    if (placement.class_id) return "class";
+    if (placement.subject_group_id) return "group";
+    return "grade";
+  };
+
+  const setAudience = (index: number, audience: Audience) => {
+    updatePlacement(index, {
+      target_type: audience,
+      class_id: audience === "class" ? placements[index].class_id : null,
+      subject_group_id: audience === "group" ? placements[index].subject_group_id : null,
+    });
+  };
+
   return (
     <div className="border-t border-border pt-4">
       <div className="flex items-center justify-between mb-3">
@@ -150,6 +176,10 @@ const LessonPlacementEditor = ({ lessonId, placements, onChange }: Props) => {
             const subjectLabel = subjects.find(s => s.slug === p.subject_slug)?.label ?? p.subject_slug;
             const gradeLabel = availableGrades.find(g => g.grade_number === p.grade_number)?.label ?? `${p.grade_number}. ročník`;
             const topicLabel = allTopics.find(t => t.id === p.topic_id)?.title;
+            const audience = getAudience(p);
+            const targetOptions = audience === "class" ? myClasses : groups;
+            const targetId = audience === "class" ? p.class_id : p.subject_group_id;
+            const selectedTarget = targetOptions.find(option => option.id === targetId);
 
             return (
               <div key={i} className="border border-border rounded-lg p-3 bg-muted/20 space-y-2">
@@ -207,20 +237,83 @@ const LessonPlacementEditor = ({ lessonId, placements, onChange }: Props) => {
                   </div>
                 </div>
 
-                {classes.length > 0 && (
+                <div className="grid grid-cols-1 gap-2 lg:grid-cols-3">
                   <div>
-                    <Label className="text-[10px] text-muted-foreground">Třída (volitelné)</Label>
-                    <Select value={p.class_id ?? "__none__"} onValueChange={(v) => updatePlacement(i, { class_id: v === "__none__" ? null : v })}>
-                      <SelectTrigger className="h-8 text-xs mt-0.5"><SelectValue placeholder="Všechny třídy" /></SelectTrigger>
+                    <Label className="text-[10px] text-muted-foreground">Komu zobrazit</Label>
+                    <Select value={audience} onValueChange={(v: Audience) => setAudience(i, v)}>
+                      <SelectTrigger className="h-8 text-xs mt-0.5"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="__none__">— Všechny třídy —</SelectItem>
-                        {classes.map(c => (
-                          <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                        ))}
+                        <SelectItem value="grade">Celému ročníku</SelectItem>
+                        <SelectItem value="class">Konkrétní třídě</SelectItem>
+                        <SelectItem value="group">Skupině</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                )}
+
+                  {audience !== "grade" && (
+                    <div>
+                      <Label className="text-[10px] text-muted-foreground">
+                        {audience === "class" ? "Třída" : "Skupina"}
+                      </Label>
+                      <Popover open={targetPicker === i} onOpenChange={(open) => setTargetPicker(open ? i : null)}>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" role="combobox" className="mt-0.5 h-8 w-full justify-between px-3 text-xs font-normal">
+                            <span className="truncate">{selectedTarget?.name ?? `Vybrat ${audience === "class" ? "třídu" : "skupinu"}…`}</span>
+                            <ChevronsUpDown className="ml-2 h-3.5 w-3.5 shrink-0 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                          <Command>
+                            <CommandInput placeholder={audience === "class" ? "Hledat třídu…" : "Hledat skupinu…"} />
+                            <CommandList>
+                              <CommandEmpty>{audience === "class" ? "Žádná vlastní třída nenalezena." : "Žádná vlastní skupina nenalezena."}</CommandEmpty>
+                              <CommandGroup>
+                                {targetOptions.map(option => (
+                                  <CommandItem
+                                    key={option.id}
+                                    value={option.name}
+                                    onSelect={() => {
+                                      updatePlacement(i, audience === "class"
+                                        ? { class_id: option.id, subject_group_id: null }
+                                        : { subject_group_id: option.id, class_id: null });
+                                      setTargetPicker(null);
+                                    }}
+                                  >
+                                    <Check className={`mr-2 h-4 w-4 ${targetId === option.id ? "opacity-100" : "opacity-0"}`} />
+                                    {option.name}
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  )}
+
+                  <div>
+                    <Label className="text-[10px] text-muted-foreground">Období</Label>
+                    <Select value={p.school_term} onValueChange={(v: Placement["school_term"]) => updatePlacement(i, { school_term: v })}>
+                      <SelectTrigger className="h-8 text-xs mt-0.5"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="full_year">Celý školní rok</SelectItem>
+                        <SelectItem value="first_half">1. pololetí</SelectItem>
+                        <SelectItem value="second_half">2. pololetí</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label className="text-[10px] text-muted-foreground">Rozsah platnosti</Label>
+                    <Select value={p.scope_all_grades ? "all" : "single"} onValueChange={(v) => updatePlacement(i, { scope_all_grades: v === "all" })}>
+                      <SelectTrigger className="h-8 text-xs mt-0.5"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="single">Jeden ročník</SelectItem>
+                        <SelectItem value="all">Celé studium oboru</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
 
                 <div className="grid grid-cols-2 gap-2 pt-1 border-t border-border/50">
                   <div>
@@ -265,9 +358,16 @@ export default LessonPlacementEditor;
 
 // Helper to save placements after lesson save
 export const savePlacements = async (lessonId: string, placements: Placement[]) => {
-  // Delete existing placements
-  await supabase.from("lesson_placements").delete().eq("lesson_id", lessonId);
-  
+  const incompleteTarget = placements.find((p) =>
+    (p.target_type === "class" && !p.class_id)
+    || (p.target_type === "group" && !p.subject_group_id),
+  );
+  if (incompleteTarget) throw new Error("Vyberte konkrétní třídu nebo skupinu.");
+
+  // Delete existing placements only after client-side validation succeeds.
+  const { error: deleteError } = await supabase.from("lesson_placements").delete().eq("lesson_id", lessonId);
+  if (deleteError) throw deleteError;
+
   if (placements.length === 0) return;
 
   // Insert new placements
@@ -277,6 +377,9 @@ export const savePlacements = async (lessonId: string, placements: Placement[]) 
     grade_number: p.grade_number,
     topic_id: p.topic_id,
     class_id: p.class_id,
+    subject_group_id: p.subject_group_id,
+    school_term: p.school_term,
+    scope_all_grades: p.scope_all_grades,
     status: p.status ?? "published",
     scheduled_publish_at: p.status === "scheduled" ? p.scheduled_publish_at ?? null : null,
   }));

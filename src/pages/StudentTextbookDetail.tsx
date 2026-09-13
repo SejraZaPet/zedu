@@ -16,6 +16,7 @@ import {
 import { ArrowLeft, BookOpen, GraduationCap, FolderOpen, CheckCircle2, Circle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import CoursePathMap, { type CoursePathItem } from "@/components/textbook/CoursePathMap";
+import { isPlacementVisibleToStudent } from "@/lib/lesson-placement-visibility";
 
 
 interface LessonData {
@@ -86,13 +87,39 @@ const StudentTextbookDetail = () => {
       // Placements pro učitelské lekce
       const teacherLessonIds = teacherLessons.map(l => l.id);
       let placements: any[] = [];
+      const { data: { user } } = await supabase.auth.getUser();
+      let studentClassIds = new Set<string>();
+      let studentGroupIds = new Set<string>();
+      let studentGradeNumbers = new Set<number>();
+      if (user) {
+        const [classMemberships, groupMemberships, profile] = await Promise.all([
+          supabase.from("class_members").select("class_id, classes(year)").eq("user_id", user.id),
+          supabase.from("subject_group_members").select("group_id").eq("student_id", user.id),
+          supabase.from("profiles").select("year").eq("id", user.id).maybeSingle(),
+        ]);
+        studentClassIds = new Set((classMemberships.data ?? []).map((row: any) => row.class_id));
+        studentGroupIds = new Set((groupMemberships.data ?? []).map((row: any) => row.group_id));
+        studentGradeNumbers = new Set(
+          [
+            ...(classMemberships.data ?? []).map((row: any) => row.classes?.year),
+            profile.data?.year,
+          ].filter((year): year is number => typeof year === "number"),
+        );
+      }
       if (teacherLessonIds.length > 0) {
         const { data: pl } = await supabase
           .from("lesson_placements")
-          .select("lesson_id, subject_slug, grade_number, topic_id, status")
+          .select("lesson_id, subject_slug, grade_number, topic_id, class_id, subject_group_id, school_term, scope_all_grades, status")
           .in("lesson_id", teacherLessonIds)
           .eq("status", "published");
-        placements = pl || [];
+        placements = (pl || []).filter((placement: any) => !user || isPlacementVisibleToStudent(
+          placement,
+          {
+            classIds: studentClassIds,
+            subjectGroupIds: studentGroupIds,
+            gradeNumbers: studentGradeNumbers,
+          },
+        ));
       }
 
       // 2) Lekce z globálního systému (textbook_lessons → topics → subject = slug učebnice)
@@ -139,6 +166,8 @@ const StudentTextbookDetail = () => {
       for (const p of placements) {
         const lesson = lessonMap.get(p.lesson_id);
         if (!lesson) continue;
+        // The backend already limits these rows to this student. All-study
+        // placements stay visible, but remain grouped under their curricular grade.
         const grade = p.grade_number;
         if (!gradeMap.has(grade)) gradeMap.set(grade, new Map());
         const topicKey = p.topic_id || "__no_topic__";
@@ -218,7 +247,6 @@ const StudentTextbookDetail = () => {
         ...teacherLessonIds,
         ...globalLessons.map((l: any) => l.id),
       ];
-      const { data: { user } } = await supabase.auth.getUser();
       if (user && allLessonIds.length > 0) {
         const { data: completions } = await supabase
           .from("student_lesson_completions")
