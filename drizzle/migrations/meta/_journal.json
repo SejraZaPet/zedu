@@ -43,6 +43,13 @@
       "when": 1789333130304,
       "tag": "0005_fix_class_textbook_notification_targets",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1789334436204,
+      "tag": "0006_textbook_visibility_levels",
+      "breakpoints": true
     }
   ]
 }
