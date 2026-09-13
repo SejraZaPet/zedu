@@ -138,6 +138,10 @@ import {
   type LessonBlock,
   type LessonActivity,
 } from "@/lib/lesson-content-splitter";
+import {
+  buildItemsFromLessonActivity,
+  mapLessonActivityToItemType,
+} from "@/lib/lesson-activity-to-worksheet";
 import { useSubjects } from "@/hooks/useSubjects";
 import { useQuery } from "@tanstack/react-query";
 import {
