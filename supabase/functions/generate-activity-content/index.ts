@@ -112,7 +112,7 @@ ${context.slice(0, 6000)}
 
 ${topic ? `Pomocný popisek sekce (jen orientační, NENÍ téma k vymýšlení): ${topic.slice(0, 120)}` : ""}
 
-Vytvoř obsah aktivity založený na konkrétních faktech výše. Každá položka musí mít oporu v podkladu.${methodsPart}`
+Vytvoř obsah aktivity založený na konkrétních faktech výše. Každá položka musí mít oporu v podkladu.${methodsPart}${quizPart}`
       : `Typ aktivity: ${activityType}
 Požadovaný tvar JSON: ${shape}
 
