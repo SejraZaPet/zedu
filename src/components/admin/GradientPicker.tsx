@@ -10,6 +10,7 @@ import {
   normalizeGradient,
   type SlideGradient,
 } from "@/lib/slide-gradient";
+import MyPalettesSection from "@/components/ui/my-palettes-section";
 
 interface Props {
   value: SlideGradient | null | undefined;
@@ -31,6 +32,13 @@ export const GradientPicker = ({ value, onChange, nullLabel = "Plná barva", cla
 
   return (
     <div className={`space-y-2 ${className || ""}`}>
+      <MyPalettesSection
+        current={g}
+        onPick={(v) => {
+          if (typeof v === "string") onChange({ ...current, from: v });
+          else onChange({ ...v });
+        }}
+      />
       <div className="flex flex-wrap items-center gap-1.5">
         <button
           type="button"
@@ -65,11 +73,11 @@ export const GradientPicker = ({ value, onChange, nullLabel = "Plná barva", cla
         <div className="space-y-2 rounded-md border border-border p-2">
           <div>
             <Label className="text-[11px] text-muted-foreground">První barva</Label>
-            <ColorPicker value={g.from} onChange={(v) => v && set({ from: v })} compact className="mt-1" />
+            <ColorPicker value={g.from} onChange={(v) => v && set({ from: v })} compact hidePalettes className="mt-1" />
           </div>
           <div>
             <Label className="text-[11px] text-muted-foreground">Druhá barva</Label>
-            <ColorPicker value={g.to} onChange={(v) => v && set({ to: v })} compact className="mt-1" />
+            <ColorPicker value={g.to} onChange={(v) => v && set({ to: v })} compact hidePalettes className="mt-1" />
           </div>
           <div>
             <Label className="text-[11px] text-muted-foreground">Směr</Label>
