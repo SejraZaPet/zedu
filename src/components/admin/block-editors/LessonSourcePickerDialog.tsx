@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -111,13 +111,22 @@ const LessonSourcePickerDialog = ({
           if (lessons.length === 0) continue;
           next.push({ key: `book-${b.id}`, label: `${b.title} (moje učebnice)`, lessons });
         }
-        groupsCache = next;
-        groupsCacheAt = Date.now();
+        if (next.length > 0) {
+          groupsCache = next;
+          groupsCacheAt = Date.now();
+        } else {
+          groupsCache = null;
+          loadedRef.current = false;
+          const firstError =
+            topicsRes.error || globalRes.error || (myBooksRes as any).error || (myLessonsRes as any).error;
+          if (firstError) setError(firstError.message || "Lekce se nepodařilo načíst.");
+        }
         setGroups(next);
       } catch (e: any) {
+        loadedRef.current = false;
         if (!cancelled) setError(e?.message || "Lekce se nepodařilo načíst.");
       } finally {
-        if (!cancelled) setLoading(false);
+        setLoading(false);
       }
     })();
     return () => {
