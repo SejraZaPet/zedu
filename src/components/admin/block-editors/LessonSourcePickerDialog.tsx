@@ -12,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Loader2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Loader2 } from "lucide-react";
 import { blockToPlainText } from "@/lib/block-conversions";
 import type { Block } from "@/lib/textbook-config";
 
@@ -32,6 +32,13 @@ type LessonGroup = {
   lessons: LessonRef[];
 };
 
+/** Jedna sekce (blok) uvnitř lekce – nabízí se po rozbalení lekce. */
+type SectionRef = {
+  key: string;
+  label: string;
+  text: string;
+};
+
 /**
  * Cache seznamu lekcí mezi otevřeními dialogu – seznam se nemění často,
  * takže se nestahuje znovu při každém otevření (zdrojem pomalého načítání).
@@ -40,9 +47,18 @@ let groupsCache: LessonGroup[] | null = null;
 let groupsCacheAt = 0;
 const GROUPS_CACHE_TTL_MS = 5 * 60 * 1000;
 
+/** Cache obsahu jednotlivých lekcí (sekce) v rámci session. */
+const sectionsCache = new Map<string, SectionRef[]>();
+
+const sectionLabel = (text: string, index: number) => {
+  const firstLine = text.split("\n").map((l) => l.trim()).find(Boolean) ?? "";
+  const short = firstLine.length > 70 ? `${firstLine.slice(0, 70)}…` : firstLine;
+  return short || `Sekce ${index + 1}`;
+};
+
 /**
  * Výběr obsahu z jiných lekcí (napříč tématy a učebnicemi) jako podklad pro AI.
- * Funguje nezávisle na tom, z jakého bloku či lekce se aktivita zakládá.
+ * Kromě celých lekcí lze vybírat i jednotlivé sekce konkrétní lekce.
  */
 const LessonSourcePickerDialog = ({
   open,
@@ -61,6 +77,13 @@ const LessonSourcePickerDialog = ({
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Record<string, LessonRef>>({});
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [sections, setSections] = useState<Record<string, SectionRef[]>>({});
+  const [sectionsLoading, setSectionsLoading] = useState<Record<string, boolean>>({});
+  /** Vybrané sekce: lessonId -> { sectionKey: text } */
+  const [selectedSections, setSelectedSections] = useState<
+    Record<string, Record<string, string>>
+  >({});
 
   const loadedRef = useRef(false);
 
@@ -137,6 +160,44 @@ const LessonSourcePickerDialog = ({
     };
   }, [open]);
 
+  const loadSections = async (lesson: LessonRef) => {
+    if (sections[lesson.id] || sectionsCache.has(lesson.id)) {
+      if (!sections[lesson.id]) {
+        setSections((prev) => ({ ...prev, [lesson.id]: sectionsCache.get(lesson.id)! }));
+      }
+      return;
+    }
+    setSectionsLoading((prev) => ({ ...prev, [lesson.id]: true }));
+    try {
+      const table = lesson.teacher ? "teacher_textbook_lessons" : "textbook_lessons";
+      const { data, error: err } = await supabase
+        .from(table as any)
+        .select("blocks")
+        .eq("id", lesson.id)
+        .maybeSingle();
+      if (err) throw err;
+      const blocks: Block[] = Array.isArray((data as any)?.blocks) ? ((data as any).blocks as Block[]) : [];
+      const list: SectionRef[] = [];
+      blocks.forEach((b, i) => {
+        const text = blockToPlainText(b).trim();
+        if (!text) return;
+        list.push({ key: (b as any).id || `i-${i}`, label: sectionLabel(text, i), text });
+      });
+      sectionsCache.set(lesson.id, list);
+      setSections((prev) => ({ ...prev, [lesson.id]: list }));
+    } catch (e: any) {
+      setError(e?.message || "Sekce lekce se nepodařilo načíst.");
+    } finally {
+      setSectionsLoading((prev) => ({ ...prev, [lesson.id]: false }));
+    }
+  };
+
+  const toggleExpand = (lesson: LessonRef) => {
+    const next = !expanded[lesson.id];
+    setExpanded((prev) => ({ ...prev, [lesson.id]: next }));
+    if (next) void loadSections(lesson);
+  };
+
   const q = search.trim().toLowerCase();
   const visible = groups
     .map((g) => ({
@@ -157,6 +218,25 @@ const LessonSourcePickerDialog = ({
       return next;
     });
 
+  const toggleSection = (lesson: LessonRef, section: SectionRef) => {
+    setSelectedSections((prev) => {
+      const forLesson = { ...(prev[lesson.id] ?? {}) };
+      if (forLesson[section.key]) delete forLesson[section.key];
+      else forLesson[section.key] = section.text;
+      const next = { ...prev };
+      if (Object.keys(forLesson).length === 0) delete next[lesson.id];
+      else next[lesson.id] = forLesson;
+      return next;
+    });
+    // Výběr sekcí a celé lekce se vylučuje – sekce mají přednost.
+    setSelected((prev) => {
+      if (!prev[lesson.id]) return prev;
+      const next = { ...prev };
+      delete next[lesson.id];
+      return next;
+    });
+  };
+
   const toggleGroup = (group: LessonGroup) => {
     const allSelected = group.lessons.every((l) => selected[l.id]);
     setSelected((prev) => {
@@ -171,10 +251,23 @@ const LessonSourcePickerDialog = ({
 
   const confirm = async () => {
     const picked = Object.values(selected);
-    if (picked.length === 0) return;
+    const sectionLessonIds = Object.keys(selectedSections);
+    if (picked.length === 0 && sectionLessonIds.length === 0) return;
     setCollecting(true);
     setError(null);
     try {
+      const parts: string[] = [];
+
+      // 1) Vybrané jednotlivé sekce (text už máme z rozbalení).
+      const titleByLesson = new Map<string, string>();
+      for (const g of groups) for (const l of g.lessons) titleByLesson.set(l.id, l.title);
+      for (const lessonId of sectionLessonIds) {
+        const texts = Object.values(selectedSections[lessonId] ?? {}).filter(Boolean);
+        if (!texts.length) continue;
+        parts.push(`## ${titleByLesson.get(lessonId) ?? "Lekce"}\n${texts.join("\n\n")}`);
+      }
+
+      // 2) Celé vybrané lekce.
       const globalIds = picked.filter((l) => !l.teacher).map((l) => l.id);
       const teacherIds = picked.filter((l) => l.teacher).map((l) => l.id);
       const [globalRes, teacherRes] = await Promise.all([
@@ -193,7 +286,6 @@ const LessonSourcePickerDialog = ({
         ...(((teacherRes as any).data as any[]) ?? []),
       ];
 
-      const parts: string[] = [];
       for (const row of rows) {
         const blocks: Block[] = Array.isArray(row.blocks) ? (row.blocks as Block[]) : [];
         const text = blocks
@@ -205,7 +297,7 @@ const LessonSourcePickerDialog = ({
 
       const joined = parts.join("\n\n").trim();
       if (!joined) {
-        setError("Vybrané lekce neobsahují žádný textový obsah.");
+        setError("Vybraný obsah neobsahuje žádný text.");
         return;
       }
       const truncated = joined.length > MAX_AI_SOURCE_CHARS;
@@ -218,7 +310,11 @@ const LessonSourcePickerDialog = ({
     }
   };
 
-  const selectedCount = Object.keys(selected).length;
+  const selectedSectionCount = Object.values(selectedSections).reduce(
+    (sum, m) => sum + Object.keys(m).length,
+    0,
+  );
+  const selectedCount = Object.keys(selected).length + selectedSectionCount;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -226,8 +322,8 @@ const LessonSourcePickerDialog = ({
         <DialogHeader>
           <DialogTitle>Vybrat obsah z lekcí</DialogTitle>
           <DialogDescription>
-            Zaškrtněte lekce, ze kterých má AI vycházet. Můžete vybrat i celé téma – vhodné pro
-            opakování celé kapitoly.
+            Zaškrtněte celé lekce, nebo lekci rozbalte a vyberte jen konkrétní sekce, ze kterých má
+            AI vycházet.
           </DialogDescription>
         </DialogHeader>
 
@@ -253,19 +349,68 @@ const LessonSourcePickerDialog = ({
                       {g.label} · Vybrat celé téma ({g.lessons.length})
                     </span>
                   </label>
-                  <div className="pl-6 space-y-0.5">
-                    {g.lessons.map((l) => (
-                      <label
-                        key={l.id}
-                        className="flex items-center gap-2 rounded-md px-2 py-1 hover:bg-muted/60 cursor-pointer"
-                      >
-                        <Checkbox
-                          checked={!!selected[l.id]}
-                          onCheckedChange={() => toggleLesson(l)}
-                        />
-                        <span className="text-xs">{l.title}</span>
-                      </label>
-                    ))}
+                  <div className="pl-4 space-y-0.5">
+                    {g.lessons.map((l) => {
+                      const isOpen = !!expanded[l.id];
+                      const secs = sections[l.id] ?? [];
+                      const pickedSecs = selectedSections[l.id] ?? {};
+                      return (
+                        <div key={l.id}>
+                          <div className="flex items-center gap-1 rounded-md px-1 py-1 hover:bg-muted/60">
+                            <button
+                              type="button"
+                              onClick={() => toggleExpand(l)}
+                              aria-label={`Zobrazit sekce lekce ${l.title}`}
+                              className="p-0.5 text-muted-foreground hover:text-foreground"
+                            >
+                              {isOpen ? (
+                                <ChevronDown className="h-3.5 w-3.5" />
+                              ) : (
+                                <ChevronRight className="h-3.5 w-3.5" />
+                              )}
+                            </button>
+                            <label className="flex flex-1 items-center gap-2 cursor-pointer">
+                              <Checkbox
+                                checked={!!selected[l.id]}
+                                onCheckedChange={() => toggleLesson(l)}
+                              />
+                              <span className="text-xs">{l.title}</span>
+                              {Object.keys(pickedSecs).length > 0 && (
+                                <span className="text-[10px] text-muted-foreground">
+                                  ({Object.keys(pickedSecs).length} sekcí)
+                                </span>
+                              )}
+                            </label>
+                          </div>
+                          {isOpen && (
+                            <div className="pl-8 space-y-0.5 pb-1">
+                              {sectionsLoading[l.id] && (
+                                <p className="text-[11px] text-muted-foreground">Načítám sekce…</p>
+                              )}
+                              {!sectionsLoading[l.id] && secs.length === 0 && (
+                                <p className="text-[11px] text-muted-foreground">
+                                  Lekce neobsahuje textové sekce.
+                                </p>
+                              )}
+                              {secs.map((s) => (
+                                <label
+                                  key={s.key}
+                                  className="flex items-start gap-2 rounded-md px-2 py-1 hover:bg-muted/50 cursor-pointer"
+                                >
+                                  <Checkbox
+                                    checked={!!pickedSecs[s.key]}
+                                    onCheckedChange={() => toggleSection(l, s)}
+                                  />
+                                  <span className="text-[11px] leading-snug text-muted-foreground">
+                                    {s.label}
+                                  </span>
+                                </label>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               );
