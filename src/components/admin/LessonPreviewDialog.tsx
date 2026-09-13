@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { HERO_IMAGE_CLASS } from "@/lib/image-block-layout";
 import {
   Dialog,
@@ -14,14 +15,38 @@ import { LessonBlock } from "@/components/LessonBlockRenderer";
 interface Props {
   title: string;
   heroImageUrl: string | null;
-  blocks: Block[];
+  /** Bloky předané dopředu. Když chybí, načtou se líně podle `lessonId` až při otevření. */
+  blocks?: Block[];
+  /** Id lekce pro líné dotažení obsahu (seznam lekcí pak nemusí tahat všechny bloky). */
+  lessonId?: string;
+  /** Zdrojová tabulka pro líné načtení. */
+  lessonSource?: "global" | "teacher";
 }
 
-const LessonPreviewDialog = ({ title, heroImageUrl, blocks }: Props) => {
+const LessonPreviewDialog = ({ title, heroImageUrl, blocks, lessonId, lessonSource = "global" }: Props) => {
   const [open, setOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [lazyBlocks, setLazyBlocks] = useState<Block[] | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const visibleBlocks = blocks.filter((b) => b.visible !== false);
+  useEffect(() => {
+    if (!open || blocks || !lessonId) return;
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      const table = lessonSource === "teacher" ? "teacher_textbook_lessons" : "textbook_lessons";
+      const { data } = await supabase.from(table as any).select("blocks").eq("id", lessonId).maybeSingle();
+      if (cancelled) return;
+      setLazyBlocks(Array.isArray((data as any)?.blocks) ? ((data as any).blocks as Block[]) : []);
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, blocks, lessonId, lessonSource, refreshKey]);
+
+  const effectiveBlocks = blocks ?? lazyBlocks ?? [];
+  const visibleBlocks = effectiveBlocks.filter((b) => b.visible !== false);
 
   return (
     <>
@@ -64,7 +89,9 @@ const LessonPreviewDialog = ({ title, heroImageUrl, blocks }: Props) => {
               </div>
 
               {visibleBlocks.length === 0 && (
-                <p className="text-muted-foreground">Obsah lekce se připravuje.</p>
+                <p className="text-muted-foreground">
+                  {loading ? "Načítám obsah lekce…" : "Obsah lekce se připravuje."}
+                </p>
               )}
             </div>
           </div>
