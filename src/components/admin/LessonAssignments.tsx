@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useSubjects, getGradeNumbers } from "@/hooks/useSubjects";
+import { useTopicSubjectOptions } from "@/hooks/useTopicSubjectOptions";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -71,13 +71,17 @@ const AssignmentRow = ({
   targetPickerOpen: boolean;
   onTargetPickerOpenChange: (open: boolean) => void;
 }) => {
-  const { data: subjects = [] } = useSubjects(false);
+  const { options: subjects } = useTopicSubjectOptions();
   const { myClasses } = useTeacherClasses();
   const { groups } = useSubjectGroups();
   const [topics, setTopics] = useState<TopicOption[]>([]);
 
   const currentSubject = subjects.find((s) => s.slug === assignment.subject);
-  const grades = currentSubject ? getGradeNumbers(currentSubject) : [];
+  // Ročníky podle reálně existujících témat; uložený ročník zůstává vybratelný.
+  const grades = Array.from(new Set([
+    ...(currentSubject?.grades ?? []),
+    ...(assignment.grade ? [assignment.grade] : []),
+  ])).sort((a, b) => a - b);
 
   const isDuplicate = allAssignments.some(
     (a, i) => i !== index && a.topic_id === assignment.topic_id && a.topic_id !== ""
@@ -116,8 +120,7 @@ const AssignmentRow = ({
             value={assignment.subject}
             onValueChange={(v) => {
               const s = subjects.find((s) => s.slug === v);
-              const g = s ? getGradeNumbers(s) : [];
-              onChange({ ...assignment, subject: v, grade: g[0] ?? 1, topic_id: "", topic_title: "" });
+              onChange({ ...assignment, subject: v, grade: s?.grades[0] ?? 1, topic_id: "", topic_title: "" });
             }}
           >
             <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Předmět" /></SelectTrigger>
@@ -298,7 +301,7 @@ const AssignmentRow = ({
 };
 
 const LessonAssignments = ({ lessonId, assignments, onChange }: Props) => {
-  const { data: subjects = [] } = useSubjects(false);
+  const { options: subjects } = useTopicSubjectOptions();
   const [targetPicker, setTargetPicker] = useState<number | null>(null);
 
   const addAssignment = async () => {
@@ -315,7 +318,7 @@ const LessonAssignments = ({ lessonId, assignments, onChange }: Props) => {
       }
     }
     const firstSubject = subjects[0];
-    const firstGrade = firstSubject ? getGradeNumbers(firstSubject)[0] ?? 1 : 1;
+    const firstGrade = firstSubject?.grades[0] ?? 1;
     onChange([
       ...assignments,
       {
