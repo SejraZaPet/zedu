@@ -31,6 +31,7 @@ const AUDIENCES = [
   { value: "teacher", label: "Učitel" },
   { value: "student", label: "Žák" },
   { value: "parent", label: "Rodič" },
+  { value: "internal", label: "Jen interní tým (administrace)" },
 ];
 
 const emptyForm: Partial<HelpArticle> = {
