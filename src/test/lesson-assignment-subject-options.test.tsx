@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import LessonAssignments, { type Assignment } from "@/components/admin/LessonAssignments";
 
@@ -75,7 +74,6 @@ const renderRow = () => {
 describe("umístění lekce – zdroj předmětů", () => {
   it("nabídne předmět z kanonického katalogu (ekonomika) a jeho ročníky z témat", async () => {
     renderRow();
-    const user = userEvent.setup();
 
     // Předmět uložený u lekce je rozpoznaný a zobrazený.
     await waitFor(() => expect(screen.getByText("Ekonomika")).toBeInTheDocument());
@@ -83,7 +81,8 @@ describe("umístění lekce – zdroj předmětů", () => {
     // Ročník není zamčený a nabízí ročníky, pro které existují témata.
     const gradeTrigger = screen.getByText("1. ročník").closest("button")!;
     expect(gradeTrigger).not.toBeDisabled();
-    await user.click(gradeTrigger);
+    fireEvent.click(gradeTrigger);
+    fireEvent.keyDown(gradeTrigger, { key: "Enter" });
     await waitFor(() => expect(screen.getAllByText("2. ročník").length).toBeGreaterThan(0));
   });
 });
