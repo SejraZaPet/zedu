@@ -171,6 +171,7 @@ import {
 } from "@/lib/worksheet-templates";
 import { downloadWorksheetPdf, buildWorksheetPdfBlobUrl } from "@/lib/worksheet-pdf-export";
 import WorksheetPlayer from "@/components/WorksheetPlayer";
+import PublishWorksheetDialog from "@/components/worksheet/PublishWorksheetDialog";
 import LinkedLessonsDialog, { type LessonChoice } from "@/components/admin/LinkedLessonsDialog";
 import QuestionBankPickerDialog, { type QuestionBankItem } from "@/components/worksheet/QuestionBankPickerDialog";
 
@@ -369,6 +370,7 @@ export default function WorksheetEditor() {
   const [status, setStatus] = useState<"draft" | "published" | "scheduled">("draft");
   const [scheduledAt, setScheduledAt] = useState<Date | null>(null);
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
+  const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [mobilePaletteOpen, setMobilePaletteOpen] = useState(false);
   const [mobilePropsOpen, setMobilePropsOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -1962,8 +1964,8 @@ export default function WorksheetEditor() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 bg-popover">
                 {status !== "published" && (
-                  <DropdownMenuItem onClick={togglePublish}>
-                    <Send className="w-4 h-4 mr-2" /> Publikovat hned
+                  <DropdownMenuItem onClick={() => setPublishDialogOpen(true)}>
+                    <Send className="w-4 h-4 mr-2" /> Publikovat a zadat…
                   </DropdownMenuItem>
                 )}
                 {status === "published" && (
@@ -2170,6 +2172,21 @@ export default function WorksheetEditor() {
           {paletteContent}
         </SheetContent>
       </Sheet>
+
+      {/* Publish + assign dialog */}
+      {id && (
+        <PublishWorksheetDialog
+          open={publishDialogOpen}
+          onOpenChange={setPublishDialogOpen}
+          worksheetId={id}
+          worksheetTitle={spec.header.title}
+          subjectId={subjectId}
+          onPublished={() => {
+            setStatus("published");
+            setScheduledAt(null);
+          }}
+        />
+      )}
 
       {/* Schedule publish dialog */}
       <Dialog open={scheduleDialogOpen} onOpenChange={setScheduleDialogOpen}>
