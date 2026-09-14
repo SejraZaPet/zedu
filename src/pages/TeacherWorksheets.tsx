@@ -428,6 +428,15 @@ export default function TeacherWorksheets() {
                   <div className="text-xs text-muted-foreground mb-4">
                     Upraveno {formatDistanceToNow(new Date(row.updated_at), { addSuffix: true, locale: cs })}
                   </div>
+                  {row.status === "published" && !assignedIds.has(row.id) && (
+                    <div className="flex gap-2 items-start rounded-lg border border-amber-300 bg-amber-50 text-amber-900 dark:bg-amber-950/30 dark:text-amber-200 dark:border-amber-800 p-3 mb-4 text-xs">
+                      <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                      <span>
+                        <strong>Zveřejněno, ale nikomu nezadáno.</strong> Žáci pracovní list neuvidí,
+                        dokud ho nezadáte třídě nebo skupině.
+                      </span>
+                    </div>
+                  )}
                   <div className="flex gap-2 mt-auto">
                     <Button
                       variant="outline"
