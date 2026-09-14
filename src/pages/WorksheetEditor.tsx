@@ -369,6 +369,7 @@ export default function WorksheetEditor() {
   const [status, setStatus] = useState<"draft" | "published" | "scheduled">("draft");
   const [scheduledAt, setScheduledAt] = useState<Date | null>(null);
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
+  const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [mobilePaletteOpen, setMobilePaletteOpen] = useState(false);
   const [mobilePropsOpen, setMobilePropsOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -1962,8 +1963,8 @@ export default function WorksheetEditor() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 bg-popover">
                 {status !== "published" && (
-                  <DropdownMenuItem onClick={togglePublish}>
-                    <Send className="w-4 h-4 mr-2" /> Publikovat hned
+                  <DropdownMenuItem onClick={() => setPublishDialogOpen(true)}>
+                    <Send className="w-4 h-4 mr-2" /> Publikovat a zadat…
                   </DropdownMenuItem>
                 )}
                 {status === "published" && (
