@@ -2179,7 +2179,7 @@ export default function WorksheetEditor() {
           open={publishDialogOpen}
           onOpenChange={setPublishDialogOpen}
           worksheetId={id}
-          worksheetTitle={title}
+          worksheetTitle={spec.header.title}
           subjectId={subjectId}
           onPublished={() => {
             setStatus("published");
