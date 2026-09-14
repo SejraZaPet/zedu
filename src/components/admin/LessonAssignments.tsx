@@ -318,7 +318,7 @@ const LessonAssignments = ({ lessonId, assignments, onChange }: Props) => {
       }
     }
     const firstSubject = subjects[0];
-    const firstGrade = firstSubject ? getGradeNumbers(firstSubject)[0] ?? 1 : 1;
+    const firstGrade = firstSubject?.grades[0] ?? 1;
     onChange([
       ...assignments,
       {
