@@ -138,6 +138,7 @@ Deno.serve(async (req) => {
             subject: "Obnovení hesla – bezli.cz",
             html,
             text,
+            emailType: "password_reset",
           }),
         }
       );

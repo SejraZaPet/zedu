@@ -128,7 +128,7 @@ Deno.serve(async (req) => {
           Authorization: `Bearer ${RESEND_API_KEY}`,
         },
         body: JSON.stringify({
-          from: "Bezli zpětná vazba <noreply@bezli.cz>",
+          from: "Bezli zpětná vazba <noreply@send.bezli.cz>",
           to: ["info@bezli.cz"],
           ...(userEmail ? { reply_to: userEmail } : {}),
           subject: `Zpětná vazba z aplikace – ${pageContext || "neznámá stránka"}`,

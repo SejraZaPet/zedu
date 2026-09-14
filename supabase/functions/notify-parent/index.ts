@@ -42,7 +42,7 @@ async function sendEmail(to: string, subject: string, html: string) {
         "Content-Type": "application/json",
         Authorization: `Bearer ${SERVICE_KEY}`,
       },
-      body: JSON.stringify({ to, subject, html }),
+      body: JSON.stringify({ to, subject, html, emailType: "parent_notification" }),
     });
     return r.ok;
   } catch (e) {
