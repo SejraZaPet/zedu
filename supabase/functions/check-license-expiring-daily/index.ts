@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
     let ok = false;
     for (const to of recipients) {
       const { error: mailErr } = await supabase.functions.invoke("send-email", {
-        body: { to, subject, html, text },
+        body: { to, subject, html, text, emailType: "license_expiring" },
       });
       if (mailErr) {
         console.error("[check-license-expiring] send-email failed", to, mailErr.message);

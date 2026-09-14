@@ -328,7 +328,7 @@ Deno.serve(async (req) => {
           studentCode: role === "user" ? studentCode : undefined,
         });
         await admin.functions.invoke("send-email", {
-          body: { to: email, subject: mail.subject, html: mail.html, text: mail.text },
+          body: { to: email, subject: mail.subject, html: mail.html, text: mail.text, emailType: "welcome" },
         });
       } catch (e) {
         console.warn("welcome email failed", (e as any)?.message);

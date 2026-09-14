@@ -117,7 +117,7 @@ Deno.serve(async (req) => {
         "Content-Type": "application/json",
         Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
       },
-      body: JSON.stringify({ to: c.email, subject, html }),
+      body: JSON.stringify({ to: c.email, subject, html, emailType: "crm_bulk" }),
     });
     await res.text();
     if (res.ok) sent++;

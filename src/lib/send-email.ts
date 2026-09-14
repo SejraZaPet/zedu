@@ -87,7 +87,7 @@ ${APP_URL}`;
 
   try {
     const result = await supabase.functions.invoke("send-email", {
-      body: { to: params.to, subject: "Vítejte v Bezli – vaše přihlašovací údaje", html, text },
+      body: { to: params.to, subject: "Vítejte v Bezli – vaše přihlašovací údaje", html, text, emailType: "welcome" },
     });
     if (result.error) {
       console.warn("Email se nepodařilo odeslat:", result.error);

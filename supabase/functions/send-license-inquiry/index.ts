@@ -139,7 +139,7 @@ Deno.serve(async (req) => {
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "Bezli poptávky <noreply@bezli.cz>",
+        from: "Bezli poptávky <noreply@send.bezli.cz>",
         to: ["info@bezli.cz"],
         reply_to: String(email),
         subject: `Nová poptávka po licenci Bezli – ${plan}`,
