@@ -70,6 +70,7 @@ const HelpPage = () => {
           .from("help_articles")
           .select("id, title, slug, category, audience, cover_image_url")
           .eq("is_published", true)
+          .neq("audience", "internal")
           .order("category", { ascending: true })
           .order("sort_order", { ascending: true }),
       ]);
