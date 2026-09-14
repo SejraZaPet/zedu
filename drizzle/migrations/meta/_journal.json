@@ -57,6 +57,13 @@
       "when": 1789382224288,
       "tag": "0007_create_email_log",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1789399361160,
+      "tag": "0008_academy_audience_lektor",
+      "breakpoints": true
     }
   ]
 }
