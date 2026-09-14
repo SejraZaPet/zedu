@@ -2172,6 +2172,21 @@ export default function WorksheetEditor() {
         </SheetContent>
       </Sheet>
 
+      {/* Publish + assign dialog */}
+      {id && (
+        <PublishWorksheetDialog
+          open={publishDialogOpen}
+          onOpenChange={setPublishDialogOpen}
+          worksheetId={id}
+          worksheetTitle={title}
+          subjectId={subjectId}
+          onPublished={() => {
+            setStatus("published");
+            setScheduledAt(null);
+          }}
+        />
+      )}
+
       {/* Schedule publish dialog */}
       <Dialog open={scheduleDialogOpen} onOpenChange={setScheduleDialogOpen}>
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
