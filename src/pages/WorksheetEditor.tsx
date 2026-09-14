@@ -171,6 +171,7 @@ import {
 } from "@/lib/worksheet-templates";
 import { downloadWorksheetPdf, buildWorksheetPdfBlobUrl } from "@/lib/worksheet-pdf-export";
 import WorksheetPlayer from "@/components/WorksheetPlayer";
+import PublishWorksheetDialog from "@/components/worksheet/PublishWorksheetDialog";
 import LinkedLessonsDialog, { type LessonChoice } from "@/components/admin/LinkedLessonsDialog";
 import QuestionBankPickerDialog, { type QuestionBankItem } from "@/components/worksheet/QuestionBankPickerDialog";
 
