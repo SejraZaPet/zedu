@@ -208,7 +208,8 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
   const [evidenceSubmitting, setEvidenceSubmitting] = useState(false);
 
   // Lektoři používají stejné stránky jako učitelé, proto se jim lektorské kurzy zobrazují také.
-  const audienceValues = audience === "teacher" ? ["teacher", "lektor", "both"] : audience === "parent" ? ["parent", "both"] : ["student", "both"];
+  // Interní kurzy jsou pouze pro interní tým – nerozšiřují se na "both".
+  const audienceValues = audience === "internal" ? ["internal"] : audience === "teacher" ? ["teacher", "lektor", "both"] : audience === "parent" ? ["parent", "both"] : ["student", "both"];
 
   // --- Filtry kurzů ---
   const [filterCategory, setFilterCategory] = useState<string>("all");
