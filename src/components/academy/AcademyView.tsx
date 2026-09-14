@@ -18,7 +18,7 @@ import {
   ArrowLeft, GraduationCap, CheckCircle2, Circle, Award, Play, Download, FileBadge2, Share2, SlidersHorizontal, PartyPopper,
 } from "lucide-react";
 
-type AudienceScope = "teacher" | "student" | "parent";
+type AudienceScope = "teacher" | "student" | "parent" | "internal";
 
 interface Course {
   id: string;
@@ -208,7 +208,8 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
   const [evidenceSubmitting, setEvidenceSubmitting] = useState(false);
 
   // Lektoři používají stejné stránky jako učitelé, proto se jim lektorské kurzy zobrazují také.
-  const audienceValues = audience === "teacher" ? ["teacher", "lektor", "both"] : audience === "parent" ? ["parent", "both"] : ["student", "both"];
+  // Interní kurzy jsou pouze pro interní tým – nerozšiřují se na "both".
+  const audienceValues = audience === "internal" ? ["internal"] : audience === "teacher" ? ["teacher", "lektor", "both"] : audience === "parent" ? ["parent", "both"] : ["student", "both"];
 
   // --- Filtry kurzů ---
   const [filterCategory, setFilterCategory] = useState<string>("all");
@@ -572,7 +573,7 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">Všechny</SelectItem>
-                        <SelectItem value={audience}>{audience === "teacher" ? "Jen pro učitele" : audience === "parent" ? "Jen pro rodiče" : "Jen pro žáky"}</SelectItem>
+                        <SelectItem value={audience}>{audience === "teacher" ? "Jen pro učitele" : audience === "parent" ? "Jen pro rodiče" : audience === "internal" ? "Jen pro interní tým" : "Jen pro žáky"}</SelectItem>
                         <SelectItem value="both">Pro všechny skupiny</SelectItem>
                       </SelectContent>
                     </Select>

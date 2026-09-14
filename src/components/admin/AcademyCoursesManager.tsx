@@ -17,7 +17,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Plus, Pencil, Trash2, BookOpen, ArrowLeft, Award, FileBadge2, Users2, GraduationCap } from "lucide-react";
 import { toast } from "sonner";
 
-type Audience = "teacher" | "student" | "lektor" | "both";
+type Audience = "teacher" | "student" | "lektor" | "both" | "internal";
 type RevenueType = "Bezli" | "creator_share" | null;
 
 interface Course {
@@ -63,7 +63,7 @@ interface CourseStats {
   students_completed: number;
 }
 
-const audienceLabel = (a: Audience) => a === "teacher" ? "Učitelé" : a === "student" ? "Žáci" : a === "lektor" ? "Lektoři" : "Učitelé + žáci";
+const audienceLabel = (a: Audience) => a === "teacher" ? "Učitelé" : a === "student" ? "Žáci" : a === "lektor" ? "Lektoři" : a === "internal" ? "Interní tým" : "Učitelé + žáci";
 
 const COURSE_CATEGORIES = [
   "Pedagogika",
@@ -407,6 +407,8 @@ const AcademyCoursesManager = () => {
                   <SelectItem value="student">Žáci</SelectItem>
                   <SelectItem value="lektor">Lektoři</SelectItem>
                   <SelectItem value="both">Učitelé i žáci</SelectItem>
+                  <SelectItem value="internal">Interní tým (administrace)</SelectItem>
+
                 </SelectContent>
               </Select>
             </div>
