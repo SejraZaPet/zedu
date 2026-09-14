@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useStaffPermissions } from "@/hooks/useStaffPermissions";
 import { Button } from "@/components/ui/button";
@@ -9,12 +9,15 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Plus, Pencil, Trash2, Save, X, BookOpen } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import MarkdownContent from "@/components/MarkdownContent";
+import MarkdownImageToolbar from "@/components/admin/MarkdownImageToolbar";
+import { slugify } from "@/lib/slugify";
 
 interface StaffArticle {
   id: string;
   title: string;
   content: string;
   category: string | null;
+  slug?: string | null;
   updated_at: string;
 }
 
@@ -30,12 +33,15 @@ const StaffKnowledgeManager = () => {
   const [openId, setOpenId] = useState<string | null>(null);
   const [editing, setEditing] = useState<Partial<StaffArticle> | null>(null);
   const [isNew, setIsNew] = useState(false);
+  const [preview, setPreview] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const fetchArticles = async () => {
     setLoading(true);
     const { data } = await supabase
-      .from("staff_knowledge_articles")
-      .select("id, title, content, category, updated_at")
+      .from("help_articles")
+      .select("id, title, content, category, slug, updated_at")
+      .eq("audience", "internal")
       .order("category", { ascending: true })
       .order("title", { ascending: true });
     setArticles((data as StaffArticle[]) ?? []);
@@ -54,14 +60,29 @@ const StaffKnowledgeManager = () => {
       toast({ title: "Zadejte název článku", variant: "destructive" });
       return;
     }
+    const title = editing.title.trim();
     const payload = {
-      title: editing.title.trim(),
+      title,
       content: editing.content ?? "",
       category: editing.category?.trim() || null,
+      audience: "internal",
+      is_published: true,
+      slug: editing.slug?.trim() || slugify(title),
     };
-    const { error } = isNew
-      ? await supabase.from("staff_knowledge_articles").insert(payload)
-      : await supabase.from("staff_knowledge_articles").update(payload).eq("id", editing.id!);
+
+    let error;
+    if (isNew) {
+      const { data: last } = await supabase
+        .from("help_articles")
+        .select("sort_order")
+        .order("sort_order", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const nextOrder = ((last?.sort_order as number | null) ?? 0) + 1;
+      ({ error } = await supabase.from("help_articles").insert({ ...payload, sort_order: nextOrder }));
+    } else {
+      ({ error } = await supabase.from("help_articles").update(payload).eq("id", editing.id!));
+    }
     if (error) {
       toast({ title: "Uložení se nepovedlo", description: error.message, variant: "destructive" });
       return;
@@ -69,12 +90,13 @@ const StaffKnowledgeManager = () => {
     toast({ title: isNew ? "Článek vytvořen" : "Článek uložen" });
     setEditing(null);
     setIsNew(false);
+    setPreview(false);
     fetchArticles();
   };
 
   const remove = async (id: string) => {
     if (!confirm("Opravdu smazat tento článek?")) return;
-    const { error } = await supabase.from("staff_knowledge_articles").delete().eq("id", id);
+    const { error } = await supabase.from("help_articles").delete().eq("id", id);
     if (error) {
       toast({ title: "Smazání se nepovedlo", description: error.message, variant: "destructive" });
       return;
@@ -85,10 +107,11 @@ const StaffKnowledgeManager = () => {
 
   // Editor (jen admin)
   if (editing && isAdmin) {
+    const slug = editing.slug?.trim() || slugify(editing.title ?? "") || "obecne";
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="ghost" onClick={() => { setEditing(null); setIsNew(false); }}>
+          <Button size="sm" variant="ghost" onClick={() => { setEditing(null); setIsNew(false); setPreview(false); }}>
             <ArrowLeft className="w-4 h-4 mr-1" />Zpět
           </Button>
           <span className="text-sm text-muted-foreground">{isNew ? "Nový článek" : "Úprava článku"}</span>
@@ -105,17 +128,39 @@ const StaffKnowledgeManager = () => {
             </div>
           </div>
           <div>
-            <Label>Obsah (markdown: ## nadpis, - odrážka, **tučně**)</Label>
-            <Textarea className="mt-1 font-mono text-sm min-h-[320px]" value={editing.content ?? ""} onChange={(e) => setEditing({ ...editing, content: e.target.value })} />
+            <Label className="mb-2 block">Obsah (markdown: ## nadpis, - odrážka, **tučně**, ![obrázek](url))</Label>
+            <MarkdownImageToolbar
+              textareaRef={textareaRef}
+              value={editing.content ?? ""}
+              onChange={(next) => setEditing((prev) => ({ ...(prev ?? {}), content: next }))}
+              folder={`interni-akademie/${slug}`}
+              showPreviewToggle
+              previewOn={preview}
+              onTogglePreview={() => setPreview((p) => !p)}
+            />
+            <div className={preview ? "grid lg:grid-cols-2 gap-4" : ""}>
+              <Textarea
+                ref={textareaRef}
+                className="mt-1 font-mono text-sm min-h-[320px]"
+                value={editing.content ?? ""}
+                onChange={(e) => setEditing({ ...editing, content: e.target.value })}
+              />
+              {preview && (
+                <div className="mt-1 rounded-lg border border-border p-4 overflow-y-auto max-h-[480px]">
+                  <MarkdownContent content={editing.content ?? ""} />
+                </div>
+              )}
+            </div>
           </div>
           <div className="flex gap-2 pt-2 border-t border-border">
             <Button size="sm" onClick={save}><Save className="w-4 h-4 mr-1" />Uložit</Button>
-            <Button size="sm" variant="ghost" onClick={() => { setEditing(null); setIsNew(false); }}><X className="w-4 h-4 mr-1" />Zrušit</Button>
+            <Button size="sm" variant="ghost" onClick={() => { setEditing(null); setIsNew(false); setPreview(false); }}><X className="w-4 h-4 mr-1" />Zrušit</Button>
           </div>
         </div>
       </div>
     );
   }
+
 
   // Čtecí pohled
   if (openArticle) {
