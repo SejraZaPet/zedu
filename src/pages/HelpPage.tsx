@@ -32,6 +32,7 @@ const AUDIENCE_LABELS: Record<string, string> = {
   teacher: "Učitel",
   student: "Žák",
   parent: "Rodič",
+  internal: "Interní tým",
 };
 
 const HelpPage = () => {
@@ -126,7 +127,7 @@ const HelpPage = () => {
               <SelectTrigger className="w-full sm:w-[200px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all-any">Pro kohokoli</SelectItem>
-                {Object.entries(AUDIENCE_LABELS).filter(([k]) => k !== "all").map(([k, v]) => (
+                {Object.entries(AUDIENCE_LABELS).filter(([k]) => k !== "all" && k !== "internal").map(([k, v]) => (
                   <SelectItem key={k} value={k}>{v}</SelectItem>
                 ))}
               </SelectContent>
