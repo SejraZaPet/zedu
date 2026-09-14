@@ -187,7 +187,8 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
   const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
   const [evidenceSubmitting, setEvidenceSubmitting] = useState(false);
 
-  const audienceValues = audience === "teacher" ? ["teacher", "both"] : audience === "parent" ? ["parent", "both"] : ["student", "both"];
+  // Lektoři používají stejné stránky jako učitelé, proto se jim lektorské kurzy zobrazují také.
+  const audienceValues = audience === "teacher" ? ["teacher", "lektor", "both"] : audience === "parent" ? ["parent", "both"] : ["student", "both"];
 
   // --- Filtry kurzů ---
   const [filterCategory, setFilterCategory] = useState<string>("all");
