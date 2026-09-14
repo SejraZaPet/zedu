@@ -17,7 +17,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Plus, Pencil, Trash2, BookOpen, ArrowLeft, Award, FileBadge2, Users2, GraduationCap } from "lucide-react";
 import { toast } from "sonner";
 
-type Audience = "teacher" | "student" | "lektor" | "both";
+type Audience = "teacher" | "student" | "lektor" | "both" | "internal";
 type RevenueType = "Bezli" | "creator_share" | null;
 
 interface Course {
