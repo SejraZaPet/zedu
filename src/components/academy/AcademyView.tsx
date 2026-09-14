@@ -12,6 +12,8 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import MarkdownContent from "@/components/MarkdownContent";
+import { LessonBlock } from "@/components/LessonBlockRenderer";
+import type { Block } from "@/lib/textbook-config";
 import {
   ArrowLeft, GraduationCap, CheckCircle2, Circle, Award, Play, Download, FileBadge2, Share2, SlidersHorizontal, PartyPopper,
 } from "lucide-react";
@@ -53,6 +55,7 @@ interface Module {
   id: string;
   title: string;
   content: string | null;
+  content_blocks: Block[] | null;
   video_url: string | null;
   sort_order: number;
 }
@@ -67,6 +70,23 @@ interface CertificateRow {
 }
 
 const renderContent = (content: string) => <MarkdownContent content={content} />;
+
+/** Modul se vykresluje stejným rendererem jako lekce; fallback na starý Markdown. */
+const ModuleContent = ({ module }: { module: Module }) => {
+  const blocks = Array.isArray(module.content_blocks) ? module.content_blocks : [];
+  if (blocks.length > 0) {
+    return (
+      <div className="space-y-4">
+        {blocks
+          .filter((b) => b && b.visible !== false)
+          .map((b, i) => (
+            <LessonBlock key={b.id || i} block={b} blockIndex={i} />
+          ))}
+      </div>
+    );
+  }
+  return module.content ? renderContent(module.content) : null;
+};
 
 const statusMeta = (status: EvidenceSubmission["status"]) => {
   if (status === "approved") return { label: "Schváleno 🎉", cls: "bg-primary/10 text-primary border-primary/30" };
@@ -353,7 +373,13 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
       supabase.from("academy_module_completions").select("module_id").eq("enrollment_id", enroll!.id),
       supabase.from("academy_evidence_submissions").select("*").eq("enrollment_id", enroll!.id).order("submitted_at", { ascending: false }).limit(1),
     ]);
-    setModules((mods || []) as Module[]);
+    setModules(((mods || []) as unknown[]).map((m) => {
+      const row = m as Record<string, unknown>;
+      return {
+        ...(row as unknown as Module),
+        content_blocks: Array.isArray(row.content_blocks) ? (row.content_blocks as unknown as Block[]) : null,
+      };
+    }));
     setCompletedIds(new Set((comps || []).map((c: any) => c.module_id)));
     setEvidence(((evi as any[]) || [])[0] || null);
     setEvidenceDesc("");
@@ -813,7 +839,7 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
                       <iframe src={activeModule.video_url} className="w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen title={activeModule.title} />
                     </div>
                   )}
-                  {activeModule.content && renderContent(activeModule.content)}
+                  <ModuleContent module={activeModule} />
                   <div className="mt-6 pt-4 border-t border-border flex items-center justify-between">
                     <Button variant={completedIds.has(activeModule.id) ? "outline" : "default"} onClick={() => toggleModuleDone(activeModule.id)}>
                       {completedIds.has(activeModule.id) ? (<><CheckCircle2 className="w-4 h-4 mr-1" /> Splněno – zrušit</>) : (<><Circle className="w-4 h-4 mr-1" /> Označit jako dokončené</>)}

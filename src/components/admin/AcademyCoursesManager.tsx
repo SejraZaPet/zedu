@@ -1,11 +1,12 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import MarkdownImageToolbar from "@/components/admin/MarkdownImageToolbar";
-import MarkdownContent from "@/components/MarkdownContent";
+import BlockEditor from "@/components/admin/BlockEditor";
+import type { Block } from "@/lib/textbook-config";
+import { markdownToBlocks } from "@/lib/markdown-to-blocks";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -43,6 +44,7 @@ interface Module {
   course_id: string;
   title: string;
   content: string | null;
+  content_blocks: Block[] | null;
   video_url: string | null;
   sort_order: number;
 }
@@ -84,8 +86,7 @@ const AcademyCoursesManager = () => {
 
   const [moduleDlgOpen, setModuleDlgOpen] = useState(false);
   const [moduleForm, setModuleForm] = useState<Partial<Module>>({});
-  const [modulePreview, setModulePreview] = useState(false);
-  const moduleTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const [moduleBlocks, setModuleBlocks] = useState<Block[]>([]);
 
   const [stats, setStats] = useState<CourseStats[]>([]);
   const [statsLoading, setStatsLoading] = useState(false);
@@ -101,7 +102,13 @@ const AcademyCoursesManager = () => {
     const { data } = await supabase
       .from("academy_modules").select("*").eq("course_id", courseId)
       .order("sort_order", { ascending: true });
-    setModules((data || []) as Module[]);
+    setModules(((data || []) as unknown as Record<string, unknown>[]).map((row) => {
+      const r = row as Record<string, unknown>;
+      return {
+        ...(r as unknown as Module),
+        content_blocks: Array.isArray(r.content_blocks) ? (r.content_blocks as unknown as Block[]) : null,
+      };
+    }));
   }, []);
 
   const fetchStats = useCallback(async () => {
@@ -169,15 +176,23 @@ const AcademyCoursesManager = () => {
   const openNewModule = () => {
     if (!selectedCourse) return;
     setModuleForm({ course_id: selectedCourse.id, title: "", content: "", sort_order: modules.length });
+    setModuleBlocks([]);
     setModuleDlgOpen(true);
   };
-  const openEditModule = (m: Module) => { setModuleForm(m); setModuleDlgOpen(true); };
+  const openEditModule = (m: Module) => {
+    setModuleForm(m);
+    // Starší moduly mají jen Markdown – převedeme je do bloků při otevření.
+    const existing = Array.isArray(m.content_blocks) ? m.content_blocks : [];
+    setModuleBlocks(existing.length > 0 ? existing : markdownToBlocks(m.content || ""));
+    setModuleDlgOpen(true);
+  };
   const saveModule = async () => {
     if (!moduleForm.title?.trim()) return toast.error("Zadejte název");
     const payload = {
       course_id: moduleForm.course_id!,
       title: moduleForm.title,
       content: moduleForm.content || null,
+      content_blocks: JSON.parse(JSON.stringify(moduleBlocks)),
       video_url: moduleForm.video_url || null,
       sort_order: moduleForm.sort_order ?? 0,
     };
@@ -230,33 +245,20 @@ const AcademyCoursesManager = () => {
         </div>
 
         <Sheet open={moduleDlgOpen} onOpenChange={setModuleDlgOpen}>
-          <SheetContent side="right" className={modulePreview ? "sm:max-w-4xl overflow-y-auto" : "sm:max-w-xl overflow-y-auto"}>
+          <SheetContent side="right" className="w-screen sm:max-w-none overflow-y-auto">
             <SheetHeader><SheetTitle>{moduleForm.id ? "Upravit modul" : "Nový modul"}</SheetTitle></SheetHeader>
-            <div className="space-y-3 mt-4">
-              <div><Label>Název</Label><Input value={moduleForm.title || ""} onChange={(e) => setModuleForm({ ...moduleForm, title: e.target.value })} /></div>
-              <div><Label>Pořadí</Label><Input type="number" value={moduleForm.sort_order ?? 0} onChange={(e) => setModuleForm({ ...moduleForm, sort_order: parseInt(e.target.value) || 0 })} /></div>
-              <div><Label>Video URL (volitelné – embed odkaz)</Label><Input value={moduleForm.video_url || ""} onChange={(e) => setModuleForm({ ...moduleForm, video_url: e.target.value })} /></div>
+            <div className="space-y-4 mt-4 mx-auto max-w-[1400px]">
+              <div className="grid gap-3 md:grid-cols-3">
+                <div><Label>Název</Label><Input value={moduleForm.title || ""} onChange={(e) => setModuleForm({ ...moduleForm, title: e.target.value })} /></div>
+                <div><Label>Pořadí</Label><Input type="number" value={moduleForm.sort_order ?? 0} onChange={(e) => setModuleForm({ ...moduleForm, sort_order: parseInt(e.target.value) || 0 })} /></div>
+                <div><Label>Video URL (volitelné – embed odkaz)</Label><Input value={moduleForm.video_url || ""} onChange={(e) => setModuleForm({ ...moduleForm, video_url: e.target.value })} /></div>
+              </div>
               <div>
-                <Label>Obsah (markdown: ## nadpis, - odrážka, **tučně**, ![obrázek](url))</Label>
-                <div className="mt-2">
-                  <MarkdownImageToolbar
-                    textareaRef={moduleTextareaRef}
-                    value={moduleForm.content || ""}
-                    onChange={(next) => setModuleForm((f) => ({ ...f, content: next }))}
-                    folder={`academy/${moduleForm.course_id || "obecne"}`}
-                    showPreviewToggle
-                    previewOn={modulePreview}
-                    onTogglePreview={() => setModulePreview((p) => !p)}
-                  />
-                </div>
-                <div className={modulePreview ? "grid lg:grid-cols-2 gap-4" : ""}>
-                  <Textarea ref={moduleTextareaRef} rows={16} className="font-mono text-sm" value={moduleForm.content || ""} onChange={(e) => setModuleForm({ ...moduleForm, content: e.target.value })} />
-                  {modulePreview && (
-                    <div className="rounded-lg border border-border p-4 overflow-y-auto max-h-[420px]">
-                      <MarkdownContent content={moduleForm.content || ""} />
-                    </div>
-                  )}
-                </div>
+                <Label>Obsah modulu</Label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Klikněte do textu a pište. Nástroje se objeví po najetí myší, „+“ přidá další blok (obrázek, odrážky, box…).
+                </p>
+                <BlockEditor blocks={moduleBlocks} onChange={setModuleBlocks} />
               </div>
               <Button onClick={saveModule} className="w-full">Uložit</Button>
             </div>

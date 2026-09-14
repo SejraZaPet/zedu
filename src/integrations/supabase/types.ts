@@ -252,6 +252,7 @@ export type Database = {
       academy_modules: {
         Row: {
           content: string | null
+          content_blocks: Json | null
           course_id: string
           created_at: string
           id: string
@@ -262,6 +263,7 @@ export type Database = {
         }
         Insert: {
           content?: string | null
+          content_blocks?: Json | null
           course_id: string
           created_at?: string
           id?: string
@@ -272,6 +274,7 @@ export type Database = {
         }
         Update: {
           content?: string | null
+          content_blocks?: Json | null
           course_id?: string
           created_at?: string
           id?: string
