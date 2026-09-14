@@ -120,8 +120,7 @@ const AssignmentRow = ({
             value={assignment.subject}
             onValueChange={(v) => {
               const s = subjects.find((s) => s.slug === v);
-              const g = s ? getGradeNumbers(s) : [];
-              onChange({ ...assignment, subject: v, grade: g[0] ?? 1, topic_id: "", topic_title: "" });
+              onChange({ ...assignment, subject: v, grade: s?.grades[0] ?? 1, topic_id: "", topic_title: "" });
             }}
           >
             <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Předmět" /></SelectTrigger>
@@ -302,7 +301,7 @@ const AssignmentRow = ({
 };
 
 const LessonAssignments = ({ lessonId, assignments, onChange }: Props) => {
-  const { data: subjects = [] } = useSubjects(false);
+  const { options: subjects } = useTopicSubjectOptions();
   const [targetPicker, setTargetPicker] = useState<number | null>(null);
 
   const addAssignment = async () => {
