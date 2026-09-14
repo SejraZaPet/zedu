@@ -18,7 +18,7 @@ import {
   ArrowLeft, GraduationCap, CheckCircle2, Circle, Award, Play, Download, FileBadge2, Share2, SlidersHorizontal, PartyPopper,
 } from "lucide-react";
 
-type AudienceScope = "teacher" | "student" | "parent";
+type AudienceScope = "teacher" | "student" | "parent" | "internal";
 
 interface Course {
   id: string;
