@@ -303,7 +303,7 @@ const Admin = () => {
         )}
 
 
-        {activeTab === "staff-academy" && !isTeacher && <StaffKnowledgeManager />}
+        {activeTab === "staff-academy" && !isTeacher && <AcademyView audience="internal" title="Interní akademie" subtitle="Kurzy a školení pro tým Bezli." />}
         {activeTab === "stats" && !isTeacher && <SystemStats />}
         {activeTab === "textbooks" && isTeacher && <TeacherTextbooksManager />}
         {activeTab === "lessons" && isTeacher && <LessonsManager />}
