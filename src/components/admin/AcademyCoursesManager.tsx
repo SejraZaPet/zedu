@@ -407,6 +407,8 @@ const AcademyCoursesManager = () => {
                   <SelectItem value="student">Žáci</SelectItem>
                   <SelectItem value="lektor">Lektoři</SelectItem>
                   <SelectItem value="both">Učitelé i žáci</SelectItem>
+                  <SelectItem value="internal">Interní tým (administrace)</SelectItem>
+
                 </SelectContent>
               </Select>
             </div>
