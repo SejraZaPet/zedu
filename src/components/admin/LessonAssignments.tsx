@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useSubjects, getGradeNumbers } from "@/hooks/useSubjects";
+import { useTopicSubjectOptions } from "@/hooks/useTopicSubjectOptions";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -71,13 +71,17 @@ const AssignmentRow = ({
   targetPickerOpen: boolean;
   onTargetPickerOpenChange: (open: boolean) => void;
 }) => {
-  const { data: subjects = [] } = useSubjects(false);
+  const { options: subjects } = useTopicSubjectOptions();
   const { myClasses } = useTeacherClasses();
   const { groups } = useSubjectGroups();
   const [topics, setTopics] = useState<TopicOption[]>([]);
 
   const currentSubject = subjects.find((s) => s.slug === assignment.subject);
-  const grades = currentSubject ? getGradeNumbers(currentSubject) : [];
+  // Ročníky podle reálně existujících témat; uložený ročník zůstává vybratelný.
+  const grades = Array.from(new Set([
+    ...(currentSubject?.grades ?? []),
+    ...(assignment.grade ? [assignment.grade] : []),
+  ])).sort((a, b) => a - b);
 
   const isDuplicate = allAssignments.some(
     (a, i) => i !== index && a.topic_id === assignment.topic_id && a.topic_id !== ""
