@@ -63,7 +63,7 @@ interface CourseStats {
   students_completed: number;
 }
 
-const audienceLabel = (a: Audience) => a === "teacher" ? "Učitelé" : a === "student" ? "Žáci" : a === "lektor" ? "Lektoři" : "Učitelé + žáci";
+const audienceLabel = (a: Audience) => a === "teacher" ? "Učitelé" : a === "student" ? "Žáci" : a === "lektor" ? "Lektoři" : a === "internal" ? "Interní tým" : "Učitelé + žáci";
 
 const COURSE_CATEGORIES = [
   "Pedagogika",
