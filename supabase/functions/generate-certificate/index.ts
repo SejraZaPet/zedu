@@ -276,6 +276,7 @@ Deno.serve(async (req) => {
             subject: `Certifikát – ${course.title}`,
             html,
             text: `Gratulujeme k dokončení kurzu ${course.title}. Certifikát č. ${cert.certificate_number} si stáhněte zde: ${downloadUrl}`,
+            emailType: "certificate",
           },
           headers: { Authorization: `Bearer ${SERVICE_KEY}` },
         });
