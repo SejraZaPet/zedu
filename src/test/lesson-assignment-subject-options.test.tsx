@@ -52,6 +52,9 @@ vi.mock("@/integrations/supabase/client", () => ({
 vi.mock("@/hooks/useTeacherClasses", () => ({ useTeacherClasses: () => ({ myClasses: [], classes: [] }) }));
 vi.mock("@/hooks/useSubjectGroups", () => ({ useSubjectGroups: () => ({ groups: [] }) }));
 
+// jsdom nemá scrollIntoView, které Radix Select používá při otevření.
+(Element.prototype as any).scrollIntoView = () => {};
+
 const assignment: Assignment = {
   topic_id: "",
   subject: "ekonomika",
