@@ -37,7 +37,7 @@ import CrmManager from "@/components/admin/CrmManager";
 import MarketplaceEconomicsManager from "@/components/admin/MarketplaceEconomicsManager";
 import WebsiteAssistantManager from "@/components/admin/WebsiteAssistantManager";
 import MyStaffPanel from "@/components/admin/MyStaffPanel";
-import StaffKnowledgeManager from "@/components/admin/StaffKnowledgeManager";
+import AcademyView from "@/components/academy/AcademyView";
 import SchoolsManager from "@/components/admin/SchoolsManager";
 import { useStaffPermissions } from "@/hooks/useStaffPermissions";
 import { Button } from "@/components/ui/button";
