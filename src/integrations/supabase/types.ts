@@ -2171,6 +2171,54 @@ export type Database = {
           },
         ]
       }
+      email_log: {
+        Row: {
+          body_text: string | null
+          created_at: string
+          email_type: string
+          error_message: string | null
+          from_address: string | null
+          html: string | null
+          id: string
+          metadata: Json
+          provider_message_id: string | null
+          recipient: string
+          status: string
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          body_text?: string | null
+          created_at?: string
+          email_type?: string
+          error_message?: string | null
+          from_address?: string | null
+          html?: string | null
+          id?: string
+          metadata?: Json
+          provider_message_id?: string | null
+          recipient: string
+          status?: string
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          body_text?: string | null
+          created_at?: string
+          email_type?: string
+          error_message?: string | null
+          from_address?: string | null
+          html?: string | null
+          id?: string
+          metadata?: Json
+          provider_message_id?: string | null
+          recipient?: string
+          status?: string
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       export_jobs: {
         Row: {
           attempt: number
