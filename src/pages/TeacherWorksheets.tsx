@@ -25,7 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { FileText, Plus, Search, Copy, Trash2, Share2 } from "lucide-react";
+import { FileText, Plus, Search, Copy, Trash2, Share2, AlertTriangle } from "lucide-react";
 import ShareContentDialog from "@/components/sharing/ShareContentDialog";
 import ReviewButton from "@/components/sharing/ReviewButton";
 
@@ -72,6 +72,7 @@ export default function TeacherWorksheets() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "published">("all");
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [assignedIds, setAssignedIds] = useState<Set<string>>(new Set());
   const [shareTarget, setShareTarget] = useState<{ id: string; title: string } | null>(null);
   const [worksheetsForLessonOpen, setWorksheetsForLessonOpen] = useState(false);
   const [worksheetsForLesson, setWorksheetsForLesson] = useState<WorksheetForLessonItem[]>([]);
@@ -259,7 +260,20 @@ export default function TeacherWorksheets() {
     if (error) {
       toast({ title: "Nepodařilo se načíst pracovní listy", description: error.message, variant: "destructive" });
     } else {
-      setItems((data as any) ?? []);
+      const rows = ((data as any) ?? []) as WorksheetRow[];
+      setItems(rows);
+      const ids = rows.map((r) => r.id);
+      if (ids.length) {
+        const { data: aRows } = await supabase
+          .from("assignments")
+          .select("worksheet_id")
+          .in("worksheet_id", ids);
+        setAssignedIds(
+          new Set(((aRows as any[]) ?? []).map((a) => a.worksheet_id).filter(Boolean)),
+        );
+      } else {
+        setAssignedIds(new Set());
+      }
     }
     setLoading(false);
   }
