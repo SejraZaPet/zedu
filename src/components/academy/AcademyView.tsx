@@ -573,7 +573,7 @@ const AcademyView = ({ audience, title, subtitle }: AcademyViewProps) => {
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">Všechny</SelectItem>
-                        <SelectItem value={audience}>{audience === "teacher" ? "Jen pro učitele" : audience === "parent" ? "Jen pro rodiče" : "Jen pro žáky"}</SelectItem>
+                        <SelectItem value={audience}>{audience === "teacher" ? "Jen pro učitele" : audience === "parent" ? "Jen pro rodiče" : audience === "internal" ? "Jen pro interní tým" : "Jen pro žáky"}</SelectItem>
                         <SelectItem value="both">Pro všechny skupiny</SelectItem>
                       </SelectContent>
                     </Select>
