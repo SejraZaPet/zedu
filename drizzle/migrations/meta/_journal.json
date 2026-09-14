@@ -71,6 +71,13 @@
       "when": 1789402188151,
       "tag": "0009_academy_modules_content_blocks",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1789403672697,
+      "tag": "0010_help_articles_internal_audience",
+      "breakpoints": true
     }
   ]
 }
