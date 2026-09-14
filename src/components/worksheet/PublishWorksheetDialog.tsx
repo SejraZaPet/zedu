@@ -32,7 +32,7 @@ interface Props {
 export default function PublishWorksheetDialog({
   open, onOpenChange, worksheetId, worksheetTitle, subjectId, onPublished,
 }: Props) {
-  const { data: classes } = useTeacherClasses();
+  const { myClasses: teacherClasses } = useTeacherClasses();
   const { groups } = useSubjectGroups();
 
   const [assign, setAssign] = useState(true);
@@ -40,10 +40,7 @@ export default function PublishWorksheetDialog({
   const [deadline, setDeadline] = useState<string>("");
   const [busy, setBusy] = useState(false);
 
-  const myClasses = useMemo(
-    () => (classes ?? []).filter((c) => c.source !== "school"),
-    [classes],
-  );
+  const myClasses = useMemo(() => teacherClasses ?? [], [teacherClasses]);
 
   const submit = async () => {
     if (assign && !target) {
