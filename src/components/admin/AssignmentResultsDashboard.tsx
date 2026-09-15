@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, Fragment } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -527,7 +527,10 @@ const AssignmentResultsDashboard = ({ teacherId, initialAssignmentId }: Props) =
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredStudents.map((s) => {
+                      {(() => {
+                      const groupMode = assignments.find((a) => a.id === selectedAssignmentId)?.groupMode ?? "individual";
+                      const renderStudentRow = (s: StudentResult) => {
+
 
                         const cfg = STATUS_CONFIG[s.status];
                         const StatusIcon = cfg.icon;
@@ -590,7 +593,30 @@ const AssignmentResultsDashboard = ({ teacherId, initialAssignmentId }: Props) =
                             </TableCell>
                           </TableRow>
                         );
-                      })}
+                      };
+
+                      if (groupMode === "individual") return filteredStudents.map(renderStudentRow);
+
+                      // Skupinové/párové úkoly: řádky seskupené podle skupiny
+                      const groupNames = [...new Set(filteredStudents.map((s) => s.groupName || "Bez skupiny"))]
+                        .sort((a, b) => a.localeCompare(b, "cs"));
+                      return groupNames.map((gn) => (
+                        <Fragment key={gn}>
+                          <TableRow className="bg-muted/50">
+                            <TableCell colSpan={7} className="text-xs font-semibold">
+                              <span className="flex items-center gap-1.5">
+                                <Users className="w-3.5 h-3.5" /> {gn}
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                          {filteredStudents
+                            .filter((s) => (s.groupName || "Bez skupiny") === gn)
+                            .map(renderStudentRow)}
+                        </Fragment>
+                      ));
+                      })()}
+
+
 
                     </TableBody>
                   </Table>
