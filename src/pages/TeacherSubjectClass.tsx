@@ -1816,6 +1816,40 @@ export default function TeacherSubjectClass() {
           onSaved={() => setReflectionVersion((v) => v + 1)}
         />
       )}
+      <Dialog open={!!materialsDate} onOpenChange={(o) => { if (!o) setMaterialsDate(null); }}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Materiály k hodině</DialogTitle>
+            <DialogDescription>
+              {materialsDate
+                ? `Materiály se zobrazí žákům u hodiny ${format(new Date(materialsDate), "d. M. yyyy", { locale: cs })}.`
+                : ""}
+            </DialogDescription>
+          </DialogHeader>
+          {user && (
+            <AssignmentMaterialsEditor
+              materials={materialsDraft}
+              onChange={setMaterialsDraft}
+              teacherId={user.id}
+            />
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setMaterialsDate(null)}>
+              Zavřít
+            </Button>
+            <Button
+              onClick={async () => {
+                if (!materialsDate) return;
+                await saveLessonTopic(materialsDate, { materials: materialsDraft });
+                setMaterialsDate(null);
+              }}
+            >
+              Uložit materiály
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <SiteFooter />
 
       <Dialog open={linkOpen} onOpenChange={setLinkOpen}>
