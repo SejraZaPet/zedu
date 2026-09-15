@@ -281,6 +281,7 @@ const AssignmentResultsDashboard = ({ teacherId, initialAssignmentId }: Props) =
           lastActivity,
           violationCount: ts.count,
           leftTest: ts.left,
+          groupName: groupNameByStudent[sid] ?? null,
         };
       });
 
