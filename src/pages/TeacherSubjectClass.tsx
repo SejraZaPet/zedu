@@ -495,6 +495,92 @@ export default function TeacherSubjectClass() {
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, classId, pastLessons.length, reflectionVersion]);
+
+  // ---- Témata hodin („Co jsme probrali“) ----
+  useEffect(() => {
+    if (!user) return;
+    if (!isGroup && !classId) return;
+    if (isGroup && !groupId) return;
+    if (!subjectLabel) return;
+    let cancelled = false;
+    (async () => {
+      let q = supabase
+        .from("lesson_topics")
+        .select("id, lesson_date, topic, materials")
+        .eq("teacher_id", user.id)
+        .eq("subject", subjectLabel);
+      q = isGroup ? q.eq("group_id", groupId!) : q.eq("class_id", classId!);
+      const { data } = await q;
+      if (cancelled) return;
+      const map: Record<string, LessonTopicRow> = {};
+      for (const r of data ?? []) {
+        map[r.lesson_date] = {
+          id: r.id,
+          lesson_date: r.lesson_date,
+          topic: r.topic ?? null,
+          materials: Array.isArray(r.materials) ? (r.materials as unknown as AssignmentMaterial[]) : [],
+        };
+      }
+      setLessonTopics(map);
+    })();
+    return () => { cancelled = true; };
+  }, [user, classId, groupId, isGroup, subjectLabel]);
+
+  const saveLessonTopic = async (
+    dateKey: string,
+    patch: { topic?: string | null; materials?: AssignmentMaterial[] },
+  ) => {
+    if (!user) return;
+    const existing = lessonTopics[dateKey];
+    const payload: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (patch.topic !== undefined) payload.topic = patch.topic;
+    if (patch.materials !== undefined) payload.materials = patch.materials as unknown as any;
+
+    if (existing) {
+      const { error } = await supabase.from("lesson_topics").update(payload).eq("id", existing.id);
+      if (error) {
+        toast({ title: "Nepodařilo se uložit", description: error.message, variant: "destructive" });
+        return;
+      }
+      setLessonTopics((prev) => ({
+        ...prev,
+        [dateKey]: {
+          ...existing,
+          topic: patch.topic !== undefined ? patch.topic : existing.topic,
+          materials: patch.materials !== undefined ? patch.materials : existing.materials,
+        },
+      }));
+    } else {
+      const { data, error } = await supabase
+        .from("lesson_topics")
+        .insert({
+          teacher_id: user.id,
+          subject: subjectLabel,
+          class_id: isGroup ? null : classId,
+          group_id: isGroup ? groupId : null,
+          lesson_date: dateKey,
+          topic: patch.topic ?? null,
+          materials: (patch.materials ?? []) as unknown as any,
+        })
+        .select("id, lesson_date, topic, materials")
+        .maybeSingle();
+      if (error || !data) {
+        toast({ title: "Nepodařilo se uložit", description: error?.message, variant: "destructive" });
+        return;
+      }
+      setLessonTopics((prev) => ({
+        ...prev,
+        [dateKey]: {
+          id: data.id,
+          lesson_date: data.lesson_date,
+          topic: data.topic ?? null,
+          materials: Array.isArray(data.materials) ? (data.materials as unknown as AssignmentMaterial[]) : [],
+        },
+      }));
+    }
+    toast({ title: "Uloženo" });
+  };
+
   const upcomingLessons = occurrences.filter((e) => e.start >= now).slice(0, 15);
 
   const room = slots[0]?.room || "";
