@@ -454,6 +454,7 @@ const TeacherAssignments = () => {
 
           <TabsContent value="assignments" className="space-y-4">
             <div className="flex justify-between gap-2 flex-wrap">
+              <div className="flex gap-2 flex-wrap">
               <Select value={filterExamType} onValueChange={setFilterExamType}>
                 <SelectTrigger className="w-48">
                   <SelectValue placeholder="Filtrovat podle typu" />
@@ -465,6 +466,21 @@ const TeacherAssignments = () => {
                   ))}
                 </SelectContent>
               </Select>
+              <Select value={filterTarget} onValueChange={setFilterTarget}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Filtrovat podle třídy" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">Všechny třídy a skupiny</SelectItem>
+                  {classes.map((c) => (
+                    <SelectItem key={c.id} value={`class:${c.id}`}>{c.name}</SelectItem>
+                  ))}
+                  {groups.map((g) => (
+                    <SelectItem key={g.id} value={`group:${g.id}`}>{g.name} (skupina)</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              </div>
               <Button
                 onClick={() => {
                   if (showForm && !editingId) {
