@@ -1242,6 +1242,9 @@ export default function TeacherSubjectClass() {
                       const dateKey = format(e.start, "yyyy-MM-dd");
                       const planForDate = findPlanForDate(dateKey);
                       const refl = reflections[reflectionKey({ subject: subjectLabel, classId, date: dateKey })];
+                      const topicRow = lessonTopics[dateKey];
+                      const editingTopic = topicEditDate === dateKey;
+
                       return (
                         <Card key={e.id} className="p-3">
                           <div className="flex items-center justify-between gap-2">
