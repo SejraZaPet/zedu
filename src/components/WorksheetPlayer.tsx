@@ -25,6 +25,7 @@ import {
   CheckCircle2,
   Clock,
   Info,
+  ExternalLink,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useWorksheetAutosave, type WorksheetAnswers } from "@/hooks/useWorksheetAutosave";
@@ -362,6 +363,23 @@ export default function WorksheetPlayer({
             </div>
 
             <p className="text-sm leading-relaxed text-foreground">{item.prompt}</p>
+
+            {item.imageUrl && (
+              <img
+                src={item.imageUrl}
+                alt={item.imageAlt || ""}
+                className="rounded-lg border border-border max-h-80 w-auto"
+              />
+            )}
+
+            {item.linkUrl && (
+              <Button variant="outline" asChild>
+                <a href={item.linkUrl} target="_blank" rel="noreferrer">
+                  <ExternalLink className="h-4 w-4 mr-1" />
+                  {item.linkLabel || item.linkUrl}
+                </a>
+              </Button>
+            )}
 
             {renderItemBody(item)}
 

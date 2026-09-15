@@ -3116,6 +3116,25 @@ function TypeSpecificEditor({
       </div>
 
       <div className="pt-3 border-t border-border">
+        <Label className="text-xs">Odkaz (URL, volitelné)</Label>
+        <Input
+          value={item.linkUrl ?? ""}
+          onChange={(e) => onUpdateItem({ linkUrl: e.target.value || undefined })}
+          placeholder="https://…"
+          className="flex-1"
+        />
+        {item.linkUrl && (
+          <Input
+            className="mt-1"
+            value={item.linkLabel ?? ""}
+            onChange={(e) => onUpdateItem({ linkLabel: e.target.value || undefined })}
+            placeholder="Popisek odkazu (např. 'Otevřít video')"
+          />
+        )}
+      </div>
+
+
+      <div className="pt-3 border-t border-border">
         <Label className="text-xs">Prostor pro odpověď (tisk)</Label>
         <Select
           value={item.answerSpace.type}
@@ -4119,6 +4138,25 @@ function PropertiesPanel({
           />
         )}
       </div>
+
+      <div className="pt-3 border-t border-border">
+        <Label className="text-xs">Odkaz (URL, volitelné)</Label>
+        <Input
+          value={item.linkUrl ?? ""}
+          onChange={(e) => onUpdateItem({ linkUrl: e.target.value || undefined })}
+          placeholder="https://…"
+          className="flex-1"
+        />
+        {item.linkUrl && (
+          <Input
+            className="mt-1"
+            value={item.linkLabel ?? ""}
+            onChange={(e) => onUpdateItem({ linkLabel: e.target.value || undefined })}
+            placeholder="Popisek odkazu (např. 'Otevřít video')"
+          />
+        )}
+      </div>
+
 
       <div className="pt-3 border-t border-border">
         <Label className="text-xs">Prostor pro odpověď (tisk)</Label>
