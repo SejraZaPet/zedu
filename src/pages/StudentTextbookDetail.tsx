@@ -380,24 +380,21 @@ const StudentTextbookDetail = () => {
                 Lekce dokončena
               </div>
             ) : (
-              <Button
-                onClick={() => {
-                  if (!canComplete) {
-                    const remaining = requiredActivityIndices.filter(i => !completedActivityIndices.has(i)).length;
-                    toast({
-                      title: "Nejdříve dokonči povinné aktivity",
-                      description: `Zbývá ti ${remaining} povinná ${remaining === 1 ? "aktivita" : remaining < 5 ? "aktivity" : "aktivit"}. Jsou označeny fialovým rámečkem v lekci.`,
-                      variant: "destructive",
-                    });
-                    return;
-                  }
-                  handleMarkComplete(selectedLesson.id);
-                }}
-                className="gap-2"
-              >
-                <CheckCircle2 className="w-4 h-4" />
-                Označit jako dokončené
-              </Button>
+              <>
+                <Button
+                  onClick={() => handleMarkComplete(selectedLesson.id)}
+                  disabled={!canComplete}
+                  className="gap-2"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  Označit jako dokončené
+                </Button>
+                {!canComplete && (
+                  <p className="text-sm text-muted-foreground text-center">
+                    Nejdřív dokonči povinné aktivity ({completedRequiredCount}/{requiredActivityIndices.length} hotovo). Jsou označeny fialovým rámečkem v lekci.
+                  </p>
+                )}
+              </>
             )}
           </div>
         </main>
