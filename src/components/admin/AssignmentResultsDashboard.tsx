@@ -151,6 +151,7 @@ const AssignmentResultsDashboard = ({ teacherId, initialAssignmentId }: Props) =
           inProgress: inProgressStudents.size,
           submitted: submittedStudents.size,
           avgScore,
+          groupMode: (a.group_mode as string) ?? "individual",
         };
       });
 
@@ -205,6 +206,38 @@ const AssignmentResultsDashboard = ({ teacherId, initialAssignmentId }: Props) =
         attemptsByStudent[att.student_id].push(att);
         if (!studentIds.includes(att.student_id)) studentIds.push(att.student_id);
       });
+
+      // Skupinové/párové úkoly: pokus je sdílený, přiřadíme ho všem členům skupiny
+      const groupNameByStudent: Record<string, string> = {};
+      if (assignment.groupMode !== "individual") {
+        const { data: gData } = await supabase
+          .from("assignment_groups" as any)
+          .select("id, name")
+          .eq("assignment_id", assignmentId)
+          .order("name");
+        const groupRows = ((gData as any[]) || []);
+        if (groupRows.length > 0) {
+          const { data: mData } = await supabase
+            .from("assignment_group_members" as any)
+            .select("group_id, student_id")
+            .in("group_id", groupRows.map((g: any) => g.id));
+          const memberRows = ((mData as any[]) || []);
+          const attemptsByGroup: Record<string, any[]> = {};
+          ((attempts as any[]) || []).forEach((att: any) => {
+            if (!att.group_id) return;
+            if (!attemptsByGroup[att.group_id]) attemptsByGroup[att.group_id] = [];
+            attemptsByGroup[att.group_id].push(att);
+          });
+          memberRows.forEach((m: any) => {
+            const g = groupRows.find((x: any) => x.id === m.group_id);
+            groupNameByStudent[m.student_id] = g?.name ?? "Skupina";
+            if (!studentIds.includes(m.student_id)) studentIds.push(m.student_id);
+            const shared = attemptsByGroup[m.group_id] || [];
+            if (shared.length > 0) attemptsByStudent[m.student_id] = shared;
+          });
+        }
+      }
+
 
       if (studentIds.length === 0) { setStudents([]); setDetailLoading(false); return; }
 
