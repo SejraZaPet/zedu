@@ -269,17 +269,23 @@ const LessonPage = () => {
               </div>
 
               {!isTeacherOrAdmin && blocks.length > 0 && (
-                <div className="mt-10 pt-8 border-t border-border flex justify-center">
+                <div className="mt-10 pt-8 border-t border-border flex flex-col items-center gap-2">
                   <Button
                     onClick={() => {
                       trackLessonComplete();
                       window.history.back();
                     }}
+                    disabled={!allRequiredDone}
                     variant="hero"
                     className="gap-2"
                   >
                     ✓ Označit lekci jako dokončenou
                   </Button>
+                  {!allRequiredDone && (
+                    <p className="text-sm text-muted-foreground text-center">
+                      Nejdřív dokonči povinné aktivity ({completedRequiredCount}/{requiredActivityIndices.length} hotovo)
+                    </p>
+                  )}
                 </div>
               )}
 
