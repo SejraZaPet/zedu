@@ -263,6 +263,33 @@ export default function StudentSubjectClass() {
   const pastLessons = occurrences.filter((e) => e.end < now).slice(-15).reverse();
   const upcomingLessons = occurrences.filter((e) => e.start >= now).slice(0, 15);
 
+  // Témata a materiály k proběhlým hodinám (zapisuje učitel v této Výuce).
+  useEffect(() => {
+    if (!user || !classId || !subjectLabel) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("lesson_topics")
+        .select("lesson_date, topic, materials")
+        .eq("class_id", classId)
+        .eq("subject", subjectLabel);
+      if (cancelled) return;
+      const map: Record<string, StudentLessonTopic> = {};
+      for (const r of data ?? []) {
+        if (map[r.lesson_date]) continue;
+        map[r.lesson_date] = {
+          topic: r.topic ?? null,
+          materials: Array.isArray(r.materials) ? (r.materials as unknown as AssignmentMaterial[]) : [],
+        };
+      }
+      setLessonTopics(map);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user, classId, subjectLabel]);
+
+
   // Compute student's own results
   const attemptByAssignment = useMemo(() => {
     const m = new Map<string, AttemptRow>();
