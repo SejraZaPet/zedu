@@ -1606,7 +1606,7 @@ export default function TeacherSubjectClass() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => navigate(`/ucitel/ulohy`)}
+                          onClick={() => navigate(`/ucitel/ulohy?detail=${a.id}&return_to=${encodeURIComponent(location.pathname)}`)}
                         >
                           Detail
                         </Button>

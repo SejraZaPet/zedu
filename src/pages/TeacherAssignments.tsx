@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -149,6 +149,20 @@ const TeacherAssignments = () => {
   useEffect(() => {
     loadData();
   }, []);
+
+  // Pokud URL obsahuje ?detail=<id> (např. z Předmět/Třída), otevři detail úlohy jednou.
+  const detailParam = searchParams.get("detail");
+  const detailOpenedRef = useRef(false);
+  useEffect(() => {
+    if (detailOpenedRef.current) return;
+    if (!detailParam) return;
+    if (assignments.length === 0) return;
+    const found = assignments.find((a) => a.id === detailParam);
+    if (found) {
+      detailOpenedRef.current = true;
+      setDetailAssignment(found);
+    }
+  }, [detailParam, assignments]);
 
   // (Old AI inline generator removed — worksheets are now first-class entities.)
 
@@ -1473,7 +1487,13 @@ const TeacherAssignments = () => {
         <AssignmentDetailDialog
           assignment={detailAssignment}
           open={!!detailAssignment}
-          onOpenChange={(o) => { if (!o) setDetailAssignment(null); }}
+          onOpenChange={(o) => {
+            if (!o) {
+              setDetailAssignment(null);
+              const returnTo = searchParams.get("return_to");
+              if (returnTo) navigate(decodeURIComponent(returnTo));
+            }
+          }}
         />
 
         <Dialog open={!!resultsAssignmentId} onOpenChange={(o) => { if (!o) setResultsAssignmentId(null); }}>
