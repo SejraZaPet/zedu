@@ -160,6 +160,27 @@ export default function StudentSubjectClass() {
         return;
       }
 
+      // Spočítej subject_id před dotazem na assignments, ať lze filtrovat úkoly podle předmětu.
+      let subjectIdKey: string | null = null;
+      if (UUID_RE.test(rawSubjectParam)) {
+        subjectIdKey = rawSubjectParam;
+      } else {
+        const { data: subjRow } = await supabase
+          .from("subjects" as any)
+          .select("id")
+          .ilike("name", rawSubjectParam)
+          .maybeSingle();
+        subjectIdKey = ((subjRow as any)?.id as string) ?? null;
+      }
+
+      let assignQuery = supabase
+        .from("assignments")
+        .select("id, title, description, status, deadline, created_at, class_id")
+        .eq("class_id", classId)
+        .eq("status", "published");
+      if (subjectIdKey) assignQuery = assignQuery.eq("subject_id", subjectIdKey);
+      assignQuery = assignQuery.order("created_at", { ascending: false });
+
       const [classRes, slotsRes, assignRes] = await Promise.all([
         supabase
           .from("classes")
@@ -170,12 +191,7 @@ export default function StudentSubjectClass() {
           .from("class_schedule_slots" as any)
           .select("*, subjects(name, color, abbreviation)")
           .eq("class_id", classId),
-        supabase
-          .from("assignments")
-          .select("id, title, description, status, deadline, created_at, class_id")
-          .eq("class_id", classId)
-          .eq("status", "published")
-          .order("created_at", { ascending: false }),
+        assignQuery,
       ]);
 
       if (cancelled) return;
@@ -211,9 +227,11 @@ export default function StudentSubjectClass() {
       setSlots(filtered);
 
       // Učebnice připojená k předmětu třídy / skupině (nejen do rozvrhu)
-      let subjectIdKey: string | null = UUID_RE.test(rawSubjectParam)
-        ? rawSubjectParam
-        : ((filtered.find((s: any) => s.subject_id) as any)?.subject_id ?? null);
+      // subjectIdKey bylo spočítáno před dotazem na assignments; případně doplň ze slotů.
+      if (!subjectIdKey) {
+        subjectIdKey =
+          (filtered.find((s: any) => s.subject_id) as any)?.subject_id ?? null;
+      }
       if (!subjectIdKey) {
         const { data: subjRow } = await supabase
           .from("subjects" as any)
