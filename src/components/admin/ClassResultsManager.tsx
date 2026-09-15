@@ -407,6 +407,13 @@ const ClassResultsManager = () => {
                 </div>
               )}
 
+              <Tabs defaultValue="by-student" className="flex flex-col overflow-hidden">
+                <TabsList>
+                  <TabsTrigger value="by-student">Podle studenta</TabsTrigger>
+                  <TabsTrigger value="by-lesson">Podle lekce</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="by-student" className="mt-3 overflow-hidden">
               {/* Students table */}
               <div className="overflow-y-auto border border-border rounded-md">
                 <Table>
