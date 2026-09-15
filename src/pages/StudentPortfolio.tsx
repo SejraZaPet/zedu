@@ -100,8 +100,33 @@ export default function StudentPortfolio() {
         {loading ? (
           <p className="text-center text-muted-foreground py-12">Načítám…</p>
         ) : (
-          <PortfolioTimeline items={items} canDelete onItemDeleted={refresh} initialSubject={initialSubject} />
+          <>
+            <div className="mb-4 flex gap-2">
+              <Button
+                size="sm"
+                variant={view === "timeline" ? "default" : "outline"}
+                className="gap-1.5"
+                onClick={() => setView("timeline")}
+              >
+                <Clock className="w-4 h-4" /> Časová osa
+              </Button>
+              <Button
+                size="sm"
+                variant={view === "book" ? "default" : "outline"}
+                className="gap-1.5"
+                onClick={() => setView("book")}
+              >
+                <NotebookPen className="w-4 h-4" /> Sešit
+              </Button>
+            </div>
+            {view === "timeline" ? (
+              <PortfolioTimeline items={items} canDelete onItemDeleted={refresh} initialSubject={initialSubject} />
+            ) : (
+              <PortfolioBookView items={items} canDelete onItemDeleted={refresh} initialSubject={initialSubject} />
+            )}
+          </>
         )}
+
       </main>
 
     </>
