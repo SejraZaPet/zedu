@@ -273,6 +273,15 @@ export default function TeacherSubjectClass() {
     let cancelled = false;
     setLoading(true);
     (async () => {
+      let assignQuery = supabase
+        .from("assignments")
+        .select("id, title, description, status, deadline, created_at")
+        .eq("teacher_id", user.id);
+      if (isGroup) assignQuery = assignQuery.eq("group_id", groupId);
+      else assignQuery = assignQuery.eq("class_id", classId);
+      if (resolvedSubjectId) assignQuery = assignQuery.eq("subject_id", resolvedSubjectId);
+      assignQuery = assignQuery.order("created_at", { ascending: false });
+
       const [classRes, slotsRes, plansRes, assignRes, membersRes] = await Promise.all([
         isGroup
           ? supabase.from("subject_groups").select("id, name, school_year, textbook_id, textbook_type").eq("id", groupId).maybeSingle()
@@ -291,19 +300,7 @@ export default function TeacherSubjectClass() {
           .select("id, title, subject, subject_id, created_at, updated_at, input_data")
           .eq("teacher_id", user.id)
           .order("updated_at", { ascending: false }),
-        isGroup
-          ? supabase
-              .from("assignments")
-              .select("id, title, description, status, deadline, created_at")
-              .eq("teacher_id", user.id)
-              .eq("group_id", groupId)
-              .order("created_at", { ascending: false })
-          : supabase
-              .from("assignments")
-              .select("id, title, description, status, deadline, created_at")
-              .eq("teacher_id", user.id)
-              .eq("class_id", classId)
-              .order("created_at", { ascending: false }),
+        assignQuery,
         isGroup
           ? supabase.from("subject_group_members").select("student_id").eq("group_id", groupId)
           : supabase
