@@ -55,8 +55,11 @@ interface CompletionRow {
   completed_at: string | null;
 }
 
+const norm = (s: string | null | undefined) => (s ?? "").trim().toLowerCase();
+
 const ClassResultsManager = () => {
   const { toast } = useToast();
+  const { user, role } = useAuth();
   const [loading, setLoading] = useState(true);
   const [classes, setClasses] = useState<ClassOverview[]>([]);
   const [search, setSearch] = useState("");
@@ -68,6 +71,31 @@ const ClassResultsManager = () => {
   const [lessonTitles, setLessonTitles] = useState<Record<string, string>>({});
   const [openLessonId, setOpenLessonId] = useState<string | null>(null);
   const [openStudentKey, setOpenStudentKey] = useState<string | null>(null);
+
+  /** Úroveň přístupu: elevated = admin / školní admin, homeroom = třídní učitel */
+  const isElevated = role === "admin" || role === "school_admin";
+  const [homeroomClassIds, setHomeroomClassIds] = useState<Set<string>>(new Set());
+  /** class_id -> předměty, ke kterým je učitel v té třídě připojený (podle rozvrhu) */
+  const [mySubjectsByClass, setMySubjectsByClass] = useState<Map<string, Set<string>>>(new Map());
+
+  const hasFullAccess = (classId: string) => isElevated || homeroomClassIds.has(classId);
+
+  const fetchAccess = async () => {
+    if (!user) return;
+    const [{ data: homeroomRows }, { data: mySlots }] = await Promise.all([
+      supabase.from("class_teachers").select("class_id").eq("user_id", user.id).eq("role", "homeroom"),
+      supabase.from("class_schedule_slots").select("class_id, subject_label").eq("created_by", user.id),
+    ]);
+    setHomeroomClassIds(new Set((homeroomRows ?? []).map((r: any) => r.class_id)));
+    const map = new Map<string, Set<string>>();
+    (mySlots ?? []).forEach((s: any) => {
+      if (!s.class_id) return;
+      if (!map.has(s.class_id)) map.set(s.class_id, new Set());
+      if (s.subject_label) map.get(s.class_id)!.add(norm(s.subject_label));
+    });
+    setMySubjectsByClass(map);
+  };
+
 
   const fetchOverview = async () => {
     setLoading(true);
