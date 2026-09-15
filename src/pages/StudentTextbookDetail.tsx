@@ -278,6 +278,29 @@ const StudentTextbookDetail = () => {
     fetchData();
   }, [textbookId]);
 
+  // Načti dříve dokončené aktivity otevřené lekce (i z minulých návštěv)
+  useEffect(() => {
+    const loadPrevious = async () => {
+      if (!selectedLesson?.id) return;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from("student_activity_results")
+        .select("activity_index")
+        .eq("user_id", user.id)
+        .eq("lesson_id", selectedLesson.id);
+      if (data && data.length > 0) {
+        setCompletedActivityIndices(prev => {
+          const next = new Set(prev);
+          data.forEach((row: any) => next.add(row.activity_index));
+          return next;
+        });
+      }
+    };
+    loadPrevious();
+  }, [selectedLesson?.id]);
+
+
   const handleMarkComplete = async (lessonId: string) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
@@ -357,24 +380,21 @@ const StudentTextbookDetail = () => {
                 Lekce dokončena
               </div>
             ) : (
-              <Button
-                onClick={() => {
-                  if (!canComplete) {
-                    const remaining = requiredActivityIndices.filter(i => !completedActivityIndices.has(i)).length;
-                    toast({
-                      title: "Nejdříve dokonči povinné aktivity",
-                      description: `Zbývá ti ${remaining} povinná ${remaining === 1 ? "aktivita" : remaining < 5 ? "aktivity" : "aktivit"}. Jsou označeny fialovým rámečkem v lekci.`,
-                      variant: "destructive",
-                    });
-                    return;
-                  }
-                  handleMarkComplete(selectedLesson.id);
-                }}
-                className="gap-2"
-              >
-                <CheckCircle2 className="w-4 h-4" />
-                Označit jako dokončené
-              </Button>
+              <>
+                <Button
+                  onClick={() => handleMarkComplete(selectedLesson.id)}
+                  disabled={!canComplete}
+                  className="gap-2"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  Označit jako dokončené
+                </Button>
+                {!canComplete && (
+                  <p className="text-sm text-muted-foreground text-center">
+                    Nejdřív dokonči povinné aktivity ({completedRequiredCount}/{requiredActivityIndices.length} hotovo). Jsou označeny fialovým rámečkem v lekci.
+                  </p>
+                )}
+              </>
             )}
           </div>
         </main>

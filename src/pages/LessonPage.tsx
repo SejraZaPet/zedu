@@ -140,14 +140,46 @@ const LessonPage = () => {
 
   const blocks: Block[] = (lesson?.blocks as unknown as Block[]) ?? [];
   const { trackActivity, trackLessonComplete } = useActivityTracking(lesson?.id);
+  const [completedActivityIndices, setCompletedActivityIndices] = useState<Set<number>>(new Set());
+
+  // Načti dříve dokončené aktivity, aby žák nemusel opakovat práci z minulé návštěvy
+  useEffect(() => {
+    const loadPrevious = async () => {
+      if (!lesson?.id) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+      const { data } = await supabase
+        .from("student_activity_results")
+        .select("activity_index")
+        .eq("user_id", session.user.id)
+        .eq("lesson_id", lesson.id);
+      if (data && data.length > 0) {
+        setCompletedActivityIndices((prev) => {
+          const next = new Set(prev);
+          data.forEach((row: any) => next.add(row.activity_index));
+          return next;
+        });
+      }
+    };
+    loadPrevious();
+  }, [lesson?.id]);
 
   // Track activity completion
   const handleActivityComplete = useCallback(
     (activityIndex: number, activityType: string, score: number, maxScore: number) => {
+      setCompletedActivityIndices((prev) => new Set([...prev, activityIndex]));
       trackActivity(activityIndex, activityType, score, maxScore);
     },
     [trackActivity]
   );
+
+  const visibleBlocks = blocks.filter((b) => b.visible !== false);
+  const requiredActivityIndices = visibleBlocks
+    .map((b, idx) => ({ b, idx }))
+    .filter(({ b }) => b.type === "activity" && (b.props as any)?.required === true)
+    .map(({ idx }) => idx);
+  const completedRequiredCount = requiredActivityIndices.filter((i) => completedActivityIndices.has(i)).length;
+  const allRequiredDone = completedRequiredCount >= requiredActivityIndices.length;
 
   const handleSaved = () => {
     // Refresh lesson data without full reload
@@ -237,17 +269,23 @@ const LessonPage = () => {
               </div>
 
               {!isTeacherOrAdmin && blocks.length > 0 && (
-                <div className="mt-10 pt-8 border-t border-border flex justify-center">
+                <div className="mt-10 pt-8 border-t border-border flex flex-col items-center gap-2">
                   <Button
                     onClick={() => {
                       trackLessonComplete();
                       window.history.back();
                     }}
+                    disabled={!allRequiredDone}
                     variant="hero"
                     className="gap-2"
                   >
                     ✓ Označit lekci jako dokončenou
                   </Button>
+                  {!allRequiredDone && (
+                    <p className="text-sm text-muted-foreground text-center">
+                      Nejdřív dokonči povinné aktivity ({completedRequiredCount}/{requiredActivityIndices.length} hotovo)
+                    </p>
+                  )}
                 </div>
               )}
 
