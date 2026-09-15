@@ -522,6 +522,10 @@ export type Database = {
           student_id: string
           submission_note: string | null
           submitted_at: string | null
+          teacher_feedback_at: string | null
+          teacher_feedback_by: string | null
+          teacher_feedback_emoji: string | null
+          teacher_feedback_text: string | null
         }
         Insert: {
           answers?: Json
@@ -538,6 +542,10 @@ export type Database = {
           student_id: string
           submission_note?: string | null
           submitted_at?: string | null
+          teacher_feedback_at?: string | null
+          teacher_feedback_by?: string | null
+          teacher_feedback_emoji?: string | null
+          teacher_feedback_text?: string | null
         }
         Update: {
           answers?: Json
@@ -554,6 +562,10 @@ export type Database = {
           student_id?: string
           submission_note?: string | null
           submitted_at?: string | null
+          teacher_feedback_at?: string | null
+          teacher_feedback_by?: string | null
+          teacher_feedback_emoji?: string | null
+          teacher_feedback_text?: string | null
         }
         Relationships: [
           {
