@@ -1,5 +1,5 @@
 import { BetaBadge } from "@/components/common/BetaBadge";
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -21,7 +21,18 @@ import {
   Lock,
   Pencil,
   Star,
+  ChevronRight,
+  ChevronDown,
+  Check,
 } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import LessonReflectionDialog from "@/components/lessons/LessonReflectionDialog";
 import TeachingUnitCollaboratorsCard from "@/components/teacher/TeachingUnitCollaboratorsCard";
 import UnitCurriculumPlansCard from "@/components/teaching/UnitCurriculumPlansCard";
@@ -68,6 +79,23 @@ interface ClassRow {
   field_of_study: string;
   year: number | null;
 }
+
+interface LessonActivityRow {
+  user_id: string;
+  lesson_id: string | null;
+  activity_index: number;
+  activity_type: string;
+  score: number;
+  max_score: number;
+  completed_at: string | null;
+}
+
+interface LessonCompletionRow {
+  user_id: string;
+  lesson_id: string | null;
+  completed_at: string | null;
+}
+
 
 interface ScheduleSlot {
   id: string;
@@ -546,6 +574,175 @@ export default function TeacherSubjectClass() {
     }
     return max > 0 ? Math.round((total / max) * 100) : null;
   }, [studentScores]);
+
+  // ---- Výsledky lekcí z propojené učebnice -------------------------------
+  const [lessonActs, setLessonActs] = useState<LessonActivityRow[]>([]);
+  const [lessonComps, setLessonComps] = useState<LessonCompletionRow[]>([]);
+  const [lessonTitles, setLessonTitles] = useState<Record<string, string>>({});
+  const [openLessonId, setOpenLessonId] = useState<string | null>(null);
+  const [openStudentKey, setOpenStudentKey] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const memberIds = members.map((m) => m.user_id);
+    if (!linkedTextbookId || memberIds.length === 0) {
+      setLessonActs([]);
+      setLessonComps([]);
+      setLessonTitles({});
+      return;
+    }
+    (async () => {
+      // 1) Učitelské lekce této učebnice
+      const { data: teacherLessons } = await supabase
+        .from("teacher_textbook_lessons")
+        .select("id, title")
+        .eq("textbook_id", linkedTextbookId);
+
+      // 2) Globální lekce navázané na tuto učebnici přes její subject slug
+      const { data: tb } = await supabase
+        .from("teacher_textbooks")
+        .select("title, subject")
+        .eq("id", linkedTextbookId)
+        .maybeSingle();
+
+      let globalLessons: { id: string; title: string }[] = [];
+      if (tb) {
+        const tbAny = tb as any;
+        const slugFromTitle = (tbAny.title || "")
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9]+/g, "_")
+          .replace(/^_|_$/g, "");
+        const subjectSlug = (tbAny.subject && tbAny.subject.trim()) || slugFromTitle;
+        const { data: topics } = await supabase
+          .from("textbook_topics")
+          .select("id")
+          .eq("subject", subjectSlug);
+        const topicIds = (topics ?? []).map((t: any) => t.id);
+        if (topicIds.length > 0) {
+          const { data: tas } = await supabase
+            .from("lesson_topic_assignments")
+            .select("lesson_id")
+            .in("topic_id", topicIds);
+          const globalIds = [...new Set((tas ?? []).map((a: any) => a.lesson_id).filter(Boolean))];
+          if (globalIds.length > 0) {
+            const { data: gl } = await supabase
+              .from("textbook_lessons")
+              .select("id, title")
+              .in("id", globalIds);
+            globalLessons = (gl ?? []) as { id: string; title: string }[];
+          }
+        }
+      }
+
+      const titles: Record<string, string> = {};
+      [...((teacherLessons ?? []) as any[]), ...globalLessons].forEach((l: any) => {
+        titles[l.id] = l.title;
+      });
+      const allowedIds = Object.keys(titles);
+      if (allowedIds.length === 0) {
+        if (!cancelled) {
+          setLessonActs([]);
+          setLessonComps([]);
+          setLessonTitles({});
+        }
+        return;
+      }
+
+      const [actsRes, compsRes] = await Promise.all([
+        supabase
+          .from("student_activity_results")
+          .select("user_id, lesson_id, activity_index, activity_type, score, max_score, completed_at")
+          .in("user_id", memberIds)
+          .in("lesson_id", allowedIds),
+        supabase
+          .from("student_lesson_completions")
+          .select("user_id, lesson_id, completed_at")
+          .in("user_id", memberIds)
+          .in("lesson_id", allowedIds),
+      ]);
+
+      if (cancelled) return;
+      setLessonTitles(titles);
+      setLessonActs((actsRes.data as LessonActivityRow[]) ?? []);
+      setLessonComps((compsRes.data as LessonCompletionRow[]) ?? []);
+      setOpenLessonId(null);
+      setOpenStudentKey(null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [linkedTextbookId, members]);
+
+  const lessonSummaries = useMemo(() => {
+    const map = new Map<
+      string,
+      {
+        lesson_id: string;
+        title: string;
+        completedUsers: Map<string, string | null>;
+        actsByUser: Map<string, LessonActivityRow[]>;
+        indexes: Set<number>;
+        totalScore: number;
+        totalMax: number;
+      }
+    >();
+
+    const ensure = (lessonId: string) => {
+      if (!map.has(lessonId)) {
+        map.set(lessonId, {
+          lesson_id: lessonId,
+          title: lessonTitles[lessonId] || "Neznámá lekce",
+          completedUsers: new Map(),
+          actsByUser: new Map(),
+          indexes: new Set(),
+          totalScore: 0,
+          totalMax: 0,
+        });
+      }
+      return map.get(lessonId)!;
+    };
+
+    lessonComps.forEach((c) => {
+      if (!c.lesson_id) return;
+      ensure(c.lesson_id).completedUsers.set(c.user_id, c.completed_at);
+    });
+
+    lessonActs.forEach((a) => {
+      if (!a.lesson_id) return;
+      const e = ensure(a.lesson_id);
+      const arr = e.actsByUser.get(a.user_id) ?? [];
+      arr.push(a);
+      e.actsByUser.set(a.user_id, arr);
+      e.indexes.add(a.activity_index);
+      e.totalScore += a.score;
+      e.totalMax += a.max_score;
+    });
+
+    return Array.from(map.values())
+      .map((e) => ({
+        ...e,
+        avg_success: e.totalMax > 0 ? Math.round((e.totalScore / e.totalMax) * 100) : 0,
+        activityCount: e.indexes.size,
+      }))
+      .sort((a, b) => a.title.localeCompare(b.title, "cs"));
+  }, [lessonActs, lessonComps, lessonTitles]);
+
+  const formatResultDate = (d: string | null) =>
+    d
+      ? new Date(d).toLocaleDateString("cs-CZ", {
+          day: "numeric",
+          month: "numeric",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : "–";
+
+  const successColor = (pct: number) =>
+    pct >= 80 ? "text-green-500" : pct >= 50 ? "text-yellow-500" : pct > 0 ? "text-red-500" : "text-muted-foreground";
+
 
   function openTextbook() {
     if (linkedTextbookId) {
@@ -1302,6 +1499,148 @@ export default function TeacherSubjectClass() {
                 </div>
               )}
             </Card>
+
+            {linkedTextbookId && (
+              <Card className="p-0 overflow-hidden">
+                <div className="px-4 py-3 border-b border-border bg-muted/30 text-sm font-medium">
+                  Výsledky lekcí
+                </div>
+                {lessonSummaries.length === 0 ? (
+                  <div className="p-6 text-center text-sm text-muted-foreground">
+                    Zatím žádné výsledky z lekcí propojené učebnice.
+                  </div>
+                ) : (
+                  <div className="p-3 space-y-2">
+                    {lessonSummaries.map((l) => {
+                      const total = members.length;
+                      const isOpen = openLessonId === l.lesson_id;
+                      return (
+                        <div key={l.lesson_id} className="border border-border rounded-md">
+                          <button
+                            type="button"
+                            className="w-full flex items-start gap-2 p-3 text-left hover:bg-muted/50 rounded-md"
+                            onClick={() => {
+                              setOpenLessonId(isOpen ? null : l.lesson_id);
+                              setOpenStudentKey(null);
+                            }}
+                          >
+                            {isOpen ? (
+                              <ChevronDown className="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" />
+                            ) : (
+                              <ChevronRight className="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium">{l.title}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {l.completedUsers.size}/{total} dokončilo učebnici
+                                {" · "}
+                                {l.actsByUser.size}/{total} udělalo aktivity
+                              </p>
+                            </div>
+                            <span className={`text-sm font-medium ${successColor(l.avg_success)}`}>
+                              {l.avg_success > 0 ? `${l.avg_success} %` : "–"}
+                            </span>
+                          </button>
+
+                          {isOpen && (
+                            <div className="border-t border-border overflow-x-auto">
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
+                                    <TableHead>Žák</TableHead>
+                                    <TableHead className="text-center">Dokončil učebnici</TableHead>
+                                    <TableHead className="text-center">Aktivity</TableHead>
+                                    <TableHead className="text-center">Úspěšnost</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {members.map((m) => {
+                                    const acts = (l.actsByUser.get(m.user_id) ?? [])
+                                      .slice()
+                                      .sort((a, b) => a.activity_index - b.activity_index);
+                                    const done = l.completedUsers.has(m.user_id);
+                                    const doneAt = l.completedUsers.get(m.user_id) ?? null;
+                                    const maxSum = acts.reduce((sum, a) => sum + a.max_score, 0);
+                                    const scoreSum = acts.reduce((sum, a) => sum + a.score, 0);
+                                    const pct = maxSum > 0 ? Math.round((scoreSum / maxSum) * 100) : 0;
+                                    const key = `${l.lesson_id}-${m.user_id}`;
+                                    const rowOpen = openStudentKey === key;
+                                    const name = m.profiles
+                                      ? `${m.profiles.first_name} ${m.profiles.last_name}`.trim()
+                                      : "Žák";
+                                    return (
+                                      <Fragment key={key}>
+                                        <TableRow
+                                          className="cursor-pointer hover:bg-muted/50"
+                                          onClick={() => setOpenStudentKey(rowOpen ? null : key)}
+                                        >
+                                          <TableCell>
+                                            <p className="text-sm font-medium">{name || "Žák"}</p>
+                                          </TableCell>
+                                          <TableCell className="text-center">
+                                            {done ? (
+                                              <span className="inline-flex items-center gap-1 text-xs text-green-500 whitespace-nowrap">
+                                                <Check className="w-3 h-3" /> {formatResultDate(doneAt)}
+                                              </span>
+                                            ) : (
+                                              <span className="text-sm text-muted-foreground">–</span>
+                                            )}
+                                          </TableCell>
+                                          <TableCell className="text-center text-sm text-muted-foreground">
+                                            {acts.length}/{l.activityCount || 0}
+                                          </TableCell>
+                                          <TableCell className="text-center">
+                                            <span className={`text-sm font-medium ${successColor(pct)}`}>
+                                              {pct > 0 ? `${pct} %` : "–"}
+                                            </span>
+                                          </TableCell>
+                                        </TableRow>
+                                        {rowOpen && acts.length > 0 && (
+                                          <TableRow key={`${key}-detail`}>
+                                            <TableCell colSpan={4} className="bg-muted/30">
+                                              <ul className="space-y-1">
+                                                {acts.map((a) => (
+                                                  <li
+                                                    key={`${key}-${a.activity_index}`}
+                                                    className="flex flex-wrap items-center gap-2 text-xs"
+                                                  >
+                                                    <Badge variant="secondary" className="text-xs">
+                                                      <Clock className="w-3 h-3 mr-1" />
+                                                      {a.activity_type}
+                                                    </Badge>
+                                                    <span className="text-muted-foreground">
+                                                      {a.score}/{a.max_score}
+                                                    </span>
+                                                    <span className="text-muted-foreground">
+                                                      {formatResultDate(a.completed_at)}
+                                                    </span>
+                                                  </li>
+                                                ))}
+                                              </ul>
+                                            </TableCell>
+                                          </TableRow>
+                                        )}
+                                      </Fragment>
+                                    );
+                                  })}
+                                  {members.length === 0 && (
+                                    <TableRow>
+                                      <TableCell colSpan={4} className="text-center text-muted-foreground py-6">
+                                        Ve třídě zatím nejsou žáci.
+                                      </TableCell>
+                                    </TableRow>
+                                  )}
+                                </TableBody>
+                              </Table>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </Card>
+            )}
           </TabsContent>
         </Tabs>
       </main>
