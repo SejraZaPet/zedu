@@ -491,7 +491,10 @@ export default function StudentSubjectClass() {
               </p>
             ) : (
               <div className="space-y-2">
-                {pastLessons.map((e) => (
+                {pastLessons.map((e) => {
+                  const dateKey = format(e.start, "yyyy-MM-dd");
+                  const topicRow = lessonTopics[dateKey];
+                  return (
                   <Card key={e.id} className="p-3">
                     <div className="flex items-center justify-between gap-2">
                       <div className="min-w-0">
@@ -499,21 +502,33 @@ export default function StudentSubjectClass() {
                           {format(e.start, "EEE d. M.", { locale: cs })} ·{" "}
                           {formatTime(e.start)}
                         </div>
+                        {topicRow?.topic && (
+                          <div className="text-xs text-muted-foreground truncate">
+                            {topicRow.topic}
+                          </div>
+                        )}
                         {e.room && (
                           <div className="text-xs text-muted-foreground truncate">
                             {e.room}
                           </div>
                         )}
                       </div>
-                      {linkedTextbookId && (
-                        <Button size="sm" variant="ghost" onClick={openTextbook}>
-                          <BookOpen className="h-3.5 w-3.5 mr-1" />
-                          Materiál
+                      {!!topicRow?.materials?.length && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setMaterialsDate(dateKey)}
+                          title="Materiály k hodině"
+                        >
+                          <Paperclip className="h-3.5 w-3.5" />
+                          <span className="ml-1 text-[10px]">{topicRow.materials.length}</span>
                         </Button>
                       )}
                     </div>
                   </Card>
-                ))}
+                  );
+                })}
+
               </div>
             )}
           </TabsContent>
