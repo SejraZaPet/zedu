@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -1473,7 +1473,13 @@ const TeacherAssignments = () => {
         <AssignmentDetailDialog
           assignment={detailAssignment}
           open={!!detailAssignment}
-          onOpenChange={(o) => { if (!o) setDetailAssignment(null); }}
+          onOpenChange={(o) => {
+            if (!o) {
+              setDetailAssignment(null);
+              const returnTo = searchParams.get("return_to");
+              if (returnTo) navigate(decodeURIComponent(returnTo));
+            }
+          }}
         />
 
         <Dialog open={!!resultsAssignmentId} onOpenChange={(o) => { if (!o) setResultsAssignmentId(null); }}>
