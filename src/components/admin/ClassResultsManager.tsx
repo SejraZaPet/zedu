@@ -453,6 +453,134 @@ const ClassResultsManager = () => {
                   </TableBody>
                 </Table>
               </div>
+                </TabsContent>
+
+                <TabsContent value="by-lesson" className="mt-3 overflow-y-auto space-y-2">
+                  {lessonSummaries.length === 0 && (
+                    <p className="text-sm text-muted-foreground py-8 text-center">
+                      Žádné výsledky lekcí pro tuto třídu.
+                    </p>
+                  )}
+                  {lessonSummaries.map((l) => {
+                    const total = selectedClass?.student_count ?? 0;
+                    const isOpen = openLessonId === l.lesson_id;
+                    return (
+                      <div key={l.lesson_id} className="border border-border rounded-md">
+                        <button
+                          type="button"
+                          className="w-full flex items-start gap-2 p-3 text-left hover:bg-muted/50 rounded-md"
+                          onClick={() => { setOpenLessonId(isOpen ? null : l.lesson_id); setOpenStudentKey(null); }}
+                        >
+                          {isOpen
+                            ? <ChevronDown className="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" />
+                            : <ChevronRight className="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" />}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium">{l.title}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {l.completedUsers.size}/{total} dokončilo učebnici
+                              {" · "}
+                              {l.actsByUser.size}/{total} udělalo aktivity
+                            </p>
+                          </div>
+                          <span className={`text-sm font-medium ${successColor(l.avg_success)}`}>
+                            {l.avg_success > 0 ? `${l.avg_success} %` : "–"}
+                          </span>
+                        </button>
+
+                        {isOpen && (
+                          <div className="border-t border-border">
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead>Student</TableHead>
+                                  <TableHead className="text-center">Dokončil učebnici</TableHead>
+                                  <TableHead className="text-center">Aktivity</TableHead>
+                                  <TableHead className="text-center">Úspěšnost</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {students.map((s) => {
+                                  const acts = (l.actsByUser.get(s.id) ?? [])
+                                    .slice()
+                                    .sort((a, b) => a.activity_index - b.activity_index);
+                                  const done = l.completedUsers.has(s.id);
+                                  const doneAt = l.completedUsers.get(s.id) ?? null;
+                                  const maxSum = acts.reduce((sum, a) => sum + a.max_score, 0);
+                                  const scoreSum = acts.reduce((sum, a) => sum + a.score, 0);
+                                  const pct = maxSum > 0 ? Math.round((scoreSum / maxSum) * 100) : 0;
+                                  const key = `${l.lesson_id}-${s.id}`;
+                                  const rowOpen = openStudentKey === key;
+                                  return (
+                                    <>
+                                      <TableRow
+                                        key={key}
+                                        className="cursor-pointer hover:bg-muted/50"
+                                        onClick={() => setOpenStudentKey(rowOpen ? null : key)}
+                                      >
+                                        <TableCell>
+                                          <p className="text-sm font-medium">{s.first_name} {s.last_name}</p>
+                                        </TableCell>
+                                        <TableCell className="text-center">
+                                          {done ? (
+                                            <span className="inline-flex items-center gap-1 text-xs text-green-400 whitespace-nowrap">
+                                              <Check className="w-3 h-3" /> {formatDate(doneAt)}
+                                            </span>
+                                          ) : (
+                                            <span className="text-sm text-muted-foreground">–</span>
+                                          )}
+                                        </TableCell>
+                                        <TableCell className="text-center text-sm text-muted-foreground">
+                                          {acts.length}/{l.activityCount || 0}
+                                        </TableCell>
+                                        <TableCell className="text-center">
+                                          <span className={`text-sm font-medium ${successColor(pct)}`}>
+                                            {pct > 0 ? `${pct} %` : "–"}
+                                          </span>
+                                        </TableCell>
+                                      </TableRow>
+                                      {rowOpen && acts.length > 0 && (
+                                        <TableRow key={`${key}-detail`}>
+                                          <TableCell colSpan={4} className="bg-muted/30">
+                                            <ul className="space-y-1">
+                                              {acts.map((a) => (
+                                                <li
+                                                  key={`${key}-${a.activity_index}`}
+                                                  className="flex flex-wrap items-center gap-2 text-xs"
+                                                >
+                                                  <Badge variant="secondary" className="text-xs">
+                                                    <Clock className="w-3 h-3 mr-1" />{a.activity_type}
+                                                  </Badge>
+                                                  <span className="text-muted-foreground">
+                                                    {a.score}/{a.max_score}
+                                                  </span>
+                                                  <span className="text-muted-foreground">
+                                                    {formatDate(a.completed_at)}
+                                                  </span>
+                                                </li>
+                                              ))}
+                                            </ul>
+                                          </TableCell>
+                                        </TableRow>
+                                      )}
+                                    </>
+                                  );
+                                })}
+                                {students.length === 0 && (
+                                  <TableRow>
+                                    <TableCell colSpan={4} className="text-center text-muted-foreground py-6">
+                                      Žádní studenti v této třídě.
+                                    </TableCell>
+                                  </TableRow>
+                                )}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </TabsContent>
+              </Tabs>
             </div>
           )}
         </DialogContent>
