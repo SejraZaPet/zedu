@@ -127,16 +127,68 @@ const StudentAssignmentPlayer = () => {
         toast({ title: "Termín vypršel", description: "Tato úloha již nelze odevzdat.", variant: "destructive" });
       }
 
+      // Skupinový / párový úkol: pokus je sdílený celou skupinou
+      let groupId: string | null = null;
+      const isGroupAssignment = (assignmentData.group_mode ?? "individual") !== "individual";
+      if (isGroupAssignment) {
+        // RLS vrátí žákovi jen skupinu, ve které je členem.
+        const { data: gData } = await supabase
+          .from("assignment_groups" as any)
+          .select("id, name")
+          .eq("assignment_id", assignmentId);
+        const myG = ((gData as any[]) || [])[0];
+        if (!myG) {
+          setNoGroup(true);
+          setLoading(false);
+          return;
+        }
+        groupId = myG.id as string;
+        setMyGroup({ id: myG.id, name: myG.name });
+
+        const { data: mData } = await supabase
+          .from("assignment_group_members" as any)
+          .select("student_id")
+          .eq("group_id", groupId);
+        const memberIds = ((mData as any[]) || []).map((m: any) => m.student_id as string);
+        if (memberIds.length > 0) {
+          const { data: profs } = await supabase
+            .from("profiles")
+            .select("id, first_name, last_name")
+            .in("id", memberIds);
+          setGroupMemberNames(
+            ((profs as any[]) || []).map(
+              (p: any) => `${p.first_name ?? ""} ${p.last_name ?? ""}`.trim() || "Spolužák",
+            ),
+          );
+        }
+      }
+
       // Load or create attempt
-      const { data: attempts } = await supabase
+      let attemptQuery = supabase
         .from("assignment_attempts" as any)
         .select("*")
-        .eq("assignment_id", assignmentId)
-        .eq("student_id", user.id)
-        .order("attempt_number", { ascending: false });
+        .eq("assignment_id", assignmentId);
+      attemptQuery = groupId
+        ? attemptQuery.eq("group_id", groupId)
+        : attemptQuery.eq("student_id", user.id);
+      const { data: attempts } = await attemptQuery.order("attempt_number", { ascending: false });
 
       const existingAttempts = (attempts as any[] || []);
       const inProgress = existingAttempts.find((a: any) => a.status === "in_progress");
+
+      // Kdo naposledy upravoval sdílený pokus
+      const editedSource = inProgress || existingAttempts[0];
+      if (isGroupAssignment && editedSource?.last_edited_by && editedSource?.last_edited_at) {
+        const { data: ed } = await supabase
+          .from("profiles")
+          .select("first_name, last_name")
+          .eq("id", editedSource.last_edited_by)
+          .maybeSingle();
+        setLastEdited({
+          name: ed ? `${(ed as any).first_name ?? ""} ${(ed as any).last_name ?? ""}`.trim() || "Spolužák" : "Spolužák",
+          at: editedSource.last_edited_at,
+        });
+      }
 
       if (inProgress) {
         // Resume existing attempt
@@ -154,10 +206,13 @@ const StudentAssignmentPlayer = () => {
           .insert({
             assignment_id: assignmentId,
             student_id: user.id,
+            group_id: groupId,
             attempt_number: newAttemptNum,
             status: "in_progress",
             answers: {},
             progress: { currentIndex: 0, completed: [] },
+            last_edited_by: user.id,
+            last_edited_at: new Date().toISOString(),
           } as any)
           .select()
           .single();
