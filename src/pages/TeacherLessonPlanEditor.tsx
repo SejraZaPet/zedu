@@ -36,6 +36,8 @@ import {
   School,
   Lightbulb,
   Wand2,
+  Pencil,
+  Printer,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -148,6 +150,11 @@ export default function TeacherLessonPlanEditor() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
+  const returnTo = searchParams.get("return_to");
+  const isViewMode = id !== "novy" && searchParams.get("edit") !== "1";
+  function handleBack() {
+    navigate(returnTo ? decodeURIComponent(returnTo) : "/ucitel/plany-hodin");
+  }
   const { user, loading: authLoading } = useAuth();
   const { subjects } = useTeacherSubjects();
 
@@ -970,6 +977,113 @@ export default function TeacherLessonPlanEditor() {
     timeMin: parseInt(phases[p.key].timeMin, 10) || 0,
   }));
 
+  // ===== Read-only náhled plánu =====
+  if (isViewMode) {
+    const className = teacherClasses.find((c) => c.id === classId)?.name;
+    const [startT, endT] = (linkedTime || "").split("-");
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <SiteHeader />
+        <div aria-hidden className="h-[70px] shrink-0" />
+        <main className="flex-1 container mx-auto px-4 pt-8 pb-12 max-w-4xl">
+          <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
+            <Button variant="ghost" size="sm" onClick={handleBack} className="shrink-0">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Zpět
+            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={() => handleExportPdf("detailed")}>
+                <Printer className="w-4 h-4 mr-2" />
+                Tisk
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() =>
+                  navigate(
+                    `/ucitel/plany-hodin/${id}?edit=1${returnTo ? `&return_to=${encodeURIComponent(returnTo)}` : ""}`,
+                  )
+                }
+              >
+                <Pencil className="w-4 h-4 mr-2" />
+                Upravit
+              </Button>
+            </div>
+          </div>
+
+          <div className="bg-card border border-border rounded-xl p-5 mb-6 space-y-3">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="font-heading text-2xl font-bold">{title || "Plán hodiny"}</h1>
+              <AiContentBadge aiGenerated={aiMeta.aiGenerated} aiModifiedAt={aiMeta.aiModifiedAt} />
+            </div>
+            <div className="flex items-center gap-2 flex-wrap text-sm text-muted-foreground">
+              {subject && <Badge variant="outline">{subject}</Badge>}
+              {className && <Badge variant="outline">{className}</Badge>}
+              {(linkedDate || startT) && (
+                <span className="inline-flex items-center gap-1.5">
+                  <CalendarDays className="w-4 h-4" />
+                  {linkedDate ? format(new Date(linkedDate), "d. M. yyyy", { locale: cs }) : ""}
+                  {startT ? ` ${startT}${endT ? `–${endT}` : ""}` : ""}
+                </span>
+              )}
+              <span className="inline-flex items-center gap-1.5">
+                <Clock className="w-4 h-4" />
+                Celkem: {totalMin} min
+              </span>
+            </div>
+            {description && (
+              <p className="whitespace-pre-wrap text-sm text-muted-foreground">{description}</p>
+            )}
+          </div>
+
+          <div className="space-y-4">
+            {PHASES.map((p) => {
+              const v = phases[p.key];
+              const hasContent = v?.timeMin || v?.description || (v?.activities?.length ?? 0) > 0;
+              if (!hasContent) return null;
+              return (
+                <div key={p.key} className="bg-card border border-border rounded-xl p-5 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <h2 className="font-semibold">{p.title}</h2>
+                    {v?.timeMin && (
+                      <span className="text-xs text-muted-foreground inline-flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5" />
+                        {v.timeMin} min
+                      </span>
+                    )}
+                  </div>
+                  {v?.description && (
+                    <p className="whitespace-pre-wrap text-sm">{v.description}</p>
+                  )}
+                  {(v?.activities?.length ?? 0) > 0 && (
+                    <ul className="space-y-1 pt-1">
+                      {v!.activities!.map((a, i) => (
+                        <li key={i} className="flex items-center gap-2 text-sm">
+                          <Badge variant="secondary" className="text-[10px]">
+                            {ACTIVITY_META[a.kind]?.label ?? a.kind}
+                          </Badge>
+                          <span>{a.title}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              );
+            })}
+            {PHASES.every((p) => {
+              const v = phases[p.key];
+              return !(v?.timeMin || v?.description || (v?.activities?.length ?? 0) > 0);
+            }) && (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                Tento plán zatím nemá vyplněné žádné fáze.
+              </p>
+            )}
+          </div>
+        </main>
+        <SiteFooter />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <SiteHeader />
@@ -980,7 +1094,7 @@ export default function TeacherLessonPlanEditor() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate("/ucitel/plany-hodin")}
+            onClick={handleBack}
             className="shrink-0"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />

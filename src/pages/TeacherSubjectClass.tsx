@@ -1,6 +1,6 @@
 import { BetaBadge } from "@/components/common/BetaBadge";
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import {
@@ -156,6 +156,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 export default function TeacherSubjectClass() {
   const { subjectId = "", classId = "", groupId = "" } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
   const { subjects } = useTeacherSubjects();
@@ -548,7 +549,7 @@ export default function TeacherSubjectClass() {
 
   function openTextbook() {
     if (linkedTextbookId) {
-      navigate(`/ucitel/ucebnice/${linkedTextbookId}`);
+      navigate(`/ucitel/ucebnice/${linkedTextbookId}?return_to=${encodeURIComponent(location.pathname)}`);
     } else {
       openLinkDialog();
     }
@@ -964,7 +965,7 @@ export default function TeacherSubjectClass() {
                             </div>
                             <div className="flex items-center gap-1">
                               {planForDate && (
-                                <Button size="sm" variant="ghost" onClick={() => navigate(`/ucitel/plany-hodin/${planForDate.id}`)}>
+                                <Button size="sm" variant="ghost" onClick={() => navigate(`/ucitel/plany-hodin/${planForDate.id}?return_to=${encodeURIComponent(location.pathname)}`)}>
                                   <FileText className="h-3.5 w-3.5 mr-1" />
                                   Otevřít
                                 </Button>
@@ -1055,7 +1056,7 @@ export default function TeacherSubjectClass() {
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={() => navigate(`/ucitel/plany-hodin/${planForDate.id}`)}
+                                onClick={() => navigate(`/ucitel/plany-hodin/${planForDate.id}?return_to=${encodeURIComponent(location.pathname)}`)}
                               >
                                 <FileText className="h-3.5 w-3.5 mr-1" />
                                 Otevřít
@@ -1139,7 +1140,7 @@ export default function TeacherSubjectClass() {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => navigate(`/ucitel/plany-hodin/${p.id}`)}
+                              onClick={() => navigate(`/ucitel/plany-hodin/${p.id}?return_to=${encodeURIComponent(location.pathname)}`)}
                             >
                               <FileText className="h-3.5 w-3.5 mr-1" />
                               Otevřít
