@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -98,6 +98,7 @@ interface GradeGroup {
 
 const TeacherTextbooks = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { textbookId } = useParams<{ textbookId?: string }>();
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
@@ -599,7 +600,8 @@ const TeacherTextbooks = () => {
         <main className="flex-1 container mx-auto px-4 py-12 max-w-4xl" style={{ paddingTop: "calc(70px + 3rem)" }}>
           <Button variant="ghost" size="sm" onClick={() => {
             setSelectedTextbook(null);
-            navigate("/ucitel/ucebnice");
+            const returnTo = searchParams.get("return_to");
+            navigate(returnTo ? decodeURIComponent(returnTo) : "/ucitel/ucebnice");
           }} className="mb-4 gap-2">
             <ArrowLeft className="w-4 h-4" /> Zpět na učebnice
           </Button>
