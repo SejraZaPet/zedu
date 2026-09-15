@@ -1499,6 +1499,148 @@ export default function TeacherSubjectClass() {
                 </div>
               )}
             </Card>
+
+            {linkedTextbookId && (
+              <Card className="p-0 overflow-hidden">
+                <div className="px-4 py-3 border-b border-border bg-muted/30 text-sm font-medium">
+                  Výsledky lekcí
+                </div>
+                {lessonSummaries.length === 0 ? (
+                  <div className="p-6 text-center text-sm text-muted-foreground">
+                    Zatím žádné výsledky z lekcí propojené učebnice.
+                  </div>
+                ) : (
+                  <div className="p-3 space-y-2">
+                    {lessonSummaries.map((l) => {
+                      const total = members.length;
+                      const isOpen = openLessonId === l.lesson_id;
+                      return (
+                        <div key={l.lesson_id} className="border border-border rounded-md">
+                          <button
+                            type="button"
+                            className="w-full flex items-start gap-2 p-3 text-left hover:bg-muted/50 rounded-md"
+                            onClick={() => {
+                              setOpenLessonId(isOpen ? null : l.lesson_id);
+                              setOpenStudentKey(null);
+                            }}
+                          >
+                            {isOpen ? (
+                              <ChevronDown className="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" />
+                            ) : (
+                              <ChevronRight className="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium">{l.title}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {l.completedUsers.size}/{total} dokončilo učebnici
+                                {" · "}
+                                {l.actsByUser.size}/{total} udělalo aktivity
+                              </p>
+                            </div>
+                            <span className={`text-sm font-medium ${successColor(l.avg_success)}`}>
+                              {l.avg_success > 0 ? `${l.avg_success} %` : "–"}
+                            </span>
+                          </button>
+
+                          {isOpen && (
+                            <div className="border-t border-border overflow-x-auto">
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
+                                    <TableHead>Žák</TableHead>
+                                    <TableHead className="text-center">Dokončil učebnici</TableHead>
+                                    <TableHead className="text-center">Aktivity</TableHead>
+                                    <TableHead className="text-center">Úspěšnost</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {members.map((m) => {
+                                    const acts = (l.actsByUser.get(m.user_id) ?? [])
+                                      .slice()
+                                      .sort((a, b) => a.activity_index - b.activity_index);
+                                    const done = l.completedUsers.has(m.user_id);
+                                    const doneAt = l.completedUsers.get(m.user_id) ?? null;
+                                    const maxSum = acts.reduce((sum, a) => sum + a.max_score, 0);
+                                    const scoreSum = acts.reduce((sum, a) => sum + a.score, 0);
+                                    const pct = maxSum > 0 ? Math.round((scoreSum / maxSum) * 100) : 0;
+                                    const key = `${l.lesson_id}-${m.user_id}`;
+                                    const rowOpen = openStudentKey === key;
+                                    const name = m.profiles
+                                      ? `${m.profiles.first_name} ${m.profiles.last_name}`.trim()
+                                      : "Žák";
+                                    return (
+                                      <Fragment key={key}>
+                                        <TableRow
+                                          className="cursor-pointer hover:bg-muted/50"
+                                          onClick={() => setOpenStudentKey(rowOpen ? null : key)}
+                                        >
+                                          <TableCell>
+                                            <p className="text-sm font-medium">{name || "Žák"}</p>
+                                          </TableCell>
+                                          <TableCell className="text-center">
+                                            {done ? (
+                                              <span className="inline-flex items-center gap-1 text-xs text-green-500 whitespace-nowrap">
+                                                <Check className="w-3 h-3" /> {formatResultDate(doneAt)}
+                                              </span>
+                                            ) : (
+                                              <span className="text-sm text-muted-foreground">–</span>
+                                            )}
+                                          </TableCell>
+                                          <TableCell className="text-center text-sm text-muted-foreground">
+                                            {acts.length}/{l.activityCount || 0}
+                                          </TableCell>
+                                          <TableCell className="text-center">
+                                            <span className={`text-sm font-medium ${successColor(pct)}`}>
+                                              {pct > 0 ? `${pct} %` : "–"}
+                                            </span>
+                                          </TableCell>
+                                        </TableRow>
+                                        {rowOpen && acts.length > 0 && (
+                                          <TableRow key={`${key}-detail`}>
+                                            <TableCell colSpan={4} className="bg-muted/30">
+                                              <ul className="space-y-1">
+                                                {acts.map((a) => (
+                                                  <li
+                                                    key={`${key}-${a.activity_index}`}
+                                                    className="flex flex-wrap items-center gap-2 text-xs"
+                                                  >
+                                                    <Badge variant="secondary" className="text-xs">
+                                                      <Clock className="w-3 h-3 mr-1" />
+                                                      {a.activity_type}
+                                                    </Badge>
+                                                    <span className="text-muted-foreground">
+                                                      {a.score}/{a.max_score}
+                                                    </span>
+                                                    <span className="text-muted-foreground">
+                                                      {formatResultDate(a.completed_at)}
+                                                    </span>
+                                                  </li>
+                                                ))}
+                                              </ul>
+                                            </TableCell>
+                                          </TableRow>
+                                        )}
+                                      </Fragment>
+                                    );
+                                  })}
+                                  {members.length === 0 && (
+                                    <TableRow>
+                                      <TableCell colSpan={4} className="text-center text-muted-foreground py-6">
+                                        Ve třídě zatím nejsou žáci.
+                                      </TableCell>
+                                    </TableRow>
+                                  )}
+                                </TableBody>
+                              </Table>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </Card>
+            )}
           </TabsContent>
         </Tabs>
       </main>
