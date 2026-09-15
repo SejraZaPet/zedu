@@ -42,7 +42,13 @@ import {
 import { fetchStudentClassTextbookLinks } from "@/lib/student-class-textbooks";
 
 
+interface StudentLessonTopic {
+  topic: string | null;
+  materials: AssignmentMaterial[];
+}
+
 interface ClassRow {
+
   id: string;
   name: string;
   school: string;
