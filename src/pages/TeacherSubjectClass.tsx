@@ -80,6 +80,23 @@ interface ClassRow {
   year: number | null;
 }
 
+interface LessonActivityRow {
+  user_id: string;
+  lesson_id: string | null;
+  activity_index: number;
+  activity_type: string;
+  score: number;
+  max_score: number;
+  completed_at: string | null;
+}
+
+interface LessonCompletionRow {
+  user_id: string;
+  lesson_id: string | null;
+  completed_at: string | null;
+}
+
+
 interface ScheduleSlot {
   id: string;
   class_id: string;
