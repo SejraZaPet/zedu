@@ -281,6 +281,7 @@ const ClassesManager = () => {
         await supabase
           .from("class_teachers")
           .insert({ class_id: created.id, user_id: user.id, role: "owner" });
+        await saveHomeroom(created.id);
       }
     }
 
