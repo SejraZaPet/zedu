@@ -3329,6 +3329,45 @@ export type Database = {
           },
         ]
       }
+      lesson_topics: {
+        Row: {
+          class_id: string | null
+          created_at: string
+          group_id: string | null
+          id: string
+          lesson_date: string
+          materials: Json
+          subject: string
+          teacher_id: string
+          topic: string | null
+          updated_at: string
+        }
+        Insert: {
+          class_id?: string | null
+          created_at?: string
+          group_id?: string | null
+          id?: string
+          lesson_date: string
+          materials?: Json
+          subject: string
+          teacher_id: string
+          topic?: string | null
+          updated_at?: string
+        }
+        Update: {
+          class_id?: string | null
+          created_at?: string
+          group_id?: string | null
+          id?: string
+          lesson_date?: string
+          materials?: Json
+          subject?: string
+          teacher_id?: string
+          topic?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       lessons: {
         Row: {
           content: string
