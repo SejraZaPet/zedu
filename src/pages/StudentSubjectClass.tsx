@@ -14,7 +14,17 @@ import {
   Clock,
   ExternalLink,
   FolderOpen,
+  Paperclip,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import AssignmentMaterialsList from "@/components/assignments/AssignmentMaterialsList";
+import type { AssignmentMaterial } from "@/lib/assignment-materials";
+
 
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
