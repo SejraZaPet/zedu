@@ -266,6 +266,8 @@ const StudentAssignmentPlayer = () => {
           submission_note: note.trim() ? note : null,
           progress: { currentIndex, completed: Object.keys(answers).map(Number).filter((k) => answers[k] !== undefined) },
           last_saved_at: new Date().toISOString(),
+          last_edited_by: userId,
+          last_edited_at: new Date().toISOString(),
         } as any)
         .eq("id", attempt.id);
       lastSavedAnswers.current = currentAnswersStr;
@@ -305,6 +307,8 @@ const StudentAssignmentPlayer = () => {
           score,
           max_score: maxScore,
           submitted_at: new Date().toISOString(),
+          last_edited_by: userId,
+          last_edited_at: new Date().toISOString(),
           progress: { currentIndex: items.length, completed: items.map((_: any, i: number) => i) },
         } as any)
         .eq("id", attempt.id);
@@ -516,7 +520,11 @@ const StudentAssignmentPlayer = () => {
                         // Poznámku uložíme ještě před odevzdáním, aby ji učitel viděl.
                         await supabase
                           .from("assignment_attempts" as any)
-                          .update({ submission_note: note.trim() ? note : null } as any)
+                          .update({
+                            submission_note: note.trim() ? note : null,
+                            last_edited_by: userId,
+                            last_edited_at: new Date().toISOString(),
+                          } as any)
                           .eq("id", attempt.id);
                         const { data, error } = await supabase.rpc("submit_portfolio_assignment", {
                           _attempt_id: attempt.id,
@@ -572,6 +580,8 @@ const StudentAssignmentPlayer = () => {
                     score,
                     max_score: maxScore,
                     submitted_at: new Date().toISOString(),
+                    last_edited_by: userId,
+                    last_edited_at: new Date().toISOString(),
                   } as any)
                   .eq("id", attempt.id);
                 setAttempt({ ...attempt, status: "submitted", score, max_score: maxScore });
