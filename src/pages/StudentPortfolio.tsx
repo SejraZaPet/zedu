@@ -2,9 +2,11 @@ import { useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import SiteHeader from "@/components/SiteHeader";
 import PortfolioTimeline from "@/components/portfolio/PortfolioTimeline";
+import PortfolioBookView from "@/components/portfolio/PortfolioBookView";
 import AddPortfolioItemDialog from "@/components/portfolio/AddPortfolioItemDialog";
 import { Button } from "@/components/ui/button";
-import { Download, FolderOpen } from "lucide-react";
+import { Download, FolderOpen, Clock, NotebookPen } from "lucide-react";
+
 import { useAuth } from "@/contexts/AuthContext";
 import { loadFullPortfolio, PortfolioItem, TYPE_LABEL } from "@/lib/portfolio";
 import { downloadHtmlAsPdf } from "@/lib/html-to-pdf";
@@ -19,6 +21,8 @@ export default function StudentPortfolio() {
   const [items, setItems] = useState<PortfolioItem[]>([]);
   const [profileName, setProfileName] = useState("");
   const [loading, setLoading] = useState(true);
+  const [view, setView] = useState<"timeline" | "book">("timeline");
+
 
 
   const refresh = useCallback(async () => {
@@ -100,8 +104,33 @@ export default function StudentPortfolio() {
         {loading ? (
           <p className="text-center text-muted-foreground py-12">Načítám…</p>
         ) : (
-          <PortfolioTimeline items={items} canDelete onItemDeleted={refresh} initialSubject={initialSubject} />
+          <>
+            <div className="mb-4 flex gap-2">
+              <Button
+                size="sm"
+                variant={view === "timeline" ? "default" : "outline"}
+                className="gap-1.5"
+                onClick={() => setView("timeline")}
+              >
+                <Clock className="w-4 h-4" /> Časová osa
+              </Button>
+              <Button
+                size="sm"
+                variant={view === "book" ? "default" : "outline"}
+                className="gap-1.5"
+                onClick={() => setView("book")}
+              >
+                <NotebookPen className="w-4 h-4" /> Sešit
+              </Button>
+            </div>
+            {view === "timeline" ? (
+              <PortfolioTimeline items={items} canDelete onItemDeleted={refresh} initialSubject={initialSubject} />
+            ) : (
+              <PortfolioBookView items={items} canDelete onItemDeleted={refresh} initialSubject={initialSubject} />
+            )}
+          </>
         )}
+
       </main>
 
     </>

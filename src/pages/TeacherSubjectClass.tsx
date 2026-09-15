@@ -25,6 +25,7 @@ import {
   ChevronDown,
   Check,
   Paperclip,
+  NotebookPen,
 } from "lucide-react";
 import AssignmentMaterialsEditor from "@/components/assignments/AssignmentMaterialsEditor";
 import type { AssignmentMaterial } from "@/lib/assignment-materials";
@@ -1203,6 +1204,20 @@ export default function TeacherSubjectClass() {
                   Přiřadit učebnici
                 </Button>
               )}
+              {!isGroup && (
+                <Button
+                  variant="outline"
+                  onClick={() =>
+                    navigate(
+                      `/ucitel/sesit?trida=${classId}&predmet=${encodeURIComponent(subjectLabel)}&nazev=${encodeURIComponent(subjectLabel)}`,
+                    )
+                  }
+                >
+                  <NotebookPen className="h-4 w-4 mr-2" />
+                  Otevřít sešit
+                </Button>
+              )}
+
 
             </div>
           </div>
