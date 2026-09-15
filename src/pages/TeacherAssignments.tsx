@@ -889,109 +889,207 @@ const TeacherAssignments = () => {
           </Card>
         )}
 
-        {/* Assignments list */}
+        {/* Assignments list – seskupené podle stavu */}
         {loading ? (
           <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
         ) : assignments.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             <p>Zatím žádné úlohy. Klikni na „Nová úloha".</p>
           </div>
-        ) : (
-          <div className="space-y-3">
-            {assignments
-              .filter((a) => filterExamType === "__all__" || (filterExamType === "ukol" ? !a.exam_type : a.exam_type === filterExamType))
-              .map((a) => (
-              <Card key={a.id} className="hover:shadow-sm transition-shadow">
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-semibold">{a.title}</h3>
-                        <ExamTypeBadge examType={a.exam_type} showDefault />
-                        <Badge variant={a.status === "published" ? "default" : "secondary"} className="text-xs">
-                          {a.status === "published"
-                            ? "Publikováno"
-                            : a.status === "scheduled"
-                              ? "Naplánováno"
-                              : "Koncept"}
-                        </Badge>
-                        {a.status === "scheduled" && a.scheduled_publish_at && (
-                          <Badge variant="outline" className="text-xs">
-                            <CalendarIcon className="w-3 h-3 mr-1" />
-                            {new Date(a.scheduled_publish_at).toLocaleString("cs-CZ", {
-                              day: "numeric",
-                              month: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </Badge>
-                        )}
+        ) : (() => {
+          const visible = assignments
+            .filter((a) => filterExamType === "__all__" || (filterExamType === "ukol" ? !a.exam_type : a.exam_type === filterExamType))
+            .filter((a) => {
+              if (filterTarget === "__all__") return true;
+              const [kind, id] = filterTarget.split(":");
+              return kind === "class" ? a.class_id === id : a.group_id === id;
+            });
 
-                        {a.group_id && (
-                          <Badge variant="outline" className="text-xs">
-                            <Users className="w-3 h-3 mr-1" />
-                            {groups.find((g) => g.id === a.group_id)?.name ?? "Skupina"}
-                          </Badge>
-                        )}
+          const SECTIONS: { key: string; label: string; dot: string }[] = [
+            { key: "published", label: "Publikováno", dot: "bg-emerald-500" },
+            { key: "scheduled", label: "Naplánováno", dot: "bg-muted-foreground" },
+            { key: "draft", label: "Koncepty", dot: "border border-border" },
+          ];
 
-                      </div>
-                      {a.description && <p className="text-sm text-muted-foreground">{a.description}</p>}
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                        {a.deadline && (
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {format(new Date(a.deadline), "d. M. yyyy", { locale: cs })}
-                          </span>
-                        )}
-                        <span className="flex items-center gap-1">
-                          <RotateCcw className="w-3 h-3" />
-                          {a.max_attempts} {a.max_attempts === 1 ? "pokus" : "pokusy"}
-                        </span>
-                        {a.randomize_order && <span className="flex items-center gap-1"><Shuffle className="w-3 h-3" /> Míchání</span>}
-                        {a.lockdown_mode && (
-                          <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
-                            <Lock className="w-3 h-3" /> Lockdown
-                          </span>
-                        )}
-                      </div>
-                      <TeacherAssignmentAttachments assignmentId={a.id} />
+          if (visible.length === 0) {
+            return <div className="text-center py-12 text-muted-foreground text-sm">Žádné úlohy odpovídající filtru.</div>;
+          }
+
+          return (
+            <div className="space-y-6">
+              {SECTIONS.map((section) => {
+                const items = visible.filter((a) =>
+                  section.key === "draft" ? a.status !== "published" && a.status !== "scheduled" : a.status === section.key,
+                );
+                if (items.length === 0) return null;
+                return (
+                  <div key={section.key} className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className={cn("w-2.5 h-2.5 rounded-full", section.dot)} />
+                      <h2 className="text-sm font-semibold">{section.label}</h2>
+                      <span className="text-xs text-muted-foreground">({items.length})</span>
                     </div>
-                    <div className="flex gap-1">
-                      {a.status === "published" && a.class_id && (
-                        <RemindButton
-                          mode="teacher"
-                          receiverType="class"
-                          receiverIds={[a.class_id]}
-                          title={`Připomenutí úkolu: ${a.title}`}
-                          content={
-                            a.deadline
-                              ? `Nezapomeň odevzdat úkol „${a.title}" do ${format(new Date(a.deadline), "d. M. yyyy", { locale: cs })}.`
-                              : `Nezapomeň na úkol „${a.title}".`
-                          }
-                          link={`/student/ulohy`}
-                        />
-                      )}
-                      {(a.status === "draft" || a.status === "scheduled") && (
-                        <Button size="sm" variant="outline" onClick={() => handlePublish(a.id)}>
-                          <Send className="w-3.5 h-3.5 mr-1" />
-                          {a.status === "scheduled" ? "Publikovat hned" : "Publikovat"}
-                        </Button>
-                      )}
-                      <Button size="sm" variant="outline" onClick={() => startEdit(a)}>
-                        <Pencil className="w-3.5 h-3.5 mr-1" />
-                        Upravit
-                      </Button>
-                      <Button size="sm" variant="ghost" className="text-destructive" onClick={() => handleDelete(a.id)}>
 
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
-                    </div>
+                    {items.map((a) => {
+                      // Typová ikona a barva: pracovní list / portfolio / běžný úkol
+                      const kind = a.worksheet_id
+                        ? { Icon: ClipboardList, className: "text-blue-600 dark:text-blue-400 bg-blue-500/10" }
+                        : a.is_portfolio_task
+                          ? { Icon: FolderCheck, className: "text-purple-600 dark:text-purple-400 bg-purple-500/10" }
+                          : { Icon: ListTodo, className: "text-muted-foreground bg-muted" };
+                      const KindIcon = kind.Icon;
+                      const targetName = a.group_id
+                        ? groups.find((g) => g.id === a.group_id)?.name ?? "Skupina"
+                        : classes.find((c) => c.id === a.class_id)?.name ?? null;
+                      const prog = progress[a.id] ?? { submitted: 0, total: 0 };
+                      const pct = prog.total > 0 ? Math.round((prog.submitted / prog.total) * 100) : 0;
+
+                      return (
+                        <Card
+                          key={a.id}
+                          className="hover:shadow-md transition-shadow cursor-pointer"
+                          onClick={() => setDetailAssignment(a)}
+                        >
+                          <CardContent className="p-4">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex gap-3 min-w-0">
+                                <span className={cn("shrink-0 rounded-md p-2", kind.className)}>
+                                  <KindIcon className="w-4 h-4" />
+                                </span>
+                                <div className="space-y-1 min-w-0">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <h3 className="font-semibold">{a.title}</h3>
+                                    <ExamTypeBadge examType={a.exam_type} showDefault />
+                                    {targetName && (
+                                      <Badge variant="outline" className="text-xs">
+                                        <Users className="w-3 h-3 mr-1" />
+                                        {targetName}
+                                      </Badge>
+                                    )}
+                                    {a.status === "scheduled" && a.scheduled_publish_at && (
+                                      <Badge variant="outline" className="text-xs">
+                                        <CalendarIcon className="w-3 h-3 mr-1" />
+                                        {new Date(a.scheduled_publish_at).toLocaleString("cs-CZ", {
+                                          day: "numeric",
+                                          month: "numeric",
+                                          hour: "2-digit",
+                                          minute: "2-digit",
+                                        })}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  {a.description && <p className="text-sm text-muted-foreground line-clamp-2">{a.description}</p>}
+
+                                  {a.status === "published" && (
+                                    <div className="space-y-1 pt-1 max-w-xs">
+                                      <div className="flex justify-between text-xs text-muted-foreground">
+                                        <span>{prog.submitted}/{prog.total} odevzdáno</span>
+                                        <span>{pct}%</span>
+                                      </div>
+                                      <Progress value={pct} className="h-1.5" />
+                                    </div>
+                                  )}
+
+                                  <div className="flex items-center gap-4 text-xs text-muted-foreground pt-1">
+                                    {a.deadline && (
+                                      <span className="flex items-center gap-1">
+                                        <Clock className="w-3 h-3" />
+                                        {format(new Date(a.deadline), "d. M. yyyy", { locale: cs })}
+                                      </span>
+                                    )}
+                                    <span className="flex items-center gap-1">
+                                      <RotateCcw className="w-3 h-3" />
+                                      {a.max_attempts} {a.max_attempts === 1 ? "pokus" : "pokusy"}
+                                    </span>
+                                    {a.randomize_order && <span className="flex items-center gap-1"><Shuffle className="w-3 h-3" /> Míchání</span>}
+                                    {a.lockdown_mode && (
+                                      <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                                        <Lock className="w-3 h-3" /> Lockdown
+                                      </span>
+                                    )}
+                                  </div>
+                                  <TeacherAssignmentAttachments assignmentId={a.id} />
+                                </div>
+                              </div>
+
+                              <div className="flex gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                                {a.status === "published" && a.class_id && (
+                                  <RemindButton
+                                    mode="teacher"
+                                    receiverType="class"
+                                    receiverIds={[a.class_id]}
+                                    title={`Připomenutí úkolu: ${a.title}`}
+                                    content={
+                                      a.deadline
+                                        ? `Nezapomeň odevzdat úkol „${a.title}" do ${format(new Date(a.deadline), "d. M. yyyy", { locale: cs })}.`
+                                        : `Nezapomeň na úkol „${a.title}".`
+                                    }
+                                    link={`/student/ulohy`}
+                                  />
+                                )}
+                                {(a.status === "draft" || a.status === "scheduled") && (
+                                  <Button size="sm" variant="outline" onClick={() => handlePublish(a.id)}>
+                                    <Send className="w-3.5 h-3.5 mr-1" />
+                                    {a.status === "scheduled" ? "Publikovat hned" : "Publikovat"}
+                                  </Button>
+                                )}
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  aria-label="Výsledky"
+                                  title="Výsledky"
+                                  onClick={() => setResultsAssignmentId(a.id)}
+                                >
+                                  <BarChart3 className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  aria-label="Upravit"
+                                  title="Upravit"
+                                  onClick={() => startEdit(a)}
+                                >
+                                  <Pencil className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="text-destructive"
+                                  aria-label="Smazat"
+                                  title="Smazat"
+                                  onClick={() => handleDelete(a.id)}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+                );
+              })}
+            </div>
+          );
+        })()}
+
+        <AssignmentDetailDialog
+          assignment={detailAssignment}
+          open={!!detailAssignment}
+          onOpenChange={(o) => { if (!o) setDetailAssignment(null); }}
+        />
+
+        <Dialog open={!!resultsAssignmentId} onOpenChange={(o) => { if (!o) setResultsAssignmentId(null); }}>
+          <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Výsledky úlohy</DialogTitle>
+            </DialogHeader>
+            {userId && resultsAssignmentId && (
+              <AssignmentResultsDashboard teacherId={userId} initialAssignmentId={resultsAssignmentId} />
+            )}
+          </DialogContent>
+        </Dialog>
           </TabsContent>
 
           <TabsContent value="results">
