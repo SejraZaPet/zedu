@@ -38,6 +38,22 @@ interface StudentDetail {
   last_activity: string | null;
 }
 
+interface ActivityRow {
+  user_id: string;
+  lesson_id: string | null;
+  activity_index: number;
+  activity_type: string;
+  score: number;
+  max_score: number;
+  completed_at: string | null;
+}
+
+interface CompletionRow {
+  user_id: string;
+  lesson_id: string | null;
+  completed_at: string | null;
+}
+
 const ClassResultsManager = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
