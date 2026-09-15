@@ -128,6 +128,9 @@ export default function StudentSubjectClass() {
   const [attempts, setAttempts] = useState<AttemptRow[]>([]);
   const [extraTextbookId, setExtraTextbookId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [lessonTopics, setLessonTopics] = useState<Record<string, StudentLessonTopic>>({});
+  const [materialsDate, setMaterialsDate] = useState<string | null>(null);
+
 
 
   useEffect(() => {
