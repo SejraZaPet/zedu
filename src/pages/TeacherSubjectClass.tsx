@@ -238,6 +238,12 @@ export default function TeacherSubjectClass() {
 
   const [reflections, setReflections] = useState<Record<string, LessonReflection>>({});
   const [reflectionEvent, setReflectionEvent] = useState<{ date: string; subject: string; classId: string; label: string } | null>(null);
+  const [lessonTopics, setLessonTopics] = useState<Record<string, LessonTopicRow>>({});
+  const [topicEditDate, setTopicEditDate] = useState<string | null>(null);
+  const [topicDraft, setTopicDraft] = useState("");
+  const [materialsDate, setMaterialsDate] = useState<string | null>(null);
+  const [materialsDraft, setMaterialsDraft] = useState<AssignmentMaterial[]>([]);
+
   const [reflectionVersion, setReflectionVersion] = useState(0);
 
   useEffect(() => {
