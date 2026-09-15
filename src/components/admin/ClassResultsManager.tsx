@@ -316,9 +316,11 @@ const ClassResultsManager = () => {
 
   useEffect(() => { fetchOverview(); }, []);
 
+  useEffect(() => { fetchAccess(); }, [user?.id]);
+
   useEffect(() => {
     if (selectedClass) fetchClassDetail(selectedClass.id);
-  }, [selectedClass]);
+  }, [selectedClass, homeroomClassIds, mySubjectsByClass, isElevated]);
 
   const filtered = useMemo(() => {
     if (!search) return classes;
