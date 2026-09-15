@@ -24,6 +24,11 @@ import {
   ChevronRight,
   ChevronDown,
   Check,
+  Paperclip,
+} from "lucide-react";
+import AssignmentMaterialsEditor from "@/components/assignments/AssignmentMaterialsEditor";
+import type { AssignmentMaterial } from "@/lib/assignment-materials";
+
 } from "lucide-react";
 import {
   Table,
