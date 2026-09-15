@@ -15,6 +15,7 @@ import {
   ExternalLink,
   FolderOpen,
   Paperclip,
+  NotebookPen,
 } from "lucide-react";
 import {
   Dialog,
