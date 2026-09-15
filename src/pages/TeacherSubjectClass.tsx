@@ -24,7 +24,11 @@ import {
   ChevronRight,
   ChevronDown,
   Check,
+  Paperclip,
 } from "lucide-react";
+import AssignmentMaterialsEditor from "@/components/assignments/AssignmentMaterialsEditor";
+import type { AssignmentMaterial } from "@/lib/assignment-materials";
+
 import {
   Table,
   TableBody,
@@ -72,7 +76,15 @@ import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
 import { useSubjectCatalog } from "@/hooks/useSubjectCatalog";
 import { expandScheduleSlots, formatTime } from "@/lib/calendar-utils";
 
+interface LessonTopicRow {
+  id: string;
+  lesson_date: string;
+  topic: string | null;
+  materials: AssignmentMaterial[];
+}
+
 interface ClassRow {
+
   id: string;
   name: string;
   school: string;
@@ -238,6 +250,12 @@ export default function TeacherSubjectClass() {
 
   const [reflections, setReflections] = useState<Record<string, LessonReflection>>({});
   const [reflectionEvent, setReflectionEvent] = useState<{ date: string; subject: string; classId: string; label: string } | null>(null);
+  const [lessonTopics, setLessonTopics] = useState<Record<string, LessonTopicRow>>({});
+  const [topicEditDate, setTopicEditDate] = useState<string | null>(null);
+  const [topicDraft, setTopicDraft] = useState("");
+  const [materialsDate, setMaterialsDate] = useState<string | null>(null);
+  const [materialsDraft, setMaterialsDraft] = useState<AssignmentMaterial[]>([]);
+
   const [reflectionVersion, setReflectionVersion] = useState(0);
 
   useEffect(() => {
@@ -495,6 +513,92 @@ export default function TeacherSubjectClass() {
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, classId, pastLessons.length, reflectionVersion]);
+
+  // ---- Témata hodin („Co jsme probrali“) ----
+  useEffect(() => {
+    if (!user) return;
+    if (!isGroup && !classId) return;
+    if (isGroup && !groupId) return;
+    if (!subjectLabel) return;
+    let cancelled = false;
+    (async () => {
+      let q = supabase
+        .from("lesson_topics")
+        .select("id, lesson_date, topic, materials")
+        .eq("teacher_id", user.id)
+        .eq("subject", subjectLabel);
+      q = isGroup ? q.eq("group_id", groupId!) : q.eq("class_id", classId!);
+      const { data } = await q;
+      if (cancelled) return;
+      const map: Record<string, LessonTopicRow> = {};
+      for (const r of data ?? []) {
+        map[r.lesson_date] = {
+          id: r.id,
+          lesson_date: r.lesson_date,
+          topic: r.topic ?? null,
+          materials: Array.isArray(r.materials) ? (r.materials as unknown as AssignmentMaterial[]) : [],
+        };
+      }
+      setLessonTopics(map);
+    })();
+    return () => { cancelled = true; };
+  }, [user, classId, groupId, isGroup, subjectLabel]);
+
+  const saveLessonTopic = async (
+    dateKey: string,
+    patch: { topic?: string | null; materials?: AssignmentMaterial[] },
+  ) => {
+    if (!user) return;
+    const existing = lessonTopics[dateKey];
+    const payload: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (patch.topic !== undefined) payload.topic = patch.topic;
+    if (patch.materials !== undefined) payload.materials = patch.materials as unknown as any;
+
+    if (existing) {
+      const { error } = await supabase.from("lesson_topics").update(payload).eq("id", existing.id);
+      if (error) {
+        toast({ title: "Nepodařilo se uložit", description: error.message, variant: "destructive" });
+        return;
+      }
+      setLessonTopics((prev) => ({
+        ...prev,
+        [dateKey]: {
+          ...existing,
+          topic: patch.topic !== undefined ? patch.topic : existing.topic,
+          materials: patch.materials !== undefined ? patch.materials : existing.materials,
+        },
+      }));
+    } else {
+      const { data, error } = await supabase
+        .from("lesson_topics")
+        .insert({
+          teacher_id: user.id,
+          subject: subjectLabel,
+          class_id: isGroup ? null : classId,
+          group_id: isGroup ? groupId : null,
+          lesson_date: dateKey,
+          topic: patch.topic ?? null,
+          materials: (patch.materials ?? []) as unknown as any,
+        })
+        .select("id, lesson_date, topic, materials")
+        .maybeSingle();
+      if (error || !data) {
+        toast({ title: "Nepodařilo se uložit", description: error?.message, variant: "destructive" });
+        return;
+      }
+      setLessonTopics((prev) => ({
+        ...prev,
+        [dateKey]: {
+          id: data.id,
+          lesson_date: data.lesson_date,
+          topic: data.topic ?? null,
+          materials: Array.isArray(data.materials) ? (data.materials as unknown as AssignmentMaterial[]) : [],
+        },
+      }));
+    }
+    toast({ title: "Uloženo" });
+  };
+
   const upcomingLessons = occurrences.filter((e) => e.start >= now).slice(0, 15);
 
   const room = slots[0]?.room || "";
@@ -1138,6 +1242,9 @@ export default function TeacherSubjectClass() {
                       const dateKey = format(e.start, "yyyy-MM-dd");
                       const planForDate = findPlanForDate(dateKey);
                       const refl = reflections[reflectionKey({ subject: subjectLabel, classId, date: dateKey })];
+                      const topicRow = lessonTopics[dateKey];
+                      const editingTopic = topicEditDate === dateKey;
+
                       return (
                         <Card key={e.id} className="p-3">
                           <div className="flex items-center justify-between gap-2">
@@ -1159,8 +1266,62 @@ export default function TeacherSubjectClass() {
                                   Bez plánu hodiny
                                 </div>
                               )}
+                              {editingTopic ? (
+                                <div className="mt-1 flex items-center gap-1">
+                                  <Input
+                                    autoFocus
+                                    value={topicDraft}
+                                    onChange={(ev) => setTopicDraft(ev.target.value)}
+                                    placeholder="Téma hodiny"
+                                    className="h-7 text-xs"
+                                    onKeyDown={async (ev) => {
+                                      if (ev.key === "Enter") {
+                                        await saveLessonTopic(dateKey, { topic: topicDraft.trim() || null });
+                                        setTopicEditDate(null);
+                                      }
+                                      if (ev.key === "Escape") setTopicEditDate(null);
+                                    }}
+                                  />
+                                  <Button
+                                    size="sm"
+                                    className="h-7"
+                                    onClick={async () => {
+                                      await saveLessonTopic(dateKey, { topic: topicDraft.trim() || null });
+                                      setTopicEditDate(null);
+                                    }}
+                                  >
+                                    Uložit
+                                  </Button>
+                                </div>
+                              ) : (
+                                <button
+                                  type="button"
+                                  className={`mt-0.5 text-xs text-left truncate hover:underline ${topicRow?.topic ? "text-foreground" : "text-muted-foreground italic"}`}
+                                  onClick={() => {
+                                    setTopicDraft(topicRow?.topic ?? "");
+                                    setTopicEditDate(dateKey);
+                                  }}
+                                >
+                                  {topicRow?.topic ? `Téma: ${topicRow.topic}` : "Přidat téma hodiny"}
+                                </button>
+                              )}
                             </div>
                             <div className="flex items-center gap-1">
+                              <Button
+                                size="sm"
+                                variant={topicRow?.materials?.length ? "secondary" : "ghost"}
+                                onClick={() => {
+                                  setMaterialsDraft(topicRow?.materials ?? []);
+                                  setMaterialsDate(dateKey);
+                                }}
+                                title="Materiály k hodině"
+                              >
+                                <Paperclip className="h-3.5 w-3.5" />
+                                {topicRow?.materials?.length ? (
+                                  <span className="ml-1 text-[10px]">{topicRow.materials.length}</span>
+                                ) : null}
+                              </Button>
+
                               {planForDate && (
                                 <Button size="sm" variant="ghost" onClick={() => navigate(`/ucitel/plany-hodin/${planForDate.id}?return_to=${encodeURIComponent(location.pathname)}`)}>
                                   <FileText className="h-3.5 w-3.5 mr-1" />
@@ -1655,6 +1816,40 @@ export default function TeacherSubjectClass() {
           onSaved={() => setReflectionVersion((v) => v + 1)}
         />
       )}
+      <Dialog open={!!materialsDate} onOpenChange={(o) => { if (!o) setMaterialsDate(null); }}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Materiály k hodině</DialogTitle>
+            <DialogDescription>
+              {materialsDate
+                ? `Materiály se zobrazí žákům u hodiny ${format(new Date(materialsDate), "d. M. yyyy", { locale: cs })}.`
+                : ""}
+            </DialogDescription>
+          </DialogHeader>
+          {user && (
+            <AssignmentMaterialsEditor
+              materials={materialsDraft}
+              onChange={setMaterialsDraft}
+              teacherId={user.id}
+            />
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setMaterialsDate(null)}>
+              Zavřít
+            </Button>
+            <Button
+              onClick={async () => {
+                if (!materialsDate) return;
+                await saveLessonTopic(materialsDate, { materials: materialsDraft });
+                setMaterialsDate(null);
+              }}
+            >
+              Uložit materiály
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <SiteFooter />
 
       <Dialog open={linkOpen} onOpenChange={setLinkOpen}>
