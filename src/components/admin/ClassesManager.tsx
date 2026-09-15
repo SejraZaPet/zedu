@@ -33,6 +33,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Plus, Pencil, Archive, ArchiveRestore, Trash2, Users, Search, Key, KeyRound, Copy, RefreshCw, XCircle, Clock, BookOpen } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useMySchool } from "@/hooks/useMySchool";
 import ClassMembersDialog from "./ClassMembersDialog";
 import ClassScheduleDialog from "./ClassScheduleDialog";
@@ -72,7 +73,13 @@ const ClassesManager = () => {
   const [school, setSchool] = useState("");
   const [fieldOfStudy, setFieldOfStudy] = useState("");
   const [year, setYear] = useState("");
+  const [homeroomUserId, setHomeroomUserId] = useState<string>("none");
   const [saving, setSaving] = useState(false);
+
+  // Třídní učitelé
+  const [homeroomByClass, setHomeroomByClass] = useState<Record<string, string>>({});
+  const [teacherOptions, setTeacherOptions] = useState<{ id: string; name: string }[]>([]);
+  const [teacherNames, setTeacherNames] = useState<Record<string, string>>({});
 
   // Members dialog
   const [membersClass, setMembersClass] = useState<ClassItem | null>(null);
