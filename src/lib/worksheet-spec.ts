@@ -142,6 +142,10 @@ export interface WorksheetItem {
   imageUrl?: string;
   /** Image alt text */
   imageAlt?: string;
+  /** Link URL associated with this item (shown as a button in web view) */
+  linkUrl?: string;
+  /** Label for the link button (defaults to linkUrl when omitted) */
+  linkLabel?: string;
   /** Answer space config for print */
   answerSpace: AnswerSpace;
   /** Hints shown only in web mode */
@@ -338,6 +342,8 @@ export const WORKSHEET_SPEC_JSON_SCHEMA = {
                 blankText: { type: "string" },
                 imageUrl: { type: "string" },
                 imageAlt: { type: "string" },
+                linkUrl: { type: "string" },
+                linkLabel: { type: "string" },
                 answerSpace: {
                   type: "object", required: ["type", "heightMm"],
                   properties: {
