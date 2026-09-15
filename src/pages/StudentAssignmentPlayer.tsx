@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, ChevronLeft, ChevronRight, CheckCircle2, Clock, Save, Send, ArrowLeft, Lock, AlertTriangle, Maximize } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, CheckCircle2, Clock, Save, Send, ArrowLeft, Lock, AlertTriangle, Maximize, Users } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
@@ -357,6 +357,29 @@ const StudentAssignmentPlayer = () => {
     );
   }
 
+  if (noGroup) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <SiteHeader />
+        <main className="flex-1 flex items-center justify-center px-4">
+          <Card className="max-w-md">
+            <CardContent className="p-6 text-center space-y-3">
+              <Users className="w-10 h-10 mx-auto text-muted-foreground" />
+              <p className="text-sm">
+                Nejsi zařazen/a do žádné skupiny pro tento úkol, kontaktuj učitele.
+              </p>
+              <Button variant="outline" size="sm" onClick={() => navigate(-1)}>
+                <ArrowLeft className="w-4 h-4 mr-1" /> Zpět
+              </Button>
+            </CardContent>
+          </Card>
+        </main>
+        <SiteFooter />
+      </div>
+    );
+  }
+
+
   if (!assignment) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
@@ -405,6 +428,34 @@ const StudentAssignmentPlayer = () => {
             </Badge>
           )}
         </div>
+
+        {/* Skupinový úkol – spolužáci a kdo naposledy upravoval */}
+        {myGroup && (
+          <Card className="mb-4">
+            <CardContent className="p-3 space-y-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge variant="outline" className="text-xs">
+                  <Users className="w-3 h-3 mr-1" />
+                  {myGroup.name}
+                </Badge>
+                {groupMemberNames.map((n) => (
+                  <Badge key={n} variant="secondary" className="text-xs">{n}</Badge>
+                ))}
+              </div>
+              {lastEdited && (
+                <p className="text-xs text-muted-foreground">
+                  Naposledy upravil/a: {lastEdited.name} ·{" "}
+                  {new Date(lastEdited.at).toLocaleString("cs-CZ")}
+                </p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Odevzdáváte společně – všichni pracujete na jednom odevzdání.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+
 
         {/* Lockdown banner */}
         {lockdownEnabled && !isReadOnly && (
