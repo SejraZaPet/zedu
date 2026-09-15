@@ -170,6 +170,9 @@ const ClassResultsManager = () => {
     const memberIds = memberLinks?.map((m: any) => m.user_id) ?? [];
     if (memberIds.length === 0) {
       setStudents([]);
+      setLessonActs([]);
+      setLessonComps([]);
+      setLessonTitles({});
       setDetailLoading(false);
       return;
     }
@@ -181,13 +184,34 @@ const ClassResultsManager = () => {
 
     const { data: activityResults } = await supabase
       .from("student_activity_results")
-      .select("user_id, score, max_score, completed_at")
+      .select("user_id, lesson_id, activity_index, activity_type, score, max_score, completed_at")
       .in("user_id", memberIds);
 
     const { data: lessonCompletions } = await supabase
       .from("student_lesson_completions")
-      .select("user_id, completed_at")
+      .select("user_id, lesson_id, completed_at")
       .in("user_id", memberIds);
+
+    const lessonIds = Array.from(new Set([
+      ...(activityResults ?? []).map((r: any) => r.lesson_id),
+      ...(lessonCompletions ?? []).map((l: any) => l.lesson_id),
+    ].filter(Boolean))) as string[];
+
+    let titles: Record<string, string> = {};
+    if (lessonIds.length > 0) {
+      const { data: lessonRows } = await supabase
+        .from("lessons")
+        .select("id, title")
+        .in("id", lessonIds);
+      lessonRows?.forEach((l: any) => { titles[l.id] = l.title; });
+    }
+
+    setLessonActs((activityResults ?? []) as ActivityRow[]);
+    setLessonComps((lessonCompletions ?? []) as CompletionRow[]);
+    setLessonTitles(titles);
+    setOpenLessonId(null);
+    setOpenStudentKey(null);
+
 
     const userActs = new Map<string, { count: number; totalScore: number; totalMax: number; lastAt: string | null }>();
     activityResults?.forEach((r: any) => {
