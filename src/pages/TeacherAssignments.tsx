@@ -54,6 +54,8 @@ interface Assignment {
   lockdown_mode?: boolean;
   is_portfolio_task?: boolean;
   exam_type?: string | null;
+  group_mode?: string | null;
+  group_size?: number | null;
 }
 
 
@@ -125,6 +127,23 @@ const TeacherAssignments = () => {
   const [scheduleEnabled, setScheduleEnabled] = useState(false);
   const [scheduleDate, setScheduleDate] = useState<Date | undefined>();
   const [scheduleTime, setScheduleTime] = useState("08:00");
+
+  // ---- Skupinové / párové úkoly ----
+  type GroupMode = "individual" | "pairs" | "groups";
+  const [groupMode, setGroupMode] = useState<GroupMode>("individual");
+  const [groupSize, setGroupSize] = useState(3);
+  /** Skupiny vytvořené pro právě upravovanou úlohu (včetně členů). */
+  const [assignmentGroups, setAssignmentGroups] = useState<
+    { id: string; name: string; members: { id: string; name: string }[] }[]
+  >([]);
+  /** Žáci zvolené třídy/skupiny předmětu. */
+  const [targetMembers, setTargetMembers] = useState<{ id: string; name: string }[]>([]);
+  /** Ruční rozdělení: student_id → číslo skupiny (1..N). */
+  const [manualAssign, setManualAssign] = useState<Record<string, number>>({});
+  const [manualGroupCount, setManualGroupCount] = useState(2);
+  const [showManual, setShowManual] = useState(false);
+  const [groupBusy, setGroupBusy] = useState(false);
+  const [copySourceId, setCopySourceId] = useState("");
 
 
   useEffect(() => {
@@ -283,6 +302,8 @@ const TeacherAssignments = () => {
           lockdown_mode: lockdownMode,
           is_portfolio_task: isPortfolioTask,
           exam_type: examType === "ukol" ? null : examType,
+          group_mode: groupMode,
+          group_size: groupMode === "groups" ? groupSize : groupMode === "pairs" ? 2 : null,
         };
         if (subjectIdForAssignment) patch.subject_id = subjectIdForAssignment;
         const original = assignments.find((a) => a.id === editingId);
@@ -300,7 +321,7 @@ const TeacherAssignments = () => {
         if (error) throw error;
         toast({ title: "Změny uloženy" });
       } else {
-        const { error } = await supabase.from("assignments" as any).insert({
+        const { data: created, error } = await supabase.from("assignments" as any).insert({
           teacher_id: user.id,
           title: title.trim(),
           description: description.trim(),
@@ -319,7 +340,9 @@ const TeacherAssignments = () => {
           lockdown_mode: lockdownMode,
           is_portfolio_task: isPortfolioTask,
           exam_type: examType === "ukol" ? null : examType,
-        } as any);
+          group_mode: groupMode,
+          group_size: groupMode === "groups" ? groupSize : groupMode === "pairs" ? 2 : null,
+        } as any).select("id").single();
 
         if (error) throw error;
         toast({
@@ -328,6 +351,13 @@ const TeacherAssignments = () => {
             ? `Žákům se zpřístupní ${new Date(scheduledPublishAt).toLocaleString("cs-CZ")}.`
             : undefined,
         });
+        // U skupinových úkolů necháme formulář otevřený, aby šlo hned rozdělit skupiny.
+        if (groupMode !== "individual" && (created as any)?.id) {
+          setEditingId((created as any).id as string);
+          await loadData();
+          setCreating(false);
+          return;
+        }
       }
 
       setShowForm(false);
@@ -370,6 +400,13 @@ const TeacherAssignments = () => {
     setScheduleEnabled(false);
     setScheduleDate(undefined);
     setScheduleTime("08:00");
+    setGroupMode("individual");
+    setGroupSize(3);
+    setAssignmentGroups([]);
+    setManualAssign({});
+    setManualGroupCount(2);
+    setShowManual(false);
+    setCopySourceId("");
   };
 
   /** Otevře formulář s předvyplněnými hodnotami už zadané úlohy. */
@@ -393,6 +430,10 @@ const TeacherAssignments = () => {
     setIsPortfolioTask(!!a.is_portfolio_task);
     setLockdownMode(!!a.lockdown_mode && !a.is_portfolio_task);
     setExamType((a.exam_type as ExamType) || "ukol");
+    setGroupMode(((a.group_mode as GroupMode) || "individual") as GroupMode);
+    setGroupSize(a.group_size && a.group_size > 1 ? a.group_size : 3);
+    setShowManual(false);
+    setCopySourceId("");
     if (a.scheduled_publish_at) {
       const when = new Date(a.scheduled_publish_at);
       setScheduleEnabled(true);
