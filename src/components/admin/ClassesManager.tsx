@@ -257,6 +257,7 @@ const ClassesManager = () => {
       }
       toast({ title: "Uloženo", description: "Třída byla upravena." });
       logAudit("class_updated", "class", editingClass.id, { name: payload.name });
+      await saveHomeroom(editingClass.id);
     } else {
       if (!user) {
         toast({ title: "Chyba", description: "Nejste přihlášen/a.", variant: "destructive" });
