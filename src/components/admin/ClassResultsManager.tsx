@@ -62,6 +62,11 @@ const ClassResultsManager = () => {
   const [selectedClass, setSelectedClass] = useState<ClassOverview | null>(null);
   const [students, setStudents] = useState<StudentDetail[]>([]);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [lessonActs, setLessonActs] = useState<ActivityRow[]>([]);
+  const [lessonComps, setLessonComps] = useState<CompletionRow[]>([]);
+  const [lessonTitles, setLessonTitles] = useState<Record<string, string>>({});
+  const [openLessonId, setOpenLessonId] = useState<string | null>(null);
+  const [openStudentKey, setOpenStudentKey] = useState<string | null>(null);
 
   const fetchOverview = async () => {
     setLoading(true);
