@@ -33,6 +33,8 @@ interface AssignmentData {
   lockdown_mode?: boolean;
   is_portfolio_task?: boolean;
   materials?: unknown;
+  group_mode?: string | null;
+  group_size?: number | null;
 }
 
 
@@ -76,6 +78,12 @@ const StudentAssignmentPlayer = () => {
   const [worksheetSpec, setWorksheetSpec] = useState<WorksheetSpec | null>(null);
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedAnswers = useRef<string>("");
+  // ---- Skupinové / párové úkoly ----
+  /** Skupina žáka pro tento úkol (jen u skupinových/párových zadání). */
+  const [myGroup, setMyGroup] = useState<{ id: string; name: string } | null>(null);
+  const [groupMemberNames, setGroupMemberNames] = useState<string[]>([]);
+  const [noGroup, setNoGroup] = useState(false);
+  const [lastEdited, setLastEdited] = useState<{ name: string; at: string } | null>(null);
 
   useEffect(() => {
     if (assignmentId) loadAssignment();
