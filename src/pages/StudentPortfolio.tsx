@@ -2,9 +2,11 @@ import { useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import SiteHeader from "@/components/SiteHeader";
 import PortfolioTimeline from "@/components/portfolio/PortfolioTimeline";
+import PortfolioBookView from "@/components/portfolio/PortfolioBookView";
 import AddPortfolioItemDialog from "@/components/portfolio/AddPortfolioItemDialog";
 import { Button } from "@/components/ui/button";
-import { Download, FolderOpen } from "lucide-react";
+import { Download, FolderOpen, Clock, NotebookPen } from "lucide-react";
+
 import { useAuth } from "@/contexts/AuthContext";
 import { loadFullPortfolio, PortfolioItem, TYPE_LABEL } from "@/lib/portfolio";
 import { downloadHtmlAsPdf } from "@/lib/html-to-pdf";
@@ -19,6 +21,8 @@ export default function StudentPortfolio() {
   const [items, setItems] = useState<PortfolioItem[]>([]);
   const [profileName, setProfileName] = useState("");
   const [loading, setLoading] = useState(true);
+  const [view, setView] = useState<"timeline" | "book">("timeline");
+
 
 
   const refresh = useCallback(async () => {
