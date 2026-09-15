@@ -36,6 +36,8 @@ import {
   School,
   Lightbulb,
   Wand2,
+  Pencil,
+  Printer,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -148,6 +150,11 @@ export default function TeacherLessonPlanEditor() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
+  const returnTo = searchParams.get("return_to");
+  const isViewMode = id !== "novy" && searchParams.get("edit") !== "1";
+  function handleBack() {
+    navigate(returnTo ? decodeURIComponent(returnTo) : "/ucitel/plany-hodin");
+  }
   const { user, loading: authLoading } = useAuth();
   const { subjects } = useTeacherSubjects();
 
