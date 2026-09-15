@@ -29,7 +29,6 @@ import {
 import AssignmentMaterialsEditor from "@/components/assignments/AssignmentMaterialsEditor";
 import type { AssignmentMaterial } from "@/lib/assignment-materials";
 
-} from "lucide-react";
 import {
   Table,
   TableBody,
