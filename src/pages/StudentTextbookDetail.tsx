@@ -278,6 +278,29 @@ const StudentTextbookDetail = () => {
     fetchData();
   }, [textbookId]);
 
+  // Načti dříve dokončené aktivity otevřené lekce (i z minulých návštěv)
+  useEffect(() => {
+    const loadPrevious = async () => {
+      if (!selectedLesson?.id) return;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from("student_activity_results")
+        .select("activity_index")
+        .eq("user_id", user.id)
+        .eq("lesson_id", selectedLesson.id);
+      if (data && data.length > 0) {
+        setCompletedActivityIndices(prev => {
+          const next = new Set(prev);
+          data.forEach((row: any) => next.add(row.activity_index));
+          return next;
+        });
+      }
+    };
+    loadPrevious();
+  }, [selectedLesson?.id]);
+
+
   const handleMarkComplete = async (lessonId: string) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
