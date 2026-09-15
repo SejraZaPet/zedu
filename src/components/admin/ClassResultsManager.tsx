@@ -10,7 +10,8 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import { Search, ArrowLeft, Users, Activity, BookOpen, Clock } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Search, ArrowLeft, Users, Activity, BookOpen, Clock, ChevronRight, ChevronDown, Check } from "lucide-react";
 
 interface ClassOverview {
   id: string;
