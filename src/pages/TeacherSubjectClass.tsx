@@ -72,7 +72,15 @@ import { useTeacherSubjects } from "@/hooks/useTeacherSubjects";
 import { useSubjectCatalog } from "@/hooks/useSubjectCatalog";
 import { expandScheduleSlots, formatTime } from "@/lib/calendar-utils";
 
+interface LessonTopicRow {
+  id: string;
+  lesson_date: string;
+  topic: string | null;
+  materials: AssignmentMaterial[];
+}
+
 interface ClassRow {
+
   id: string;
   name: string;
   school: string;
