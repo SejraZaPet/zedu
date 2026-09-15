@@ -110,6 +110,14 @@ const TeacherAssignments = () => {
   };
   const [examType, setExamType] = useState<ExamType | "ukol">("ukol");
   const [filterExamType, setFilterExamType] = useState<string>("__all__");
+  /** Filtr podle třídy/skupiny v seznamu úloh. */
+  const [filterTarget, setFilterTarget] = useState<string>("__all__");
+  /** Odevzdanost pro publikované úlohy: id úlohy → {odevzdáno, celkem}. */
+  const [progress, setProgress] = useState<Record<string, { submitted: number; total: number }>>({});
+  /** Úloha otevřená v needitovatelném detailu (klik na tělo karty). */
+  const [detailAssignment, setDetailAssignment] = useState<Assignment | null>(null);
+  /** Úloha, pro kterou se mají zobrazit výsledky. */
+  const [resultsAssignmentId, setResultsAssignmentId] = useState<string | null>(null);
   // Naplánované zveřejnění – appka úlohu zpřístupní žákům sama v daný čas.
   const [scheduleEnabled, setScheduleEnabled] = useState(false);
   const [scheduleDate, setScheduleDate] = useState<Date | undefined>();
