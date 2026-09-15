@@ -946,6 +946,165 @@ const TeacherAssignments = () => {
                 </div>
               </div>
 
+              {/* Typ zadání – individuálně / dvojice / skupiny */}
+              <div className="p-3 border border-border rounded-lg bg-muted/30 space-y-3">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm">Typ zadání</Label>
+                    <Select value={groupMode} onValueChange={(v) => setGroupMode(v as GroupMode)}>
+                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="individual">Individuálně</SelectItem>
+                        <SelectItem value="pairs">Ve dvojicích</SelectItem>
+                        <SelectItem value="groups">Ve skupinách</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {groupMode === "groups" && (
+                    <div>
+                      <Label className="text-sm">Velikost skupiny</Label>
+                      <Input
+                        type="number"
+                        min={2}
+                        max={10}
+                        value={groupSize}
+                        onChange={(e) => setGroupSize(Math.max(2, Number(e.target.value) || 3))}
+                        className="mt-1"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {groupMode !== "individual" && (
+                  <>
+                    {!editingId ? (
+                      <p className="text-xs text-muted-foreground">
+                        Nejdřív úlohu vytvořte – potom tady rozdělíte žáky do skupin.
+                      </p>
+                    ) : !(selectedClassId || selectedGroupId) ? (
+                      <p className="text-xs text-muted-foreground">
+                        Vyberte třídu nebo skupinu, ať je koho rozdělit.
+                      </p>
+                    ) : (
+                      <div className="space-y-3">
+                        <Label className="text-sm">Rozdělení do skupin</Label>
+                        <div className="flex gap-2 flex-wrap">
+                          <Button type="button" size="sm" variant="outline" disabled={groupBusy} onClick={handleRandomSplit}>
+                            {groupBusy ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Shuffle className="w-3.5 h-3.5 mr-1" />}
+                            Rozdělit náhodně
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setShowManual((v) => !v);
+                              if (!showManual) {
+                                const init: Record<string, number> = {};
+                                targetMembers.forEach((m, i) => {
+                                  init[m.id] =
+                                    manualAssign[m.id] ??
+                                    Math.min(manualGroupCount, Math.floor(i / (groupMode === "pairs" ? 2 : groupSize)) + 1);
+                                });
+                                setManualAssign(init);
+                                setManualGroupCount(
+                                  Math.max(
+                                    2,
+                                    Math.ceil(targetMembers.length / (groupMode === "pairs" ? 2 : groupSize)) || 2,
+                                  ),
+                                );
+                              }
+                            }}
+                          >
+                            <Users className="w-3.5 h-3.5 mr-1" />
+                            Rozdělit ručně
+                          </Button>
+                          {copySourceOptions.length > 0 && (
+                            <Select
+                              value={copySourceId || "__none__"}
+                              onValueChange={(v) => {
+                                if (v === "__none__") return;
+                                setCopySourceId(v);
+                                handleCopyGroups(v);
+                              }}
+                            >
+                              <SelectTrigger className="w-[260px] h-9 text-xs">
+                                <SelectValue placeholder="Použít skupiny z jiného úkolu" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="__none__">Použít skupiny z jiného úkolu</SelectItem>
+                                {copySourceOptions.map((a) => (
+                                  <SelectItem key={a.id} value={a.id}>{a.title}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        </div>
+
+                        {showManual && (
+                          <div className="space-y-2 rounded-lg border border-border p-3 bg-background">
+                            {targetMembers.length === 0 ? (
+                              <p className="text-xs text-muted-foreground">Tato třída/skupina nemá žáky.</p>
+                            ) : (
+                              <>
+                                {targetMembers.map((m) => (
+                                  <div key={m.id} className="flex items-center justify-between gap-3">
+                                    <span className="text-sm">{m.name}</span>
+                                    <Select
+                                      value={String(manualAssign[m.id] ?? 1)}
+                                      onValueChange={(v) => setManualAssign((prev) => ({ ...prev, [m.id]: Number(v) }))}
+                                    >
+                                      <SelectTrigger className="w-[130px] h-8 text-xs"><SelectValue /></SelectTrigger>
+                                      <SelectContent>
+                                        {Array.from({ length: manualGroupCount }, (_, i) => i + 1).map((n) => (
+                                          <SelectItem key={n} value={String(n)}>Skupina {n}</SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                ))}
+                                <div className="flex gap-2 pt-1">
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setManualGroupCount((n) => n + 1)}
+                                  >
+                                    <Plus className="w-3.5 h-3.5 mr-1" /> Přidat skupinu
+                                  </Button>
+                                  <Button type="button" size="sm" disabled={groupBusy} onClick={handleManualSave}>
+                                    {groupBusy && <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />}
+                                    Uložit rozdělení
+                                  </Button>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        )}
+
+                        {assignmentGroups.length > 0 && (
+                          <div className="space-y-2">
+                            <p className="text-xs text-muted-foreground">
+                              Vytvořené skupiny ({assignmentGroups.length}) – lze kdykoli přegenerovat.
+                            </p>
+                            <div className="grid gap-2 sm:grid-cols-2">
+                              {assignmentGroups.map((g) => (
+                                <div key={g.id} className="rounded-lg border border-border p-2 bg-background">
+                                  <p className="text-sm font-medium">{g.name}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {g.members.map((m) => m.name).join(", ") || "Bez členů"}
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
               {/* Randomization */}
               <div className="flex flex-col gap-3 p-3 border border-border rounded-lg bg-muted/30">
                 <div
