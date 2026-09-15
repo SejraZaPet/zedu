@@ -1,5 +1,5 @@
 import { BetaBadge } from "@/components/common/BetaBadge";
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -21,7 +21,18 @@ import {
   Lock,
   Pencil,
   Star,
+  ChevronRight,
+  ChevronDown,
+  Check,
 } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import LessonReflectionDialog from "@/components/lessons/LessonReflectionDialog";
 import TeachingUnitCollaboratorsCard from "@/components/teacher/TeachingUnitCollaboratorsCard";
 import UnitCurriculumPlansCard from "@/components/teaching/UnitCurriculumPlansCard";
