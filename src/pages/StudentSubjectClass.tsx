@@ -455,6 +455,18 @@ export default function StudentSubjectClass() {
                   Otevřít učebnici
                 </Button>
               )}
+              <Button
+                variant="outline"
+                onClick={() =>
+                  navigate(
+                    `/student/sesit?trida=${classId}&predmet=${encodeURIComponent(subjectLabel)}&nazev=${encodeURIComponent(subjectLabel)}`,
+                  )
+                }
+              >
+                <NotebookPen className="h-4 w-4 mr-2" />
+                Otevřít sešit
+              </Button>
+
             </div>
 
           </div>
