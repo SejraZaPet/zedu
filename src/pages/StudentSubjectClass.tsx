@@ -707,7 +707,19 @@ export default function StudentSubjectClass() {
           </TabsContent>
         </Tabs>
       </main>
+      <Dialog open={!!materialsDate} onOpenChange={(o) => { if (!o) setMaterialsDate(null); }}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Materiály k hodině</DialogTitle>
+          </DialogHeader>
+          <AssignmentMaterialsList
+            materials={materialsDate ? lessonTopics[materialsDate]?.materials ?? [] : []}
+            title="Materiály k hodině"
+          />
+        </DialogContent>
+      </Dialog>
       <SiteFooter />
+
     </div>
   );
 }
