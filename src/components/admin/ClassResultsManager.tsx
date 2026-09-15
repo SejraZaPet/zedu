@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { Fragment, useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +10,8 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import { Search, ArrowLeft, Users, Activity, BookOpen, Clock } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Search, ArrowLeft, Users, Activity, BookOpen, Clock, ChevronRight, ChevronDown, Check } from "lucide-react";
 
 interface ClassOverview {
   id: string;
@@ -37,6 +38,22 @@ interface StudentDetail {
   last_activity: string | null;
 }
 
+interface ActivityRow {
+  user_id: string;
+  lesson_id: string | null;
+  activity_index: number;
+  activity_type: string;
+  score: number;
+  max_score: number;
+  completed_at: string | null;
+}
+
+interface CompletionRow {
+  user_id: string;
+  lesson_id: string | null;
+  completed_at: string | null;
+}
+
 const ClassResultsManager = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
@@ -45,6 +62,11 @@ const ClassResultsManager = () => {
   const [selectedClass, setSelectedClass] = useState<ClassOverview | null>(null);
   const [students, setStudents] = useState<StudentDetail[]>([]);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [lessonActs, setLessonActs] = useState<ActivityRow[]>([]);
+  const [lessonComps, setLessonComps] = useState<CompletionRow[]>([]);
+  const [lessonTitles, setLessonTitles] = useState<Record<string, string>>({});
+  const [openLessonId, setOpenLessonId] = useState<string | null>(null);
+  const [openStudentKey, setOpenStudentKey] = useState<string | null>(null);
 
   const fetchOverview = async () => {
     setLoading(true);
@@ -148,6 +170,9 @@ const ClassResultsManager = () => {
     const memberIds = memberLinks?.map((m: any) => m.user_id) ?? [];
     if (memberIds.length === 0) {
       setStudents([]);
+      setLessonActs([]);
+      setLessonComps([]);
+      setLessonTitles({});
       setDetailLoading(false);
       return;
     }
@@ -159,13 +184,34 @@ const ClassResultsManager = () => {
 
     const { data: activityResults } = await supabase
       .from("student_activity_results")
-      .select("user_id, score, max_score, completed_at")
+      .select("user_id, lesson_id, activity_index, activity_type, score, max_score, completed_at")
       .in("user_id", memberIds);
 
     const { data: lessonCompletions } = await supabase
       .from("student_lesson_completions")
-      .select("user_id, completed_at")
+      .select("user_id, lesson_id, completed_at")
       .in("user_id", memberIds);
+
+    const lessonIds = Array.from(new Set([
+      ...(activityResults ?? []).map((r: any) => r.lesson_id),
+      ...(lessonCompletions ?? []).map((l: any) => l.lesson_id),
+    ].filter(Boolean))) as string[];
+
+    let titles: Record<string, string> = {};
+    if (lessonIds.length > 0) {
+      const { data: lessonRows } = await supabase
+        .from("lessons")
+        .select("id, title")
+        .in("id", lessonIds);
+      lessonRows?.forEach((l: any) => { titles[l.id] = l.title; });
+    }
+
+    setLessonActs((activityResults ?? []) as ActivityRow[]);
+    setLessonComps((lessonCompletions ?? []) as CompletionRow[]);
+    setLessonTitles(titles);
+    setOpenLessonId(null);
+    setOpenStudentKey(null);
+
 
     const userActs = new Map<string, { count: number; totalScore: number; totalMax: number; lastAt: string | null }>();
     activityResults?.forEach((r: any) => {
@@ -209,6 +255,57 @@ const ClassResultsManager = () => {
     const s = search.toLowerCase();
     return classes.filter((c) => `${c.name} ${c.school} ${c.field_of_study}`.toLowerCase().includes(s));
   }, [classes, search]);
+
+  const lessonSummaries = useMemo(() => {
+    const map = new Map<string, {
+      lesson_id: string;
+      title: string;
+      completedUsers: Map<string, string | null>;
+      actsByUser: Map<string, ActivityRow[]>;
+      indexes: Set<number>;
+      totalScore: number;
+      totalMax: number;
+    }>();
+
+    const ensure = (lessonId: string) => {
+      if (!map.has(lessonId)) {
+        map.set(lessonId, {
+          lesson_id: lessonId,
+          title: lessonTitles[lessonId] || "Neznámá lekce",
+          completedUsers: new Map(),
+          actsByUser: new Map(),
+          indexes: new Set(),
+          totalScore: 0,
+          totalMax: 0,
+        });
+      }
+      return map.get(lessonId)!;
+    };
+
+    lessonComps.forEach((c) => {
+      if (!c.lesson_id) return;
+      ensure(c.lesson_id).completedUsers.set(c.user_id, c.completed_at);
+    });
+
+    lessonActs.forEach((a) => {
+      if (!a.lesson_id) return;
+      const e = ensure(a.lesson_id);
+      const arr = e.actsByUser.get(a.user_id) ?? [];
+      arr.push(a);
+      e.actsByUser.set(a.user_id, arr);
+      e.indexes.add(a.activity_index);
+      e.totalScore += a.score;
+      e.totalMax += a.max_score;
+    });
+
+    return Array.from(map.values())
+      .map((e) => ({
+        ...e,
+        avg_success: e.totalMax > 0 ? Math.round((e.totalScore / e.totalMax) * 100) : 0,
+        activityCount: e.indexes.size,
+      }))
+      .sort((a, b) => a.title.localeCompare(b.title, "cs"));
+  }, [lessonActs, lessonComps, lessonTitles]);
 
   const formatDate = (d: string | null) =>
     d ? new Date(d).toLocaleDateString("cs-CZ", { day: "numeric", month: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "–";
@@ -310,6 +407,13 @@ const ClassResultsManager = () => {
                 </div>
               )}
 
+              <Tabs defaultValue="by-student" className="flex flex-col overflow-hidden">
+                <TabsList>
+                  <TabsTrigger value="by-student">Podle studenta</TabsTrigger>
+                  <TabsTrigger value="by-lesson">Podle lekce</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="by-student" className="mt-3 overflow-hidden">
               {/* Students table */}
               <div className="overflow-y-auto border border-border rounded-md">
                 <Table>
@@ -349,6 +453,133 @@ const ClassResultsManager = () => {
                   </TableBody>
                 </Table>
               </div>
+                </TabsContent>
+
+                <TabsContent value="by-lesson" className="mt-3 overflow-y-auto space-y-2">
+                  {lessonSummaries.length === 0 && (
+                    <p className="text-sm text-muted-foreground py-8 text-center">
+                      Žádné výsledky lekcí pro tuto třídu.
+                    </p>
+                  )}
+                  {lessonSummaries.map((l) => {
+                    const total = selectedClass?.student_count ?? 0;
+                    const isOpen = openLessonId === l.lesson_id;
+                    return (
+                      <div key={l.lesson_id} className="border border-border rounded-md">
+                        <button
+                          type="button"
+                          className="w-full flex items-start gap-2 p-3 text-left hover:bg-muted/50 rounded-md"
+                          onClick={() => { setOpenLessonId(isOpen ? null : l.lesson_id); setOpenStudentKey(null); }}
+                        >
+                          {isOpen
+                            ? <ChevronDown className="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" />
+                            : <ChevronRight className="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" />}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium">{l.title}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {l.completedUsers.size}/{total} dokončilo učebnici
+                              {" · "}
+                              {l.actsByUser.size}/{total} udělalo aktivity
+                            </p>
+                          </div>
+                          <span className={`text-sm font-medium ${successColor(l.avg_success)}`}>
+                            {l.avg_success > 0 ? `${l.avg_success} %` : "–"}
+                          </span>
+                        </button>
+
+                        {isOpen && (
+                          <div className="border-t border-border">
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead>Student</TableHead>
+                                  <TableHead className="text-center">Dokončil učebnici</TableHead>
+                                  <TableHead className="text-center">Aktivity</TableHead>
+                                  <TableHead className="text-center">Úspěšnost</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {students.map((s) => {
+                                  const acts = (l.actsByUser.get(s.id) ?? [])
+                                    .slice()
+                                    .sort((a, b) => a.activity_index - b.activity_index);
+                                  const done = l.completedUsers.has(s.id);
+                                  const doneAt = l.completedUsers.get(s.id) ?? null;
+                                  const maxSum = acts.reduce((sum, a) => sum + a.max_score, 0);
+                                  const scoreSum = acts.reduce((sum, a) => sum + a.score, 0);
+                                  const pct = maxSum > 0 ? Math.round((scoreSum / maxSum) * 100) : 0;
+                                  const key = `${l.lesson_id}-${s.id}`;
+                                  const rowOpen = openStudentKey === key;
+                                  return (
+                                    <Fragment key={key}>
+                                      <TableRow
+                                        className="cursor-pointer hover:bg-muted/50"
+                                        onClick={() => setOpenStudentKey(rowOpen ? null : key)}
+                                      >
+                                        <TableCell>
+                                          <p className="text-sm font-medium">{s.first_name} {s.last_name}</p>
+                                        </TableCell>
+                                        <TableCell className="text-center">
+                                          {done ? (
+                                            <span className="inline-flex items-center gap-1 text-xs text-green-400 whitespace-nowrap">
+                                              <Check className="w-3 h-3" /> {formatDate(doneAt)}
+                                            </span>
+                                          ) : (
+                                            <span className="text-sm text-muted-foreground">–</span>
+                                          )}
+                                        </TableCell>
+                                        <TableCell className="text-center text-sm text-muted-foreground">
+                                          {acts.length}/{l.activityCount || 0}
+                                        </TableCell>
+                                        <TableCell className="text-center">
+                                          <span className={`text-sm font-medium ${successColor(pct)}`}>
+                                            {pct > 0 ? `${pct} %` : "–"}
+                                          </span>
+                                        </TableCell>
+                                      </TableRow>
+                                      {rowOpen && acts.length > 0 && (
+                                        <TableRow key={`${key}-detail`}>
+                                          <TableCell colSpan={4} className="bg-muted/30">
+                                            <ul className="space-y-1">
+                                              {acts.map((a) => (
+                                                <li
+                                                  key={`${key}-${a.activity_index}`}
+                                                  className="flex flex-wrap items-center gap-2 text-xs"
+                                                >
+                                                  <Badge variant="secondary" className="text-xs">
+                                                    <Clock className="w-3 h-3 mr-1" />{a.activity_type}
+                                                  </Badge>
+                                                  <span className="text-muted-foreground">
+                                                    {a.score}/{a.max_score}
+                                                  </span>
+                                                  <span className="text-muted-foreground">
+                                                    {formatDate(a.completed_at)}
+                                                  </span>
+                                                </li>
+                                              ))}
+                                            </ul>
+                                          </TableCell>
+                                        </TableRow>
+                                      )}
+                                    </Fragment>
+                                  );
+                                })}
+                                {students.length === 0 && (
+                                  <TableRow>
+                                    <TableCell colSpan={4} className="text-center text-muted-foreground py-6">
+                                      Žádní studenti v této třídě.
+                                    </TableCell>
+                                  </TableRow>
+                                )}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </TabsContent>
+              </Tabs>
             </div>
           )}
         </DialogContent>
