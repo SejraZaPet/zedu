@@ -256,6 +256,57 @@ const ClassResultsManager = () => {
     return classes.filter((c) => `${c.name} ${c.school} ${c.field_of_study}`.toLowerCase().includes(s));
   }, [classes, search]);
 
+  const lessonSummaries = useMemo(() => {
+    const map = new Map<string, {
+      lesson_id: string;
+      title: string;
+      completedUsers: Map<string, string | null>;
+      actsByUser: Map<string, ActivityRow[]>;
+      indexes: Set<number>;
+      totalScore: number;
+      totalMax: number;
+    }>();
+
+    const ensure = (lessonId: string) => {
+      if (!map.has(lessonId)) {
+        map.set(lessonId, {
+          lesson_id: lessonId,
+          title: lessonTitles[lessonId] || "Neznámá lekce",
+          completedUsers: new Map(),
+          actsByUser: new Map(),
+          indexes: new Set(),
+          totalScore: 0,
+          totalMax: 0,
+        });
+      }
+      return map.get(lessonId)!;
+    };
+
+    lessonComps.forEach((c) => {
+      if (!c.lesson_id) return;
+      ensure(c.lesson_id).completedUsers.set(c.user_id, c.completed_at);
+    });
+
+    lessonActs.forEach((a) => {
+      if (!a.lesson_id) return;
+      const e = ensure(a.lesson_id);
+      const arr = e.actsByUser.get(a.user_id) ?? [];
+      arr.push(a);
+      e.actsByUser.set(a.user_id, arr);
+      e.indexes.add(a.activity_index);
+      e.totalScore += a.score;
+      e.totalMax += a.max_score;
+    });
+
+    return Array.from(map.values())
+      .map((e) => ({
+        ...e,
+        avg_success: e.totalMax > 0 ? Math.round((e.totalScore / e.totalMax) * 100) : 0,
+        activityCount: e.indexes.size,
+      }))
+      .sort((a, b) => a.title.localeCompare(b.title, "cs"));
+  }, [lessonActs, lessonComps, lessonTitles]);
+
   const formatDate = (d: string | null) =>
     d ? new Date(d).toLocaleDateString("cs-CZ", { day: "numeric", month: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "–";
 
