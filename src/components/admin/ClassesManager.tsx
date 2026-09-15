@@ -218,6 +218,7 @@ const ClassesManager = () => {
     setSchool(mySchoolId ? (schoolName ?? "") : "");
     setFieldOfStudy("");
     setYear("");
+    setHomeroomUserId("none");
     setFormOpen(true);
   };
 
@@ -228,6 +229,7 @@ const ClassesManager = () => {
     setSchool(c.school);
     setFieldOfStudy(c.field_of_study);
     setYear(c.year ? String(c.year) : "");
+    setHomeroomUserId(homeroomByClass[c.id] ?? "none");
     setFormOpen(true);
   };
 
