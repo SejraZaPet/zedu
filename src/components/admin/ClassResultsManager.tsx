@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { Fragment, useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -511,9 +511,8 @@ const ClassResultsManager = () => {
                                   const key = `${l.lesson_id}-${s.id}`;
                                   const rowOpen = openStudentKey === key;
                                   return (
-                                    <>
+                                    <Fragment key={key}>
                                       <TableRow
-                                        key={key}
                                         className="cursor-pointer hover:bg-muted/50"
                                         onClick={() => setOpenStudentKey(rowOpen ? null : key)}
                                       >
@@ -562,7 +561,7 @@ const ClassResultsManager = () => {
                                           </TableCell>
                                         </TableRow>
                                       )}
-                                    </>
+                                    </Fragment>
                                   );
                                 })}
                                 {students.length === 0 && (
