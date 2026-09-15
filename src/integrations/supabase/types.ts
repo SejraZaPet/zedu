@@ -512,7 +512,10 @@ export type Database = {
           assignment_id: string
           attempt_number: number
           created_at: string
+          group_id: string | null
           id: string
+          last_edited_at: string | null
+          last_edited_by: string | null
           last_saved_at: string
           max_score: number | null
           progress: Json
@@ -532,7 +535,10 @@ export type Database = {
           assignment_id: string
           attempt_number?: number
           created_at?: string
+          group_id?: string | null
           id?: string
+          last_edited_at?: string | null
+          last_edited_by?: string | null
           last_saved_at?: string
           max_score?: number | null
           progress?: Json
@@ -552,7 +558,10 @@ export type Database = {
           assignment_id?: string
           attempt_number?: number
           created_at?: string
+          group_id?: string | null
           id?: string
+          last_edited_at?: string | null
+          last_edited_by?: string | null
           last_saved_at?: string
           max_score?: number | null
           progress?: Json
@@ -575,7 +584,61 @@ export type Database = {
             referencedRelation: "assignments"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "assignment_attempts_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "assignment_groups"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      assignment_group_members: {
+        Row: {
+          group_id: string
+          id: string
+          student_id: string
+        }
+        Insert: {
+          group_id: string
+          id?: string
+          student_id: string
+        }
+        Update: {
+          group_id?: string
+          id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignment_group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "assignment_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assignment_groups: {
+        Row: {
+          assignment_id: string
+          created_at: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          assignment_id: string
+          created_at?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          assignment_id?: string
+          created_at?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
       }
       assignments: {
         Row: {
@@ -586,6 +649,8 @@ export type Database = {
           description: string
           exam_type: string | null
           group_id: string | null
+          group_mode: string | null
+          group_size: number | null
           id: string
           is_portfolio_task: boolean
           lesson_plan_id: string | null
@@ -611,6 +676,8 @@ export type Database = {
           description?: string
           exam_type?: string | null
           group_id?: string | null
+          group_mode?: string | null
+          group_size?: number | null
           id?: string
           is_portfolio_task?: boolean
           lesson_plan_id?: string | null
@@ -636,6 +703,8 @@ export type Database = {
           description?: string
           exam_type?: string | null
           group_id?: string | null
+          group_mode?: string | null
+          group_size?: number | null
           id?: string
           is_portfolio_task?: boolean
           lesson_plan_id?: string | null
@@ -7798,6 +7867,10 @@ export type Database = {
       is_active_staff: { Args: { _user_id: string }; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
       is_admin_or_teacher: { Args: never; Returns: boolean }
+      is_assignment_group_member: {
+        Args: { _group_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_class_linked_textbook: {
         Args: { _textbook_id: string; _user_id: string }
         Returns: boolean

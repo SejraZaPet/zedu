@@ -54,6 +54,8 @@ interface Assignment {
   lockdown_mode?: boolean;
   is_portfolio_task?: boolean;
   exam_type?: string | null;
+  group_mode?: string | null;
+  group_size?: number | null;
 }
 
 
@@ -125,6 +127,23 @@ const TeacherAssignments = () => {
   const [scheduleEnabled, setScheduleEnabled] = useState(false);
   const [scheduleDate, setScheduleDate] = useState<Date | undefined>();
   const [scheduleTime, setScheduleTime] = useState("08:00");
+
+  // ---- Skupinové / párové úkoly ----
+  type GroupMode = "individual" | "pairs" | "groups";
+  const [groupMode, setGroupMode] = useState<GroupMode>("individual");
+  const [groupSize, setGroupSize] = useState(3);
+  /** Skupiny vytvořené pro právě upravovanou úlohu (včetně členů). */
+  const [assignmentGroups, setAssignmentGroups] = useState<
+    { id: string; name: string; members: { id: string; name: string }[] }[]
+  >([]);
+  /** Žáci zvolené třídy/skupiny předmětu. */
+  const [targetMembers, setTargetMembers] = useState<{ id: string; name: string }[]>([]);
+  /** Ruční rozdělení: student_id → číslo skupiny (1..N). */
+  const [manualAssign, setManualAssign] = useState<Record<string, number>>({});
+  const [manualGroupCount, setManualGroupCount] = useState(2);
+  const [showManual, setShowManual] = useState(false);
+  const [groupBusy, setGroupBusy] = useState(false);
+  const [copySourceId, setCopySourceId] = useState("");
 
 
   useEffect(() => {
@@ -283,6 +302,8 @@ const TeacherAssignments = () => {
           lockdown_mode: lockdownMode,
           is_portfolio_task: isPortfolioTask,
           exam_type: examType === "ukol" ? null : examType,
+          group_mode: groupMode,
+          group_size: groupMode === "groups" ? groupSize : groupMode === "pairs" ? 2 : null,
         };
         if (subjectIdForAssignment) patch.subject_id = subjectIdForAssignment;
         const original = assignments.find((a) => a.id === editingId);
@@ -300,7 +321,7 @@ const TeacherAssignments = () => {
         if (error) throw error;
         toast({ title: "Změny uloženy" });
       } else {
-        const { error } = await supabase.from("assignments" as any).insert({
+        const { data: created, error } = await supabase.from("assignments" as any).insert({
           teacher_id: user.id,
           title: title.trim(),
           description: description.trim(),
@@ -319,7 +340,9 @@ const TeacherAssignments = () => {
           lockdown_mode: lockdownMode,
           is_portfolio_task: isPortfolioTask,
           exam_type: examType === "ukol" ? null : examType,
-        } as any);
+          group_mode: groupMode,
+          group_size: groupMode === "groups" ? groupSize : groupMode === "pairs" ? 2 : null,
+        } as any).select("id").single();
 
         if (error) throw error;
         toast({
@@ -328,6 +351,13 @@ const TeacherAssignments = () => {
             ? `Žákům se zpřístupní ${new Date(scheduledPublishAt).toLocaleString("cs-CZ")}.`
             : undefined,
         });
+        // U skupinových úkolů necháme formulář otevřený, aby šlo hned rozdělit skupiny.
+        if (groupMode !== "individual" && (created as any)?.id) {
+          setEditingId((created as any).id as string);
+          await loadData();
+          setCreating(false);
+          return;
+        }
       }
 
       setShowForm(false);
@@ -370,6 +400,13 @@ const TeacherAssignments = () => {
     setScheduleEnabled(false);
     setScheduleDate(undefined);
     setScheduleTime("08:00");
+    setGroupMode("individual");
+    setGroupSize(3);
+    setAssignmentGroups([]);
+    setManualAssign({});
+    setManualGroupCount(2);
+    setShowManual(false);
+    setCopySourceId("");
   };
 
   /** Otevře formulář s předvyplněnými hodnotami už zadané úlohy. */
@@ -393,6 +430,10 @@ const TeacherAssignments = () => {
     setIsPortfolioTask(!!a.is_portfolio_task);
     setLockdownMode(!!a.lockdown_mode && !a.is_portfolio_task);
     setExamType((a.exam_type as ExamType) || "ukol");
+    setGroupMode(((a.group_mode as GroupMode) || "individual") as GroupMode);
+    setGroupSize(a.group_size && a.group_size > 1 ? a.group_size : 3);
+    setShowManual(false);
+    setCopySourceId("");
     if (a.scheduled_publish_at) {
       const when = new Date(a.scheduled_publish_at);
       setScheduleEnabled(true);
@@ -433,6 +474,199 @@ const TeacherAssignments = () => {
       loadData();
     }
   };
+
+  // ---------- Skupinové / párové úkoly ----------
+
+  /** Načte žáky zvolené třídy nebo skupiny předmětu (jméno pro zobrazení). */
+  const loadTargetMembers = async () => {
+    let ids: string[] = [];
+    if (selectedGroupId) {
+      const { data } = await supabase
+        .from("subject_group_members")
+        .select("student_id")
+        .eq("group_id", selectedGroupId);
+      ids = ((data as any[]) || []).map((m: any) => m.student_id);
+    } else if (selectedClassId) {
+      const { data } = await supabase
+        .from("class_members")
+        .select("user_id")
+        .eq("class_id", selectedClassId);
+      ids = ((data as any[]) || []).map((m: any) => m.user_id);
+    }
+    if (ids.length === 0) {
+      setTargetMembers([]);
+      return;
+    }
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, first_name, last_name")
+      .in("id", ids);
+    const list = ids.map((id) => {
+      const p = ((profiles as any[]) || []).find((x: any) => x.id === id);
+      return {
+        id,
+        name: p ? `${p.last_name ?? ""} ${p.first_name ?? ""}`.trim() || "Žák" : "Žák",
+      };
+    });
+    setTargetMembers(list.sort((a, b) => a.name.localeCompare(b.name, "cs")));
+  };
+
+  /** Načte existující skupiny (a jejich členy) pro upravovanou úlohu. */
+  const loadAssignmentGroups = async (assignmentId: string) => {
+    const { data: gData } = await supabase
+      .from("assignment_groups" as any)
+      .select("id, name")
+      .eq("assignment_id", assignmentId)
+      .order("name");
+    const groupsRows = ((gData as any[]) || []);
+    if (groupsRows.length === 0) {
+      setAssignmentGroups([]);
+      return;
+    }
+    const { data: mData } = await supabase
+      .from("assignment_group_members" as any)
+      .select("group_id, student_id")
+      .in("group_id", groupsRows.map((g: any) => g.id));
+    const memberRows = ((mData as any[]) || []);
+    const studentIds = [...new Set(memberRows.map((m: any) => m.student_id))];
+    let profileMap: Record<string, string> = {};
+    if (studentIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, first_name, last_name")
+        .in("id", studentIds);
+      ((profiles as any[]) || []).forEach((p: any) => {
+        profileMap[p.id] = `${p.last_name ?? ""} ${p.first_name ?? ""}`.trim() || "Žák";
+      });
+    }
+    setAssignmentGroups(
+      groupsRows.map((g: any) => ({
+        id: g.id,
+        name: g.name,
+        members: memberRows
+          .filter((m: any) => m.group_id === g.id)
+          .map((m: any) => ({ id: m.student_id, name: profileMap[m.student_id] || "Žák" })),
+      })),
+    );
+  };
+
+  /** Přepíše skupiny úlohy zadaným rozdělením (seznam seznamů student_id). */
+  const replaceGroups = async (assignmentId: string, buckets: string[][]) => {
+    setGroupBusy(true);
+    try {
+      await supabase.from("assignment_groups" as any).delete().eq("assignment_id", assignmentId);
+      const usable = buckets.filter((b) => b.length > 0);
+      for (let i = 0; i < usable.length; i++) {
+        const { data: g, error } = await supabase
+          .from("assignment_groups" as any)
+          .insert({ assignment_id: assignmentId, name: `Skupina ${i + 1}` } as any)
+          .select("id")
+          .single();
+        if (error) throw error;
+        const gid = (g as any).id as string;
+        const { error: mErr } = await supabase
+          .from("assignment_group_members" as any)
+          .insert(usable[i].map((sid) => ({ group_id: gid, student_id: sid })) as any);
+        if (mErr) throw mErr;
+      }
+      await loadAssignmentGroups(assignmentId);
+      toast({ title: "Skupiny uloženy", description: `Vytvořeno ${usable.length} skupin.` });
+    } catch (e: any) {
+      toast({ title: "Chyba", description: e.message, variant: "destructive" });
+    } finally {
+      setGroupBusy(false);
+    }
+  };
+
+  /** Náhodné rozdělení (Fisher-Yates) po zvolené velikosti skupiny. */
+  const handleRandomSplit = async () => {
+    if (!editingId) return;
+    if (targetMembers.length === 0) {
+      toast({ title: "Žádní žáci", description: "Zvolená třída/skupina nemá žáky.", variant: "destructive" });
+      return;
+    }
+    const size = groupMode === "pairs" ? 2 : Math.max(2, groupSize);
+    const shuffled = targetMembers.map((m) => m.id);
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    const buckets: string[][] = [];
+    for (let i = 0; i < shuffled.length; i += size) buckets.push(shuffled.slice(i, i + size));
+    // Poslední samotný žák se přidá k předchozí skupině.
+    if (buckets.length > 1 && buckets[buckets.length - 1].length === 1) {
+      const last = buckets.pop()!;
+      buckets[buckets.length - 1].push(...last);
+    }
+    await replaceGroups(editingId, buckets);
+  };
+
+  /** Uloží ruční rozdělení podle vybraných čísel skupin. */
+  const handleManualSave = async () => {
+    if (!editingId) return;
+    const buckets: string[][] = Array.from({ length: manualGroupCount }, () => []);
+    targetMembers.forEach((m) => {
+      const idx = (manualAssign[m.id] ?? 1) - 1;
+      if (idx >= 0 && idx < buckets.length) buckets[idx].push(m.id);
+    });
+    await replaceGroups(editingId, buckets);
+  };
+
+  /** Zkopíruje složení skupin z jiné úlohy stejné třídy/skupiny. */
+  const handleCopyGroups = async (sourceId: string) => {
+    if (!editingId || !sourceId) return;
+    setGroupBusy(true);
+    try {
+      const { data: gData } = await supabase
+        .from("assignment_groups" as any)
+        .select("id, name")
+        .eq("assignment_id", sourceId)
+        .order("name");
+      const rows = ((gData as any[]) || []);
+      if (rows.length === 0) {
+        toast({ title: "Zdrojová úloha nemá skupiny", variant: "destructive" });
+        return;
+      }
+      const { data: mData } = await supabase
+        .from("assignment_group_members" as any)
+        .select("group_id, student_id")
+        .in("group_id", rows.map((g: any) => g.id));
+      const members = ((mData as any[]) || []);
+      const buckets = rows.map((g: any) =>
+        members.filter((m: any) => m.group_id === g.id).map((m: any) => m.student_id as string),
+      );
+      setGroupBusy(false);
+      await replaceGroups(editingId, buckets);
+    } catch (e: any) {
+      toast({ title: "Chyba", description: e.message, variant: "destructive" });
+      setGroupBusy(false);
+    }
+  };
+
+  // Načtení žáků cíle při změně cíle nebo režimu
+  useEffect(() => {
+    if (groupMode === "individual") return;
+    loadTargetMembers();
+  }, [groupMode, selectedClassId, selectedGroupId]);
+
+  // Načtení existujících skupin upravované úlohy
+  useEffect(() => {
+    if (editingId && groupMode !== "individual") {
+      loadAssignmentGroups(editingId);
+    } else {
+      setAssignmentGroups([]);
+    }
+  }, [editingId, groupMode]);
+
+  /** Předchozí skupinové úlohy stejné třídy/skupiny (pro kopii složení). */
+  const copySourceOptions = assignments.filter(
+    (a) =>
+      a.id !== editingId &&
+      (a.group_mode ?? "individual") !== "individual" &&
+      (selectedGroupId ? a.group_id === selectedGroupId : a.class_id === selectedClassId),
+  );
+
+
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -710,6 +944,165 @@ const TeacherAssignments = () => {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+
+              {/* Typ zadání – individuálně / dvojice / skupiny */}
+              <div className="p-3 border border-border rounded-lg bg-muted/30 space-y-3">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm">Typ zadání</Label>
+                    <Select value={groupMode} onValueChange={(v) => setGroupMode(v as GroupMode)}>
+                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="individual">Individuálně</SelectItem>
+                        <SelectItem value="pairs">Ve dvojicích</SelectItem>
+                        <SelectItem value="groups">Ve skupinách</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {groupMode === "groups" && (
+                    <div>
+                      <Label className="text-sm">Velikost skupiny</Label>
+                      <Input
+                        type="number"
+                        min={2}
+                        max={10}
+                        value={groupSize}
+                        onChange={(e) => setGroupSize(Math.max(2, Number(e.target.value) || 3))}
+                        className="mt-1"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {groupMode !== "individual" && (
+                  <>
+                    {!editingId ? (
+                      <p className="text-xs text-muted-foreground">
+                        Nejdřív úlohu vytvořte – potom tady rozdělíte žáky do skupin.
+                      </p>
+                    ) : !(selectedClassId || selectedGroupId) ? (
+                      <p className="text-xs text-muted-foreground">
+                        Vyberte třídu nebo skupinu, ať je koho rozdělit.
+                      </p>
+                    ) : (
+                      <div className="space-y-3">
+                        <Label className="text-sm">Rozdělení do skupin</Label>
+                        <div className="flex gap-2 flex-wrap">
+                          <Button type="button" size="sm" variant="outline" disabled={groupBusy} onClick={handleRandomSplit}>
+                            {groupBusy ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Shuffle className="w-3.5 h-3.5 mr-1" />}
+                            Rozdělit náhodně
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setShowManual((v) => !v);
+                              if (!showManual) {
+                                const init: Record<string, number> = {};
+                                targetMembers.forEach((m, i) => {
+                                  init[m.id] =
+                                    manualAssign[m.id] ??
+                                    Math.min(manualGroupCount, Math.floor(i / (groupMode === "pairs" ? 2 : groupSize)) + 1);
+                                });
+                                setManualAssign(init);
+                                setManualGroupCount(
+                                  Math.max(
+                                    2,
+                                    Math.ceil(targetMembers.length / (groupMode === "pairs" ? 2 : groupSize)) || 2,
+                                  ),
+                                );
+                              }
+                            }}
+                          >
+                            <Users className="w-3.5 h-3.5 mr-1" />
+                            Rozdělit ručně
+                          </Button>
+                          {copySourceOptions.length > 0 && (
+                            <Select
+                              value={copySourceId || "__none__"}
+                              onValueChange={(v) => {
+                                if (v === "__none__") return;
+                                setCopySourceId(v);
+                                handleCopyGroups(v);
+                              }}
+                            >
+                              <SelectTrigger className="w-[260px] h-9 text-xs">
+                                <SelectValue placeholder="Použít skupiny z jiného úkolu" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="__none__">Použít skupiny z jiného úkolu</SelectItem>
+                                {copySourceOptions.map((a) => (
+                                  <SelectItem key={a.id} value={a.id}>{a.title}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        </div>
+
+                        {showManual && (
+                          <div className="space-y-2 rounded-lg border border-border p-3 bg-background">
+                            {targetMembers.length === 0 ? (
+                              <p className="text-xs text-muted-foreground">Tato třída/skupina nemá žáky.</p>
+                            ) : (
+                              <>
+                                {targetMembers.map((m) => (
+                                  <div key={m.id} className="flex items-center justify-between gap-3">
+                                    <span className="text-sm">{m.name}</span>
+                                    <Select
+                                      value={String(manualAssign[m.id] ?? 1)}
+                                      onValueChange={(v) => setManualAssign((prev) => ({ ...prev, [m.id]: Number(v) }))}
+                                    >
+                                      <SelectTrigger className="w-[130px] h-8 text-xs"><SelectValue /></SelectTrigger>
+                                      <SelectContent>
+                                        {Array.from({ length: manualGroupCount }, (_, i) => i + 1).map((n) => (
+                                          <SelectItem key={n} value={String(n)}>Skupina {n}</SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                ))}
+                                <div className="flex gap-2 pt-1">
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setManualGroupCount((n) => n + 1)}
+                                  >
+                                    <Plus className="w-3.5 h-3.5 mr-1" /> Přidat skupinu
+                                  </Button>
+                                  <Button type="button" size="sm" disabled={groupBusy} onClick={handleManualSave}>
+                                    {groupBusy && <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />}
+                                    Uložit rozdělení
+                                  </Button>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        )}
+
+                        {assignmentGroups.length > 0 && (
+                          <div className="space-y-2">
+                            <p className="text-xs text-muted-foreground">
+                              Vytvořené skupiny ({assignmentGroups.length}) – lze kdykoli přegenerovat.
+                            </p>
+                            <div className="grid gap-2 sm:grid-cols-2">
+                              {assignmentGroups.map((g) => (
+                                <div key={g.id} className="rounded-lg border border-border p-2 bg-background">
+                                  <p className="text-sm font-medium">{g.name}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {g.members.map((m) => m.name).join(", ") || "Bez členů"}
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
 
               {/* Randomization */}

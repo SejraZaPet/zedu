@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, Fragment } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +30,8 @@ interface StudentResult {
   lastActivity: string | null;
   violationCount: number;
   leftTest: boolean;
+  /** Název skupiny u skupinových/párových úkolů. */
+  groupName?: string | null;
 }
 
 interface AssignmentSummary {
@@ -44,6 +46,8 @@ interface AssignmentSummary {
   inProgress: number;
   submitted: number;
   avgScore: number | null;
+  /** 'individual' | 'pairs' | 'groups' */
+  groupMode: string;
 }
 
 interface Props {
@@ -147,6 +151,7 @@ const AssignmentResultsDashboard = ({ teacherId, initialAssignmentId }: Props) =
           inProgress: inProgressStudents.size,
           submitted: submittedStudents.size,
           avgScore,
+          groupMode: (a.group_mode as string) ?? "individual",
         };
       });
 
@@ -202,6 +207,38 @@ const AssignmentResultsDashboard = ({ teacherId, initialAssignmentId }: Props) =
         if (!studentIds.includes(att.student_id)) studentIds.push(att.student_id);
       });
 
+      // Skupinové/párové úkoly: pokus je sdílený, přiřadíme ho všem členům skupiny
+      const groupNameByStudent: Record<string, string> = {};
+      if (assignment.groupMode !== "individual") {
+        const { data: gData } = await supabase
+          .from("assignment_groups" as any)
+          .select("id, name")
+          .eq("assignment_id", assignmentId)
+          .order("name");
+        const groupRows = ((gData as any[]) || []);
+        if (groupRows.length > 0) {
+          const { data: mData } = await supabase
+            .from("assignment_group_members" as any)
+            .select("group_id, student_id")
+            .in("group_id", groupRows.map((g: any) => g.id));
+          const memberRows = ((mData as any[]) || []);
+          const attemptsByGroup: Record<string, any[]> = {};
+          ((attempts as any[]) || []).forEach((att: any) => {
+            if (!att.group_id) return;
+            if (!attemptsByGroup[att.group_id]) attemptsByGroup[att.group_id] = [];
+            attemptsByGroup[att.group_id].push(att);
+          });
+          memberRows.forEach((m: any) => {
+            const g = groupRows.find((x: any) => x.id === m.group_id);
+            groupNameByStudent[m.student_id] = g?.name ?? "Skupina";
+            if (!studentIds.includes(m.student_id)) studentIds.push(m.student_id);
+            const shared = attemptsByGroup[m.group_id] || [];
+            if (shared.length > 0) attemptsByStudent[m.student_id] = shared;
+          });
+        }
+      }
+
+
       if (studentIds.length === 0) { setStudents([]); setDetailLoading(false); return; }
 
       // Get profiles
@@ -244,6 +281,7 @@ const AssignmentResultsDashboard = ({ teacherId, initialAssignmentId }: Props) =
           lastActivity,
           violationCount: ts.count,
           leftTest: ts.left,
+          groupName: groupNameByStudent[sid] ?? null,
         };
       });
 
@@ -489,7 +527,10 @@ const AssignmentResultsDashboard = ({ teacherId, initialAssignmentId }: Props) =
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredStudents.map((s) => {
+                      {(() => {
+                      const groupMode = assignments.find((a) => a.id === selectedAssignmentId)?.groupMode ?? "individual";
+                      const renderStudentRow = (s: StudentResult) => {
+
 
                         const cfg = STATUS_CONFIG[s.status];
                         const StatusIcon = cfg.icon;
@@ -552,7 +593,30 @@ const AssignmentResultsDashboard = ({ teacherId, initialAssignmentId }: Props) =
                             </TableCell>
                           </TableRow>
                         );
-                      })}
+                      };
+
+                      if (groupMode === "individual") return filteredStudents.map(renderStudentRow);
+
+                      // Skupinové/párové úkoly: řádky seskupené podle skupiny
+                      const groupNames = [...new Set(filteredStudents.map((s) => s.groupName || "Bez skupiny"))]
+                        .sort((a, b) => a.localeCompare(b, "cs"));
+                      return groupNames.map((gn) => (
+                        <Fragment key={gn}>
+                          <TableRow className="bg-muted/50">
+                            <TableCell colSpan={7} className="text-xs font-semibold">
+                              <span className="flex items-center gap-1.5">
+                                <Users className="w-3.5 h-3.5" /> {gn}
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                          {filteredStudents
+                            .filter((s) => (s.groupName || "Bez skupiny") === gn)
+                            .map(renderStudentRow)}
+                        </Fragment>
+                      ));
+                      })()}
+
+
 
                     </TableBody>
                   </Table>
