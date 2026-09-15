@@ -992,6 +992,13 @@ function renderItem(item: WorksheetItem, showPoints: boolean): string {
   // Pro fill_blank schovej prompt — text už je součástí blank-text
   const showPrompt = item.type !== "fill_blank";
 
+  // Obrázek u otázky (pod prompt, před body a answer space) — pouze pokud
+  // typ sám obrázek nevykresluje (image_label/image_hotspot mají vlastní rendering).
+  const hasOwnImageRender = item.type === "image_label" || item.type === "image_hotspot";
+  const imageHtml = !hasOwnImageRender && item.imageUrl
+    ? `<div style="margin:6pt 0 0 18pt;"><img src="${esc(item.imageUrl)}" alt="${esc(item.imageAlt ?? "")}" style="max-height:240px;max-width:100%;border:1px solid #ccc;border-radius:6px;display:block;" /></div>`
+    : "";
+
   return `
 <div class="ws-item">
   <div class="ws-item-header">
@@ -999,6 +1006,7 @@ function renderItem(item: WorksheetItem, showPoints: boolean): string {
     ${showPrompt ? `<span class="ws-item-prompt prompt">${esc(item.prompt)}</span>` : ""}
     ${pointsHtml}
   </div>
+  ${imageHtml}
   ${body}
   ${renderAnswerSpace(item.answerSpace)}
 </div>`;
