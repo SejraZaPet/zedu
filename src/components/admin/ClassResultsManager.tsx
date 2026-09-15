@@ -199,11 +199,12 @@ const ClassResultsManager = () => {
 
     let titles: Record<string, string> = {};
     if (lessonIds.length > 0) {
-      const { data: lessonRows } = await supabase
-        .from("lessons")
-        .select("id, title")
-        .in("id", lessonIds);
-      lessonRows?.forEach((l: any) => { titles[l.id] = l.title; });
+      const [teacherRes, textbookRes] = await Promise.all([
+        supabase.from("teacher_textbook_lessons").select("id, title").in("id", lessonIds),
+        supabase.from("textbook_lessons").select("id, title").in("id", lessonIds),
+      ]);
+      (teacherRes.data ?? []).forEach((l: any) => { titles[l.id] = l.title; });
+      (textbookRes.data ?? []).forEach((l: any) => { titles[l.id] = l.title; });
     }
 
     setLessonActs((activityResults ?? []) as ActivityRow[]);
