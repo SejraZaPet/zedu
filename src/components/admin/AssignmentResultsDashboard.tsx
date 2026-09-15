@@ -48,6 +48,8 @@ interface AssignmentSummary {
 
 interface Props {
   teacherId: string;
+  /** Volitelné předvybrání konkrétní úlohy (otevření výsledků z karty úlohy). */
+  initialAssignmentId?: string;
 }
 
 const STATUS_CONFIG: Record<StudentStatus, { label: string; icon: typeof CheckCircle2; className: string }> = {
@@ -56,10 +58,10 @@ const STATUS_CONFIG: Record<StudentStatus, { label: string; icon: typeof CheckCi
   submitted: { label: "Dokončeno", icon: CheckCircle2, className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200" },
 };
 
-const AssignmentResultsDashboard = ({ teacherId }: Props) => {
+const AssignmentResultsDashboard = ({ teacherId, initialAssignmentId }: Props) => {
   const [loading, setLoading] = useState(true);
   const [assignments, setAssignments] = useState<AssignmentSummary[]>([]);
-  const [selectedAssignmentId, setSelectedAssignmentId] = useState<string>("");
+  const [selectedAssignmentId, setSelectedAssignmentId] = useState<string>(initialAssignmentId ?? "");
   const [students, setStudents] = useState<StudentResult[]>([]);
   const [detailLoading, setDetailLoading] = useState(false);
   const [classes, setClasses] = useState<{ id: string; name: string }[]>([]);
