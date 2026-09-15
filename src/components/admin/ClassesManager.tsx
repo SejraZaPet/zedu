@@ -388,6 +388,7 @@ const ClassesManager = () => {
               <TableHead>Název</TableHead>
               <TableHead>Škola</TableHead>
               <TableHead>Obor</TableHead>
+              <TableHead>Třídní</TableHead>
               <TableHead className="text-center">Ročník</TableHead>
               <TableHead className="text-center">Studenti</TableHead>
               <TableHead className="text-center">Stav studentů</TableHead>
@@ -414,6 +415,9 @@ const ClassesManager = () => {
                 </TableCell>
                 <TableCell className="text-muted-foreground">{c.school || "–"}</TableCell>
                 <TableCell className="text-muted-foreground">{c.field_of_study || "–"}</TableCell>
+                <TableCell className="text-muted-foreground text-sm">
+                  {homeroomByClass[c.id] ? (teacherNames[homeroomByClass[c.id]] ?? "Učitel") : "–"}
+                </TableCell>
                 <TableCell className="text-center text-muted-foreground">{c.year ?? "–"}</TableCell>
                 <TableCell className="text-center">
                   <Badge variant="secondary" className="text-xs cursor-pointer" onClick={() => setMembersClass(c)}>
@@ -517,7 +521,7 @@ const ClassesManager = () => {
             ))}
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                   {showArchived ? "Žádné archivované třídy." : "Žádné třídy. Vytvořte první."}
                 </TableCell>
               </TableRow>
@@ -558,6 +562,20 @@ const ClassesManager = () => {
                 <Label htmlFor="classYear">Ročník</Label>
                 <Input id="classYear" type="number" min={1} max={9} value={year} onChange={(e) => setYear(e.target.value)} />
               </div>
+            </div>
+            <div>
+              <Label>Třídní učitel</Label>
+              <Select value={homeroomUserId} onValueChange={setHomeroomUserId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Bez třídního" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Bez třídního</SelectItem>
+                  {teacherOptions.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={() => setFormOpen(false)}>Zrušit</Button>
