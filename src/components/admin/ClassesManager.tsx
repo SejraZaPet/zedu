@@ -146,9 +146,57 @@ const ClassesManager = () => {
       };
     });
 
+    // Třídní učitelé + seznam učitelů (z rozvrhů tříd a existujících přiřazení)
+    const [{ data: classTeachers }, { data: slotCreators }] = await Promise.all([
+      supabase.from("class_teachers").select("class_id, user_id, role"),
+      supabase.from("class_schedule_slots").select("class_id, created_by"),
+    ]);
+
+    const homeroom: Record<string, string> = {};
+    const teacherIds = new Set<string>();
+    (classTeachers ?? []).forEach((t: any) => {
+      if (t.role === "homeroom") homeroom[t.class_id] = t.user_id;
+      if (t.user_id) teacherIds.add(t.user_id);
+    });
+    (slotCreators ?? []).forEach((s: any) => {
+      if (s.created_by) teacherIds.add(s.created_by);
+    });
+
+    const names: Record<string, string> = {};
+    if (teacherIds.size > 0) {
+      const { data: teacherProfiles } = await supabase
+        .from("profiles")
+        .select("id, first_name, last_name, email")
+        .in("id", Array.from(teacherIds));
+      (teacherProfiles ?? []).forEach((p: any) => {
+        names[p.id] = [p.first_name, p.last_name].filter(Boolean).join(" ").trim() || p.email || "Učitel";
+      });
+    }
+
+    setHomeroomByClass(homeroom);
+    setTeacherNames(names);
+    setTeacherOptions(
+      Array.from(teacherIds)
+        .map((id) => ({ id, name: names[id] ?? "Učitel" }))
+        .sort((a, b) => a.name.localeCompare(b.name, "cs")),
+    );
+
     setClasses(enriched);
     setLoading(false);
   };
+
+  const saveHomeroom = async (classId: string) => {
+    await supabase.from("class_teachers").delete().eq("class_id", classId).eq("role", "homeroom");
+    if (homeroomUserId && homeroomUserId !== "none") {
+      const { error } = await supabase
+        .from("class_teachers")
+        .insert({ class_id: classId, user_id: homeroomUserId, role: "homeroom" });
+      if (error) {
+        toast({ title: "Třídního nelze uložit", description: error.message, variant: "destructive" });
+      }
+    }
+  };
+
 
   useEffect(() => { fetchClasses(); }, []);
 
