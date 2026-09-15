@@ -28,6 +28,9 @@ export default function MyNotebook() {
   const lessonId = params.get("lekce");
   const classId = params.get("trida");
   const lessonTitle = params.get("nazev");
+  const subjectParam = params.get("predmet");
+  const openId = params.get("otevrit");
+
 
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
   const [loading, setLoading] = useState(true);
@@ -100,12 +103,14 @@ export default function MyNotebook() {
     })();
   }, [user, lessonId, lessonTitle, loading, notebooks, openNotebook, refresh]);
 
-  /* Propojení s třídou: ?trida=<id> → otevři existující nebo založ nový */
+  /* Propojení s třídou: ?trida=<id>(&predmet=<label>) → otevři existující nebo založ nový */
   const handledClass = useRef(false);
   useEffect(() => {
     if (!user || !classId || loading || handledClass.current) return;
     handledClass.current = true;
-    const existing = notebooks.find((n) => n.related_class_id === classId);
+    const existing = subjectParam
+      ? notebooks.find((n) => n.related_class_id === classId && n.subject === subjectParam)
+      : notebooks.find((n) => n.related_class_id === classId);
     if (existing) {
       openNotebook(existing);
       return;
@@ -114,7 +119,10 @@ export default function MyNotebook() {
       try {
         const nb = await createNotebook({
           ownerId: user.id,
-          title: lessonTitle ? `Poznámky: ${lessonTitle}` : "Poznámky ke třídě",
+          title: subjectParam
+            ? (lessonTitle ? `Sešit – ${lessonTitle}` : "Sešit")
+            : (lessonTitle ? `Poznámky: ${lessonTitle}` : "Poznámky ke třídě"),
+          subject: subjectParam || null,
           coverColor: COVER_COLORS[2],
           relatedClassId: classId,
         });
@@ -125,7 +133,18 @@ export default function MyNotebook() {
         toast.error(e.message || "Sešit se nepodařilo založit.");
       }
     })();
-  }, [user, classId, lessonTitle, loading, notebooks, openNotebook, refresh]);
+  }, [user, classId, subjectParam, lessonTitle, loading, notebooks, openNotebook, refresh]);
+
+  /* Otevření konkrétního sešitu: ?otevrit=<id> */
+  const handledOpenId = useRef(false);
+  useEffect(() => {
+    if (!user || !openId || loading || handledOpenId.current) return;
+    const found = notebooks.find((n) => n.id === openId);
+    if (!found) return;
+    handledOpenId.current = true;
+    openNotebook(found);
+  }, [user, openId, loading, notebooks, openNotebook]);
+
 
   const activePage = pages[activeIndex] ?? null;
 
