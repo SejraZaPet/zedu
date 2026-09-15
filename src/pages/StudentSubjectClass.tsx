@@ -227,9 +227,11 @@ export default function StudentSubjectClass() {
       setSlots(filtered);
 
       // Učebnice připojená k předmětu třídy / skupině (nejen do rozvrhu)
-      let subjectIdKey: string | null = UUID_RE.test(rawSubjectParam)
-        ? rawSubjectParam
-        : ((filtered.find((s: any) => s.subject_id) as any)?.subject_id ?? null);
+      // subjectIdKey bylo spočítáno před dotazem na assignments; případně doplň ze slotů.
+      if (!subjectIdKey) {
+        subjectIdKey =
+          (filtered.find((s: any) => s.subject_id) as any)?.subject_id ?? null;
+      }
       if (!subjectIdKey) {
         const { data: subjRow } = await supabase
           .from("subjects" as any)
