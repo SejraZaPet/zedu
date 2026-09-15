@@ -412,7 +412,12 @@ const ClassResultsManager = () => {
               <TableRow key={c.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelectedClass(c)}>
                 <TableCell>
                   <div>
-                    <p className="font-medium">{c.name}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium">{c.name}</p>
+                      {!hasFullAccess(c.id) && (
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">jen tvé předměty</Badge>
+                      )}
+                    </div>
                     <p className="text-xs text-muted-foreground">
                       {[c.school, c.field_of_study, c.year ? `${c.year}. ročník` : null].filter(Boolean).join(" · ") || "–"}
                     </p>
