@@ -134,9 +134,63 @@ const TeacherAssignments = () => {
         .in("status", ["draft", "published"])
         .order("updated_at", { ascending: false }),
     ]);
-    if (assignmentsRes.data) setAssignments(assignmentsRes.data as any);
+    const list = (assignmentsRes.data as any[]) || [];
+    if (assignmentsRes.data) setAssignments(list as any);
     if (worksheetsRes.data) setWorksheets(worksheetsRes.data as any);
+    await loadProgress(list);
     setLoading(false);
+  };
+
+  /**
+   * Spočítá „X/Y odevzdáno“ pro publikované úlohy – stejná logika jako
+   * v přehledu výsledků (odevzdané pokusy vs. počet členů třídy/skupiny).
+   */
+  const loadProgress = async (list: any[]) => {
+    if (list.length === 0) {
+      setProgress({});
+      return;
+    }
+    const ids = list.map((a) => a.id);
+    const classIds = [...new Set(list.filter((a) => a.class_id).map((a) => a.class_id as string))];
+    const groupIds = [...new Set(list.filter((a) => a.group_id).map((a) => a.group_id as string))];
+
+    const [attemptsRes, membersRes, groupMembersRes] = await Promise.all([
+      supabase.from("assignment_attempts" as any).select("assignment_id, student_id, status").in("assignment_id", ids),
+      classIds.length
+        ? supabase.from("class_members").select("class_id").in("class_id", classIds)
+        : Promise.resolve({ data: [] as any[] }),
+      groupIds.length
+        ? supabase.from("subject_group_members").select("group_id").in("group_id", groupIds)
+        : Promise.resolve({ data: [] as any[] }),
+    ]);
+
+    const byClass: Record<string, number> = {};
+    ((membersRes as any).data || []).forEach((m: any) => {
+      byClass[m.class_id] = (byClass[m.class_id] || 0) + 1;
+    });
+    const byGroup: Record<string, number> = {};
+    ((groupMembersRes as any).data || []).forEach((m: any) => {
+      byGroup[m.group_id] = (byGroup[m.group_id] || 0) + 1;
+    });
+
+    const submittedByAssignment: Record<string, Set<string>> = {};
+    (((attemptsRes as any).data as any[]) || []).forEach((att: any) => {
+      if (att.status !== "submitted") return;
+      if (!submittedByAssignment[att.assignment_id]) submittedByAssignment[att.assignment_id] = new Set();
+      submittedByAssignment[att.assignment_id].add(att.student_id);
+    });
+
+    const next: Record<string, { submitted: number; total: number }> = {};
+    list.forEach((a) => {
+      const submitted = submittedByAssignment[a.id]?.size ?? 0;
+      const total = a.group_id
+        ? byGroup[a.group_id] ?? 0
+        : a.class_id
+          ? byClass[a.class_id] ?? 0
+          : submitted;
+      next[a.id] = { submitted, total };
+    });
+    setProgress(next);
   };
 
   const handleSubmit = async () => {
