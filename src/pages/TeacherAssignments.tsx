@@ -150,6 +150,20 @@ const TeacherAssignments = () => {
     loadData();
   }, []);
 
+  // Pokud URL obsahuje ?detail=<id> (např. z Předmět/Třída), otevři detail úlohy jednou.
+  const detailParam = searchParams.get("detail");
+  const detailOpenedRef = useRef(false);
+  useEffect(() => {
+    if (detailOpenedRef.current) return;
+    if (!detailParam) return;
+    if (assignments.length === 0) return;
+    const found = assignments.find((a) => a.id === detailParam);
+    if (found) {
+      detailOpenedRef.current = true;
+      setDetailAssignment(found);
+    }
+  }, [detailParam, assignments]);
+
   // (Old AI inline generator removed — worksheets are now first-class entities.)
 
   const loadData = async () => {
