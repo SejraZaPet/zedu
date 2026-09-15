@@ -475,6 +475,199 @@ const TeacherAssignments = () => {
     }
   };
 
+  // ---------- Skupinové / párové úkoly ----------
+
+  /** Načte žáky zvolené třídy nebo skupiny předmětu (jméno pro zobrazení). */
+  const loadTargetMembers = async () => {
+    let ids: string[] = [];
+    if (selectedGroupId) {
+      const { data } = await supabase
+        .from("subject_group_members")
+        .select("student_id")
+        .eq("group_id", selectedGroupId);
+      ids = ((data as any[]) || []).map((m: any) => m.student_id);
+    } else if (selectedClassId) {
+      const { data } = await supabase
+        .from("class_members")
+        .select("user_id")
+        .eq("class_id", selectedClassId);
+      ids = ((data as any[]) || []).map((m: any) => m.user_id);
+    }
+    if (ids.length === 0) {
+      setTargetMembers([]);
+      return;
+    }
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, first_name, last_name")
+      .in("id", ids);
+    const list = ids.map((id) => {
+      const p = ((profiles as any[]) || []).find((x: any) => x.id === id);
+      return {
+        id,
+        name: p ? `${p.last_name ?? ""} ${p.first_name ?? ""}`.trim() || "Žák" : "Žák",
+      };
+    });
+    setTargetMembers(list.sort((a, b) => a.name.localeCompare(b.name, "cs")));
+  };
+
+  /** Načte existující skupiny (a jejich členy) pro upravovanou úlohu. */
+  const loadAssignmentGroups = async (assignmentId: string) => {
+    const { data: gData } = await supabase
+      .from("assignment_groups" as any)
+      .select("id, name")
+      .eq("assignment_id", assignmentId)
+      .order("name");
+    const groupsRows = ((gData as any[]) || []);
+    if (groupsRows.length === 0) {
+      setAssignmentGroups([]);
+      return;
+    }
+    const { data: mData } = await supabase
+      .from("assignment_group_members" as any)
+      .select("group_id, student_id")
+      .in("group_id", groupsRows.map((g: any) => g.id));
+    const memberRows = ((mData as any[]) || []);
+    const studentIds = [...new Set(memberRows.map((m: any) => m.student_id))];
+    let profileMap: Record<string, string> = {};
+    if (studentIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, first_name, last_name")
+        .in("id", studentIds);
+      ((profiles as any[]) || []).forEach((p: any) => {
+        profileMap[p.id] = `${p.last_name ?? ""} ${p.first_name ?? ""}`.trim() || "Žák";
+      });
+    }
+    setAssignmentGroups(
+      groupsRows.map((g: any) => ({
+        id: g.id,
+        name: g.name,
+        members: memberRows
+          .filter((m: any) => m.group_id === g.id)
+          .map((m: any) => ({ id: m.student_id, name: profileMap[m.student_id] || "Žák" })),
+      })),
+    );
+  };
+
+  /** Přepíše skupiny úlohy zadaným rozdělením (seznam seznamů student_id). */
+  const replaceGroups = async (assignmentId: string, buckets: string[][]) => {
+    setGroupBusy(true);
+    try {
+      await supabase.from("assignment_groups" as any).delete().eq("assignment_id", assignmentId);
+      const usable = buckets.filter((b) => b.length > 0);
+      for (let i = 0; i < usable.length; i++) {
+        const { data: g, error } = await supabase
+          .from("assignment_groups" as any)
+          .insert({ assignment_id: assignmentId, name: `Skupina ${i + 1}` } as any)
+          .select("id")
+          .single();
+        if (error) throw error;
+        const gid = (g as any).id as string;
+        const { error: mErr } = await supabase
+          .from("assignment_group_members" as any)
+          .insert(usable[i].map((sid) => ({ group_id: gid, student_id: sid })) as any);
+        if (mErr) throw mErr;
+      }
+      await loadAssignmentGroups(assignmentId);
+      toast({ title: "Skupiny uloženy", description: `Vytvořeno ${usable.length} skupin.` });
+    } catch (e: any) {
+      toast({ title: "Chyba", description: e.message, variant: "destructive" });
+    } finally {
+      setGroupBusy(false);
+    }
+  };
+
+  /** Náhodné rozdělení (Fisher-Yates) po zvolené velikosti skupiny. */
+  const handleRandomSplit = async () => {
+    if (!editingId) return;
+    if (targetMembers.length === 0) {
+      toast({ title: "Žádní žáci", description: "Zvolená třída/skupina nemá žáky.", variant: "destructive" });
+      return;
+    }
+    const size = groupMode === "pairs" ? 2 : Math.max(2, groupSize);
+    const shuffled = targetMembers.map((m) => m.id);
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    const buckets: string[][] = [];
+    for (let i = 0; i < shuffled.length; i += size) buckets.push(shuffled.slice(i, i + size));
+    // Poslední samotný žák se přidá k předchozí skupině.
+    if (buckets.length > 1 && buckets[buckets.length - 1].length === 1) {
+      const last = buckets.pop()!;
+      buckets[buckets.length - 1].push(...last);
+    }
+    await replaceGroups(editingId, buckets);
+  };
+
+  /** Uloží ruční rozdělení podle vybraných čísel skupin. */
+  const handleManualSave = async () => {
+    if (!editingId) return;
+    const buckets: string[][] = Array.from({ length: manualGroupCount }, () => []);
+    targetMembers.forEach((m) => {
+      const idx = (manualAssign[m.id] ?? 1) - 1;
+      if (idx >= 0 && idx < buckets.length) buckets[idx].push(m.id);
+    });
+    await replaceGroups(editingId, buckets);
+  };
+
+  /** Zkopíruje složení skupin z jiné úlohy stejné třídy/skupiny. */
+  const handleCopyGroups = async (sourceId: string) => {
+    if (!editingId || !sourceId) return;
+    setGroupBusy(true);
+    try {
+      const { data: gData } = await supabase
+        .from("assignment_groups" as any)
+        .select("id, name")
+        .eq("assignment_id", sourceId)
+        .order("name");
+      const rows = ((gData as any[]) || []);
+      if (rows.length === 0) {
+        toast({ title: "Zdrojová úloha nemá skupiny", variant: "destructive" });
+        return;
+      }
+      const { data: mData } = await supabase
+        .from("assignment_group_members" as any)
+        .select("group_id, student_id")
+        .in("group_id", rows.map((g: any) => g.id));
+      const members = ((mData as any[]) || []);
+      const buckets = rows.map((g: any) =>
+        members.filter((m: any) => m.group_id === g.id).map((m: any) => m.student_id as string),
+      );
+      setGroupBusy(false);
+      await replaceGroups(editingId, buckets);
+    } catch (e: any) {
+      toast({ title: "Chyba", description: e.message, variant: "destructive" });
+      setGroupBusy(false);
+    }
+  };
+
+  // Načtení žáků cíle při změně cíle nebo režimu
+  useEffect(() => {
+    if (groupMode === "individual") return;
+    loadTargetMembers();
+  }, [groupMode, selectedClassId, selectedGroupId]);
+
+  // Načtení existujících skupin upravované úlohy
+  useEffect(() => {
+    if (editingId && groupMode !== "individual") {
+      loadAssignmentGroups(editingId);
+    } else {
+      setAssignmentGroups([]);
+    }
+  }, [editingId, groupMode]);
+
+  /** Předchozí skupinové úlohy stejné třídy/skupiny (pro kopii složení). */
+  const copySourceOptions = assignments.filter(
+    (a) =>
+      a.id !== editingId &&
+      (a.group_mode ?? "individual") !== "individual" &&
+      (selectedGroupId ? a.group_id === selectedGroupId : a.class_id === selectedClassId),
+  );
+
+
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <SiteHeader />
