@@ -30,6 +30,8 @@ interface StudentResult {
   lastActivity: string | null;
   violationCount: number;
   leftTest: boolean;
+  /** Název skupiny u skupinových/párových úkolů. */
+  groupName?: string | null;
 }
 
 interface AssignmentSummary {
@@ -44,6 +46,8 @@ interface AssignmentSummary {
   inProgress: number;
   submitted: number;
   avgScore: number | null;
+  /** 'individual' | 'pairs' | 'groups' */
+  groupMode: string;
 }
 
 interface Props {
