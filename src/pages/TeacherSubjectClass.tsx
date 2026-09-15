@@ -1266,8 +1266,62 @@ export default function TeacherSubjectClass() {
                                   Bez plánu hodiny
                                 </div>
                               )}
+                              {editingTopic ? (
+                                <div className="mt-1 flex items-center gap-1">
+                                  <Input
+                                    autoFocus
+                                    value={topicDraft}
+                                    onChange={(ev) => setTopicDraft(ev.target.value)}
+                                    placeholder="Téma hodiny"
+                                    className="h-7 text-xs"
+                                    onKeyDown={async (ev) => {
+                                      if (ev.key === "Enter") {
+                                        await saveLessonTopic(dateKey, { topic: topicDraft.trim() || null });
+                                        setTopicEditDate(null);
+                                      }
+                                      if (ev.key === "Escape") setTopicEditDate(null);
+                                    }}
+                                  />
+                                  <Button
+                                    size="sm"
+                                    className="h-7"
+                                    onClick={async () => {
+                                      await saveLessonTopic(dateKey, { topic: topicDraft.trim() || null });
+                                      setTopicEditDate(null);
+                                    }}
+                                  >
+                                    Uložit
+                                  </Button>
+                                </div>
+                              ) : (
+                                <button
+                                  type="button"
+                                  className={`mt-0.5 text-xs text-left truncate hover:underline ${topicRow?.topic ? "text-foreground" : "text-muted-foreground italic"}`}
+                                  onClick={() => {
+                                    setTopicDraft(topicRow?.topic ?? "");
+                                    setTopicEditDate(dateKey);
+                                  }}
+                                >
+                                  {topicRow?.topic ? `Téma: ${topicRow.topic}` : "Přidat téma hodiny"}
+                                </button>
+                              )}
                             </div>
                             <div className="flex items-center gap-1">
+                              <Button
+                                size="sm"
+                                variant={topicRow?.materials?.length ? "secondary" : "ghost"}
+                                onClick={() => {
+                                  setMaterialsDraft(topicRow?.materials ?? []);
+                                  setMaterialsDate(dateKey);
+                                }}
+                                title="Materiály k hodině"
+                              >
+                                <Paperclip className="h-3.5 w-3.5" />
+                                {topicRow?.materials?.length ? (
+                                  <span className="ml-1 text-[10px]">{topicRow.materials.length}</span>
+                                ) : null}
+                              </Button>
+
                               {planForDate && (
                                 <Button size="sm" variant="ghost" onClick={() => navigate(`/ucitel/plany-hodin/${planForDate.id}?return_to=${encodeURIComponent(location.pathname)}`)}>
                                   <FileText className="h-3.5 w-3.5 mr-1" />
