@@ -33,6 +33,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Plus, Pencil, Archive, ArchiveRestore, Trash2, Users, Search, Key, KeyRound, Copy, RefreshCw, XCircle, Clock, BookOpen } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useMySchool } from "@/hooks/useMySchool";
 import ClassMembersDialog from "./ClassMembersDialog";
 import ClassScheduleDialog from "./ClassScheduleDialog";
@@ -72,7 +73,13 @@ const ClassesManager = () => {
   const [school, setSchool] = useState("");
   const [fieldOfStudy, setFieldOfStudy] = useState("");
   const [year, setYear] = useState("");
+  const [homeroomUserId, setHomeroomUserId] = useState<string>("none");
   const [saving, setSaving] = useState(false);
+
+  // Třídní učitelé
+  const [homeroomByClass, setHomeroomByClass] = useState<Record<string, string>>({});
+  const [teacherOptions, setTeacherOptions] = useState<{ id: string; name: string }[]>([]);
+  const [teacherNames, setTeacherNames] = useState<Record<string, string>>({});
 
   // Members dialog
   const [membersClass, setMembersClass] = useState<ClassItem | null>(null);
@@ -139,9 +146,57 @@ const ClassesManager = () => {
       };
     });
 
+    // Třídní učitelé + seznam učitelů (z rozvrhů tříd a existujících přiřazení)
+    const [{ data: classTeachers }, { data: slotCreators }] = await Promise.all([
+      supabase.from("class_teachers").select("class_id, user_id, role"),
+      supabase.from("class_schedule_slots").select("class_id, created_by"),
+    ]);
+
+    const homeroom: Record<string, string> = {};
+    const teacherIds = new Set<string>();
+    (classTeachers ?? []).forEach((t: any) => {
+      if (t.role === "homeroom") homeroom[t.class_id] = t.user_id;
+      if (t.user_id) teacherIds.add(t.user_id);
+    });
+    (slotCreators ?? []).forEach((s: any) => {
+      if (s.created_by) teacherIds.add(s.created_by);
+    });
+
+    const names: Record<string, string> = {};
+    if (teacherIds.size > 0) {
+      const { data: teacherProfiles } = await supabase
+        .from("profiles")
+        .select("id, first_name, last_name, email")
+        .in("id", Array.from(teacherIds));
+      (teacherProfiles ?? []).forEach((p: any) => {
+        names[p.id] = [p.first_name, p.last_name].filter(Boolean).join(" ").trim() || p.email || "Učitel";
+      });
+    }
+
+    setHomeroomByClass(homeroom);
+    setTeacherNames(names);
+    setTeacherOptions(
+      Array.from(teacherIds)
+        .map((id) => ({ id, name: names[id] ?? "Učitel" }))
+        .sort((a, b) => a.name.localeCompare(b.name, "cs")),
+    );
+
     setClasses(enriched);
     setLoading(false);
   };
+
+  const saveHomeroom = async (classId: string) => {
+    await supabase.from("class_teachers").delete().eq("class_id", classId).eq("role", "homeroom");
+    if (homeroomUserId && homeroomUserId !== "none") {
+      const { error } = await supabase
+        .from("class_teachers")
+        .insert({ class_id: classId, user_id: homeroomUserId, role: "homeroom" });
+      if (error) {
+        toast({ title: "Třídního nelze uložit", description: error.message, variant: "destructive" });
+      }
+    }
+  };
+
 
   useEffect(() => { fetchClasses(); }, []);
 
@@ -163,6 +218,7 @@ const ClassesManager = () => {
     setSchool(mySchoolId ? (schoolName ?? "") : "");
     setFieldOfStudy("");
     setYear("");
+    setHomeroomUserId("none");
     setFormOpen(true);
   };
 
@@ -173,6 +229,7 @@ const ClassesManager = () => {
     setSchool(c.school);
     setFieldOfStudy(c.field_of_study);
     setYear(c.year ? String(c.year) : "");
+    setHomeroomUserId(homeroomByClass[c.id] ?? "none");
     setFormOpen(true);
   };
 
@@ -200,6 +257,7 @@ const ClassesManager = () => {
       }
       toast({ title: "Uloženo", description: "Třída byla upravena." });
       logAudit("class_updated", "class", editingClass.id, { name: payload.name });
+      await saveHomeroom(editingClass.id);
     } else {
       if (!user) {
         toast({ title: "Chyba", description: "Nejste přihlášen/a.", variant: "destructive" });
@@ -223,6 +281,7 @@ const ClassesManager = () => {
         await supabase
           .from("class_teachers")
           .insert({ class_id: created.id, user_id: user.id, role: "owner" });
+        await saveHomeroom(created.id);
       }
     }
 
@@ -329,6 +388,7 @@ const ClassesManager = () => {
               <TableHead>Název</TableHead>
               <TableHead>Škola</TableHead>
               <TableHead>Obor</TableHead>
+              <TableHead>Třídní</TableHead>
               <TableHead className="text-center">Ročník</TableHead>
               <TableHead className="text-center">Studenti</TableHead>
               <TableHead className="text-center">Stav studentů</TableHead>
@@ -355,6 +415,9 @@ const ClassesManager = () => {
                 </TableCell>
                 <TableCell className="text-muted-foreground">{c.school || "–"}</TableCell>
                 <TableCell className="text-muted-foreground">{c.field_of_study || "–"}</TableCell>
+                <TableCell className="text-muted-foreground text-sm">
+                  {homeroomByClass[c.id] ? (teacherNames[homeroomByClass[c.id]] ?? "Učitel") : "–"}
+                </TableCell>
                 <TableCell className="text-center text-muted-foreground">{c.year ?? "–"}</TableCell>
                 <TableCell className="text-center">
                   <Badge variant="secondary" className="text-xs cursor-pointer" onClick={() => setMembersClass(c)}>
@@ -458,7 +521,7 @@ const ClassesManager = () => {
             ))}
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                   {showArchived ? "Žádné archivované třídy." : "Žádné třídy. Vytvořte první."}
                 </TableCell>
               </TableRow>
@@ -499,6 +562,20 @@ const ClassesManager = () => {
                 <Label htmlFor="classYear">Ročník</Label>
                 <Input id="classYear" type="number" min={1} max={9} value={year} onChange={(e) => setYear(e.target.value)} />
               </div>
+            </div>
+            <div>
+              <Label>Třídní učitel</Label>
+              <Select value={homeroomUserId} onValueChange={setHomeroomUserId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Bez třídního" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Bez třídního</SelectItem>
+                  {teacherOptions.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={() => setFormOpen(false)}>Zrušit</Button>

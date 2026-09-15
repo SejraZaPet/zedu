@@ -1,5 +1,6 @@
 import { Fragment, useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -54,8 +55,11 @@ interface CompletionRow {
   completed_at: string | null;
 }
 
+const norm = (s: string | null | undefined) => (s ?? "").trim().toLowerCase();
+
 const ClassResultsManager = () => {
   const { toast } = useToast();
+  const { user, role } = useAuth();
   const [loading, setLoading] = useState(true);
   const [classes, setClasses] = useState<ClassOverview[]>([]);
   const [search, setSearch] = useState("");
@@ -67,6 +71,31 @@ const ClassResultsManager = () => {
   const [lessonTitles, setLessonTitles] = useState<Record<string, string>>({});
   const [openLessonId, setOpenLessonId] = useState<string | null>(null);
   const [openStudentKey, setOpenStudentKey] = useState<string | null>(null);
+
+  /** Úroveň přístupu: elevated = admin / školní admin, homeroom = třídní učitel */
+  const isElevated = role === "admin" || role === "school_admin";
+  const [homeroomClassIds, setHomeroomClassIds] = useState<Set<string>>(new Set());
+  /** class_id -> předměty, ke kterým je učitel v té třídě připojený (podle rozvrhu) */
+  const [mySubjectsByClass, setMySubjectsByClass] = useState<Map<string, Set<string>>>(new Map());
+
+  const hasFullAccess = (classId: string) => isElevated || homeroomClassIds.has(classId);
+
+  const fetchAccess = async () => {
+    if (!user) return;
+    const [{ data: homeroomRows }, { data: mySlots }] = await Promise.all([
+      supabase.from("class_teachers").select("class_id").eq("user_id", user.id).eq("role", "homeroom"),
+      supabase.from("class_schedule_slots").select("class_id, subject_label").eq("created_by", user.id),
+    ]);
+    setHomeroomClassIds(new Set((homeroomRows ?? []).map((r: any) => r.class_id)));
+    const map = new Map<string, Set<string>>();
+    (mySlots ?? []).forEach((s: any) => {
+      if (!s.class_id) return;
+      if (!map.has(s.class_id)) map.set(s.class_id, new Set());
+      if (s.subject_label) map.get(s.class_id)!.add(norm(s.subject_label));
+    });
+    setMySubjectsByClass(map);
+  };
+
 
   const fetchOverview = async () => {
     setLoading(true);
@@ -182,36 +211,76 @@ const ClassResultsManager = () => {
       .select("id, first_name, last_name, email")
       .in("id", memberIds);
 
-    const { data: activityResults } = await supabase
+    const { data: allActivityResults } = await supabase
       .from("student_activity_results")
       .select("user_id, lesson_id, activity_index, activity_type, score, max_score, completed_at")
       .in("user_id", memberIds);
 
-    const { data: lessonCompletions } = await supabase
+    const { data: allLessonCompletions } = await supabase
       .from("student_lesson_completions")
       .select("user_id, lesson_id, completed_at")
       .in("user_id", memberIds);
 
     const lessonIds = Array.from(new Set([
-      ...(activityResults ?? []).map((r: any) => r.lesson_id),
-      ...(lessonCompletions ?? []).map((l: any) => l.lesson_id),
+      ...(allActivityResults ?? []).map((r: any) => r.lesson_id),
+      ...(allLessonCompletions ?? []).map((l: any) => l.lesson_id),
     ].filter(Boolean))) as string[];
 
     let titles: Record<string, string> = {};
+    /** lesson_id -> název předmětu učebnice (best-effort podle názvu) */
+    const lessonSubject = new Map<string, string>();
     if (lessonIds.length > 0) {
       const [teacherRes, textbookRes] = await Promise.all([
-        supabase.from("teacher_textbook_lessons").select("id, title").in("id", lessonIds),
-        supabase.from("textbook_lessons").select("id, title").in("id", lessonIds),
+        supabase.from("teacher_textbook_lessons").select("id, title, textbook_id").in("id", lessonIds),
+        supabase.from("textbook_lessons").select("id, title, topic_id").in("id", lessonIds),
       ]);
       (teacherRes.data ?? []).forEach((l: any) => { titles[l.id] = l.title; });
       (textbookRes.data ?? []).forEach((l: any) => { titles[l.id] = l.title; });
+
+      // Předmět u učitelských učebnic
+      const tbIds = Array.from(new Set((teacherRes.data ?? []).map((l: any) => l.textbook_id).filter(Boolean)));
+      const topicIds = Array.from(new Set((textbookRes.data ?? []).map((l: any) => l.topic_id).filter(Boolean)));
+      const [tbRes, topicRes, subjRes] = await Promise.all([
+        tbIds.length ? supabase.from("teacher_textbooks").select("id, subject").in("id", tbIds) : Promise.resolve({ data: [] } as any),
+        topicIds.length ? supabase.from("textbook_topics").select("id, subject").in("id", topicIds) : Promise.resolve({ data: [] } as any),
+        supabase.from("textbook_subjects").select("slug, label"),
+      ]);
+      const slugToLabel = new Map<string, string>();
+      (subjRes.data ?? []).forEach((s: any) => slugToLabel.set(norm(s.slug), norm(s.label)));
+      const tbSubject = new Map<string, string>();
+      (tbRes.data ?? []).forEach((t: any) => tbSubject.set(t.id, slugToLabel.get(norm(t.subject)) ?? norm(t.subject)));
+      const topicSubject = new Map<string, string>();
+      (topicRes.data ?? []).forEach((t: any) => topicSubject.set(t.id, slugToLabel.get(norm(t.subject)) ?? norm(t.subject)));
+
+      (teacherRes.data ?? []).forEach((l: any) => {
+        const s = tbSubject.get(l.textbook_id);
+        if (s) lessonSubject.set(l.id, s);
+      });
+      (textbookRes.data ?? []).forEach((l: any) => {
+        const s = topicSubject.get(l.topic_id);
+        if (s) lessonSubject.set(l.id, s);
+      });
     }
 
-    setLessonActs((activityResults ?? []) as ActivityRow[]);
-    setLessonComps((lessonCompletions ?? []) as CompletionRow[]);
+    // Omezený přístup: jen lekce z učebnic předmětů, ke kterým je učitel v této třídě připojený
+    const limited = !hasFullAccess(classId);
+    const mySubjects = mySubjectsByClass.get(classId) ?? new Set<string>();
+    const lessonAllowed = (lessonId: string | null) => {
+      if (!limited) return true;
+      if (!lessonId) return false;
+      const s = lessonSubject.get(lessonId);
+      return !!s && mySubjects.has(s);
+    };
+
+    const activityResults = (allActivityResults ?? []).filter((r: any) => lessonAllowed(r.lesson_id));
+    const lessonCompletions = (allLessonCompletions ?? []).filter((l: any) => lessonAllowed(l.lesson_id));
+
+    setLessonActs(activityResults as ActivityRow[]);
+    setLessonComps(lessonCompletions as CompletionRow[]);
     setLessonTitles(titles);
     setOpenLessonId(null);
     setOpenStudentKey(null);
+
 
 
     const userActs = new Map<string, { count: number; totalScore: number; totalMax: number; lastAt: string | null }>();
@@ -247,9 +316,11 @@ const ClassResultsManager = () => {
 
   useEffect(() => { fetchOverview(); }, []);
 
+  useEffect(() => { fetchAccess(); }, [user?.id]);
+
   useEffect(() => {
     if (selectedClass) fetchClassDetail(selectedClass.id);
-  }, [selectedClass]);
+  }, [selectedClass, homeroomClassIds, mySubjectsByClass, isElevated]);
 
   const filtered = useMemo(() => {
     if (!search) return classes;
@@ -341,7 +412,12 @@ const ClassResultsManager = () => {
               <TableRow key={c.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelectedClass(c)}>
                 <TableCell>
                   <div>
-                    <p className="font-medium">{c.name}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium">{c.name}</p>
+                      {!hasFullAccess(c.id) && (
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">jen tvé předměty</Badge>
+                      )}
+                    </div>
                     <p className="text-xs text-muted-foreground">
                       {[c.school, c.field_of_study, c.year ? `${c.year}. ročník` : null].filter(Boolean).join(" · ") || "–"}
                     </p>
