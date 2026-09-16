@@ -157,6 +157,10 @@ const TeacherAssignments = () => {
   // Pokud URL obsahuje ?detail=<id> (např. z Předmět/Třída), otevři detail úlohy jednou.
   const detailParam = searchParams.get("detail");
   const detailOpenedRef = useRef(false);
+  /** ID úlohy otevřené přes URL deep-link – jen ta má při zavření vrátit return_to. */
+  const deepLinkIdRef = useRef<string | null>(null);
+  /** return_to zachycené v okamžiku otevření deep-link dialogu. */
+  const deepLinkReturnRef = useRef<string | null>(null);
   useEffect(() => {
     if (detailOpenedRef.current) return;
     if (!detailParam) return;
@@ -164,9 +168,18 @@ const TeacherAssignments = () => {
     const found = assignments.find((a) => a.id === detailParam);
     if (found) {
       detailOpenedRef.current = true;
+      deepLinkIdRef.current = detailParam;
+      deepLinkReturnRef.current = searchParams.get("return_to");
       setDetailAssignment(found);
+    } else {
+      detailOpenedRef.current = true;
     }
-  }, [detailParam, assignments]);
+    // detail/return_to se použily (nebo neplatí) – vyčistíme je z URL, ať nezůstávají viset.
+    const next = new URLSearchParams(searchParams);
+    next.delete("detail");
+    next.delete("return_to");
+    setSearchParams(next, { replace: true });
+  }, [detailParam, assignments, searchParams, setSearchParams]);
 
   // (Old AI inline generator removed — worksheets are now first-class entities.)
 
