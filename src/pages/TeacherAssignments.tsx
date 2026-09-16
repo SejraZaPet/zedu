@@ -279,9 +279,9 @@ const TeacherAssignments = () => {
       if (!user) throw new Error("Nepřihlášen");
 
       // Naplánované zveřejnění: uloží se jako `scheduled` + časová značka,
-      // publikaci pak provede appka na pozadí. Bez plánu zůstává „Koncept“.
+      // publikaci pak provede appka na pozadí.
       let scheduledPublishAt: string | null = null;
-      if (scheduleEnabled) {
+      if (mode === "scheduled") {
         if (!scheduleDate) {
           throw new Error("Vyberte datum zveřejnění.");
         }
