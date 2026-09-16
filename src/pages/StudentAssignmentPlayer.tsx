@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, ChevronLeft, ChevronRight, CheckCircle2, Clock, Save, Send, ArrowLeft, Lock, AlertTriangle, Maximize, Users } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, CheckCircle2, Clock, Save, Send, ArrowLeft, Lock, AlertTriangle, Maximize, Users, MessageSquare } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
@@ -47,6 +47,9 @@ interface AttemptData {
   score: number | null;
   max_score: number | null;
   submission_note?: string | null;
+  teacher_feedback_text?: string | null;
+  teacher_feedback_emoji?: string | null;
+  teacher_feedback_at?: string | null;
 }
 
 // Deterministic shuffle using a seed
@@ -540,6 +543,32 @@ const StudentAssignmentPlayer = () => {
           </Card>
         )}
 
+
+        {/* Zpětná vazba od učitele k odevzdanému pokusu */}
+        {attempt?.status === "submitted" &&
+          (attempt.teacher_feedback_text || attempt.teacher_feedback_emoji) && (
+            <Card className="mb-4 border-primary/30 bg-primary/5">
+              <CardContent className="p-4 space-y-2">
+                <div className="flex items-center gap-2 text-sm font-semibold">
+                  <MessageSquare className="w-4 h-4 text-primary" />
+                  Zpětná vazba od učitele
+                  {attempt.teacher_feedback_emoji && (
+                    <span className="text-xl" aria-label="Reakce učitele">
+                      {attempt.teacher_feedback_emoji}
+                    </span>
+                  )}
+                </div>
+                {attempt.teacher_feedback_text && (
+                  <p className="whitespace-pre-wrap text-sm">{attempt.teacher_feedback_text}</p>
+                )}
+                {attempt.teacher_feedback_at && (
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(attempt.teacher_feedback_at).toLocaleString("cs-CZ")}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
         {/* Portfolio task branch (upload-only, no quiz) */}
         {assignment.is_portfolio_task ? (
