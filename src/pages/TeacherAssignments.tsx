@@ -145,6 +145,8 @@ const TeacherAssignments = () => {
   const [showManual, setShowManual] = useState(false);
   const [groupBusy, setGroupBusy] = useState(false);
   const [copySourceId, setCopySourceId] = useState("");
+  /** Předmět úlohy – lze doplnit i u starších úloh bez subject_id. */
+  const [formSubjectId, setFormSubjectId] = useState<string | null>(null);
 
 
   useEffect(() => {
