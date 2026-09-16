@@ -254,7 +254,11 @@ const TeacherAssignments = () => {
     setProgress(next);
   };
 
-  const handleSubmit = async () => {
+  /**
+   * Společné jádro pro všechny tři akce uložení úlohy.
+   * `mode` určuje výsledný stav: "draft" | "scheduled" | "published".
+   */
+  const submitAssignment = async (mode: "draft" | "scheduled" | "published") => {
     if (!title.trim()) {
       toast({ title: "Chyba", description: "Zadej název úlohy.", variant: "destructive" });
       return;
