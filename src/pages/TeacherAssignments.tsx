@@ -419,6 +419,10 @@ const TeacherAssignments = () => {
     }
   };
 
+  const handleSaveDraft = () => submitAssignment("draft");
+  const handleSchedule = () => submitAssignment("scheduled");
+  const handlePublishForm = () => submitAssignment("published");
+
   // Když Výuka předá třídu školy, ke které učitel ještě není přihlášený, přihlásíme ho.
   useEffect(() => {
     if (!prefillClassId) return;
