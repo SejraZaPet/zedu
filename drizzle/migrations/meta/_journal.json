@@ -127,6 +127,13 @@
       "when": 1789559579388,
       "tag": "0017_allow_assignment_feedback_notification_type",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1789559667365,
+      "tag": "0018_curriculum_topics_rocnik",
+      "breakpoints": true
     }
   ]
 }
