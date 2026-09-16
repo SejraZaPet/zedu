@@ -283,7 +283,9 @@ const TeacherAssignments = () => {
 
       // Předmět (Výuka) — použije se pro sdílení se spoluučiteli dané Výuky.
       const subjectIdParam = searchParams.get("subjectId");
-      let subjectIdForAssignment: string | null = subjectIdParam || null;
+      // Ruční volba ve formuláři má přednost – umožní doplnit předmět u starých úloh.
+      let subjectIdForAssignment: string | null =
+        formSubjectId || subjectIdParam || null;
       if (!subjectIdForAssignment && selectedWorksheetId) {
         const { data: ws } = await supabase
           .from("worksheets")
