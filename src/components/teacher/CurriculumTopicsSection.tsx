@@ -508,6 +508,43 @@ export default function CurriculumTopicsSection({
     }
   };
 
+  // ─────────────── Seskupení podle ročníku ───────────────
+
+  /** Sekce podle ročníku; null = žádné téma nemá ročník → plochý seznam. */
+  const grouped = useMemo(() => {
+    const years = Array.from(
+      new Set(topics.map((t) => t.rocnik).filter((r): r is number => typeof r === "number")),
+    ).sort((a, b) => a - b);
+    if (years.length === 0) return null;
+    const sections = years.map((y) => ({
+      key: `r${y}`,
+      label: `${y}. ročník`,
+      items: topics.filter((t) => t.rocnik === y),
+    }));
+    const rest = topics.filter((t) => typeof t.rocnik !== "number");
+    if (rest.length > 0) sections.push({ key: "none", label: "Bez ročníku", items: rest });
+    return sections;
+  }, [topics]);
+
+  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    setOpenGroups(
+      typeof defaultExpandedRocnik === "number"
+        ? new Set([`r${defaultExpandedRocnik}`])
+        : new Set<string>(),
+    );
+  }, [defaultExpandedRocnik, planId]);
+
+  const toggleGroup = (key: string) =>
+    setOpenGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+
+
+
   const renderTopic = (t: CurriculumTopic) => {
                 const covered = t.linked.length > 0;
                 return (
