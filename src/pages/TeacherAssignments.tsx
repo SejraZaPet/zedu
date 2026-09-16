@@ -56,6 +56,7 @@ interface Assignment {
   exam_type?: string | null;
   group_mode?: string | null;
   group_size?: number | null;
+  subject_id?: string | null;
 }
 
 

@@ -178,7 +178,11 @@ export default function StudentSubjectClass() {
         .select("id, title, description, status, deadline, created_at, class_id")
         .eq("class_id", classId)
         .eq("status", "published");
-      if (subjectIdKey) assignQuery = assignQuery.eq("subject_id", subjectIdKey);
+      // Starší úkoly bez subject_id ponecháme viditelné, jen nejsou roztříděné.
+      if (subjectIdKey)
+        assignQuery = assignQuery.or(
+          `subject_id.eq.${subjectIdKey},subject_id.is.null`,
+        );
       assignQuery = assignQuery.order("created_at", { ascending: false });
 
       const [classRes, slotsRes, assignRes] = await Promise.all([
