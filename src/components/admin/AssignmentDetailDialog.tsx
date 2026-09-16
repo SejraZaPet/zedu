@@ -369,14 +369,16 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
                                   )}
                                 </div>
 
-                                {attempt.submission_note && (
-                                  <div>
-                                    <h5 className="mb-1 text-xs font-semibold">Poznámka žáka</h5>
+                                <div>
+                                  <h5 className="mb-1 text-xs font-semibold">Poznámka žáka</h5>
+                                  {attempt.submission_note ? (
                                     <p className="whitespace-pre-wrap rounded-md border border-border bg-muted/30 p-2 text-sm">
                                       {attempt.submission_note}
                                     </p>
-                                  </div>
-                                )}
+                                  ) : (
+                                    <p className="text-sm text-muted-foreground">Bez poznámky.</p>
+                                  )}
+                                </div>
 
                                 <div>
                                   <h5 className="mb-1 text-xs font-semibold">Přílohy</h5>
