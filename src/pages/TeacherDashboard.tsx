@@ -18,6 +18,7 @@ import {
   Wand2,
   Award,
   BookMarked,
+  ClipboardList,
 } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
@@ -59,6 +60,7 @@ const DEFAULT_ORDER = [
   "subjects",
   "textbooks",
   "activities",
+  "assignments",
   "classes",
   "results",
   "calendar",
@@ -200,6 +202,14 @@ const TeacherDashboard = () => {
       description: "Vytvářejte kvízy a interaktivní úkoly pro studenty.",
       button: "Otevřít aktivity",
       onClick: () => navigate("/aktivity"),
+    },
+    assignments: {
+      id: "assignments",
+      icon: ClipboardList,
+      title: "Úlohy pro žáky",
+      description: "Zadávejte a spravujte úkoly, testy a pracovní listy pro žáky.",
+      button: "Otevřít úlohy",
+      onClick: () => navigate("/ucitel/ulohy"),
     },
     classes: {
       id: "classes",
