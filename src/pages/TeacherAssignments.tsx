@@ -1340,12 +1340,44 @@ const TeacherAssignments = () => {
                 )}
               </div>
 
-              <div className="flex gap-2">
-                <Button onClick={handleSubmit} disabled={creating}>
-                  {creating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : editingId ? <Pencil className="w-4 h-4 mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
-                  {editingId ? "Uložit změny" : "Vytvořit"}
-
+              <div className="flex flex-wrap gap-2">
+                <Button onClick={handleSaveDraft} disabled={creating}>
+                  {creating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Pencil className="w-4 h-4 mr-2" />}
+                  Uložit koncept
                 </Button>
+                {(() => {
+                  const canSchedule = !!scheduleDate && !!scheduleTime;
+                  const scheduleBtn = (
+                    <Button onClick={handleSchedule} disabled={creating || !canSchedule}>
+                      {creating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Clock className="w-4 h-4 mr-2" />}
+                      Naplánovat
+                    </Button>
+                  );
+                  if (canSchedule) return scheduleBtn;
+                  return (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="inline-block">{scheduleBtn}</span>
+                        </TooltipTrigger>
+                        <TooltipContent>Nejdřív vyber datum a čas</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  );
+                })()}
+                {(() => {
+                  // U editace již publikované úlohy skryjeme "Publikovat",
+                  // aby nedošlo k republish a duplicitním notifikacím.
+                  const editingOriginal = editingId ? assignments.find((a) => a.id === editingId) : null;
+                  const isAlreadyPublished = editingOriginal?.status === "published";
+                  if (isAlreadyPublished) return null;
+                  return (
+                    <Button onClick={handlePublishForm} disabled={creating}>
+                      {creating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
+                      Publikovat
+                    </Button>
+                  );
+                })()}
                 <Button variant="outline" onClick={() => { setShowForm(false); resetForm(); }}>Zrušit</Button>
               </div>
             </CardContent>
