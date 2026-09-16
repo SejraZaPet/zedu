@@ -324,7 +324,9 @@ const TeacherAssignments = () => {
 
       if (editingId) {
         // Úprava už zadané úlohy: název, popis, termín, cíl i nastavení lze měnit
-        // i po zveřejnění. Stav (koncept/publikováno) měníme jen kvůli plánu.
+        // i po zveřejnění. Stav (koncept/naplánováno/publikováno) se mění podle
+        // zvolené akce – kromě již publikované úlohy, kde "Publikovat" nedělá
+        // republish (žádné duplicitní notifikace studentům).
         const patch: Record<string, unknown> = {
           title: title.trim(),
           description: description.trim(),
@@ -344,19 +346,28 @@ const TeacherAssignments = () => {
         };
         if (subjectIdForAssignment) patch.subject_id = subjectIdForAssignment;
         const original = assignments.find((a) => a.id === editingId);
-        if (scheduledPublishAt) {
+        if (mode === "scheduled") {
           patch.scheduled_publish_at = scheduledPublishAt;
           if (original?.status !== "published") patch.status = "scheduled";
-        } else {
+        } else if (mode === "published") {
           patch.scheduled_publish_at = null;
-          if (original?.status === "scheduled") patch.status = "draft";
+          // Už publikovanou úlohu nepřepublikujeme – pouze updatneme pole,
+          // status zůstává "published" beze změny, trigger nespustí notifikace.
+          if (original?.status !== "published") patch.status = "published";
+        } else {
+          // draft
+          patch.scheduled_publish_at = null;
+          patch.status = "draft";
         }
         const { error } = await supabase
           .from("assignments" as any)
           .update(patch as any)
           .eq("id", editingId);
         if (error) throw error;
-        toast({ title: "Změny uloženy" });
+        const toastTitle =
+          mode === "published" ? "Úloha publikována" :
+          mode === "scheduled" ? "Úloha naplánována" : "Koncept uložen";
+        toast({ title: toastTitle });
       } else {
         const { data: created, error } = await supabase.from("assignments" as any).insert({
           teacher_id: user.id,
