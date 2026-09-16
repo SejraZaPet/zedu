@@ -19,7 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { BookMarked, Eyeff, Link2, X, ExternalLink, FileText, Pencil } from "lucide-react";
+import { BookMarked, Eye, Link2, X, ExternalLink, FileText, Pencil } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { LessonBlock } from "@/components/LessonBlockRenderer";
 import CurriculumTopicsSection from "@/components/teacher/CurriculumTopicsSection";
