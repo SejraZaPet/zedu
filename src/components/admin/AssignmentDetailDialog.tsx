@@ -249,6 +249,45 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
         .update(full as any)
         .eq("id", attempt.id);
       if (error) throw error;
+
+      // Notifikaci žákovi pošleme jen při skutečné změně hodnoty zpětné vazby.
+      const emojiChanged =
+        "teacher_feedback_emoji" in patch &&
+        (patch.teacher_feedback_emoji ?? null) !== (attempt.teacher_feedback_emoji ?? null);
+      const textChanged =
+        "teacher_feedback_text" in patch &&
+        (patch.teacher_feedback_text ?? null) !== (attempt.teacher_feedback_text ?? null);
+      if ((emojiChanged || textChanged) && user && assignment) {
+        const nextEmoji = "teacher_feedback_emoji" in patch
+          ? (patch.teacher_feedback_emoji as string | null)
+          : attempt.teacher_feedback_emoji;
+        const nextText = "teacher_feedback_text" in patch
+          ? (patch.teacher_feedback_text as string | null)
+          : attempt.teacher_feedback_text;
+        const snippet = nextText ? (nextText.length > 140 ? nextText.slice(0, 140) + "…" : nextText) : null;
+        const body = snippet
+          ? snippet
+          : nextEmoji
+            ? `Učitel zareagoval ${nextEmoji} na tvé odevzdání úkolu „${assignment.title}“.`
+            : `Učitel aktualizoval zpětnou vazbu k úkolu „${assignment.title}“.`;
+        try {
+          await supabase.from("notifications").insert({
+            recipient_id: row.studentId,
+            sender_id: user.id,
+            sender_role: "teacher",
+            type: "assignment_feedback",
+            title: "Nová zpětná vazba k úkolu",
+            body,
+            link: `/n/${assignment.id}`,
+            status: "sent",
+            sent_at: new Date().toISOString(),
+            payload: { assignment_id: assignment.id, attempt_id: attempt.id },
+          } as any);
+        } catch (e) {
+          console.warn("[patchAttempt] notification insert failed", e);
+        }
+      }
+
       setStudents((prev) =>
         prev.map((r) =>
           r.studentId === row.studentId && r.latestAttempt
