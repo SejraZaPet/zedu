@@ -14,7 +14,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useNotifications, Notification } from "@/hooks/use-notifications";
-import { ClipboardList, CheckCircle2, AlertCircle, BookOpen, UserPlus, Megaphone, Trash2, Check, BellOff } from "lucide-react";
+import { ClipboardList, CheckCircle2, AlertCircle, BookOpen, UserPlus, Megaphone, Trash2, Check, BellOff, MessageSquare } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { cs } from "date-fns/locale";
 
@@ -25,6 +25,7 @@ const TYPE_META: Record<string, { Icon: any; color: string }> = {
   class_textbook_added: { Icon: BookOpen, color: "#9333ea" },
   class_teacher_invited: { Icon: UserPlus, color: "#0d9488" },
   admin_message: { Icon: Megaphone, color: "#6b7280" },
+  assignment_feedback: { Icon: MessageSquare, color: "#7c3aed" },
 };
 
 const NotificationsPage = () => {
