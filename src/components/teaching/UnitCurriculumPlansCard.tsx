@@ -154,10 +154,24 @@ const UnitCurriculumPlansCard = ({ subjectId, classId, groupId }: Props) => {
             <ul className="space-y-2">
               {assigned.map((p) => (
                 <li key={p.id} className="flex items-center justify-between gap-2 rounded-md border p-2">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">{p.title}</p>
+                  <button
+                    type="button"
+                    className="min-w-0 flex-1 text-left rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    onClick={() => setPreview(p)}
+                    aria-label={`Otevřít náhled ŠVP ${p.title}`}
+                  >
+                    <p className="truncate text-sm font-medium text-primary hover:underline">{p.title}</p>
                     <Badge variant="secondary" className="mt-1">{p.subject}</Badge>
-                  </div>
+                  </button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setPreview(p)}
+                    aria-label={`Otevřít ŠVP ${p.title}`}
+                  >
+                    <Eye className="h-4 w-4 mr-1" />
+                    Otevřít ŠVP
+                  </Button>
                   <Button
                     size="sm"
                     variant="ghost"
@@ -168,6 +182,7 @@ const UnitCurriculumPlansCard = ({ subjectId, classId, groupId }: Props) => {
                     <X className="h-4 w-4" />
                   </Button>
                 </li>
+
               ))}
             </ul>
           )}
