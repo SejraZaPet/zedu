@@ -279,7 +279,11 @@ export default function TeacherSubjectClass() {
         .eq("teacher_id", user.id);
       if (isGroup) assignQuery = assignQuery.eq("group_id", groupId);
       else assignQuery = assignQuery.eq("class_id", classId);
-      if (resolvedSubjectId) assignQuery = assignQuery.eq("subject_id", resolvedSubjectId);
+      // Starší úkoly nemají vyplněný subject_id – zobrazíme je i tak, ať nezmizí.
+      if (resolvedSubjectId)
+        assignQuery = assignQuery.or(
+          `subject_id.eq.${resolvedSubjectId},subject_id.is.null`,
+        );
       assignQuery = assignQuery.order("created_at", { ascending: false });
 
       const [classRes, slotsRes, plansRes, assignRes, membersRes] = await Promise.all([

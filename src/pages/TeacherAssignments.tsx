@@ -30,6 +30,7 @@ import { EXAM_TYPE_OPTIONS, type ExamType } from "@/lib/exam-types";
 import { useTeacherClasses, claimSchoolClass } from "@/hooks/useTeacherClasses";
 import { useSubjectGroups } from "@/hooks/useSubjectGroups";
 import AssignmentMaterialsEditor from "@/components/assignments/AssignmentMaterialsEditor";
+import SubjectPicker from "@/components/subjects/SubjectPicker";
 import { type AssignmentMaterial, parseMaterials } from "@/lib/assignment-materials";
 
 
@@ -56,6 +57,7 @@ interface Assignment {
   exam_type?: string | null;
   group_mode?: string | null;
   group_size?: number | null;
+  subject_id?: string | null;
 }
 
 
@@ -144,6 +146,8 @@ const TeacherAssignments = () => {
   const [showManual, setShowManual] = useState(false);
   const [groupBusy, setGroupBusy] = useState(false);
   const [copySourceId, setCopySourceId] = useState("");
+  /** Předmět úlohy – lze doplnit i u starších úloh bez subject_id. */
+  const [formSubjectId, setFormSubjectId] = useState<string | null>(null);
 
 
   useEffect(() => {
@@ -280,7 +284,9 @@ const TeacherAssignments = () => {
 
       // Předmět (Výuka) — použije se pro sdílení se spoluučiteli dané Výuky.
       const subjectIdParam = searchParams.get("subjectId");
-      let subjectIdForAssignment: string | null = subjectIdParam || null;
+      // Ruční volba ve formuláři má přednost – umožní doplnit předmět u starých úloh.
+      let subjectIdForAssignment: string | null =
+        formSubjectId || subjectIdParam || null;
       if (!subjectIdForAssignment && selectedWorksheetId) {
         const { data: ws } = await supabase
           .from("worksheets")
@@ -421,11 +427,13 @@ const TeacherAssignments = () => {
     setManualGroupCount(2);
     setShowManual(false);
     setCopySourceId("");
+    setFormSubjectId(null);
   };
 
   /** Otevře formulář s předvyplněnými hodnotami už zadané úlohy. */
   const startEdit = (a: Assignment) => {
     setEditingId(a.id);
+    setFormSubjectId(a.subject_id ?? null);
     setTitle(a.title ?? "");
     setDescription(a.description ?? "");
     setDeadline(a.deadline ? new Date(a.deadline) : undefined);
@@ -881,6 +889,17 @@ const TeacherAssignments = () => {
                 )}
               </div>
 
+
+              {/* Předmět – u starších úloh bývá prázdný, lze ho tu doplnit. */}
+              <div>
+                <Label>Předmět</Label>
+                <SubjectPicker
+                  value={formSubjectId}
+                  onChange={({ subjectId }) => setFormSubjectId(subjectId)}
+                  placeholder="Vyberte předmět…"
+                  className="mt-1"
+                />
+              </div>
 
               <div className="grid grid-cols-2 gap-4">
                 {/* Class or subject group */}
@@ -1370,6 +1389,15 @@ const TeacherAssignments = () => {
                                   <div className="flex items-center gap-2 flex-wrap">
                                     <h3 className="font-semibold">{a.title}</h3>
                                     <ExamTypeBadge examType={a.exam_type} showDefault />
+                                    {!a.subject_id && (
+                                      <Badge
+                                        variant="outline"
+                                        className="text-xs border-amber-500/40 text-amber-600 bg-amber-500/10"
+                                        title="Úloha není přiřazená k předmětu – doplňte ji přes Upravit."
+                                      >
+                                        Bez předmětu
+                                      </Badge>
+                                    )}
                                     {targetName && (
                                       <Badge variant="outline" className="text-xs">
                                         <Users className="w-3 h-3 mr-1" />
