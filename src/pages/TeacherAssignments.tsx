@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Loader2, Plus, CalendarIcon, Trash2, Send, Clock, Users, Shuffle, RotateCcw, Eye, EyeOff, BarChart3, FileText, ExternalLink, Lock, Pencil, ClipboardList, FolderCheck, ListTodo } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import AssignmentDetailDialog from "@/components/admin/AssignmentDetailDialog";
@@ -254,7 +255,11 @@ const TeacherAssignments = () => {
     setProgress(next);
   };
 
-  const handleSubmit = async () => {
+  /**
+   * Společné jádro pro všechny tři akce uložení úlohy.
+   * `mode` určuje výsledný stav: "draft" | "scheduled" | "published".
+   */
+  const submitAssignment = async (mode: "draft" | "scheduled" | "published") => {
     if (!title.trim()) {
       toast({ title: "Chyba", description: "Zadej název úlohy.", variant: "destructive" });
       return;
@@ -275,9 +280,9 @@ const TeacherAssignments = () => {
       if (!user) throw new Error("Nepřihlášen");
 
       // Naplánované zveřejnění: uloží se jako `scheduled` + časová značka,
-      // publikaci pak provede appka na pozadí. Bez plánu zůstává „Koncept“.
+      // publikaci pak provede appka na pozadí.
       let scheduledPublishAt: string | null = null;
-      if (scheduleEnabled) {
+      if (mode === "scheduled") {
         if (!scheduleDate) {
           throw new Error("Vyberte datum zveřejnění.");
         }
@@ -320,7 +325,9 @@ const TeacherAssignments = () => {
 
       if (editingId) {
         // Úprava už zadané úlohy: název, popis, termín, cíl i nastavení lze měnit
-        // i po zveřejnění. Stav (koncept/publikováno) měníme jen kvůli plánu.
+        // i po zveřejnění. Stav (koncept/naplánováno/publikováno) se mění podle
+        // zvolené akce – kromě již publikované úlohy, kde "Publikovat" nedělá
+        // republish (žádné duplicitní notifikace studentům).
         const patch: Record<string, unknown> = {
           title: title.trim(),
           description: description.trim(),
@@ -340,20 +347,30 @@ const TeacherAssignments = () => {
         };
         if (subjectIdForAssignment) patch.subject_id = subjectIdForAssignment;
         const original = assignments.find((a) => a.id === editingId);
-        if (scheduledPublishAt) {
+        if (mode === "scheduled") {
           patch.scheduled_publish_at = scheduledPublishAt;
           if (original?.status !== "published") patch.status = "scheduled";
-        } else {
+        } else if (mode === "published") {
           patch.scheduled_publish_at = null;
-          if (original?.status === "scheduled") patch.status = "draft";
+          // Už publikovanou úlohu nepřepublikujeme – pouze updatneme pole,
+          // status zůstává "published" beze změny, trigger nespustí notifikace.
+          if (original?.status !== "published") patch.status = "published";
+        } else {
+          // draft
+          patch.scheduled_publish_at = null;
+          patch.status = "draft";
         }
         const { error } = await supabase
           .from("assignments" as any)
           .update(patch as any)
           .eq("id", editingId);
         if (error) throw error;
-        toast({ title: "Změny uloženy" });
+        const toastTitle =
+          mode === "published" ? "Úloha publikována" :
+          mode === "scheduled" ? "Úloha naplánována" : "Koncept uložen";
+        toast({ title: toastTitle });
       } else {
+        const status = mode === "published" ? "published" : mode === "scheduled" ? "scheduled" : "draft";
         const { data: created, error } = await supabase.from("assignments" as any).insert({
           teacher_id: user.id,
           title: title.trim(),
@@ -366,7 +383,7 @@ const TeacherAssignments = () => {
           class_id: selectedGroupId ? null : (selectedClassId || null),
           group_id: selectedGroupId || null,
           subject_id: subjectIdForAssignment,
-          status: scheduledPublishAt ? "scheduled" : "draft",
+          status,
           scheduled_publish_at: scheduledPublishAt,
           activity_data: [] as any,
           worksheet_id: selectedWorksheetId || null,
@@ -379,8 +396,8 @@ const TeacherAssignments = () => {
 
         if (error) throw error;
         toast({
-          title: scheduledPublishAt ? "Úloha naplánována" : "Úloha vytvořena",
-          description: scheduledPublishAt
+          title: mode === "published" ? "Úloha publikována" : mode === "scheduled" ? "Úloha naplánována" : "Úloha vytvořena",
+          description: mode === "scheduled" && scheduledPublishAt
             ? `Žákům se zpřístupní ${new Date(scheduledPublishAt).toLocaleString("cs-CZ")}.`
             : undefined,
         });
@@ -402,6 +419,10 @@ const TeacherAssignments = () => {
       setCreating(false);
     }
   };
+
+  const handleSaveDraft = () => submitAssignment("draft");
+  const handleSchedule = () => submitAssignment("scheduled");
+  const handlePublishForm = () => submitAssignment("published");
 
   // Když Výuka předá třídu školy, ke které učitel ještě není přihlášený, přihlásíme ho.
   useEffect(() => {
@@ -1319,12 +1340,44 @@ const TeacherAssignments = () => {
                 )}
               </div>
 
-              <div className="flex gap-2">
-                <Button onClick={handleSubmit} disabled={creating}>
-                  {creating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : editingId ? <Pencil className="w-4 h-4 mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
-                  {editingId ? "Uložit změny" : "Vytvořit"}
-
+              <div className="flex flex-wrap gap-2">
+                <Button onClick={handleSaveDraft} disabled={creating}>
+                  {creating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Pencil className="w-4 h-4 mr-2" />}
+                  Uložit koncept
                 </Button>
+                {(() => {
+                  const canSchedule = !!scheduleDate && !!scheduleTime;
+                  const scheduleBtn = (
+                    <Button onClick={handleSchedule} disabled={creating || !canSchedule}>
+                      {creating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Clock className="w-4 h-4 mr-2" />}
+                      Naplánovat
+                    </Button>
+                  );
+                  if (canSchedule) return scheduleBtn;
+                  return (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="inline-block">{scheduleBtn}</span>
+                        </TooltipTrigger>
+                        <TooltipContent>Nejdřív vyber datum a čas</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  );
+                })()}
+                {(() => {
+                  // U editace již publikované úlohy skryjeme "Publikovat",
+                  // aby nedošlo k republish a duplicitním notifikacím.
+                  const editingOriginal = editingId ? assignments.find((a) => a.id === editingId) : null;
+                  const isAlreadyPublished = editingOriginal?.status === "published";
+                  if (isAlreadyPublished) return null;
+                  return (
+                    <Button onClick={handlePublishForm} disabled={creating}>
+                      {creating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
+                      Publikovat
+                    </Button>
+                  );
+                })()}
                 <Button variant="outline" onClick={() => { setShowForm(false); resetForm(); }}>Zrušit</Button>
               </div>
             </CardContent>
