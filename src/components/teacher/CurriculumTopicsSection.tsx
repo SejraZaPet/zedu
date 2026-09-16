@@ -24,7 +24,13 @@ import {
   Link2,
   BookOpen,
   FileText,
+  ChevronRight,
 } from "lucide-react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import AiContentBadge from "@/components/ai/AiContentBadge";
 import type { Block } from "@/lib/textbook-config";
 import { curriculumBlocksToText } from "@/lib/curriculum-template";
