@@ -1,0 +1,1 @@
+ALTER TABLE public.curriculum_topics ADD COLUMN IF NOT EXISTS rocnik integer;

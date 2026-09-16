@@ -91,7 +91,22 @@ const GENERIC_HEADINGS = [
 
 function isGenericHeading(text: string): boolean {
   const t = text.toLowerCase();
-  return GENERIC_HEADINGS.some((g) => t.startsWith(g)) || /^\d+\.\s*ročník/.test(t);
+  return GENERIC_HEADINGS.some((g) => t.startsWith(g));
+}
+
+/** Nadpis typu „2. ročník“ – vrací číslo ročníku, jinak null. */
+function rocnikFromHeading(text: string): number | null {
+  const m = /^(\d)\.\s*ročník/i.exec(text.trim());
+  if (!m) return null;
+  const n = parseInt(m[1], 10);
+  return n >= 1 && n <= 9 ? n : null;
+}
+
+/** Téma vytažené z bloků ŠVP včetně ročníku, pod kterým bylo nalezeno. */
+export interface ExtractedTopic {
+  title: string;
+  /** 1–9 podle nadpisu „N. ročník“, null pro témata mimo takovou sekci. */
+  rocnik: number | null;
 }
 
 /**
@@ -99,17 +114,19 @@ function isGenericHeading(text: string): boolean {
  * - nadpisy 3. a nižší úrovně (a nadpisy 2. úrovně mimo obecné sekce šablony),
  * - řádky tabulek – sloupec „Učivo“ (nebo první sloupec, pokud „Učivo“ chybí),
  * - položky odrážkových seznamů pod sekcí učiva.
+ * Nadpisy „N. ročník“ slouží jako kontext – témata pod nimi dostanou daný ročník.
  */
-export function extractTopicsFromBlocks(blocks: Block[]): string[] {
-  const out: string[] = [];
+export function extractTopicsFromBlocks(blocks: Block[]): ExtractedTopic[] {
+  const out: ExtractedTopic[] = [];
   const seen = new Set<string>();
+  let currentRocnik: number | null = null;
   const push = (raw: string) => {
     const t = stripHtml(raw).replace(/\s+/g, " ").trim();
     if (t.length < 2 || t.length > 160) return;
     const k = t.toLowerCase();
     if (seen.has(k)) return;
     seen.add(k);
-    out.push(t);
+    out.push({ title: t, rocnik: currentRocnik });
   };
 
   let inLearningSection = false;
@@ -120,9 +137,16 @@ export function extractTopicsFromBlocks(blocks: Block[]): string[] {
       case "heading": {
         const text = stripHtml(p.text);
         const level = Number(p.level) || 2;
+        // Ročníkový nadpis jen přepne kontext, tématem sám není.
+        const yr = rocnikFromHeading(text);
+        if (yr !== null) {
+          currentRocnik = yr;
+          inLearningSection = false;
+          break;
+        }
         inLearningSection = /učivo|rozpis učiva|tematick/i.test(text);
         if (!text || isGenericHeading(text)) break;
-        if (level >= 3 || !/^\d+\.\s*ročník/i.test(text)) push(text);
+        push(text);
         break;
       }
       case "table": {

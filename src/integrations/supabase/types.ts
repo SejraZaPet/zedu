@@ -2224,6 +2224,7 @@ export type Database = {
           created_at: string
           curriculum_plan_id: string
           id: string
+          rocnik: number | null
           sort_order: number
           title: string
         }
@@ -2233,6 +2234,7 @@ export type Database = {
           created_at?: string
           curriculum_plan_id: string
           id?: string
+          rocnik?: number | null
           sort_order?: number
           title: string
         }
@@ -2242,6 +2244,7 @@ export type Database = {
           created_at?: string
           curriculum_plan_id?: string
           id?: string
+          rocnik?: number | null
           sort_order?: number
           title?: string
         }

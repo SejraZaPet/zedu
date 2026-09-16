@@ -24,11 +24,17 @@ import {
   Link2,
   BookOpen,
   FileText,
+  ChevronRight,
 } from "lucide-react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import AiContentBadge from "@/components/ai/AiContentBadge";
 import type { Block } from "@/lib/textbook-config";
 import { curriculumBlocksToText } from "@/lib/curriculum-template";
-import { extractTopicsFromBlocks } from "@/lib/curriculum-topics";
+import { extractTopicsFromBlocks, type ExtractedTopic } from "@/lib/curriculum-topics";
 import { CURRICULUM_AI_MAX_CHARS, extractDocumentText } from "@/lib/curriculum-file-extract";
 
 interface LinkedItem {
@@ -43,6 +49,7 @@ interface CurriculumTopic {
   id: string;
   title: string;
   sort_order: number;
+  rocnik?: number | null;
   linked: LinkedItem[];
   ai_generated?: boolean;
   ai_modified_at?: string | null;
@@ -63,6 +70,8 @@ interface Props {
   fileName?: string | null;
   teacherId: string;
   subject: string;
+  /** Ročník, jehož sekce se má otevřít rozbalená (např. ročník aktuální třídy). */
+  defaultExpandedRocnik?: number | null;
 }
 
 export default function CurriculumTopicsSection({
@@ -73,6 +82,7 @@ export default function CurriculumTopicsSection({
   fileName,
   teacherId,
   subject,
+  defaultExpandedRocnik,
 }: Props) {
   const [topics, setTopics] = useState<CurriculumTopic[]>([]);
   const [loading, setLoading] = useState(true);
@@ -100,7 +110,7 @@ export default function CurriculumTopicsSection({
     setLoading(true);
     const { data: t } = await supabase
       .from("curriculum_topics")
-      .select("id, title, sort_order, ai_generated, ai_modified_at")
+      .select("id, title, sort_order, rocnik, ai_generated, ai_modified_at")
       .eq("curriculum_plan_id", planId)
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: true });
@@ -110,6 +120,7 @@ export default function CurriculumTopicsSection({
         id: string;
         title: string;
         sort_order: number;
+        rocnik?: number | null;
         ai_generated?: boolean;
         ai_modified_at?: string | null;
       }[] | null) ?? [];
@@ -189,17 +200,18 @@ export default function CurriculumTopicsSection({
     return { total, covered, pct };
   }, [topics]);
 
-  /** Uloží nová témata (bez duplicit vůči existujícím). */
-  const insertTopics = async (list: string[], aiGenerated: boolean) => {
+  /** Uloží nová témata (bez duplicit vůči existujícím), včetně ročníku. */
+  const insertTopics = async (list: (string | ExtractedTopic)[], aiGenerated: boolean) => {
     const existing = new Set(topics.map((t) => t.title.trim().toLowerCase()));
     const seen = new Set<string>();
-    const toInsert: string[] = [];
+    const toInsert: ExtractedTopic[] = [];
     for (const raw of list) {
-      const title = raw.trim();
+      const item: ExtractedTopic = typeof raw === "string" ? { title: raw, rocnik: null } : raw;
+      const title = item.title.trim();
       const k = title.toLowerCase();
       if (!title || existing.has(k) || seen.has(k)) continue;
       seen.add(k);
-      toInsert.push(title);
+      toInsert.push({ title, rocnik: item.rocnik ?? null });
     }
     if (toInsert.length === 0) {
       toast({ title: "Všechna nalezená témata už máte v seznamu." });
@@ -207,9 +219,10 @@ export default function CurriculumTopicsSection({
     }
     const startOrder = topics.length;
     const { error } = await supabase.from("curriculum_topics").insert(
-      toInsert.map((title, i) => ({
+      toInsert.map((item, i) => ({
         curriculum_plan_id: planId,
-        title,
+        title: item.title,
+        rocnik: item.rocnik,
         sort_order: startOrder + i,
         ai_generated: aiGenerated,
       })),
@@ -254,7 +267,7 @@ export default function CurriculumTopicsSection({
     }
     setAiBusy(true);
     try {
-      let list: string[] = [];
+      let list: (string | ExtractedTopic)[] = [];
       let aiGenerated = false;
       let source = "";
 
@@ -501,40 +514,44 @@ export default function CurriculumTopicsSection({
     }
   };
 
-  return (
-    <div className="border-t border-border pt-3 space-y-3">
-      <div className="flex items-center justify-between gap-2 flex-wrap">
-        <h4 className="text-sm font-semibold">Témata ŠVP</h4>
-        {canExtract && (
-          <Button
-            size="sm"
-            variant="outline"
-            className="gap-1.5 h-8"
-            onClick={extractTopics}
-            disabled={aiBusy}
-            title={
-              hasBlocks
-                ? "Témata se vytáhnou z nadpisů a tabulek bloků ŠVP"
-                : hasText
-                  ? "Témata rozpozná AI z textu ŠVP"
-                  : "Témata rozpozná AI z nahraného souboru"
-            }
-          >
-            {aiBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-            {aiBusy && aiStep ? aiStep : "Vytáhnout témata z ŠVP"}
-          </Button>
-        )}
-      </div>
+  // ─────────────── Seskupení podle ročníku ───────────────
 
-      {loading ? (
-        <div className="text-xs text-muted-foreground flex items-center gap-1.5">
-          <Loader2 className="w-3.5 h-3.5 animate-spin" /> Načítání témat…
-        </div>
-      ) : (
-        <>
-          {topics.length > 0 && (
-            <ul className="space-y-1.5">
-              {topics.map((t) => {
+  /** Sekce podle ročníku; null = žádné téma nemá ročník → plochý seznam. */
+  const grouped = useMemo(() => {
+    const years = Array.from(
+      new Set(topics.map((t) => t.rocnik).filter((r): r is number => typeof r === "number")),
+    ).sort((a, b) => a - b);
+    if (years.length === 0) return null;
+    const sections = years.map((y) => ({
+      key: `r${y}`,
+      label: `${y}. ročník`,
+      items: topics.filter((t) => t.rocnik === y),
+    }));
+    const rest = topics.filter((t) => typeof t.rocnik !== "number");
+    if (rest.length > 0) sections.push({ key: "none", label: "Bez ročníku", items: rest });
+    return sections;
+  }, [topics]);
+
+  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    setOpenGroups(
+      typeof defaultExpandedRocnik === "number"
+        ? new Set([`r${defaultExpandedRocnik}`])
+        : new Set<string>(),
+    );
+  }, [defaultExpandedRocnik, planId]);
+
+  const toggleGroup = (key: string) =>
+    setOpenGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+
+
+
+  const renderTopic = (t: CurriculumTopic) => {
                 const covered = t.linked.length > 0;
                 return (
                   <li key={t.id} className="text-sm bg-muted/30 rounded-md px-2 py-1.5 space-y-1">
@@ -647,9 +664,63 @@ export default function CurriculumTopicsSection({
                     )}
                   </li>
                 );
-              })}
-            </ul>
-          )}
+  };
+
+  return (
+    <div className="border-t border-border pt-3 space-y-3">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <h4 className="text-sm font-semibold">Témata ŠVP</h4>
+        {canExtract && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1.5 h-8"
+            onClick={extractTopics}
+            disabled={aiBusy}
+            title={
+              hasBlocks
+                ? "Témata se vytáhnou z nadpisů a tabulek bloků ŠVP"
+                : hasText
+                  ? "Témata rozpozná AI z textu ŠVP"
+                  : "Témata rozpozná AI z nahraného souboru"
+            }
+          >
+            {aiBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+            {aiBusy && aiStep ? aiStep : "Vytáhnout témata z ŠVP"}
+          </Button>
+        )}
+      </div>
+
+      {loading ? (
+        <div className="text-xs text-muted-foreground flex items-center gap-1.5">
+          <Loader2 className="w-3.5 h-3.5 animate-spin" /> Načítání témat…
+        </div>
+      ) : (
+        <>
+          {topics.length > 0 &&
+            (grouped ? (
+              <div className="space-y-2">
+                {grouped.map((g) => {
+                  const open = openGroups.has(g.key);
+                  return (
+                    <Collapsible key={g.key} open={open} onOpenChange={() => toggleGroup(g.key)}>
+                      <CollapsibleTrigger className="w-full flex items-center gap-2 text-sm font-medium rounded-md bg-muted/50 px-2 py-1.5 hover:bg-muted transition-colors">
+                        <ChevronRight
+                          className={`w-4 h-4 shrink-0 transition-transform ${open ? "rotate-90" : ""}`}
+                        />
+                        <span className="flex-1 text-left">{g.label}</span>
+                        <span className="text-xs text-muted-foreground">{g.items.length}</span>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <ul className="space-y-1.5 pt-1.5">{g.items.map(renderTopic)}</ul>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  );
+                })}
+              </div>
+            ) : (
+              <ul className="space-y-1.5">{topics.map(renderTopic)}</ul>
+            ))}
 
           <div className="flex gap-2">
             <Input
