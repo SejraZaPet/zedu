@@ -369,6 +369,7 @@ const TeacherAssignments = () => {
           mode === "scheduled" ? "Úloha naplánována" : "Koncept uložen";
         toast({ title: toastTitle });
       } else {
+        const status = mode === "published" ? "published" : mode === "scheduled" ? "scheduled" : "draft";
         const { data: created, error } = await supabase.from("assignments" as any).insert({
           teacher_id: user.id,
           title: title.trim(),
@@ -381,7 +382,7 @@ const TeacherAssignments = () => {
           class_id: selectedGroupId ? null : (selectedClassId || null),
           group_id: selectedGroupId || null,
           subject_id: subjectIdForAssignment,
-          status: scheduledPublishAt ? "scheduled" : "draft",
+          status,
           scheduled_publish_at: scheduledPublishAt,
           activity_data: [] as any,
           worksheet_id: selectedWorksheetId || null,
@@ -394,8 +395,8 @@ const TeacherAssignments = () => {
 
         if (error) throw error;
         toast({
-          title: scheduledPublishAt ? "Úloha naplánována" : "Úloha vytvořena",
-          description: scheduledPublishAt
+          title: mode === "published" ? "Úloha publikována" : mode === "scheduled" ? "Úloha naplánována" : "Úloha vytvořena",
+          description: mode === "scheduled" && scheduledPublishAt
             ? `Žákům se zpřístupní ${new Date(scheduledPublishAt).toLocaleString("cs-CZ")}.`
             : undefined,
         });
