@@ -261,7 +261,7 @@ export default function CurriculumTopicsSection({
     }
     setAiBusy(true);
     try {
-      let list: string[] = [];
+      let list: (string | ExtractedTopic)[] = [];
       let aiGenerated = false;
       let source = "";
 
