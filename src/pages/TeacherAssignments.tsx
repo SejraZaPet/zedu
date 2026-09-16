@@ -1530,9 +1530,16 @@ const TeacherAssignments = () => {
           open={!!detailAssignment}
           onOpenChange={(o) => {
             if (!o) {
+              const closedId = detailAssignment?.id ?? null;
+              const wasDeepLink =
+                deepLinkIdRef.current !== null && deepLinkIdRef.current === closedId;
+              const returnTo = deepLinkReturnRef.current;
               setDetailAssignment(null);
-              const returnTo = searchParams.get("return_to");
-              if (returnTo) navigate(decodeURIComponent(returnTo));
+              if (wasDeepLink) {
+                deepLinkIdRef.current = null;
+                deepLinkReturnRef.current = null;
+                if (returnTo) navigate(decodeURIComponent(returnTo));
+              }
             }
           }}
         />
