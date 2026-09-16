@@ -28,7 +28,7 @@ import {
 import AiContentBadge from "@/components/ai/AiContentBadge";
 import type { Block } from "@/lib/textbook-config";
 import { curriculumBlocksToText } from "@/lib/curriculum-template";
-import { extractTopicsFromBlocks } from "@/lib/curriculum-topics";
+import { extractTopicsFromBlocks, type ExtractedTopic } from "@/lib/curriculum-topics";
 import { CURRICULUM_AI_MAX_CHARS, extractDocumentText } from "@/lib/curriculum-file-extract";
 
 interface LinkedItem {
