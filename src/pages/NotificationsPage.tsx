@@ -14,7 +14,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useNotifications, Notification } from "@/hooks/use-notifications";
-import { ClipboardList, CheckCircle2, AlertCircle, BookOpen, UserPlus, Megaphone, Trash2, Check, BellOff } from "lucide-react";
+import { ClipboardList, CheckCircle2, AlertCircle, BookOpen, UserPlus, Megaphone, Trash2, Check, BellOff, MessageSquare } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { cs } from "date-fns/locale";
 

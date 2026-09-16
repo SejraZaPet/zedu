@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Bell, ClipboardList, CheckCircle2, AlertCircle, BookOpen, UserPlus, Megaphone } from "lucide-react";
+import { Bell, ClipboardList, CheckCircle2, AlertCircle, BookOpen, UserPlus, Megaphone, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
