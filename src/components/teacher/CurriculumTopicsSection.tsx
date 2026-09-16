@@ -508,40 +508,7 @@ export default function CurriculumTopicsSection({
     }
   };
 
-  return (
-    <div className="border-t border-border pt-3 space-y-3">
-      <div className="flex items-center justify-between gap-2 flex-wrap">
-        <h4 className="text-sm font-semibold">Témata ŠVP</h4>
-        {canExtract && (
-          <Button
-            size="sm"
-            variant="outline"
-            className="gap-1.5 h-8"
-            onClick={extractTopics}
-            disabled={aiBusy}
-            title={
-              hasBlocks
-                ? "Témata se vytáhnou z nadpisů a tabulek bloků ŠVP"
-                : hasText
-                  ? "Témata rozpozná AI z textu ŠVP"
-                  : "Témata rozpozná AI z nahraného souboru"
-            }
-          >
-            {aiBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-            {aiBusy && aiStep ? aiStep : "Vytáhnout témata z ŠVP"}
-          </Button>
-        )}
-      </div>
-
-      {loading ? (
-        <div className="text-xs text-muted-foreground flex items-center gap-1.5">
-          <Loader2 className="w-3.5 h-3.5 animate-spin" /> Načítání témat…
-        </div>
-      ) : (
-        <>
-          {topics.length > 0 && (
-            <ul className="space-y-1.5">
-              {topics.map((t) => {
+  const renderTopic = (t: CurriculumTopic) => {
                 const covered = t.linked.length > 0;
                 return (
                   <li key={t.id} className="text-sm bg-muted/30 rounded-md px-2 py-1.5 space-y-1">
@@ -654,9 +621,63 @@ export default function CurriculumTopicsSection({
                     )}
                   </li>
                 );
-              })}
-            </ul>
-          )}
+  };
+
+  return (
+    <div className="border-t border-border pt-3 space-y-3">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <h4 className="text-sm font-semibold">Témata ŠVP</h4>
+        {canExtract && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1.5 h-8"
+            onClick={extractTopics}
+            disabled={aiBusy}
+            title={
+              hasBlocks
+                ? "Témata se vytáhnou z nadpisů a tabulek bloků ŠVP"
+                : hasText
+                  ? "Témata rozpozná AI z textu ŠVP"
+                  : "Témata rozpozná AI z nahraného souboru"
+            }
+          >
+            {aiBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+            {aiBusy && aiStep ? aiStep : "Vytáhnout témata z ŠVP"}
+          </Button>
+        )}
+      </div>
+
+      {loading ? (
+        <div className="text-xs text-muted-foreground flex items-center gap-1.5">
+          <Loader2 className="w-3.5 h-3.5 animate-spin" /> Načítání témat…
+        </div>
+      ) : (
+        <>
+          {topics.length > 0 &&
+            (grouped ? (
+              <div className="space-y-2">
+                {grouped.map((g) => {
+                  const open = openGroups.has(g.key);
+                  return (
+                    <Collapsible key={g.key} open={open} onOpenChange={() => toggleGroup(g.key)}>
+                      <CollapsibleTrigger className="w-full flex items-center gap-2 text-sm font-medium rounded-md bg-muted/50 px-2 py-1.5 hover:bg-muted transition-colors">
+                        <ChevronRight
+                          className={`w-4 h-4 shrink-0 transition-transform ${open ? "rotate-90" : ""}`}
+                        />
+                        <span className="flex-1 text-left">{g.label}</span>
+                        <span className="text-xs text-muted-foreground">{g.items.length}</span>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <ul className="space-y-1.5 pt-1.5">{g.items.map(renderTopic)}</ul>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  );
+                })}
+              </div>
+            ) : (
+              <ul className="space-y-1.5">{topics.map(renderTopic)}</ul>
+            ))}
 
           <div className="flex gap-2">
             <Input
