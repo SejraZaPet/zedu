@@ -71,7 +71,7 @@ interface WorksheetOption {
 const TeacherAssignments = () => {
   const navigate = useNavigate();
   const { groups } = useSubjectGroups();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const prefillLessonId = searchParams.get("lessonId");
   const prefillLessonTitle = searchParams.get("lessonTitle") || "";
