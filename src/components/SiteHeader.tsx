@@ -48,6 +48,7 @@ const TEACHER_MENU_GROUPS: TeacherMenuGroup[] = [
   {
     title: "Nástroje pro hodiny",
     items: [
+      { label: "Úlohy", href: "/ucitel/ulohy", icon: ClipboardList },
       { label: "Rubriky hodnocení", href: "/ucitel/rubriky", icon: ClipboardList },
       { label: "Banka otázek", href: "/ucitel/banka-otazek", icon: Library },
       { label: "BezliStart", href: "/ucitel/bezlistart", icon: Zap },
