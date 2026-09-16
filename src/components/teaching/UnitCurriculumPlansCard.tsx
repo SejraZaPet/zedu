@@ -65,13 +65,15 @@ const UnitCurriculumPlansCard = ({ subjectId, classId, groupId }: Props) => {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<string>("");
   const [busy, setBusy] = useState(false);
+  const [preview, setPreview] = useState<PlanRow | null>(null);
+  const navigate = useNavigate();
 
   const load = useCallback(async () => {
     if (!user) return;
     setLoading(true);
     const { data, error } = await supabase
       .from("teacher_curriculum_plans")
-      .select("id, title, subject, subject_id, class_id, group_id")
+      .select("id, title, subject, subject_id, class_id, group_id, content, content_blocks, file_url, file_name, updated_at")
       .eq("teacher_id", user.id)
       .order("created_at", { ascending: false });
     if (error) {
