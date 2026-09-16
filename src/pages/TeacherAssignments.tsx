@@ -424,11 +424,13 @@ const TeacherAssignments = () => {
     setManualGroupCount(2);
     setShowManual(false);
     setCopySourceId("");
+    setFormSubjectId(null);
   };
 
   /** Otevře formulář s předvyplněnými hodnotami už zadané úlohy. */
   const startEdit = (a: Assignment) => {
     setEditingId(a.id);
+    setFormSubjectId(a.subject_id ?? null);
     setTitle(a.title ?? "");
     setDescription(a.description ?? "");
     setDeadline(a.deadline ? new Date(a.deadline) : undefined);
