@@ -91,6 +91,8 @@ interface AttemptRow {
   score: number | null;
   max_score: number | null;
   submitted_at: string | null;
+  teacher_feedback_text: string | null;
+  teacher_feedback_emoji: string | null;
 }
 
 const decodeSubject = (raw: string) => {
@@ -262,7 +264,7 @@ export default function StudentSubjectClass() {
       if (_assignments.length) {
         const { data: aData } = await supabase
           .from("assignment_attempts")
-          .select("id, assignment_id, status, score, max_score, submitted_at")
+          .select("id, assignment_id, status, score, max_score, submitted_at, teacher_feedback_text, teacher_feedback_emoji")
           .eq("student_id", user.id)
           .in(
             "assignment_id",
@@ -724,8 +726,20 @@ export default function StudentSubjectClass() {
                         key={a.id}
                         className="px-4 py-2.5 flex items-center justify-between gap-3"
                       >
-                        <div className="text-sm truncate min-w-0">{a.title}</div>
+                        <div className="min-w-0">
+                          <div className="text-sm truncate">{a.title}</div>
+                          {att?.teacher_feedback_text && (
+                            <p className="text-xs text-muted-foreground mt-0.5 whitespace-pre-wrap">
+                              {att.teacher_feedback_text}
+                            </p>
+                          )}
+                        </div>
                         <div className="flex items-center gap-3 text-sm shrink-0">
+                          {att?.teacher_feedback_emoji && (
+                            <span className="text-base" title="Reakce učitele" aria-label="Reakce učitele">
+                              {att.teacher_feedback_emoji}
+                            </span>
+                          )}
                           <Badge variant={meta.variant}>{meta.label}</Badge>
                           <span className="font-medium tabular-nums w-20 text-right">
                             {att && att.score != null && att.max_score != null
