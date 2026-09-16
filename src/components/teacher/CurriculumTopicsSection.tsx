@@ -104,7 +104,7 @@ export default function CurriculumTopicsSection({
     setLoading(true);
     const { data: t } = await supabase
       .from("curriculum_topics")
-      .select("id, title, sort_order, ai_generated, ai_modified_at")
+      .select("id, title, sort_order, rocnik, ai_generated, ai_modified_at")
       .eq("curriculum_plan_id", planId)
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: true });
@@ -114,6 +114,7 @@ export default function CurriculumTopicsSection({
         id: string;
         title: string;
         sort_order: number;
+        rocnik?: number | null;
         ai_generated?: boolean;
         ai_modified_at?: string | null;
       }[] | null) ?? [];
