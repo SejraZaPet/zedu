@@ -1389,6 +1389,15 @@ const TeacherAssignments = () => {
                                   <div className="flex items-center gap-2 flex-wrap">
                                     <h3 className="font-semibold">{a.title}</h3>
                                     <ExamTypeBadge examType={a.exam_type} showDefault />
+                                    {!a.subject_id && (
+                                      <Badge
+                                        variant="outline"
+                                        className="text-xs border-amber-500/40 text-amber-600 bg-amber-500/10"
+                                        title="Úloha není přiřazená k předmětu – doplňte ji přes Upravit."
+                                      >
+                                        Bez předmětu
+                                      </Badge>
+                                    )}
                                     {targetName && (
                                       <Badge variant="outline" className="text-xs">
                                         <Users className="w-3 h-3 mr-1" />
