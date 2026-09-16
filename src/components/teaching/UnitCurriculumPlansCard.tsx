@@ -209,7 +209,69 @@ const UnitCurriculumPlansCard = ({ subjectId, classId, groupId }: Props) => {
           </div>
         </>
       )}
+      <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          {preview && (
+            <>
+              <DialogHeader>
+                <DialogTitle>{preview.title}</DialogTitle>
+                <DialogDescription>
+                  {preview.subject} · Aktualizováno{" "}
+                  {new Date(preview.updated_at).toLocaleDateString("cs-CZ")}
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-4">
+                {planBlocks(preview).length > 0 && (
+                  <div className="space-y-3 rounded-md border p-3">
+                    {planBlocks(preview).map((block, index) => (
+                      <LessonBlock key={block.id ?? index} block={block} blockIndex={index} isTeacher />
+                    ))}
+                  </div>
+                )}
+
+                {preview.file_name && (
+                  <div className="flex items-center gap-2 text-xs bg-muted/40 rounded-md px-2 py-1.5">
+                    <FileText className="w-3.5 h-3.5 shrink-0" />
+                    <span className="truncate flex-1">{preview.file_name}</span>
+                    {preview.file_url && (
+                      <a
+                        href={preview.file_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-primary hover:underline shrink-0 inline-flex items-center gap-0.5"
+                      >
+                        <ExternalLink className="w-3 h-3" /> Otevřít
+                      </a>
+                    )}
+                  </div>
+                )}
+
+                {user && (
+                  <CurriculumTopicsSection
+                    planId={preview.id}
+                    planContent={preview.content}
+                    planBlocks={planBlocks(preview)}
+                    fileUrl={preview.file_url}
+                    fileName={preview.file_name}
+                    teacherId={user.id}
+                    subject={preview.subject}
+                  />
+                )}
+
+                <div className="flex justify-end">
+                  <Button variant="outline" size="sm" onClick={() => navigate("/ucitel/svp")}>
+                    <Pencil className="h-4 w-4 mr-1" />
+                    Upravit v plném editoru
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
+
   );
 };
 
