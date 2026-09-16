@@ -120,6 +120,13 @@
       "when": 1789545367678,
       "tag": "0016_notifications_teacher_feedback_insert",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1789559579388,
+      "tag": "0017_allow_assignment_feedback_notification_type",
+      "breakpoints": true
     }
   ]
 }

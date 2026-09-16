@@ -270,21 +270,27 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
           : nextEmoji
             ? `Učitel zareagoval ${nextEmoji} na tvé odevzdání úkolu „${assignment.title}“.`
             : `Učitel aktualizoval zpětnou vazbu k úkolu „${assignment.title}“.`;
-        try {
-          await supabase.from("notifications").insert({
-            recipient_id: row.studentId,
-            sender_id: user.id,
-            sender_role: "teacher",
-            type: "assignment_feedback",
-            title: "Nová zpětná vazba k úkolu",
-            body,
-            link: `/n/${assignment.id}`,
-            status: "sent",
-            sent_at: new Date().toISOString(),
-            payload: { assignment_id: assignment.id, attempt_id: attempt.id },
-          } as any);
-        } catch (e) {
-          console.warn("[patchAttempt] notification insert failed", e);
+        // Chybu notifikace hlásíme viditelně – hodnocení už uložené je,
+        // ale učitel musí vědět, že se žákovi neozvalo upozornění.
+        const { error: notifyError } = await supabase.from("notifications").insert({
+          recipient_id: row.studentId,
+          sender_id: user.id,
+          sender_role: "teacher",
+          type: "assignment_feedback",
+          title: "Nová zpětná vazba k úkolu",
+          body,
+          link: `/n/${assignment.id}`,
+          status: "sent",
+          sent_at: new Date().toISOString(),
+          payload: { assignment_id: assignment.id, attempt_id: attempt.id },
+        } as any);
+        if (notifyError) {
+          console.warn("[patchAttempt] notification insert failed", notifyError);
+          toast({
+            title: "Hodnocení uloženo, ale upozornění se neodeslalo",
+            description: notifyError.message,
+            variant: "destructive",
+          });
         }
       }
 
