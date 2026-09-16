@@ -52,13 +52,15 @@ interface Props {
   subjectId: string | null;
   classId?: string | null;
   groupId?: string | null;
+  /** Ročník třídy – v náhledu ŠVP se rovnou rozbalí jeho sekce témat. */
+  classYear?: number | null;
 }
 
 /**
  * Výběr ŠVP, které platí pro konkrétní Výuku (předmět + třída/skupina).
  * ŠVP bez vazby na třídu/skupinu se nabízí k přiřazení, přiřazené lze odebrat.
  */
-const UnitCurriculumPlansCard = ({ subjectId, classId, groupId }: Props) => {
+const UnitCurriculumPlansCard = ({ subjectId, classId, groupId, classYear }: Props) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [plans, setPlans] = useState<PlanRow[]>([]);
