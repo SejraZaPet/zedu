@@ -397,7 +397,7 @@ const StudentAssignmentPlayer = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <SiteHeader />
-      <main className="flex-1 container mx-auto px-4 py-6 max-w-2xl">
+      <main className="flex-1 container mx-auto px-4 pt-24 md:pt-28 pb-6 max-w-2xl">
         {/* Header */}
         <div className="flex items-center gap-3 mb-4">
           <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
