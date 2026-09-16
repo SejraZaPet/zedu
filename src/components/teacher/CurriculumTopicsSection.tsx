@@ -194,17 +194,18 @@ export default function CurriculumTopicsSection({
     return { total, covered, pct };
   }, [topics]);
 
-  /** Uloží nová témata (bez duplicit vůči existujícím). */
-  const insertTopics = async (list: string[], aiGenerated: boolean) => {
+  /** Uloží nová témata (bez duplicit vůči existujícím), včetně ročníku. */
+  const insertTopics = async (list: (string | ExtractedTopic)[], aiGenerated: boolean) => {
     const existing = new Set(topics.map((t) => t.title.trim().toLowerCase()));
     const seen = new Set<string>();
-    const toInsert: string[] = [];
+    const toInsert: ExtractedTopic[] = [];
     for (const raw of list) {
-      const title = raw.trim();
+      const item: ExtractedTopic = typeof raw === "string" ? { title: raw, rocnik: null } : raw;
+      const title = item.title.trim();
       const k = title.toLowerCase();
       if (!title || existing.has(k) || seen.has(k)) continue;
       seen.add(k);
-      toInsert.push(title);
+      toInsert.push({ title, rocnik: item.rocnik ?? null });
     }
     if (toInsert.length === 0) {
       toast({ title: "Všechna nalezená témata už máte v seznamu." });
@@ -212,9 +213,10 @@ export default function CurriculumTopicsSection({
     }
     const startOrder = topics.length;
     const { error } = await supabase.from("curriculum_topics").insert(
-      toInsert.map((title, i) => ({
+      toInsert.map((item, i) => ({
         curriculum_plan_id: planId,
-        title,
+        title: item.title,
+        rocnik: item.rocnik,
         sort_order: startOrder + i,
         ai_generated: aiGenerated,
       })),
