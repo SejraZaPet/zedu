@@ -30,6 +30,7 @@ import { EXAM_TYPE_OPTIONS, type ExamType } from "@/lib/exam-types";
 import { useTeacherClasses, claimSchoolClass } from "@/hooks/useTeacherClasses";
 import { useSubjectGroups } from "@/hooks/useSubjectGroups";
 import AssignmentMaterialsEditor from "@/components/assignments/AssignmentMaterialsEditor";
+import SubjectPicker from "@/components/subjects/SubjectPicker";
 import { type AssignmentMaterial, parseMaterials } from "@/lib/assignment-materials";
 
 
@@ -888,6 +889,17 @@ const TeacherAssignments = () => {
                 )}
               </div>
 
+
+              {/* Předmět – u starších úloh bývá prázdný, lze ho tu doplnit. */}
+              <div>
+                <Label>Předmět</Label>
+                <SubjectPicker
+                  value={formSubjectId}
+                  onChange={({ subjectId }) => setFormSubjectId(subjectId)}
+                  placeholder="Vyberte předmět…"
+                  className="mt-1"
+                />
+              </div>
 
               <div className="grid grid-cols-2 gap-4">
                 {/* Class or subject group */}
