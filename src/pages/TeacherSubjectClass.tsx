@@ -1550,6 +1550,7 @@ export default function TeacherSubjectClass() {
                 subjectId={resolvedSubjectId}
                 classId={isGroup ? null : classId}
                 groupId={isGroup ? groupId : null}
+                classYear={klass?.year ?? null}
               />
 
               <TeachingUnitCollaboratorsCard

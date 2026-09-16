@@ -258,6 +258,7 @@ const UnitCurriculumPlansCard = ({ subjectId, classId, groupId, classYear }: Pro
                     fileName={preview.file_name}
                     teacherId={user.id}
                     subject={preview.subject}
+                    defaultExpandedRocnik={classYear ?? null}
                   />
                 )}
 
