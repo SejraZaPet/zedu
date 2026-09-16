@@ -43,6 +43,7 @@ interface CurriculumTopic {
   id: string;
   title: string;
   sort_order: number;
+  rocnik?: number | null;
   linked: LinkedItem[];
   ai_generated?: boolean;
   ai_modified_at?: string | null;
@@ -63,6 +64,8 @@ interface Props {
   fileName?: string | null;
   teacherId: string;
   subject: string;
+  /** Ročník, jehož sekce se má otevřít rozbalená (např. ročník aktuální třídy). */
+  defaultExpandedRocnik?: number | null;
 }
 
 export default function CurriculumTopicsSection({
@@ -73,6 +76,7 @@ export default function CurriculumTopicsSection({
   fileName,
   teacherId,
   subject,
+  defaultExpandedRocnik,
 }: Props) {
   const [topics, setTopics] = useState<CurriculumTopic[]>([]);
   const [loading, setLoading] = useState(true);
