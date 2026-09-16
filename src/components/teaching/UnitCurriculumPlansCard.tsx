@@ -12,7 +12,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { BookMarked, Link2, X } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { BookMarked, Eyeff, Link2, X, ExternalLink, FileText, Pencil } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { LessonBlock } from "@/components/LessonBlockRenderer";
+import CurriculumTopicsSection from "@/components/teacher/CurriculumTopicsSection";
+import { legacyContentToBlocks } from "@/lib/curriculum-template";
+import type { Block } from "@/lib/textbook-config";
 
 interface PlanRow {
   id: string;
@@ -21,7 +33,20 @@ interface PlanRow {
   subject_id: string | null;
   class_id: string | null;
   group_id: string | null;
+  content: string | null;
+  content_blocks: Block[] | null;
+  file_url: string | null;
+  file_name: string | null;
+  updated_at: string;
 }
+
+/** Bloky plánu – z content_blocks, jinak fallback ze starého textu. */
+function planBlocks(plan: PlanRow): Block[] {
+  const raw = plan.content_blocks;
+  if (Array.isArray(raw) && raw.length > 0) return raw as Block[];
+  return legacyContentToBlocks(plan.content);
+}
+
 
 interface Props {
   subjectId: string | null;
