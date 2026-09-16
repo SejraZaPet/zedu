@@ -12,7 +12,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { BookMarked, Link2, X } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { BookMarked, Eye, Link2, X, ExternalLink, FileText, Pencil } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { LessonBlock } from "@/components/LessonBlockRenderer";
+import CurriculumTopicsSection from "@/components/teacher/CurriculumTopicsSection";
+import { legacyContentToBlocks } from "@/lib/curriculum-template";
+import type { Block } from "@/lib/textbook-config";
 
 interface PlanRow {
   id: string;
@@ -21,7 +33,20 @@ interface PlanRow {
   subject_id: string | null;
   class_id: string | null;
   group_id: string | null;
+  content: string | null;
+  content_blocks: Block[] | null;
+  file_url: string | null;
+  file_name: string | null;
+  updated_at: string;
 }
+
+/** Bloky plánu – z content_blocks, jinak fallback ze starého textu. */
+function planBlocks(plan: PlanRow): Block[] {
+  const raw = plan.content_blocks;
+  if (Array.isArray(raw) && raw.length > 0) return raw as Block[];
+  return legacyContentToBlocks(plan.content);
+}
+
 
 interface Props {
   subjectId: string | null;
@@ -40,13 +65,15 @@ const UnitCurriculumPlansCard = ({ subjectId, classId, groupId }: Props) => {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<string>("");
   const [busy, setBusy] = useState(false);
+  const [preview, setPreview] = useState<PlanRow | null>(null);
+  const navigate = useNavigate();
 
   const load = useCallback(async () => {
     if (!user) return;
     setLoading(true);
     const { data, error } = await supabase
       .from("teacher_curriculum_plans")
-      .select("id, title, subject, subject_id, class_id, group_id")
+      .select("id, title, subject, subject_id, class_id, group_id, content, content_blocks, file_url, file_name, updated_at")
       .eq("teacher_id", user.id)
       .order("created_at", { ascending: false });
     if (error) {
@@ -127,10 +154,24 @@ const UnitCurriculumPlansCard = ({ subjectId, classId, groupId }: Props) => {
             <ul className="space-y-2">
               {assigned.map((p) => (
                 <li key={p.id} className="flex items-center justify-between gap-2 rounded-md border p-2">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">{p.title}</p>
+                  <button
+                    type="button"
+                    className="min-w-0 flex-1 text-left rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    onClick={() => setPreview(p)}
+                    aria-label={`Otevřít náhled ŠVP ${p.title}`}
+                  >
+                    <p className="truncate text-sm font-medium text-primary hover:underline">{p.title}</p>
                     <Badge variant="secondary" className="mt-1">{p.subject}</Badge>
-                  </div>
+                  </button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setPreview(p)}
+                    aria-label={`Otevřít ŠVP ${p.title}`}
+                  >
+                    <Eye className="h-4 w-4 mr-1" />
+                    Otevřít ŠVP
+                  </Button>
                   <Button
                     size="sm"
                     variant="ghost"
@@ -141,6 +182,7 @@ const UnitCurriculumPlansCard = ({ subjectId, classId, groupId }: Props) => {
                     <X className="h-4 w-4" />
                   </Button>
                 </li>
+
               ))}
             </ul>
           )}
@@ -167,7 +209,69 @@ const UnitCurriculumPlansCard = ({ subjectId, classId, groupId }: Props) => {
           </div>
         </>
       )}
+      <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          {preview && (
+            <>
+              <DialogHeader>
+                <DialogTitle>{preview.title}</DialogTitle>
+                <DialogDescription>
+                  {preview.subject} · Aktualizováno{" "}
+                  {new Date(preview.updated_at).toLocaleDateString("cs-CZ")}
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-4">
+                {planBlocks(preview).length > 0 && (
+                  <div className="space-y-3 rounded-md border p-3">
+                    {planBlocks(preview).map((block, index) => (
+                      <LessonBlock key={block.id ?? index} block={block} blockIndex={index} isTeacher />
+                    ))}
+                  </div>
+                )}
+
+                {preview.file_name && (
+                  <div className="flex items-center gap-2 text-xs bg-muted/40 rounded-md px-2 py-1.5">
+                    <FileText className="w-3.5 h-3.5 shrink-0" />
+                    <span className="truncate flex-1">{preview.file_name}</span>
+                    {preview.file_url && (
+                      <a
+                        href={preview.file_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-primary hover:underline shrink-0 inline-flex items-center gap-0.5"
+                      >
+                        <ExternalLink className="w-3 h-3" /> Otevřít
+                      </a>
+                    )}
+                  </div>
+                )}
+
+                {user && (
+                  <CurriculumTopicsSection
+                    planId={preview.id}
+                    planContent={preview.content}
+                    planBlocks={planBlocks(preview)}
+                    fileUrl={preview.file_url}
+                    fileName={preview.file_name}
+                    teacherId={user.id}
+                    subject={preview.subject}
+                  />
+                )}
+
+                <div className="flex justify-end">
+                  <Button variant="outline" size="sm" onClick={() => navigate("/ucitel/svp")}>
+                    <Pencil className="h-4 w-4 mr-1" />
+                    Upravit v plném editoru
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
+
   );
 };
 
