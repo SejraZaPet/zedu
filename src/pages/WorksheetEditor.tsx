@@ -1475,8 +1475,17 @@ export default function WorksheetEditor() {
         const existingItems = aiReplaceMode === "replace" ? [] : s.variants[0].items;
         const existingKeys =
           aiReplaceMode === "replace" ? [] : s.answerKeys[variantId] ?? [];
+        // V režimu „Technika s videi“ připravíme prázdné QR placeholdery pro videa.
+        const qrCodes =
+          aiMode === "technique" && (s.header.qrCodes ?? []).length === 0
+            ? [
+                { label: "Teorie", url: "" },
+                { label: "Opakování", url: "" },
+              ]
+            : s.header.qrCodes;
         return {
           ...s,
+          header: { ...s.header, qrCodes },
           variants: s.variants.map((v, idx) =>
             idx === 0 ? { ...v, items: [...existingItems, ...newItems] } : v,
           ),
@@ -2107,6 +2116,86 @@ export default function WorksheetEditor() {
                   rows={2}
                 />
               </div>
+              <div className="sm:col-span-2">
+                <Label className="text-xs">QR kódy v záhlaví</Label>
+                <div className="space-y-2 mt-1">
+                  {(spec.header.qrCodes ?? []).map((q, i) => (
+                    <div key={i} className="flex flex-col sm:flex-row gap-2">
+                      <Input
+                        className="sm:w-40"
+                        value={q.label}
+                        placeholder="Popisek (např. Teorie)"
+                        onChange={(e) =>
+                          updateSpec((s) => ({
+                            ...s,
+                            header: {
+                              ...s.header,
+                              qrCodes: (s.header.qrCodes ?? []).map((x, j) =>
+                                j === i ? { ...x, label: e.target.value } : x,
+                              ),
+                            },
+                          }))
+                        }
+                      />
+                      <Input
+                        className="flex-1"
+                        value={q.url}
+                        placeholder="https://…"
+                        onChange={(e) =>
+                          updateSpec((s) => ({
+                            ...s,
+                            header: {
+                              ...s.header,
+                              qrCodes: (s.header.qrCodes ?? []).map((x, j) =>
+                                j === i ? { ...x, url: e.target.value } : x,
+                              ),
+                            },
+                          }))
+                        }
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Smazat QR kód"
+                        onClick={() =>
+                          updateSpec((s) => ({
+                            ...s,
+                            header: {
+                              ...s.header,
+                              qrCodes: (s.header.qrCodes ?? []).filter((_, j) => j !== i),
+                            },
+                          }))
+                        }
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  {(spec.header.qrCodes ?? []).length < 5 && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        updateSpec((s) => ({
+                          ...s,
+                          header: {
+                            ...s.header,
+                            qrCodes: [...(s.header.qrCodes ?? []), { label: "", url: "" }],
+                          },
+                        }))
+                      }
+                    >
+                      <Plus className="w-4 h-4 mr-1" />
+                      Přidat QR kód
+                    </Button>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Prázdný odkaz se v tisku vykreslí jako rámeček „Sem vlož odkaz“.
+                  </p>
+                </div>
+              </div>
             </div>
 
             {/* Náhled přiřazené lekce */}
@@ -2411,6 +2500,7 @@ export default function WorksheetEditor() {
                   <SelectItem value="revision">Opakování (matching + ordering + fill_blank)</SelectItem>
                   <SelectItem value="homework">Domácí úkol (otevřené otázky + reflexe)</SelectItem>
                   <SelectItem value="study">Výukový list – zápis a aktivity</SelectItem>
+                  <SelectItem value="technique">Technika s videi</SelectItem>
                   <SelectItem value="worksheet">Pracovní list s aktivitami (write_lines + instruction + two_boxes)</SelectItem>
                 </SelectContent>
               </Select>

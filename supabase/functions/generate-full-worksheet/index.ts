@@ -48,6 +48,8 @@ const MODE_GUIDANCE: Record<string, string> = {
   worksheet: "Hlavně section_header, write_lines, instruction_box, two_boxes, flow_steps. Min. mcq/true_false.",
   study:
     "Výukový list – zápis a aktivity: list slouží k zápisu do hodiny i k procvičení. Prokládej výklad/zápis a aktivity, začni section_header, používej write_lines, two_boxes a instruction_box pro strukturu zápisu.",
+  technique:
+    "Technika s videi: list popisuje jednu technologickou úpravu / postup. Postupuj takto: (1) první blok section_header = přesný název techniky nebo postupu (např. „Pečení“, „Dušení“) bez dalších slov; (2) hned poté write_lines s promptem typu „Charakteristika – doplň při výkladu“ (lineStyle \"dotted\", lineCount 3–4), kam si žák doplní definici; (3) flow_steps se schématem postupu — konkrétní kroky odvoď z tématu (např. Výběr suroviny → Předběžná úprava → Průběh → Dokončení), 3–6 kroků; (4) dále střídej section_header + write_lines (tečkované doplňovací řádky) pro dílčí postupy (např. „Příprava šťávy“) a two_boxes pro srovnání dvou variant postupu, kde leftContent/rightContent obsahují jen krátké nadpisy bodů k doplnění; (5) doplň max. 1–2 krátké kontrolní otázky (short_answer nebo true_false). Nepoužívej dlouhé otevřené otázky ani mcq.",
 };
 
 function shuffleSeeded<T>(arr: T[], seed: number): T[] {

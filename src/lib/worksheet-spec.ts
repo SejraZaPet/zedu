@@ -106,6 +106,8 @@ export interface WorksheetHeader {
   variantLabel?: string;
   /** Instructions text shown at the top */
   instructions?: string;
+  /** QR kódy v pravé části záhlaví (doporučeno max. 4–5). Prázdné url = placeholder pro doplnění. */
+  qrCodes?: { url: string; label: string }[];
 }
 
 export interface AnswerSpace {

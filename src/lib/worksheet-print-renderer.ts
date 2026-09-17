@@ -150,25 +150,44 @@ html, body {
   display: table-cell;
   vertical-align: top;
   text-align: right;
-  width: 25%;
+  width: 34%;
+  white-space: nowrap;
 }
-.ws-qr-wrap img {
+.ws-qr-item {
   display: inline-block;
-  width: 70pt;
-  height: 70pt;
+  vertical-align: top;
+  text-align: center;
+  margin-left: 6pt;
+}
+.ws-qr-item img,
+.ws-qr-placeholder {
+  display: block;
+  width: 52pt;
+  height: 52pt;
   border: 1pt solid #E5E7EB;
   border-radius: 4pt;
   padding: 2pt;
   background: #FFFFFF !important;
+  box-sizing: border-box;
 }
-.ws-qr-wrap > div:last-child {
+.ws-qr-placeholder {
+  border-style: dashed;
+  font-size: 6pt;
+  color: #94A3B8 !important;
+  line-height: 1.15;
+  padding: 16pt 3pt;
+  text-align: center;
+}
+.ws-qr-label {
   display: block;
-  margin-top: 3pt;
+  margin-top: 2pt;
   font-size: 6.5pt;
+  font-weight: 600;
   color: #64748B !important;
   line-height: 1.2;
-  max-width: 100pt;
-  text-align: right;
+  max-width: 56pt;
+  white-space: normal;
+  text-align: center;
 }
 
 /* ─── Student fields ─── */
@@ -637,6 +656,21 @@ function renderHeader(spec: WorksheetSpec, _variant: WorksheetVariant): string {
     ? `<div class="ws-subtitle">${esc(h.subtitle)}</div>`
     : "";
 
+  // QR kódy v pravé horní části záhlaví (max. 5), prázdné url = placeholder.
+  const qrList = (h.qrCodes ?? []).slice(0, 5);
+  const qrBlock = qrList.length
+    ? `<div class="ws-qr-wrap">${qrList
+        .map((q) => {
+          const url = (q?.url ?? "").trim();
+          const img = url
+            ? `<img src="${qrSvgDataUrl(url, 150)}" alt="QR ${esc(q?.label ?? "")}" />`
+            : `<div class="ws-qr-placeholder">Sem vlož odkaz</div>`;
+          const label = q?.label ? `<span class="ws-qr-label">${esc(q.label)}</span>` : "";
+          return `<div class="ws-qr-item">${img}${label}</div>`;
+        })
+        .join("")}</div>`
+    : "";
+
   return `
 <div class="ws-header">
   <div class="ws-header-top">
@@ -645,6 +679,7 @@ function renderHeader(spec: WorksheetSpec, _variant: WorksheetVariant): string {
       <h1 class="ws-title">${esc(h.title)}</h1>
       ${subtitle}
     </div>
+    ${qrBlock}
   </div>
   ${fields.length ? `<div class="ws-fields-strip">${fields.join("")}</div>` : ""}
   ${h.instructions ? `<div class="ws-instructions">${esc(h.instructions)}</div>` : ""}
