@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Loader2, Plus, CalendarIcon, Trash2, Send, Clock, Users, Shuffle, RotateCcw, Eye, EyeOff, BarChart3, FileText, ExternalLink, Lock, Pencil, ClipboardList, FolderCheck, ListTodo } from "lucide-react";
+import { Loader2, Plus, CalendarIcon, Trash2, Send, Clock, Users, Shuffle, RotateCcw, Eye, EyeOff, BarChart3, FileText, ExternalLink, Lock, Pencil, ClipboardList, FolderCheck, ListTodo, BookOpen } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -55,6 +55,8 @@ interface Assignment {
   worksheet_id?: string | null;
   lockdown_mode?: boolean;
   is_portfolio_task?: boolean;
+  lesson_id?: string | null;
+  lesson_source?: string | null;
   exam_type?: string | null;
   group_mode?: string | null;
   group_size?: number | null;
@@ -111,6 +113,20 @@ const TeacherAssignments = () => {
   const [lockdownMode, setLockdownMode] = useState(false);
   const [isPortfolioTask, setIsPortfolioTask] = useState(false);
 
+  // ---- Propojení úlohy s lekcí z učebnice (nepovinné) ----
+  /** Učebnice, ke kterým má učitel přístup (pro výběr lekce). */
+  const [lessonTextbooks, setLessonTextbooks] = useState<{ id: string; title: string }[]>([]);
+  const [selectedLessonTextbookId, setSelectedLessonTextbookId] = useState<string>("");
+  /** Lekce zvolené učebnice – učitelské i globální, každá se svým zdrojem. */
+  const [textbookLessonOptions, setTextbookLessonOptions] = useState<
+    { id: string; title: string; source: "textbook_lessons" | "teacher_textbook_lessons" }[]
+  >([]);
+  const [linkedLessonId, setLinkedLessonId] = useState<string>("");
+  const [linkedLessonSource, setLinkedLessonSource] = useState<
+    "textbook_lessons" | "teacher_textbook_lessons" | null
+  >(null);
+  const [lessonOptionsLoading, setLessonOptionsLoading] = useState(false);
+
   /** Portfoliový úkol a lockdown se vylučují — zapnutí portfolia lockdown vypne. */
   const togglePortfolioTask = (next: boolean) => {
     setIsPortfolioTask(next);
@@ -154,6 +170,109 @@ const TeacherAssignments = () => {
   useEffect(() => {
     loadData();
   }, []);
+
+  // Učebnice pro propojení s lekcí – RLS vrátí jen ty, ke kterým má učitel přístup.
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("teacher_textbooks" as any)
+        .select("id, title")
+        .order("title", { ascending: true });
+      setLessonTextbooks(((data as any[]) ?? []).map((t) => ({ id: t.id, title: t.title })));
+    })();
+  }, []);
+
+  // Lekce zvolené učebnice: učitelské lekce + globální lekce přes témata předmětu.
+  useEffect(() => {
+    if (!selectedLessonTextbookId) {
+      setTextbookLessonOptions([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      setLessonOptionsLoading(true);
+      const options: {
+        id: string;
+        title: string;
+        source: "textbook_lessons" | "teacher_textbook_lessons";
+      }[] = [];
+
+      const [tbRes, teacherLessonsRes] = await Promise.all([
+        supabase
+          .from("teacher_textbooks" as any)
+          .select("subject, title")
+          .eq("id", selectedLessonTextbookId)
+          .maybeSingle(),
+        supabase
+          .from("teacher_textbook_lessons" as any)
+          .select("id, title, sort_order")
+          .eq("textbook_id", selectedLessonTextbookId)
+          .order("sort_order", { ascending: true }),
+      ]);
+
+      for (const l of ((teacherLessonsRes.data as any[]) ?? [])) {
+        options.push({ id: l.id, title: l.title, source: "teacher_textbook_lessons" });
+      }
+
+      const tb = tbRes.data as any;
+      const slug =
+        (tb?.subject && String(tb.subject).trim()) ||
+        String(tb?.title ?? "")
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-|-$/g, "");
+      if (slug) {
+        const { data: topics } = await supabase
+          .from("textbook_topics")
+          .select("id")
+          .eq("subject", slug);
+        const topicIds = ((topics as any[]) ?? []).map((t) => t.id);
+        if (topicIds.length > 0) {
+          const { data: tas } = await supabase
+            .from("lesson_topic_assignments")
+            .select("lesson_id")
+            .in("topic_id", topicIds);
+          const globalIds = [...new Set(((tas as any[]) ?? []).map((a) => a.lesson_id).filter(Boolean))];
+          if (globalIds.length > 0) {
+            const { data: gl } = await supabase
+              .from("textbook_lessons")
+              .select("id, title")
+              .in("id", globalIds);
+            for (const l of ((gl as any[]) ?? [])) {
+              options.push({ id: l.id, title: l.title, source: "textbook_lessons" });
+            }
+          }
+        }
+      }
+
+      if (!cancelled) {
+        setTextbookLessonOptions(options);
+        setLessonOptionsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedLessonTextbookId]);
+
+  // Při editaci úlohy dohledáme učebnici, ve které propojená lekce leží.
+  useEffect(() => {
+    if (!linkedLessonId || selectedLessonTextbookId) return;
+    (async () => {
+      if (linkedLessonSource === "teacher_textbook_lessons") {
+        const { data } = await supabase
+          .from("teacher_textbook_lessons" as any)
+          .select("textbook_id")
+          .eq("id", linkedLessonId)
+          .maybeSingle();
+        const tbId = (data as any)?.textbook_id;
+        if (tbId) setSelectedLessonTextbookId(tbId as string);
+      }
+    })();
+  }, [linkedLessonId, linkedLessonSource, selectedLessonTextbookId]);
+
 
   // Pokud URL obsahuje ?detail=<id> (např. z Předmět/Třída), otevři detail úlohy jednou.
   const detailParam = searchParams.get("detail");
@@ -339,6 +458,8 @@ const TeacherAssignments = () => {
           class_id: selectedGroupId ? null : (selectedClassId || null),
           group_id: selectedGroupId || null,
           worksheet_id: selectedWorksheetId || null,
+          lesson_id: linkedLessonId || null,
+          lesson_source: linkedLessonId ? linkedLessonSource : null,
           lockdown_mode: lockdownMode,
           is_portfolio_task: isPortfolioTask,
           exam_type: examType === "ukol" ? null : examType,
@@ -387,6 +508,8 @@ const TeacherAssignments = () => {
           scheduled_publish_at: scheduledPublishAt,
           activity_data: [] as any,
           worksheet_id: selectedWorksheetId || null,
+          lesson_id: linkedLessonId || null,
+          lesson_source: linkedLessonId ? linkedLessonSource : null,
           lockdown_mode: lockdownMode,
           is_portfolio_task: isPortfolioTask,
           exam_type: examType === "ukol" ? null : examType,
@@ -448,6 +571,9 @@ const TeacherAssignments = () => {
     setSelectedGroupId(prefillGroupId);
 
     setSelectedWorksheetId("");
+    setSelectedLessonTextbookId("");
+    setLinkedLessonId("");
+    setLinkedLessonSource(null);
     setLockdownMode(false);
     setIsPortfolioTask(false);
     setExamType("ukol");
@@ -483,6 +609,11 @@ const TeacherAssignments = () => {
     setSelectedGroupId(a.group_id || "");
     setSelectedClassId(a.group_id ? "" : (a.class_id || ""));
     setSelectedWorksheetId(a.worksheet_id || "");
+    setLinkedLessonId(a.lesson_id || "");
+    setLinkedLessonSource(
+      (a.lesson_source as "textbook_lessons" | "teacher_textbook_lessons" | null) || null,
+    );
+    setSelectedLessonTextbookId("");
     setIsPortfolioTask(!!a.is_portfolio_task);
     setLockdownMode(!!a.lockdown_mode && !a.is_portfolio_task);
     setExamType((a.exam_type as ExamType) || "ukol");
@@ -1339,6 +1470,72 @@ const TeacherAssignments = () => {
                   </p>
                 )}
               </div>
+
+            {/* Propojení s lekcí z učebnice – nezávislé na pracovním listu i portfoliu */}
+            <div className="p-3 border border-border rounded-lg bg-muted/30 space-y-2">
+              <div className="flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-muted-foreground" />
+                <Label className="text-sm">Propojit s lekcí z učebnice (volitelné)</Label>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Žáci si u úlohy otevřou příslušnou lekci. Lze kombinovat s pracovním listem i portfoliem.
+              </p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <Select
+                  value={selectedLessonTextbookId || "__none__"}
+                  onValueChange={(v) => {
+                    setSelectedLessonTextbookId(v === "__none__" ? "" : v);
+                    setLinkedLessonId("");
+                    setLinkedLessonSource(null);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="— Vyber učebnici —" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">— Vyber učebnici —</SelectItem>
+                    {lessonTextbooks.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={linkedLessonId || "__none__"}
+                  disabled={!selectedLessonTextbookId || lessonOptionsLoading}
+                  onValueChange={(v) => {
+                    if (v === "__none__") {
+                      setLinkedLessonId("");
+                      setLinkedLessonSource(null);
+                      return;
+                    }
+                    const found = textbookLessonOptions.find((l) => l.id === v);
+                    setLinkedLessonId(v);
+                    setLinkedLessonSource(found?.source ?? "teacher_textbook_lessons");
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue
+                      placeholder={lessonOptionsLoading ? "Načítám lekce…" : "— Bez lekce —"}
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">— Bez lekce —</SelectItem>
+                    {textbookLessonOptions.map((l) => (
+                      <SelectItem key={`${l.source}-${l.id}`} value={l.id}>
+                        {l.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {linkedLessonId && (
+                <p className="text-[11px] text-muted-foreground">
+                  ✓ Žáci u úlohy uvidí tlačítko „Otevřít lekci“.
+                </p>
+              )}
+            </div>
 
               <div className="flex flex-wrap gap-2">
                 <Button onClick={handleSaveDraft} disabled={creating}>

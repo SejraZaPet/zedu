@@ -18,6 +18,8 @@ import type { WorksheetSpec } from "@/lib/worksheet-spec";
 import { useLockdownMode } from "@/hooks/useLockdownMode";
 import ReadAloudButton from "@/components/a11y/ReadAloudButton";
 import BezlaiTutorChat from "@/components/BezlaiTutorChat";
+import { resolveLinkedLesson, type LinkedLessonInfo } from "@/lib/linked-lesson";
+import { BookOpen } from "lucide-react";
 
 interface AssignmentData {
   id: string;
@@ -35,6 +37,8 @@ interface AssignmentData {
   materials?: unknown;
   group_mode?: string | null;
   group_size?: number | null;
+  lesson_id?: string | null;
+  lesson_source?: string | null;
 }
 
 
@@ -87,6 +91,8 @@ const StudentAssignmentPlayer = () => {
   const [groupMemberNames, setGroupMemberNames] = useState<string[]>([]);
   const [noGroup, setNoGroup] = useState(false);
   const [lastEdited, setLastEdited] = useState<{ name: string; at: string } | null>(null);
+  /** Lekce z učebnice propojená s úlohou (nepovinná). */
+  const [linkedLesson, setLinkedLesson] = useState<LinkedLessonInfo | null>(null);
 
   useEffect(() => {
     if (assignmentId) loadAssignment();
@@ -111,6 +117,15 @@ const StudentAssignmentPlayer = () => {
       if (aErr || !aData) throw new Error("Úloha nenalezena");
       const assignmentData = aData as any as AssignmentData;
       setAssignment(assignmentData);
+
+      // Propojená lekce z učebnice – zobrazí se nad zadáním jako tlačítko.
+      if (assignmentData.lesson_id) {
+        resolveLinkedLesson(assignmentData.lesson_id, assignmentData.lesson_source ?? null)
+          .then((info) => setLinkedLesson(info))
+          .catch(() => setLinkedLesson(null));
+      } else {
+        setLinkedLesson(null);
+      }
 
       // Pokud má assignment přiřazený worksheet, načti ho (přednost před activity_data).
       if (assignmentData.worksheet_id) {
@@ -493,6 +508,22 @@ const StudentAssignmentPlayer = () => {
               </p>
               <Button onClick={lockdown.requestFullscreen}>
                 <Maximize className="w-4 h-4 mr-2" /> Spustit fullscreen a začít
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Propojená lekce z učebnice */}
+        {linkedLesson && (
+          <Card className="mb-4">
+            <CardContent className="p-4 flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2 text-sm">
+                <BookOpen className="w-4 h-4 text-muted-foreground" />
+                <span className="font-medium">{linkedLesson.title}</span>
+              </div>
+              <Button size="sm" variant="outline" onClick={() => navigate(linkedLesson.url)}>
+                <BookOpen className="w-4 h-4 mr-2" />
+                Otevřít lekci
               </Button>
             </CardContent>
           </Card>
