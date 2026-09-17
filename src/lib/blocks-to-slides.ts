@@ -1,5 +1,6 @@
 import { blockBackgroundSlideColor } from "@/lib/block-backgrounds";
 import { getGroupChildFrames } from "@/lib/slide-groups";
+import { DEFAULT_THEME_ID } from "@/lib/presentation-themes";
 
 function stripHtml(html: string): string {
   if (!html) return "";
@@ -123,6 +124,8 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
     projector: { headline: lessonTitle, body: "Připojte se pomocí kódu níže." },
     device: { instructions: "Naskenujte QR kód nebo zadejte kód pro připojení." },
     teacherNotes: "",
+    themeId: DEFAULT_THEME_ID,
+    layout: defaultLayoutForType("intro"),
   });
 
   let slideIndex = 1;
@@ -313,6 +316,8 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
     projector: { headline: "Shrnutí", body: `Lekce: ${lessonTitle}` },
     device: { instructions: "Zkontrolujte si znalosti." },
     teacherNotes: "",
+    themeId: DEFAULT_THEME_ID,
+    layout: defaultLayoutForType("summary"),
   });
 
   return slides;
