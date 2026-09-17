@@ -91,6 +91,8 @@ const StudentAssignmentPlayer = () => {
   const [groupMemberNames, setGroupMemberNames] = useState<string[]>([]);
   const [noGroup, setNoGroup] = useState(false);
   const [lastEdited, setLastEdited] = useState<{ name: string; at: string } | null>(null);
+  /** Lekce z učebnice propojená s úlohou (nepovinná). */
+  const [linkedLesson, setLinkedLesson] = useState<LinkedLessonInfo | null>(null);
 
   useEffect(() => {
     if (assignmentId) loadAssignment();
@@ -115,6 +117,15 @@ const StudentAssignmentPlayer = () => {
       if (aErr || !aData) throw new Error("Úloha nenalezena");
       const assignmentData = aData as any as AssignmentData;
       setAssignment(assignmentData);
+
+      // Propojená lekce z učebnice – zobrazí se nad zadáním jako tlačítko.
+      if (assignmentData.lesson_id) {
+        resolveLinkedLesson(assignmentData.lesson_id, assignmentData.lesson_source ?? null)
+          .then((info) => setLinkedLesson(info))
+          .catch(() => setLinkedLesson(null));
+      } else {
+        setLinkedLesson(null);
+      }
 
       // Pokud má assignment přiřazený worksheet, načti ho (přednost před activity_data).
       if (assignmentData.worksheet_id) {
