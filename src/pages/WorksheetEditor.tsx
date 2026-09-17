@@ -400,6 +400,10 @@ export default function WorksheetEditor() {
   const fromLessonId = searchParams.get("from_lesson");
   const fromLessonType = (searchParams.get("from_lesson_type") as "global" | "teacher" | null) || null;
   const returnTo = searchParams.get("return_to");
+  /** Předvyplněné téma ŠVP (generování pracovního listu k tématu). */
+  const topicParam = searchParams.get("topic");
+  const topicRocnikParam = searchParams.get("topic_rocnik");
+  const topicSubjectParam = searchParams.get("topic_subject");
   const autoLinkAttempted = useRef(false);
 
   const [suggestionDialog, setSuggestionDialog] = useState<{
@@ -1169,6 +1173,20 @@ export default function WorksheetEditor() {
   const [aiCustomHint, setAiCustomHint] = useState<string>("");
   const [aiReplaceMode, setAiReplaceMode] = useState<string>("replace");
   const [aiGenerating, setAiGenerating] = useState(false);
+  /** Poměr poznámky / aktivity (jen v režimu „Výukový list – zápis a aktivity“). */
+  const [aiNotesRatio, setAiNotesRatio] = useState<string>("balanced");
+  const topicPrefillDone = useRef(false);
+
+  // Otevře generování s předvyplněným tématem ŠVP.
+  useEffect(() => {
+    if (!topicParam || topicPrefillDone.current) return;
+    topicPrefillDone.current = true;
+    setAiMode("study");
+    setAiCustomHint((prev) =>
+      prev || `Zaměř se přesně na téma ŠVP „${topicParam}“${topicRocnikParam ? ` pro ${topicRocnikParam}. ročník` : ""}.`,
+    );
+    setShowAiGenerateDialog(true);
+  }, [topicParam, topicRocnikParam]);
 
   /** Insert text from a lesson block into the targeted worksheet item. */
   function applyLessonBlockToItem(itemId: string, block: LessonBlock) {
