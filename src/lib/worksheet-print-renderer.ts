@@ -1102,9 +1102,12 @@ export function renderWorksheetVariantHtml(
   const css = buildWorksheetCss();
   const header = renderHeader(specCopy, variant);
   const showPointsEffective = specCopy.renderConfig.showPoints && specCopy.renderConfig.pointsEnabled !== false;
-  const items = variant.items.map((it) => renderItem(it, showPointsEffective)).join("\n");
+  const displayNumbers = computeDisplayNumbers(variant.items);
+  const items = variant.items
+    .map((it) => renderItem(it, showPointsEffective, displayNumbers.get(it.itemNumber)))
+    .join("\n");
   const answerKey = specCopy.renderConfig.includeAnswerKey
-    ? renderAnswerKey(variantId, spec.answerKeys[variantId] ?? [])
+    ? renderAnswerKey(variantId, spec.answerKeys[variantId] ?? [], displayNumbers)
     : "";
 
   return `<!DOCTYPE html>
