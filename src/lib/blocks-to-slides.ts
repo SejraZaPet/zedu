@@ -285,7 +285,16 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
       continue;
     }
 
-    if (!current) current = newSlide("");
+    if (!current) {
+      sectionHeadline = "";
+      sectionSourceId = block.id ?? null;
+      sectionPart = 0;
+      current = newSlide("", block.id);
+    } else if (isOverfull(current)) {
+      // Mezi dvěma nadpisy je víc obsahu, než se vejde na jeden snímek –
+      // pokračujeme dalším navazujícím snímkem místo přeplněného.
+      continueSection();
+    }
     current.blocks.push(block);
     const blockBg = blockBackgroundSlideColor(props);
     if (blockBg && !current.backgroundOverride) current.backgroundOverride = { color: blockBg };
