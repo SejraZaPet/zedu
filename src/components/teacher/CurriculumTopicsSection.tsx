@@ -637,6 +637,21 @@ export default function CurriculumTopicsSection({
                             <Link2 className="w-3.5 h-3.5" /> Napárovat
                           </Button>
                           <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 px-2 gap-1 text-xs"
+                            onClick={() => generateWorksheetForTopic(t)}
+                            disabled={worksheetTopicId === t.id}
+                            aria-label={`Vygenerovat pracovní list k tématu ${t.title}`}
+                          >
+                            {worksheetTopicId === t.id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <FilePlus2 className="w-3.5 h-3.5" />
+                            )}
+                            Pracovní list
+                          </Button>
+                          <Button
                             size="icon"
                             variant="ghost"
                             className="h-7 w-7"
