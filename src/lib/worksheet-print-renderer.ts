@@ -688,7 +688,37 @@ const GROUP_SIZE_PRINT_LABELS: Record<string, string> = {
   class: "Celá třída",
 };
 
-function renderItem(item: WorksheetItem, showPoints: boolean): string {
+/** Typy položek, které v tisku skutečně zobrazují pořadové číslo otázky. */
+const NUMBERED_ITEM_TYPES = new Set([
+  "mcq",
+  "true_false",
+  "fill_blank",
+  "matching",
+  "ordering",
+  "short_answer",
+  "open_answer",
+  "offline_activity",
+]);
+
+/**
+ * Spočítá "zobrazená" pořadová čísla – číslují se jen typy, které číslo
+ * v tisku skutečně vykreslují (layoutové/poznámkové bloky číslo nemají,
+ * takže syrové itemNumber by dělalo v číslování díry).
+ * Vrací mapu interní itemNumber → zobrazené pořadové číslo.
+ */
+function computeDisplayNumbers(items: WorksheetItem[]): Map<number, number> {
+  const map = new Map<number, number>();
+  let display = 0;
+  for (const it of items) {
+    if (NUMBERED_ITEM_TYPES.has(it.type)) {
+      display += 1;
+      map.set(it.itemNumber, display);
+    }
+  }
+  return map;
+}
+
+function renderItem(item: WorksheetItem, showPoints: boolean, displayNumber?: number): string {
   const pointsHtml = showPoints && item.points > 0
     ? `<span class="ws-item-points">${item.points} ${pointsLabel(item.points)}</span>`
     : "";
@@ -1002,7 +1032,7 @@ function renderItem(item: WorksheetItem, showPoints: boolean): string {
   return `
 <div class="ws-item">
   <div class="ws-item-header">
-    <span class="ws-item-num">${item.itemNumber}.</span>
+    <span class="ws-item-num">${displayNumber ?? item.itemNumber}.</span>
     ${showPrompt ? `<span class="ws-item-prompt prompt">${esc(item.prompt)}</span>` : ""}
     ${pointsHtml}
   </div>
@@ -1012,15 +1042,20 @@ function renderItem(item: WorksheetItem, showPoints: boolean): string {
 </div>`;
 }
 
-function renderAnswerKey(variantId: string, keys: AnswerKeyEntry[]): string {
+function renderAnswerKey(
+  variantId: string,
+  keys: AnswerKeyEntry[],
+  displayNumbers?: Map<number, number>,
+): string {
   if (!keys?.length) return "";
 
   const rows = keys
     .map((k) => {
       const ans = Array.isArray(k.correctAnswer) ? k.correctAnswer.join(", ") : k.correctAnswer;
+      const num = displayNumbers?.get(k.itemNumber) ?? k.itemNumber;
       return `
 <div class="ws-key-item">
-  <span class="ws-key-num">${k.itemNumber}.</span>
+  <span class="ws-key-num">${num}.</span>
   <div>
     <span class="ws-key-answer">${esc(ans)}</span>
     ${k.explanation ? `<div class="ws-key-explanation">${esc(k.explanation)}</div>` : ""}
@@ -1067,9 +1102,12 @@ export function renderWorksheetVariantHtml(
   const css = buildWorksheetCss();
   const header = renderHeader(specCopy, variant);
   const showPointsEffective = specCopy.renderConfig.showPoints && specCopy.renderConfig.pointsEnabled !== false;
-  const items = variant.items.map((it) => renderItem(it, showPointsEffective)).join("\n");
+  const displayNumbers = computeDisplayNumbers(variant.items);
+  const items = variant.items
+    .map((it) => renderItem(it, showPointsEffective, displayNumbers.get(it.itemNumber)))
+    .join("\n");
   const answerKey = specCopy.renderConfig.includeAnswerKey
-    ? renderAnswerKey(variantId, spec.answerKeys[variantId] ?? [])
+    ? renderAnswerKey(variantId, spec.answerKeys[variantId] ?? [], displayNumbers)
     : "";
 
   return `<!DOCTYPE html>
@@ -1118,11 +1156,12 @@ export function renderWorksheetVariantFragment(
   const css = buildWorksheetCss();
   const header = renderHeader(specCopy, variant);
   const showPointsEffective = specCopy.renderConfig.showPoints && specCopy.renderConfig.pointsEnabled !== false;
+  const displayNumbers = computeDisplayNumbers(variant.items);
   const items = variant.items
-    .map((it) => renderItem(it, showPointsEffective))
+    .map((it) => renderItem(it, showPointsEffective, displayNumbers.get(it.itemNumber)))
     .join("\n");
   const answerKey = specCopy.renderConfig.includeAnswerKey
-    ? renderAnswerKey(variantId, spec.answerKeys[variantId] ?? [])
+    ? renderAnswerKey(variantId, spec.answerKeys[variantId] ?? [], displayNumbers)
     : "";
 
   const bodyHtml = `
