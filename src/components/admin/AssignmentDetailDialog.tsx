@@ -29,6 +29,8 @@ import { cn } from "@/lib/utils";
 import AssignmentMaterialsList from "@/components/assignments/AssignmentMaterialsList";
 import { parseMaterials, type AssignmentMaterial } from "@/lib/assignment-materials";
 import { getStudentAttachmentSignedUrl } from "@/lib/portfolio";
+import { resolveLinkedLesson, type LinkedLessonInfo } from "@/lib/linked-lesson";
+import { BookOpen } from "lucide-react";
 
 type StudentStatus = "not_started" | "in_progress" | "submitted";
 
@@ -49,6 +51,8 @@ export interface AssignmentDetailAssignment {
   materials?: unknown;
   class_id?: string | null;
   group_id?: string | null;
+  lesson_id?: string | null;
+  lesson_source?: string | null;
 }
 
 interface AttemptInfo {
@@ -97,6 +101,26 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [attachUrls, setAttachUrls] = useState<Record<string, string>>({});
   const [materials, setMaterials] = useState<AssignmentMaterial[]>([]);
+  /** Lekce z učebnice propojená se zadáním (nepovinná). */
+  const [linkedLesson, setLinkedLesson] = useState<LinkedLessonInfo | null>(null);
+
+  useEffect(() => {
+    if (!assignment?.lesson_id) {
+      setLinkedLesson(null);
+      return;
+    }
+    let cancelled = false;
+    resolveLinkedLesson(assignment.lesson_id, assignment.lesson_source ?? null)
+      .then((info) => {
+        if (!cancelled) setLinkedLesson(info);
+      })
+      .catch(() => {
+        if (!cancelled) setLinkedLesson(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [assignment?.lesson_id, assignment?.lesson_source]);
 
   const load = useCallback(async () => {
     if (!assignment) return;
@@ -336,6 +360,19 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
                 ? `Termín: ${format(new Date(assignment.deadline), "d. M. yyyy HH:mm", { locale: cs })}`
                 : "Bez termínu"}
             </div>
+
+            {linkedLesson && (
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border p-3">
+                <div className="flex items-center gap-2 text-sm">
+                  <BookOpen className="w-4 h-4 text-muted-foreground" />
+                  <span className="font-medium">{linkedLesson.title}</span>
+                </div>
+                <Button size="sm" variant="outline" onClick={() => window.open(linkedLesson.url, "_blank")}>
+                  <ExternalLink className="w-3.5 h-3.5 mr-1" />
+                  Otevřít
+                </Button>
+              </div>
+            )}
 
             <AssignmentMaterialsList materials={materials} />
 
