@@ -513,6 +513,22 @@ const StudentAssignmentPlayer = () => {
           </Card>
         )}
 
+        {/* Propojená lekce z učebnice */}
+        {linkedLesson && (
+          <Card className="mb-4">
+            <CardContent className="p-4 flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2 text-sm">
+                <BookOpen className="w-4 h-4 text-muted-foreground" />
+                <span className="font-medium">{linkedLesson.title}</span>
+              </div>
+              <Button size="sm" variant="outline" onClick={() => navigate(linkedLesson.url)}>
+                <BookOpen className="w-4 h-4 mr-2" />
+                Otevřít lekci
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Materiály od učitele */}
         {parseMaterials(assignment.materials).length > 0 && (
           <Card className="mb-4">
