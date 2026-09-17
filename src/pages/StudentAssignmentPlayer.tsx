@@ -18,6 +18,8 @@ import type { WorksheetSpec } from "@/lib/worksheet-spec";
 import { useLockdownMode } from "@/hooks/useLockdownMode";
 import ReadAloudButton from "@/components/a11y/ReadAloudButton";
 import BezlaiTutorChat from "@/components/BezlaiTutorChat";
+import { resolveLinkedLesson, type LinkedLessonInfo } from "@/lib/linked-lesson";
+import { BookOpen } from "lucide-react";
 
 interface AssignmentData {
   id: string;
@@ -35,6 +37,8 @@ interface AssignmentData {
   materials?: unknown;
   group_mode?: string | null;
   group_size?: number | null;
+  lesson_id?: string | null;
+  lesson_source?: string | null;
 }
 
 
