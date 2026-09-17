@@ -653,7 +653,9 @@ export type Database = {
           group_size: number | null
           id: string
           is_portfolio_task: boolean
+          lesson_id: string | null
           lesson_plan_id: string | null
+          lesson_source: string | null
           lockdown_mode: boolean
           materials: Json
           max_attempts: number
@@ -680,7 +682,9 @@ export type Database = {
           group_size?: number | null
           id?: string
           is_portfolio_task?: boolean
+          lesson_id?: string | null
           lesson_plan_id?: string | null
+          lesson_source?: string | null
           lockdown_mode?: boolean
           materials?: Json
           max_attempts?: number
@@ -707,7 +711,9 @@ export type Database = {
           group_size?: number | null
           id?: string
           is_portfolio_task?: boolean
+          lesson_id?: string | null
           lesson_plan_id?: string | null
+          lesson_source?: string | null
           lockdown_mode?: boolean
           materials?: Json
           max_attempts?: number
