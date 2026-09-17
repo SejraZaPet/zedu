@@ -688,7 +688,37 @@ const GROUP_SIZE_PRINT_LABELS: Record<string, string> = {
   class: "Celá třída",
 };
 
-function renderItem(item: WorksheetItem, showPoints: boolean): string {
+/** Typy položek, které v tisku skutečně zobrazují pořadové číslo otázky. */
+const NUMBERED_ITEM_TYPES = new Set([
+  "mcq",
+  "true_false",
+  "fill_blank",
+  "matching",
+  "ordering",
+  "short_answer",
+  "open_answer",
+  "offline_activity",
+]);
+
+/**
+ * Spočítá "zobrazená" pořadová čísla – číslují se jen typy, které číslo
+ * v tisku skutečně vykreslují (layoutové/poznámkové bloky číslo nemají,
+ * takže syrové itemNumber by dělalo v číslování díry).
+ * Vrací mapu interní itemNumber → zobrazené pořadové číslo.
+ */
+function computeDisplayNumbers(items: WorksheetItem[]): Map<number, number> {
+  const map = new Map<number, number>();
+  let display = 0;
+  for (const it of items) {
+    if (NUMBERED_ITEM_TYPES.has(it.type)) {
+      display += 1;
+      map.set(it.itemNumber, display);
+    }
+  }
+  return map;
+}
+
+function renderItem(item: WorksheetItem, showPoints: boolean, displayNumber?: number): string {
   const pointsHtml = showPoints && item.points > 0
     ? `<span class="ws-item-points">${item.points} ${pointsLabel(item.points)}</span>`
     : "";
