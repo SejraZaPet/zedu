@@ -1038,59 +1038,16 @@ const LiveTeacherScreen = () => {
             <div className="flex items-center gap-2 mb-3 text-xs font-medium text-muted-foreground">
               <Monitor className="w-4 h-4" /> PROJEKTOR
             </div>
-            {(currentSlide as any).blocks && (currentSlide as any).blocks.length > 0 ? (
-              /* Stejný renderer jako v editoru i na projekci – zachová pozice,
-                 pozadí, gradienty i rotaci prvků. */
-              <div className="rounded-lg overflow-hidden">
-                <SlideCanvas
-                  slide={currentSlide}
-                  themeId={(currentSlide as any)?.themeId}
-                  darkMode
-                />
-              </div>
-            ) : (
-              <>
-                {currentSlide.projector?.headline && (
-                  <h2 className="text-2xl font-bold">{currentSlide.projector.headline}</h2>
-                )}
-                {!(currentSlide as any).tableData && !(currentSlide as any).cardData && currentSlide.projector?.body && (
-                  <p className="text-base text-muted-foreground mt-2 whitespace-pre-wrap">{currentSlide.projector.body}</p>
-                )}
-
-                {(currentSlide as any).tableData && (
-                  <div className="overflow-x-auto mt-3">
-                    <table className="w-full text-sm border-collapse">
-                      <thead>
-                        <tr>
-                          {(currentSlide as any).tableData.headers.map((h: string, i: number) => (
-                            <th key={i} className="border border-border bg-muted px-3 py-2 text-left font-medium">{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(currentSlide as any).tableData.rows.map((row: string[], ri: number) => (
-                          <tr key={ri}>
-                            {row.map((cell: string, ci: number) => (
-                              <td key={ci} className="border border-border px-3 py-2">{cell}</td>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-                {(currentSlide as any).cardData && (
-                  <div className="grid grid-cols-2 gap-3 mt-4">
-                    {(currentSlide as any).cardData.map((card: any, i: number) => (
-                      <div key={i} className="border border-border rounded-lg p-3 bg-card">
-                        <p className="font-semibold text-sm">{card.title}</p>
-                        {card.text && <p className="text-xs text-muted-foreground mt-1">{card.text}</p>}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </>
-            )}
+            {/* Stejný renderer jako v editoru i na projekci – zachová pozice,
+                pozadí, gradienty, sazbu i „scale-to-fit“ chování. Snímky bez
+                bloků dostanou bloky dopočítané z textu / tabulky / karet. */}
+            <div className="rounded-lg overflow-hidden">
+              <SlideCanvas
+                slide={slideWithFallbackBlocks(currentSlide)}
+                themeId={(currentSlide as any)?.themeId}
+                darkMode
+              />
+            </div>
           </div>
 
 
