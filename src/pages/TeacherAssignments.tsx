@@ -55,6 +55,8 @@ interface Assignment {
   worksheet_id?: string | null;
   lockdown_mode?: boolean;
   is_portfolio_task?: boolean;
+  lesson_id?: string | null;
+  lesson_source?: string | null;
   exam_type?: string | null;
   group_mode?: string | null;
   group_size?: number | null;
@@ -456,6 +458,8 @@ const TeacherAssignments = () => {
           class_id: selectedGroupId ? null : (selectedClassId || null),
           group_id: selectedGroupId || null,
           worksheet_id: selectedWorksheetId || null,
+          lesson_id: linkedLessonId || null,
+          lesson_source: linkedLessonId ? linkedLessonSource : null,
           lockdown_mode: lockdownMode,
           is_portfolio_task: isPortfolioTask,
           exam_type: examType === "ukol" ? null : examType,
@@ -504,6 +508,8 @@ const TeacherAssignments = () => {
           scheduled_publish_at: scheduledPublishAt,
           activity_data: [] as any,
           worksheet_id: selectedWorksheetId || null,
+          lesson_id: linkedLessonId || null,
+          lesson_source: linkedLessonId ? linkedLessonSource : null,
           lockdown_mode: lockdownMode,
           is_portfolio_task: isPortfolioTask,
           exam_type: examType === "ukol" ? null : examType,
@@ -565,6 +571,9 @@ const TeacherAssignments = () => {
     setSelectedGroupId(prefillGroupId);
 
     setSelectedWorksheetId("");
+    setSelectedLessonTextbookId("");
+    setLinkedLessonId("");
+    setLinkedLessonSource(null);
     setLockdownMode(false);
     setIsPortfolioTask(false);
     setExamType("ukol");
@@ -600,6 +609,11 @@ const TeacherAssignments = () => {
     setSelectedGroupId(a.group_id || "");
     setSelectedClassId(a.group_id ? "" : (a.class_id || ""));
     setSelectedWorksheetId(a.worksheet_id || "");
+    setLinkedLessonId(a.lesson_id || "");
+    setLinkedLessonSource(
+      (a.lesson_source as "textbook_lessons" | "teacher_textbook_lessons" | null) || null,
+    );
+    setSelectedLessonTextbookId("");
     setIsPortfolioTask(!!a.is_portfolio_task);
     setLockdownMode(!!a.lockdown_mode && !a.is_portfolio_task);
     setExamType((a.exam_type as ExamType) || "ukol");
