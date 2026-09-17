@@ -111,6 +111,20 @@ const TeacherAssignments = () => {
   const [lockdownMode, setLockdownMode] = useState(false);
   const [isPortfolioTask, setIsPortfolioTask] = useState(false);
 
+  // ---- Propojení úlohy s lekcí z učebnice (nepovinné) ----
+  /** Učebnice, ke kterým má učitel přístup (pro výběr lekce). */
+  const [lessonTextbooks, setLessonTextbooks] = useState<{ id: string; title: string }[]>([]);
+  const [selectedLessonTextbookId, setSelectedLessonTextbookId] = useState<string>("");
+  /** Lekce zvolené učebnice – učitelské i globální, každá se svým zdrojem. */
+  const [textbookLessonOptions, setTextbookLessonOptions] = useState<
+    { id: string; title: string; source: "textbook_lessons" | "teacher_textbook_lessons" }[]
+  >([]);
+  const [linkedLessonId, setLinkedLessonId] = useState<string>("");
+  const [linkedLessonSource, setLinkedLessonSource] = useState<
+    "textbook_lessons" | "teacher_textbook_lessons" | null
+  >(null);
+  const [lessonOptionsLoading, setLessonOptionsLoading] = useState(false);
+
   /** Portfoliový úkol a lockdown se vylučují — zapnutí portfolia lockdown vypne. */
   const togglePortfolioTask = (next: boolean) => {
     setIsPortfolioTask(next);
