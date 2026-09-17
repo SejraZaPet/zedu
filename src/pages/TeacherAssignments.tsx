@@ -1471,6 +1471,72 @@ const TeacherAssignments = () => {
                 )}
               </div>
 
+            {/* Propojení s lekcí z učebnice – nezávislé na pracovním listu i portfoliu */}
+            <div className="p-3 border border-border rounded-lg bg-muted/30 space-y-2">
+              <div className="flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-muted-foreground" />
+                <Label className="text-sm">Propojit s lekcí z učebnice (volitelné)</Label>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Žáci si u úlohy otevřou příslušnou lekci. Lze kombinovat s pracovním listem i portfoliem.
+              </p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <Select
+                  value={selectedLessonTextbookId || "__none__"}
+                  onValueChange={(v) => {
+                    setSelectedLessonTextbookId(v === "__none__" ? "" : v);
+                    setLinkedLessonId("");
+                    setLinkedLessonSource(null);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="— Vyber učebnici —" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">— Vyber učebnici —</SelectItem>
+                    {lessonTextbooks.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={linkedLessonId || "__none__"}
+                  disabled={!selectedLessonTextbookId || lessonOptionsLoading}
+                  onValueChange={(v) => {
+                    if (v === "__none__") {
+                      setLinkedLessonId("");
+                      setLinkedLessonSource(null);
+                      return;
+                    }
+                    const found = textbookLessonOptions.find((l) => l.id === v);
+                    setLinkedLessonId(v);
+                    setLinkedLessonSource(found?.source ?? "teacher_textbook_lessons");
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue
+                      placeholder={lessonOptionsLoading ? "Načítám lekce…" : "— Bez lekce —"}
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">— Bez lekce —</SelectItem>
+                    {textbookLessonOptions.map((l) => (
+                      <SelectItem key={`${l.source}-${l.id}`} value={l.id}>
+                        {l.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {linkedLessonId && (
+                <p className="text-[11px] text-muted-foreground">
+                  ✓ Žáci u úlohy uvidí tlačítko „Otevřít lekci“.
+                </p>
+              )}
+            </div>
+
               <div className="flex flex-wrap gap-2">
                 <Button onClick={handleSaveDraft} disabled={creating}>
                   {creating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Pencil className="w-4 h-4 mr-2" />}
