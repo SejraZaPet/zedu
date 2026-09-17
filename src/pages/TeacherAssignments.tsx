@@ -169,6 +169,109 @@ const TeacherAssignments = () => {
     loadData();
   }, []);
 
+  // Učebnice pro propojení s lekcí – RLS vrátí jen ty, ke kterým má učitel přístup.
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("teacher_textbooks" as any)
+        .select("id, title")
+        .order("title", { ascending: true });
+      setLessonTextbooks(((data as any[]) ?? []).map((t) => ({ id: t.id, title: t.title })));
+    })();
+  }, []);
+
+  // Lekce zvolené učebnice: učitelské lekce + globální lekce přes témata předmětu.
+  useEffect(() => {
+    if (!selectedLessonTextbookId) {
+      setTextbookLessonOptions([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      setLessonOptionsLoading(true);
+      const options: {
+        id: string;
+        title: string;
+        source: "textbook_lessons" | "teacher_textbook_lessons";
+      }[] = [];
+
+      const [tbRes, teacherLessonsRes] = await Promise.all([
+        supabase
+          .from("teacher_textbooks" as any)
+          .select("subject, title")
+          .eq("id", selectedLessonTextbookId)
+          .maybeSingle(),
+        supabase
+          .from("teacher_textbook_lessons" as any)
+          .select("id, title, sort_order")
+          .eq("textbook_id", selectedLessonTextbookId)
+          .order("sort_order", { ascending: true }),
+      ]);
+
+      for (const l of ((teacherLessonsRes.data as any[]) ?? [])) {
+        options.push({ id: l.id, title: l.title, source: "teacher_textbook_lessons" });
+      }
+
+      const tb = tbRes.data as any;
+      const slug =
+        (tb?.subject && String(tb.subject).trim()) ||
+        String(tb?.title ?? "")
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-|-$/g, "");
+      if (slug) {
+        const { data: topics } = await supabase
+          .from("textbook_topics")
+          .select("id")
+          .eq("subject", slug);
+        const topicIds = ((topics as any[]) ?? []).map((t) => t.id);
+        if (topicIds.length > 0) {
+          const { data: tas } = await supabase
+            .from("lesson_topic_assignments")
+            .select("lesson_id")
+            .in("topic_id", topicIds);
+          const globalIds = [...new Set(((tas as any[]) ?? []).map((a) => a.lesson_id).filter(Boolean))];
+          if (globalIds.length > 0) {
+            const { data: gl } = await supabase
+              .from("textbook_lessons")
+              .select("id, title")
+              .in("id", globalIds);
+            for (const l of ((gl as any[]) ?? [])) {
+              options.push({ id: l.id, title: l.title, source: "textbook_lessons" });
+            }
+          }
+        }
+      }
+
+      if (!cancelled) {
+        setTextbookLessonOptions(options);
+        setLessonOptionsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedLessonTextbookId]);
+
+  // Při editaci úlohy dohledáme učebnici, ve které propojená lekce leží.
+  useEffect(() => {
+    if (!linkedLessonId || selectedLessonTextbookId) return;
+    (async () => {
+      if (linkedLessonSource === "teacher_textbook_lessons") {
+        const { data } = await supabase
+          .from("teacher_textbook_lessons" as any)
+          .select("textbook_id")
+          .eq("id", linkedLessonId)
+          .maybeSingle();
+        const tbId = (data as any)?.textbook_id;
+        if (tbId) setSelectedLessonTextbookId(tbId as string);
+      }
+    })();
+  }, [linkedLessonId, linkedLessonSource, selectedLessonTextbookId]);
+
+
   // Pokud URL obsahuje ?detail=<id> (např. z Předmět/Třída), otevři detail úlohy jednou.
   const detailParam = searchParams.get("detail");
   const detailOpenedRef = useRef(false);
