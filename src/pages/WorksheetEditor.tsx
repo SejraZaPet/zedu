@@ -2410,6 +2410,7 @@ export default function WorksheetEditor() {
                   <SelectItem value="test">Test (MCQ + krátké odpovědi)</SelectItem>
                   <SelectItem value="revision">Opakování (matching + ordering + fill_blank)</SelectItem>
                   <SelectItem value="homework">Domácí úkol (otevřené otázky + reflexe)</SelectItem>
+                  <SelectItem value="study">Výukový list – zápis a aktivity</SelectItem>
                   <SelectItem value="worksheet">Pracovní list s aktivitami (write_lines + instruction + two_boxes)</SelectItem>
                 </SelectContent>
               </Select>
