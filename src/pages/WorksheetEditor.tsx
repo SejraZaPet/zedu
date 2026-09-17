@@ -2415,6 +2415,29 @@ export default function WorksheetEditor() {
                 </SelectContent>
               </Select>
             </div>
+            {aiMode === "study" && (
+              <div className="space-y-1.5">
+                <Label>Poměr poznámky / aktivity</Label>
+                <Select value={aiNotesRatio} onValueChange={setAiNotesRatio}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    <SelectItem value="notes">Hlavně poznámky</SelectItem>
+                    <SelectItem value="balanced">Vyvážené</SelectItem>
+                    <SelectItem value="activities">Hlavně aktivity</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  AI automaticky prokládá prostor na zápis a aktivity – nemusíte to psát do pokynu.
+                </p>
+              </div>
+            )}
+            {topicParam && (
+              <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
+                Generuje se k tématu ŠVP <strong>{topicParam}</strong>
+                {topicRocnikParam ? ` · ${topicRocnikParam}. ročník` : ""}
+                {topicSubjectParam ? ` · ${topicSubjectParam}` : ""}
+              </div>
+            )}
             <div className="space-y-1.5">
               <Label>Počet bloků</Label>
               <Select value={aiCount} onValueChange={setAiCount}>
