@@ -99,6 +99,21 @@ function blockToBodyText(block: any): { text: string; assetRef?: string; activit
   }
 }
 
+/** Maximální „hustota“ jednoho automaticky vygenerovaného snímku. */
+const MAX_BLOCKS_PER_SLIDE = 5;
+const MAX_CHARS_PER_SLIDE = 900;
+
+/** Výchozí rozvržení podle typu snímku, ať prezentace nepůsobí jako slepenec. */
+function defaultLayoutForType(type: string): string {
+  switch (type) {
+    case "intro":
+    case "summary":
+      return "title-only";
+    default:
+      return "full";
+  }
+}
+
 export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
   const slides: any[] = [];
 
@@ -112,6 +127,10 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
 
   let slideIndex = 1;
   let current: any = null;
+  /** Kontext aktuální sekce (nadpis + stabilní id zdrojového bloku lekce). */
+  let sectionHeadline = "";
+  let sectionSourceId: string | null = null;
+  let sectionPart = 0;
 
   const flush = () => {
     if (
@@ -122,20 +141,39 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
         (current.blocks && current.blocks.length))
     ) {
       current.slideId = `slide-${slideIndex++}`;
+      if (!current.themeId) current.themeId = DEFAULT_THEME_ID;
+      if (!current.layout) current.layout = defaultLayoutForType(current.type);
       slides.push(current);
     }
     current = null;
   };
 
 
-  const newSlide = (headline = ""): any => ({
+  const newSlide = (headline = "", sourceBlockId?: string | null): any => ({
     slideId: "",
     type: "explain",
     projector: { headline, body: "", assetRefs: [] as string[] },
     device: { instructions: "Sledujte výklad." },
     teacherNotes: "",
     blocks: [] as any[],
+    ...(sourceBlockId ? { sourceBlockId } : {}),
   });
+
+  /** Je aktuální snímek už tak plný, že by se obsah nevešel? */
+  const isOverfull = (slide: any): boolean => {
+    if (!slide) return false;
+    const blockCount = (slide.blocks || []).length;
+    const chars = String(slide.projector?.body || "").length;
+    return blockCount >= MAX_BLOCKS_PER_SLIDE || chars >= MAX_CHARS_PER_SLIDE;
+  };
+
+  /** Pokračovací snímek téže sekce (nadpis se nepřepisuje, jen doplní). */
+  const continueSection = () => {
+    flush();
+    sectionPart += 1;
+    const headline = sectionHeadline ? `${sectionHeadline} (pokračování)` : "";
+    current = newSlide(headline, sectionSourceId ? `${sectionSourceId}#${sectionPart}` : null);
+  };
 
   const appendBody = (text: string) => {
     if (!text) return;
