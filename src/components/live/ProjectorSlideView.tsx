@@ -4,8 +4,9 @@ import WallProjectorView from "@/components/activities/WallProjectorView";
 import WordCloudView from "@/components/activities/WordCloudView";
 import ActivityTaskPreview, { hasActivityTaskPreview } from "@/components/live/ActivityTaskPreview";
 
-import SlideCanvas, { SlideBody } from "@/components/admin/SlideCanvas";
+import SlideCanvas from "@/components/admin/SlideCanvas";
 import { slideTransitionClass } from "@/lib/slide-transitions";
+import { slideWithFallbackBlocks, slideImageUrls } from "@/lib/slide-canvas-fallback";
 import { getPresentationTheme, themeStageStyle } from "@/lib/presentation-themes";
 import { slideBackgroundOverrideStyle } from "@/lib/slide-typography";
 import { buildAnonymousLabelMap, type GamePlayer } from "@/lib/game-types";
@@ -36,7 +37,7 @@ interface Props {
  * Used by both LiveProjectorScreen and LiveTeacherScreen (under whiteboard overlay)
  * so that whiteboard strokes align identically in both views.
  */
-const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, slides, players, gameCode, overlayContent, scrollTop, zoom, backgroundUrl }: Props) => {
+const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, slides, players, gameCode, overlayContent, zoom, backgroundUrl }: Props) => {
   const progressPct = slides.length > 0 ? ((currentIndex + 1) / slides.length) * 100 : 0;
   const anonymousAnswers = !!(session?.settings as any)?.anonymousAnswers;
   const anonymousLabelMap = useMemo(
@@ -44,14 +45,7 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
     [anonymousAnswers, players]
   );
   const frameRef = useRef<HTMLDivElement>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
-
-  useEffect(() => {
-    if (scrollTop !== undefined && scrollRef.current) {
-      scrollRef.current.scrollTop = scrollTop;
-    }
-  }, [scrollTop]);
 
   useEffect(() => {
     const frame = frameRef.current;
@@ -75,6 +69,24 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
     };
   }, []);
 
+  // Přednačtení obrázků následujícího snímku, ať těžší slide nenabíhá s prodlevou.
+  useEffect(() => {
+    const next = slides[currentIndex + 1];
+    if (!next) return;
+    const urls = slideImageUrls(next);
+    const imgs = urls.map((url) => {
+      const img = new Image();
+      img.decoding = "async";
+      img.src = url;
+      return img;
+    });
+    return () => {
+      imgs.forEach((img) => {
+        img.src = "";
+      });
+    };
+  }, [currentIndex, slides]);
+
   const projectorTheme = getPresentationTheme((currentSlide as any)?.themeId);
   const projectorBgOverride = slideBackgroundOverrideStyle(currentSlide);
   const projectorStageStyle: CSSProperties = projectorBgOverride
@@ -82,6 +94,16 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
     : backgroundUrl
       ? gameBackgroundStyle(backgroundUrl)
       : themeStageStyle(projectorTheme);
+
+  // Snímky bez bloků dostanou dopočítané bloky, aby měly stejnou sazbu
+  // i „scale-to-fit“ chování jako blokové snímky.
+  const canvasSlide = useMemo(() => slideWithFallbackBlocks(currentSlide), [currentSlide]);
+  const hasCanvasContent = !!(
+    canvasSlide &&
+    ((canvasSlide.blocks && canvasSlide.blocks.length > 0) || canvasSlide.projector?.headline)
+  );
+
+  const activityType = currentSlide?.type === "activity" ? currentSlide?.activitySpec?.activityType : null;
 
   return (
     <div
@@ -97,153 +119,94 @@ const ProjectorSlideView = ({ sessionId, session, currentSlide, currentIndex, sl
             transform: `translate(-50%, -50%) scale(${scale})`,
           }}
         >
-          <div className="h-full w-full overflow-hidden">
-          <div className="flex h-full flex-col overflow-hidden relative" style={zoomStageStyle(zoom)}>
-            <div className="h-2 bg-white/10 shrink-0">
-              <div className="h-full bg-purple-400 transition-all duration-500" style={{ width: `${progressPct}%` }} />
-            </div>
-
-            <div className="flex justify-between items-center px-12 py-6 text-gray-300 shrink-0">
-              <span className="text-lg">{session.title}</span>
-              <span className="text-lg font-medium">Slide {currentIndex + 1} / {slides.length}</span>
-            </div>
-
-            {(() => {
-              const hasBlocks = !!(currentSlide.blocks && currentSlide.blocks.length > 0);
-              return (
+          <div className="relative h-full w-full overflow-hidden">
+            {/* Přechod animuje CELOU scénu (lišta, hlavička, obsah i patička),
+                takže se při výměně snímku nic neblikne. */}
             <div
-              ref={scrollRef}
-              className={`flex-1 flex flex-col items-center justify-start px-6 py-4 gap-4 min-h-0 ${
-                hasBlocks ? "overflow-hidden" : "overflow-y-auto"
+              key={currentIndex}
+              className={`flex h-full flex-col overflow-hidden relative ${
+                slideTransitionClass((currentSlide as any)?.transitionStyle) || "slide-trans-fade"
               }`}
+              style={zoomStageStyle(zoom)}
             >
-              <div
-                key={currentIndex}
-                className={`w-full flex-1 min-h-0 flex flex-col items-center gap-4 ${
-                  slideTransitionClass((currentSlide as any)?.transitionStyle) || "animate-fade-in"
-                }`}
-              >
-              {currentSlide.type === "explain" && (
-                <div className="mb-2 inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-1.5 text-sm text-purple-300 shrink-0">
-                  <BookOpen className="w-4 h-4" /> Výklad
-                </div>
-              )}
-
-              {hasBlocks ? (
-                /* Přesně stejný renderer jako editor: celá scéna 1600×900 se
-                   proporčně zmenší do dostupného místa, takže se prvky
-                   nepřekrývají a rozvržení odpovídá editoru. */
-                <div className="w-full flex-1 min-h-0 flex items-center justify-center">
-                  <SlideCanvas key={currentIndex} slide={currentSlide} themeId={(currentSlide as any)?.themeId} darkMode revealStep={(session?.settings as any)?.revealStep} />
-                </div>
-              ) : (
-
-
-                <>
-                  {currentSlide.projector?.headline && (
-                    <h2 className="text-6xl font-bold text-center mb-10 leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-purple-200 shrink-0">
-                      {currentSlide.projector.headline}
-                    </h2>
-                  )}
-                  {!currentSlide.tableData && !currentSlide.cardData && currentSlide.projector?.body && (
-                    <div className="text-2xl text-gray-300 leading-relaxed space-y-3 w-full max-w-5xl shrink-0">
-                      {currentSlide.projector.body.split('\n').filter(Boolean).map((line: string, i: number) => (
-                        <p key={i} className={line.startsWith('•') ? "flex items-start gap-3" : "text-center"}>
-                          {line.startsWith('•') ? (
-                            <>
-                              <span className="text-purple-400 mt-1 flex-shrink-0">•</span>
-                              <span>{line.substring(1).trim()}</span>
-                            </>
-                          ) : line}
-                        </p>
-                      ))}
-                    </div>
-                  )}
-                </>
-              )}
-
-              {currentSlide.tableData && !(currentSlide.blocks && currentSlide.blocks.length > 0) && (
-                <div className="w-full mt-4 rounded-xl overflow-hidden border border-white/20 shrink-0">
-                  <table className="w-full text-xl border-collapse table-fixed">
-                    <thead>
-                      <tr>
-                        {currentSlide.tableData.headers.map((h: string, i: number) => (
-                          <th key={i} className="border border-white/20 bg-white/20 px-6 py-4 text-left font-bold text-white">{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {currentSlide.tableData.rows.map((row: string[], ri: number) => (
-                        <tr key={ri} className={ri % 2 === 0 ? "bg-white/5" : "bg-white/10"}>
-                          {row.map((cell: string, ci: number) => (
-                            <td key={ci} className="border border-white/20 px-6 py-4 text-white">{cell}</td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-
-              {currentSlide.cardData && !(currentSlide.blocks && currentSlide.blocks.length > 0) && (
-                <div className="grid grid-cols-3 gap-6 w-full max-w-6xl shrink-0">
-                  {currentSlide.cardData.map((card: any, i: number) => (
-                    <div key={i} className="bg-card border border-border rounded-2xl p-8 shadow-sm min-w-0">
-                      <h3 className="text-2xl font-bold text-foreground mb-3">{card.title}</h3>
-                      {card.text && <p className="text-lg text-muted-foreground">{card.text}</p>}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {currentSlide.type === "activity" && currentSlide.activitySpec?.activityType === "wall" ? (
-                <WallProjectorView
-                  sessionId={sessionId}
-                  questionIndex={currentIndex}
-                  anonymous={currentSlide.activitySpec?.anonymous || false}
-                  anonymousLabelMap={anonymousLabelMap}
-                  published={
-                    (session.settings as any)?.wallPublished === true &&
-                    (session.settings as any)?.wallPublishedQuestion === currentIndex
-                  }
-                />
-              ) : currentSlide.type === "activity" && currentSlide.activitySpec?.activityType === "wordcloud" ? (
-                <WordCloudView
-                  sessionId={sessionId}
-                  questionIndex={currentIndex}
-                  published={
-                    (session.settings as any)?.wordcloudPublished === true &&
-                    (session.settings as any)?.wordcloudPublishedQuestion === currentIndex
-                  }
-                  darkMode
-                />
-              ) : currentSlide.type === "activity" && hasActivityTaskPreview(currentSlide.activitySpec) ? (
-                <div className="mt-6 w-full max-w-5xl rounded-2xl border border-white/20 bg-white/5 px-8 py-6 shrink-0 text-xl">
-                  <ActivityTaskPreview spec={currentSlide.activitySpec} darkMode />
-                </div>
-              ) : currentSlide.type === "activity" && (
-                <div className="mt-8 bg-primary/10 border border-primary/20 rounded-2xl px-8 py-6 shrink-0">
-                  <div className="flex items-center gap-4 text-primary text-2xl font-medium">
-                    <span className="w-3 h-3 rounded-full bg-primary animate-pulse" />
-                    Žáci plní aktivitu na svých zařízeních
-                  </div>
-                </div>
-              )}
-
+              <div className="h-2 bg-white/10 shrink-0">
+                <div className="h-full bg-purple-400 transition-all duration-500" style={{ width: `${progressPct}%` }} />
               </div>
+
+              <div className="flex justify-between items-center px-12 py-6 text-gray-300 shrink-0">
+                <span className="text-lg">{session.title}</span>
+                <span className="text-lg font-medium">Snímek {currentIndex + 1} / {slides.length}</span>
+              </div>
+
+              <div className="flex-1 flex flex-col items-center justify-start px-6 py-4 gap-4 min-h-0 overflow-hidden">
+                {currentSlide.type === "explain" && (
+                  <div className="mb-2 inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-1.5 text-sm text-purple-300 shrink-0">
+                    <BookOpen className="w-4 h-4" /> Výklad
+                  </div>
+                )}
+
+                {hasCanvasContent && (
+                  /* Přesně stejný renderer jako editor: celá scéna 1600×900 se
+                     proporčně zmenší do dostupného místa, takže se prvky
+                     nepřekrývají a rozvržení odpovídá editoru. */
+                  <div className="w-full flex-1 min-h-0 flex items-center justify-center">
+                    <SlideCanvas
+                      key={currentIndex}
+                      slide={canvasSlide}
+                      themeId={(currentSlide as any)?.themeId}
+                      darkMode
+                      revealStep={(session?.settings as any)?.revealStep}
+                    />
+                  </div>
+                )}
+
+                {activityType === "wall" ? (
+                  <WallProjectorView
+                    sessionId={sessionId}
+                    questionIndex={currentIndex}
+                    anonymous={currentSlide.activitySpec?.anonymous || false}
+                    anonymousLabelMap={anonymousLabelMap}
+                    published={
+                      (session.settings as any)?.wallPublished === true &&
+                      (session.settings as any)?.wallPublishedQuestion === currentIndex
+                    }
+                  />
+                ) : activityType === "wordcloud" ? (
+                  <WordCloudView
+                    sessionId={sessionId}
+                    questionIndex={currentIndex}
+                    published={
+                      (session.settings as any)?.wordcloudPublished === true &&
+                      (session.settings as any)?.wordcloudPublishedQuestion === currentIndex
+                    }
+                    darkMode
+                  />
+                ) : currentSlide.type === "activity" && hasActivityTaskPreview(currentSlide.activitySpec) ? (
+                  <div className="w-full max-w-5xl rounded-2xl border border-white/20 bg-white/5 px-8 py-6 shrink-0 text-xl">
+                    <ActivityTaskPreview spec={currentSlide.activitySpec} darkMode />
+                  </div>
+                ) : currentSlide.type === "activity" ? (
+                  <div className="bg-primary/10 border border-primary/20 rounded-2xl px-8 py-6 shrink-0">
+                    <div className="flex items-center gap-4 text-primary text-2xl font-medium">
+                      <span className="w-3 h-3 rounded-full bg-primary animate-pulse" />
+                      Žáci plní aktivitu na svých zařízeních
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="px-12 py-6 border-t border-border flex justify-between items-center text-muted-foreground shrink-0">
+                <span className="text-lg">Kód: <span className="font-mono font-bold text-foreground">{gameCode}</span></span>
+                <span className="text-lg">{players.length} žáků online</span>
+              </div>
+
+              {overlayContent}
             </div>
-              );
-            })()}
 
-
-
-            <div className="px-12 py-6 border-t border-border flex justify-between items-center text-muted-foreground shrink-0">
-              <span className="text-lg">Kód: <span className="font-mono font-bold text-foreground">{gameCode}</span></span>
-              <span className="text-lg">{players.length} žáků online</span>
+            {/* Nenápadný ukazatel postupu – viditelný žákům po celou dobu. */}
+            <div className="pointer-events-none absolute bottom-3 right-4 rounded-full bg-black/30 px-3 py-1 text-sm font-medium text-white/70 backdrop-blur-sm">
+              Snímek {currentIndex + 1}/{slides.length}
             </div>
-
-            {overlayContent}
-          </div>
           </div>
         </div>
       </div>

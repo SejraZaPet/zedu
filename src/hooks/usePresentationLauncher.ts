@@ -27,7 +27,16 @@ export function usePresentationLauncher() {
 
   const [hasSavedPresentation, setHasSavedPresentation] = useState(false);
 
+  /**
+   * Párování uložených a nově vygenerovaných snímků.
+   *
+   * Primárně podle stabilního id zdrojového bloku lekce – přejmenování nadpisu
+   * v učebnici tak nezahodí ruční úpravy snímku. Starší uložené prezentace
+   * `sourceBlockId` nemají, tam padáme zpět na nadpis / slideId.
+   */
   const slideKey = (slide: any, index: number) => {
+    const sourceId = String(slide?.sourceBlockId || "").trim();
+    if (sourceId) return `src:${sourceId}`;
     const headline = String(slide?.projector?.headline || "").trim().toLowerCase();
     return headline || String(slide?.slideId || `index-${index}`);
   };

@@ -8,7 +8,8 @@
 
 export type SlideTransition = "cut" | "fade" | "push";
 
-export const DEFAULT_TRANSITION: SlideTransition = "cut";
+/** Výchozí je jemné prolnutí – plynulejší než skoková výměna snímku. */
+export const DEFAULT_TRANSITION: SlideTransition = "fade";
 
 export const SLIDE_TRANSITIONS: { value: SlideTransition; label: string; hint: string }[] = [
   { value: "cut", label: "Bez přechodu", hint: "Slide se okamžitě vymění" },

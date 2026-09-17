@@ -1,5 +1,6 @@
 import { blockBackgroundSlideColor } from "@/lib/block-backgrounds";
 import { getGroupChildFrames } from "@/lib/slide-groups";
+import { DEFAULT_THEME_ID } from "@/lib/presentation-themes";
 
 function stripHtml(html: string): string {
   if (!html) return "";
@@ -99,6 +100,21 @@ function blockToBodyText(block: any): { text: string; assetRef?: string; activit
   }
 }
 
+/** Maximální „hustota“ jednoho automaticky vygenerovaného snímku. */
+const MAX_BLOCKS_PER_SLIDE = 5;
+const MAX_CHARS_PER_SLIDE = 900;
+
+/** Výchozí rozvržení podle typu snímku, ať prezentace nepůsobí jako slepenec. */
+function defaultLayoutForType(type: string): string {
+  switch (type) {
+    case "intro":
+    case "summary":
+      return "title-only";
+    default:
+      return "full";
+  }
+}
+
 export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
   const slides: any[] = [];
 
@@ -108,10 +124,16 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
     projector: { headline: lessonTitle, body: "Připojte se pomocí kódu níže." },
     device: { instructions: "Naskenujte QR kód nebo zadejte kód pro připojení." },
     teacherNotes: "",
+    themeId: DEFAULT_THEME_ID,
+    layout: defaultLayoutForType("intro"),
   });
 
   let slideIndex = 1;
   let current: any = null;
+  /** Kontext aktuální sekce (nadpis + stabilní id zdrojového bloku lekce). */
+  let sectionHeadline = "";
+  let sectionSourceId: string | null = null;
+  let sectionPart = 0;
 
   const flush = () => {
     if (
@@ -122,20 +144,39 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
         (current.blocks && current.blocks.length))
     ) {
       current.slideId = `slide-${slideIndex++}`;
+      if (!current.themeId) current.themeId = DEFAULT_THEME_ID;
+      if (!current.layout) current.layout = defaultLayoutForType(current.type);
       slides.push(current);
     }
     current = null;
   };
 
 
-  const newSlide = (headline = ""): any => ({
+  const newSlide = (headline = "", sourceBlockId?: string | null): any => ({
     slideId: "",
     type: "explain",
     projector: { headline, body: "", assetRefs: [] as string[] },
     device: { instructions: "Sledujte výklad." },
     teacherNotes: "",
     blocks: [] as any[],
+    ...(sourceBlockId ? { sourceBlockId } : {}),
   });
+
+  /** Je aktuální snímek už tak plný, že by se obsah nevešel? */
+  const isOverfull = (slide: any): boolean => {
+    if (!slide) return false;
+    const blockCount = (slide.blocks || []).length;
+    const chars = String(slide.projector?.body || "").length;
+    return blockCount >= MAX_BLOCKS_PER_SLIDE || chars >= MAX_CHARS_PER_SLIDE;
+  };
+
+  /** Pokračovací snímek téže sekce (nadpis se nepřepisuje, jen doplní). */
+  const continueSection = () => {
+    flush();
+    sectionPart += 1;
+    const headline = sectionHeadline ? `${sectionHeadline} (pokračování)` : "";
+    current = newSlide(headline, sectionSourceId ? `${sectionSourceId}#${sectionPart}` : null);
+  };
 
   const appendBody = (text: string) => {
     if (!text) return;
@@ -179,7 +220,7 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
         bodyChildren = visibleChildren;
       }
 
-      const groupSlide = newSlide(headline);
+      const groupSlide = newSlide(headline, block.id);
       const groupBg = blockBackgroundSlideColor(props)
         || visibleChildren.map((c) => blockBackgroundSlideColor(c?.props)).find(Boolean)
         || null;
@@ -215,7 +256,10 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
       flush();
       const headline = getText(props);
       if (!headline) continue;
-      current = newSlide(headline);
+      sectionHeadline = headline;
+      sectionSourceId = block.id ?? null;
+      sectionPart = 0;
+      current = newSlide(headline, block.id);
       const headingBg = blockBackgroundSlideColor(props);
       if (headingBg) current.backgroundOverride = { color: headingBg };
       continue;
@@ -230,7 +274,7 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
       flush();
       const activityHeadline =
         props.title || props.question || props.activityType || "Aktivita";
-      const activitySlide = newSlide(activityHeadline);
+      const activitySlide = newSlide(activityHeadline, block.id);
       activitySlide.type = "activity";
       activitySlide.activitySpec = converted.activitySpec || props;
       activitySlide.blocks.push(block);
@@ -244,7 +288,16 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
       continue;
     }
 
-    if (!current) current = newSlide("");
+    if (!current) {
+      sectionHeadline = "";
+      sectionSourceId = block.id ?? null;
+      sectionPart = 0;
+      current = newSlide("", block.id);
+    } else if (isOverfull(current)) {
+      // Mezi dvěma nadpisy je víc obsahu, než se vejde na jeden snímek –
+      // pokračujeme dalším navazujícím snímkem místo přeplněného.
+      continueSection();
+    }
     current.blocks.push(block);
     const blockBg = blockBackgroundSlideColor(props);
     if (blockBg && !current.backgroundOverride) current.backgroundOverride = { color: blockBg };
@@ -263,6 +316,8 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
     projector: { headline: "Shrnutí", body: `Lekce: ${lessonTitle}` },
     device: { instructions: "Zkontrolujte si znalosti." },
     teacherNotes: "",
+    themeId: DEFAULT_THEME_ID,
+    layout: defaultLayoutForType("summary"),
   });
 
   return slides;
