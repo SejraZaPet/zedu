@@ -84,7 +84,7 @@ const WorksheetPanel = ({ lessonPlanId, planTitle, gradeBand }: Props) => {
     setGenerating(true);
     setWorksheet(null);
     try {
-      const { data, error } = await supabase.functions.invoke("generate-worksheet", {
+      const { data, error } = await supabase.functions.invoke("generate-full-worksheet", {
         body: {
           lessonPlanId,
           gradeBand,

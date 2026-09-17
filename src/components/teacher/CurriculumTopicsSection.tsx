@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { emptyWorksheetSpec } from "@/lib/worksheet-defaults";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +27,7 @@ import {
   BookOpen,
   FileText,
   ChevronRight,
+  FilePlus2,
 } from "lucide-react";
 import {
   Collapsible,
@@ -84,7 +87,37 @@ export default function CurriculumTopicsSection({
   subject,
   defaultExpandedRocnik,
 }: Props) {
+  const navigate = useNavigate();
   const [topics, setTopics] = useState<CurriculumTopic[]>([]);
+  const [worksheetTopicId, setWorksheetTopicId] = useState<string | null>(null);
+
+  /** Vytvoří nový pracovní list a otevře AI generování s předvyplněným tématem ŠVP. */
+  const generateWorksheetForTopic = async (t: CurriculumTopic) => {
+    setWorksheetTopicId(t.id);
+    try {
+      const { data, error } = await supabase
+        .from("worksheets" as never)
+        .insert({
+          teacher_id: teacherId,
+          title: t.title,
+          subject,
+          spec: emptyWorksheetSpec({ title: t.title, subject }) as never,
+        } as never)
+        .select("id")
+        .single();
+      if (error || !data) throw error ?? new Error("Pracovní list se nepodařilo vytvořit.");
+      const params = new URLSearchParams({ topic: t.title });
+      if (typeof t.rocnik === "number") params.set("topic_rocnik", String(t.rocnik));
+      if (subject) params.set("topic_subject", subject);
+      navigate(`/ucitel/pracovni-listy/${(data as { id: string }).id}?${params.toString()}`);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast({ title: "Nepodařilo se otevřít generování", description: msg, variant: "destructive" });
+    } finally {
+      setWorksheetTopicId(null);
+    }
+  };
+
   const [loading, setLoading] = useState(true);
   const [aiBusy, setAiBusy] = useState(false);
   const [aiStep, setAiStep] = useState("");
@@ -602,6 +635,21 @@ export default function CurriculumTopicsSection({
                             aria-label={`Napárovat lekce a plány k tématu ${t.title}`}
                           >
                             <Link2 className="w-3.5 h-3.5" /> Napárovat
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 px-2 gap-1 text-xs"
+                            onClick={() => generateWorksheetForTopic(t)}
+                            disabled={worksheetTopicId === t.id}
+                            aria-label={`Vygenerovat pracovní list k tématu ${t.title}`}
+                          >
+                            {worksheetTopicId === t.id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <FilePlus2 className="w-3.5 h-3.5" />
+                            )}
+                            Pracovní list
                           </Button>
                           <Button
                             size="icon"

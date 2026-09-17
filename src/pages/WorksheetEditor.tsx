@@ -400,6 +400,10 @@ export default function WorksheetEditor() {
   const fromLessonId = searchParams.get("from_lesson");
   const fromLessonType = (searchParams.get("from_lesson_type") as "global" | "teacher" | null) || null;
   const returnTo = searchParams.get("return_to");
+  /** Předvyplněné téma ŠVP (generování pracovního listu k tématu). */
+  const topicParam = searchParams.get("topic");
+  const topicRocnikParam = searchParams.get("topic_rocnik");
+  const topicSubjectParam = searchParams.get("topic_subject");
   const autoLinkAttempted = useRef(false);
 
   const [suggestionDialog, setSuggestionDialog] = useState<{
@@ -1169,6 +1173,20 @@ export default function WorksheetEditor() {
   const [aiCustomHint, setAiCustomHint] = useState<string>("");
   const [aiReplaceMode, setAiReplaceMode] = useState<string>("replace");
   const [aiGenerating, setAiGenerating] = useState(false);
+  /** Poměr poznámky / aktivity (jen v režimu „Výukový list – zápis a aktivity“). */
+  const [aiNotesRatio, setAiNotesRatio] = useState<string>("balanced");
+  const topicPrefillDone = useRef(false);
+
+  // Otevře generování s předvyplněným tématem ŠVP.
+  useEffect(() => {
+    if (!topicParam || topicPrefillDone.current) return;
+    topicPrefillDone.current = true;
+    setAiMode("study");
+    setAiCustomHint((prev) =>
+      prev || `Zaměř se přesně na téma ŠVP „${topicParam}“${topicRocnikParam ? ` pro ${topicRocnikParam}. ročník` : ""}.`,
+    );
+    setShowAiGenerateDialog(true);
+  }, [topicParam, topicRocnikParam]);
 
   /** Insert text from a lesson block into the targeted worksheet item. */
   function applyLessonBlockToItem(itemId: string, block: LessonBlock) {
@@ -1380,7 +1398,8 @@ export default function WorksheetEditor() {
 
   async function handleAiGenerateAll() {
     if (!spec) return;
-    if (!activeLessonContent || activeLessonContent.trim().length < 20) {
+    const hasLessonText = !!activeLessonContent && activeLessonContent.trim().length >= 20;
+    if (!hasLessonText && !topicParam) {
       toast({
         title: "Chybí obsah lekce",
         description: "Nejdřív přiřaďte lekci s textovým obsahem.",
@@ -1390,21 +1409,32 @@ export default function WorksheetEditor() {
     }
     setAiGenerating(true);
     try {
-      const lessonText =
-        lessonBlocks
-          .map((b) => (b.title && b.title !== b.text ? `## ${b.title}\n${b.text}` : b.text))
-          .filter(Boolean)
-          .join("\n\n") || activeLessonContent;
+      const lessonText = hasLessonText
+        ? lessonBlocks
+            .map((b) => (b.title && b.title !== b.text ? `## ${b.title}\n${b.text}` : b.text))
+            .filter(Boolean)
+            .join("\n\n") || activeLessonContent
+        : "";
 
       const { data, error } = await supabase.functions.invoke("generate-full-worksheet", {
         body: {
           lessonContent: lessonText,
           lessonTitle:
-            allLessons.find((l) => l.id === activeLessonId)?.title ?? spec.header.title,
+            allLessons.find((l) => l.id === activeLessonId)?.title ??
+            topicParam ??
+            spec.header.title,
           worksheetMode: aiMode,
           itemCount: parseInt(aiCount, 10),
           difficulty: aiDifficulty,
           hint: aiCustomHint,
+          notesRatio: aiNotesRatio,
+          ...(topicParam
+            ? {
+                topicTitle: topicParam,
+                topicRocnik: topicRocnikParam ? Number(topicRocnikParam) : undefined,
+                subject: topicSubjectParam ?? spec.header.subject ?? undefined,
+              }
+            : {}),
           availableTypes: [
             "mcq", "true_false", "fill_blank", "matching", "ordering",
             "short_answer", "open_answer", "section_header", "write_lines",
@@ -2380,10 +2410,34 @@ export default function WorksheetEditor() {
                   <SelectItem value="test">Test (MCQ + krátké odpovědi)</SelectItem>
                   <SelectItem value="revision">Opakování (matching + ordering + fill_blank)</SelectItem>
                   <SelectItem value="homework">Domácí úkol (otevřené otázky + reflexe)</SelectItem>
+                  <SelectItem value="study">Výukový list – zápis a aktivity</SelectItem>
                   <SelectItem value="worksheet">Pracovní list s aktivitami (write_lines + instruction + two_boxes)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+            {aiMode === "study" && (
+              <div className="space-y-1.5">
+                <Label>Poměr poznámky / aktivity</Label>
+                <Select value={aiNotesRatio} onValueChange={setAiNotesRatio}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    <SelectItem value="notes">Hlavně poznámky</SelectItem>
+                    <SelectItem value="balanced">Vyvážené</SelectItem>
+                    <SelectItem value="activities">Hlavně aktivity</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  AI automaticky prokládá prostor na zápis a aktivity – nemusíte to psát do pokynu.
+                </p>
+              </div>
+            )}
+            {topicParam && (
+              <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
+                Generuje se k tématu ŠVP <strong>{topicParam}</strong>
+                {topicRocnikParam ? ` · ${topicRocnikParam}. ročník` : ""}
+                {topicSubjectParam ? ` · ${topicSubjectParam}` : ""}
+              </div>
+            )}
             <div className="space-y-1.5">
               <Label>Počet bloků</Label>
               <Select value={aiCount} onValueChange={setAiCount}>
