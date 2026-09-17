@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { requireAuth } from "../_shared/auth.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { requireAuth, hasRole } from "../_shared/auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,6 +14,103 @@ const DEFAULT_TYPES = [
   "instruction_box", "two_boxes", "flow_steps",
   "sorting", "flashcards", "word_search",
 ];
+
+/** Bloky, které představují aktivitu (žák něco řeší). */
+const ACTIVITY_TYPES = [
+  "mcq", "matching", "sorting", "crossword", "word_search", "flashcards",
+  "image_label", "image_hotspot", "ordering", "fill_blank", "true_false",
+  "short_answer", "open_answer",
+];
+
+/** Layoutové bloky (prostor na zápis / strukturu listu). */
+const LAYOUT_TYPES = ["section_header", "write_lines", "two_boxes", "instruction_box", "flow_steps"];
+
+const RHYTHM_RULE = `RYTMUS ZÁPIS / AKTIVITA (povinné v tomto režimu):
+- Po každých 1–2 aktivitových blocích (${ACTIVITY_TYPES.join(", ")}) vlož JEDEN layoutový blok na poznámky: "write_lines", "two_boxes", nebo dvojici "section_header" + "write_lines".
+- Nikdy nedávej za sebou 3 a více aktivitových bloků bez prostoru na zápis.
+- Layoutové bloky nejsou dekorace — "prompt" u write_lines musí říkat, co si má žák zapsat (např. "Zapiš si definici vlastními slovy").`;
+
+/** Poměr poznámky vs. aktivity. */
+const RATIO_GUIDANCE: Record<string, string> = {
+  notes:
+    "POMĚR: hlavně poznámky — cca 60–70 % bloků layoutových (write_lines s lineCount 6–8, two_boxes, section_header), zbytek jednoduché aktivity. Po každé aktivitě následuje prostor na zápis.",
+  balanced:
+    "POMĚR: vyvážené — cca 50 % layoutových bloků na zápis (write_lines s lineCount 4–6) a 50 % aktivit, pravidelně se střídají.",
+  activities:
+    "POMĚR: hlavně aktivity — cca 70 % aktivitových bloků, prostor na zápis (write_lines s lineCount 3–4) vlož po každých 2 aktivitách.",
+};
+
+const MODE_GUIDANCE: Record<string, string> = {
+  classwork: "Mix typů — kombinuj mcq, true_false, fill_blank, short_answer, matching a sekce.",
+  test: "Hlavně mcq, true_false, fill_blank, matching a short_answer. Bez instruction_box.",
+  revision: "Hlavně matching, ordering, fill_blank, mcq. Žádné dlouhé otevřené otázky.",
+  homework: "Hlavně open_answer, short_answer, reflexivní instruction_box.",
+  worksheet: "Hlavně section_header, write_lines, instruction_box, two_boxes, flow_steps. Min. mcq/true_false.",
+  study:
+    "Výukový list – zápis a aktivity: list slouží k zápisu do hodiny i k procvičení. Prokládej výklad/zápis a aktivity, začni section_header, používej write_lines, two_boxes a instruction_box pro strukturu zápisu.",
+};
+
+function shuffleSeeded<T>(arr: T[], seed: number): T[] {
+  const out = [...arr];
+  let s = seed || 1;
+  const rnd = () => {
+    s = (s * 1103515245 + 12345) % 2147483648;
+    return s / 2147483648;
+  };
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(rnd() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+/** Převede nové bloky na starší tvar variants/answerKeys (zpětná kompatibilita UI plánů hodin). */
+function toLegacyWorksheet(
+  items: any[],
+  meta: { title: string; subject?: string; gradeBand?: string; worksheetMode?: string; deadline?: string },
+  variantIds: string[],
+) {
+  const base = items.map((it, i) => ({
+    itemNumber: i + 1,
+    type: it.type,
+    question: it.prompt ?? it.blankText ?? "",
+    options: it.choices ?? it.orderItems ?? undefined,
+    matchPairs: it.matchPairs ?? undefined,
+    points: typeof it.points === "number" ? it.points : 0,
+    difficulty: it.difficulty ?? "medium",
+    correctAnswer: it.correctAnswer ?? "",
+  }));
+
+  const variants = variantIds.map((vid, vi) => {
+    const seed = Math.floor(Math.random() * 900000) + 100000;
+    const ordered = vi === 0 ? base : shuffleSeeded(base, seed);
+    return {
+      id: vid,
+      seed,
+      items: ordered.map((it, i) => ({ ...it, itemNumber: i + 1 })),
+    };
+  });
+
+  const answerKeys: Record<string, any[]> = {};
+  for (const v of variants) {
+    answerKeys[v.id] = v.items
+      .filter((it) => !LAYOUT_TYPES.includes(it.type))
+      .map((it) => ({ itemNumber: it.itemNumber, correctAnswer: String(it.correctAnswer ?? "") }));
+  }
+
+  return {
+    ...meta,
+    variants,
+    answerKeys,
+    randomizationRules: [{ rule: "Přeházené pořadí úloh", appliedTo: variantIds.slice(1).join(", ") || "—" }],
+    totalPoints: base.reduce((a, b) => a + (b.points || 0), 0),
+    difficultyDistribution: {
+      easy: base.filter((b) => b.difficulty === "easy").length,
+      medium: base.filter((b) => b.difficulty === "medium").length,
+      hard: base.filter((b) => b.difficulty === "hard").length,
+    },
+  };
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -30,34 +128,87 @@ serve(async (req) => {
 
     const body = await req.json();
     const {
-      lessonContent,
       worksheetMode = "classwork",
       itemCount = 8,
       difficulty = "mixed",
       hint = "",
       availableTypes,
-      lessonTitle = "",
+      notesRatio = "balanced",
+      // Vstup z lekce (původní použití)
+      lessonContent: rawLessonContent,
+      lessonTitle: rawLessonTitle = "",
+      // Vstup z plánu hodiny (dřív generate-worksheet)
+      lessonPlanId,
+      gradeBand,
+      numItems,
+      variants,
+      deadline,
+      // Vstup z tématu ŠVP
+      topicTitle,
+      topicRocnik,
+      subject,
     } = body ?? {};
 
-    if (!lessonContent || typeof lessonContent !== "string" || lessonContent.trim().length < 20) {
+    let lessonContent: string = typeof rawLessonContent === "string" ? rawLessonContent : "";
+    let lessonTitle: string = rawLessonTitle || "";
+    let planSubject: string | undefined = subject || undefined;
+    let planGradeBand: string | undefined = gradeBand || undefined;
+
+    // ── Kontext z plánu hodiny ──
+    if (lessonPlanId) {
+      const sb = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      );
+      const { data: plan, error: planErr } = await sb
+        .from("lesson_plans")
+        .select("title, subject, grade_band, slides, teacher_id")
+        .eq("id", lessonPlanId)
+        .single();
+      if (planErr || !plan) {
+        return new Response(JSON.stringify({ error: "Plán hodiny nenalezen" }), {
+          status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const isAdmin = await hasRole(auth.userId, "admin");
+      if (!isAdmin && plan.teacher_id !== auth.userId) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const slides = (plan.slides as any[]) || [];
+      const slidesText = slides
+        .map((s: any, i: number) =>
+          `Slide ${i + 1} (${s?.type ?? ""}): ${s?.projector?.headline ?? ""} – ${s?.projector?.body ?? ""}`)
+        .join("\n");
+      lessonContent = [lessonContent, slidesText].filter((x) => x && x.trim()).join("\n\n");
+      lessonTitle = lessonTitle || plan.title || "";
+      planSubject = planSubject || plan.subject || undefined;
+      planGradeBand = planGradeBand || plan.grade_band || undefined;
+    }
+
+    // ── Kontext z tématu ŠVP ──
+    if (topicTitle) {
+      lessonTitle = lessonTitle || topicTitle;
+      lessonContent = [
+        `Téma ŠVP: ${topicTitle}`,
+        planSubject ? `Předmět: ${planSubject}` : "",
+        topicRocnik ? `Ročník: ${topicRocnik}. ročník` : "",
+        lessonContent,
+      ].filter(Boolean).join("\n");
+    }
+
+    if (!lessonContent || lessonContent.trim().length < 20) {
       return new Response(
-        JSON.stringify({ error: "Lekce neobsahuje dostatek textu pro generování pracovního listu." }),
+        JSON.stringify({ error: "Chybí dostatek vstupního obsahu pro generování pracovního listu." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    const safeCount = Math.max(1, Math.min(20, Number(itemCount) || 8));
+    const safeCount = Math.max(1, Math.min(20, Number(numItems ?? itemCount) || 8));
     const types: string[] = Array.isArray(availableTypes) && availableTypes.length > 0
       ? availableTypes.filter((t: string) => DEFAULT_TYPES.includes(t))
       : DEFAULT_TYPES;
-
-    const modeGuidance: Record<string, string> = {
-      classwork: "Mix typů — kombinuj mcq, true_false, fill_blank, short_answer, matching a sekce.",
-      test: "Hlavně mcq, true_false, fill_blank, matching a short_answer. Bez instruction_box.",
-      revision: "Hlavně matching, ordering, fill_blank, mcq. Žádné dlouhé otevřené otázky.",
-      homework: "Hlavně open_answer, short_answer, reflexivní instruction_box.",
-      worksheet: "Hlavně section_header, write_lines, instruction_box, two_boxes, flow_steps. Min. mcq/true_false.",
-    };
 
     const diffGuidance: Record<string, string> = {
       easy: "Snadná obtížnost (1. ročník SŠ, základy). Většina difficulty: easy.",
@@ -65,16 +216,21 @@ serve(async (req) => {
       hard: "Náročná (maturita) — většina medium/hard, hlubší aplikace pojmů.",
     };
 
-    const systemPrompt = `Jsi expert na tvorbu pracovních listů pro české školy. Na základě obsahu lekce vygeneruj kompletní pracovní list.
+    const isStudyMode = worksheetMode === "study";
+    const rhythmSection = isStudyMode
+      ? `\n${RHYTHM_RULE}\n${RATIO_GUIDANCE[notesRatio] ?? RATIO_GUIDANCE.balanced}\n`
+      : `\nDoporučený rytmus: pokud si režim nebo pokyn učitele vyžádá prostor na poznámky, po každých 1–2 aktivitových blocích vlož jeden layoutový blok (write_lines / two_boxes / section_header + write_lines).\n`;
+
+    const systemPrompt = `Jsi expert na tvorbu pracovních listů pro české školy. Na základě vstupního obsahu vygeneruj kompletní pracovní list.
 
 PRAVIDLA:
-- Použij VÝHRADNĚ informace z obsahu lekce, nevymýšlej fakta, čísla ani jména mimo text.
+- Použij VÝHRADNĚ informace z dodaného obsahu, nevymýšlej fakta, čísla ani jména mimo text.
 - Vygeneruj přesně ${safeCount} bloků (počítáno včetně section_header).
 - Začni blokem typu "section_header" s krátkým názvem tématu (prompt = název).
-- ${modeGuidance[worksheetMode] ?? modeGuidance.classwork}
+- ${MODE_GUIDANCE[worksheetMode] ?? MODE_GUIDANCE.classwork}
 - ${diffGuidance[difficulty] ?? diffGuidance.mixed}
 - Povolené typy: ${types.join(", ")}.
-- Každý blok MUSÍ mít: type, prompt, points (int), difficulty ("easy"|"medium"|"hard"), timeEstimateSec (int).
+${rhythmSection}- Každý blok MUSÍ mít: type, prompt, points (int), difficulty ("easy"|"medium"|"hard"), timeEstimateSec (int).
 - section_header / instruction_box / write_lines / two_boxes / flow_steps mají points = 0.
 - mcq: pole "choices" (přesně 4) + "correctAnswer" = text správné volby.
 - true_false: "correctAnswer" = "true" nebo "false".
@@ -89,14 +245,14 @@ PRAVIDLA:
 - sorting: "sortingCategories" (2–4 prvky { id, label }), "sortingItems" (6–12 prvků { text, categoryId }).
 - flashcards: "flashcards" (4–8 prvků { front, back }).
 - word_search: "wordSearchWords" (4–8 slov VELKÝMI PÍSMENY bez diakritiky), volitelně "wordSearchSize" (8–16).
-- Jazyk: čeština (cs-CZ), formálně ale srozumitelně pro studenty.`;
+- Jazyk: čeština (cs-CZ), formálně ale srozumitelně pro studenty.${planGradeBand ? `\n- Ročník / úroveň: ${planGradeBand}.` : ""}${topicRocnik ? `\n- Cílový ročník: ${topicRocnik}. ročník.` : ""}`;
 
-    const userPrompt = `Téma lekce: ${lessonTitle || "(bez názvu)"}
-
-Obsah lekce:
+    const userPrompt = `Téma: ${lessonTitle || "(bez názvu)"}
+${planSubject ? `Předmět: ${planSubject}\n` : ""}${deadline ? `Termín odevzdání: ${deadline}\n` : ""}
+Obsah:
 ${lessonContent.slice(0, 12000)}
 
-${hint ? `Doplňující pokyn učitele: ${hint}\n\n` : ""}Vytvoř pracovní list (${safeCount} bloků, režim: ${worksheetMode}, obtížnost: ${difficulty}).`;
+${hint ? `Doplňující pokyn učitele: ${hint}\n\n` : ""}Vytvoř pracovní list (${safeCount} bloků, režim: ${worksheetMode}, obtížnost: ${difficulty}${isStudyMode ? `, poměr: ${notesRatio}` : ""}).`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -219,7 +375,26 @@ ${hint ? `Doplňující pokyn učitele: ${hint}\n\n` : ""}Vytvoř pracovní list
 
     const result = JSON.parse(toolCall.function.arguments);
 
-    return new Response(JSON.stringify(result), {
+    // Zpětně kompatibilní tvar pro UI, které čekalo varianty A/B (plány hodin).
+    const variantIds: string[] = Array.isArray(variants) && variants.length > 0
+      ? variants.map(String)
+      : [];
+    const payload: Record<string, unknown> = { ...result };
+    if (variantIds.length > 0) {
+      payload.worksheet = toLegacyWorksheet(
+        Array.isArray(result.items) ? result.items : [],
+        {
+          title: lessonTitle || "Pracovní list",
+          subject: planSubject,
+          gradeBand: planGradeBand,
+          worksheetMode,
+          deadline,
+        },
+        variantIds,
+      );
+    }
+
+    return new Response(JSON.stringify(payload), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
