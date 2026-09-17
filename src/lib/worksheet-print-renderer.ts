@@ -656,6 +656,21 @@ function renderHeader(spec: WorksheetSpec, _variant: WorksheetVariant): string {
     ? `<div class="ws-subtitle">${esc(h.subtitle)}</div>`
     : "";
 
+  // QR kódy v pravé horní části záhlaví (max. 5), prázdné url = placeholder.
+  const qrList = (h.qrCodes ?? []).slice(0, 5);
+  const qrBlock = qrList.length
+    ? `<div class="ws-qr-wrap">${qrList
+        .map((q) => {
+          const url = (q?.url ?? "").trim();
+          const img = url
+            ? `<img src="${qrSvgDataUrl(url, 150)}" alt="QR ${esc(q?.label ?? "")}" />`
+            : `<div class="ws-qr-placeholder">Sem vlož odkaz</div>`;
+          const label = q?.label ? `<span class="ws-qr-label">${esc(q.label)}</span>` : "";
+          return `<div class="ws-qr-item">${img}${label}</div>`;
+        })
+        .join("")}</div>`
+    : "";
+
   return `
 <div class="ws-header">
   <div class="ws-header-top">
@@ -664,6 +679,7 @@ function renderHeader(spec: WorksheetSpec, _variant: WorksheetVariant): string {
       <h1 class="ws-title">${esc(h.title)}</h1>
       ${subtitle}
     </div>
+    ${qrBlock}
   </div>
   ${fields.length ? `<div class="ws-fields-strip">${fields.join("")}</div>` : ""}
   ${h.instructions ? `<div class="ws-instructions">${esc(h.instructions)}</div>` : ""}
