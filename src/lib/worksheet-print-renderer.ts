@@ -1042,15 +1042,20 @@ function renderItem(item: WorksheetItem, showPoints: boolean, displayNumber?: nu
 </div>`;
 }
 
-function renderAnswerKey(variantId: string, keys: AnswerKeyEntry[]): string {
+function renderAnswerKey(
+  variantId: string,
+  keys: AnswerKeyEntry[],
+  displayNumbers?: Map<number, number>,
+): string {
   if (!keys?.length) return "";
 
   const rows = keys
     .map((k) => {
       const ans = Array.isArray(k.correctAnswer) ? k.correctAnswer.join(", ") : k.correctAnswer;
+      const num = displayNumbers?.get(k.itemNumber) ?? k.itemNumber;
       return `
 <div class="ws-key-item">
-  <span class="ws-key-num">${k.itemNumber}.</span>
+  <span class="ws-key-num">${num}.</span>
   <div>
     <span class="ws-key-answer">${esc(ans)}</span>
     ${k.explanation ? `<div class="ws-key-explanation">${esc(k.explanation)}</div>` : ""}
