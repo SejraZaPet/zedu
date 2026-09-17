@@ -38,6 +38,8 @@ import type { TeamMode } from "@/lib/game-types";
 import AiClusterButton from "@/components/live/AiClusterButton";
 import ZoomZoneSurface from "@/components/live/ZoomZoneSurface";
 import SlideCanvas from "@/components/admin/SlideCanvas";
+import { slideWithFallbackBlocks } from "@/lib/slide-canvas-fallback";
+import LessonPlanPacing from "@/components/live/LessonPlanPacing";
 import { getZoomZones, isValidZoomRect, isZoomableSlide, zoomStageStyle, type ZoomRect } from "@/lib/zoom-zones";
 
 interface SlideData {
@@ -985,6 +987,14 @@ const LiveTeacherScreen = () => {
         <div className="space-y-4">
           <Badge>{SLIDE_TYPE_LABELS[currentSlide.type] || currentSlide.type}</Badge>
 
+          {/* Časování a poznámky podle plánu hodiny – jen pro učitele */}
+          <LessonPlanPacing
+            teacherId={(session as any)?.teacher_id}
+            sessionTitle={session?.title}
+            currentIndex={currentIndex}
+            slideCount={slides.length}
+          />
+
           {/* Živé přiblížení – náhled výřezu + kreslení */}
           {zoomable && (drawZoomMode || activeZoom) && (
             <div className="space-y-2">
@@ -1033,7 +1043,7 @@ const LiveTeacherScreen = () => {
           <div
             ref={projectorPreviewRef}
             onScroll={handleProjectorScroll}
-            className="border border-border rounded-lg p-4 bg-background max-h-[60vh] overflow-y-auto"
+            className="border border-border rounded-lg p-4 bg-background max-h-[60vh] overflow-hidden"
           >
             <div className="flex items-center gap-2 mb-3 text-xs font-medium text-muted-foreground">
               <Monitor className="w-4 h-4" /> PROJEKTOR
