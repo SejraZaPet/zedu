@@ -1032,7 +1032,7 @@ function renderItem(item: WorksheetItem, showPoints: boolean, displayNumber?: nu
   return `
 <div class="ws-item">
   <div class="ws-item-header">
-    <span class="ws-item-num">${item.itemNumber}.</span>
+    <span class="ws-item-num">${displayNumber ?? item.itemNumber}.</span>
     ${showPrompt ? `<span class="ws-item-prompt prompt">${esc(item.prompt)}</span>` : ""}
     ${pointsHtml}
   </div>
