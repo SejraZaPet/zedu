@@ -1398,7 +1398,8 @@ export default function WorksheetEditor() {
 
   async function handleAiGenerateAll() {
     if (!spec) return;
-    if (!activeLessonContent || activeLessonContent.trim().length < 20) {
+    const hasLessonText = !!activeLessonContent && activeLessonContent.trim().length >= 20;
+    if (!hasLessonText && !topicParam) {
       toast({
         title: "Chybí obsah lekce",
         description: "Nejdřív přiřaďte lekci s textovým obsahem.",
@@ -1408,21 +1409,32 @@ export default function WorksheetEditor() {
     }
     setAiGenerating(true);
     try {
-      const lessonText =
-        lessonBlocks
-          .map((b) => (b.title && b.title !== b.text ? `## ${b.title}\n${b.text}` : b.text))
-          .filter(Boolean)
-          .join("\n\n") || activeLessonContent;
+      const lessonText = hasLessonText
+        ? lessonBlocks
+            .map((b) => (b.title && b.title !== b.text ? `## ${b.title}\n${b.text}` : b.text))
+            .filter(Boolean)
+            .join("\n\n") || activeLessonContent
+        : "";
 
       const { data, error } = await supabase.functions.invoke("generate-full-worksheet", {
         body: {
           lessonContent: lessonText,
           lessonTitle:
-            allLessons.find((l) => l.id === activeLessonId)?.title ?? spec.header.title,
+            allLessons.find((l) => l.id === activeLessonId)?.title ??
+            topicParam ??
+            spec.header.title,
           worksheetMode: aiMode,
           itemCount: parseInt(aiCount, 10),
           difficulty: aiDifficulty,
           hint: aiCustomHint,
+          notesRatio: aiNotesRatio,
+          ...(topicParam
+            ? {
+                topicTitle: topicParam,
+                topicRocnik: topicRocnikParam ? Number(topicRocnikParam) : undefined,
+                subject: topicSubjectParam ?? spec.header.subject ?? undefined,
+              }
+            : {}),
           availableTypes: [
             "mcq", "true_false", "fill_blank", "matching", "ordering",
             "short_answer", "open_answer", "section_header", "write_lines",
