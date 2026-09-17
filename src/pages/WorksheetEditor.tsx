@@ -1475,8 +1475,17 @@ export default function WorksheetEditor() {
         const existingItems = aiReplaceMode === "replace" ? [] : s.variants[0].items;
         const existingKeys =
           aiReplaceMode === "replace" ? [] : s.answerKeys[variantId] ?? [];
+        // V režimu „Technika s videi“ připravíme prázdné QR placeholdery pro videa.
+        const qrCodes =
+          aiMode === "technique" && (s.header.qrCodes ?? []).length === 0
+            ? [
+                { label: "Teorie", url: "" },
+                { label: "Opakování", url: "" },
+              ]
+            : s.header.qrCodes;
         return {
           ...s,
+          header: { ...s.header, qrCodes },
           variants: s.variants.map((v, idx) =>
             idx === 0 ? { ...v, items: [...existingItems, ...newItems] } : v,
           ),
