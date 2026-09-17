@@ -258,6 +258,21 @@ const StudentTextbookDetail = () => {
 
       setGrades(gradeGroups);
 
+      // Deep-link ?lesson=<id> (např. z úlohy) otevře konkrétní lekci.
+      const wanted = new URLSearchParams(window.location.search).get("lesson");
+      if (wanted) {
+        for (const g of gradeGroups) {
+          for (const t of g.topics) {
+            const found = t.lessons.find((l) => l.id === wanted);
+            if (found) {
+              setCompletedActivityIndices(new Set());
+              setSelectedLesson(found);
+              break;
+            }
+          }
+        }
+      }
+
       // Completions (učitelské + studentské)
       const allLessonIds = [
         ...teacherLessonIds,
