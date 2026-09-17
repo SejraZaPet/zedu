@@ -253,7 +253,10 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
       flush();
       const headline = getText(props);
       if (!headline) continue;
-      current = newSlide(headline);
+      sectionHeadline = headline;
+      sectionSourceId = block.id ?? null;
+      sectionPart = 0;
+      current = newSlide(headline, block.id);
       const headingBg = blockBackgroundSlideColor(props);
       if (headingBg) current.backgroundOverride = { color: headingBg };
       continue;
@@ -268,7 +271,7 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
       flush();
       const activityHeadline =
         props.title || props.question || props.activityType || "Aktivita";
-      const activitySlide = newSlide(activityHeadline);
+      const activitySlide = newSlide(activityHeadline, block.id);
       activitySlide.type = "activity";
       activitySlide.activitySpec = converted.activitySpec || props;
       activitySlide.blocks.push(block);
