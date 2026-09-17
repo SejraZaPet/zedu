@@ -217,7 +217,7 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
         bodyChildren = visibleChildren;
       }
 
-      const groupSlide = newSlide(headline);
+      const groupSlide = newSlide(headline, block.id);
       const groupBg = blockBackgroundSlideColor(props)
         || visibleChildren.map((c) => blockBackgroundSlideColor(c?.props)).find(Boolean)
         || null;
