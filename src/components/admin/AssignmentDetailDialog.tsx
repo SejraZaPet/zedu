@@ -30,7 +30,10 @@ import AssignmentMaterialsList from "@/components/assignments/AssignmentMaterial
 import { parseMaterials, type AssignmentMaterial } from "@/lib/assignment-materials";
 import { getStudentAttachmentSignedUrl } from "@/lib/portfolio";
 import { resolveLinkedLesson, type LinkedLessonInfo } from "@/lib/linked-lesson";
-import { BookOpen } from "lucide-react";
+import { BookOpen, BarChart3 } from "lucide-react";
+import { fetchLessonActivities } from "@/lib/lesson-activity-index";
+import AssignmentDifficultyStats from "@/components/admin/AssignmentDifficultyStats";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 type StudentStatus = "not_started" | "in_progress" | "submitted";
 
@@ -53,6 +56,8 @@ export interface AssignmentDetailAssignment {
   group_id?: string | null;
   lesson_id?: string | null;
   lesson_source?: string | null;
+  worksheet_id?: string | null;
+  is_portfolio_task?: boolean | null;
 }
 
 interface AttemptInfo {
@@ -81,6 +86,8 @@ interface StudentRow {
   lastActivity: string | null;
   latestAttempt: AttemptInfo | null;
   attachments: Array<{ id: string; file_name: string; file_path: string }>;
+  /** Splnění povinných aktivit propojené lekce (jen když je lekce nastavená). */
+  lessonProgress?: { done: number; total: number; avgPct: number | null };
 }
 
 interface Props {
@@ -101,6 +108,9 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [attachUrls, setAttachUrls] = useState<Record<string, string>>({});
   const [materials, setMaterials] = useState<AssignmentMaterial[]>([]);
+  /** Žáci, kterým je úloha zadaná – vstup pro statistiku obtížnosti. */
+  const [studentIds, setStudentIds] = useState<string[]>([]);
+  const [statsOpen, setStatsOpen] = useState(false);
   /** Lekce z učebnice propojená se zadáním (nepovinná). */
   const [linkedLesson, setLinkedLesson] = useState<LinkedLessonInfo | null>(null);
 
@@ -170,6 +180,7 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
 
       if (studentIds.length === 0) {
         setStudents([]);
+        setStudentIds([]);
         return;
       }
 
@@ -225,8 +236,49 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
         };
       });
 
+      // Výsledky povinných aktivit propojené lekce – u úloh bez pracovního listu
+      // a bez portfolia je to jediný zdroj informace o dokončení.
+      if (assignment.lesson_id) {
+        const activities = await fetchLessonActivities(assignment.lesson_id, assignment.lesson_source ?? null);
+        const requiredIdx = activities.filter((a) => a.required).map((a) => a.index);
+        const { data: results } = await supabase
+          .from("student_activity_results")
+          .select("user_id, activity_index, score, max_score")
+          .eq("lesson_id", assignment.lesson_id)
+          .in("user_id", studentIds);
+
+        const byStudent: Record<string, { idx: Set<number>; sum: number; n: number }> = {};
+        ((results as any[]) || []).forEach((r) => {
+          if (requiredIdx.length > 0 && !requiredIdx.includes(r.activity_index)) return;
+          const entry = byStudent[r.user_id] ?? { idx: new Set<number>(), sum: 0, n: 0 };
+          entry.idx.add(r.activity_index);
+          const max = Number(r.max_score) || 0;
+          if (max > 0) {
+            entry.sum += (Number(r.score) || 0) / max;
+            entry.n += 1;
+          }
+          byStudent[r.user_id] = entry;
+        });
+
+        const noOtherSource = !assignment.worksheet_id && !assignment.is_portfolio_task;
+        rows.forEach((row) => {
+          const entry = byStudent[row.studentId];
+          const total = requiredIdx.length;
+          const done = entry ? entry.idx.size : 0;
+          row.lessonProgress = {
+            done,
+            total,
+            avgPct: entry && entry.n > 0 ? Math.round((entry.sum / entry.n) * 100) : null,
+          };
+          if (noOtherSource) {
+            row.status = total > 0 && done >= total ? "submitted" : done > 0 ? "in_progress" : "not_started";
+          }
+        });
+      }
+
       rows.sort((a, b) => a.lastName.localeCompare(b.lastName, "cs"));
       setStudents(rows);
+      setStudentIds(studentIds);
       setDrafts(
         Object.fromEntries(
           rows.filter((r) => r.latestAttempt).map((r) => [r.latestAttempt!.id, r.latestAttempt!.teacher_feedback_text || ""]),
@@ -409,6 +461,13 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
                               {attempt.teacher_feedback_emoji}
                             </span>
                           )}
+                          {s.lessonProgress && (
+                            <Badge variant="outline" className="text-[10px]" title="Povinné aktivity lekce">
+                              <BookOpen className="mr-1 h-3 w-3" />
+                              {s.lessonProgress.done}/{s.lessonProgress.total}
+                              {s.lessonProgress.avgPct !== null ? ` · ${s.lessonProgress.avgPct}%` : ""}
+                            </Badge>
+                          )}
                           {s.bestScore !== null && (
                             <Badge variant="outline" className="text-[10px]">
                               {s.bestScore}{s.maxScore !== null ? ` / ${s.maxScore}` : ""}
@@ -555,6 +614,30 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
                 </ul>
               )}
             </div>
+
+            {(assignment.lesson_id || assignment.worksheet_id) && (
+              <Collapsible open={statsOpen} onOpenChange={setStatsOpen}>
+                <CollapsibleTrigger asChild>
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-2 rounded-lg border border-border p-3 text-left text-sm font-semibold hover:bg-muted/40"
+                  >
+                    {statsOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                    <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                    Statistika obtížnosti
+                  </button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="pt-3">
+                  <AssignmentDifficultyStats
+                    assignmentId={assignment.id}
+                    lessonId={assignment.lesson_id}
+                    lessonSource={assignment.lesson_source}
+                    worksheetId={assignment.worksheet_id}
+                    studentIds={studentIds}
+                  />
+                </CollapsibleContent>
+              </Collapsible>
+            )}
           </div>
         )}
       </DialogContent>
