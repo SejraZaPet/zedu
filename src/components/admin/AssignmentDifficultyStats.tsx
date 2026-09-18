@@ -125,9 +125,69 @@ const AssignmentDifficultyStats = ({
   worksheetId,
   studentIds,
 }: Props) => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<DifficultyRow[]>([]);
   const [manualRows, setManualRows] = useState<DifficultyRow[]>([]);
+  /** Kolik úkolů zadává stejnou lekci – trend má smysl až od dvou. */
+  const [sameLessonCount, setSameLessonCount] = useState(0);
+  const [trendRow, setTrendRow] = useState<DifficultyRow | null>(null);
+  const [subjectName, setSubjectName] = useState("");
+  const [classYear, setClassYear] = useState<number | null>(null);
+  const [worksheetBusyKey, setWorksheetBusyKey] = useState<string | null>(null);
+
+  // Kontext úlohy (předmět, ročník třídy) a počet úkolů se stejnou lekcí.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("assignments")
+        .select("subject_id, class_id, subjects(name), classes(year)")
+        .eq("id", assignmentId)
+        .maybeSingle();
+      const row = data as any;
+      if (!cancelled) {
+        setSubjectName(row?.subjects?.name ?? "");
+        setClassYear(typeof row?.classes?.year === "number" ? row.classes.year : null);
+      }
+      if (lessonId) {
+        const { count } = await supabase
+          .from("assignments")
+          .select("id", { count: "exact", head: true })
+          .eq("lesson_id", lessonId);
+        if (!cancelled) setSameLessonCount(count ?? 0);
+      } else if (!cancelled) {
+        setSameLessonCount(0);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [assignmentId, lessonId]);
+
+  /** Vytvoří pracovní list zaměřený na slabé místo a otevře AI generování. */
+  const generateSupportWorksheet = async (row: DifficultyRow) => {
+    setWorksheetBusyKey(row.key);
+    try {
+      const topic = row.label.replace(/\s*\(povinné\)$/, "").trim() || "Opakování";
+      const id = await createWorksheetForTopic(
+        topic,
+        subjectName,
+        emptyWorksheetSpec({ title: topic, subject: subjectName }),
+      );
+      const params = new URLSearchParams({ topic });
+      if (classYear !== null) params.set("topic_rocnik", String(classYear));
+      if (subjectName) params.set("topic_subject", subjectName);
+      params.set("focus", topic);
+      navigate(`/ucitel/pracovni-listy/${id}?${params.toString()}`);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast({ title: "Nepodařilo se otevřít generování", description: msg, variant: "destructive" });
+    } finally {
+      setWorksheetBusyKey(null);
+    }
+  };
+
 
   useEffect(() => {
     let cancelled = false;
