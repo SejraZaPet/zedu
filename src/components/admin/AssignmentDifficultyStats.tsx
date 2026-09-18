@@ -1,7 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
-import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Loader2, LineChart, FilePlus2 } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
+import { emptyWorksheetSpec } from "@/lib/worksheet-defaults";
+import { createWorksheetForTopic } from "@/lib/assignment-difficulty";
+import AssignmentDifficultyTrend from "@/components/admin/AssignmentDifficultyTrend";
 import { fetchLessonActivities, type LessonActivityInfo } from "@/lib/lesson-activity-index";
 
 interface Props {
@@ -19,6 +25,8 @@ interface DifficultyRow {
   /** Úspěšnost 0–100, null = nelze vyhodnotit automaticky. */
   pct: number | null;
   sampleCount: number;
+  /** Index aktivity v lekci (jen u řádků z lekce) – vstup pro trend. */
+  activityIndex?: number;
 }
 
 const norm = (v: unknown) => String(v ?? "").trim().toLowerCase();
