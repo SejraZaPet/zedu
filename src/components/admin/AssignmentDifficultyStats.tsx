@@ -222,6 +222,7 @@ const AssignmentDifficultyStats = ({
               label: `${act.title}${act.required ? " (povinné)" : ""}`,
               pct: agg && agg.n > 0 ? Math.round((agg.sum / agg.n) * 100) : null,
               sampleCount: agg?.n ?? 0,
+              activityIndex: act.index,
             });
           }
         }
