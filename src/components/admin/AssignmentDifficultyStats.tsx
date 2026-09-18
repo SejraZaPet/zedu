@@ -326,9 +326,47 @@ const AssignmentDifficultyStats = ({
                   <div className={`h-full ${barColor(r.pct)}`} style={{ width: `${r.pct}%` }} />
                 </div>
               )}
+              <div className="flex flex-wrap gap-1">
+                {typeof r.activityIndex === "number" && sameLessonCount > 1 && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 gap-1 px-1.5 text-[11px]"
+                    onClick={() => setTrendRow(r)}
+                  >
+                    <LineChart className="h-3 w-3" /> Zobrazit trend
+                  </Button>
+                )}
+                {r.pct !== null && r.pct < 50 && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 gap-1 px-1.5 text-[11px]"
+                    onClick={() => generateSupportWorksheet(r)}
+                    disabled={worksheetBusyKey === r.key}
+                  >
+                    {worksheetBusyKey === r.key ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <FilePlus2 className="h-3 w-3" />
+                    )}
+                    Vygenerovat doplňkový list
+                  </Button>
+                )}
+              </div>
             </li>
           ))}
         </ul>
+      )}
+
+      {trendRow && lessonId && typeof trendRow.activityIndex === "number" && (
+        <AssignmentDifficultyTrend
+          open
+          onOpenChange={(o) => !o && setTrendRow(null)}
+          lessonId={lessonId}
+          activityIndex={trendRow.activityIndex}
+          activityTitle={trendRow.label}
+        />
       )}
 
       {manualRows.length > 0 && (
