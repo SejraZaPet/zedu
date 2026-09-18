@@ -17,6 +17,7 @@ import { ArrowLeft, BookOpen, GraduationCap, FolderOpen, CheckCircle2, Circle } 
 import { toast } from "@/hooks/use-toast";
 import CoursePathMap, { type CoursePathItem } from "@/components/textbook/CoursePathMap";
 import { isPlacementVisibleToStudent } from "@/lib/lesson-placement-visibility";
+import { useActivityTracking } from "@/hooks/useActivityTracking";
 
 
 interface LessonData {
@@ -51,6 +52,32 @@ const StudentTextbookDetail = () => {
   const [selectedLesson, setSelectedLesson] = useState<LessonData | null>(null);
   const [completedLessonIds, setCompletedLessonIds] = useState<Set<string>>(new Set());
   const [completedActivityIndices, setCompletedActivityIndices] = useState<Set<number>>(new Set());
+  const { trackActivity } = useActivityTracking(selectedLesson?.id);
+
+  // Po otevření lekce dotáhni dříve uložené výsledky aktivit, aby zůstalo "Hotovo".
+  useEffect(() => {
+    let cancelled = false;
+    const loadPrevious = async () => {
+      if (!selectedLesson?.id) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+      const { data } = await supabase
+        .from("student_activity_results")
+        .select("activity_index")
+        .eq("user_id", session.user.id)
+        .eq("lesson_id", selectedLesson.id);
+      if (cancelled || !data || data.length === 0) return;
+      setCompletedActivityIndices((prev) => {
+        const next = new Set(prev);
+        data.forEach((row: any) => next.add(row.activity_index));
+        return next;
+      });
+    };
+    loadPrevious();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedLesson?.id]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -347,7 +374,8 @@ const StudentTextbookDetail = () => {
     const requireActivities = !!selectedLesson.require_activities;
     const activityBlockCount = (selectedLesson.blocks || []).filter((b: any) => b?.type === "activity").length;
     const hasActivities = activityBlockCount > 0;
-    const requiredActivityIndices = (selectedLesson.blocks || [])
+    const visibleBlocks = (selectedLesson.blocks || []).filter((b: any) => b?.visible !== false);
+    const requiredActivityIndices = visibleBlocks
       .map((b: any, idx: number) => ({ b, idx }))
       .filter(({ b }) => b?.type === "activity" && b?.props?.required === true)
       .map(({ idx }) => idx);
@@ -374,13 +402,16 @@ const StudentTextbookDetail = () => {
           </Button>
           <h1 className="font-heading text-2xl font-bold mb-6">{selectedLesson.title}</h1>
           <div className="space-y-6">
-            {(selectedLesson.blocks || []).map((block: any, idx: number) => (
+            {visibleBlocks.map((block: any, idx: number) => (
               <LessonBlockRenderer
-                key={idx}
+                key={block?.id ?? idx}
                 block={block}
                 blockIndex={idx}
-                onActivityComplete={(activityIndex) => {
+                isCompleted={completedActivityIndices.has(idx)}
+                onActivityComplete={(activityIndex, activityType, score, maxScore) => {
+                  if (completedActivityIndices.has(activityIndex)) return;
                   setCompletedActivityIndices(prev => new Set([...prev, activityIndex]));
+                  trackActivity(activityIndex, activityType, score, maxScore);
                 }}
               />
             ))}

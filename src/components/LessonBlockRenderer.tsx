@@ -27,7 +27,7 @@ import { blockBackgroundStyle } from "@/lib/block-backgrounds";
 import FreeFrameCanvas from "@/components/blocks/FreeFrameCanvas";
 import { getGroupChildFrames, getGroupChildHeight, getGroupMinHeight } from "@/lib/slide-groups";
 import { useState } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, Check } from "lucide-react";
 import { activityMeta, activitySummary, activityMinutes } from "@/lib/activity-meta";
 import {
   activitySlideAppearanceStyle,
@@ -43,10 +43,12 @@ const StudentActivityShell = ({
   props: p,
   children,
   appearance,
+  isCompleted,
 }: {
   props: Record<string, any>;
   children: React.ReactNode;
   appearance?: ActivitySlideAppearance;
+  isCompleted?: boolean;
 }) => {
   const required = p.required === true;
   const meta = activityMeta(p.activityType || "flashcards");
@@ -65,7 +67,13 @@ const StudentActivityShell = ({
 
   return (
     <div
-      className={`rounded-xl border ${required ? "border-secondary/40 bg-gradient-brand-pastel" : "border-border"} ${meta.accent}`}
+      className={`rounded-xl border ${
+        isCompleted
+          ? "border-green-500/60 bg-green-500/5"
+          : required
+            ? "border-secondary/40 bg-gradient-brand-pastel"
+            : "border-border"
+      } ${meta.accent}`}
     >
       <button
         type="button"
@@ -89,12 +97,19 @@ const StudentActivityShell = ({
             {minutes && <span>· ~{minutes} min</span>}
           </span>
         </span>
-        <span
-          className={`flex-shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-            required ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-          }`}
-        >
-          {required ? "🔒 Povinné" : "Nepovinné"}
+        <span className="flex flex-shrink-0 items-center gap-1.5">
+          {isCompleted && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-green-600 px-2.5 py-1 text-[11px] font-semibold text-white">
+              <Check className="h-3 w-3" aria-hidden="true" /> Hotovo
+            </span>
+          )}
+          <span
+            className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+              required ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+            }`}
+          >
+            {required ? "🔒 Povinné" : "Nepovinné"}
+          </span>
         </span>
       </button>
       {open && <div className="px-4 pb-4">{children}</div>}
@@ -129,6 +144,8 @@ interface LessonBlockProps {
   blockIndex?: number;
   onActivityComplete?: (activityIndex: number, activityType: string, score: number, maxScore: number) => void;
   isTeacher?: boolean;
+  /** Aktivita je již dokončená (aktuální návštěva nebo dřívější uložený výsledek). */
+  isCompleted?: boolean;
   /** Vzhled aktivity na snímku prezentace (mimo prezentaci se nepoužívá). */
   activityAppearance?: ActivitySlideAppearance;
 }
@@ -142,7 +159,7 @@ export const LessonBlock = (props: LessonBlockProps): JSX.Element | null => {
   return <div style={bgStyle}>{inner}</div>;
 };
 
-const LessonBlockInner = ({ block, blockIndex, onActivityComplete, isTeacher, activityAppearance }: LessonBlockProps): JSX.Element | null => {
+const LessonBlockInner = ({ block, blockIndex, onActivityComplete, isTeacher, isCompleted, activityAppearance }: LessonBlockProps): JSX.Element | null => {
   const p = block.props;
 
   switch (block.type) {
@@ -588,7 +605,7 @@ const LessonBlockInner = ({ block, blockIndex, onActivityComplete, isTeacher, ac
       );
 
       const shell = (
-        <StudentActivityShell props={p} appearance={activityAppearance}>
+        <StudentActivityShell props={p} appearance={activityAppearance} isCompleted={isCompleted}>
           {activityInner}
         </StudentActivityShell>
       );
