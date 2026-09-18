@@ -404,6 +404,8 @@ export default function WorksheetEditor() {
   const topicParam = searchParams.get("topic");
   const topicRocnikParam = searchParams.get("topic_rocnik");
   const topicSubjectParam = searchParams.get("topic_subject");
+  /** Slabé místo z statistiky obtížnosti – doplňková instrukce pro AI. */
+  const topicFocusParam = searchParams.get("focus");
   const autoLinkAttempted = useRef(false);
 
   const [suggestionDialog, setSuggestionDialog] = useState<{
@@ -1182,11 +1184,15 @@ export default function WorksheetEditor() {
     if (!topicParam || topicPrefillDone.current) return;
     topicPrefillDone.current = true;
     setAiMode("study");
-    setAiCustomHint((prev) =>
-      prev || `Zaměř se přesně na téma ŠVP „${topicParam}“${topicRocnikParam ? ` pro ${topicRocnikParam}. ročník` : ""}.`,
-    );
+    setAiCustomHint((prev) => {
+      if (prev) return prev;
+      const base = `Zaměř se přesně na téma ŠVP „${topicParam}“${topicRocnikParam ? ` pro ${topicRocnikParam}. ročník` : ""}.`;
+      return topicFocusParam
+        ? `${base} Zaměř se především na téma, které žákům dělalo problém: „${topicFocusParam}“ – přidej k němu více procvičení a vysvětlení.`
+        : base;
+    });
     setShowAiGenerateDialog(true);
-  }, [topicParam, topicRocnikParam]);
+  }, [topicParam, topicRocnikParam, topicFocusParam]);
 
   /** Insert text from a lesson block into the targeted worksheet item. */
   function applyLessonBlockToItem(itemId: string, block: LessonBlock) {

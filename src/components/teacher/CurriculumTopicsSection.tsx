@@ -35,6 +35,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import AiContentBadge from "@/components/ai/AiContentBadge";
+import CurriculumTopicWeakSpots from "@/components/admin/CurriculumTopicWeakSpots";
 import type { Block } from "@/lib/textbook-config";
 import { curriculumBlocksToText } from "@/lib/curriculum-template";
 import { extractTopicsFromBlocks, type ExtractedTopic } from "@/lib/curriculum-topics";
@@ -709,6 +710,9 @@ export default function CurriculumTopicsSection({
                           );
                         })}
                       </div>
+                    )}
+                    {t.linked.some((l) => l.kind === "lesson") && (
+                      <CurriculumTopicWeakSpots topicId={t.id} topicTitle={t.title} />
                     )}
                   </li>
                 );

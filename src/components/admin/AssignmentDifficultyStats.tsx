@@ -1,7 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
-import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Loader2, LineChart, FilePlus2 } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
+import { emptyWorksheetSpec } from "@/lib/worksheet-defaults";
+import { createWorksheetForTopic } from "@/lib/assignment-difficulty";
+import AssignmentDifficultyTrend from "@/components/admin/AssignmentDifficultyTrend";
 import { fetchLessonActivities, type LessonActivityInfo } from "@/lib/lesson-activity-index";
 
 interface Props {
@@ -19,6 +25,8 @@ interface DifficultyRow {
   /** Úspěšnost 0–100, null = nelze vyhodnotit automaticky. */
   pct: number | null;
   sampleCount: number;
+  /** Index aktivity v lekci (jen u řádků z lekce) – vstup pro trend. */
+  activityIndex?: number;
 }
 
 const norm = (v: unknown) => String(v ?? "").trim().toLowerCase();
@@ -117,9 +125,69 @@ const AssignmentDifficultyStats = ({
   worksheetId,
   studentIds,
 }: Props) => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<DifficultyRow[]>([]);
   const [manualRows, setManualRows] = useState<DifficultyRow[]>([]);
+  /** Kolik úkolů zadává stejnou lekci – trend má smysl až od dvou. */
+  const [sameLessonCount, setSameLessonCount] = useState(0);
+  const [trendRow, setTrendRow] = useState<DifficultyRow | null>(null);
+  const [subjectName, setSubjectName] = useState("");
+  const [classYear, setClassYear] = useState<number | null>(null);
+  const [worksheetBusyKey, setWorksheetBusyKey] = useState<string | null>(null);
+
+  // Kontext úlohy (předmět, ročník třídy) a počet úkolů se stejnou lekcí.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("assignments")
+        .select("subject_id, class_id, subjects(name), classes(year)")
+        .eq("id", assignmentId)
+        .maybeSingle();
+      const row = data as any;
+      if (!cancelled) {
+        setSubjectName(row?.subjects?.name ?? "");
+        setClassYear(typeof row?.classes?.year === "number" ? row.classes.year : null);
+      }
+      if (lessonId) {
+        const { count } = await supabase
+          .from("assignments")
+          .select("id", { count: "exact", head: true })
+          .eq("lesson_id", lessonId);
+        if (!cancelled) setSameLessonCount(count ?? 0);
+      } else if (!cancelled) {
+        setSameLessonCount(0);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [assignmentId, lessonId]);
+
+  /** Vytvoří pracovní list zaměřený na slabé místo a otevře AI generování. */
+  const generateSupportWorksheet = async (row: DifficultyRow) => {
+    setWorksheetBusyKey(row.key);
+    try {
+      const topic = row.label.replace(/\s*\(povinné\)$/, "").trim() || "Opakování";
+      const id = await createWorksheetForTopic(
+        topic,
+        subjectName,
+        emptyWorksheetSpec({ title: topic, subject: subjectName }),
+      );
+      const params = new URLSearchParams({ topic });
+      if (classYear !== null) params.set("topic_rocnik", String(classYear));
+      if (subjectName) params.set("topic_subject", subjectName);
+      params.set("focus", topic);
+      navigate(`/ucitel/pracovni-listy/${id}?${params.toString()}`);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast({ title: "Nepodařilo se otevřít generování", description: msg, variant: "destructive" });
+    } finally {
+      setWorksheetBusyKey(null);
+    }
+  };
+
 
   useEffect(() => {
     let cancelled = false;
@@ -154,6 +222,7 @@ const AssignmentDifficultyStats = ({
               label: `${act.title}${act.required ? " (povinné)" : ""}`,
               pct: agg && agg.n > 0 ? Math.round((agg.sum / agg.n) * 100) : null,
               sampleCount: agg?.n ?? 0,
+              activityIndex: act.index,
             });
           }
         }
@@ -257,9 +326,47 @@ const AssignmentDifficultyStats = ({
                   <div className={`h-full ${barColor(r.pct)}`} style={{ width: `${r.pct}%` }} />
                 </div>
               )}
+              <div className="flex flex-wrap gap-1">
+                {typeof r.activityIndex === "number" && sameLessonCount > 1 && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 gap-1 px-1.5 text-[11px]"
+                    onClick={() => setTrendRow(r)}
+                  >
+                    <LineChart className="h-3 w-3" /> Zobrazit trend
+                  </Button>
+                )}
+                {r.pct !== null && r.pct < 50 && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 gap-1 px-1.5 text-[11px]"
+                    onClick={() => generateSupportWorksheet(r)}
+                    disabled={worksheetBusyKey === r.key}
+                  >
+                    {worksheetBusyKey === r.key ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <FilePlus2 className="h-3 w-3" />
+                    )}
+                    Vygenerovat doplňkový list
+                  </Button>
+                )}
+              </div>
             </li>
           ))}
         </ul>
+      )}
+
+      {trendRow && lessonId && typeof trendRow.activityIndex === "number" && (
+        <AssignmentDifficultyTrend
+          open
+          onOpenChange={(o) => !o && setTrendRow(null)}
+          lessonId={lessonId}
+          activityIndex={trendRow.activityIndex}
+          activityTitle={trendRow.label}
+        />
       )}
 
       {manualRows.length > 0 && (
