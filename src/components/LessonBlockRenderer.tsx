@@ -144,6 +144,8 @@ interface LessonBlockProps {
   blockIndex?: number;
   onActivityComplete?: (activityIndex: number, activityType: string, score: number, maxScore: number) => void;
   isTeacher?: boolean;
+  /** Aktivita je již dokončená (aktuální návštěva nebo dřívější uložený výsledek). */
+  isCompleted?: boolean;
   /** Vzhled aktivity na snímku prezentace (mimo prezentaci se nepoužívá). */
   activityAppearance?: ActivitySlideAppearance;
 }
@@ -157,7 +159,7 @@ export const LessonBlock = (props: LessonBlockProps): JSX.Element | null => {
   return <div style={bgStyle}>{inner}</div>;
 };
 
-const LessonBlockInner = ({ block, blockIndex, onActivityComplete, isTeacher, activityAppearance }: LessonBlockProps): JSX.Element | null => {
+const LessonBlockInner = ({ block, blockIndex, onActivityComplete, isTeacher, isCompleted, activityAppearance }: LessonBlockProps): JSX.Element | null => {
   const p = block.props;
 
   switch (block.type) {
@@ -603,7 +605,7 @@ const LessonBlockInner = ({ block, blockIndex, onActivityComplete, isTeacher, ac
       );
 
       const shell = (
-        <StudentActivityShell props={p} appearance={activityAppearance}>
+        <StudentActivityShell props={p} appearance={activityAppearance} isCompleted={isCompleted}>
           {activityInner}
         </StudentActivityShell>
       );
