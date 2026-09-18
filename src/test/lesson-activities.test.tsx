@@ -61,3 +61,15 @@ describe("aktivita u žáka", () => {
     expect(screen.queryByText("Které maso je hovězí?")).not.toBeInTheDocument();
   });
 });
+
+describe("indikace hotové aktivity", () => {
+  it("s isCompleted zobrazí zelené Hotovo, bez něj ne", () => {
+    const { unmount } = render(<LessonBlockRenderer block={quizBlock({ required: true })} />);
+    expect(screen.queryByText("Hotovo")).not.toBeInTheDocument();
+    unmount();
+
+    render(<LessonBlockRenderer block={quizBlock({ required: true })} blockIndex={0} isCompleted />);
+    expect(screen.getByText("Hotovo")).toBeInTheDocument();
+    expect(screen.getByText("🔒 Povinné")).toBeInTheDocument();
+  });
+});
