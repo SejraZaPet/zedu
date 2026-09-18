@@ -409,6 +409,7 @@ const StudentTextbookDetail = () => {
                 blockIndex={idx}
                 isCompleted={completedActivityIndices.has(idx)}
                 onActivityComplete={(activityIndex, activityType, score, maxScore) => {
+                  if (completedActivityIndices.has(activityIndex)) return;
                   setCompletedActivityIndices(prev => new Set([...prev, activityIndex]));
                   trackActivity(activityIndex, activityType, score, maxScore);
                 }}
