@@ -27,7 +27,7 @@ import { blockBackgroundStyle } from "@/lib/block-backgrounds";
 import FreeFrameCanvas from "@/components/blocks/FreeFrameCanvas";
 import { getGroupChildFrames, getGroupChildHeight, getGroupMinHeight } from "@/lib/slide-groups";
 import { useState } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, Check } from "lucide-react";
 import { activityMeta, activitySummary, activityMinutes } from "@/lib/activity-meta";
 import {
   activitySlideAppearanceStyle,
@@ -43,10 +43,12 @@ const StudentActivityShell = ({
   props: p,
   children,
   appearance,
+  isCompleted,
 }: {
   props: Record<string, any>;
   children: React.ReactNode;
   appearance?: ActivitySlideAppearance;
+  isCompleted?: boolean;
 }) => {
   const required = p.required === true;
   const meta = activityMeta(p.activityType || "flashcards");
