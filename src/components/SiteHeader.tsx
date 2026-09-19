@@ -239,23 +239,24 @@ const SiteHeader = () => {
           )}
         </button>
 
-        <div className="hidden md:flex items-center gap-6">
-          <nav className="flex items-center gap-1">
+        <div className="hidden md:flex items-center md:gap-3 lg:gap-6 min-w-0">
+          <nav className="flex items-center gap-1 min-w-0">
             {navItems.map((item) => {
               const Icon = item.icon;
               const active = isActive(item.href);
               return (
                 <button
                   key={item.label}
+                  title={item.label}
                   onClick={() => handleNavClick(item.href)}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                  className={`flex items-center gap-1.5 px-2 lg:px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
                     active
                       ? "bg-primary/10 text-primary"
                       : "text-muted-foreground hover:text-primary hover:bg-muted/50"
                   }`}
                 >
                   <Icon className="w-4 h-4" />
-                  {item.label}
+                  <span className="hidden lg:inline">{item.label}</span>
                 </button>
               );
             })}
