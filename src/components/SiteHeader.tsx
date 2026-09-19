@@ -262,7 +262,7 @@ const SiteHeader = () => {
             })}
           </nav>
           {isLoggedIn ? (
-            <div className="flex items-center gap-2 ml-2 border-l border-border pl-4">
+            <div className="flex items-center gap-2 ml-2 border-l border-border pl-4 shrink-0">
               <SchoolViewSwitcher />
               <NotificationBell />
               <DropdownMenu>
