@@ -260,7 +260,17 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
           byStudent[r.user_id] = entry;
         });
 
-        const noOtherSource = !assignment.worksheet_id && !assignment.is_portfolio_task;
+        // Úloha má vlastní obsah k odevzdání, pokud má pracovní list, portfolio
+        // nebo pokud vůbec existuje nějaký pokus s odpověďmi/odevzdáním.
+        const hasOwnSubmission =
+          !!assignment.worksheet_id ||
+          !!assignment.is_portfolio_task ||
+          rows.some((r) => {
+            const a = r.latestAttempt;
+            if (!a) return false;
+            const hasAnswers = a.answers && Object.keys(a.answers as Record<string, unknown>).length > 0;
+            return !!a.submitted_at || a.status === "submitted" || a.status === "in_progress" || !!hasAnswers;
+          });
         rows.forEach((row) => {
           const entry = byStudent[row.studentId];
           const total = requiredIdx.length;
@@ -270,10 +280,12 @@ const AssignmentDetailDialog = ({ assignment, open, onOpenChange }: Props) => {
             total,
             avgPct: entry && entry.n > 0 ? Math.round((entry.sum / entry.n) * 100) : null,
           };
-          if (noOtherSource) {
+          // Stav z lekce jen u úloh bez vlastního obsahu k odevzdání a u žáků bez pokusu.
+          if (!hasOwnSubmission && row.attemptCount === 0) {
             row.status = total > 0 && done >= total ? "submitted" : done > 0 ? "in_progress" : "not_started";
           }
         });
+
       }
 
       rows.sort((a, b) => a.lastName.localeCompare(b.lastName, "cs"));
