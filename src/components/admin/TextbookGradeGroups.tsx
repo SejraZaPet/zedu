@@ -191,6 +191,7 @@ const TopicLessonsList = ({
   onOpenPresentation,
   onOpenWorksheet,
   onReorderLessons,
+  onRequestMove,
 }: {
   topic: TopicItem;
   onEditLesson: (l: LessonItem) => void;
@@ -198,6 +199,7 @@ const TopicLessonsList = ({
   onOpenPresentation: (l: LessonItem) => void;
   onOpenWorksheet: (l: LessonItem) => void;
   onReorderLessons?: (topicId: string, orderedLessons: LessonItem[]) => void;
+  onRequestMove?: (l: LessonItem) => void;
 }) => {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
