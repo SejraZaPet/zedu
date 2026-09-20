@@ -303,7 +303,9 @@ const SortableTopic = ({
           onOpenPresentation={onOpenPresentation}
           onOpenWorksheet={onOpenWorksheet}
           onReorderLessons={onReorderLessons}
+          onRequestMove={onRequestMove}
         />
+
       )}
 
       {/* Quick add lesson to this topic */}
