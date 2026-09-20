@@ -1190,8 +1190,10 @@ const TeacherTextbooks = () => {
             const id = existingSession!.id;
             setExistingSession(null);
             setPendingLaunchData(null);
+            showProjector(id);
             navigate(`/live/ucitel/${id}`);
           }}
+
           onLaunchNew={launchNew}
           onCloseExisting={() => { setExistingSession(null); setPendingLaunchData(null); }}
         />
