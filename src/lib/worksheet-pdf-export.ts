@@ -82,7 +82,7 @@ window.addEventListener("load", function () {
   var items = Array.from(sourceItems.children);
   var pageHeight = sourceContent.clientHeight;
 
-  function makePage() {
+  function makePage(afterPage) {
     var page = document.createElement("div");
     page.className = "ws-page";
     var content = document.createElement("div");
@@ -91,7 +91,7 @@ window.addEventListener("load", function () {
     list.className = "ws-items";
     content.appendChild(list);
     page.appendChild(content);
-    sourcePage.parentNode.insertBefore(page, sourcePage.nextSibling);
+    afterPage.parentNode.insertBefore(page, afterPage.nextSibling);
     return { page: page, content: content, list: list };
   }
 
@@ -100,7 +100,7 @@ window.addEventListener("load", function () {
     current.list.appendChild(item);
     if (current.content.scrollHeight > pageHeight + 1 && current.list.children.length > 1) {
       current.list.removeChild(item);
-      current = makePage();
+      current = makePage(current.page);
       current.list.appendChild(item);
     }
   });

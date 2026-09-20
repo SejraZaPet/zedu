@@ -550,6 +550,11 @@ p, li { orphans: 2; widows: 2; }
     overflow: hidden;
     margin-bottom: 20px;
   }
+  body.ws-preview-paginated .ws-content {
+    height: 267mm;
+    min-height: 267mm;
+    overflow: hidden;
+  }
   .ws-content {
     max-width: 100%;
     margin: 0;
