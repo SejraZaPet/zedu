@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FolderOpen, ChevronRight, Pencil, Trash2, Plus, FileText, Play, Monitor, GripVertical, FolderInput, Merge } from "lucide-react";
+import { FolderOpen, ChevronRight, ChevronDown, Pencil, Trash2, Plus, FileText, Play, Monitor, GripVertical, FolderInput, Merge } from "lucide-react";
 import LessonPreviewDialog from "@/components/admin/LessonPreviewDialog";
 import {
   Dialog,
@@ -289,6 +289,8 @@ const SortableTopic = ({
     opacity: isDragging ? 0.5 : 1,
   };
 
+  const [collapsed, setCollapsed] = useState(true);
+
   return (
     <div ref={setNodeRef} style={style} className="border border-border rounded-md">
       {/* Topic header */}
@@ -302,50 +304,64 @@ const SortableTopic = ({
         >
           <GripVertical className="w-4 h-4" />
         </button>
-        <FolderOpen className="w-4 h-4 text-primary" />
-        <span className="text-sm font-medium flex-1">{topic.title}</span>
-        <Badge variant="secondary" className="text-[10px]">
+        <button
+          type="button"
+          onClick={() => setCollapsed((c) => !c)}
+          className="flex items-center gap-1.5 flex-1 text-left min-w-0"
+          aria-expanded={!collapsed}
+          aria-label={collapsed ? "Rozbalit téma" : "Sbalit téma"}
+        >
+          <ChevronDown
+            className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform duration-200 ${collapsed ? "" : "rotate-180"}`}
+          />
+          <FolderOpen className="w-4 h-4 text-primary shrink-0" />
+          <span className="text-sm font-medium truncate">{topic.title}</span>
+        </button>
+        <Badge variant="secondary" className="text-[10px] shrink-0">
           {topic.lessons.length} {topic.lessons.length === 1 ? "lekce" : "lekcí"}
         </Badge>
         {onRequestMergeTopic && (
-          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onRequestMergeTopic(topic)} title="Sloučit s jiným tématem…">
+          <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={() => onRequestMergeTopic(topic)} title="Sloučit s jiným tématem…">
             <Merge className="w-3.5 h-3.5" />
           </Button>
         )}
-        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onEditTopic({ id: topic.id, title: topic.title, grade: topic.grade ?? 0 })}>
+        <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={() => onEditTopic({ id: topic.id, title: topic.title, grade: topic.grade ?? 0 })}>
           <Pencil className="w-3.5 h-3.5" />
         </Button>
-        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onDeleteTopic(topic.id, topic.lessons.length)}>
+        <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={() => onDeleteTopic(topic.id, topic.lessons.length)}>
           <Trash2 className="w-3.5 h-3.5 text-destructive" />
         </Button>
       </div>
 
-      {/* Lessons */}
-      {topic.lessons.length > 0 && (
-        <TopicLessonsList
-          topic={topic}
-          onEditLesson={onEditLesson}
-          onDeleteLesson={onDeleteLesson}
-          onOpenPresentation={onOpenPresentation}
-          onOpenWorksheet={onOpenWorksheet}
-          onReorderLessons={onReorderLessons}
-          onRequestMove={onRequestMove}
-          onRequestMergeLesson={onRequestMergeLesson}
-        />
+      {/* Lessons + add lesson (only when expanded) */}
+      {!collapsed && (
+        <>
+          {topic.lessons.length > 0 && (
+            <TopicLessonsList
+              topic={topic}
+              onEditLesson={onEditLesson}
+              onDeleteLesson={onDeleteLesson}
+              onOpenPresentation={onOpenPresentation}
+              onOpenWorksheet={onOpenWorksheet}
+              onReorderLessons={onReorderLessons}
+              onRequestMove={onRequestMove}
+              onRequestMergeLesson={onRequestMergeLesson}
+            />
+          )}
 
+          {/* Quick add lesson to this topic */}
+          <div className="border-t border-border px-3 py-1.5">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-xs h-7 gap-1 text-muted-foreground hover:text-foreground"
+              onClick={() => onAddLesson(topic.id)}
+            >
+              <Plus className="w-3 h-3" /> Přidat lekci
+            </Button>
+          </div>
+        </>
       )}
-
-      {/* Quick add lesson to this topic */}
-      <div className="border-t border-border px-3 py-1.5">
-        <Button
-          size="sm"
-          variant="ghost"
-          className="text-xs h-7 gap-1 text-muted-foreground hover:text-foreground"
-          onClick={() => onAddLesson(topic.id)}
-        >
-          <Plus className="w-3 h-3" /> Přidat lekci
-        </Button>
-      </div>
     </div>
   );
 };
