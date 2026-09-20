@@ -116,6 +116,8 @@ const TeacherTextbooks = () => {
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [gradeGroups, setGradeGroups] = useState<GradeGroup[]>([]);
   const [detailLoading, setDetailLoading] = useState(false);
+  // Vybraný ročník pro Mapu lekcí (null = ještě neurčeno)
+  const [mapGrade, setMapGrade] = useState<number | null>(null);
 
   // Lesson editor sheet
   const [editingLesson, setEditingLesson] = useState<LessonItem | null>(null);
@@ -353,6 +355,20 @@ const TeacherTextbooks = () => {
     setGradeGroups(groups);
     setDetailLoading(false);
   }, [subjects]);
+
+  // Výchozí ročník mapy: z URL (?rocnik=, předává stránka Předmět/Třída),
+  // jinak první ročník, který v učebnici reálně obsahuje lekce.
+  useEffect(() => {
+    const available = gradeGroups.filter((g) => g.topics.some((t) => t.lessons.length > 0));
+    if (available.length === 0) {
+      setMapGrade(null);
+      return;
+    }
+    const fromUrl = Number(searchParams.get("rocnik"));
+    const match = available.find((g) => g.grade === fromUrl);
+    setMapGrade((match ?? available[0]).grade);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gradeGroups]);
 
   useEffect(() => {
     if (!textbookId || textbooks.length === 0) return;
