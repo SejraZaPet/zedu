@@ -168,12 +168,49 @@ export function AiSuggestFromLessonDialog({
     if (selectedIdx.length === 0) return;
     setGenerating(true);
     setGeneratedItem(null);
+    setMapped(null);
     try {
       const selectedContent = selectedIdx
         .map((i) => blocks[i])
         .filter(Boolean)
-        .map((b) => b.text)
+        .map((b) => (b.title && b.title !== b.text ? `${b.title}\n${b.text}` : b.text))
         .join("\n\n");
+
+      // ── Aktivity se stejnou obdobou v lekci: generujeme identickou cestou ──
+      if (activityType && onApplyMapped) {
+        const { data, error } = await supabase.functions.invoke("generate-activity-content", {
+          body: {
+            activityType,
+            topic: [lessonTitle, selectedIdx.map((i) => blocks[i]?.title).filter(Boolean).join(", ")]
+              .filter(Boolean)
+              .join(" – ")
+              .slice(0, 120),
+            context: [selectedContent, aiHint ? `Pokyn učitele: ${aiHint}` : ""]
+              .filter(Boolean)
+              .join("\n\n"),
+          },
+        });
+        if (error) throw error;
+        const props = (data as any)?.props;
+        if (!props) {
+          toast({ title: "AI nevrátila návrh", variant: "destructive" });
+          return;
+        }
+        const built = buildItemsFromLessonActivity({
+          id: "ai",
+          activityType,
+          title: String(props.title ?? ""),
+          instructions: String(props.instructions ?? ""),
+          props,
+        } as any);
+        const usable = built.filter((m) => Object.keys(m.patch).length > 0);
+        if (usable.length === 0) {
+          toast({ title: "AI nevrátila použitelný obsah", variant: "destructive" });
+          return;
+        }
+        setMapped(usable);
+        return;
+      }
 
       const instruction = [
         isSolvable
