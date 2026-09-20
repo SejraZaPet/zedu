@@ -39,6 +39,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
@@ -3055,6 +3056,60 @@ function SaveIndicator({ state }: { state: SaveState }) {
   if (state === "error")
     return <span className="text-xs text-destructive">Chyba ukládání</span>;
   return null;
+}
+
+function InsertItemControl({
+  onInsert,
+  onInsertOffline,
+}: {
+  onInsert: (type: ItemType) => void;
+  onInsertOffline: (mode: OfflineMode) => void;
+}) {
+  return (
+    <div className="relative flex h-5 items-center justify-center" role="group" aria-label="Vložit blok za tuto položku">
+      <div className="absolute inset-x-0 top-1/2 border-t border-dashed border-border opacity-0 transition-opacity group-hover/insert:opacity-100 group-focus-within/insert:opacity-100" />
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="relative z-10 h-7 gap-1 bg-background px-2 text-xs opacity-0 shadow-sm transition-opacity group-hover/insert:opacity-100 group-focus-within/insert:opacity-100 max-md:opacity-100"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Přidat sem
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="center" className="max-h-[70vh] w-64 overflow-y-auto bg-popover">
+          <DropdownMenuLabel>Layoutové bloky</DropdownMenuLabel>
+          {LAYOUT_BLOCK_TYPES.map((type) => (
+            <DropdownMenuItem key={type} onSelect={() => onInsert(type)}>
+              {ITEM_TYPE_LABELS[type].label}
+            </DropdownMenuItem>
+          ))}
+          <DropdownMenuSeparator />
+          <DropdownMenuLabel>Aktivity</DropdownMenuLabel>
+          {ACTIVITY_BLOCK_TYPES.map((type) => (
+            <DropdownMenuItem key={type} onSelect={() => onInsert(type)}>
+              {ITEM_TYPE_LABELS[type].label}
+            </DropdownMenuItem>
+          ))}
+          <DropdownMenuSeparator />
+          <DropdownMenuLabel>Offline aktivity</DropdownMenuLabel>
+          {OFFLINE_MODES.map((mode) => {
+            const meta = OFFLINE_MODE_META[mode];
+            const Icon = meta.icon;
+            return (
+              <DropdownMenuItem key={mode} onSelect={() => onInsertOffline(mode)}>
+                <Icon className="mr-2 h-4 w-4 text-accent" />
+                {meta.label}
+              </DropdownMenuItem>
+            );
+          })}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
 }
 
 // ─────────────────────────── Sortable block (canvas) ───────────────────────────
