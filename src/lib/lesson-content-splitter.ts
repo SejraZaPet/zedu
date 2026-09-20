@@ -11,6 +11,35 @@ export interface LessonBlock {
   text: string;
 }
 
+/**
+ * Rozbalí bloky lekce tak, že vnořené bloky karet (slide_group → props.children)
+ * jsou ve výstupu na stejné úrovni jako běžné bloky. Skryté bloky se vynechávají.
+ * `topIndex` odpovídá indexu mezi VIDITELNÝMI bloky na nejvyšší úrovni
+ * (konvence deep-linku `?aktivita=<index>` a student_activity_results).
+ */
+export function flattenLessonBlocks(
+  blocks: unknown,
+): Array<{ block: any; topIndex: number; nested: boolean }> {
+  if (!Array.isArray(blocks)) return [];
+  const out: Array<{ block: any; topIndex: number; nested: boolean }> = [];
+  let topIndex = 0;
+  const walk = (list: any[], top: number | null) => {
+    for (const b of list) {
+      if (!b || typeof b !== "object" || b.visible === false) continue;
+      const myTop = top ?? topIndex++;
+      const children = (b.props as any)?.children;
+      if (b.type === "slide_group" && Array.isArray(children)) {
+        walk(children, top === null ? myTop : top);
+        continue;
+      }
+      out.push({ block: b, topIndex: myTop, nested: top !== null });
+    }
+  };
+  walk(blocks as any[], null);
+  return out;
+}
+
+
 /** Hrubě rozdělí text na bloky podle nadpisů (#, ##) a prázdných řádků. */
 export function splitLessonContent(content: string): LessonBlock[] {
   if (!content || !content.trim()) return [];
