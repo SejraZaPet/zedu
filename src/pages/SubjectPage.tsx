@@ -1,4 +1,5 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import TextbookSearch from "@/components/textbook/TextbookSearch";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useSubjects, getSubjectBySlug, getGradeNumbers } from "@/hooks/useSubjects";
@@ -101,6 +102,44 @@ const SubjectPage = () => {
     enabled: topicIds.length > 0,
   });
 
+  // Lekce ročníku pro fulltextové hledání (název + text bloků)
+  const { data: searchLessonsData = [] } = useQuery({
+    queryKey: ["subject-search-lessons", topicIds],
+    queryFn: async () => {
+      if (topicIds.length === 0) return [];
+      const { data: assignments } = await supabase
+        .from("lesson_topic_assignments")
+        .select("topic_id, lesson_id")
+        .in("topic_id", topicIds);
+      const lessonIds = [...new Set((assignments ?? []).map((a: any) => a.lesson_id))];
+      if (lessonIds.length === 0) return [];
+      const { data: lessons } = await supabase
+        .from("textbook_lessons")
+        .select("id, title, blocks")
+        .in("id", lessonIds)
+        .eq("status", "published");
+      const topicByLesson = new Map<string, string>();
+      for (const a of (assignments ?? []) as any[]) {
+        if (!topicByLesson.has(a.lesson_id)) topicByLesson.set(a.lesson_id, a.topic_id);
+      }
+      return ((lessons ?? []) as any[]).map((l) => ({
+        id: l.id,
+        title: l.title,
+        blocks: (l.blocks as any[]) ?? [],
+        topicId: topicByLesson.get(l.id) ?? "",
+      }));
+    },
+    enabled: topicIds.length > 0,
+  });
+
+  const openSearchLesson = (lessonId: string) => {
+    const hit = searchLessonsData.find((l) => l.id === lessonId);
+    if (!hit) return;
+    const topic = topics?.find((t) => t.id === hit.topicId);
+    const topicSlug = topic ? slugify(topic.title) || topic.id : "obsah";
+    navigate(`/ucebnice/${subjectId}/${selectedGrade}/${topicSlug}/${lessonId}`);
+  };
+
   if (subjectsLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -150,6 +189,15 @@ const SubjectPage = () => {
           <h1 className="font-heading text-4xl md:text-5xl font-bold mb-8 text-foreground">
             {subject.label}
           </h1>
+
+          {searchLessonsData.length > 0 && (
+            <TextbookSearch
+              className="mb-10"
+              lessons={searchLessonsData}
+              onOpen={openSearchLesson}
+              placeholder="Hledat v učebnici (název lekce i text)…"
+            />
+          )}
 
           {/* Grade selector */}
           {hasMultipleGrades && (
