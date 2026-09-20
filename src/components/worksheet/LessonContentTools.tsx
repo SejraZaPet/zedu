@@ -23,6 +23,10 @@ import { toast } from "@/hooks/use-toast";
 import type { LessonBlock } from "@/lib/lesson-content-splitter";
 import { ITEM_TYPE_LABELS } from "@/lib/worksheet-defaults";
 import type { ItemType } from "@/lib/worksheet-spec";
+import {
+  buildItemsFromLessonActivity,
+  type MappedWorksheetItem,
+} from "@/lib/lesson-activity-to-worksheet";
 
 // ───── Picker (Sheet) ──────────────────────────────────────────────
 
@@ -87,6 +91,25 @@ export type AiGeneratedItem = {
   points?: number;
 };
 
+/**
+ * Typy úloh, které mají v lekci přímou obdobu aktivity. Pro ně generujeme
+ * obsah stejnou cestou jako v lekci (generate-activity-content) a výsledek
+ * mapujeme na položky pracovního listu, aby se propsala celá struktura
+ * (páry, skupiny, kartičky…), ne jen text zadání.
+ */
+const ACTIVITY_LIKE: Partial<Record<ItemType, string>> = {
+  matching: "matching",
+  sorting: "sorting",
+  ordering: "ordering",
+  flashcards: "flashcards",
+  crossword: "crossword",
+  fill_blank: "fill_blanks",
+  true_false: "true_false",
+  mcq: "quiz",
+  image_label: "image_label",
+  image_hotspot: "image_hotspot",
+};
+
 export function AiSuggestFromLessonDialog({
   open,
   onOpenChange,
@@ -95,6 +118,7 @@ export function AiSuggestFromLessonDialog({
   lessonTitle,
   lessonSubject,
   onApply,
+  onApplyMapped,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -103,17 +127,23 @@ export function AiSuggestFromLessonDialog({
   lessonTitle?: string;
   lessonSubject?: string;
   onApply: (generated: AiGeneratedItem) => void;
+  /** Aplikace strukturované aktivity (stejný tvar jako aktivita v lekci). */
+  onApplyMapped?: (mapped: MappedWorksheetItem[]) => void;
 }) {
   const [selectedIdx, setSelectedIdx] = useState<number[]>([]);
   const [aiHint, setAiHint] = useState("");
   const [generating, setGenerating] = useState(false);
   const [generatedItem, setGeneratedItem] = useState<AiGeneratedItem | null>(null);
+  const [mapped, setMapped] = useState<MappedWorksheetItem[] | null>(null);
+
+  const activityType = onApplyMapped ? ACTIVITY_LIKE[itemType] : undefined;
 
   useEffect(() => {
     if (open) {
       setSelectedIdx([]);
       setAiHint("");
       setGeneratedItem(null);
+      setMapped(null);
     }
   }, [open]);
 
@@ -127,7 +157,7 @@ export function AiSuggestFromLessonDialog({
     "open_answer",
   ];
   /** Bloky jako „Řádky pro zápis“ neumí uložit úlohu — AI pak typ vybere sama. */
-  const isSolvable = SOLVABLE.includes(itemType);
+  const isSolvable = SOLVABLE.includes(itemType) || !!activityType;
   const typeLabel = isSolvable
     ? ITEM_TYPE_LABELS[itemType]?.label ?? itemType
     : "AI vybere podle obsahu (typ bloku se podle toho upraví)";
@@ -142,12 +172,49 @@ export function AiSuggestFromLessonDialog({
     if (selectedIdx.length === 0) return;
     setGenerating(true);
     setGeneratedItem(null);
+    setMapped(null);
     try {
       const selectedContent = selectedIdx
         .map((i) => blocks[i])
         .filter(Boolean)
-        .map((b) => b.text)
+        .map((b) => (b.title && b.title !== b.text ? `${b.title}\n${b.text}` : b.text))
         .join("\n\n");
+
+      // ── Aktivity se stejnou obdobou v lekci: generujeme identickou cestou ──
+      if (activityType && onApplyMapped) {
+        const { data, error } = await supabase.functions.invoke("generate-activity-content", {
+          body: {
+            activityType,
+            topic: [lessonTitle, selectedIdx.map((i) => blocks[i]?.title).filter(Boolean).join(", ")]
+              .filter(Boolean)
+              .join(" – ")
+              .slice(0, 120),
+            context: [selectedContent, aiHint ? `Pokyn učitele: ${aiHint}` : ""]
+              .filter(Boolean)
+              .join("\n\n"),
+          },
+        });
+        if (error) throw error;
+        const props = (data as any)?.props;
+        if (!props) {
+          toast({ title: "AI nevrátila návrh", variant: "destructive" });
+          return;
+        }
+        const built = buildItemsFromLessonActivity({
+          id: "ai",
+          activityType,
+          title: String(props.title ?? ""),
+          instructions: String(props.instructions ?? ""),
+          props,
+        } as any);
+        const usable = built.filter((m) => Object.keys(m.patch).length > 0);
+        if (usable.length === 0) {
+          toast({ title: "AI nevrátila použitelný obsah", variant: "destructive" });
+          return;
+        }
+        setMapped(usable);
+        return;
+      }
 
       const instruction = [
         isSolvable
@@ -255,6 +322,69 @@ export function AiSuggestFromLessonDialog({
             )}
             {generating ? "Generuji…" : "Generovat otázku"}
           </Button>
+
+          {mapped && mapped.length > 0 && (
+            <div className="border rounded-lg p-4 bg-muted/50 space-y-3">
+              <Label className="text-xs">Návrh AI (připraveno jako aktivita v lekci):</Label>
+              {mapped.map((m, i) => (
+                <div key={i} className="text-sm space-y-1">
+                  {m.patch.prompt && <p className="font-medium whitespace-pre-wrap">{m.patch.prompt}</p>}
+                  {m.patch.matchPairs?.map((p, j) => (
+                    <div key={j}>
+                      <strong>{p.left}</strong> → {p.right}
+                    </div>
+                  ))}
+                  {m.patch.sortingCategories && (
+                    <div className="text-xs text-muted-foreground">
+                      Skupiny: {m.patch.sortingCategories.map((c) => c.label).join(" · ")}
+                    </div>
+                  )}
+                  {m.patch.sortingItems?.map((it, j) => (
+                    <div key={j}>
+                      {it.text} →{" "}
+                      {m.patch.sortingCategories?.find((c) => c.id === it.categoryId)?.label ?? "?"}
+                    </div>
+                  ))}
+                  {m.patch.orderItems?.map((o, j) => (
+                    <div key={j}>
+                      {j + 1}. {o}
+                    </div>
+                  ))}
+                  {m.patch.flashcards?.map((c, j) => (
+                    <div key={j}>
+                      <strong>{c.front}</strong> — {c.back}
+                    </div>
+                  ))}
+                  {m.patch.choices?.map((c, j) => (
+                    <div key={j}>
+                      {m.correct === c ? "✓ " : "• "}
+                      {c}
+                    </div>
+                  ))}
+                  {m.patch.blankText && <p className="whitespace-pre-wrap">{m.patch.blankText}</p>}
+                  {m.patch.crosswordEntries?.map((e, j) => (
+                    <div key={j}>
+                      {e.answer} — {e.clue}
+                    </div>
+                  ))}
+                </div>
+              ))}
+              <div className="flex gap-2 pt-1">
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    onApplyMapped?.(mapped);
+                    onOpenChange(false);
+                  }}
+                >
+                  <Check className="w-4 h-4 mr-1" /> Použít
+                </Button>
+                <Button size="sm" variant="outline" onClick={handleGenerate} disabled={generating}>
+                  <RefreshCw className="w-4 h-4 mr-1" /> Jiný návrh
+                </Button>
+              </div>
+            </div>
+          )}
 
           {generatedItem && (
             <div className="border rounded-lg p-4 bg-muted/50">
