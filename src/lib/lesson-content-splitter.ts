@@ -173,6 +173,8 @@ export function extractTablesFromBlocks(blocks: unknown): LessonTable[] {
 /**
  * Extrahuje plain-text / markdown z blokové struktury (jsonb `blocks`)
  * používané v učitelských lekcích a textbook_lessons.
+ * Vnořené bloky karet (slide_group → props.children) se zpracují stejně
+ * jako bloky na nejvyšší úrovni.
  */
 export function extractTextFromBlocks(blocks: unknown): string {
   if (!Array.isArray(blocks)) return "";
@@ -180,9 +182,9 @@ export function extractTextFromBlocks(blocks: unknown): string {
     String(s ?? "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
   const parts: string[] = [];
 
-  for (const b of blocks as any[]) {
-    if (!b || typeof b !== "object") continue;
+  for (const { block: b } of flattenLessonBlocks(blocks)) {
     const p = b.props ?? {};
+
     switch (b.type) {
       case "heading": {
         const lvl = Number(p.level) > 0 && Number(p.level) <= 6 ? Number(p.level) : 2;
