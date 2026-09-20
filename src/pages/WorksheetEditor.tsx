@@ -404,6 +404,11 @@ export default function WorksheetEditor() {
   const [activeLessonContent, setActiveLessonContent] = useState<string>("");
   const [activeLessonActivities, setActiveLessonActivities] = useState<LessonActivity[]>([]);
   const [activeLessonTables, setActiveLessonTables] = useState<LessonTable[]>([]);
+  /** Sekce lekce v chronologickém pořadí (stavba listu sekce po sekci). */
+  const [activeLessonSections, setActiveLessonSections] = useState<LessonSection[]>([]);
+  const [sectionsPanelOpen, setSectionsPanelOpen] = useState(false);
+  /** Absolutní URL přiřazené lekce (pro QR odkazy na aktivity). */
+  const [lessonLinkBase, setLessonLinkBase] = useState<string | null>(null);
   const [linkedLessons, setLinkedLessons] = useState<LinkedLessonRow[]>([]);
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [searchParams] = useSearchParams();
@@ -555,6 +560,7 @@ export default function WorksheetEditor() {
       setActiveLessonContent(extractTextFromBlocks(row.blocks));
       setActiveLessonActivities(extractActivitiesFromBlocks(row.blocks));
       setActiveLessonTables(extractTablesFromBlocks(row.blocks));
+      setActiveLessonSections(splitLessonIntoSections(row.blocks));
     })();
   }, [activeLessonId, allLessons]);
 
