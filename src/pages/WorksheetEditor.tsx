@@ -2982,6 +2982,9 @@ export default function WorksheetEditor() {
         onApply={(g) => {
           if (aiPickerForItem) applyAiSuggestionToItem(aiPickerForItem, g);
         }}
+        onApplyMapped={(m) => {
+          if (aiPickerForItem) applyMappedActivityToItem(aiPickerForItem, m);
+        }}
       />
 
       <Dialog
