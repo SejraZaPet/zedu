@@ -53,6 +53,7 @@ import {
   Sigma as IconSigma,
   Volume2 as IconVolume2,
   Video as IconVideo,
+  Puzzle as IconPuzzle,
   ArrowRightLeft,
   Loader2,
   Group as IconGroup,
@@ -129,6 +130,7 @@ import ChartBlock from "./block-editors/ChartBlock";
 import FormulaBlock from "./block-editors/FormulaBlock";
 import AudioBlock from "./block-editors/AudioBlock";
 import VideoBlock from "./block-editors/VideoBlock";
+import EmbedBlock from "./block-editors/EmbedBlock";
 
 // --- Categorization: card visuals (Step 1) ---
 type CategoryKey = "text" | "media" | "structure" | "interactive";
@@ -137,7 +139,7 @@ const CARD_CATEGORY: Record<string, CategoryKey> = {
   heading: "text", paragraph: "text", bullet_list: "text",
   quote: "text", callout: "text", summary: "text",
   image: "media", image_text: "media", gallery: "media", youtube: "media",
-  audio: "media", video: "media",
+  audio: "media", video: "media", embed: "media",
   shape: "structure", chart: "structure", formula: "text",
   card_grid: "structure", table: "structure", two_column: "structure",
   hierarchy: "structure", accordion: "structure", divider: "structure",
@@ -180,13 +182,14 @@ const BLOCK_ICON: Record<string, React.ComponentType<{ className?: string; style
   formula: IconSigma,
   audio: IconVolume2,
   video: IconVideo,
+  embed: IconPuzzle,
   slide_group: IconGroup,
 };
 
 // --- Add-menu grouping (Step 2) ---
 const MENU_GROUPS: { key: CategoryKey; label: string; types: string[]; accent?: boolean }[] = [
   { key: "text", label: "Text", types: ["heading", "paragraph", "bullet_list", "quote", "callout", "formula"] },
-  { key: "media", label: "Média", types: ["image", "image_text", "gallery", "youtube", "video", "audio"] },
+  { key: "media", label: "Média", types: ["image", "image_text", "gallery", "youtube", "video", "audio", "embed"] },
   { key: "structure", label: "Struktura a rozložení", types: ["card_grid", "table", "two_column", "hierarchy", "accordion", "shape", "chart", "divider"] },
   { key: "interactive", label: "Interaktivní a AI", types: ["activity", "summary", "lesson_link"], accent: true },
 ];
@@ -243,6 +246,7 @@ const BlockRenderer = React.memo(({ block, onChange, showControls = true }: { bl
     case "formula": return <FormulaBlock block={block} onChange={onChange} />;
     case "audio": return <AudioBlock block={block} onChange={onChange} />;
     case "video": return <VideoBlock block={block} onChange={onChange} />;
+    case "embed": return <EmbedBlock block={block} onChange={onChange} />;
     default: return <p className="text-muted-foreground text-sm">Neznámý blok</p>;
   }
 });
