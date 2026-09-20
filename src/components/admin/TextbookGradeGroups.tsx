@@ -550,6 +550,82 @@ const TextbookGradeGroups = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Merge topics */}
+      <Dialog open={!!mergingTopic} onOpenChange={(open) => { if (!open) setMergingTopic(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Sloučit s jiným tématem</DialogTitle>
+            <DialogDescription>
+              Vyberte téma, do kterého se přesunou všechny lekce z tématu „{mergingTopic?.title}".
+            </DialogDescription>
+          </DialogHeader>
+          <Select value={mergeTopicTargetId} onValueChange={setMergeTopicTargetId}>
+            <SelectTrigger>
+              <SelectValue placeholder="Vyberte cílové téma" />
+            </SelectTrigger>
+            <SelectContent>
+              {flatTopics
+                .filter((t) => t.id !== mergingTopic?.id)
+                .map((t) => (
+                  <SelectItem key={t.id} value={t.id}>
+                    {t.gradeLabel} — {t.title}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
+          {mergeTopicTarget && mergingTopic && (
+            <p className="text-sm text-destructive">
+              Přesune {mergingTopic.lessons.length}{" "}
+              {mergingTopic.lessons.length === 1 ? "lekci" : "lekcí"} do tématu „{mergeTopicTarget.title}" a téma
+              „{mergingTopic.title}" smaže.
+            </p>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setMergingTopic(null)} disabled={mergingTopicBusy}>
+              Zrušit
+            </Button>
+            <Button onClick={confirmMergeTopics} disabled={!mergeTopicTargetId || mergingTopicBusy}>
+              {mergingTopicBusy ? "Slučuji…" : "Sloučit témata"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Merge lessons */}
+      <Dialog open={!!mergingLesson} onOpenChange={(open) => { if (!open) setMergingLesson(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Sloučit s jinou lekcí</DialogTitle>
+            <DialogDescription>
+              Obsah vybrané lekce se připojí za obsah lekce „{mergingLesson?.title}". Vybraná lekce se poté smaže.
+            </DialogDescription>
+          </DialogHeader>
+          <Select value={mergeLessonSourceId} onValueChange={setMergeLessonSourceId}>
+            <SelectTrigger>
+              <SelectValue placeholder="Vyberte lekci k připojení" />
+            </SelectTrigger>
+            <SelectContent>
+              {mergeLessonOptions.map((o) => (
+                <SelectItem key={o.id} value={o.id}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-sm text-destructive">
+            Pozor: tuto akci nelze vrátit zpět. Sloučené lekce už nejde rozdělit.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setMergingLesson(null)} disabled={mergingLessonBusy}>
+              Zrušit
+            </Button>
+            <Button variant="destructive" onClick={confirmMergeLessons} disabled={!mergeLessonSourceId || mergingLessonBusy}>
+              {mergingLessonBusy ? "Slučuji…" : "Sloučit lekce"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 
