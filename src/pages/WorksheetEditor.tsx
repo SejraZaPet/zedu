@@ -1321,10 +1321,39 @@ export default function WorksheetEditor() {
   }
 
   /** Apply AI-generated suggestion to an existing item (preserves points/difficulty/timing). */
+  /**
+   * Odvodí typ úlohy z obsahu AI návrhu. Když je blok typu, který data návrhu
+   * neumí uložit (např. „Řádky pro zápis“), přepne se na odpovídající typ,
+   * jinak by se do listu propsal jen text zadání.
+   */
+  function inferTypeFromSuggestion(
+    current: ItemType,
+    g: AiGeneratedItem,
+  ): ItemType {
+    const canHold: Partial<Record<ItemType, boolean>> = {
+      mcq: !!g.choices?.length,
+      fill_blank: !!g.blankText,
+      matching: !!g.matchPairs?.length,
+      ordering: !!g.orderItems?.length,
+      true_false: g.correctBoolean !== undefined,
+      short_answer: !!g.shortAnswer,
+    };
+    if (canHold[current]) return current;
+    if (g.matchPairs?.length) return "matching";
+    if (g.orderItems?.length) return "ordering";
+    if (g.choices?.length) return "mcq";
+    if (g.blankText) return "fill_blank";
+    if (g.correctBoolean !== undefined) return "true_false";
+    if (g.shortAnswer) return "short_answer";
+    return current;
+  }
+
   function applyAiSuggestionToItem(itemId: string, g: AiGeneratedItem) {
     const it = items.find((x) => x.id === itemId);
     if (!it) return;
+    const type = inferTypeFromSuggestion(it.type as ItemType, g);
     const patch: Partial<WorksheetItem> = { prompt: g.prompt };
+    if (type !== it.type) patch.type = type;
     if (g.choices) patch.choices = g.choices;
     if (g.matchPairs) patch.matchPairs = g.matchPairs;
     if (g.orderItems) patch.orderItems = g.orderItems;
@@ -1333,20 +1362,24 @@ export default function WorksheetEditor() {
 
     // Answer key update
     let correct: string | string[] | undefined;
-    if (it.type === "mcq") correct = g.correctChoice ?? g.choices?.[0];
-    else if (it.type === "true_false")
+    if (type === "mcq") correct = g.correctChoice ?? g.choices?.[0];
+    else if (type === "true_false")
       correct = g.correctBoolean === undefined ? undefined : g.correctBoolean ? "true" : "false";
-    else if (it.type === "fill_blank") correct = g.blankAnswers;
-    else if (it.type === "matching")
+    else if (type === "fill_blank") correct = g.blankAnswers;
+    else if (type === "matching")
       correct = (g.matchPairs ?? []).map((p) => `${p.left}=${p.right}`);
-    else if (it.type === "ordering") correct = g.orderItems;
-    else if (it.type === "short_answer") correct = g.shortAnswer;
+    else if (type === "ordering") correct = g.orderItems;
+    else if (type === "short_answer") correct = g.shortAnswer;
     if (correct !== undefined) updateAnswerKey(itemId, { correctAnswer: correct });
     if (g.rubric) updateAnswerKey(itemId, { rubric: g.rubric });
-    toast({ title: "AI návrh aplikován" });
+    toast({
+      title: "AI návrh aplikován",
+      description:
+        type !== it.type
+          ? `Typ úlohy změněn na „${ITEM_TYPE_LABELS[type]?.label ?? type}“, aby se obsah vešel.`
+          : undefined,
+    });
   }
-
-
 
   // ── AI: load suggestions for a lesson block ──
   async function openSuggestionsForBlock(block: LessonBlock) {
