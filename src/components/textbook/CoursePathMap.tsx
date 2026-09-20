@@ -17,6 +17,8 @@ interface Props {
   showProgress?: boolean;
   title?: string;
   description?: string;
+  /** Omezená výška seznamu lekcí v px – mapa se scroluje uvnitř karty. */
+  maxListHeight?: number;
 }
 
 /**
@@ -29,6 +31,7 @@ const CoursePathMap = ({
   showProgress = false,
   title = "Průchod kurzem",
   description,
+  maxListHeight,
 }: Props) => {
   const { completedCount, nextIndex } = useMemo(() => {
     const done = items.filter((i) => i.completed).length;
@@ -67,6 +70,10 @@ const CoursePathMap = ({
         <p className="text-sm text-muted-foreground mb-4">{description}</p>
       )}
 
+      <div
+        className={maxListHeight ? "overflow-y-auto pr-1" : undefined}
+        style={maxListHeight ? { maxHeight: maxListHeight } : undefined}
+      >
       <ol className="flex flex-wrap items-stretch gap-y-4">
         {items.map((item, idx) => {
           const isNext = showProgress && idx === nextIndex;
@@ -146,6 +153,7 @@ const CoursePathMap = ({
           </div>
         </li>
       </ol>
+      </div>
     </section>
   );
 };

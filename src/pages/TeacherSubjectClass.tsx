@@ -852,7 +852,10 @@ export default function TeacherSubjectClass() {
 
   function openTextbook() {
     if (linkedTextbookId) {
-      navigate(`/ucitel/ucebnice/${linkedTextbookId}?return_to=${encodeURIComponent(location.pathname)}`);
+      const params = new URLSearchParams();
+      params.set("return_to", location.pathname);
+      if (klass?.year != null) params.set("rocnik", String(klass.year));
+      navigate(`/ucitel/ucebnice/${linkedTextbookId}?${params.toString()}`);
     } else {
       openLinkDialog();
     }
