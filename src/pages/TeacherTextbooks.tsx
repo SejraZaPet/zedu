@@ -603,6 +603,102 @@ const TeacherTextbooks = () => {
     g.topics.map(t => ({ ...t, gradeLabel: g.label }))
   );
 
+  /**
+   * Přesun jedné lekce do jiného tématu (funguje pro importované i učitelské lekce).
+   * Vrací chybovou zprávu, nebo null při úspěchu.
+   */
+  const moveLessonToTopic = async (
+    lesson: any,
+    targetTopicId: string,
+    targetGrade: number | undefined,
+    sortOrder: number,
+  ): Promise<string | null> => {
+    if (lesson.source === "textbook_lessons") {
+      const { error } = await supabase
+        .from("textbook_lessons")
+        .update({ topic_id: targetTopicId, sort_order: sortOrder })
+        .eq("id", lesson.id);
+      return error ? error.message : null;
+    }
+    const { error } = await supabase
+      .from("lesson_placements")
+      .update({ topic_id: targetTopicId, grade_number: targetGrade ?? 1 })
+      .eq("lesson_id", lesson.id)
+      .eq("subject_slug", selectedTextbook?.subject ?? "")
+      .eq("topic_id", lesson.topic_id ?? "");
+    if (error) return error.message;
+    await supabase.from("teacher_textbook_lessons").update({ sort_order: sortOrder }).eq("id", lesson.id);
+    return null;
+  };
+
+  /** Sloučení témat: přesune všechny lekce a zdrojové téma smaže. */
+  const handleMergeTopics = async (sourceTopic: any, targetTopicId: string) => {
+    const targetTopic = allTopics.find((t) => t.id === targetTopicId);
+    if (!targetTopic || sourceTopic.id === targetTopicId) return;
+
+    let order = targetTopic.lessons.length;
+    for (const lesson of sourceTopic.lessons) {
+      const err = await moveLessonToTopic(lesson, targetTopicId, targetTopic.grade, order);
+      if (err) {
+        toast({ title: "Sloučení se nepovedlo", description: err, variant: "destructive" });
+        refreshDetail();
+        return;
+      }
+      order += 1;
+    }
+
+    const { error: delError } = await supabase.from("textbook_topics").delete().eq("id", sourceTopic.id);
+    if (delError) {
+      toast({
+        title: "Lekce přesunuty, téma se nepodařilo smazat",
+        description: delError.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Témata sloučena",
+        description: `${sourceTopic.lessons.length} lekcí přesunuto do „${targetTopic.title}".`,
+      });
+    }
+    refreshDetail();
+  };
+
+  /** Sloučení lekcí: bloky zdrojové lekce se připojí za cílovou, zdrojová se smaže. */
+  const handleMergeLessons = async (targetLesson: any, sourceLessonId: string) => {
+    const allLessons = gradeGroups.flatMap((g) => g.topics.flatMap((t) => t.lessons));
+    const sourceLesson = allLessons.find((l) => l.id === sourceLessonId);
+    if (!sourceLesson || sourceLesson.id === targetLesson.id) return;
+
+    const mergedBlocks = [
+      ...((targetLesson.blocks as any[]) ?? []),
+      ...((sourceLesson.blocks as any[]) ?? []),
+    ];
+
+    const { error: updError } = await supabase
+      .from(targetLesson.source as any)
+      .update({ blocks: mergedBlocks as any })
+      .eq("id", targetLesson.id);
+    if (updError) {
+      toast({ title: "Sloučení se nepovedlo", description: updError.message, variant: "destructive" });
+      return;
+    }
+
+    const { error: delError } = await supabase
+      .from(sourceLesson.source as any)
+      .delete()
+      .eq("id", sourceLesson.id);
+    if (delError) {
+      toast({
+        title: "Obsah spojen, původní lekci nelze smazat",
+        description: delError.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({ title: "Lekce sloučeny", description: `„${sourceLesson.title}" je nyní součástí „${targetLesson.title}".` });
+    }
+    refreshDetail();
+  };
+
   // === DETAIL VIEW ===
   if (selectedTextbook) {
     const matchedSubject = subjects?.find(s => s.slug === selectedTextbook.subject);
