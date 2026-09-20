@@ -905,35 +905,21 @@ const TeacherTextbooks = () => {
                 onMoveLesson={async (lesson, targetTopicId) => {
                   const targetTopic = allTopics.find((t) => t.id === targetTopicId);
                   if (!targetTopic) return;
-                  const nextOrder = targetTopic.lessons.length;
-                  if (lesson.source === "textbook_lessons") {
-                    const { error } = await supabase
-                      .from("textbook_lessons")
-                      .update({ topic_id: targetTopicId, sort_order: nextOrder })
-                      .eq("id", lesson.id);
-                    if (error) {
-                      toast({ title: "Přesun se nepovedl", description: error.message, variant: "destructive" });
-                      return;
-                    }
-                  } else {
-                    const { error } = await supabase
-                      .from("lesson_placements")
-                      .update({ topic_id: targetTopicId, grade_number: targetTopic.grade ?? 1 })
-                      .eq("lesson_id", lesson.id)
-                      .eq("subject_slug", selectedTextbook?.subject ?? "")
-                      .eq("topic_id", lesson.topic_id ?? "");
-                    if (error) {
-                      toast({ title: "Přesun se nepovedl", description: error.message, variant: "destructive" });
-                      return;
-                    }
-                    await supabase
-                      .from("teacher_textbook_lessons")
-                      .update({ sort_order: nextOrder })
-                      .eq("id", lesson.id);
+                  const err = await moveLessonToTopic(
+                    lesson,
+                    targetTopicId,
+                    targetTopic.grade,
+                    targetTopic.lessons.length,
+                  );
+                  if (err) {
+                    toast({ title: "Přesun se nepovedl", description: err, variant: "destructive" });
+                    return;
                   }
                   toast({ title: "Lekce přesunuta", description: `${targetTopic.gradeLabel} — ${targetTopic.title}` });
                   refreshDetail();
                 }}
+                onMergeTopics={handleMergeTopics}
+                onMergeLessons={handleMergeLessons}
                 onReorderTopics={async (grade, ordered) => {
 
                   // Optimistic update
