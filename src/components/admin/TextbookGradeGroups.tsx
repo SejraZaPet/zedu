@@ -245,6 +245,7 @@ const TopicLessonsList = ({
               onOpenPresentation={onOpenPresentation}
               onOpenWorksheet={onOpenWorksheet}
               onRequestMove={onRequestMove}
+              onRequestMerge={onRequestMergeLesson}
             />
 
           ))}
