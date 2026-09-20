@@ -11,6 +11,7 @@ import SiteFooter from "@/components/SiteFooter";
 
 const SubjectPage = () => {
   const { subjectId } = useParams<{ subjectId: string }>();
+  const navigate = useNavigate();
   const { data: subjects = [], isLoading: subjectsLoading } = useSubjects(true);
   const subject = getSubjectBySlug(subjects, subjectId ?? "");
   const grades = subject ? getGradeNumbers(subject) : [];
