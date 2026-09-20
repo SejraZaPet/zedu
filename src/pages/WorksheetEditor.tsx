@@ -151,6 +151,7 @@ import TableFieldsEditor from "@/components/worksheet/TableFieldsEditor";
 import {
   buildItemsFromLessonActivity,
   mapLessonActivityToItemType,
+  type MappedWorksheetItem,
 } from "@/lib/lesson-activity-to-worksheet";
 import { resolveLinkedLesson } from "@/lib/linked-lesson";
 import { useSubjects } from "@/hooks/useSubjects";
