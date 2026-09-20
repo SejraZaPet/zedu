@@ -17,6 +17,8 @@ import { ArrowLeft, BookOpen, GraduationCap, FolderOpen, CheckCircle2, Circle } 
 import { toast } from "@/hooks/use-toast";
 import CoursePathMap, { type CoursePathItem } from "@/components/textbook/CoursePathMap";
 import TextbookSearch from "@/components/textbook/TextbookSearch";
+import LessonHighlightLayer from "@/components/lesson/LessonHighlightLayer";
+import { HIGHLIGHTABLE_BLOCK_TYPES } from "@/lib/highlightable-blocks";
 import { isPlacementVisibleToStudent } from "@/lib/lesson-placement-visibility";
 import { useActivityTracking } from "@/hooks/useActivityTracking";
 
@@ -402,10 +404,18 @@ const StudentTextbookDetail = () => {
             <ArrowLeft className="w-4 h-4" /> Zpět na učebnici
           </Button>
           <h1 className="font-heading text-2xl font-bold mb-6">{selectedLesson.title}</h1>
+          <LessonHighlightLayer
+            lessonId={selectedLesson.id}
+            lessonSource="teacher_textbook_lessons"
+            contentKey={`${selectedLesson.id}:${visibleBlocks.length}`}
+          >
           <div className="space-y-6">
             {visibleBlocks.map((block: any, idx: number) => (
-              <LessonBlockRenderer
+              <div
                 key={block?.id ?? idx}
+                {...(HIGHLIGHTABLE_BLOCK_TYPES.has(block?.type) ? { "data-highlight-block": block?.id } : {})}
+              >
+              <LessonBlockRenderer
                 block={block}
                 blockIndex={idx}
                 isCompleted={completedActivityIndices.has(idx)}
@@ -415,8 +425,10 @@ const StudentTextbookDetail = () => {
                   trackActivity(activityIndex, activityType, score, maxScore);
                 }}
               />
+              </div>
             ))}
           </div>
+          </LessonHighlightLayer>
           {(!selectedLesson.blocks || selectedLesson.blocks.length === 0) && (
             <p className="text-muted-foreground text-center py-8">Tato lekce zatím nemá žádný obsah.</p>
           )}

@@ -15,6 +15,8 @@ import { Button } from "@/components/ui/button";
 import LessonEditorSheet from "@/components/LessonEditorSheet";
 import BezlaiTutorChat from "@/components/BezlaiTutorChat";
 import { useActivityTracking } from "@/hooks/useActivityTracking";
+import LessonHighlightLayer from "@/components/lesson/LessonHighlightLayer";
+import { HIGHLIGHTABLE_BLOCK_TYPES } from "@/lib/highlightable-blocks";
 
 // Extract plain readable text from lesson blocks for TTS.
 const stripHtmlToText = (html: string): string => {
@@ -262,11 +264,22 @@ const LessonPage = () => {
               </div>
 
 
-              <div className="space-y-6">
-                {visibleBlocks.map((block, index) => (
-                  <LessonBlock key={block.id} block={block} blockIndex={index} onActivityComplete={handleActivityComplete} isTeacher={isTeacherOrAdmin} isCompleted={completedActivityIndices.has(index)} />
-                ))}
-              </div>
+              <LessonHighlightLayer
+                lessonId={lesson.id}
+                lessonSource="textbook_lessons"
+                contentKey={`${lesson.id}:${visibleBlocks.length}`}
+              >
+                <div className="space-y-6">
+                  {visibleBlocks.map((block, index) => (
+                    <div
+                      key={block.id}
+                      {...(HIGHLIGHTABLE_BLOCK_TYPES.has(block.type) ? { "data-highlight-block": block.id } : {})}
+                    >
+                      <LessonBlock block={block} blockIndex={index} onActivityComplete={handleActivityComplete} isTeacher={isTeacherOrAdmin} isCompleted={completedActivityIndices.has(index)} />
+                    </div>
+                  ))}
+                </div>
+              </LessonHighlightLayer>
 
               {!isTeacherOrAdmin && blocks.length > 0 && (
                 <div className="mt-10 pt-8 border-t border-border flex flex-col items-center gap-2">
