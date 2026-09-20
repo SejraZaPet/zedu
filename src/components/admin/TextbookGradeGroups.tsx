@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FolderOpen, ChevronRight, Pencil, Trash2, Plus, FileText, Play, Monitor, GripVertical, FolderInput } from "lucide-react";
+import { FolderOpen, ChevronRight, Pencil, Trash2, Plus, FileText, Play, Monitor, GripVertical, FolderInput, Merge } from "lucide-react";
 import LessonPreviewDialog from "@/components/admin/LessonPreviewDialog";
 import {
   Dialog,
@@ -71,6 +71,8 @@ interface Props {
   onReorderLessons?: (topicId: string, orderedLessons: LessonItem[]) => void;
   onReorderTopics?: (grade: number, orderedTopics: TopicItem[]) => void;
   onMoveLesson?: (lesson: LessonItem, targetTopicId: string) => void | Promise<void>;
+  onMergeTopics?: (sourceTopic: TopicItem, targetTopicId: string) => void | Promise<void>;
+  onMergeLessons?: (targetLesson: LessonItem, sourceLessonId: string) => void | Promise<void>;
 }
 
 const SortableLessonRow = ({
@@ -80,6 +82,7 @@ const SortableLessonRow = ({
   onOpenPresentation,
   onOpenWorksheet,
   onRequestMove,
+  onRequestMerge,
 }: {
   lesson: LessonItem;
   onEditLesson: (l: LessonItem) => void;
@@ -87,6 +90,7 @@ const SortableLessonRow = ({
   onOpenPresentation: (l: LessonItem) => void;
   onOpenWorksheet: (l: LessonItem) => void;
   onRequestMove?: (l: LessonItem) => void;
+  onRequestMerge?: (l: LessonItem) => void;
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: lesson.id });
   const style = {
@@ -139,6 +143,11 @@ const SortableLessonRow = ({
             <FolderInput className="w-4 h-4" />
           </Button>
         )}
+        {onRequestMerge && (
+          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => onRequestMerge(lesson)} title="Sloučit s jinou lekcí…">
+            <Merge className="w-4 h-4" />
+          </Button>
+        )}
         <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => onDeleteLesson(lesson)} title="Smazat">
 
           <Trash2 className="w-4 h-4 text-destructive" />
@@ -175,6 +184,11 @@ const SortableLessonRow = ({
             <FolderInput className="w-3.5 h-3.5" />
           </Button>
         )}
+        {onRequestMerge && (
+          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onRequestMerge(lesson)} title="Sloučit s jinou lekcí…">
+            <Merge className="w-3.5 h-3.5" />
+          </Button>
+        )}
         <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onDeleteLesson(lesson)} title="Smazat">
 
           <Trash2 className="w-3.5 h-3.5 text-destructive" />
@@ -192,6 +206,7 @@ const TopicLessonsList = ({
   onOpenWorksheet,
   onReorderLessons,
   onRequestMove,
+  onRequestMergeLesson,
 }: {
   topic: TopicItem;
   onEditLesson: (l: LessonItem) => void;
@@ -200,6 +215,7 @@ const TopicLessonsList = ({
   onOpenWorksheet: (l: LessonItem) => void;
   onReorderLessons?: (topicId: string, orderedLessons: LessonItem[]) => void;
   onRequestMove?: (l: LessonItem) => void;
+  onRequestMergeLesson?: (l: LessonItem) => void;
 }) => {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -229,6 +245,7 @@ const TopicLessonsList = ({
               onOpenPresentation={onOpenPresentation}
               onOpenWorksheet={onOpenWorksheet}
               onRequestMove={onRequestMove}
+              onRequestMerge={onRequestMergeLesson}
             />
 
           ))}
@@ -249,6 +266,8 @@ const SortableTopic = ({
   onOpenWorksheet,
   onReorderLessons,
   onRequestMove,
+  onRequestMergeLesson,
+  onRequestMergeTopic,
 }: {
   topic: TopicItem;
   onEditLesson: (l: LessonItem) => void;
@@ -260,6 +279,8 @@ const SortableTopic = ({
   onOpenWorksheet: (l: LessonItem) => void;
   onReorderLessons?: (topicId: string, orderedLessons: LessonItem[]) => void;
   onRequestMove?: (l: LessonItem) => void;
+  onRequestMergeLesson?: (l: LessonItem) => void;
+  onRequestMergeTopic?: (t: TopicItem) => void;
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: topic.id });
   const style = {
@@ -286,6 +307,11 @@ const SortableTopic = ({
         <Badge variant="secondary" className="text-[10px]">
           {topic.lessons.length} {topic.lessons.length === 1 ? "lekce" : "lekcí"}
         </Badge>
+        {onRequestMergeTopic && (
+          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onRequestMergeTopic(topic)} title="Sloučit s jiným tématem…">
+            <Merge className="w-3.5 h-3.5" />
+          </Button>
+        )}
         <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onEditTopic({ id: topic.id, title: topic.title, grade: topic.grade ?? 0 })}>
           <Pencil className="w-3.5 h-3.5" />
         </Button>
@@ -304,6 +330,7 @@ const SortableTopic = ({
           onOpenWorksheet={onOpenWorksheet}
           onReorderLessons={onReorderLessons}
           onRequestMove={onRequestMove}
+          onRequestMergeLesson={onRequestMergeLesson}
         />
 
       )}
@@ -335,6 +362,8 @@ const TextbookGradeGroups = ({
   onReorderLessons,
   onReorderTopics,
   onMoveLesson,
+  onMergeTopics,
+  onMergeLessons,
 }: Props) => {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -368,6 +397,74 @@ const TextbookGradeGroups = ({
       setMovingLesson(null);
     } finally {
       setMoving(false);
+    }
+  };
+
+  // --- Merge topics ---
+  const [mergingTopic, setMergingTopic] = useState<TopicItem | null>(null);
+  const [mergeTopicTargetId, setMergeTopicTargetId] = useState<string>("");
+  const [mergingTopicBusy, setMergingTopicBusy] = useState(false);
+
+  const handleRequestMergeTopic = onMergeTopics
+    ? (topic: TopicItem) => {
+        setMergingTopic(topic);
+        setMergeTopicTargetId("");
+      }
+    : undefined;
+
+  const mergeTopicTarget = flatTopics.find((t) => t.id === mergeTopicTargetId);
+
+  const confirmMergeTopics = async () => {
+    if (!mergingTopic || !mergeTopicTargetId || !onMergeTopics) return;
+    setMergingTopicBusy(true);
+    try {
+      await onMergeTopics(mergingTopic, mergeTopicTargetId);
+      setMergingTopic(null);
+    } finally {
+      setMergingTopicBusy(false);
+    }
+  };
+
+  // --- Merge lessons ---
+  const [mergingLesson, setMergingLesson] = useState<LessonItem | null>(null);
+  const [mergeLessonSourceId, setMergeLessonSourceId] = useState<string>("");
+  const [mergingLessonBusy, setMergingLessonBusy] = useState(false);
+
+  const handleRequestMergeLesson = onMergeLessons
+    ? (lesson: LessonItem) => {
+        setMergingLesson(lesson);
+        setMergeLessonSourceId("");
+      }
+    : undefined;
+
+  const mergeLessonTopicId = mergingLesson
+    ? gradeGroups.flatMap((g) => g.topics).find((t) => t.lessons.some((l) => l.id === mergingLesson.id))?.id
+    : undefined;
+
+  const mergeLessonOptions = mergingLesson
+    ? gradeGroups
+        .flatMap((g) => g.topics.map((t) => ({ topic: t, gradeLabel: g.label })))
+        .flatMap(({ topic, gradeLabel }) =>
+          topic.lessons
+            .filter((l) => l.id !== mergingLesson.id)
+            .map((l) => ({
+              id: l.id,
+              title: l.title,
+              sameTopic: topic.id === mergeLessonTopicId,
+              label: topic.id === mergeLessonTopicId ? l.title : `${gradeLabel} — ${topic.title}: ${l.title}`,
+            })),
+        )
+        .sort((a, b) => Number(b.sameTopic) - Number(a.sameTopic))
+    : [];
+
+  const confirmMergeLessons = async () => {
+    if (!mergingLesson || !mergeLessonSourceId || !onMergeLessons) return;
+    setMergingLessonBusy(true);
+    try {
+      await onMergeLessons(mergingLesson, mergeLessonSourceId);
+      setMergingLesson(null);
+    } finally {
+      setMergingLessonBusy(false);
     }
   };
 
@@ -409,6 +506,8 @@ const TextbookGradeGroups = ({
                         onOpenWorksheet={onOpenWorksheet}
                         onReorderLessons={onReorderLessons}
                         onRequestMove={handleRequestMove}
+                        onRequestMergeLesson={handleRequestMergeLesson}
+                        onRequestMergeTopic={handleRequestMergeTopic}
                       />
                     ))}
                   </SortableContext>
@@ -447,6 +546,82 @@ const TextbookGradeGroups = ({
             </Button>
             <Button onClick={confirmMove} disabled={!targetTopicId || moving}>
               {moving ? "Přesouvám…" : "Přesunout"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Merge topics */}
+      <Dialog open={!!mergingTopic} onOpenChange={(open) => { if (!open) setMergingTopic(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Sloučit s jiným tématem</DialogTitle>
+            <DialogDescription>
+              Vyberte téma, do kterého se přesunou všechny lekce z tématu „{mergingTopic?.title}".
+            </DialogDescription>
+          </DialogHeader>
+          <Select value={mergeTopicTargetId} onValueChange={setMergeTopicTargetId}>
+            <SelectTrigger>
+              <SelectValue placeholder="Vyberte cílové téma" />
+            </SelectTrigger>
+            <SelectContent>
+              {flatTopics
+                .filter((t) => t.id !== mergingTopic?.id)
+                .map((t) => (
+                  <SelectItem key={t.id} value={t.id}>
+                    {t.gradeLabel} — {t.title}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
+          {mergeTopicTarget && mergingTopic && (
+            <p className="text-sm text-destructive">
+              Přesune {mergingTopic.lessons.length}{" "}
+              {mergingTopic.lessons.length === 1 ? "lekci" : "lekcí"} do tématu „{mergeTopicTarget.title}" a téma
+              „{mergingTopic.title}" smaže.
+            </p>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setMergingTopic(null)} disabled={mergingTopicBusy}>
+              Zrušit
+            </Button>
+            <Button onClick={confirmMergeTopics} disabled={!mergeTopicTargetId || mergingTopicBusy}>
+              {mergingTopicBusy ? "Slučuji…" : "Sloučit témata"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Merge lessons */}
+      <Dialog open={!!mergingLesson} onOpenChange={(open) => { if (!open) setMergingLesson(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Sloučit s jinou lekcí</DialogTitle>
+            <DialogDescription>
+              Obsah vybrané lekce se připojí za obsah lekce „{mergingLesson?.title}". Vybraná lekce se poté smaže.
+            </DialogDescription>
+          </DialogHeader>
+          <Select value={mergeLessonSourceId} onValueChange={setMergeLessonSourceId}>
+            <SelectTrigger>
+              <SelectValue placeholder="Vyberte lekci k připojení" />
+            </SelectTrigger>
+            <SelectContent>
+              {mergeLessonOptions.map((o) => (
+                <SelectItem key={o.id} value={o.id}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-sm text-destructive">
+            Pozor: tuto akci nelze vrátit zpět. Sloučené lekce už nejde rozdělit.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setMergingLesson(null)} disabled={mergingLessonBusy}>
+              Zrušit
+            </Button>
+            <Button variant="destructive" onClick={confirmMergeLessons} disabled={!mergeLessonSourceId || mergingLessonBusy}>
+              {mergingLessonBusy ? "Slučuji…" : "Sloučit lekce"}
             </Button>
           </DialogFooter>
         </DialogContent>
