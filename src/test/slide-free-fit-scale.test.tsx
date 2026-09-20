@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { render } from "@testing-library/react";
 import SlideCanvas from "@/components/admin/SlideCanvas";
-import FreeFrameCanvas from "@/components/blocks/FreeFrameCanvas";
+import FreeFrameCanvas, { layoutReadOnlyFrames } from "@/components/blocks/FreeFrameCanvas";
 
 const slide = {
   slideId: "s1",
@@ -32,6 +32,34 @@ describe("volné rozmístění v prezentaci", () => {
 });
 
 describe("volné rozmístění v náhledu lekce", () => {
+  it("zvětší kartu podle obsahu a posune celou následující řadu", () => {
+    const items = [
+      { id: "heading-left", frame: { x: 4, y: 5, w: 44, h: 10 } },
+      { id: "heading-right", frame: { x: 52, y: 5, w: 44, h: 10 } },
+      { id: "text-left", frame: { x: 4, y: 20, w: 44, h: 20 } },
+      { id: "text-right", frame: { x: 52, y: 20, w: 44, h: 20 } },
+      { id: "next-left", frame: { x: 4, y: 45, w: 44, h: 20 } },
+      { id: "next-right", frame: { x: 52, y: 45, w: 44, h: 20 } },
+    ];
+
+    const layout = layoutReadOnlyFrames(items, { "text-left": 35 });
+    expect(layout.frames["text-left"].h).toBe(35);
+    expect(layout.frames["text-right"].y).toBe(20);
+    expect(layout.frames["next-left"].y).toBe(60);
+    expect(layout.frames["next-right"].y).toBe(60);
+    expect(layout.extent).toBe(100);
+  });
+
+  it("zachová uložené rozměry, když se obsah do karet vejde", () => {
+    const items = [
+      { id: "a", frame: { x: 4, y: 5, w: 44, h: 20 } },
+      { id: "b", frame: { x: 4, y: 30, w: 44, h: 20 } },
+    ];
+    const layout = layoutReadOnlyFrames(items, { a: 12, b: 18 });
+    expect(layout.frames.a).toEqual(items[0].frame);
+    expect(layout.frames.b).toEqual(items[1].frame);
+  });
+
   it("obsah přesahující plochu zachová plnou šířku a prodlouží výšku plátna", () => {
     const { container } = render(
       <FreeFrameCanvas

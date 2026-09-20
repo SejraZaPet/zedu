@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useLayoutEffect, useRef, useState } from "react";
 import {
   applyFrameDrag,
   snapFrame,
@@ -12,6 +12,76 @@ export interface FreeFrameItem {
   id: string;
   frame: BlockFrame;
   node: React.ReactNode;
+}
+
+interface ReadOnlyFrameLayout {
+  frames: Record<string, BlockFrame>;
+  extent: number;
+}
+
+const SAME_ROW_TOLERANCE = 2;
+
+/**
+ * Zvětší karty podle změřeného obsahu a posune následující vizuální řady.
+ * Původní mezery i vodorovné souřadnice zůstávají zachované.
+ */
+export function layoutReadOnlyFrames(
+  items: Pick<FreeFrameItem, "id" | "frame">[],
+  requiredHeights: Record<string, number> = {},
+): ReadOnlyFrameLayout {
+  const sorted = [...items].sort((a, b) => a.frame.y - b.frame.y || a.frame.x - b.frame.x);
+  const rows: typeof sorted[] = [];
+
+  for (const item of sorted) {
+    const row = rows[rows.length - 1];
+    if (row && Math.abs(item.frame.y - row[0].frame.y) <= SAME_ROW_TOLERANCE) {
+      row.push(item);
+    } else {
+      rows.push([item]);
+    }
+  }
+
+  const frames: Record<string, BlockFrame> = {};
+  let nextTop: number | null = null;
+
+  rows.forEach((row, rowIndex) => {
+    const originalTop = Math.min(...row.map((item) => item.frame.y));
+    const originalBottom = Math.max(...row.map((item) => item.frame.y + item.frame.h));
+    const renderedTop = nextTop === null ? originalTop : Math.max(originalTop, nextTop);
+    const shift = renderedTop - originalTop;
+
+    for (const item of row) {
+      frames[item.id] = {
+        ...item.frame,
+        y: item.frame.y + shift,
+        h: Math.max(item.frame.h, requiredHeights[item.id] ?? 0),
+      };
+    }
+
+    const renderedBottom = Math.max(...row.map((item) => frames[item.id].y + frames[item.id].h));
+    const followingRow = rows[rowIndex + 1];
+    if (followingRow) {
+      const followingTop = Math.min(...followingRow.map((item) => item.frame.y));
+      const originalGap = Math.max(0, followingTop - originalBottom);
+      nextTop = renderedBottom + originalGap;
+    }
+  });
+
+  return {
+    frames,
+    extent: Math.max(100, ...Object.values(frames).map((frame) => frame.y + frame.h)),
+  };
+}
+
+function sameLayout(a: ReadOnlyFrameLayout, b: ReadOnlyFrameLayout): boolean {
+  if (Math.abs(a.extent - b.extent) > 0.05) return false;
+  const ids = Object.keys(a.frames);
+  if (ids.length !== Object.keys(b.frames).length) return false;
+  return ids.every((id) => {
+    const left = a.frames[id];
+    const right = b.frames[id];
+    return !!right && (["x", "y", "w", "h"] as const).every((key) => Math.abs(left[key] - right[key]) <= 0.05);
+  });
 }
 
 const HANDLES: { handle: FrameHandle; className: string; cursor: string }[] = [
@@ -51,12 +121,45 @@ const FreeFrameCanvas = ({
   const contentRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [guides, setGuides] = useState<SnapGuides | null>(null);
   const editable = !!onChangeFrame;
-  // Ve čtecím zobrazení zůstává volná plocha vždy přes celou šířku. Pokud byly
-  // karty v editoru posunuté pod základní 16:9 plochu, prodloužíme výšku plátna
-  // až k poslední kartě místo zmenšení celé skupiny.
-  const readOnlyVerticalExtent = editable
-    ? 100
-    : Math.max(100, ...items.map((item) => item.frame.y + item.frame.h));
+  const [readOnlyLayout, setReadOnlyLayout] = useState<ReadOnlyFrameLayout>(() => layoutReadOnlyFrames(items));
+
+  const measureReadOnlyLayout = useCallback(() => {
+    if (editable || !stageRef.current) return;
+    const stageWidth = stageRef.current.getBoundingClientRect().width;
+    if (!stageWidth) return;
+
+    // 100 jednotek výšky odpovídá základnímu plátnu 16:9. Díky tomu zůstává
+    // měření nezávislé na už prodloužené výšce read-only plátna.
+    const baseCanvasHeight = stageWidth * (9 / 16);
+    const requiredHeights: Record<string, number> = {};
+    for (const item of items) {
+      const node = contentRefs.current[item.id];
+      if (!node) continue;
+      requiredHeights[item.id] = (node.scrollHeight / baseCanvasHeight) * 100;
+    }
+
+    const next = layoutReadOnlyFrames(items, requiredHeights);
+    setReadOnlyLayout((current) => (sameLayout(current, next) ? current : next));
+  }, [editable, items]);
+
+  useLayoutEffect(() => {
+    if (editable) return;
+    setReadOnlyLayout(layoutReadOnlyFrames(items));
+    measureReadOnlyLayout();
+
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measureReadOnlyLayout);
+    if (stageRef.current) observer.observe(stageRef.current);
+    for (const item of items) {
+      const node = contentRefs.current[item.id];
+      if (node) observer.observe(node);
+    }
+    return () => observer.disconnect();
+  }, [editable, items, measureReadOnlyLayout]);
+
+  // Ve čtecím zobrazení zůstává volná plocha vždy přes celou šířku a prodlouží
+  // se až k poslední kartě po započtení skutečné výšky zalomeného obsahu.
+  const readOnlyVerticalExtent = editable ? 100 : readOnlyLayout.extent;
 
   /** Dvojklik na spodní pruh: výška karty podle skutečného obsahu. */
   const fitHeight = (item: FreeFrameItem) => {
@@ -130,6 +233,7 @@ const FreeFrameCanvas = ({
       <div className="absolute inset-0" data-free-vertical-extent={readOnlyVerticalExtent}>
         {items.map((item) => {
           const active = selectedId === item.id;
+          const displayFrame = editable ? item.frame : readOnlyLayout.frames[item.id] ?? item.frame;
           return (
             <div
               key={item.id}
@@ -142,10 +246,10 @@ const FreeFrameCanvas = ({
                   : ""
               }`}
               style={{
-                left: `${item.frame.x}%`,
-                top: `${(item.frame.y / readOnlyVerticalExtent) * 100}%`,
-                width: `${item.frame.w}%`,
-                height: `${(item.frame.h / readOnlyVerticalExtent) * 100}%`,
+                left: `${displayFrame.x}%`,
+                top: `${(displayFrame.y / readOnlyVerticalExtent) * 100}%`,
+                width: `${displayFrame.w}%`,
+                height: `${(displayFrame.h / readOnlyVerticalExtent) * 100}%`,
               }}
               onPointerDown={editable ? (e) => startDrag(e, item, "move") : undefined}
             >
@@ -153,7 +257,7 @@ const FreeFrameCanvas = ({
                 ref={(node) => {
                   contentRefs.current[item.id] = node;
                 }}
-                className={`h-full w-full overflow-hidden ${editable ? "p-1.5" : ""}`}
+                className={`${editable ? "h-full overflow-hidden p-1.5" : "overflow-visible"} w-full`}
               >
                 {item.node}
               </div>

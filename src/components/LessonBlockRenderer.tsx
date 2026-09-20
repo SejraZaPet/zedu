@@ -414,7 +414,7 @@ const LessonBlockInner = ({ block, blockIndex, onActivityComplete, isTeacher, is
               id: child.id,
               frame: frames[child.id],
               node: (
-                <div className="h-full w-full overflow-hidden min-w-0">
+                <div className="w-full min-w-0">
                   <LessonBlock
                     block={child}
                     blockIndex={blockIndex}
