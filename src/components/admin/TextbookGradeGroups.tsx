@@ -400,6 +400,74 @@ const TextbookGradeGroups = ({
     }
   };
 
+  // --- Merge topics ---
+  const [mergingTopic, setMergingTopic] = useState<TopicItem | null>(null);
+  const [mergeTopicTargetId, setMergeTopicTargetId] = useState<string>("");
+  const [mergingTopicBusy, setMergingTopicBusy] = useState(false);
+
+  const handleRequestMergeTopic = onMergeTopics
+    ? (topic: TopicItem) => {
+        setMergingTopic(topic);
+        setMergeTopicTargetId("");
+      }
+    : undefined;
+
+  const mergeTopicTarget = flatTopics.find((t) => t.id === mergeTopicTargetId);
+
+  const confirmMergeTopics = async () => {
+    if (!mergingTopic || !mergeTopicTargetId || !onMergeTopics) return;
+    setMergingTopicBusy(true);
+    try {
+      await onMergeTopics(mergingTopic, mergeTopicTargetId);
+      setMergingTopic(null);
+    } finally {
+      setMergingTopicBusy(false);
+    }
+  };
+
+  // --- Merge lessons ---
+  const [mergingLesson, setMergingLesson] = useState<LessonItem | null>(null);
+  const [mergeLessonSourceId, setMergeLessonSourceId] = useState<string>("");
+  const [mergingLessonBusy, setMergingLessonBusy] = useState(false);
+
+  const handleRequestMergeLesson = onMergeLessons
+    ? (lesson: LessonItem) => {
+        setMergingLesson(lesson);
+        setMergeLessonSourceId("");
+      }
+    : undefined;
+
+  const mergeLessonTopicId = mergingLesson
+    ? gradeGroups.flatMap((g) => g.topics).find((t) => t.lessons.some((l) => l.id === mergingLesson.id))?.id
+    : undefined;
+
+  const mergeLessonOptions = mergingLesson
+    ? gradeGroups
+        .flatMap((g) => g.topics.map((t) => ({ topic: t, gradeLabel: g.label })))
+        .flatMap(({ topic, gradeLabel }) =>
+          topic.lessons
+            .filter((l) => l.id !== mergingLesson.id)
+            .map((l) => ({
+              id: l.id,
+              title: l.title,
+              sameTopic: topic.id === mergeLessonTopicId,
+              label: topic.id === mergeLessonTopicId ? l.title : `${gradeLabel} — ${topic.title}: ${l.title}`,
+            })),
+        )
+        .sort((a, b) => Number(b.sameTopic) - Number(a.sameTopic))
+    : [];
+
+  const confirmMergeLessons = async () => {
+    if (!mergingLesson || !mergeLessonSourceId || !onMergeLessons) return;
+    setMergingLessonBusy(true);
+    try {
+      await onMergeLessons(mergingLesson, mergeLessonSourceId);
+      setMergingLesson(null);
+    } finally {
+      setMergingLessonBusy(false);
+    }
+  };
+
   return (
     <div className="space-y-3">
 
