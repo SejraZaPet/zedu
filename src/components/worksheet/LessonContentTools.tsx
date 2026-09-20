@@ -87,6 +87,25 @@ export type AiGeneratedItem = {
   points?: number;
 };
 
+/**
+ * Typy úloh, které mají v lekci přímou obdobu aktivity. Pro ně generujeme
+ * obsah stejnou cestou jako v lekci (generate-activity-content) a výsledek
+ * mapujeme na položky pracovního listu, aby se propsala celá struktura
+ * (páry, skupiny, kartičky…), ne jen text zadání.
+ */
+const ACTIVITY_LIKE: Partial<Record<ItemType, string>> = {
+  matching: "matching",
+  sorting: "sorting",
+  ordering: "ordering",
+  flashcards: "flashcards",
+  crossword: "crossword",
+  fill_blank: "fill_blanks",
+  true_false: "true_false",
+  mcq: "quiz",
+  image_label: "image_label",
+  image_hotspot: "image_hotspot",
+};
+
 export function AiSuggestFromLessonDialog({
   open,
   onOpenChange,
@@ -95,6 +114,7 @@ export function AiSuggestFromLessonDialog({
   lessonTitle,
   lessonSubject,
   onApply,
+  onApplyMapped,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -103,17 +123,23 @@ export function AiSuggestFromLessonDialog({
   lessonTitle?: string;
   lessonSubject?: string;
   onApply: (generated: AiGeneratedItem) => void;
+  /** Aplikace strukturované aktivity (stejný tvar jako aktivita v lekci). */
+  onApplyMapped?: (mapped: MappedWorksheetItem[]) => void;
 }) {
   const [selectedIdx, setSelectedIdx] = useState<number[]>([]);
   const [aiHint, setAiHint] = useState("");
   const [generating, setGenerating] = useState(false);
   const [generatedItem, setGeneratedItem] = useState<AiGeneratedItem | null>(null);
+  const [mapped, setMapped] = useState<MappedWorksheetItem[] | null>(null);
+
+  const activityType = onApplyMapped ? ACTIVITY_LIKE[itemType] : undefined;
 
   useEffect(() => {
     if (open) {
       setSelectedIdx([]);
       setAiHint("");
       setGeneratedItem(null);
+      setMapped(null);
     }
   }, [open]);
 
