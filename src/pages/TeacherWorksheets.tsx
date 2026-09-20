@@ -66,6 +66,8 @@ export default function TeacherWorksheets() {
   const fromLessonId = searchParams.get("from_lesson");
   const fromLessonType = (searchParams.get("from_lesson_type") as "global" | "teacher" | null) || null;
   const returnTo = searchParams.get("return_to");
+  /** ?generate=1 — po otevření editoru rovnou nabídne generování z lekce. */
+  const generateParam = searchParams.get("generate");
   const { user, loading: authLoading } = useAuth();
   const [items, setItems] = useState<WorksheetRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,6 +83,7 @@ export default function TeacherWorksheets() {
     id: string;
     type: "global" | "teacher";
     returnTo: string | null;
+    generate: boolean;
   } | null>(null);
 
   useEffect(() => {
@@ -176,6 +179,7 @@ export default function TeacherWorksheets() {
         params.set("from_lesson", fromLessonId);
         params.set("from_lesson_type", fromLessonType);
         if (returnTo) params.set("return_to", returnTo);
+        if (generateParam === "1") params.set("generate", "1");
         navigate(`/ucitel/pracovni-listy/${id}?${params.toString()}`, { replace: true });
       };
 
@@ -187,7 +191,12 @@ export default function TeacherWorksheets() {
       if (ownWorksheets.length >= 2) {
         setLessonTitle(title);
         setWorksheetsForLesson(ownWorksheets);
-        setPendingLessonCtx({ id: fromLessonId, type: fromLessonType, returnTo });
+        setPendingLessonCtx({
+          id: fromLessonId,
+          type: fromLessonType,
+          returnTo,
+          generate: generateParam === "1",
+        });
         setWorksheetsForLessonOpen(true);
         // strip URL params so re-opens don't re-trigger
         navigate("/ucitel/pracovni-listy", { replace: true });
@@ -215,7 +224,7 @@ export default function TeacherWorksheets() {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authLoading, user, fromLessonId, fromLessonType]);
+  }, [authLoading, user, fromLessonId, fromLessonType, generateParam]);
 
   async function handleCreateNewForLesson() {
     const ctx = pendingLessonCtx;
@@ -246,6 +255,7 @@ export default function TeacherWorksheets() {
     params.set("from_lesson", ctx.id);
     params.set("from_lesson_type", ctx.type);
     if (ctx.returnTo) params.set("return_to", ctx.returnTo);
+    if (ctx.generate) params.set("generate", "1");
     navigate(`/ucitel/pracovni-listy/${(created as any).id}?${params.toString()}`);
   }
 

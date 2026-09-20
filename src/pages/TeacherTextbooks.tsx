@@ -880,13 +880,14 @@ const TeacherTextbooks = () => {
                 onEditTopic={(topic) => setEditingTopic(topic)}
                 onDeleteTopic={handleDeleteTopic}
                 onOpenPresentation={handleOpenPresentation}
-                onOpenWorksheet={async (lesson) => {
+                onOpenWorksheet={async (lesson, generate) => {
                   const lessonType: "global" | "teacher" =
                     lesson.source === "textbook_lessons" ? "global" : "teacher";
                   const params = new URLSearchParams();
                   params.set("from_lesson", lesson.id);
                   params.set("from_lesson_type", lessonType);
                   params.set("return_to", `/ucitel/ucebnice/${selectedTextbook?.id ?? ""}`);
+                  if (generate) params.set("generate", "1");
                   navigate(`/ucitel/pracovni-listy?${params.toString()}`);
                 }}
                 onPreviewLesson={() => {}}
