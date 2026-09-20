@@ -157,7 +157,7 @@ const TeacherTextbooks = () => {
     existingSession, setExistingSession,
     pendingLaunchData, setPendingLaunchData,
     hasSavedPresentation,
-    openEditor, launchLiveSession, launchNew,
+    openEditor, launchLiveSession, launchNew, quickLaunch, showProjector,
   } = usePresentationLauncher();
 
   /**
