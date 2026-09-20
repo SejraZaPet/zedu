@@ -82,6 +82,7 @@ const SortableLessonRow = ({
   onOpenPresentation,
   onOpenWorksheet,
   onRequestMove,
+  onRequestMerge,
 }: {
   lesson: LessonItem;
   onEditLesson: (l: LessonItem) => void;
@@ -89,6 +90,7 @@ const SortableLessonRow = ({
   onOpenPresentation: (l: LessonItem) => void;
   onOpenWorksheet: (l: LessonItem) => void;
   onRequestMove?: (l: LessonItem) => void;
+  onRequestMerge?: (l: LessonItem) => void;
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: lesson.id });
   const style = {
