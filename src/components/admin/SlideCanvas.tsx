@@ -6,6 +6,8 @@ import { MediaPickerDialog } from "@/components/media/MediaPickerDialog";
 import DOMPurify from "dompurify";
 import ShapeRenderer from "@/components/blocks/ShapeRenderer";
 import SlideDrawingLayer, { type DrawingStroke } from "@/components/admin/SlideDrawingLayer";
+import { READABLE_SCALE_FLOOR } from "@/lib/blocks-to-slides";
+
 import { STAGE_W, STAGE_H } from "@/lib/slide-stage";
 import { getPresentationTheme, themeStageStyle } from "@/lib/presentation-themes";
 import { getSlideIcon } from "@/lib/slide-icons";
@@ -1746,8 +1748,8 @@ export function SlideBody({
 
 
 
-  // Obsah slidu se nikdy nescrolluje – když se nevejde do stage, zmenší se
-  // (stejný princip jako živá projekce).
+  // Obsah slidu se nikdy nescrolluje – když se nevejde do stage, zmenší se,
+  // ale jen do hranice čitelnosti (pod ní obsah dělí generátor na další snímky).
   useEffect(() => {
     const area = flowAreaRef.current;
     const content = flowContentRef.current;
@@ -1756,8 +1758,9 @@ export function SlideBody({
       const availH = area.clientHeight;
       const contentH = content.scrollHeight;
       if (!availH || !contentH) return;
-      setFlowScale(contentH > availH + 1 ? Math.max(0.35, availH / contentH) : 1);
+      setFlowScale(contentH > availH + 1 ? Math.max(READABLE_SCALE_FLOOR, availH / contentH) : 1);
     };
+
     update();
     if (typeof ResizeObserver === "undefined") return;
     const ro = new ResizeObserver(update);

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { blocksToSlides } from "@/lib/blocks-to-slides";
@@ -41,7 +41,51 @@ export function usePresentationLauncher() {
     return headline || String(slide?.slideId || `index-${index}`);
   };
 
+  /**
+   * Snímky pro spuštění: vždy vygenerované z aktuálního obsahu lekce,
+   * doplněné ručními úpravami z dřív uložené prezentace (tiché přegenerování).
+   */
+  const buildSlidesForLesson = async (lesson: LessonItem): Promise<any[]> => {
+    const freshSlides = blocksToSlides(lesson.blocks || [], lesson.title);
+    const table = lesson.source === "teacher_textbook_lessons"
+      ? "teacher_textbook_lessons"
+      : "textbook_lessons";
+    const { data } = await supabase
+      .from(table)
+      .select("presentation_slides" as any)
+      .eq("id", lesson.id)
+      .maybeSingle();
+    const savedSlides = (data as any)?.presentation_slides;
+    if (!Array.isArray(savedSlides) || savedSlides.length === 0) return freshSlides;
+
+    const savedByKey = new Map<string, any>();
+    savedSlides.forEach((slide: any, index: number) => savedByKey.set(slideKey(slide, index), slide));
+    return freshSlides.map((freshSlide, index) => {
+      const savedSlide = savedByKey.get(slideKey(freshSlide, index));
+      if (!savedSlide) return freshSlide;
+      return {
+        ...savedSlide,
+        ...freshSlide,
+        projector: {
+          ...savedSlide.projector,
+          ...freshSlide.projector,
+          fontScale: savedSlide.projector?.fontScale ?? freshSlide.projector?.fontScale,
+        },
+        device: savedSlide.device ?? freshSlide.device,
+        teacherNotes: savedSlide.teacherNotes ?? freshSlide.teacherNotes,
+        layout: savedSlide.layout ?? freshSlide.layout,
+        heroImage: savedSlide.heroImage ?? freshSlide.heroImage,
+        activitySpec: savedSlide.activitySpec ?? freshSlide.activitySpec,
+        blocks: freshSlide.blocks,
+        tableData: freshSlide.tableData,
+        cardData: freshSlide.cardData,
+        type: freshSlide.type,
+      };
+    });
+  };
+
   const openEditor = async (lesson: LessonItem) => {
+
     const freshSlides = blocksToSlides(lesson.blocks || [], lesson.title);
     let slides: any[] = freshSlides;
     let saved = false;
@@ -100,7 +144,22 @@ export function usePresentationLauncher() {
     setEditingSlideIndex(0);
   };
 
+  /** Okno projektoru otevřené přímo při kliknutí (kvůli blokování pop-upů). */
+  const projectorWindowRef = useRef<Window | null>(null);
+
+  const showProjector = (sessionId: string) => {
+    const url = `${window.location.origin}/live/projektor/${sessionId}`;
+    const win = projectorWindowRef.current;
+    projectorWindowRef.current = null;
+    if (win && !win.closed) {
+      win.location.href = url;
+      return;
+    }
+    window.open(url, "_blank");
+  };
+
   const launchLiveSession = async (lesson: LessonItem, prebuiltSlides?: any[]) => {
+
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
@@ -113,10 +172,15 @@ export function usePresentationLauncher() {
           .maybeSingle();
         if (existing) {
           const slides = prebuiltSlides || blocksToSlides(lesson.blocks || [], lesson.title);
+          // Jediné rozhodnutí, které necháváme na učiteli.
+          const win = projectorWindowRef.current;
+          if (win && !win.closed) win.close();
+          projectorWindowRef.current = null;
           setExistingSession(existing);
           setPendingLaunchData({ lesson, slides });
           return;
         }
+
       }
       const rawBlocks = lesson.blocks || [];
       const slides = prebuiltSlides || blocksToSlides(rawBlocks, lesson.title);
@@ -141,8 +205,31 @@ export function usePresentationLauncher() {
         .update({ presentation_slides: slides } as any)
         .eq("id", lesson.id);
       toast({ title: "Prezentace spuštěna", description: `Kód: ${gameCode}` });
+      showProjector(data.id);
       navigate(`/live/ucitel/${data.id}`);
     } catch (e: any) {
+      const win = projectorWindowRef.current;
+      if (win && !win.closed) win.close();
+      projectorWindowRef.current = null;
+      toast({ title: "Chyba", description: e?.message || "Nepodařilo se spustit prezentaci", variant: "destructive" });
+    }
+  };
+
+  /**
+   * FÁZE 3 – „Spustit prezentaci“ jedním klikem: snímky se tiše vygenerují
+   * (nebo aktualizují) z obsahu lekce, rovnou vznikne relace a otevře se
+   * projektor. Ptáme se jen na běžící starší relaci.
+   */
+  const quickLaunch = async (lesson: LessonItem) => {
+    // Okno musí vzniknout v přímé reakci na klik, jinak ho prohlížeč zablokuje.
+    projectorWindowRef.current = window.open("", "_blank");
+    try {
+      const slides = await buildSlidesForLesson(lesson);
+      await launchLiveSession(lesson, slides);
+    } catch (e: any) {
+      const win = projectorWindowRef.current;
+      if (win && !win.closed) win.close();
+      projectorWindowRef.current = null;
       toast({ title: "Chyba", description: e?.message || "Nepodařilo se spustit prezentaci", variant: "destructive" });
     }
   };
@@ -165,6 +252,7 @@ export function usePresentationLauncher() {
       current_question_index: -1,
     }).select().single();
     if (!error && newSession?.id) {
+      showProjector(newSession.id);
       navigate(`/live/ucitel/${newSession.id}`);
     }
   };
@@ -176,6 +264,7 @@ export function usePresentationLauncher() {
     existingSession, setExistingSession,
     pendingLaunchData, setPendingLaunchData,
     hasSavedPresentation,
-    openEditor, launchLiveSession, launchNew,
+    openEditor, launchLiveSession, launchNew, quickLaunch, showProjector,
+
   };
 }

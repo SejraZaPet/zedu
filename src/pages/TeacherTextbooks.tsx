@@ -157,7 +157,7 @@ const TeacherTextbooks = () => {
     existingSession, setExistingSession,
     pendingLaunchData, setPendingLaunchData,
     hasSavedPresentation,
-    openEditor, launchLiveSession, launchNew,
+    openEditor, launchLiveSession, launchNew, quickLaunch, showProjector,
   } = usePresentationLauncher();
 
   /**
@@ -167,44 +167,14 @@ const TeacherTextbooks = () => {
   const [linkedPresentationChoice, setLinkedPresentationChoice] =
     useState<{ lesson: any; presentationId: string; presentationTitle: string } | null>(null);
 
+  /**
+   * FÁZE 3 – jeden klik: snímky se tiše vygenerují/aktualizují z obsahu lekce,
+   * vznikne živá relace a otevře se projektor. Ptáme se jen na běžící relaci.
+   */
   const handleOpenPresentation = async (lesson: any) => {
-    console.log("[presentations] open for lesson", {
-      id: lesson?.id, title: lesson?.title, source: lesson?.source,
-    });
-
-    // Funguje pro jakoukoli lekci z učebnice – zdroj lekce nerozhoduje.
-    const table = lesson?.source === "textbook_lessons" ? "textbook_lessons" : "teacher_textbook_lessons";
-    const { data: lessonRow, error: lessonError } = await supabase
-      .from(table as any)
-      .select("presentation_slides")
-      .eq("id", lesson.id)
-      .maybeSingle();
-    console.log("[presentations] presentation_slides lookup", { table, lessonRow, lessonError });
-
-    const savedSlides = (lessonRow as any)?.presentation_slides;
-    const hasSlides = Array.isArray(savedSlides) && savedSlides.length > 0;
-
-    if (!hasSlides) {
-      const { data: linkedRows, error: linkedError } = await supabase
-        .from("teacher_presentations")
-        .select("id, title, updated_at")
-        .eq("lesson_id", lesson.id)
-        .order("updated_at", { ascending: false })
-        .limit(1);
-      console.log("[presentations] teacher_presentations lookup", { linkedRows, linkedError });
-
-      const linked = linkedRows?.[0];
-      if (linked) {
-        setLinkedPresentationChoice({
-          lesson,
-          presentationId: linked.id,
-          presentationTitle: linked.title,
-        });
-        return;
-      }
-    }
-    await openEditor(lesson);
+    await quickLaunch(lesson);
   };
+
 
 
 
@@ -1220,8 +1190,10 @@ const TeacherTextbooks = () => {
             const id = existingSession!.id;
             setExistingSession(null);
             setPendingLaunchData(null);
+            showProjector(id);
             navigate(`/live/ucitel/${id}`);
           }}
+
           onLaunchNew={launchNew}
           onCloseExisting={() => { setExistingSession(null); setPendingLaunchData(null); }}
         />
@@ -1283,7 +1255,41 @@ const TeacherTextbooks = () => {
       </main>
       <SiteFooter />
 
+      {/* Jediné rozhodnutí při rychlém spuštění: běží starší relace. */}
+      <Dialog
+        open={!!existingSession && !presentationLesson}
+        onOpenChange={(o) => { if (!o) { setExistingSession(null); setPendingLaunchData(null); } }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Tato prezentace už běží</DialogTitle>
+            <DialogDescription>
+              Pro lekci „{existingSession?.title}“ je spuštěná starší relace. Chcete v ní pokračovat, nebo začít novou?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => { setExistingSession(null); setPendingLaunchData(null); }}>
+              Zrušit
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                const id = existingSession!.id;
+                setExistingSession(null);
+                setPendingLaunchData(null);
+                showProjector(id);
+                navigate(`/live/ucitel/${id}`);
+              }}
+            >
+              Pokračovat ve staré
+            </Button>
+            <Button onClick={launchNew}>Začít novou</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <PresentationEditorDialog
+
         presentationLesson={presentationLesson ? { ...presentationLesson, textbookId: selectedTextbook?.id } : null}
         pendingSlides={pendingSlides}
         setPendingSlides={setPendingSlides}
@@ -1312,8 +1318,10 @@ const TeacherTextbooks = () => {
           const id = existingSession!.id;
           setExistingSession(null);
           setPendingLaunchData(null);
+          showProjector(id);
           navigate(`/live/ucitel/${id}`);
         }}
+
         onLaunchNew={launchNew}
         onCloseExisting={() => { setExistingSession(null); setPendingLaunchData(null); }}
       />

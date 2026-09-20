@@ -187,10 +187,11 @@ const SortableLessonRow = ({
           variant="outline"
           className="h-7 gap-1.5"
           onClick={() => onOpenPresentation(lesson)}
-          title="Spustit jako prezentaci"
+          title="Spustit prezentaci a otevřít projektor"
         >
           <Play className="w-3.5 h-3.5" />
-          Prezentace
+          Spustit prezentaci
+
         </Button>
         {onRequestMove && (
           <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onRequestMove(lesson)} title="Přesunout do tématu…">
