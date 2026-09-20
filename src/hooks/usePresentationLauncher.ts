@@ -205,8 +205,31 @@ export function usePresentationLauncher() {
         .update({ presentation_slides: slides } as any)
         .eq("id", lesson.id);
       toast({ title: "Prezentace spuštěna", description: `Kód: ${gameCode}` });
+      showProjector(data.id);
       navigate(`/live/ucitel/${data.id}`);
     } catch (e: any) {
+      const win = projectorWindowRef.current;
+      if (win && !win.closed) win.close();
+      projectorWindowRef.current = null;
+      toast({ title: "Chyba", description: e?.message || "Nepodařilo se spustit prezentaci", variant: "destructive" });
+    }
+  };
+
+  /**
+   * FÁZE 3 – „Spustit prezentaci“ jedním klikem: snímky se tiše vygenerují
+   * (nebo aktualizují) z obsahu lekce, rovnou vznikne relace a otevře se
+   * projektor. Ptáme se jen na běžící starší relaci.
+   */
+  const quickLaunch = async (lesson: LessonItem) => {
+    // Okno musí vzniknout v přímé reakci na klik, jinak ho prohlížeč zablokuje.
+    projectorWindowRef.current = window.open("", "_blank");
+    try {
+      const slides = await buildSlidesForLesson(lesson);
+      await launchLiveSession(lesson, slides);
+    } catch (e: any) {
+      const win = projectorWindowRef.current;
+      if (win && !win.closed) win.close();
+      projectorWindowRef.current = null;
       toast({ title: "Chyba", description: e?.message || "Nepodařilo se spustit prezentaci", variant: "destructive" });
     }
   };
@@ -229,6 +252,7 @@ export function usePresentationLauncher() {
       current_question_index: -1,
     }).select().single();
     if (!error && newSession?.id) {
+      showProjector(newSession.id);
       navigate(`/live/ucitel/${newSession.id}`);
     }
   };
@@ -240,6 +264,7 @@ export function usePresentationLauncher() {
     existingSession, setExistingSession,
     pendingLaunchData, setPendingLaunchData,
     hasSavedPresentation,
-    openEditor, launchLiveSession, launchNew,
+    openEditor, launchLiveSession, launchNew, quickLaunch, showProjector,
+
   };
 }
