@@ -408,6 +408,7 @@ const TextbookGradeGroups = ({
                         onOpenPresentation={onOpenPresentation}
                         onOpenWorksheet={onOpenWorksheet}
                         onReorderLessons={onReorderLessons}
+                        onRequestMove={handleRequestMove}
                       />
                     ))}
                   </SortableContext>
@@ -417,8 +418,42 @@ const TextbookGradeGroups = ({
           </div>
         );
       })}
+
+      <Dialog open={!!movingLesson} onOpenChange={(open) => { if (!open) setMovingLesson(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Přesunout do tématu</DialogTitle>
+            <DialogDescription>
+              Lekce „{movingLesson?.title}" se zařadí na konec vybraného tématu.
+            </DialogDescription>
+          </DialogHeader>
+          <Select value={targetTopicId} onValueChange={setTargetTopicId}>
+            <SelectTrigger>
+              <SelectValue placeholder="Vyberte cílové téma" />
+            </SelectTrigger>
+            <SelectContent>
+              {flatTopics
+                .filter((t) => t.id !== currentTopicId)
+                .map((t) => (
+                  <SelectItem key={t.id} value={t.id}>
+                    {t.gradeLabel} — {t.title}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setMovingLesson(null)} disabled={moving}>
+              Zrušit
+            </Button>
+            <Button onClick={confirmMove} disabled={!targetTopicId || moving}>
+              {moving ? "Přesouvám…" : "Přesunout"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
+
 };
 
 export default TextbookGradeGroups;
