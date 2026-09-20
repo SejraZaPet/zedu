@@ -117,7 +117,20 @@ export function AiSuggestFromLessonDialog({
     }
   }, [open]);
 
-  const typeLabel = ITEM_TYPE_LABELS[itemType]?.label ?? itemType;
+  const SOLVABLE: ItemType[] = [
+    "mcq",
+    "fill_blank",
+    "true_false",
+    "matching",
+    "ordering",
+    "short_answer",
+    "open_answer",
+  ];
+  /** Bloky jako „Řádky pro zápis“ neumí uložit úlohu — AI pak typ vybere sama. */
+  const isSolvable = SOLVABLE.includes(itemType);
+  const typeLabel = isSolvable
+    ? ITEM_TYPE_LABELS[itemType]?.label ?? itemType
+    : "AI vybere podle obsahu (typ bloku se podle toho upraví)";
 
   function toggle(i: number) {
     setSelectedIdx((prev) =>
@@ -137,7 +150,9 @@ export function AiSuggestFromLessonDialog({
         .join("\n\n");
 
       const instruction = [
-        `Vygeneruj VÝHRADNĚ jednu úlohu typu "${itemType}" (${typeLabel}).`,
+        isSolvable
+          ? `Vygeneruj VÝHRADNĚ jednu úlohu typu "${itemType}" (${typeLabel}).`
+          : "Vygeneruj jednu řešitelnou úlohu (mcq, fill_blank, true_false, matching nebo ordering) a typ vyber podle obsahu.",
         aiHint ? `Pokyn učitele: ${aiHint}` : "",
         "Vrať 3 varianty, všechny stejného typu.",
       ]
@@ -154,7 +169,7 @@ export function AiSuggestFromLessonDialog({
       });
       if (error) throw error;
       const list = ((data as any)?.suggestions ?? []) as Array<AiGeneratedItem & { type: ItemType }>;
-      const match = list.find((s) => s.type === itemType) ?? list[0];
+      const match = (isSolvable ? list.find((s) => s.type === itemType) : undefined) ?? list[0];
       if (!match) {
         toast({ title: "AI nevrátila návrh", variant: "destructive" });
         return;
