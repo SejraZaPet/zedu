@@ -248,6 +248,7 @@ const SortableTopic = ({
   onOpenPresentation,
   onOpenWorksheet,
   onReorderLessons,
+  onRequestMove,
 }: {
   topic: TopicItem;
   onEditLesson: (l: LessonItem) => void;
@@ -258,6 +259,7 @@ const SortableTopic = ({
   onOpenPresentation: (l: LessonItem) => void;
   onOpenWorksheet: (l: LessonItem) => void;
   onReorderLessons?: (topicId: string, orderedLessons: LessonItem[]) => void;
+  onRequestMove?: (l: LessonItem) => void;
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: topic.id });
   const style = {
