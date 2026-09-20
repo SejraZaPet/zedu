@@ -34,6 +34,7 @@ export type BlockType =
   | "formula"
   | "audio"
   | "video"
+  | "embed"
   | "slide_group";
 
 
@@ -113,6 +114,7 @@ export const BLOCK_TYPES: { type: BlockType; label: string; icon: string }[] = [
   { type: "formula", label: "Vzorec", icon: "∑" },
   { type: "audio", label: "Zvuk", icon: "🔊" },
   { type: "video", label: "Video (soubor)", icon: "🎬" },
+  { type: "embed", label: "Externí nástroj", icon: "🧩" },
   { type: "slide_group", label: "Snímek", icon: "🗂" },
 ];
 
@@ -186,6 +188,8 @@ export const createDefaultBlock = (type: BlockType): Block => {
       return { ...base, props: { url: "", caption: "" } };
     case "video":
       return { ...base, props: { url: "", caption: "", width: "full" } };
+    case "embed":
+      return { ...base, props: { url: "", title: "", aspectRatio: "16:9" } };
     case "hierarchy":
       return {
         ...base,

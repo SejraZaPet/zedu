@@ -24,6 +24,7 @@ import ShapeRenderer from "@/components/blocks/ShapeRenderer";
 import ChartRenderer from "@/components/blocks/ChartRenderer";
 import FormulaRenderer from "@/components/blocks/FormulaRenderer";
 import { blockBackgroundStyle } from "@/lib/block-backgrounds";
+import { embedAspectRatio, isAllowedEmbedUrl } from "@/lib/embed-allowlist";
 import FreeFrameCanvas from "@/components/blocks/FreeFrameCanvas";
 import { getGroupChildFrames, getGroupChildHeight, getGroupMinHeight } from "@/lib/slide-groups";
 import { useState } from "react";
@@ -355,6 +356,36 @@ const LessonBlockInner = ({ block, blockIndex, onActivityComplete, isTeacher, is
         <figure className={vw}>
           <video controls src={p.url} className="w-full rounded-lg" />
           {p.caption && <figcaption className="mt-1 text-center text-sm opacity-70">{p.caption}</figcaption>}
+        </figure>
+      );
+    }
+    case "embed": {
+      const embedUrl = (p.url || "").toString().trim();
+      if (!embedUrl) return null;
+      if (!isAllowedEmbedUrl(embedUrl)) {
+        return (
+          <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
+            Tuhle doménu appka nepovoluje vložit.
+          </div>
+        );
+      }
+      return (
+        <figure className="w-full">
+          <div
+            className="w-full overflow-hidden rounded-lg border border-border"
+            style={{ aspectRatio: embedAspectRatio(p.aspectRatio) }}
+          >
+            <iframe
+              src={embedUrl}
+              title={p.title || "Externí interaktivní obsah"}
+              className="h-full w-full"
+              loading="lazy"
+              sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+            />
+          </div>
+          {p.title && (
+            <figcaption className="mt-2 text-center text-sm text-muted-foreground">{p.title}</figcaption>
+          )}
         </figure>
       );
     }
