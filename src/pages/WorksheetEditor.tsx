@@ -1458,7 +1458,9 @@ export default function WorksheetEditor() {
       if (qrActivities.length > 0 && activeLessonId) {
         const linked = await resolveLinkedLesson(
           activeLessonId,
-          activeLessonType === "teacher" ? "teacher_textbook_lessons" : "textbook_lessons",
+          (allLessons.find((l) => l.id === activeLessonId)?.type ?? "global") === "teacher"
+            ? "teacher_textbook_lessons"
+            : "textbook_lessons",
         );
         if (linked) {
           const origin = window.location.origin;
