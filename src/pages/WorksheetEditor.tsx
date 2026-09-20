@@ -2636,6 +2636,49 @@ export default function WorksheetEditor() {
                 </SelectContent>
               </Select>
             </div>
+            {activeLessonTables.length > 0 && (
+              <div className="rounded-lg border bg-muted/50 p-3 text-sm">
+                Z lekce se převezme{" "}
+                <strong>
+                  {activeLessonTables.length}{" "}
+                  {activeLessonTables.length === 1 ? "tabulka" : "tabulky"}
+                </strong>{" "}
+                – vloží se do listu přesně tak, jak jsou v lekci.
+              </div>
+            )}
+            {activeLessonActivities.length > 0 && (
+              <div className="space-y-2">
+                <Label>Aktivity z lekce</Label>
+                <p className="text-xs text-muted-foreground">
+                  U každé aktivity vyberte, jestli má být v listu QR kód (žák ji vyplní
+                  v appce), nebo se má převést na tisknutelnou úlohu.
+                </p>
+                <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                  {activeLessonActivities.map((a) => (
+                    <div
+                      key={a.id}
+                      className="flex items-center justify-between gap-2 rounded-lg border p-2"
+                    >
+                      <span className="text-sm truncate">{a.title}</span>
+                      <Select
+                        value={activityModes[a.id] ?? "qr"}
+                        onValueChange={(v) =>
+                          setActivityModes((prev) => ({ ...prev, [a.id]: v as "qr" | "convert" }))
+                        }
+                      >
+                        <SelectTrigger className="w-[190px] shrink-0">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover">
+                          <SelectItem value="qr">QR kód na aktivitu</SelectItem>
+                          <SelectItem value="convert">Převést na úlohu v listu</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="space-y-1.5">
               <Label>Volitelný pokyn pro AI</Label>
               <Textarea
