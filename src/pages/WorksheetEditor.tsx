@@ -1450,9 +1450,36 @@ export default function WorksheetEditor() {
             .join("\n\n") || activeLessonContent
         : "";
 
+      // ── Kontext z lekce: tabulky 1:1, QR na aktivity, aktivity k převodu ──
+      const qrActivities = activeLessonActivities.filter((a) => activityModes[a.id] !== "convert");
+      const convertActivities = activeLessonActivities.filter((a) => activityModes[a.id] === "convert");
+
+      let qrLinks: Array<{ label: string; url: string }> = [];
+      if (qrActivities.length > 0 && activeLessonId) {
+        const linked = await resolveLinkedLesson(
+          activeLessonId,
+          activeLessonType === "teacher" ? "teacher_textbook_lessons" : "textbook_lessons",
+        );
+        if (linked) {
+          const origin = window.location.origin;
+          qrLinks = qrActivities.map((a) => {
+            const index = Number(a.id.replace("lesson-activity-", "")) || 0;
+            const sep = linked.url.includes("?") ? "&" : "?";
+            return { label: a.title, url: `${origin}${linked.url}${sep}aktivita=${index}` };
+          });
+        }
+      }
+
       const { data, error } = await supabase.functions.invoke("generate-full-worksheet", {
         body: {
           lessonContent: lessonText,
+          tables: activeLessonTables.map((t) => ({ rows: t.rows, caption: t.caption })),
+          qrLinks,
+          activityPlan: convertActivities.map((a) => ({
+            title: a.title,
+            activityType: a.activityType,
+            detail: a.instructions,
+          })),
           lessonTitle:
             allLessons.find((l) => l.id === activeLessonId)?.title ??
             topicParam ??
@@ -1495,6 +1522,24 @@ export default function WorksheetEditor() {
         } as WorksheetItem;
       });
 
+      // Aktivity označené „převést“ vložíme deterministicky – zadání 1:1 z lekce.
+      const convertedItems: WorksheetItem[] = [];
+      const convertedKeys: ReturnType<typeof createDefaultAnswerKey>[] = [];
+      for (const a of convertActivities) {
+        for (const m of buildItemsFromLessonActivity(a)) {
+          const base = createDefaultItem(
+            m.type,
+            baseNumber + newItems.length + convertedItems.length + 1,
+          );
+          const converted: WorksheetItem = { ...base, ...m.patch };
+          const key = createDefaultAnswerKey(converted);
+          convertedItems.push(converted);
+          convertedKeys.push(
+            m.correct !== undefined ? { ...key, correctAnswer: m.correct } : key,
+          );
+        }
+      }
+
       const newKeys = newItems.map((it, i) => {
         const aiItem: any = data.items[i] ?? {};
         const base = createDefaultAnswerKey(it);
@@ -1521,18 +1566,22 @@ export default function WorksheetEditor() {
           ...s,
           header: { ...s.header, qrCodes },
           variants: s.variants.map((v, idx) =>
-            idx === 0 ? { ...v, items: [...existingItems, ...newItems] } : v,
+            idx === 0
+              ? { ...v, items: [...existingItems, ...newItems, ...convertedItems] }
+              : v,
           ),
           answerKeys: {
             ...s.answerKeys,
-            [variantId]: [...existingKeys, ...newKeys],
+            [variantId]: [...existingKeys, ...newKeys, ...convertedKeys],
           },
         };
       });
 
       toast({
         title: "Pracovní list vygenerován",
-        description: `AI vytvořila ${newItems.length} bloků z obsahu lekce.`,
+        description: `AI vytvořila ${newItems.length} bloků z obsahu lekce${
+          convertedItems.length ? ` + ${convertedItems.length} úloh z aktivit` : ""
+        }${activeLessonTables.length ? ` a ${activeLessonTables.length} tabulek z lekce` : ""}.`,
       });
       setShowAiGenerateDialog(false);
     } catch (err: any) {
