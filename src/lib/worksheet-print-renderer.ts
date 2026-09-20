@@ -105,20 +105,20 @@ html, body {
 /* ─── D.1 Header ─── */
 .ws-header {
   display: block;
-  margin-bottom: 8mm;
-  padding-bottom: 6mm;
+  margin-bottom: 4mm;
+  padding-bottom: 3mm;
   border-bottom: 1pt solid #94A3B8;
 }
 .ws-header-top {
   display: table;
   width: 100%;
-  margin-bottom: 6pt;
+  margin-bottom: 3pt;
 }
 .ws-title-block {
   display: table-cell;
   vertical-align: top;
   width: 75%;
-  padding-right: 12pt;
+  padding-right: 8pt;
 }
 .ws-eyebrow {
   display: block;
@@ -126,15 +126,15 @@ html, body {
   font-weight: 600;
   color: #64748B !important;
 
-  margin-bottom: 4pt;
+  margin-bottom: 2pt;
 }
 .ws-title {
   display: block;
-  font-size: 26pt;
+  font-size: 21pt;
   font-weight: 700;
   color: #1A1F2C !important;
   line-height: 1.1;
-  margin: 0 0 4pt 0;
+  margin: 0 0 2pt 0;
   letter-spacing: -0.01em;
 }
 .ws-subtitle {
@@ -144,7 +144,7 @@ html, body {
   color: #64748B !important;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  margin-bottom: 4pt;
+  margin-bottom: 2pt;
 }
 .ws-qr-wrap {
   display: table-cell;
@@ -157,16 +157,17 @@ html, body {
   display: inline-block;
   vertical-align: top;
   text-align: center;
-  margin-left: 6pt;
+  margin-left: 4pt;
 }
 .ws-qr-item img,
+.ws-qr-wrap > img,
 .ws-qr-placeholder {
   display: block;
-  width: 52pt;
-  height: 52pt;
+  width: 36pt;
+  height: 36pt;
   border: 1pt solid #E5E7EB;
   border-radius: 4pt;
-  padding: 2pt;
+  padding: 1pt;
   background: #FFFFFF !important;
   box-sizing: border-box;
 }
@@ -175,7 +176,7 @@ html, body {
   font-size: 6pt;
   color: #94A3B8 !important;
   line-height: 1.15;
-  padding: 16pt 3pt;
+  padding: 10pt 2pt;
   text-align: center;
 }
 .ws-qr-label {
@@ -185,7 +186,7 @@ html, body {
   font-weight: 600;
   color: #64748B !important;
   line-height: 1.2;
-  max-width: 56pt;
+  max-width: 42pt;
   white-space: normal;
   text-align: center;
 }
@@ -193,14 +194,14 @@ html, body {
 /* ─── Student fields ─── */
 .ws-fields-strip {
   display: block;
-  margin: 6pt 0 0 0;
-  padding-top: 6pt;
+  margin: 3pt 0 0 0;
+  padding-top: 3pt;
   border-top: 0.5pt solid #E5E7EB;
 }
 .ws-field {
   display: inline-block;
-  margin-right: 32pt;
-  font-size: 10pt;
+  margin-right: 22pt;
+  font-size: 9pt;
   color: #64748B !important;
   white-space: nowrap;
 }
@@ -212,9 +213,9 @@ html, body {
 }
 .ws-field-line {
   display: inline-block;
-  min-width: 130pt;
+  min-width: 110pt;
   border-bottom: 1pt solid #1A1F2C;
-  height: 14pt;
+  height: 11pt;
   vertical-align: bottom;
 }
 

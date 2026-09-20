@@ -777,15 +777,64 @@ export default function WorksheetEditor() {
   const selectedItem = items.find((it) => it.id === selectedId) ?? null;
   const selectedAnswer = answerKeys.find((a) => a.itemId === selectedId) ?? null;
 
-  function addItem(type: ItemType) {
+  function insertItem(type: ItemType, insertAt = items.length) {
     if (!spec) return;
     const variantId = spec.variants[0].variantId;
-    const newItem = createDefaultItem(type, items.length + 1);
+    const newItem = createDefaultItem(type, insertAt + 1);
     const newKey = createDefaultAnswerKey(newItem);
     updateSpec((s) => ({
       ...s,
       variants: s.variants.map((v, idx) =>
-        idx === 0 ? { ...v, items: [...v.items, newItem] } : v
+        idx === 0
+          ? {
+              ...v,
+              items: [
+                ...v.items.slice(0, insertAt),
+                newItem,
+                ...v.items.slice(insertAt),
+              ].map((item, itemIndex) => ({ ...item, itemNumber: itemIndex + 1 })),
+            }
+          : v
+      ),
+      answerKeys: {
+        ...s.answerKeys,
+        [variantId]: [...(s.answerKeys[variantId] ?? []), newKey],
+      },
+    }));
+    setSelectedId(newItem.id);
+  }
+
+  function addItem(type: ItemType) {
+    insertItem(type);
+  }
+
+  function insertOfflineActivity(mode: OfflineMode, insertAt = items.length) {
+    if (!spec) return;
+    const variantId = spec.variants[0].variantId;
+    const meta = OFFLINE_MODE_META[mode];
+    const base = createDefaultItem("offline_activity", insertAt + 1);
+    const newItem: WorksheetItem = {
+      ...base,
+      offlineMode: mode,
+      groupSize: meta.defaultGroup,
+      durationMin: meta.defaultDuration,
+      timeEstimateSec: meta.defaultDuration * 60,
+      prompt: meta.defaultPrompt,
+    };
+    const newKey = createDefaultAnswerKey(newItem);
+    updateSpec((s) => ({
+      ...s,
+      variants: s.variants.map((v, idx) =>
+        idx === 0
+          ? {
+              ...v,
+              items: [
+                ...v.items.slice(0, insertAt),
+                newItem,
+                ...v.items.slice(insertAt),
+              ].map((item, itemIndex) => ({ ...item, itemNumber: itemIndex + 1 })),
+            }
+          : v
       ),
       answerKeys: {
         ...s.answerKeys,
@@ -894,30 +943,7 @@ export default function WorksheetEditor() {
 
 
   function addOfflineActivity(mode: OfflineMode) {
-    if (!spec) return;
-    const variantId = spec.variants[0].variantId;
-    const meta = OFFLINE_MODE_META[mode];
-    const base = createDefaultItem("offline_activity", items.length + 1);
-    const newItem: WorksheetItem = {
-      ...base,
-      offlineMode: mode,
-      groupSize: meta.defaultGroup,
-      durationMin: meta.defaultDuration,
-      timeEstimateSec: meta.defaultDuration * 60,
-      prompt: meta.defaultPrompt,
-    };
-    const newKey = createDefaultAnswerKey(newItem);
-    updateSpec((s) => ({
-      ...s,
-      variants: s.variants.map((v, idx) =>
-        idx === 0 ? { ...v, items: [...v.items, newItem] } : v
-      ),
-      answerKeys: {
-        ...s.answerKeys,
-        [variantId]: [...(s.answerKeys[variantId] ?? []), newKey],
-      },
-    }));
-    setSelectedId(newItem.id);
+    insertOfflineActivity(mode);
   }
 
   /** Insert worksheet item(s) prefilled from a lesson activity block. */
@@ -2453,27 +2479,32 @@ export default function WorksheetEditor() {
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                 <SortableContext items={items.map((it) => it.id)} strategy={verticalListSortingStrategy}>
                   <div className="space-y-3">
-                    {items.map((item) => {
+                    {items.map((item, itemIndex) => {
                       const ak = answerKeys.find((a) => a.itemId === item.id) ?? null;
                       return (
-                        <SortableItemBlock
-                          key={item.id}
-                          item={item}
-                          answerKey={ak}
-                          expanded={item.id === selectedId}
-                          pointsEnabled={spec.renderConfig?.pointsEnabled ?? true}
-                          onExpand={() => setSelectedId(item.id)}
-                          onCollapse={() => setSelectedId(null)}
-                          onDelete={() => deleteItem(item.id)}
-                          onUpdateItem={(p) => updateItem(item.id, p)}
-                          onUpdateKey={(p) => updateAnswerKey(item.id, p)}
-                          onApplyRefined={(refined) => replaceItem(item.id, refined)}
-                          onMoveUp={() => moveItem(item.id, -1)}
-                          onMoveDown={() => moveItem(item.id, 1)}
-                          hasLesson={lessonBlocks.length > 0}
-                          onPickFromLesson={() => setPickerForItem(item.id)}
-                          onAiFromLesson={() => setAiPickerForItem(item.id)}
-                        />
+                        <div key={item.id} className="group/insert">
+                          <SortableItemBlock
+                            item={item}
+                            answerKey={ak}
+                            expanded={item.id === selectedId}
+                            pointsEnabled={spec.renderConfig?.pointsEnabled ?? true}
+                            onExpand={() => setSelectedId(item.id)}
+                            onCollapse={() => setSelectedId(null)}
+                            onDelete={() => deleteItem(item.id)}
+                            onUpdateItem={(p) => updateItem(item.id, p)}
+                            onUpdateKey={(p) => updateAnswerKey(item.id, p)}
+                            onApplyRefined={(refined) => replaceItem(item.id, refined)}
+                            onMoveUp={() => moveItem(item.id, -1)}
+                            onMoveDown={() => moveItem(item.id, 1)}
+                            hasLesson={lessonBlocks.length > 0}
+                            onPickFromLesson={() => setPickerForItem(item.id)}
+                            onAiFromLesson={() => setAiPickerForItem(item.id)}
+                          />
+                          <InsertItemControl
+                            onInsert={(type) => insertItem(type, itemIndex + 1)}
+                            onInsertOffline={(mode) => insertOfflineActivity(mode, itemIndex + 1)}
+                          />
+                        </div>
                       );
                     })}
                   </div>
