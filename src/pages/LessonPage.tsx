@@ -3,7 +3,7 @@ import { HERO_IMAGE_CLASS } from "@/lib/image-block-layout";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Loader2, Pencil, List, NotebookPen } from "lucide-react";
+import { ArrowLeft, Loader2, Pencil, List, NotebookPen, Download } from "lucide-react";
 
 import { slugify } from "@/lib/slugify";
 import SiteHeader from "@/components/SiteHeader";
@@ -16,6 +16,8 @@ import LessonEditorSheet from "@/components/LessonEditorSheet";
 import BezlaiTutorChat from "@/components/BezlaiTutorChat";
 import { useActivityTracking } from "@/hooks/useActivityTracking";
 import LessonHighlightLayer from "@/components/lesson/LessonHighlightLayer";
+import { downloadLessonOfflineHtml } from "@/lib/lesson-offline-export";
+import { toast } from "sonner";
 import { HIGHLIGHTABLE_BLOCK_TYPES } from "@/lib/highlightable-blocks";
 
 // Extract plain readable text from lesson blocks for TTS.
@@ -77,6 +79,7 @@ const LessonPage = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isTeacherOrAdmin, setIsTeacherOrAdmin] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
+  const [offlineBusy, setOfflineBusy] = useState(false);
 
   // Check admin/teacher status
   useEffect(() => {
@@ -260,6 +263,26 @@ const LessonPage = () => {
                     text={buildLessonReadableText(lesson.title, blocks)}
                     label="Přečíst"
                   />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5"
+                    disabled={offlineBusy}
+                    onClick={async () => {
+                      setOfflineBusy(true);
+                      try {
+                        await downloadLessonOfflineHtml(lesson.title, blocks, lesson.hero_image_url);
+                        toast.success("Lekce stažena – otevři soubor i bez internetu.");
+                      } catch {
+                        toast.error("Stažení se nepovedlo. Zkus to prosím znovu.");
+                      } finally {
+                        setOfflineBusy(false);
+                      }
+                    }}
+                  >
+                    {offlineBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                    Stáhnout pro offline čtení
+                  </Button>
                 </div>
               </div>
 
