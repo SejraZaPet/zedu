@@ -153,7 +153,7 @@ export function AiSuggestFromLessonDialog({
     "open_answer",
   ];
   /** Bloky jako „Řádky pro zápis“ neumí uložit úlohu — AI pak typ vybere sama. */
-  const isSolvable = SOLVABLE.includes(itemType);
+  const isSolvable = SOLVABLE.includes(itemType) || !!activityType;
   const typeLabel = isSolvable
     ? ITEM_TYPE_LABELS[itemType]?.label ?? itemType
     : "AI vybere podle obsahu (typ bloku se podle toho upraví)";
