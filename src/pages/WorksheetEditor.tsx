@@ -2095,6 +2095,25 @@ export default function WorksheetEditor() {
                     <Button
                       variant="outline"
                       size="sm"
+                      onClick={() => setSectionsPanelOpen(true)}
+                      disabled={activeLessonSections.length === 0}
+                    >
+                      <FileText className="w-4 h-4 mr-1" /> Sekce lekce
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                {activeLessonSections.length === 0 && (
+                  <TooltipContent>Nejdřív přiřaďte lekci s obsahem</TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="hidden lg:inline-flex">
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => setShowAiGenerateDialog(true)}
                       disabled={!activeLessonContent || activeLessonContent.trim().length < 20}
                     >
@@ -3449,6 +3468,8 @@ function TypeSpecificEditor({
         </div>
       )}
 
+      <TableFieldsEditor item={item} onUpdate={onUpdateItem} />
+
       <ActivityBlockEditor
         item={item}
         onUpdate={onUpdateItem}
@@ -4477,6 +4498,8 @@ function PropertiesPanel({
           </div>
         </div>
       )}
+
+      <TableFieldsEditor item={item} onUpdate={onUpdateItem} />
 
       <ActivityBlockEditor item={item} onUpdate={onUpdateItem} hasLesson={false} />
 
