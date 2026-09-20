@@ -18,6 +18,8 @@ export type CalendarEvent = {
   start: Date;
   end: Date;
   classId?: string;
+  /** Skupina předmětu – alternativa ke classId (vyplněno jen jedno z nich). */
+  groupId?: string;
   className?: string;
   room?: string;
   subject?: string;
@@ -32,7 +34,9 @@ export type CalendarEvent = {
 
 export type ScheduleSlotInput = {
   id: string;
-  class_id: string;
+  class_id: string | null;
+  /** Skupina předmětu – alternativa ke class_id (vyplněno jen jedno z nich). */
+  group_id?: string | null;
   day_of_week: number;
   start_time: string;
   end_time: string;
@@ -44,6 +48,7 @@ export type ScheduleSlotInput = {
   color?: string | null;
   abbreviation?: string | null;
   classes?: { name: string } | null;
+  subject_groups?: { name?: string | null } | null;
   /** Kanonický katalog předmětů – zdroj barvy/zkratky, když hodina svou nemá. */
   subjects?: { name?: string | null; color?: string | null; abbreviation?: string | null } | null;
 };
@@ -91,7 +96,8 @@ export function expandScheduleSlots(
 
       const start = parseTime(date, slot.start_time);
       const end = parseTime(date, slot.end_time);
-      const className = slot.classes?.name ?? "";
+      // U skupinových slotů (class_id null) ukazujeme název skupiny místo třídy.
+      const className = slot.classes?.name ?? slot.subject_groups?.name ?? "";
       // Katalog má přednost při názvu, hodina při barvě/zkratce (sjednocené pravidlo).
       const subjectName = getSubjectName(slot, slot.subjects, "");
       const title = subjectName || className || "Hodina";
@@ -109,7 +115,8 @@ export function expandScheduleSlots(
         title,
         start,
         end,
-        classId: slot.class_id,
+        classId: slot.class_id ?? undefined,
+        groupId: slot.group_id ?? undefined,
         className,
         room: slot.room || undefined,
         subject: subjectName || slot.subject_label || undefined,
