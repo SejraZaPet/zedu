@@ -2834,6 +2834,16 @@ export default function WorksheetEditor() {
         </DialogContent>
       </Dialog>
 
+      {/* Stavba listu sekce po sekci (pracovní list z lekce) */}
+      <LessonSectionsPanel
+        open={sectionsPanelOpen}
+        onOpenChange={setSectionsPanelOpen}
+        sections={activeLessonSections}
+        lessonTitle={allLessons.find((l) => l.id === activeLessonId)?.title}
+        activityUrlFor={activityUrlFor}
+        onBuild={handleBuildFromSections}
+      />
+
       <LessonContentPickerSheet
         open={pickerForItem !== null}
         onOpenChange={(v) => { if (!v) setPickerForItem(null); }}
