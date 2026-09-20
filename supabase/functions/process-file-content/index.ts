@@ -1246,6 +1246,17 @@ serve(async (req) => {
       }
     }
 
+    // Starý binární .doc AI jako soubor nepřijímá – vrať jasnou hlášku.
+    if (!sourceText && (lowerName.endsWith(".doc") || cleanMimeType === "application/msword")) {
+      return jsonResponse(
+        {
+          error:
+            "Starý formát .doc nelze přečíst. Otevřete dokument ve Wordu a uložte ho jako .docx nebo PDF, pak ho nahrajte znovu.",
+        },
+        400,
+      );
+    }
+
     let rawLessons: any[];
     if (sourceText) {
       rawLessons = await generateLessonsFromText(LOVABLE_API_KEY, sourceText, aiPayload);

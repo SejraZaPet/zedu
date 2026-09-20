@@ -33,12 +33,43 @@ function blocksToText(blocks: any[]): string {
 }
 
 /**
+ * Starý binární formát .doc (Word 97-2003) AI jako soubor nepřijímá,
+ * proto z něj text vytáhneme hrubou heuristikou v prohlížeči.
+ */
+async function extractLegacyDocText(file: File): Promise<string> {
+  const buf = new Uint8Array(await file.arrayBuffer());
+  let decoded = "";
+  try {
+    decoded = new TextDecoder("windows-1250").decode(buf);
+  } catch {
+    decoded = new TextDecoder("latin1").decode(buf);
+  }
+  const runs = decoded.match(/[\p{L}\p{N} .,;:!?()\-–—/%"'\r\n\t]{25,}/gu) ?? [];
+  return runs
+    .map((r) => r.replace(/[\r\t]+/g, "\n").replace(/[ ]{2,}/g, " ").trim())
+    .filter((r) => /\p{L}{3,}/u.test(r))
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+/**
  * Extrahuje text z dokumentu na klientovi (PDF přes pdf.js, ostatní přes
  * edge funkci `process-file-content`) – stejný mechanismus jako FromMaterialView.
  */
 export async function extractDocumentText(file: File): Promise<string> {
   const lower = file.name.toLowerCase();
   let text = "";
+
+  if (lower.endsWith(".doc")) {
+    text = await extractLegacyDocText(file);
+    if (text.length < 100) {
+      throw new Error(
+        "Starý formát .doc se nepodařilo přečíst. Otevřete dokument ve Wordu a uložte ho jako .docx nebo PDF, pak ho nahrajte znovu.",
+      );
+    }
+    return text;
+  }
 
   if (lower.endsWith(".pdf")) {
     try {
