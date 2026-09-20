@@ -48,6 +48,7 @@ const TEACHER_MENU_GROUPS: TeacherMenuGroup[] = [
   {
     title: "Nástroje pro hodiny",
     items: [
+      { label: "Rozvrh", href: "/ucitel/rozvrh", icon: CalendarDays },
       { label: "Úlohy", href: "/ucitel/ulohy", icon: ClipboardList },
       { label: "Rubriky hodnocení", href: "/ucitel/rubriky", icon: ClipboardList },
       { label: "Banka otázek", href: "/ucitel/banka-otazek", icon: Library },
@@ -155,7 +156,6 @@ const SiteHeader = () => {
       return [
         { label: "Přehled", href: "/ucitel", icon: LayoutDashboard },
         { label: "Výuka", href: "/ucitel/predmety", icon: GraduationCap },
-        { label: "Rozvrh", href: "/ucitel/rozvrh", icon: CalendarDays },
         { label: "Kalendář", href: "/ucitel/kalendar", icon: CalendarDays },
         { label: "Třídy", href: "/ucitel/tridy", icon: FolderOpen },
         { label: "Můj sešit", href: "/ucitel/sesit", icon: NotebookPen },
