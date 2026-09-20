@@ -101,6 +101,40 @@ export function extractActivitiesFromBlocks(blocks: unknown): LessonActivity[] {
   return out;
 }
 
+/** Tabulka z lekce připravená k reprodukci v pracovním listu. */
+export interface LessonTable {
+  /** Index bloku v lekci (stabilní ID). */
+  blockIndex: number;
+  /** Řádky včetně hlavičky na prvním místě. */
+  rows: string[][];
+  /** Popisek tabulky, pokud v lekci je. */
+  caption?: string;
+}
+
+/**
+ * Vrátí tabulky nalezené v blocích lekce (jsonb `blocks`) — hlavička + řádky.
+ * Používá se k tomu, aby se tabulka do pracovního listu propsala 1:1.
+ */
+export function extractTablesFromBlocks(blocks: unknown): LessonTable[] {
+  if (!Array.isArray(blocks)) return [];
+  const clean = (v: unknown) =>
+    String(v ?? "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  const out: LessonTable[] = [];
+  (blocks as any[]).forEach((b, idx) => {
+    if (!b || typeof b !== "object" || b.type !== "table") return;
+    const p = (b.props ?? {}) as any;
+    const headers: string[] = Array.isArray(p.headers) ? p.headers.map(clean) : [];
+    const body: string[][] = Array.isArray(p.rows)
+      ? p.rows.filter(Array.isArray).map((r: unknown[]) => r.map(clean))
+      : [];
+    const rows = headers.length > 0 ? [headers, ...body] : body;
+    if (rows.length === 0) return;
+    const caption = clean(p.caption);
+    out.push({ blockIndex: idx, rows, ...(caption ? { caption } : {}) });
+  });
+  return out;
+}
+
 /**
  * Extrahuje plain-text / markdown z blokové struktury (jsonb `blocks`)
  * používané v učitelských lekcích a textbook_lessons.
