@@ -285,10 +285,29 @@ const ImportTextbookFileDialog = ({
         body: invokeBody,
       });
 
-      if (error) throw error;
+      if (error) {
+        // Edge funkce vrací srozumitelnou hlášku v těle odpovědi – vytáhni ji,
+        // ať uživatel nevidí obecné "Edge Function returned a non-2xx status code".
+        let serverMessage = "";
+        const ctx = (error as { context?: unknown }).context;
+        if (ctx && typeof (ctx as Response).text === "function") {
+          try {
+            const body = await (ctx as Response).clone().text();
+            const parsed = JSON.parse(body) as { error?: string };
+            if (parsed?.error) serverMessage = parsed.error;
+          } catch {
+            /* tělo nelze přečíst – necháme obecnou hlášku */
+          }
+        }
+        throw new Error(
+          serverMessage ||
+            "Dokument se nepodařilo zpracovat. Zkuste ho rozdělit na menší části (např. po ročnících nebo kapitolách).",
+        );
+      }
       if ((data as { error?: string } | null)?.error) {
         throw new Error((data as { error: string }).error);
       }
+
 
       const response = (data ?? {}) as {
         lessons?: { title?: string; blocks?: Block[] }[];

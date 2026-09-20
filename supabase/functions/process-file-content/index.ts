@@ -616,6 +616,187 @@ function ensureToolArguments(aiResult: any) {
   return JSON.parse(toolArgs);
 }
 
+/** Uživatelsky srozumitelná hláška, když se dokument nedá zpracovat ani po dělení. */
+const TOO_LONG_MESSAGE =
+  "Dokument je příliš dlouhý na zpracování najednou. Zkuste ho rozdělit na menší části (např. po ročnících nebo kapitolách).";
+
+/** Bezpečná délka jedné dávky textu posílané AI. */
+const MAX_WORDS_PER_BATCH = 2500;
+/** Maximální hloubka rekurzivního dělení dávky při utnuté odpovědi. */
+const MAX_SPLIT_DEPTH = 4;
+
+const countWords = (text: string) => {
+  const t = text.trim();
+  return t ? t.split(/\s+/).length : 0;
+};
+
+/** Heuristika: je řádek nadpisem / hranicí sekce (ročník, kapitola, slide)? */
+function isSectionBoundary(line: string): boolean {
+  const t = line.trim();
+  if (!t || t.length > 120) return false;
+  if (/^---\s*Slide\s*---$/i.test(t)) return true;
+  if (/^\|/.test(t)) return false;
+  if (/ročník/i.test(t) && t.length <= 60) return true;
+  if (/^(kapitola|téma|lekce|část)\b/i.test(t)) return true;
+  if (/^\d+(\.\d+)*\.?\s+\p{L}/u.test(t) && t.length <= 90) return true;
+  const words = t.split(/\s+/).length;
+  if (!/[.!?;,:]$/.test(t) && words <= 10 && /\p{L}/u.test(t)) return true;
+  return false;
+}
+
+/** Rozdělí text na dávky do ~maxWords slov, hranice hledá na nadpisech/sekcích. */
+export function splitTextIntoBatches(text: string, maxWords = MAX_WORDS_PER_BATCH): string[] {
+  if (countWords(text) <= maxWords) return [text];
+
+  const segments: string[][] = [];
+  for (const line of text.split("\n")) {
+    const last = segments[segments.length - 1];
+    if (!last || (isSectionBoundary(line) && last.join("\n").trim().length > 0)) {
+      segments.push([line]);
+    } else {
+      last.push(line);
+    }
+  }
+
+  const batches: string[] = [];
+  let current: string[] = [];
+  let currentWords = 0;
+  for (const seg of segments) {
+    const segText = seg.join("\n");
+    const w = countWords(segText);
+    if (currentWords > 0 && currentWords + w > maxWords) {
+      batches.push(current.join("\n"));
+      current = [];
+      currentWords = 0;
+    }
+    current.push(segText);
+    currentWords += w;
+  }
+  if (current.length > 0) batches.push(current.join("\n"));
+  return batches.map((b) => b.trim()).filter((b) => b.length > 0);
+}
+
+/** Rozpůlí text na hranici řádku podle počtu slov. */
+function splitInHalf(text: string): string[] {
+  const lines = text.split("\n");
+  if (lines.length < 2) {
+    const words = text.trim().split(/\s+/);
+    if (words.length < 4) return [text];
+    const mid = Math.floor(words.length / 2);
+    return [words.slice(0, mid).join(" "), words.slice(mid).join(" ")];
+  }
+  const total = countWords(text);
+  let acc = 0;
+  let cut = 1;
+  for (let i = 0; i < lines.length; i++) {
+    acc += countWords(lines[i]);
+    if (acc >= total / 2) {
+      cut = Math.min(Math.max(i + 1, 1), lines.length - 1);
+      break;
+    }
+  }
+  const a = lines.slice(0, cut).join("\n").trim();
+  const b = lines.slice(cut).join("\n").trim();
+  if (!a || !b) return [text];
+  return [a, b];
+}
+
+/**
+ * Zpracuje jednu dávku textu. Pokud AI odpověď skončí utnutá (finish_reason
+ * "length") nebo nevrátí použitelný tool call, dávku rozpůlí a zkusí znovu
+ * (max MAX_SPLIT_DEPTH úrovní).
+ */
+async function generateLessonsForBatch(
+  apiKey: string,
+  batchText: string,
+  payload: { fileName: string; mimeType: string; mode: "single" | "split" },
+  depth = 0,
+): Promise<any[]> {
+  let aiResult: any;
+  try {
+    aiResult = await callGatewayWithText(apiKey, { ...payload, extractedText: batchText });
+  } catch (err) {
+    if (depth < MAX_SPLIT_DEPTH) {
+      const halves = splitInHalf(batchText);
+      if (halves.length === 2) {
+        const out: any[] = [];
+        for (const half of halves) {
+          out.push(...(await generateLessonsForBatch(apiKey, half, payload, depth + 1)));
+        }
+        return out;
+      }
+    }
+    throw err;
+  }
+
+  const choice = aiResult?.choices?.[0];
+  const toolArgs = choice?.message?.tool_calls?.[0]?.function?.arguments;
+  let parsed: any = null;
+  if (toolArgs && choice?.finish_reason !== "length") {
+    try {
+      parsed = JSON.parse(toolArgs);
+    } catch {
+      parsed = null;
+    }
+  }
+
+  if (!parsed || !Array.isArray(parsed.lessons) || parsed.lessons.length === 0) {
+    if (depth < MAX_SPLIT_DEPTH) {
+      const halves = splitInHalf(batchText);
+      if (halves.length === 2) {
+        console.warn(
+          `[batch] odpověď utnutá/neúplná (finish_reason=${choice?.finish_reason}), dělím na poloviny (depth ${depth + 1})`,
+        );
+        const out: any[] = [];
+        for (const half of halves) {
+          out.push(...(await generateLessonsForBatch(apiKey, half, payload, depth + 1)));
+        }
+        return out;
+      }
+    }
+    throw new Error(TOO_LONG_MESSAGE);
+  }
+
+  return parsed.lessons;
+}
+
+/**
+ * Rozdělí text na dávky a zpracuje je paralelně (omezená souběžnost, ať se
+ * vejdeme do časového limitu edge funkce); výsledné lekce spojí v původním
+ * pořadí dávek.
+ */
+const BATCH_CONCURRENCY = 4;
+
+async function generateLessonsFromText(
+  apiKey: string,
+  text: string,
+  payload: { fileName: string; mimeType: string; mode: "single" | "split" },
+): Promise<any[]> {
+  const batches = splitTextIntoBatches(text);
+  console.log(`[batch] text ${countWords(text)} slov → ${batches.length} dávek`);
+
+  const results: any[][] = new Array(batches.length).fill(null).map(() => []);
+  let next = 0;
+  const worker = async () => {
+    while (true) {
+      const index = next++;
+      if (index >= batches.length) return;
+      const part = await generateLessonsForBatch(apiKey, batches[index], payload);
+      console.log(`[batch] dávka ${index + 1}/${batches.length} → ${part.length} lekcí`);
+      results[index] = part;
+    }
+  };
+  await Promise.all(
+    Array.from({ length: Math.min(BATCH_CONCURRENCY, batches.length) }, () => worker()),
+  );
+
+  const lessons = results.flat();
+
+  if (lessons.length === 0) throw new Error(TOO_LONG_MESSAGE);
+  return lessons;
+}
+
+
 function normalizeBlock(block: any) {
   const type = typeof block?.type === "string" ? block.type : "paragraph";
   const id = typeof block?.id === "string" && /^[a-zA-Z0-9]{6,}$/.test(block.id)
@@ -1043,60 +1224,59 @@ serve(async (req) => {
 
     const baseTitle = String(fileName).replace(/\.[^.]+$/, "").trim() || "Importovaná lekce";
 
-    let aiResult: any;
+    const aiPayload = { fileName: String(fileName), mimeType: cleanMimeType, mode: effectiveMode };
+    const lowerName = String(fileName).toLowerCase();
+    /** Formáty, které AI jako soubor nepřijímá → text extrahujeme na serveru. */
+    const isZipDocument = lowerName.endsWith(".docx") || lowerName.endsWith(".pptx");
 
-    // Priority 1: extractedText provided by frontend (most reliable, no hallucinations)
-    if (typeof extractedText === "string" && extractedText.trim().length >= 50) {
-      aiResult = await callGatewayWithText(LOVABLE_API_KEY, {
-        extractedText: extractedText.trim(),
-        fileName: String(fileName),
-        mimeType: cleanMimeType,
-        mode: effectiveMode,
-      });
-    } else {
-      // Priority 2: try AI with the raw file (PDF/image multimodal)
+    let sourceText = typeof extractedText === "string" && extractedText.trim().length >= 50
+      ? extractedText.trim()
+      : "";
+
+    // DOCX/PPTX: AI je jako soubor nepodporuje, extrahuj rovnou text.
+    if (!sourceText && fileBase64 && isZipDocument) {
       try {
-        aiResult = await callGatewayWithFile(LOVABLE_API_KEY, {
-          fileBase64: String(fileBase64),
-          fileName: String(fileName),
-          mimeType: cleanMimeType,
-          mode: effectiveMode,
-        });
-      } catch (fileError) {
-        console.error("File mode failed, trying server-side extraction fallback:", fileError);
-
-        const lower = String(fileName).toLowerCase();
         const bytes = decodeBase64(String(fileBase64));
-        let fallbackText = "";
-
-        if (lower.endsWith(".docx")) {
-          fallbackText = await extractDocxText(bytes);
-        } else if (lower.endsWith(".pptx")) {
-          fallbackText = await extractPptxText(bytes);
-        }
-
-        if (!fallbackText || fallbackText.length < 50) {
-          throw fileError instanceof Error
-            ? fileError
-            : new Error("AI nedokázala přečíst dokument. Zkopírujte text ručně do textového pole.");
-        }
-
-        aiResult = await callGatewayWithText(LOVABLE_API_KEY, {
-          extractedText: fallbackText,
-          fileName: String(fileName),
-          mimeType: cleanMimeType,
-          mode: effectiveMode,
-        });
+        const extracted = lowerName.endsWith(".docx")
+          ? await extractDocxText(bytes)
+          : await extractPptxText(bytes);
+        if (extracted && extracted.trim().length >= 50) sourceText = extracted.trim();
+      } catch (extractErr) {
+        console.warn("Server-side text extraction failed:", extractErr);
       }
     }
 
-    const parsed = ensureToolArguments(aiResult);
-    const lessons = normalizeLessons(parsed, baseTitle, effectiveMode);
+    let rawLessons: any[];
+    if (sourceText) {
+      rawLessons = await generateLessonsFromText(LOVABLE_API_KEY, sourceText, aiPayload);
+    } else {
+      // PDF / obrázky: multimodální čtení souboru.
+      let aiResult: any;
+      try {
+        aiResult = await callGatewayWithFile(LOVABLE_API_KEY, {
+          ...aiPayload,
+          fileBase64: String(fileBase64),
+        });
+      } catch (fileError) {
+        console.error("File mode failed:", fileError);
+        throw new Error(
+          "AI nedokázala přečíst dokument. Zkopírujte text ručně do textového pole, nebo dokument rozdělte na menší části.",
+        );
+      }
+      const parsedFile = ensureToolArguments(aiResult);
+      rawLessons = Array.isArray(parsedFile?.lessons) ? parsedFile.lessons : [];
+    }
+
+    const lessons = normalizeLessons({ lessons: rawLessons }, baseTitle, effectiveMode);
+
     const blocks = lessons.flatMap((lesson: any) => lesson.blocks);
 
     if (blocks.length === 0) {
-      throw new Error("AI nedokázala z dokumentu vytvořit žádné bloky.");
+      throw new Error(
+        "Z dokumentu se nepodařilo vytvořit žádné bloky. Zkuste ho rozdělit na menší části (např. po ročnících nebo kapitolách).",
+      );
     }
+
 
     // Best-effort embedded-image extraction for DOCX/PPTX zip archives.
     // PDF embedded images are extracted on the frontend (pdfjs).
@@ -1241,6 +1421,11 @@ serve(async (req) => {
     return jsonResponse({ lessons, blocks, blockCount: blocks.length, embeddedImages, embeddedImagesBySlide, skippedImages, linkedBlocks });
   } catch (err) {
     console.error("process-file-content error:", err);
-    return jsonResponse({ error: err instanceof Error ? err.message : "Neznámá chyba" }, 500);
+    const raw = err instanceof Error ? err.message : "";
+    const friendly = !raw || /strukturovaný výstup|max_tokens|length|Unknown|Neznámá/i.test(raw)
+      ? TOO_LONG_MESSAGE
+      : raw;
+    return jsonResponse({ error: friendly }, 500);
   }
+
 });
