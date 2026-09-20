@@ -80,6 +80,7 @@ window.addEventListener("load", function () {
 
   document.body.classList.add("ws-preview-paginated");
   var items = Array.from(sourceItems.children);
+  sourceItems.replaceChildren();
   var pageHeight = sourceContent.clientHeight;
 
   function makePage(afterPage) {
