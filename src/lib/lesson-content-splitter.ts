@@ -86,7 +86,7 @@ export function splitLessonContent(content: string): LessonBlock[] {
       } as LessonBlock;
     })
     .filter((x): x is LessonBlock => x !== null)
-    .slice(0, 30); // safety cap
+    .slice(0, 200); // safety cap
 }
 
 /** Aktivita extrahovaná z lekce — připravená k převedení na položku pracovního listu. */
@@ -101,34 +101,35 @@ export interface LessonActivity {
   instructions?: string;
   /** Raw props bloku — používá se k namapování dat na worksheet item. */
   props: Record<string, unknown>;
+  /**
+   * Index pro deep-link `?aktivita=<index>`. U aktivit vnořených v kartě
+   * (slide_group) není samostatný odkaz dostupný → undefined.
+   */
+  deepLinkIndex?: number;
 }
 
 /**
- * Vrátí seznam aktivit nalezených v blocích lekce (jsonb `blocks`).
+ * Vrátí seznam aktivit nalezených v blocích lekce (jsonb `blocks`),
+ * včetně aktivit vnořených v kartách (slide_group → props.children).
  * Učitel z nich může vytvářet odpovídající bloky v pracovním listu.
  */
 export function extractActivitiesFromBlocks(blocks: unknown): LessonActivity[] {
-  if (!Array.isArray(blocks)) return [];
   const out: LessonActivity[] = [];
-  // Index se počítá jen mezi VIDITELNÝMI bloky – stejně jako se ukládají
-  // výsledky aktivit a jak se na aktivitu odkazuje přes ?aktivita=<index>.
-  (blocks as any[])
-    .filter((b) => b && typeof b === "object" && b.visible !== false)
-    .forEach((b, idx) => {
+  flattenLessonBlocks(blocks).forEach(({ block: b, topIndex, nested }, i) => {
     if (b.type !== "activity") return;
     const p = (b.props ?? {}) as Record<string, unknown>;
     const at = String(p.activityType ?? "flashcards");
     const title =
-      (typeof p.title === "string" && p.title.trim()) ||
-      `Aktivita ${idx + 1}`;
+      (typeof p.title === "string" && p.title.trim()) || `Aktivita ${i + 1}`;
     const instructions =
       typeof p.instructions === "string" ? p.instructions : undefined;
     out.push({
-      id: `lesson-activity-${idx}`,
+      id: nested ? `lesson-activity-nested-${topIndex}-${i}` : `lesson-activity-${topIndex}`,
       activityType: at,
       title: title.length > 80 ? title.slice(0, 80) + "…" : title,
       instructions,
       props: p,
+      ...(nested ? {} : { deepLinkIndex: topIndex }),
     });
   });
   return out;
@@ -145,17 +146,15 @@ export interface LessonTable {
 }
 
 /**
- * Vrátí tabulky nalezené v blocích lekce (jsonb `blocks`) — hlavička + řádky.
+ * Vrátí tabulky nalezené v blocích lekce (jsonb `blocks`) — hlavička + řádky,
+ * včetně tabulek vnořených v kartách (slide_group).
  * Používá se k tomu, aby se tabulka do pracovního listu propsala 1:1.
  */
 export function extractTablesFromBlocks(blocks: unknown): LessonTable[] {
-  if (!Array.isArray(blocks)) return [];
   const clean = (v: unknown) =>
     String(v ?? "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
   const out: LessonTable[] = [];
-  (blocks as any[])
-    .filter((b) => b && typeof b === "object" && b.visible !== false)
-    .forEach((b, idx) => {
+  flattenLessonBlocks(blocks).forEach(({ block: b, topIndex }) => {
     if (b.type !== "table") return;
     const p = (b.props ?? {}) as any;
     const headers: string[] = Array.isArray(p.headers) ? p.headers.map(clean) : [];
@@ -165,10 +164,11 @@ export function extractTablesFromBlocks(blocks: unknown): LessonTable[] {
     const rows = headers.length > 0 ? [headers, ...body] : body;
     if (rows.length === 0) return;
     const caption = clean(p.caption);
-    out.push({ blockIndex: idx, rows, ...(caption ? { caption } : {}) });
+    out.push({ blockIndex: topIndex, rows, ...(caption ? { caption } : {}) });
   });
   return out;
 }
+
 
 /**
  * Extrahuje plain-text / markdown z blokové struktury (jsonb `blocks`)
