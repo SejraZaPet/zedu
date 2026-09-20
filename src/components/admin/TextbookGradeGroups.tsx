@@ -506,6 +506,8 @@ const TextbookGradeGroups = ({
                         onOpenWorksheet={onOpenWorksheet}
                         onReorderLessons={onReorderLessons}
                         onRequestMove={handleRequestMove}
+                        onRequestMergeLesson={handleRequestMergeLesson}
+                        onRequestMergeTopic={handleRequestMergeTopic}
                       />
                     ))}
                   </SortableContext>
