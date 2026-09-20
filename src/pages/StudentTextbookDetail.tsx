@@ -19,6 +19,7 @@ import CoursePathMap, { type CoursePathItem } from "@/components/textbook/Course
 import TextbookSearch from "@/components/textbook/TextbookSearch";
 import LessonHighlightLayer from "@/components/lesson/LessonHighlightLayer";
 import { HIGHLIGHTABLE_BLOCK_TYPES } from "@/lib/highlightable-blocks";
+import { useActivityDeepLink, ACTIVITY_HIGHLIGHT_CLASS } from "@/hooks/useActivityDeepLink";
 import { isPlacementVisibleToStudent } from "@/lib/lesson-placement-visibility";
 import { useActivityTracking } from "@/hooks/useActivityTracking";
 
@@ -413,6 +414,8 @@ const StudentTextbookDetail = () => {
             {visibleBlocks.map((block: any, idx: number) => (
               <div
                 key={block?.id ?? idx}
+                data-activity-index={idx}
+                className={highlightedActivityIndex === idx ? ACTIVITY_HIGHLIGHT_CLASS : undefined}
                 {...(HIGHLIGHTABLE_BLOCK_TYPES.has(block?.type) ? { "data-highlight-block": block?.id } : {})}
               >
               <LessonBlockRenderer

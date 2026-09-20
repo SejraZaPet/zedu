@@ -19,6 +19,7 @@ import LessonHighlightLayer from "@/components/lesson/LessonHighlightLayer";
 import { downloadLessonOfflineHtml } from "@/lib/lesson-offline-export";
 import { toast } from "sonner";
 import { HIGHLIGHTABLE_BLOCK_TYPES } from "@/lib/highlightable-blocks";
+import { useActivityDeepLink, ACTIVITY_HIGHLIGHT_CLASS } from "@/hooks/useActivityDeepLink";
 
 // Extract plain readable text from lesson blocks for TTS.
 const stripHtmlToText = (html: string): string => {
@@ -186,6 +187,9 @@ const LessonPage = () => {
   const completedRequiredCount = requiredActivityIndices.filter((i) => completedActivityIndices.has(i)).length;
   const allRequiredDone = completedRequiredCount >= requiredActivityIndices.length;
 
+  // Deep-link ?aktivita=<index> — odscrolluje a zvýrazní aktivitu (QR kód z pracovního listu)
+  const highlightedActivityIndex = useActivityDeepLink(visibleBlocks.length > 0, lesson?.id ?? null);
+
   const handleSaved = () => {
     // Refresh lesson data without full reload
     queryClient.invalidateQueries({ queryKey: ["lesson-by-slug", topicSlug, lessonSlug] });
@@ -296,6 +300,8 @@ const LessonPage = () => {
                   {visibleBlocks.map((block, index) => (
                     <div
                       key={block.id}
+                      data-activity-index={index}
+                      className={highlightedActivityIndex === index ? ACTIVITY_HIGHLIGHT_CLASS : undefined}
                       {...(HIGHLIGHTABLE_BLOCK_TYPES.has(block.type) ? { "data-highlight-block": block.id } : {})}
                     >
                       <LessonBlock block={block} blockIndex={index} onActivityComplete={handleActivityComplete} isTeacher={isTeacherOrAdmin} isCompleted={completedActivityIndices.has(index)} />
