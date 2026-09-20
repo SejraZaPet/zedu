@@ -71,6 +71,8 @@ interface Props {
   onReorderLessons?: (topicId: string, orderedLessons: LessonItem[]) => void;
   onReorderTopics?: (grade: number, orderedTopics: TopicItem[]) => void;
   onMoveLesson?: (lesson: LessonItem, targetTopicId: string) => void | Promise<void>;
+  onMergeTopics?: (sourceTopic: TopicItem, targetTopicId: string) => void | Promise<void>;
+  onMergeLessons?: (targetLesson: LessonItem, sourceLessonId: string) => void | Promise<void>;
 }
 
 const SortableLessonRow = ({
