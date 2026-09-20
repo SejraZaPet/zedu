@@ -1206,55 +1206,51 @@ serve(async (req) => {
 
     const baseTitle = String(fileName).replace(/\.[^.]+$/, "").trim() || "Importovaná lekce";
 
-    let aiResult: any;
+    const aiPayload = { fileName: String(fileName), mimeType: cleanMimeType, mode: effectiveMode };
+    const lowerName = String(fileName).toLowerCase();
+    /** Formáty, které AI jako soubor nepřijímá → text extrahujeme na serveru. */
+    const isZipDocument = lowerName.endsWith(".docx") || lowerName.endsWith(".pptx");
 
-    // Priority 1: extractedText provided by frontend (most reliable, no hallucinations)
-    if (typeof extractedText === "string" && extractedText.trim().length >= 50) {
-      aiResult = await callGatewayWithText(LOVABLE_API_KEY, {
-        extractedText: extractedText.trim(),
-        fileName: String(fileName),
-        mimeType: cleanMimeType,
-        mode: effectiveMode,
-      });
-    } else {
-      // Priority 2: try AI with the raw file (PDF/image multimodal)
+    let sourceText = typeof extractedText === "string" && extractedText.trim().length >= 50
+      ? extractedText.trim()
+      : "";
+
+    // DOCX/PPTX: AI je jako soubor nepodporuje, extrahuj rovnou text.
+    if (!sourceText && fileBase64 && isZipDocument) {
       try {
-        aiResult = await callGatewayWithFile(LOVABLE_API_KEY, {
-          fileBase64: String(fileBase64),
-          fileName: String(fileName),
-          mimeType: cleanMimeType,
-          mode: effectiveMode,
-        });
-      } catch (fileError) {
-        console.error("File mode failed, trying server-side extraction fallback:", fileError);
-
-        const lower = String(fileName).toLowerCase();
         const bytes = decodeBase64(String(fileBase64));
-        let fallbackText = "";
-
-        if (lower.endsWith(".docx")) {
-          fallbackText = await extractDocxText(bytes);
-        } else if (lower.endsWith(".pptx")) {
-          fallbackText = await extractPptxText(bytes);
-        }
-
-        if (!fallbackText || fallbackText.length < 50) {
-          throw fileError instanceof Error
-            ? fileError
-            : new Error("AI nedokázala přečíst dokument. Zkopírujte text ručně do textového pole.");
-        }
-
-        aiResult = await callGatewayWithText(LOVABLE_API_KEY, {
-          extractedText: fallbackText,
-          fileName: String(fileName),
-          mimeType: cleanMimeType,
-          mode: effectiveMode,
-        });
+        const extracted = lowerName.endsWith(".docx")
+          ? await extractDocxText(bytes)
+          : await extractPptxText(bytes);
+        if (extracted && extracted.trim().length >= 50) sourceText = extracted.trim();
+      } catch (extractErr) {
+        console.warn("Server-side text extraction failed:", extractErr);
       }
     }
 
-    const parsed = ensureToolArguments(aiResult);
-    const lessons = normalizeLessons(parsed, baseTitle, effectiveMode);
+    let rawLessons: any[];
+    if (sourceText) {
+      rawLessons = await generateLessonsFromText(LOVABLE_API_KEY, sourceText, aiPayload);
+    } else {
+      // PDF / obrázky: multimodální čtení souboru.
+      let aiResult: any;
+      try {
+        aiResult = await callGatewayWithFile(LOVABLE_API_KEY, {
+          ...aiPayload,
+          fileBase64: String(fileBase64),
+        });
+      } catch (fileError) {
+        console.error("File mode failed:", fileError);
+        throw new Error(
+          "AI nedokázala přečíst dokument. Zkopírujte text ručně do textového pole, nebo dokument rozdělte na menší části.",
+        );
+      }
+      const parsedFile = ensureToolArguments(aiResult);
+      rawLessons = Array.isArray(parsedFile?.lessons) ? parsedFile.lessons : [];
+    }
+
+    const lessons = normalizeLessons({ lessons: rawLessons }, baseTitle, effectiveMode);
+
     const blocks = lessons.flatMap((lesson: any) => lesson.blocks);
 
     if (blocks.length === 0) {
