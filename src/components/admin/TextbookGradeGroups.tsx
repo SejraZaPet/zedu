@@ -1,8 +1,19 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FolderOpen, ChevronRight, Pencil, Trash2, Plus, FileText, Play, Monitor, GripVertical } from "lucide-react";
+import { FolderOpen, ChevronRight, Pencil, Trash2, Plus, FileText, Play, Monitor, GripVertical, FolderInput } from "lucide-react";
 import LessonPreviewDialog from "@/components/admin/LessonPreviewDialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Block } from "@/lib/textbook-config";
+
 import {
   DndContext,
   closestCenter,
@@ -59,6 +70,7 @@ interface Props {
   onPreviewLesson: (lesson: LessonItem) => void;
   onReorderLessons?: (topicId: string, orderedLessons: LessonItem[]) => void;
   onReorderTopics?: (grade: number, orderedTopics: TopicItem[]) => void;
+  onMoveLesson?: (lesson: LessonItem, targetTopicId: string) => void | Promise<void>;
 }
 
 const SortableLessonRow = ({
@@ -67,12 +79,14 @@ const SortableLessonRow = ({
   onDeleteLesson,
   onOpenPresentation,
   onOpenWorksheet,
+  onRequestMove,
 }: {
   lesson: LessonItem;
   onEditLesson: (l: LessonItem) => void;
   onDeleteLesson: (l: LessonItem) => void;
   onOpenPresentation: (l: LessonItem) => void;
   onOpenWorksheet: (l: LessonItem) => void;
+  onRequestMove?: (l: LessonItem) => void;
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: lesson.id });
   const style = {
@@ -120,7 +134,13 @@ const SortableLessonRow = ({
         <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => onOpenPresentation(lesson)} title="Prezentace">
           <Monitor className="w-4 h-4" />
         </Button>
+        {onRequestMove && (
+          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => onRequestMove(lesson)} title="Přesunout do tématu…">
+            <FolderInput className="w-4 h-4" />
+          </Button>
+        )}
         <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => onDeleteLesson(lesson)} title="Smazat">
+
           <Trash2 className="w-4 h-4 text-destructive" />
         </Button>
       </div>
@@ -150,7 +170,13 @@ const SortableLessonRow = ({
           <Play className="w-3.5 h-3.5" />
           Prezentace
         </Button>
+        {onRequestMove && (
+          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onRequestMove(lesson)} title="Přesunout do tématu…">
+            <FolderInput className="w-3.5 h-3.5" />
+          </Button>
+        )}
         <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onDeleteLesson(lesson)} title="Smazat">
+
           <Trash2 className="w-3.5 h-3.5 text-destructive" />
         </Button>
       </div>
@@ -165,6 +191,7 @@ const TopicLessonsList = ({
   onOpenPresentation,
   onOpenWorksheet,
   onReorderLessons,
+  onRequestMove,
 }: {
   topic: TopicItem;
   onEditLesson: (l: LessonItem) => void;
@@ -172,6 +199,7 @@ const TopicLessonsList = ({
   onOpenPresentation: (l: LessonItem) => void;
   onOpenWorksheet: (l: LessonItem) => void;
   onReorderLessons?: (topicId: string, orderedLessons: LessonItem[]) => void;
+  onRequestMove?: (l: LessonItem) => void;
 }) => {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -200,7 +228,9 @@ const TopicLessonsList = ({
               onDeleteLesson={onDeleteLesson}
               onOpenPresentation={onOpenPresentation}
               onOpenWorksheet={onOpenWorksheet}
+              onRequestMove={onRequestMove}
             />
+
           ))}
         </SortableContext>
       </DndContext>
@@ -218,6 +248,7 @@ const SortableTopic = ({
   onOpenPresentation,
   onOpenWorksheet,
   onReorderLessons,
+  onRequestMove,
 }: {
   topic: TopicItem;
   onEditLesson: (l: LessonItem) => void;
@@ -228,6 +259,7 @@ const SortableTopic = ({
   onOpenPresentation: (l: LessonItem) => void;
   onOpenWorksheet: (l: LessonItem) => void;
   onReorderLessons?: (topicId: string, orderedLessons: LessonItem[]) => void;
+  onRequestMove?: (l: LessonItem) => void;
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: topic.id });
   const style = {
@@ -271,7 +303,9 @@ const SortableTopic = ({
           onOpenPresentation={onOpenPresentation}
           onOpenWorksheet={onOpenWorksheet}
           onReorderLessons={onReorderLessons}
+          onRequestMove={onRequestMove}
         />
+
       )}
 
       {/* Quick add lesson to this topic */}
@@ -300,14 +334,46 @@ const TextbookGradeGroups = ({
   onOpenWorksheet,
   onReorderLessons,
   onReorderTopics,
+  onMoveLesson,
 }: Props) => {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
+  const [movingLesson, setMovingLesson] = useState<LessonItem | null>(null);
+  const [targetTopicId, setTargetTopicId] = useState<string>("");
+  const [moving, setMoving] = useState(false);
+
+  const flatTopics = gradeGroups.flatMap((g) =>
+    g.topics.map((t) => ({ id: t.id, title: t.title, gradeLabel: g.label })),
+  );
+
+  const currentTopicId = movingLesson
+    ? gradeGroups.flatMap((g) => g.topics).find((t) => t.lessons.some((l) => l.id === movingLesson.id))?.id
+    : undefined;
+
+  const handleRequestMove = onMoveLesson
+    ? (lesson: LessonItem) => {
+        setMovingLesson(lesson);
+        setTargetTopicId("");
+      }
+    : undefined;
+
+  const confirmMove = async () => {
+    if (!movingLesson || !targetTopicId || !onMoveLesson) return;
+    setMoving(true);
+    try {
+      await onMoveLesson(movingLesson, targetTopicId);
+      setMovingLesson(null);
+    } finally {
+      setMoving(false);
+    }
+  };
+
   return (
     <div className="space-y-3">
+
       {gradeGroups.map((group) => {
         const handleTopicDragEnd = (event: DragEndEvent) => {
           const { active, over } = event;
@@ -342,6 +408,7 @@ const TextbookGradeGroups = ({
                         onOpenPresentation={onOpenPresentation}
                         onOpenWorksheet={onOpenWorksheet}
                         onReorderLessons={onReorderLessons}
+                        onRequestMove={handleRequestMove}
                       />
                     ))}
                   </SortableContext>
@@ -351,8 +418,42 @@ const TextbookGradeGroups = ({
           </div>
         );
       })}
+
+      <Dialog open={!!movingLesson} onOpenChange={(open) => { if (!open) setMovingLesson(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Přesunout do tématu</DialogTitle>
+            <DialogDescription>
+              Lekce „{movingLesson?.title}" se zařadí na konec vybraného tématu.
+            </DialogDescription>
+          </DialogHeader>
+          <Select value={targetTopicId} onValueChange={setTargetTopicId}>
+            <SelectTrigger>
+              <SelectValue placeholder="Vyberte cílové téma" />
+            </SelectTrigger>
+            <SelectContent>
+              {flatTopics
+                .filter((t) => t.id !== currentTopicId)
+                .map((t) => (
+                  <SelectItem key={t.id} value={t.id}>
+                    {t.gradeLabel} — {t.title}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setMovingLesson(null)} disabled={moving}>
+              Zrušit
+            </Button>
+            <Button onClick={confirmMove} disabled={!targetTopicId || moving}>
+              {moving ? "Přesouvám…" : "Přesunout"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
+
 };
 
 export default TextbookGradeGroups;
