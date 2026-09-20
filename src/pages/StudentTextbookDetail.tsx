@@ -16,6 +16,7 @@ import {
 import { ArrowLeft, BookOpen, GraduationCap, FolderOpen, CheckCircle2, Circle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import CoursePathMap, { type CoursePathItem } from "@/components/textbook/CoursePathMap";
+import TextbookSearch from "@/components/textbook/TextbookSearch";
 import { isPlacementVisibleToStudent } from "@/lib/lesson-placement-visibility";
 import { useActivityTracking } from "@/hooks/useActivityTracking";
 
@@ -492,6 +493,17 @@ const StudentTextbookDetail = () => {
             </div>
           )}
         </div>
+
+        {!loading && pathItems.length > 0 && (
+          <TextbookSearch
+            className="mb-8"
+            lessons={[...lessonById.values()].map((l) => ({ id: l.id, title: l.title, blocks: l.blocks }))}
+            onOpen={(id) => {
+              const l = lessonById.get(id);
+              if (l) { setCompletedActivityIndices(new Set()); setSelectedLesson(l); }
+            }}
+          />
+        )}
 
         {!loading && pathItems.length > 0 && (
           <CoursePathMap
