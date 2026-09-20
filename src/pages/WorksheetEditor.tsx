@@ -80,6 +80,7 @@ import {
   AlertTriangle,
   Library,
   BookmarkPlus,
+  FileText,
 } from "lucide-react";
 import { usePdfExport } from "@/hooks/usePdfExport";
 import {
