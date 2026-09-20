@@ -228,7 +228,9 @@ const TopicLessonsList = ({
               onDeleteLesson={onDeleteLesson}
               onOpenPresentation={onOpenPresentation}
               onOpenWorksheet={onOpenWorksheet}
+              onRequestMove={onRequestMove}
             />
+
           ))}
         </SortableContext>
       </DndContext>
