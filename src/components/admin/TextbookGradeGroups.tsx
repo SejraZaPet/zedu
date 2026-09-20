@@ -66,7 +66,7 @@ interface Props {
   onEditTopic: (topic: { id: string; title: string; grade?: number }) => void;
   onDeleteTopic: (topicId: string, lessonCount: number) => void;
   onOpenPresentation: (lesson: LessonItem) => void;
-  onOpenWorksheet: (lesson: LessonItem) => void;
+  onOpenWorksheet: (lesson: LessonItem, generate?: boolean) => void;
   onPreviewLesson: (lesson: LessonItem) => void;
   onReorderLessons?: (topicId: string, orderedLessons: LessonItem[]) => void;
   onReorderTopics?: (grade: number, orderedTopics: TopicItem[]) => void;
@@ -88,7 +88,7 @@ const SortableLessonRow = ({
   onEditLesson: (l: LessonItem) => void;
   onDeleteLesson: (l: LessonItem) => void;
   onOpenPresentation: (l: LessonItem) => void;
-  onOpenWorksheet: (l: LessonItem) => void;
+  onOpenWorksheet: (l: LessonItem, generate?: boolean) => void;
   onRequestMove?: (l: LessonItem) => void;
   onRequestMerge?: (l: LessonItem) => void;
 }) => {
@@ -135,6 +135,9 @@ const SortableLessonRow = ({
         <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => onOpenWorksheet(lesson)} title="Pracovní list">
           <FileText className="w-4 h-4" />
         </Button>
+        <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => onOpenWorksheet(lesson, true)} title="Vygenerovat pracovní list z této lekce">
+          <Sparkles className="w-4 h-4 text-primary" />
+        </Button>
         <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => onOpenPresentation(lesson)} title="Prezentace">
           <Monitor className="w-4 h-4" />
         </Button>
@@ -168,6 +171,16 @@ const SortableLessonRow = ({
         >
           <FileText className="w-3.5 h-3.5" />
           Pracovní list
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-7 gap-1.5"
+          onClick={() => onOpenWorksheet(lesson, true)}
+          title="Vygenerovat pracovní list z obsahu této lekce (aktivity + tabulky)"
+        >
+          <Sparkles className="w-3.5 h-3.5 text-primary" />
+          List z lekce
         </Button>
         <Button
           size="sm"
@@ -212,7 +225,7 @@ const TopicLessonsList = ({
   onEditLesson: (l: LessonItem) => void;
   onDeleteLesson: (l: LessonItem) => void;
   onOpenPresentation: (l: LessonItem) => void;
-  onOpenWorksheet: (l: LessonItem) => void;
+  onOpenWorksheet: (l: LessonItem, generate?: boolean) => void;
   onReorderLessons?: (topicId: string, orderedLessons: LessonItem[]) => void;
   onRequestMove?: (l: LessonItem) => void;
   onRequestMergeLesson?: (l: LessonItem) => void;
@@ -276,7 +289,7 @@ const SortableTopic = ({
   onEditTopic: (t: { id: string; title: string; grade?: number }) => void;
   onDeleteTopic: (topicId: string, lessonCount: number) => void;
   onOpenPresentation: (l: LessonItem) => void;
-  onOpenWorksheet: (l: LessonItem) => void;
+  onOpenWorksheet: (l: LessonItem, generate?: boolean) => void;
   onReorderLessons?: (topicId: string, orderedLessons: LessonItem[]) => void;
   onRequestMove?: (l: LessonItem) => void;
   onRequestMergeLesson?: (l: LessonItem) => void;
