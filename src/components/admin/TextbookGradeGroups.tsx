@@ -330,6 +330,7 @@ const SortableTopic = ({
           onOpenWorksheet={onOpenWorksheet}
           onReorderLessons={onReorderLessons}
           onRequestMove={onRequestMove}
+          onRequestMergeLesson={onRequestMergeLesson}
         />
 
       )}
