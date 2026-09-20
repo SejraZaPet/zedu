@@ -362,6 +362,8 @@ const TextbookGradeGroups = ({
   onReorderLessons,
   onReorderTopics,
   onMoveLesson,
+  onMergeTopics,
+  onMergeLessons,
 }: Props) => {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
