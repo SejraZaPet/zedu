@@ -334,14 +334,46 @@ const TextbookGradeGroups = ({
   onOpenWorksheet,
   onReorderLessons,
   onReorderTopics,
+  onMoveLesson,
 }: Props) => {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
+  const [movingLesson, setMovingLesson] = useState<LessonItem | null>(null);
+  const [targetTopicId, setTargetTopicId] = useState<string>("");
+  const [moving, setMoving] = useState(false);
+
+  const flatTopics = gradeGroups.flatMap((g) =>
+    g.topics.map((t) => ({ id: t.id, title: t.title, gradeLabel: g.label })),
+  );
+
+  const currentTopicId = movingLesson
+    ? gradeGroups.flatMap((g) => g.topics).find((t) => t.lessons.some((l) => l.id === movingLesson.id))?.id
+    : undefined;
+
+  const handleRequestMove = onMoveLesson
+    ? (lesson: LessonItem) => {
+        setMovingLesson(lesson);
+        setTargetTopicId("");
+      }
+    : undefined;
+
+  const confirmMove = async () => {
+    if (!movingLesson || !targetTopicId || !onMoveLesson) return;
+    setMoving(true);
+    try {
+      await onMoveLesson(movingLesson, targetTopicId);
+      setMovingLesson(null);
+    } finally {
+      setMoving(false);
+    }
+  };
+
   return (
     <div className="space-y-3">
+
       {gradeGroups.map((group) => {
         const handleTopicDragEnd = (event: DragEndEvent) => {
           const { active, over } = event;
