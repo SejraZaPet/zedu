@@ -347,6 +347,9 @@ const StudentTextbookDetail = () => {
   }, [selectedLesson?.id]);
 
 
+  // Deep-link ?aktivita=<index> — odscrolluje a zvýrazní aktivitu (QR kód z pracovního listu)
+  const highlightedActivityIndex = useActivityDeepLink(!!selectedLesson, selectedLesson?.id ?? null);
+
   const handleMarkComplete = async (lessonId: string) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
