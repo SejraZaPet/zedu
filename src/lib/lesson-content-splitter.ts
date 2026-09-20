@@ -81,8 +81,12 @@ export interface LessonActivity {
 export function extractActivitiesFromBlocks(blocks: unknown): LessonActivity[] {
   if (!Array.isArray(blocks)) return [];
   const out: LessonActivity[] = [];
-  (blocks as any[]).forEach((b, idx) => {
-    if (!b || typeof b !== "object" || b.type !== "activity") return;
+  // Index se počítá jen mezi VIDITELNÝMI bloky – stejně jako se ukládají
+  // výsledky aktivit a jak se na aktivitu odkazuje přes ?aktivita=<index>.
+  (blocks as any[])
+    .filter((b) => b && typeof b === "object" && b.visible !== false)
+    .forEach((b, idx) => {
+    if (b.type !== "activity") return;
     const p = (b.props ?? {}) as Record<string, unknown>;
     const at = String(p.activityType ?? "flashcards");
     const title =
@@ -120,8 +124,10 @@ export function extractTablesFromBlocks(blocks: unknown): LessonTable[] {
   const clean = (v: unknown) =>
     String(v ?? "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
   const out: LessonTable[] = [];
-  (blocks as any[]).forEach((b, idx) => {
-    if (!b || typeof b !== "object" || b.type !== "table") return;
+  (blocks as any[])
+    .filter((b) => b && typeof b === "object" && b.visible !== false)
+    .forEach((b, idx) => {
+    if (b.type !== "table") return;
     const p = (b.props ?? {}) as any;
     const headers: string[] = Array.isArray(p.headers) ? p.headers.map(clean) : [];
     const body: string[][] = Array.isArray(p.rows)
