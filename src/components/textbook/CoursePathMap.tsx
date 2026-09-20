@@ -70,6 +70,10 @@ const CoursePathMap = ({
         <p className="text-sm text-muted-foreground mb-4">{description}</p>
       )}
 
+      <div
+        className={maxListHeight ? "overflow-y-auto pr-1" : undefined}
+        style={maxListHeight ? { maxHeight: maxListHeight } : undefined}
+      >
       <ol className="flex flex-wrap items-stretch gap-y-4">
         {items.map((item, idx) => {
           const isNext = showProgress && idx === nextIndex;
@@ -149,6 +153,7 @@ const CoursePathMap = ({
           </div>
         </li>
       </ol>
+      </div>
     </section>
   );
 };
