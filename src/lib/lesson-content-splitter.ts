@@ -170,6 +170,140 @@ export function extractTablesFromBlocks(blocks: unknown): LessonTable[] {
 }
 
 
+/** Převede JEDEN blok lekce na řádky plain-textu / markdownu. */
+export function blockToText(b: any): string[] {
+  const stripHtml = (s: unknown) =>
+    String(s ?? "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  const parts: string[] = [];
+  const p = b?.props ?? {};
+
+  switch (b?.type) {
+    case "heading": {
+      const lvl = Number(p.level) > 0 && Number(p.level) <= 6 ? Number(p.level) : 2;
+      if (p.text) parts.push(`${"#".repeat(lvl)} ${stripHtml(p.text)}`);
+      break;
+    }
+    case "paragraph":
+      if (p.text) parts.push(stripHtml(p.text));
+      break;
+    case "bullet_list": {
+      if (p.html) {
+        const liMatches = String(p.html).match(/<li[^>]*>([\s\S]*?)<\/li>/gi) ?? [];
+        for (const li of liMatches) {
+          const txt = stripHtml(li);
+          if (txt) parts.push(`- ${txt}`);
+        }
+      } else if (Array.isArray(p.items)) {
+        for (const it of p.items) {
+          const txt = stripHtml(it);
+          if (txt) parts.push(`- ${txt}`);
+        }
+      }
+      break;
+    }
+    case "callout": {
+      const label = p.calloutType ? `[${String(p.calloutType).toUpperCase()}]` : "";
+      if (p.text) parts.push(`${label} ${stripHtml(p.text)}`.trim());
+      break;
+    }
+    case "quote": {
+      const txt = stripHtml(p.text);
+      const author = stripHtml(p.author);
+      if (txt) parts.push(`> ${txt}${author ? ` — ${author}` : ""}`);
+      break;
+    }
+    case "summary": {
+      if (p.title) parts.push(`## ${stripHtml(p.title)}`);
+      if (p.text) parts.push(stripHtml(p.text));
+      break;
+    }
+    case "image": {
+      const bits = [stripHtml(p.alt), stripHtml(p.caption), stripHtml(p.title)].filter(Boolean);
+      if (bits.length) parts.push(`[Obrázek] ${bits.join(" — ")}`);
+      break;
+    }
+    case "image_text": {
+      const bits = [stripHtml(p.caption), stripHtml(p.text)].filter(Boolean);
+      if (bits.length) parts.push(bits.join("\n"));
+      break;
+    }
+    case "gallery": {
+      const imgs: any[] = Array.isArray(p.images) ? p.images : [];
+      const captions = imgs.map((i) => stripHtml(i?.caption)).filter(Boolean);
+      if (captions.length) parts.push(`[Galerie] ${captions.join(" / ")}`);
+      break;
+    }
+    case "card_grid": {
+      const cards: any[] = Array.isArray(p.cards) ? p.cards : [];
+      for (const c of cards) {
+        const title = stripHtml(c?.title);
+        if (title) parts.push(`### ${title}`);
+        if (c?.mode === "bullets" && Array.isArray(c?.items)) {
+          for (const it of c.items) {
+            const t = stripHtml(it);
+            if (t) parts.push(`- ${t}`);
+          }
+        } else if (c?.text) {
+          parts.push(stripHtml(c.text));
+        }
+      }
+      break;
+    }
+    case "table": {
+      const headers: any[] = Array.isArray(p.headers) ? p.headers : [];
+      const rows: any[] = Array.isArray(p.rows) ? p.rows : [];
+      if (headers.length) parts.push(headers.map((h) => stripHtml(h)).join(" | "));
+      for (const row of rows) {
+        if (Array.isArray(row)) {
+          parts.push(row.map((c) => stripHtml(c)).join(" | "));
+        }
+      }
+      break;
+    }
+    case "accordion": {
+      const items: any[] = Array.isArray(p.items) ? p.items : [];
+      for (const it of items) {
+        const title = stripHtml(it?.title);
+        const content = stripHtml(it?.content);
+        if (title) parts.push(`### ${title}`);
+        if (content) parts.push(content);
+      }
+      break;
+    }
+    case "two_column": {
+      const left = stripHtml(p.left);
+      const right = stripHtml(p.right);
+      if (left) parts.push(left);
+      if (right) parts.push(right);
+      break;
+    }
+    case "lesson_link": {
+      const bits = [stripHtml(p.title), stripHtml(p.buttonText), stripHtml(p.description)].filter(Boolean);
+      if (bits.length) parts.push(`[Odkaz na lekci] ${bits.join(" — ")}`);
+      break;
+    }
+    case "youtube": {
+      const bits = [stripHtml(p.caption), stripHtml(p.title)].filter(Boolean);
+      if (bits.length) parts.push(`[YouTube] ${bits.join(" — ")}`);
+      break;
+    }
+    case "activity": {
+      const bits = [stripHtml(p.title), stripHtml(p.instruction), stripHtml(p.description)].filter(Boolean);
+      if (bits.length) parts.push(`[Aktivita${p.activityType ? `: ${p.activityType}` : ""}] ${bits.join(" — ")}`);
+      break;
+    }
+    case "divider":
+      // visual only — skip
+      break;
+    default: {
+      const generic = [stripHtml(p.title), stripHtml(p.text), stripHtml(p.content), stripHtml(p.caption)].filter(Boolean);
+      if (generic.length) parts.push(generic.join(" "));
+      break;
+    }
+  }
+  return parts.filter(Boolean);
+}
+
 /**
  * Extrahuje plain-text / markdown z blokové struktury (jsonb `blocks`)
  * používané v učitelských lekcích a textbook_lessons.
@@ -178,140 +312,100 @@ export function extractTablesFromBlocks(blocks: unknown): LessonTable[] {
  */
 export function extractTextFromBlocks(blocks: unknown): string {
   if (!Array.isArray(blocks)) return "";
-  const stripHtml = (s: unknown) =>
-    String(s ?? "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
   const parts: string[] = [];
-
   for (const { block: b } of flattenLessonBlocks(blocks)) {
-    const p = b.props ?? {};
-
-    switch (b.type) {
-      case "heading": {
-        const lvl = Number(p.level) > 0 && Number(p.level) <= 6 ? Number(p.level) : 2;
-        if (p.text) parts.push(`${"#".repeat(lvl)} ${stripHtml(p.text)}`);
-        break;
-      }
-      case "paragraph":
-        if (p.text) parts.push(stripHtml(p.text));
-        break;
-      case "bullet_list": {
-        if (p.html) {
-          // Extract <li> contents from HTML
-          const liMatches = String(p.html).match(/<li[^>]*>([\s\S]*?)<\/li>/gi) ?? [];
-          for (const li of liMatches) {
-            const txt = stripHtml(li);
-            if (txt) parts.push(`- ${txt}`);
-          }
-        } else if (Array.isArray(p.items)) {
-          for (const it of p.items) {
-            const txt = stripHtml(it);
-            if (txt) parts.push(`- ${txt}`);
-          }
-        }
-        break;
-      }
-      case "callout": {
-        const label = p.calloutType ? `[${String(p.calloutType).toUpperCase()}]` : "";
-        if (p.text) parts.push(`${label} ${stripHtml(p.text)}`.trim());
-        break;
-      }
-      case "quote": {
-        const txt = stripHtml(p.text);
-        const author = stripHtml(p.author);
-        if (txt) parts.push(`> ${txt}${author ? ` — ${author}` : ""}`);
-        break;
-      }
-      case "summary": {
-        if (p.title) parts.push(`## ${stripHtml(p.title)}`);
-        if (p.text) parts.push(stripHtml(p.text));
-        break;
-      }
-      case "image": {
-        const bits = [stripHtml(p.alt), stripHtml(p.caption), stripHtml(p.title)].filter(Boolean);
-        if (bits.length) parts.push(`[Obrázek] ${bits.join(" — ")}`);
-        break;
-      }
-      case "image_text": {
-        const bits = [stripHtml(p.caption), stripHtml(p.text)].filter(Boolean);
-        if (bits.length) parts.push(bits.join("\n"));
-        break;
-      }
-      case "gallery": {
-        const imgs: any[] = Array.isArray(p.images) ? p.images : [];
-        const captions = imgs.map((i) => stripHtml(i?.caption)).filter(Boolean);
-        if (captions.length) parts.push(`[Galerie] ${captions.join(" / ")}`);
-        break;
-      }
-      case "card_grid": {
-        const cards: any[] = Array.isArray(p.cards) ? p.cards : [];
-        for (const c of cards) {
-          const title = stripHtml(c?.title);
-          if (title) parts.push(`### ${title}`);
-          if (c?.mode === "bullets" && Array.isArray(c?.items)) {
-            for (const it of c.items) {
-              const t = stripHtml(it);
-              if (t) parts.push(`- ${t}`);
-            }
-          } else if (c?.text) {
-            parts.push(stripHtml(c.text));
-          }
-        }
-        break;
-      }
-      case "table": {
-        const headers: any[] = Array.isArray(p.headers) ? p.headers : [];
-        const rows: any[] = Array.isArray(p.rows) ? p.rows : [];
-        if (headers.length) parts.push(headers.map((h) => stripHtml(h)).join(" | "));
-        for (const row of rows) {
-          if (Array.isArray(row)) {
-            parts.push(row.map((c) => stripHtml(c)).join(" | "));
-          }
-        }
-        break;
-      }
-      case "accordion": {
-        const items: any[] = Array.isArray(p.items) ? p.items : [];
-        for (const it of items) {
-          const title = stripHtml(it?.title);
-          const content = stripHtml(it?.content);
-          if (title) parts.push(`### ${title}`);
-          if (content) parts.push(content);
-        }
-        break;
-      }
-      case "two_column": {
-        const left = stripHtml(p.left);
-        const right = stripHtml(p.right);
-        if (left) parts.push(left);
-        if (right) parts.push(right);
-        break;
-      }
-      case "lesson_link": {
-        const bits = [stripHtml(p.title), stripHtml(p.buttonText), stripHtml(p.description)].filter(Boolean);
-        if (bits.length) parts.push(`[Odkaz na lekci] ${bits.join(" — ")}`);
-        break;
-      }
-      case "youtube": {
-        const bits = [stripHtml(p.caption), stripHtml(p.title)].filter(Boolean);
-        if (bits.length) parts.push(`[YouTube] ${bits.join(" — ")}`);
-        break;
-      }
-      case "activity": {
-        const bits = [stripHtml(p.title), stripHtml(p.instruction), stripHtml(p.description)].filter(Boolean);
-        if (bits.length) parts.push(`[Aktivita${p.activityType ? `: ${p.activityType}` : ""}] ${bits.join(" — ")}`);
-        break;
-      }
-      case "divider":
-        // visual only — skip
-        break;
-      default: {
-        // Unknown block — try generic text/title fields as fallback
-        const generic = [stripHtml(p.title), stripHtml(p.text), stripHtml(p.content), stripHtml(p.caption)].filter(Boolean);
-        if (generic.length) parts.push(generic.join(" "));
-        break;
-      }
-    }
+    parts.push(...blockToText(b));
   }
   return parts.filter(Boolean).join("\n");
 }
+
+/** Sekce lekce v chronologickém pořadí — podklad pro stavbu pracovního listu. */
+export interface LessonSection {
+  /** Pořadové číslo sekce (1-based). */
+  index: number;
+  /** Nadpis sekce (nebo automatický „Část N“). */
+  title: string;
+  /** Textový obsah sekce (markdown-ish). */
+  text: string;
+  /** Aktivita nalezená v sekci (pokud sekce/karta nějakou obsahuje). */
+  activity?: LessonActivity;
+  /** Tabulka nalezená v sekci (pokud nějakou obsahuje). */
+  table?: LessonTable;
+}
+
+/**
+ * Rozdělí lekci na sekce v pořadí, v jakém jsou — stejná logika jako u
+ * `blocksToSlides`: novou sekci začíná nadpis, a každá karta (slide_group)
+ * tvoří vlastní sekci. U každé sekce vrací text, případnou aktivitu a tabulku.
+ */
+export function splitLessonIntoSections(blocks: unknown): LessonSection[] {
+  const flat = flattenLessonBlocks(blocks);
+  if (flat.length === 0) return [];
+
+  const activities = extractActivitiesFromBlocks(blocks);
+  const tables = extractTablesFromBlocks(blocks);
+  let activityCursor = 0;
+  let tableCursor = 0;
+
+  type Draft = {
+    title: string;
+    lines: string[];
+    activity?: LessonActivity;
+    table?: LessonTable;
+  };
+  const drafts: Draft[] = [];
+  let current: Draft | null = null;
+  let currentCardTop: number | null = null;
+
+  const startNew = () => {
+    current = { title: "", lines: [] };
+    drafts.push(current);
+  };
+
+  const stripHtml = (s: unknown) =>
+    String(s ?? "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+
+  for (const entry of flat) {
+    const b = entry.block;
+    if (entry.nested) {
+      if (entry.topIndex !== currentCardTop || !current) {
+        startNew();
+        currentCardTop = entry.topIndex;
+      }
+    } else {
+      currentCardTop = null;
+      if (!current || b.type === "heading") startNew();
+    }
+    const draft = current!;
+
+    if (b.type === "heading") {
+      const t = stripHtml(b.props?.text);
+      if (!draft.title) draft.title = t;
+      else if (t) draft.lines.push(`### ${t}`);
+      continue;
+    }
+    if (b.type === "activity") {
+      draft.activity = draft.activity ?? activities[activityCursor];
+      activityCursor += 1;
+      continue;
+    }
+    if (b.type === "table") {
+      draft.table = draft.table ?? tables[tableCursor];
+      tableCursor += 1;
+      continue;
+    }
+    draft.lines.push(...blockToText(b));
+  }
+
+  return drafts
+    .filter((d) => d.title || d.lines.length > 0 || d.activity || d.table)
+    .map((d, i) => ({
+      index: i + 1,
+      title: d.title || (d.lines[0] ?? `Část ${i + 1}`).slice(0, 80),
+      text: d.lines.join("\n"),
+      ...(d.activity ? { activity: d.activity } : {}),
+      ...(d.table ? { table: d.table } : {}),
+    }));
+}
+
 
