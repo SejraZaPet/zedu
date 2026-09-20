@@ -1253,7 +1253,41 @@ const TeacherTextbooks = () => {
       </main>
       <SiteFooter />
 
+      {/* Jediné rozhodnutí při rychlém spuštění: běží starší relace. */}
+      <Dialog
+        open={!!existingSession && !presentationLesson}
+        onOpenChange={(o) => { if (!o) { setExistingSession(null); setPendingLaunchData(null); } }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Tato prezentace už běží</DialogTitle>
+            <DialogDescription>
+              Pro lekci „{existingSession?.title}“ je spuštěná starší relace. Chcete v ní pokračovat, nebo začít novou?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => { setExistingSession(null); setPendingLaunchData(null); }}>
+              Zrušit
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                const id = existingSession!.id;
+                setExistingSession(null);
+                setPendingLaunchData(null);
+                showProjector(id);
+                navigate(`/live/ucitel/${id}`);
+              }}
+            >
+              Pokračovat ve staré
+            </Button>
+            <Button onClick={launchNew}>Začít novou</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <PresentationEditorDialog
+
         presentationLesson={presentationLesson ? { ...presentationLesson, textbookId: selectedTextbook?.id } : null}
         pendingSlides={pendingSlides}
         setPendingSlides={setPendingSlides}
