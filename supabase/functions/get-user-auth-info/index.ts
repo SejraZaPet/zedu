@@ -60,13 +60,17 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "user_id required" }), { status: 400, headers: corsHeaders });
     }
 
-    const { data: { user }, error } = await adminClient.auth.admin.getUserById(requestedUserId);
+    const [{ data: { user }, error }, { data: profile }] = await Promise.all([
+      adminClient.auth.admin.getUserById(requestedUserId),
+      adminClient.from("profiles").select("last_active_at").eq("id", requestedUserId).maybeSingle(),
+    ]);
     if (error || !user) {
       return new Response(JSON.stringify({ error: "User not found" }), { status: 404, headers: corsHeaders });
     }
 
     return new Response(JSON.stringify({
       last_sign_in_at: user.last_sign_in_at,
+      last_active_at: profile?.last_active_at ?? null,
       created_at: user.created_at,
       email_confirmed_at: user.email_confirmed_at,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
