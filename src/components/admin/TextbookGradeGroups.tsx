@@ -266,6 +266,8 @@ const SortableTopic = ({
   onOpenWorksheet,
   onReorderLessons,
   onRequestMove,
+  onRequestMergeLesson,
+  onRequestMergeTopic,
 }: {
   topic: TopicItem;
   onEditLesson: (l: LessonItem) => void;
@@ -277,6 +279,8 @@ const SortableTopic = ({
   onOpenWorksheet: (l: LessonItem) => void;
   onReorderLessons?: (topicId: string, orderedLessons: LessonItem[]) => void;
   onRequestMove?: (l: LessonItem) => void;
+  onRequestMergeLesson?: (l: LessonItem) => void;
+  onRequestMergeTopic?: (t: TopicItem) => void;
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: topic.id });
   const style = {
