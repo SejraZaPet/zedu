@@ -688,24 +688,52 @@ const TeacherTextbooks = () => {
             </div>
           </div>
 
-          {/* Vizuální mapa lekcí */}
-          {!detailLoading && (
-            <CoursePathMap
-              title="Mapa lekcí"
-              description="Přehled pořadí lekcí, jak jimi žák projde. Kliknutím otevřete editor lekce."
-              items={gradeGroups.flatMap((g) =>
-                g.topics.flatMap((t) =>
-                  t.lessons.map((l) => ({ id: l.id, title: l.title, groupLabel: t.title }))
-                )
-              )}
-              onSelect={(id) => {
-                const lesson = gradeGroups
-                  .flatMap((g) => g.topics.flatMap((t) => t.lessons))
-                  .find((l) => l.id === id);
-                if (lesson) openLessonEditor(lesson);
-              }}
-            />
-          )}
+          {/* Vizuální mapa lekcí – filtrováno podle ročníku */}
+          {!detailLoading && (() => {
+            const available = gradeGroups.filter((g) => g.topics.some((t) => t.lessons.length > 0));
+            if (available.length === 0) return null;
+            const activeGrade = mapGrade ?? available[0].grade;
+            const activeGroup = gradeGroups.find((g) => g.grade === activeGrade) ?? available[0];
+            const mapItems = activeGroup.topics.flatMap((t) =>
+              t.lessons.map((l) => ({ id: l.id, title: l.title, groupLabel: t.title }))
+            );
+            const lessonCount = (g: GradeGroup) =>
+              g.topics.reduce((s, t) => s + t.lessons.length, 0);
+            return (
+              <div>
+                {available.length > 1 && (
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {available.map((g) => (
+                      <button
+                        key={g.grade}
+                        type="button"
+                        onClick={() => setMapGrade(g.grade)}
+                        className={`px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider transition-all duration-200 border ${
+                          activeGrade === g.grade
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-card text-muted-foreground border-border hover:border-primary/40 hover:text-foreground"
+                        }`}
+                      >
+                        {g.grade === 0 ? "Bez ročníku" : g.label} · {lessonCount(g)}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <CoursePathMap
+                  title="Mapa lekcí"
+                  description="Přehled pořadí lekcí, jak jimi žák projde. Kliknutím otevřete editor lekce."
+                  items={mapItems}
+                  maxListHeight={380}
+                  onSelect={(id) => {
+                    const lesson = gradeGroups
+                      .flatMap((g) => g.topics.flatMap((t) => t.lessons))
+                      .find((l) => l.id === id);
+                    if (lesson) openLessonEditor(lesson);
+                  }}
+                />
+              </div>
+            );
+          })()}
 
           {/* Structure */}
 
