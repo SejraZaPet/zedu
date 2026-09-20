@@ -101,7 +101,8 @@ export default function LessonSectionsPanel({
   const [modes, setModes] = useState<Record<number, SectionMode>>({});
   const [activityModes, setActivityModes] = useState<Record<number, "qr" | "convert">>({});
   const [aiTypes, setAiTypes] = useState<Record<number, string>>({});
-  const [aiResults, setAiResults] = useState<Record<number, AiItem>>({});
+  const [aiResults, setAiResults] = useState<Record<number, AiItem[]>>({});
+  const [aiCounts, setAiCounts] = useState<Record<number, number>>({});
   const [aiLoading, setAiLoading] = useState<Record<number, boolean>>({});
   const [tables, setTables] = useState<Record<number, { rows: string[][]; caption?: string }>>({});
 
@@ -118,6 +119,7 @@ export default function LessonSectionsPanel({
     setModes(m);
     setActivityModes(am);
     setAiTypes({});
+    setAiCounts({});
     setAiResults({});
     setAiLoading({});
     setTables(tb);
@@ -136,12 +138,14 @@ export default function LessonSectionsPanel({
           sectionTitle: s.title,
           sectionText: s.text,
           itemType: aiTypes[s.index] ?? "auto",
+          count: aiCounts[s.index] ?? 1,
         },
       });
       if (error) throw error;
-      const item = (data as any)?.item;
-      if (!item?.type || !item?.prompt) throw new Error("AI nevrátila úlohu");
-      setAiResults((p) => ({ ...p, [s.index]: item as AiItem }));
+      const raw = (data as any)?.items ?? ((data as any)?.item ? [(data as any).item] : []);
+      const list = (raw as AiItem[]).filter((i) => i?.type && i?.prompt);
+      if (list.length === 0) throw new Error("AI nevrátila úlohu");
+      setAiResults((p) => ({ ...p, [s.index]: list }));
     } catch (err: any) {
       toast({
         title: "AI návrh se nepovedl",
@@ -190,8 +194,8 @@ export default function LessonSectionsPanel({
             });
           }
         }
-      } else if (mode === "ai" && aiResults[s.index]) {
-        out.push(aiItemToBuilt(aiResults[s.index]));
+      } else if (mode === "ai" && aiResults[s.index]?.length) {
+        for (const ai of aiResults[s.index]) out.push(aiItemToBuilt(ai));
       } else {
         out.push({
           type: "write_lines",
@@ -319,6 +323,23 @@ export default function LessonSectionsPanel({
                           ))}
                         </SelectContent>
                       </Select>
+                      <Select
+                        value={String(aiCounts[s.index] ?? 1)}
+                        onValueChange={(v) =>
+                          setAiCounts((p) => ({ ...p, [s.index]: Number(v) }))
+                        }
+                      >
+                        <SelectTrigger className="w-[130px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover">
+                          {[1, 2, 3, 4, 5, 6, 8].map((n) => (
+                            <SelectItem key={n} value={String(n)}>
+                              {n === 1 ? "1 úloha" : n < 5 ? `${n} úlohy` : `${n} úloh`}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <Button
                         size="sm"
                         variant="outline"
@@ -330,16 +351,16 @@ export default function LessonSectionsPanel({
                         ) : (
                           <Sparkles className="w-4 h-4 mr-1" />
                         )}
-                        {aiResults[s.index] ? "Jiný návrh" : "Navrhnout"}
+                        {aiResults[s.index]?.length ? "Jiný návrh" : "Navrhnout"}
                       </Button>
                     </div>
-                    {aiResults[s.index] && (
-                      <div className="rounded-lg bg-muted/50 p-2 text-sm">
+                    {aiResults[s.index]?.map((ai, i) => (
+                      <div key={i} className="rounded-lg bg-muted/50 p-2 text-sm">
                         <Check className="w-3.5 h-3.5 inline mr-1 text-primary" />
-                        <span className="whitespace-pre-wrap">{aiResults[s.index].prompt}</span>
+                        <span className="whitespace-pre-wrap">{ai.prompt}</span>
                       </div>
-                    )}
-                    {!aiResults[s.index] && !aiLoading[s.index] && (
+                    ))}
+                    {!aiResults[s.index]?.length && !aiLoading[s.index] && (
                       <p className="text-xs text-muted-foreground">
                         Bez návrhu se do listu vloží prostor na poznámky.
                       </p>
