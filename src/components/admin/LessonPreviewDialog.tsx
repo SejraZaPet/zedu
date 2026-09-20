@@ -79,9 +79,11 @@ const LessonPreviewDialog = ({ title, heroImageUrl, blocks, lessonId, lessonSour
             </Button>
           </DialogHeader>
 
-          {/* Render preview in frontend styles */}
-          <div key={refreshKey} className="bg-background px-4 py-8">
-            <div className="mx-auto max-w-3xl">
+          {/* Render preview in frontend styles – šířka a boční odsazení
+              odpovídají žákovské stránce (LessonPage.tsx: container mx-auto max-w-3xl px-4),
+              aby náhled věrně kopíroval rozložení, které žák uvidí. */}
+          <div key={refreshKey} className="bg-background py-8">
+            <div className="mx-auto max-w-3xl px-4">
               {effectiveHero && (
                 <img
                   src={effectiveHero}
