@@ -23,6 +23,10 @@ import { toast } from "@/hooks/use-toast";
 import type { LessonBlock } from "@/lib/lesson-content-splitter";
 import { ITEM_TYPE_LABELS } from "@/lib/worksheet-defaults";
 import type { ItemType } from "@/lib/worksheet-spec";
+import {
+  buildItemsFromLessonActivity,
+  type MappedWorksheetItem,
+} from "@/lib/lesson-activity-to-worksheet";
 
 // ───── Picker (Sheet) ──────────────────────────────────────────────
 
