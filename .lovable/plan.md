@@ -1,22 +1,16 @@
-# Cílené umístění lekcí
+# Oprava volného rozmístění v náhledu lekce
 
 ## Co změním
-- Rozšířím umístění lekce o volitelnou třídu nebo skupinu, období a rozsah jednoho či všech ročníků.
-- V editoru přidám tři srozumitelné volby a vyhledávací výběr pouze z vlastních tříd a skupin učitele.
-- Zachovám dnešní výchozí chování: celý ročník, celý školní rok, jeden ročník.
+- Pouze v needitovatelném `FreeFrameCanvas` změřím skutečnou výšku obsahu každé karty při aktuální šířce.
+- Pokud obsah potřebuje více místa než uložený rámec, kartu zvětším; uložená data ani editor se nezmění.
+- Karty ve stejné řadě nebo pod zvětšenou kartou posunu dolů tak, aby se zachovalo vodorovné rozložení a nevzniklo překrytí.
+- Výšku celého plátna prodloužím podle výsledného rozmístění; obsah už nebude oříznutý.
 
-## Viditelnost pro žáka
-- Konkrétní třída bude vyžadovat členství právě v této třídě.
-- Konkrétní skupina bude vyžadovat členství právě v této skupině.
-- Bez konkrétního cíle bude umístění platit všem oprávněným žákům odpovídající učebnice.
-- „Celé studium oboru“ nebude vyžadovat shodu aktuálního ročníku; přístup k oboru zůstane omezen propojením učebnice s třídou, předmětem nebo skupinou.
-- Období bude uložená organizační informace; bez školního kalendáře nebude samo automaticky skrývat obsah podle dnešního data.
-
-## Databáze a bezpečnost
-- Přidám `subject_group_id`, `school_term` a `scope_all_grades` a upravím jedinečnost umístění pro různé cíle.
-- Přidám serverovou kontrolu způsobilosti žáka a použiji ji pro umístění i samotné lekce, aby klientské filtrování nešlo obejít.
-- Zachovám přístup vlastníků, učitelů a správců a stávající chování lekcí bez umístění.
+## Technické provedení
+- Měření proběhne po vykreslení a při změně šířky přes `ResizeObserver`, včetně pozdějšího načtení obrázků či fontů.
+- Posuny budu počítat po vizuálních řadách podle původních souřadnic `y`; růst jedné karty určí výšku celé řady, takže sousední karty zůstanou zarovnané.
+- Editovatelná varianta s `onChangeFrame` zůstane beze změny.
 
 ## Ověření
-- Obnovím databázové typy, ověřím kontrolu typů, testy a sestavení.
-- V náhledu nastavím konkrétní třídu s rozsahem celého studia a ověřím u oprávněného i jiného žáka.
+- Doplním testy pro růst karty, posun stejné/následující řady a zachování editorového chování.
+- Ověřím sestavení a náhled konkrétní lekce s textem „Zajistit, aby se potraviny vzájemně…“, pokud je dostupná v přihlášeném náhledu.
