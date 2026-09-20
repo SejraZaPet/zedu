@@ -1381,6 +1381,58 @@ export default function WorksheetEditor() {
     });
   }
 
+  /**
+   * Aplikuje strukturovanou aktivitu (stejný tvar jako aktivita v lekci) na
+   * vybranou položku. Případné další položky (např. víc otázek kvízu) vloží
+   * hned za ni.
+   */
+  function applyMappedActivityToItem(itemId: string, mapped: MappedWorksheetItem[]) {
+    if (!spec || mapped.length === 0) return;
+    const idx = items.findIndex((x) => x.id === itemId);
+    if (idx < 0) return;
+    const variantId = spec.variants[0].variantId;
+    const first = mapped[0];
+    const extras = mapped.slice(1).map((m) => {
+      const base = createDefaultItem(m.type, 0);
+      const newItem: WorksheetItem = { ...base, ...m.patch };
+      const key = createDefaultAnswerKey(newItem);
+      return {
+        item: newItem,
+        key: m.correct !== undefined ? { ...key, correctAnswer: m.correct } : key,
+      };
+    });
+
+    updateSpec((s) => {
+      const v0 = s.variants[0];
+      const patched = v0.items.map((it) =>
+        it.id === itemId ? { ...it, type: first.type, ...first.patch } : it,
+      );
+      const withExtras = [
+        ...patched.slice(0, idx + 1),
+        ...extras.map((e) => e.item),
+        ...patched.slice(idx + 1),
+      ].map((it, i) => ({ ...it, itemNumber: i + 1 }));
+      const keys = (s.answerKeys[variantId] ?? []).map((a) =>
+        a.itemId === itemId && first.correct !== undefined
+          ? { ...a, correctAnswer: first.correct }
+          : a,
+      );
+      return {
+        ...s,
+        variants: s.variants.map((v, i) => (i === 0 ? { ...v, items: withExtras } : v)),
+        answerKeys: { ...s.answerKeys, [variantId]: [...keys, ...extras.map((e) => e.key)] },
+      };
+    });
+
+    toast({
+      title: "Aktivita připravena",
+      description:
+        extras.length > 0
+          ? `Vloženo ${mapped.length} úloh podle obsahu lekce.`
+          : "Obsah z lekce se propsal do úlohy.",
+    });
+  }
+
   // ── AI: load suggestions for a lesson block ──
   async function openSuggestionsForBlock(block: LessonBlock) {
     setSuggestionDialog({
