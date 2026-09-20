@@ -760,7 +760,13 @@ async function generateLessonsForBatch(
   return parsed.lessons;
 }
 
-/** Rozdělí text na dávky a postupně je zpracuje; výsledné lekce spojí. */
+/**
+ * Rozdělí text na dávky a zpracuje je paralelně (omezená souběžnost, ať se
+ * vejdeme do časového limitu edge funkce); výsledné lekce spojí v původním
+ * pořadí dávek.
+ */
+const BATCH_CONCURRENCY = 4;
+
 async function generateLessonsFromText(
   apiKey: string,
   text: string,
@@ -768,12 +774,24 @@ async function generateLessonsFromText(
 ): Promise<any[]> {
   const batches = splitTextIntoBatches(text);
   console.log(`[batch] text ${countWords(text)} slov → ${batches.length} dávek`);
-  const lessons: any[] = [];
-  for (let i = 0; i < batches.length; i++) {
-    const part = await generateLessonsForBatch(apiKey, batches[i], payload);
-    console.log(`[batch] dávka ${i + 1}/${batches.length} → ${part.length} lekcí`);
-    lessons.push(...part);
-  }
+
+  const results: any[][] = new Array(batches.length).fill(null).map(() => []);
+  let next = 0;
+  const worker = async () => {
+    while (true) {
+      const index = next++;
+      if (index >= batches.length) return;
+      const part = await generateLessonsForBatch(apiKey, batches[index], payload);
+      console.log(`[batch] dávka ${index + 1}/${batches.length} → ${part.length} lekcí`);
+      results[index] = part;
+    }
+  };
+  await Promise.all(
+    Array.from({ length: Math.min(BATCH_CONCURRENCY, batches.length) }, () => worker()),
+  );
+
+  const lessons = results.flat();
+
   if (lessons.length === 0) throw new Error(TOO_LONG_MESSAGE);
   return lessons;
 }
