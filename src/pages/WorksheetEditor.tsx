@@ -136,10 +136,16 @@ import {
   extractTextFromBlocks,
   extractActivitiesFromBlocks,
   extractTablesFromBlocks,
+  splitLessonIntoSections,
   type LessonBlock,
   type LessonActivity,
   type LessonTable,
+  type LessonSection,
 } from "@/lib/lesson-content-splitter";
+import LessonSectionsPanel, {
+  type BuiltWorksheetItem,
+} from "@/components/worksheet/LessonSectionsPanel";
+import TableFieldsEditor from "@/components/worksheet/TableFieldsEditor";
 import {
   buildItemsFromLessonActivity,
   mapLessonActivityToItemType,
