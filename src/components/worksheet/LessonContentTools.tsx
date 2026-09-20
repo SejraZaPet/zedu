@@ -323,6 +323,69 @@ export function AiSuggestFromLessonDialog({
             {generating ? "Generuji…" : "Generovat otázku"}
           </Button>
 
+          {mapped && mapped.length > 0 && (
+            <div className="border rounded-lg p-4 bg-muted/50 space-y-3">
+              <Label className="text-xs">Návrh AI (připraveno jako aktivita v lekci):</Label>
+              {mapped.map((m, i) => (
+                <div key={i} className="text-sm space-y-1">
+                  {m.patch.prompt && <p className="font-medium whitespace-pre-wrap">{m.patch.prompt}</p>}
+                  {m.patch.matchPairs?.map((p, j) => (
+                    <div key={j}>
+                      <strong>{p.left}</strong> → {p.right}
+                    </div>
+                  ))}
+                  {m.patch.sortingCategories && (
+                    <div className="text-xs text-muted-foreground">
+                      Skupiny: {m.patch.sortingCategories.map((c) => c.label).join(" · ")}
+                    </div>
+                  )}
+                  {m.patch.sortingItems?.map((it, j) => (
+                    <div key={j}>
+                      {it.text} →{" "}
+                      {m.patch.sortingCategories?.find((c) => c.id === it.categoryId)?.label ?? "?"}
+                    </div>
+                  ))}
+                  {m.patch.orderItems?.map((o, j) => (
+                    <div key={j}>
+                      {j + 1}. {o}
+                    </div>
+                  ))}
+                  {m.patch.flashcards?.map((c, j) => (
+                    <div key={j}>
+                      <strong>{c.front}</strong> — {c.back}
+                    </div>
+                  ))}
+                  {m.patch.choices?.map((c, j) => (
+                    <div key={j}>
+                      {m.correct === c ? "✓ " : "• "}
+                      {c}
+                    </div>
+                  ))}
+                  {m.patch.blankText && <p className="whitespace-pre-wrap">{m.patch.blankText}</p>}
+                  {m.patch.crosswordEntries?.map((e, j) => (
+                    <div key={j}>
+                      {e.answer} — {e.clue}
+                    </div>
+                  ))}
+                </div>
+              ))}
+              <div className="flex gap-2 pt-1">
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    onApplyMapped?.(mapped);
+                    onOpenChange(false);
+                  }}
+                >
+                  <Check className="w-4 h-4 mr-1" /> Použít
+                </Button>
+                <Button size="sm" variant="outline" onClick={handleGenerate} disabled={generating}>
+                  <RefreshCw className="w-4 h-4 mr-1" /> Jiný návrh
+                </Button>
+              </div>
+            </div>
+          )}
+
           {generatedItem && (
             <div className="border rounded-lg p-4 bg-muted/50">
               <Label className="text-xs">Návrh AI:</Label>
