@@ -167,44 +167,14 @@ const TeacherTextbooks = () => {
   const [linkedPresentationChoice, setLinkedPresentationChoice] =
     useState<{ lesson: any; presentationId: string; presentationTitle: string } | null>(null);
 
+  /**
+   * FÁZE 3 – jeden klik: snímky se tiše vygenerují/aktualizují z obsahu lekce,
+   * vznikne živá relace a otevře se projektor. Ptáme se jen na běžící relaci.
+   */
   const handleOpenPresentation = async (lesson: any) => {
-    console.log("[presentations] open for lesson", {
-      id: lesson?.id, title: lesson?.title, source: lesson?.source,
-    });
-
-    // Funguje pro jakoukoli lekci z učebnice – zdroj lekce nerozhoduje.
-    const table = lesson?.source === "textbook_lessons" ? "textbook_lessons" : "teacher_textbook_lessons";
-    const { data: lessonRow, error: lessonError } = await supabase
-      .from(table as any)
-      .select("presentation_slides")
-      .eq("id", lesson.id)
-      .maybeSingle();
-    console.log("[presentations] presentation_slides lookup", { table, lessonRow, lessonError });
-
-    const savedSlides = (lessonRow as any)?.presentation_slides;
-    const hasSlides = Array.isArray(savedSlides) && savedSlides.length > 0;
-
-    if (!hasSlides) {
-      const { data: linkedRows, error: linkedError } = await supabase
-        .from("teacher_presentations")
-        .select("id, title, updated_at")
-        .eq("lesson_id", lesson.id)
-        .order("updated_at", { ascending: false })
-        .limit(1);
-      console.log("[presentations] teacher_presentations lookup", { linkedRows, linkedError });
-
-      const linked = linkedRows?.[0];
-      if (linked) {
-        setLinkedPresentationChoice({
-          lesson,
-          presentationId: linked.id,
-          presentationTitle: linked.title,
-        });
-        return;
-      }
-    }
-    await openEditor(lesson);
+    await quickLaunch(lesson);
   };
+
 
 
 
