@@ -58,6 +58,31 @@ const resolveBestRole = (roles: string[]): AppRole => {
 
 type RoleInfo = { role: AppRole; roles: string[]; status: string | null; preferredView: "school_admin" | "teacher" | null };
 
+const LAST_ACTIVE_KEY = "Bezli:last-active-touch";
+const LAST_ACTIVE_INTERVAL_MS = 15 * 60 * 1000;
+
+// Throttlovaný zápis aktivity – max jednou za 15 minut na tab,
+// ať "Naposledy aktivní" v adminu odráží reálné používání, ne jen čerstvé přihlášení.
+const touchLastActive = (userId: string) => {
+  if (typeof window === "undefined") return;
+  try {
+    const last = Number(window.sessionStorage.getItem(LAST_ACTIVE_KEY) ?? 0);
+    if (Number.isFinite(last) && Date.now() - last < LAST_ACTIVE_INTERVAL_MS) return;
+    window.sessionStorage.setItem(LAST_ACTIVE_KEY, String(Date.now()));
+  } catch {
+    // sessionStorage nedostupný – i tak zkusíme zapsat, ale jen jednou
+  }
+  supabase
+    .from("profiles")
+    .update({ last_active_at: new Date().toISOString() })
+    .eq("id", userId)
+    .then(({ error }) => {
+      if (error) {
+        try { window.sessionStorage.removeItem(LAST_ACTIVE_KEY); } catch { /* ignore */ }
+      }
+    });
+};
+
 const normalizeView = (v: unknown): "school_admin" | "teacher" | null =>
   v === "school_admin" || v === "teacher" ? v : null;
 
@@ -125,6 +150,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           loading: false,
           error: null,
         }));
+        touchLastActive(session.user.id);
         fetchRoleAndStatus(session.user.id).then(({ role, roles, status, preferredView }) => {
           if (mounted) {
             setState(prev => ({ ...prev, role, roles, status, preferredView }));

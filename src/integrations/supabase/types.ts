@@ -4023,6 +4023,7 @@ export type Database = {
           field_of_study: string
           first_name: string
           id: string
+          last_active_at: string | null
           last_name: string
           parent_email: string | null
           parent_email_notifications: boolean
@@ -4043,6 +4044,7 @@ export type Database = {
           field_of_study?: string
           first_name?: string
           id: string
+          last_active_at?: string | null
           last_name?: string
           parent_email?: string | null
           parent_email_notifications?: boolean
@@ -4063,6 +4065,7 @@ export type Database = {
           field_of_study?: string
           first_name?: string
           id?: string
+          last_active_at?: string | null
           last_name?: string
           parent_email?: string | null
           parent_email_notifications?: boolean
