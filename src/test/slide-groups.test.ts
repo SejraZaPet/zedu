@@ -76,8 +76,10 @@ describe("generování prezentace ze spojených bloků", () => {
     const groupSlide = content.find((s: any) => s.layout === "two-cols");
     expect(groupSlide).toBeTruthy();
     expect(groupSlide.blocks.map((x: any) => x.id)).toEqual(["img", "tab"]);
-    // Nespojený nadpis zůstává vlastním snímkem.
-    expect(content.length).toBe(2);
+    // Samotný nadpis netvoří poloprázdný snímek – předá titulek skupině.
+    expect(content.length).toBe(1);
+    expect(groupSlide.projector.headline).toBe("Nadpis lekce");
+
   });
 
   it("tři sloupce se přeloží na layout three-cols", () => {
