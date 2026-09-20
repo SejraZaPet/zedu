@@ -141,6 +141,13 @@
       "when": 1789678810183,
       "tag": "0019_assignments_lesson_link",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1789894953142,
+      "tag": "0020_lesson_highlights",
+      "breakpoints": true
     }
   ]
 }

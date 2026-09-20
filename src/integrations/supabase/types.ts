@@ -2940,6 +2940,42 @@ export type Database = {
           },
         ]
       }
+      lesson_highlights: {
+        Row: {
+          block_id: string
+          color: string | null
+          created_at: string | null
+          id: string
+          lesson_id: string
+          lesson_source: string
+          note: string | null
+          selected_text: string
+          user_id: string
+        }
+        Insert: {
+          block_id: string
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          lesson_id: string
+          lesson_source: string
+          note?: string | null
+          selected_text: string
+          user_id: string
+        }
+        Update: {
+          block_id?: string
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          lesson_id?: string
+          lesson_source?: string
+          note?: string | null
+          selected_text?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       lesson_method_links: {
         Row: {
           catalog_lesson_id: string | null
