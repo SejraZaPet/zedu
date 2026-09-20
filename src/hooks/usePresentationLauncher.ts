@@ -172,10 +172,15 @@ export function usePresentationLauncher() {
           .maybeSingle();
         if (existing) {
           const slides = prebuiltSlides || blocksToSlides(lesson.blocks || [], lesson.title);
+          // Jediné rozhodnutí, které necháváme na učiteli.
+          const win = projectorWindowRef.current;
+          if (win && !win.closed) win.close();
+          projectorWindowRef.current = null;
           setExistingSession(existing);
           setPendingLaunchData({ lesson, slides });
           return;
         }
+
       }
       const rawBlocks = lesson.blocks || [];
       const slides = prebuiltSlides || blocksToSlides(rawBlocks, lesson.title);
