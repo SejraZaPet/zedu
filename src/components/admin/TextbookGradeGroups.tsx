@@ -156,41 +156,20 @@ const SortableLessonRow = ({
           <Trash2 className="w-4 h-4 text-destructive" />
         </Button>
       </div>
-      {/* Desktop: buttons with text */}
+      {/* Desktop: icon-only buttons with tooltip */}
       <div className="hidden md:flex gap-0.5 shrink-0">
-        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onEditLesson(lesson)} title="Upravit">
+        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onEditLesson(lesson)} title="Upravit lekci">
           <Pencil className="w-3.5 h-3.5" />
         </Button>
         <LessonPreviewDialog title={lesson.title} heroImageUrl={null} blocks={lesson.blocks} />
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-7 gap-1.5"
-          onClick={() => onOpenWorksheet(lesson)}
-          title="Vytvořit pracovní list"
-        >
+        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onOpenWorksheet(lesson)} title="Pracovní list">
           <FileText className="w-3.5 h-3.5" />
-          Pracovní list
         </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-7 gap-1.5"
-          onClick={() => onOpenWorksheet(lesson, true)}
-          title="Vygenerovat pracovní list z obsahu této lekce (aktivity + tabulky)"
-        >
+        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onOpenWorksheet(lesson, true)} title="Vygenerovat pracovní list z této lekce">
           <Sparkles className="w-3.5 h-3.5 text-primary" />
-          List z lekce
         </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-7 gap-1.5"
-          onClick={() => onOpenPresentation(lesson)}
-          title="Spustit prezentaci a otevřít projektor"
-        >
+        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onOpenPresentation(lesson)} title="Spustit prezentaci a otevřít projektor">
           <Play className="w-3.5 h-3.5" />
-          Spustit prezentaci
 
         </Button>
         {onRequestMove && (
