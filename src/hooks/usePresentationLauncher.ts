@@ -41,7 +41,51 @@ export function usePresentationLauncher() {
     return headline || String(slide?.slideId || `index-${index}`);
   };
 
+  /**
+   * Snímky pro spuštění: vždy vygenerované z aktuálního obsahu lekce,
+   * doplněné ručními úpravami z dřív uložené prezentace (tiché přegenerování).
+   */
+  const buildSlidesForLesson = async (lesson: LessonItem): Promise<any[]> => {
+    const freshSlides = blocksToSlides(lesson.blocks || [], lesson.title);
+    const table = lesson.source === "teacher_textbook_lessons"
+      ? "teacher_textbook_lessons"
+      : "textbook_lessons";
+    const { data } = await supabase
+      .from(table)
+      .select("presentation_slides" as any)
+      .eq("id", lesson.id)
+      .maybeSingle();
+    const savedSlides = (data as any)?.presentation_slides;
+    if (!Array.isArray(savedSlides) || savedSlides.length === 0) return freshSlides;
+
+    const savedByKey = new Map<string, any>();
+    savedSlides.forEach((slide: any, index: number) => savedByKey.set(slideKey(slide, index), slide));
+    return freshSlides.map((freshSlide, index) => {
+      const savedSlide = savedByKey.get(slideKey(freshSlide, index));
+      if (!savedSlide) return freshSlide;
+      return {
+        ...savedSlide,
+        ...freshSlide,
+        projector: {
+          ...savedSlide.projector,
+          ...freshSlide.projector,
+          fontScale: savedSlide.projector?.fontScale ?? freshSlide.projector?.fontScale,
+        },
+        device: savedSlide.device ?? freshSlide.device,
+        teacherNotes: savedSlide.teacherNotes ?? freshSlide.teacherNotes,
+        layout: savedSlide.layout ?? freshSlide.layout,
+        heroImage: savedSlide.heroImage ?? freshSlide.heroImage,
+        activitySpec: savedSlide.activitySpec ?? freshSlide.activitySpec,
+        blocks: freshSlide.blocks,
+        tableData: freshSlide.tableData,
+        cardData: freshSlide.cardData,
+        type: freshSlide.type,
+      };
+    });
+  };
+
   const openEditor = async (lesson: LessonItem) => {
+
     const freshSlides = blocksToSlides(lesson.blocks || [], lesson.title);
     let slides: any[] = freshSlides;
     let saved = false;

@@ -104,6 +104,19 @@ function blockToBodyText(block: any): { text: string; assetRef?: string; activit
 const MAX_BLOCKS_PER_SLIDE = 5;
 const MAX_CHARS_PER_SLIDE = 900;
 
+/**
+ * Dolní hranice čitelného zmenšení obsahu na projekci (viz SlideCanvas).
+ * Co se nevejde ani při tomto zmenšení, se NEOŘEZÁVÁ, ale reálně rozdělí
+ * na navazující snímky.
+ */
+export const READABLE_SCALE_FLOOR = 0.72;
+/** Absolutní strop znaků na snímek, než se obsah rozdělí. */
+const HARD_MAX_CHARS_PER_SLIDE = Math.round(MAX_CHARS_PER_SLIDE / READABLE_SCALE_FLOOR);
+/** Sekce pod touto délkou je „poloprázdná“ a slučuje se se sousedy. */
+const SHORT_SECTION_CHARS = 120;
+/** Cílová naplněnost snímku při slučování krátkých sekcí. */
+const TARGET_FILL_CHARS = 480;
+
 /** Výchozí rozvržení podle typu snímku, ať prezentace nepůsobí jako slepenec. */
 function defaultLayoutForType(type: string): string {
   switch (type) {
@@ -114,6 +127,294 @@ function defaultLayoutForType(type: string): string {
       return "full";
   }
 }
+
+const bodyLen = (slide: any): number => String(slide?.projector?.body || "").length;
+
+/** Snímek, který lze bezpečně slučovat / dělit (běžný textový výklad). */
+function isPlainTextSlide(slide: any): boolean {
+  if (!slide || slide.type !== "explain") return false;
+  const layout = slide.layout || "full";
+  if (layout !== "full") return false;
+  if (slide.activitySpec || slide.tableData || slide.cardData) return false;
+  if ((slide.projector?.assetRefs || []).length > 0) return false;
+  if ((slide.blocks || []).some((b: any) => b?.frame)) return false;
+  return true;
+}
+
+function headingBlock(text: string, id?: string | null): any {
+  return {
+    ...(id ? { id: `${id}-h` } : {}),
+    type: "heading",
+    props: { text, level: 3 },
+  };
+}
+
+/**
+ * FÁZE 1 – slučování krátkých sekcí.
+ * Lekce s desítkami drobných mezititulků negeneruje desítky poloprázdných
+ * snímků; krátké sekce se spojují s následujícími, dokud snímek nemá rozumnou
+ * náplň (a nepřekročí strop čitelnosti).
+ */
+function mergeShortSections(slides: any[]): any[] {
+  const out: any[] = [];
+  let i = 0;
+  while (i < slides.length) {
+    const slide = slides[i];
+    if (!isPlainTextSlide(slide) || bodyLen(slide) >= SHORT_SECTION_CHARS) {
+      out.push(slide);
+      i += 1;
+      continue;
+    }
+
+    const base: any = {
+      ...slide,
+      blocks: [...(slide.blocks || [])],
+      projector: { ...slide.projector, assetRefs: [...(slide.projector?.assetRefs || [])] },
+    };
+    let chars = bodyLen(base);
+    let j = i + 1;
+
+    while (j < slides.length && chars < TARGET_FILL_CHARS) {
+      const next = slides[j];
+      if (!isPlainTextSlide(next)) break;
+      const nextLen = bodyLen(next);
+      if (chars + nextLen > HARD_MAX_CHARS_PER_SLIDE) break;
+      if (chars >= SHORT_SECTION_CHARS && chars + nextLen > MAX_CHARS_PER_SLIDE) break;
+
+      const nextHeadline = String(next.projector?.headline || "").trim();
+      const takeHeadline = !String(base.projector?.headline || "").trim() && chars === 0;
+      if (nextHeadline) {
+        if (takeHeadline) {
+          base.projector.headline = nextHeadline;
+          base.sourceBlockId = next.sourceBlockId ?? base.sourceBlockId;
+        } else {
+          base.blocks.push(headingBlock(nextHeadline, next.sourceBlockId));
+        }
+      }
+      base.blocks.push(...(next.blocks || []));
+      const nextBody = [
+        nextHeadline && !takeHeadline ? nextHeadline : "",
+        next.projector?.body || "",
+      ].filter(Boolean).join("\n");
+      if (nextBody) {
+        base.projector.body = base.projector.body ? `${base.projector.body}\n\n${nextBody}` : nextBody;
+      }
+      if (!base.backgroundOverride && next.backgroundOverride) base.backgroundOverride = next.backgroundOverride;
+      chars = bodyLen(base);
+      j += 1;
+    }
+
+    out.push(base);
+    i = Math.max(j, i + 1);
+  }
+  return out;
+}
+
+/**
+ * Rozdělí text na části tak, aby žádná nepřekročila strop čitelnosti.
+ * Části se dělí rovnoměrně, aby nevznikaly téměř prázdné „zbytkové“ snímky.
+ */
+function chunkText(text: string, hardLimit: number): string[] {
+  const full = String(text || "");
+  const parts = Math.max(1, Math.ceil(full.length / hardLimit));
+  const limit = Math.max(200, Math.min(hardLimit, Math.ceil(full.length / parts) + 60));
+  const paragraphs = full.split(/\n{2,}/).filter((p) => p.trim().length > 0);
+
+  const chunks: string[] = [];
+  let buffer = "";
+  const pushBuffer = () => {
+    if (buffer.trim()) chunks.push(buffer.trim());
+    buffer = "";
+  };
+  for (const paragraph of paragraphs) {
+    if (paragraph.length > limit) {
+      pushBuffer();
+      const lines = paragraph.split("\n");
+      let lineBuffer = "";
+      for (const line of lines) {
+        if (lineBuffer && (lineBuffer.length + line.length + 1) > limit) {
+          chunks.push(lineBuffer.trim());
+          lineBuffer = "";
+        }
+        lineBuffer = lineBuffer ? `${lineBuffer}\n${line}` : line;
+        while (lineBuffer.length > limit) {
+          chunks.push(lineBuffer.slice(0, limit).trim());
+          lineBuffer = lineBuffer.slice(limit);
+        }
+      }
+      if (lineBuffer.trim()) chunks.push(lineBuffer.trim());
+      continue;
+    }
+    if (buffer && (buffer.length + paragraph.length + 2) > limit) pushBuffer();
+    buffer = buffer ? `${buffer}\n\n${paragraph}` : paragraph;
+  }
+  pushBuffer();
+  return chunks.length > 0 ? chunks : [full];
+}
+
+const continuationHeadline = (headline: string): string =>
+  headline ? (headline.includes("(pokračování)") ? headline : `${headline} (pokračování)`) : "";
+
+/** Rozdělí jeden příliš dlouhý textový blok na několik menších bloků. */
+function splitTextBlock(block: any, limit: number): any[] {
+  const text = blockToBodyText(block).text;
+  if (text.length <= limit) return [block];
+  const chunks = chunkText(text, limit);
+  return chunks.map((chunk, idx) => ({
+    ...block,
+    ...(block?.id ? { id: idx === 0 ? block.id : `${block.id}#p${idx}` } : {}),
+    type: block?.type === "bullet_list" || block?.type === "bulletList" ? block.type : "paragraph",
+    props: { ...(block?.props || {}), text: chunk, html: undefined, items: undefined },
+  }));
+}
+
+/**
+ * FÁZE 2 – přeplněný obsah se reálně rozdělí na navazující snímky
+ * (dřív se jen zmenšoval až do nečitelnosti / oříznutí).
+ */
+function splitSlide(slide: any): any[] {
+  const layout = slide?.layout || "full";
+  const chars = bodyLen(slide);
+
+  if (chars <= HARD_MAX_CHARS_PER_SLIDE || layout === "free" || slide?.type === "intro" || slide?.type === "summary") {
+    return [slide];
+  }
+
+  const out: any[] = [];
+
+  // Aktivita zůstává celá (je interaktivní) – přeteklý popis pokračuje dál.
+  if (slide.type === "activity") {
+    const chunks = chunkText(slide.projector?.body || "", HARD_MAX_CHARS_PER_SLIDE);
+    out.push({ ...slide, projector: { ...slide.projector, body: chunks[0] } });
+    chunks.slice(1).forEach((chunk, idx) => {
+      out.push({
+        ...slide,
+        slideId: "",
+        type: "explain",
+        layout: "full",
+        activitySpec: undefined,
+        blocks: [],
+        sourceBlockId: slide.sourceBlockId ? `${slide.sourceBlockId}#txt${idx + 1}` : undefined,
+        device: { instructions: "Sledujte výklad." },
+        projector: {
+          ...slide.projector,
+          headline: continuationHeadline(String(slide.projector?.headline || "")),
+          body: chunk,
+          assetRefs: [],
+        },
+      });
+    });
+    return out;
+  }
+
+  // Karty / textové snímky dělíme po blocích, aby obsah zůstal celý.
+  // Příliš dlouhý jednotlivý blok se předtím rozpadne na menší bloky.
+  const blocks: any[] = (slide.blocks || []).flatMap((b: any) => splitTextBlock(b, HARD_MAX_CHARS_PER_SLIDE));
+  if (blocks.length > 1) {
+    const groups: any[][] = [];
+    let group: any[] = [];
+    let groupChars = 0;
+    for (const block of blocks) {
+      const len = blockToBodyText(block).text.length;
+      if (group.length > 0 && groupChars + len > HARD_MAX_CHARS_PER_SLIDE) {
+        groups.push(group);
+        group = [];
+        groupChars = 0;
+      }
+      group.push(block);
+      groupChars += len;
+    }
+    if (group.length > 0) groups.push(group);
+
+    groups.forEach((groupBlocks, idx) => {
+      const texts = groupBlocks.map((b) => blockToBodyText(b).text).filter(Boolean);
+      out.push({
+        ...slide,
+        slideId: idx === 0 ? slide.slideId : "",
+        blocks: groupBlocks,
+        sourceBlockId: idx === 0
+          ? slide.sourceBlockId
+          : slide.sourceBlockId ? `${slide.sourceBlockId}#part${idx}` : undefined,
+        projector: {
+          ...slide.projector,
+          headline: idx === 0
+            ? slide.projector?.headline
+            : continuationHeadline(String(slide.projector?.headline || "")),
+          body: texts.join("\n\n"),
+        },
+      });
+    });
+    return out;
+  }
+
+  // Jediný obří blok bez možnosti dělení – rozdělíme aspoň jeho text.
+  const chunks = chunkText(slide.projector?.body || "", HARD_MAX_CHARS_PER_SLIDE);
+  return chunks.map((chunk, idx) => ({
+    ...slide,
+    slideId: idx === 0 ? slide.slideId : "",
+    blocks: idx === 0 ? blocks : [],
+    sourceBlockId: idx === 0
+      ? slide.sourceBlockId
+      : slide.sourceBlockId ? `${slide.sourceBlockId}#part${idx}` : undefined,
+    projector: {
+      ...slide.projector,
+      headline: idx === 0
+        ? slide.projector?.headline
+        : continuationHeadline(String(slide.projector?.headline || "")),
+      body: chunk,
+    },
+  }));
+}
+
+function splitOverfullSlides(slides: any[]): any[] {
+  let current = slides;
+  // Dělení může být potřeba opakovat (velká karta → velké části).
+  for (let pass = 0; pass < 3; pass += 1) {
+    const next = current.flatMap((slide) => splitSlide(slide));
+    if (next.length === current.length) return next;
+    current = next;
+  }
+  return current;
+}
+
+/**
+ * Prázdný titulní snímek (jen nadpis bez obsahu) předá svůj nadpis
+ * následujícímu snímku, pokud ten žádný nemá – místo poloprázdného snímku.
+ */
+function absorbEmptyHeadingSlides(slides: any[]): any[] {
+  const out: any[] = [];
+  for (let i = 0; i < slides.length; i += 1) {
+    const slide = slides[i];
+    const isEmptyHeading =
+      slide?.type === "explain" &&
+      String(slide.projector?.headline || "").trim() &&
+      !String(slide.projector?.body || "").trim() &&
+      (slide.blocks || []).length === 0;
+    const next = slides[i + 1];
+    if (isEmptyHeading && next && next.type !== "summary" && !String(next.projector?.headline || "").trim()) {
+      slides[i + 1] = {
+        ...next,
+        projector: { ...next.projector, headline: slide.projector.headline },
+        sourceBlockId: next.sourceBlockId ?? slide.sourceBlockId,
+      };
+      continue;
+    }
+    out.push(slide);
+  }
+  return out;
+}
+
+
+/** Po slučování a dělení přečísluje snímky, ať mají stabilní unikátní id. */
+function renumberSlides(slides: any[]): any[] {
+  let index = 1;
+  return slides.map((slide) => {
+    if (slide.type === "intro") return { ...slide, slideId: "slide-intro" };
+    if (slide.type === "summary") return { ...slide, slideId: "slide-summary" };
+    return { ...slide, slideId: `slide-${index++}` };
+  });
+}
+
 
 export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
   const slides: any[] = [];
@@ -320,5 +621,8 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
     layout: defaultLayoutForType("summary"),
   });
 
-  return slides;
+  return renumberSlides(
+    splitOverfullSlides(absorbEmptyHeadingSlides(mergeShortSections(slides))),
+  );
+
 }
