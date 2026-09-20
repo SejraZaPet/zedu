@@ -184,6 +184,11 @@ const SortableLessonRow = ({
             <FolderInput className="w-3.5 h-3.5" />
           </Button>
         )}
+        {onRequestMerge && (
+          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onRequestMerge(lesson)} title="Sloučit s jinou lekcí…">
+            <Merge className="w-3.5 h-3.5" />
+          </Button>
+        )}
         <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onDeleteLesson(lesson)} title="Smazat">
 
           <Trash2 className="w-3.5 h-3.5 text-destructive" />
