@@ -30,6 +30,7 @@ export interface PdfExportOptions {
 async function buildPrintHtml(
   spec: WorksheetSpec,
   options: PdfExportOptions,
+  preview = false,
 ): Promise<string> {
   const variantId = options.variantId ?? spec.variants[0]?.variantId ?? "A";
   const baseUrl =
@@ -62,11 +63,52 @@ async function buildPrintHtml(
 </div>`;
 
   // Vlož QR do header-top (před uzavírací </div> ws-header-top)
-  return baseHtml.replace(
+  const htmlWithQr = baseHtml.replace(
     /<div class="ws-header-top">([\s\S]*?)<\/div>\s*(?=\s*(?:<div class="ws-fields-strip"|<div class="ws-instructions"|<\/div>))/,
     (_m, inner) =>
       `<div class="ws-header-top">${inner}${qrBlock}</div>\n  `,
   );
+
+  if (!preview) return htmlWithQr;
+
+  const previewScript = `<script>
+window.addEventListener("load", function () {
+  var sourcePage = document.querySelector(".ws-page");
+  var sourceContent = sourcePage && sourcePage.querySelector(":scope > .ws-content");
+  var sourceItems = sourceContent && sourceContent.querySelector(":scope > .ws-items");
+  if (!sourcePage || !sourceContent || !sourceItems) return;
+
+  document.body.classList.add("ws-preview-paginated");
+  var items = Array.from(sourceItems.children);
+  sourceItems.replaceChildren();
+  var pageHeight = sourceContent.clientHeight;
+
+  function makePage(afterPage) {
+    var page = document.createElement("div");
+    page.className = "ws-page";
+    var content = document.createElement("div");
+    content.className = "ws-content";
+    var list = document.createElement("div");
+    list.className = "ws-items";
+    content.appendChild(list);
+    page.appendChild(content);
+    afterPage.parentNode.insertBefore(page, afterPage.nextSibling);
+    return { page: page, content: content, list: list };
+  }
+
+  var current = { page: sourcePage, content: sourceContent, list: sourceItems };
+  items.forEach(function (item) {
+    current.list.appendChild(item);
+    if (current.content.scrollHeight > pageHeight + 1 && current.list.children.length > 1) {
+      current.list.removeChild(item);
+      current = makePage(current.page);
+      current.list.appendChild(item);
+    }
+  });
+});
+</script>`;
+
+  return htmlWithQr.replace("</body>", previewScript + "\n</body>");
 }
 
 /**
@@ -120,7 +162,7 @@ export async function buildWorksheetPdfBlobUrl(
   spec: WorksheetSpec,
   options: PdfExportOptions,
 ): Promise<string> {
-  const html = await buildPrintHtml(spec, options);
+  const html = await buildPrintHtml(spec, options, true);
   const blob = new Blob([html], { type: "text/html" });
   return URL.createObjectURL(blob);
 }

@@ -544,21 +544,16 @@ p, li { orphans: 2; widows: 2; }
     padding: 14mm 14mm 16mm;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
-  /* Browser běžné HTML sám vizuálně nestránkuje. Tato vrstva proto v
-     náhledu vyznačí přesný konec každé A4, aniž by měnila tok obsahu. */
-  .ws-page::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: 20;
-    pointer-events: none;
-    background-image: repeating-linear-gradient(
-      to bottom,
-      transparent 0,
-      transparent calc(297mm - 2px),
-      #94A3B8 calc(297mm - 2px),
-      #94A3B8 297mm
-    );
+  body.ws-preview-paginated .ws-page {
+    height: 297mm;
+    min-height: 297mm;
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+  body.ws-preview-paginated .ws-content {
+    height: 267mm;
+    min-height: 267mm;
+    overflow: hidden;
   }
   .ws-content {
     max-width: 100%;
