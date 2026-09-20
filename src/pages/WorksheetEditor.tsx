@@ -1443,16 +1443,24 @@ export default function WorksheetEditor() {
     }
     setAiGenerating(true);
     try {
+      // Kratší lekce posíláme vcelku (bez ořezávání), delší po úryvcích.
       const lessonText = hasLessonText
-        ? lessonBlocks
-            .map((b) => (b.title && b.title !== b.text ? `## ${b.title}\n${b.text}` : b.text))
-            .filter(Boolean)
-            .join("\n\n") || activeLessonContent
+        ? activeLessonContent.length <= 20000
+          ? activeLessonContent
+          : lessonBlocks
+              .map((b) => (b.title && b.title !== b.text ? `## ${b.title}\n${b.text}` : b.text))
+              .filter(Boolean)
+              .join("\n\n") || activeLessonContent
         : "";
 
       // ── Kontext z lekce: tabulky 1:1, QR na aktivity, aktivity k převodu ──
-      const qrActivities = activeLessonActivities.filter((a) => activityModes[a.id] !== "convert");
-      const convertActivities = activeLessonActivities.filter((a) => activityModes[a.id] === "convert");
+      // Aktivity vnořené v kartách nemají vlastní odkaz → vždy se převádějí na úlohu.
+      const qrActivities = activeLessonActivities.filter(
+        (a) => activityModes[a.id] !== "convert" && a.deepLinkIndex !== undefined,
+      );
+      const convertActivities = activeLessonActivities.filter(
+        (a) => activityModes[a.id] === "convert" || a.deepLinkIndex === undefined,
+      );
 
       let qrLinks: Array<{ label: string; url: string }> = [];
       if (qrActivities.length > 0 && activeLessonId) {
@@ -1465,12 +1473,13 @@ export default function WorksheetEditor() {
         if (linked) {
           const origin = window.location.origin;
           qrLinks = qrActivities.map((a) => {
-            const index = Number(a.id.replace("lesson-activity-", "")) || 0;
+            const index = a.deepLinkIndex ?? 0;
             const sep = linked.url.includes("?") ? "&" : "?";
             return { label: a.title, url: `${origin}${linked.url}${sep}aktivita=${index}` };
           });
         }
       }
+
 
       const { data, error } = await supabase.functions.invoke("generate-full-worksheet", {
         body: {
