@@ -1,8 +1,19 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FolderOpen, ChevronRight, Pencil, Trash2, Plus, FileText, Play, Monitor, GripVertical } from "lucide-react";
+import { FolderOpen, ChevronRight, Pencil, Trash2, Plus, FileText, Play, Monitor, GripVertical, FolderInput } from "lucide-react";
 import LessonPreviewDialog from "@/components/admin/LessonPreviewDialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Block } from "@/lib/textbook-config";
+
 import {
   DndContext,
   closestCenter,
