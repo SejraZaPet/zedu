@@ -1254,8 +1254,11 @@ serve(async (req) => {
     const blocks = lessons.flatMap((lesson: any) => lesson.blocks);
 
     if (blocks.length === 0) {
-      throw new Error("AI nedokázala z dokumentu vytvořit žádné bloky.");
+      throw new Error(
+        "Z dokumentu se nepodařilo vytvořit žádné bloky. Zkuste ho rozdělit na menší části (např. po ročnících nebo kapitolách).",
+      );
     }
+
 
     // Best-effort embedded-image extraction for DOCX/PPTX zip archives.
     // PDF embedded images are extracted on the frontend (pdfjs).
