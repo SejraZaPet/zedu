@@ -1,6 +1,7 @@
 /**
- * generate-section-activity — jedna cílená úloha z textu JEDNÉ sekce lekce.
- * Malý, rychlý dotaz (sekce je vždy krátká) — žádné dávkování.
+ * generate-section-activity — cílené úlohy z textu JEDNÉ sekce lekce.
+ * Vrací pole úloh (`items`) — např. víc tvrzení pravda/nepravda nebo víc otázek kvízu.
+ * Pro zpětnou kompatibilitu vrací i `item` (první úloha).
  */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { requireAuth } from "../_shared/auth.ts";
@@ -36,6 +37,8 @@ serve(async (req) => {
     const sectionTitle = typeof body?.sectionTitle === "string" ? body.sectionTitle.trim() : "";
     const requested = typeof body?.itemType === "string" ? body.itemType : "auto";
     const hint = typeof body?.hint === "string" ? body.hint.trim().slice(0, 500) : "";
+    const rawCount = Number(body?.count);
+    const count = Number.isFinite(rawCount) ? Math.min(8, Math.max(1, Math.round(rawCount))) : 1;
 
     if (sectionText.length + sectionTitle.length < 10) {
       return json({ error: "Sekce neobsahuje dost textu pro generování." }, 400);
@@ -45,14 +48,16 @@ serve(async (req) => {
       ? (requested as Allowed)
       : null;
 
-    const systemPrompt = `Jsi zkušený český pedagog. Z KRÁTKÉHO textu jedné sekce lekce vytvoříš PŘESNĚ JEDNU úlohu do pracovního listu.
+    const systemPrompt = `Jsi zkušený český pedagog. Z KRÁTKÉHO textu jedné sekce lekce vytvoříš úlohy do pracovního listu.
 
 PRAVIDLA:
+- Vytvoř PŘESNĚ ${count} ${count === 1 ? "úlohu" : "úloh"}.
 - Vycházej výhradně z dodaného textu sekce, nic si nevymýšlej.
-- Úloha musí být ověřitelná na papíře a v češtině (cs-CZ).
-- ${forcedType ? `Typ úlohy musí být "${forcedType}".` : "Typ úlohy vyber sám podle obsahu sekce (mcq, true_false, fill_blank, matching, ordering)."}
+- Úlohy se nesmí obsahově opakovat; pokrývej různá místa textu sekce.
+- Úlohy musí být ověřitelné na papíře a v češtině (cs-CZ).
+- ${forcedType ? `Typ VŠECH úloh musí být "${forcedType}".` : "Typ každé úlohy vyber sám podle obsahu sekce (mcq, true_false, fill_blank, matching, ordering)."}
 - mcq: 4 možnosti, přesně 1 správná (correctChoice musí být jedna z choices).
-- true_false: jedno jasné tvrzení + correctBoolean.
+- true_false: jedno jasné tvrzení v prompt + correctBoolean. Při více úlohách vytvoř více různých tvrzení, ideálně mix pravdivých a nepravdivých.
 - fill_blank: blankText s mezerami "___" a blankAnswers ve stejném pořadí.
 - matching: 3–5 párů left/right.
 - ordering: 3–6 kroků ve SPRÁVNÉM pořadí.`;
@@ -62,6 +67,30 @@ PRAVIDLA:
 ${sectionText.slice(0, 6000)}
 
 ${hint ? `Pokyn učitele: ${hint}` : ""}`;
+
+    const itemSchema = {
+      type: "object",
+      required: ["type", "prompt"],
+      properties: {
+        type: { type: "string", enum: [...ALLOWED] },
+        prompt: { type: "string" },
+        choices: { type: "array", items: { type: "string" } },
+        correctChoice: { type: "string" },
+        correctBoolean: { type: "boolean" },
+        blankText: { type: "string" },
+        blankAnswers: { type: "array", items: { type: "string" } },
+        matchPairs: {
+          type: "array",
+          items: {
+            type: "object",
+            required: ["left", "right"],
+            properties: { left: { type: "string" }, right: { type: "string" } },
+          },
+        },
+        orderItems: { type: "array", items: { type: "string" } },
+        difficulty: { type: "string", enum: ["easy", "medium", "hard"] },
+      },
+    };
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -79,35 +108,19 @@ ${hint ? `Pokyn učitele: ${hint}` : ""}`;
           {
             type: "function",
             function: {
-              name: "create_section_item",
-              description: "Vytvoří jednu úlohu pracovního listu ze sekce lekce.",
+              name: "create_section_items",
+              description: "Vytvoří úlohy pracovního listu ze sekce lekce.",
               parameters: {
                 type: "object",
-                required: ["type", "prompt"],
+                required: ["items"],
                 properties: {
-                  type: { type: "string", enum: [...ALLOWED] },
-                  prompt: { type: "string" },
-                  choices: { type: "array", items: { type: "string" } },
-                  correctChoice: { type: "string" },
-                  correctBoolean: { type: "boolean" },
-                  blankText: { type: "string" },
-                  blankAnswers: { type: "array", items: { type: "string" } },
-                  matchPairs: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      required: ["left", "right"],
-                      properties: { left: { type: "string" }, right: { type: "string" } },
-                    },
-                  },
-                  orderItems: { type: "array", items: { type: "string" } },
-                  difficulty: { type: "string", enum: ["easy", "medium", "hard"] },
+                  items: { type: "array", minItems: count, maxItems: count, items: itemSchema },
                 },
               },
             },
           },
         ],
-        tool_choice: { type: "function", function: { name: "create_section_item" } },
+        tool_choice: { type: "function", function: { name: "create_section_items" } },
       }),
     });
 
@@ -125,27 +138,39 @@ ${hint ? `Pokyn učitele: ${hint}` : ""}`;
       return json({ error: "AI nevrátila strukturovaný výstup" }, 500);
     }
 
-    const parsed = JSON.parse(toolCall.function.arguments) as Record<string, any>;
-    const type: Allowed = forcedType ??
-      ((ALLOWED as readonly string[]).includes(parsed.type) ? parsed.type : "mcq");
-    const prompt = String(parsed.prompt ?? "").trim();
-    if (!prompt) return json({ error: "AI vrátila neúplnou úlohu" }, 500);
+    const parsedArgs = JSON.parse(toolCall.function.arguments) as Record<string, any>;
+    const rawItems: any[] = Array.isArray(parsedArgs.items)
+      ? parsedArgs.items
+      : parsedArgs.type
+      ? [parsedArgs]
+      : [];
 
-    const item: Record<string, unknown> = { type, prompt };
-    if (Array.isArray(parsed.choices)) item.choices = parsed.choices.map(String).filter(Boolean);
-    if (typeof parsed.correctChoice === "string") item.correctChoice = parsed.correctChoice;
-    if (typeof parsed.correctBoolean === "boolean") item.correctBoolean = parsed.correctBoolean;
-    if (typeof parsed.blankText === "string") item.blankText = parsed.blankText;
-    if (Array.isArray(parsed.blankAnswers)) item.blankAnswers = parsed.blankAnswers.map(String);
-    if (Array.isArray(parsed.matchPairs)) {
-      item.matchPairs = parsed.matchPairs
-        .filter((p: any) => p?.left && p?.right)
-        .map((p: any) => ({ left: String(p.left), right: String(p.right) }));
+    const items: Record<string, unknown>[] = [];
+    for (const parsed of rawItems) {
+      const type: Allowed = forcedType ??
+        ((ALLOWED as readonly string[]).includes(parsed?.type) ? parsed.type : "mcq");
+      const prompt = String(parsed?.prompt ?? "").trim();
+      if (!prompt) continue;
+
+      const item: Record<string, unknown> = { type, prompt };
+      if (Array.isArray(parsed.choices)) item.choices = parsed.choices.map(String).filter(Boolean);
+      if (typeof parsed.correctChoice === "string") item.correctChoice = parsed.correctChoice;
+      if (typeof parsed.correctBoolean === "boolean") item.correctBoolean = parsed.correctBoolean;
+      if (typeof parsed.blankText === "string") item.blankText = parsed.blankText;
+      if (Array.isArray(parsed.blankAnswers)) item.blankAnswers = parsed.blankAnswers.map(String);
+      if (Array.isArray(parsed.matchPairs)) {
+        item.matchPairs = parsed.matchPairs
+          .filter((p: any) => p?.left && p?.right)
+          .map((p: any) => ({ left: String(p.left), right: String(p.right) }));
+      }
+      if (Array.isArray(parsed.orderItems)) item.orderItems = parsed.orderItems.map(String).filter(Boolean);
+      if (typeof parsed.difficulty === "string") item.difficulty = parsed.difficulty;
+      items.push(item);
     }
-    if (Array.isArray(parsed.orderItems)) item.orderItems = parsed.orderItems.map(String).filter(Boolean);
-    if (typeof parsed.difficulty === "string") item.difficulty = parsed.difficulty;
 
-    return json({ item });
+    if (items.length === 0) return json({ error: "AI vrátila neúplné úlohy" }, 500);
+
+    return json({ items, item: items[0] });
   } catch (e) {
     console.error("generate-section-activity error:", e);
     return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
