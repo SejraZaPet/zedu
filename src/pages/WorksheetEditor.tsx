@@ -703,6 +703,13 @@ export default function WorksheetEditor() {
 
   // Flush save + navigace zpět
   const handleBack = useCallback(async () => {
+    setPreviewOpen(false);
+    setPdfDialogOpen(false);
+    setShowPrintTipDialog(false);
+    if (pdfPreviewUrl) {
+      URL.revokeObjectURL(pdfPreviewUrl);
+      setPdfPreviewUrl(null);
+    }
     if (saveTimer.current) {
       clearTimeout(saveTimer.current);
       saveTimer.current = null;
@@ -723,8 +730,11 @@ export default function WorksheetEditor() {
       }
       setSaveState("saved");
     }
-    navigate("/ucitel/pracovni-listy");
-  }, [id, navigate]);
+    const safeReturnTo = returnTo?.startsWith("/") && !returnTo.startsWith("//")
+      ? returnTo
+      : "/ucitel/pracovni-listy";
+    navigate(safeReturnTo);
+  }, [id, navigate, pdfPreviewUrl, returnTo]);
 
   // ── Spec mutator (s history push) ──
   const updateSpec = useCallback((mutator: (s: WorksheetSpec) => WorksheetSpec) => {
@@ -1031,6 +1041,11 @@ export default function WorksheetEditor() {
 
   function handleExportPdf() {
     if (!spec || !id) return;
+    setPdfDialogOpen(false);
+    if (pdfPreviewUrl) {
+      URL.revokeObjectURL(pdfPreviewUrl);
+      setPdfPreviewUrl(null);
+    }
     const skip = typeof window !== "undefined" && localStorage.getItem("Bezli-skip-print-tip") === "true";
     if (skip) {
       void performExportPdf();
@@ -1056,6 +1071,7 @@ export default function WorksheetEditor() {
         includeAnswerKey: pdfIncludeAnswerKey,
         includeNameField: pdfIncludeNameField,
       });
+      setPdfDialogOpen(false);
       setPdfPreviewUrl((prev) => {
         if (prev) URL.revokeObjectURL(prev);
         return url;
@@ -2723,6 +2739,7 @@ export default function WorksheetEditor() {
           if (!o) {
             if (pdfPreviewUrl) URL.revokeObjectURL(pdfPreviewUrl);
             setPdfPreviewUrl(null);
+            setPdfDialogOpen(false);
           }
         }}
       >
