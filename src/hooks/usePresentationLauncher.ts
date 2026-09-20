@@ -144,7 +144,22 @@ export function usePresentationLauncher() {
     setEditingSlideIndex(0);
   };
 
+  /** Okno projektoru otevřené přímo při kliknutí (kvůli blokování pop-upů). */
+  const projectorWindowRef = useRef<Window | null>(null);
+
+  const showProjector = (sessionId: string) => {
+    const url = `${window.location.origin}/live/projektor/${sessionId}`;
+    const win = projectorWindowRef.current;
+    projectorWindowRef.current = null;
+    if (win && !win.closed) {
+      win.location.href = url;
+      return;
+    }
+    window.open(url, "_blank");
+  };
+
   const launchLiveSession = async (lesson: LessonItem, prebuiltSlides?: any[]) => {
+
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
