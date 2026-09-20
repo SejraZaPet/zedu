@@ -134,7 +134,13 @@ const SortableLessonRow = ({
         <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => onOpenPresentation(lesson)} title="Prezentace">
           <Monitor className="w-4 h-4" />
         </Button>
+        {onRequestMove && (
+          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => onRequestMove(lesson)} title="Přesunout do tématu…">
+            <FolderInput className="w-4 h-4" />
+          </Button>
+        )}
         <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => onDeleteLesson(lesson)} title="Smazat">
+
           <Trash2 className="w-4 h-4 text-destructive" />
         </Button>
       </div>
