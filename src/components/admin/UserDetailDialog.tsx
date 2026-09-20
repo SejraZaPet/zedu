@@ -101,8 +101,8 @@ const UserDetailDialog = ({ user, open, onOpenChange, onUpdated }: Props) => {
       const { data, error } = await supabase.functions.invoke("get-user-auth-info", {
         body: { user_id: userId },
       });
-      if (!error && data?.last_sign_in_at) {
-        setLastSignIn(data.last_sign_in_at);
+      if (!error && (data?.last_active_at || data?.last_sign_in_at)) {
+        setLastSignIn(data.last_active_at ?? data.last_sign_in_at);
       }
     } catch {
       // silently fail
@@ -351,7 +351,7 @@ const UserDetailDialog = ({ user, open, onOpenChange, onUpdated }: Props) => {
               <span>{new Date(user.created_at).toLocaleString("cs-CZ")}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Poslední přihlášení:</span>
+              <span className="text-muted-foreground">Naposledy aktivní:</span>
               <span>{lastSignIn ? new Date(lastSignIn).toLocaleString("cs-CZ") : "–"}</span>
             </div>
           </div>
