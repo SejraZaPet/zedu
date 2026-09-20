@@ -1400,6 +1400,11 @@ serve(async (req) => {
     return jsonResponse({ lessons, blocks, blockCount: blocks.length, embeddedImages, embeddedImagesBySlide, skippedImages, linkedBlocks });
   } catch (err) {
     console.error("process-file-content error:", err);
-    return jsonResponse({ error: err instanceof Error ? err.message : "Neznámá chyba" }, 500);
+    const raw = err instanceof Error ? err.message : "";
+    const friendly = !raw || /strukturovaný výstup|max_tokens|length|Unknown|Neznámá/i.test(raw)
+      ? TOO_LONG_MESSAGE
+      : raw;
+    return jsonResponse({ error: friendly }, 500);
   }
+
 });
