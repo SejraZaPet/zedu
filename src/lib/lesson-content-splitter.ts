@@ -81,8 +81,12 @@ export interface LessonActivity {
 export function extractActivitiesFromBlocks(blocks: unknown): LessonActivity[] {
   if (!Array.isArray(blocks)) return [];
   const out: LessonActivity[] = [];
-  (blocks as any[]).forEach((b, idx) => {
-    if (!b || typeof b !== "object" || b.type !== "activity") return;
+  // Index se počítá jen mezi VIDITELNÝMI bloky – stejně jako se ukládají
+  // výsledky aktivit a jak se na aktivitu odkazuje přes ?aktivita=<index>.
+  (blocks as any[])
+    .filter((b) => b && typeof b === "object" && b.visible !== false)
+    .forEach((b, idx) => {
+    if (b.type !== "activity") return;
     const p = (b.props ?? {}) as Record<string, unknown>;
     const at = String(p.activityType ?? "flashcards");
     const title =
@@ -97,6 +101,42 @@ export function extractActivitiesFromBlocks(blocks: unknown): LessonActivity[] {
       instructions,
       props: p,
     });
+  });
+  return out;
+}
+
+/** Tabulka z lekce připravená k reprodukci v pracovním listu. */
+export interface LessonTable {
+  /** Index bloku v lekci (stabilní ID). */
+  blockIndex: number;
+  /** Řádky včetně hlavičky na prvním místě. */
+  rows: string[][];
+  /** Popisek tabulky, pokud v lekci je. */
+  caption?: string;
+}
+
+/**
+ * Vrátí tabulky nalezené v blocích lekce (jsonb `blocks`) — hlavička + řádky.
+ * Používá se k tomu, aby se tabulka do pracovního listu propsala 1:1.
+ */
+export function extractTablesFromBlocks(blocks: unknown): LessonTable[] {
+  if (!Array.isArray(blocks)) return [];
+  const clean = (v: unknown) =>
+    String(v ?? "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  const out: LessonTable[] = [];
+  (blocks as any[])
+    .filter((b) => b && typeof b === "object" && b.visible !== false)
+    .forEach((b, idx) => {
+    if (b.type !== "table") return;
+    const p = (b.props ?? {}) as any;
+    const headers: string[] = Array.isArray(p.headers) ? p.headers.map(clean) : [];
+    const body: string[][] = Array.isArray(p.rows)
+      ? p.rows.filter(Array.isArray).map((r: unknown[]) => r.map(clean))
+      : [];
+    const rows = headers.length > 0 ? [headers, ...body] : body;
+    if (rows.length === 0) return;
+    const caption = clean(p.caption);
+    out.push({ blockIndex: idx, rows, ...(caption ? { caption } : {}) });
   });
   return out;
 }

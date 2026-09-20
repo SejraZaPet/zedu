@@ -203,6 +203,11 @@ export function createDefaultItem(type: ItemType, itemNumber: number): Worksheet
       return { ...base, prompt: "Obsah z lekce:", points: 0, timeEstimateSec: 0,
         lessonRefBlockIds: [], lessonRefContent: "",
         answerSpace: { type: "none", heightMm: 0 } };
+    case "table":
+      return { ...base, prompt: "", points: 0, timeEstimateSec: 0,
+        tableCaption: "",
+        tableRows: [["Sloupec 1", "Sloupec 2"], ["", ""]],
+        answerSpace: { type: "none", heightMm: 0 } };
   }
 }
 
@@ -284,6 +289,7 @@ export const ITEM_TYPE_LABELS: Record<ItemType, { label: string; description: st
   flashcards: { label: "Kartičky k vystřižení", description: "Páry pojem/vysvětlení pro tisk a stříhání" },
   image_label: { label: "Popisky obrázku", description: "Očíslované části obrázku k pojmenování" },
   image_hotspot: { label: "Body na obrázku", description: "Otázky vázané ke konkrétním bodům obrázku" },
+  table: { label: "Tabulka", description: "Tabulka převzatá z lekce (jen ke čtení)" },
   lesson_reference: { label: "Obsah z lekce", description: "Vloží pasáž z přiřazené lekce jako kontext" },
 };
 

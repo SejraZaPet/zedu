@@ -149,7 +149,40 @@ serve(async (req) => {
       topicTitle,
       topicRocnik,
       subject,
+      // Kontext z konkrétní lekce: tabulky 1:1, QR odkazy na aktivity, aktivity k přetvoření
+      tables,
+      qrLinks,
+      activityPlan,
     } = body ?? {};
+
+    /** Tabulky z lekce – reprodukují se 1:1, AI je negeneruje. */
+    const lessonTables: Array<{ rows: string[][]; caption?: string }> = Array.isArray(tables)
+      ? tables
+          .filter((t: any) => t && Array.isArray(t.rows) && t.rows.length > 0)
+          .map((t: any) => ({
+            rows: t.rows.map((r: any) => (Array.isArray(r) ? r.map((c: any) => String(c ?? "")) : [])),
+            caption: typeof t.caption === "string" ? t.caption : undefined,
+          }))
+      : [];
+
+    /** QR odkazy na aktivity v lekci (žák si aktivitu otevře v appce). */
+    const lessonQrLinks: Array<{ label: string; url: string }> = Array.isArray(qrLinks)
+      ? qrLinks
+          .filter((q: any) => q && typeof q.url === "string" && q.url)
+          .map((q: any) => ({ label: String(q.label ?? "Aktivita"), url: String(q.url) }))
+      : [];
+
+    /** Aktivity, které má AI přetvořit na tisknutelné úlohy. */
+    const lessonActivityPlan: Array<{ title: string; activityType: string; detail?: string }> =
+      Array.isArray(activityPlan)
+        ? activityPlan
+            .filter((a: any) => a && typeof a.title === "string")
+            .map((a: any) => ({
+              title: String(a.title),
+              activityType: String(a.activityType ?? ""),
+              detail: typeof a.detail === "string" ? a.detail : undefined,
+            }))
+        : [];
 
     let lessonContent: string = typeof rawLessonContent === "string" ? rawLessonContent : "";
     let lessonTitle: string = rawLessonTitle || "";
@@ -254,7 +287,7 @@ ${planSubject ? `Předmět: ${planSubject}\n` : ""}${deadline ? `Termín odevzd�
 Obsah:
 ${lessonContent.slice(0, 12000)}
 
-${hint ? `Doplňující pokyn učitele: ${hint}\n\n` : ""}Vytvoř pracovní list (${safeCount} bloků, režim: ${worksheetMode}, obtížnost: ${difficulty}${isStudyMode ? `, poměr: ${notesRatio}` : ""}).`;
+${lessonTables.length > 0 ? `Pozor: pracovní list už bude obsahovat ${lessonTables.length} tabulku/tabulky převzatou z lekce (vloží se automaticky). Tabulky sám negeneruj, ale můžeš na ně v úlohách odkazovat („podle tabulky…“).\n\n` : ""}${lessonQrLinks.length > 0 ? `Pozor: pro tyto aktivity z lekce se automaticky vloží QR kód, takže je NEpřepisuj do úloh: ${lessonQrLinks.map((q) => q.label).join(", ")}.\n\n` : ""}${lessonActivityPlan.length > 0 ? `Pozor: tyto aktivity z lekce už budou v listu převedené na tisknutelné úlohy (mcq / matching / ordering / true_false / fill_blank) se stejným zadáním – NEgeneruj je znovu, jen na ně navazuj:\n${lessonActivityPlan.map((a) => `- ${a.title} (${a.activityType})${a.detail ? `: ${a.detail}` : ""}`).join("\n")}\n\n` : ""}${hint ? `Doplňující pokyn učitele: ${hint}\n\n` : ""}Vytvoř pracovní list (${safeCount} bloků, režim: ${worksheetMode}, obtížnost: ${difficulty}${isStudyMode ? `, poměr: ${notesRatio}` : ""}).`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -376,6 +409,31 @@ ${hint ? `Doplňující pokyn učitele: ${hint}\n\n` : ""}Vytvoř pracovní list
     }
 
     const result = JSON.parse(toolCall.function.arguments);
+
+    // ── Deterministické bloky: tabulky z lekce 1:1 a QR kódy na aktivity ──
+    const generatedItems: any[] = Array.isArray(result.items) ? result.items : [];
+    for (const t of lessonTables) {
+      generatedItems.push({
+        type: "table",
+        prompt: "",
+        points: 0,
+        difficulty: "easy",
+        timeEstimateSec: 0,
+        tableRows: t.rows,
+        ...(t.caption ? { tableCaption: t.caption } : {}),
+      });
+    }
+    for (const q of lessonQrLinks) {
+      generatedItems.push({
+        type: "qr_link",
+        prompt: `${q.label} – naskenuj QR kód a aktivitu vyplň v appce.`,
+        points: 0,
+        difficulty: "easy",
+        timeEstimateSec: 0,
+        qrUrl: q.url,
+      });
+    }
+    result.items = generatedItems;
 
     // Zpětně kompatibilní tvar pro UI, které čekalo varianty A/B (plány hodin).
     const variantIds: string[] = Array.isArray(variants) && variants.length > 0

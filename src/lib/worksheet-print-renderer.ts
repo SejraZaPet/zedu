@@ -887,6 +887,25 @@ function renderItem(item: WorksheetItem, showPoints: boolean, displayNumber?: nu
       return `<div style="text-align:center;margin:8px 0;">${item.prompt ? `<p style="font-size:10pt;margin:0 0 6px;">${esc(item.prompt)}</p>` : ""}${boxes}</div>`;
     }
 
+    case "table": {
+      const rows = item.tableRows ?? [];
+      if (rows.length === 0) return "";
+      const [head, ...rest] = rows;
+      const thead = `<thead><tr>${head
+        .map((c) => `<th style="border:1px solid #333;padding:5px 7px;font-weight:bold;font-size:10pt;text-align:left;background:#f3f4f6;">${esc(c)}</th>`)
+        .join("")}</tr></thead>`;
+      const tbody = `<tbody>${rest
+        .map((r) => `<tr>${r
+          .map((c) => `<td style="border:1px solid #333;padding:5px 7px;font-size:10pt;vertical-align:top;">${esc(c)}</td>`)
+          .join("")}</tr>`)
+        .join("")}</tbody>`;
+      return `<div style="margin:10px 0;page-break-inside:avoid;">
+        ${item.prompt ? `<p style="font-size:10pt;margin:0 0 5px;">${esc(item.prompt)}</p>` : ""}
+        <table style="width:100%;border-collapse:collapse;">${thead}${tbody}</table>
+        ${item.tableCaption ? `<p style="font-size:9pt;color:#555;margin:4px 0 0;">${esc(item.tableCaption)}</p>` : ""}
+      </div>`;
+    }
+
     case "lesson_reference": {
       return `<div style="border-left:3px solid ${BRAND_INFO_ACCENT};background:${BRAND_INFO_SURFACE};border-radius:0 8px 8px 0;padding:10px 12px;margin:8px 0;">
         ${item.prompt ? `<p style="font-size:9pt;text-transform:uppercase;letter-spacing:0.05em;color:#0e7490;margin:0 0 4px;font-weight:600;">${esc(item.prompt)}</p>` : ""}
