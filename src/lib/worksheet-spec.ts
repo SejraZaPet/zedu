@@ -36,7 +36,8 @@ export type ItemType =
   | "flashcards"
   | "image_label"
   | "image_hotspot"
-  | "lesson_reference";
+  | "lesson_reference"
+  | "table";
 
 /** Křížovka — položka */
 export interface CrosswordEntry {
@@ -214,6 +215,12 @@ export interface WorksheetItem {
   lessonRefBlockIds?: string[];
   /** Lesson reference — zachycený text/obsah pro tisk (snapshot) */
   lessonRefContent?: string;
+
+  // ─── v1.3 — Tabulka reprodukovaná z lekce (read-only) ───
+  /** Řádky tabulky; první řádek je hlavička. */
+  tableRows?: string[][];
+  /** Popisek tabulky pod / nad tabulkou. */
+  tableCaption?: string;
 }
 
 export interface AnswerKeyEntry {
@@ -333,7 +340,7 @@ export const WORKSHEET_SPEC_JSON_SCHEMA = {
               properties: {
                 id: { type: "string" },
                 itemNumber: { type: "integer", minimum: 1 },
-                type: { type: "string", enum: ["mcq", "fill_blank", "true_false", "matching", "ordering", "short_answer", "open_answer", "offline_activity", "section_header", "write_lines", "instruction_box", "two_boxes", "qr_link", "flow_steps", "crossword", "word_search", "sorting", "flashcards", "image_label", "image_hotspot", "lesson_reference"] },
+                type: { type: "string", enum: ["mcq", "fill_blank", "true_false", "matching", "ordering", "short_answer", "open_answer", "offline_activity", "section_header", "write_lines", "instruction_box", "two_boxes", "qr_link", "flow_steps", "crossword", "word_search", "sorting", "flashcards", "image_label", "image_hotspot", "lesson_reference", "table"] },
                 prompt: { type: "string" },
                 points: { type: "number", minimum: 0 },
                 difficulty: { type: "string", enum: ["easy", "medium", "hard"] },
@@ -370,6 +377,8 @@ export const WORKSHEET_SPEC_JSON_SCHEMA = {
                 rightContent: { type: "string" },
                 instructionVariant: { type: "string", enum: ["blue", "yellow", "green", "purple"] },
                 instructionIcon: { type: "string", enum: ["info", "video", "write", "discuss", "group"] },
+                tableRows: { type: "array", items: { type: "array", items: { type: "string" } } },
+                tableCaption: { type: "string" },
               },
             },
           },

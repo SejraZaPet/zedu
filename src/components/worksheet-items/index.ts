@@ -10,6 +10,7 @@ export { default as OpenAnswerItem } from "./OpenAnswerItem";
 export { default as OfflineActivityItem } from "./OfflineActivityItem";
 export { default as LayoutBlockItem } from "./LayoutBlockItem";
 export { default as ActivityBlockItem } from "./ActivityBlockItem";
+export { default as TableItem } from "./TableItem";
 
 import type { ItemType } from "@/lib/worksheet-spec";
 import type { FC } from "react";
@@ -26,6 +27,7 @@ import OfflineActivityItem from "./OfflineActivityItem";
 import LayoutBlockItem from "./LayoutBlockItem";
 import ActivityBlockItem from "./ActivityBlockItem";
 import ImageLabelPlayer from "./ImageLabelPlayer";
+import TableItem from "./TableItem";
 
 /** Registry mapping item type → renderer component */
 export const ITEM_RENDERERS: Record<ItemType, FC<WorksheetItemProps>> = {
@@ -50,4 +52,5 @@ export const ITEM_RENDERERS: Record<ItemType, FC<WorksheetItemProps>> = {
   image_label: ImageLabelPlayer,
   image_hotspot: ActivityBlockItem,
   lesson_reference: ActivityBlockItem,
+  table: TableItem,
 };
