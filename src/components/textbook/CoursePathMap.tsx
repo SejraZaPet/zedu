@@ -17,6 +17,8 @@ interface Props {
   showProgress?: boolean;
   title?: string;
   description?: string;
+  /** Omezená výška seznamu lekcí v px – mapa se scroluje uvnitř karty. */
+  maxListHeight?: number;
 }
 
 /**
@@ -29,6 +31,7 @@ const CoursePathMap = ({
   showProgress = false,
   title = "Průchod kurzem",
   description,
+  maxListHeight,
 }: Props) => {
   const { completedCount, nextIndex } = useMemo(() => {
     const done = items.filter((i) => i.completed).length;
