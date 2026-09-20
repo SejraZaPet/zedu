@@ -307,6 +307,11 @@ const SortableTopic = ({
         <Badge variant="secondary" className="text-[10px]">
           {topic.lessons.length} {topic.lessons.length === 1 ? "lekce" : "lekcí"}
         </Badge>
+        {onRequestMergeTopic && (
+          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onRequestMergeTopic(topic)} title="Sloučit s jiným tématem…">
+            <Merge className="w-3.5 h-3.5" />
+          </Button>
+        )}
         <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onEditTopic({ id: topic.id, title: topic.title, grade: topic.grade ?? 0 })}>
           <Pencil className="w-3.5 h-3.5" />
         </Button>
