@@ -70,6 +70,7 @@ interface Props {
   onPreviewLesson: (lesson: LessonItem) => void;
   onReorderLessons?: (topicId: string, orderedLessons: LessonItem[]) => void;
   onReorderTopics?: (grade: number, orderedTopics: TopicItem[]) => void;
+  onMoveLesson?: (lesson: LessonItem, targetTopicId: string) => void | Promise<void>;
 }
 
 const SortableLessonRow = ({
@@ -78,12 +79,14 @@ const SortableLessonRow = ({
   onDeleteLesson,
   onOpenPresentation,
   onOpenWorksheet,
+  onRequestMove,
 }: {
   lesson: LessonItem;
   onEditLesson: (l: LessonItem) => void;
   onDeleteLesson: (l: LessonItem) => void;
   onOpenPresentation: (l: LessonItem) => void;
   onOpenWorksheet: (l: LessonItem) => void;
+  onRequestMove?: (l: LessonItem) => void;
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: lesson.id });
   const style = {
