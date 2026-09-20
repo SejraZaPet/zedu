@@ -82,7 +82,7 @@ export function splitLessonContent(content: string): LessonBlock[] {
       return {
         id: `lb-${idx}`,
         title: title.length > 80 ? title.slice(0, 80) + "…" : title,
-        text: text.length > 1500 ? text.slice(0, 1500) + "…" : text,
+        text: text.length > 8000 ? text.slice(0, 8000) + "…" : text,
       } as LessonBlock;
     })
     .filter((x): x is LessonBlock => x !== null)
