@@ -1649,6 +1649,52 @@ export default function WorksheetEditor() {
     }
   }
 
+  /** Sestaví pracovní list z voleb u jednotlivých sekcí lekce (v jejich pořadí). */
+  function handleBuildFromSections(built: BuiltWorksheetItem[]) {
+    if (!spec || built.length === 0) return;
+    const baseNumber = aiReplaceMode === "replace" ? 0 : items.length;
+    const newItems: WorksheetItem[] = [];
+    const newKeys: ReturnType<typeof createDefaultAnswerKey>[] = [];
+
+    built.forEach((b, i) => {
+      const defaults = createDefaultItem(b.type, baseNumber + i + 1);
+      const item: WorksheetItem = {
+        ...defaults,
+        ...b.patch,
+        id: nextItemId(),
+        type: b.type,
+        itemNumber: baseNumber + i + 1,
+      } as WorksheetItem;
+      const key = createDefaultAnswerKey(item);
+      newItems.push(item);
+      newKeys.push(b.correct !== undefined ? { ...key, correctAnswer: b.correct } : key);
+    });
+
+    updateSpec((s) => {
+      const variantId = s.variants[0].variantId;
+      const existingItems = aiReplaceMode === "replace" ? [] : s.variants[0].items;
+      const existingKeys = aiReplaceMode === "replace" ? [] : s.answerKeys[variantId] ?? [];
+      return {
+        ...s,
+        variants: s.variants.map((v, idx) =>
+          idx === 0 ? { ...v, items: [...existingItems, ...newItems] } : v,
+        ),
+        answerKeys: {
+          ...s.answerKeys,
+          [variantId]: [...existingKeys, ...newKeys],
+        },
+      };
+    });
+
+    setSectionsPanelOpen(false);
+    toast({
+      title: "Pracovní list sestaven",
+      description: `Z ${activeLessonSections.length} sekcí lekce vzniklo ${newItems.length} bloků.`,
+    });
+  }
+
+
+
 
   const SectionHeader = ({
     icon,
