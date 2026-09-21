@@ -65,6 +65,9 @@ interface ScheduleSlot {
   abbreviation: string | null;
   color: string | null;
   room: string | null;
+  class_id?: string | null;
+  group_id?: string | null;
+  subject_groups?: { name?: string | null } | null;
 }
 
 interface TextbookItem {
@@ -139,7 +142,7 @@ const TeacherClassDetail = () => {
         supabase.from("class_members").select("user_id").eq("class_id", id),
         supabase
           .from("class_schedule_slots")
-          .select("*, subjects(name, color, abbreviation)")
+          .select("*, subjects(name, color, abbreviation), subject_groups(name)")
           .eq("class_id", id),
         supabase.from("class_textbooks").select("textbook_id, textbook_type").eq("class_id", id),
         supabase.from("assignments").select("id,title,status,deadline,worksheet_id,created_at").eq("class_id", id).order("created_at", { ascending: false }),
@@ -176,7 +179,25 @@ const TeacherClassDetail = () => {
       setMembers([]);
     }
 
-    setSchedule((slotData as any[]) ?? []);
+    // Rozvrh třídy + hodiny skupin, ve kterých jsou žáci této třídy
+    let allSlots: any[] = ((slotData as any[]) ?? []).slice();
+    if (userIds.length > 0) {
+      const { data: gmRows } = await supabase
+        .from("subject_group_members")
+        .select("group_id")
+        .in("student_id", userIds);
+      const groupIds = Array.from(new Set(((gmRows as any[]) ?? []).map((r: any) => r.group_id)));
+      if (groupIds.length > 0) {
+        const { data: groupSlots } = await supabase
+          .from("class_schedule_slots")
+          .select("*, subjects(name, color, abbreviation), subject_groups(name)")
+          .in("group_id", groupIds);
+        const byId = new Map<string, any>();
+        for (const r of [...allSlots, ...(((groupSlots as any[]) ?? []))]) byId.set(r.id, r);
+        allSlots = Array.from(byId.values());
+      }
+    }
+    setSchedule(allSlots);
 
     // textbooks
     const teacherIds = (ctData ?? []).filter((r: any) => r.textbook_type === "teacher").map((r: any) => r.textbook_id);
@@ -511,11 +532,17 @@ const TeacherClassDetail = () => {
                           key={s.id}
                           className="rounded p-1.5 text-[11px] border border-border"
                           style={{ background: s.color ? `${s.color}20` : undefined, borderLeft: s.color ? `3px solid ${s.color}` : undefined }}
+                          title={`${(s as any).subjects?.name || s.subject_label || ""}${
+                            s.subject_groups?.name ? ` · skupina ${s.subject_groups.name}` : ""
+                          }`}
                         >
                           <div className="font-semibold truncate">
                             {s.abbreviation || (s as any).subjects?.name || s.subject_label}
                           </div>
                           <div className="text-muted-foreground">{s.start_time.slice(0, 5)}</div>
+                          {s.subject_groups?.name && (
+                            <div className="text-muted-foreground truncate">{s.subject_groups.name}</div>
+                          )}
                           {s.room && <div className="text-muted-foreground truncate">{s.room}</div>}
                         </div>
                       ))}

@@ -12,7 +12,8 @@ const DAYS_SHORT = ["Po", "Út", "St", "Čt", "Pá"];
 
 interface MiniSlot {
   id: string;
-  class_id: string;
+  class_id: string | null;
+  group_id?: string | null;
   day_of_week: number;
   start_time: string;
   end_time: string;
@@ -20,6 +21,7 @@ interface MiniSlot {
   subject_label: string | null;
   abbreviation: string | null;
   color: string | null;
+  subject_groups?: { name?: string | null } | null;
 }
 
 interface Props {
@@ -58,26 +60,46 @@ const ChildScheduleWidget = ({ studentIds, studentNames }: Props) => {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const { data: members } = await supabase
-        .from("class_members")
-        .select("class_id")
-        .eq("user_id", activeChild);
+      const [{ data: members }, { data: gm }] = await Promise.all([
+        supabase.from("class_members").select("class_id").eq("user_id", activeChild),
+        supabase
+          .from("subject_group_members")
+          .select("group_id")
+          .eq("student_id", activeChild),
+      ]);
       const classIds = (members ?? []).map((m: any) => m.class_id);
-      if (classIds.length === 0) {
+      const groupIds = (gm ?? []).map((r: any) => r.group_id);
+      if (classIds.length === 0 && groupIds.length === 0) {
         if (!cancelled) {
           setSlots([]);
           setLoading(false);
         }
         return;
       }
-      const { data: rows } = await supabase
-        .from("class_schedule_slots" as any)
-        .select("id, class_id, day_of_week, start_time, end_time, week_parity, subject_label, abbreviation, color, subjects(name, color, abbreviation)")
-        .in("class_id", classIds)
-        .order("day_of_week", { ascending: true })
-        .order("start_time", { ascending: true });
+      const select =
+        "id, class_id, group_id, day_of_week, start_time, end_time, week_parity, subject_label, abbreviation, color, subjects(name, color, abbreviation), subject_groups(name)";
+      const [classRes, groupRes] = await Promise.all([
+        classIds.length
+          ? supabase.from("class_schedule_slots" as any).select(select).in("class_id", classIds)
+          : Promise.resolve({ data: [] as any[] }),
+        groupIds.length
+          ? supabase.from("class_schedule_slots" as any).select(select).in("group_id", groupIds)
+          : Promise.resolve({ data: [] as any[] }),
+      ]);
       if (!cancelled) {
-        setSlots(((rows as any) || []) as MiniSlot[]);
+        const byId = new Map<string, any>();
+        for (const r of [
+          ...(((classRes as any).data as any[]) ?? []),
+          ...(((groupRes as any).data as any[]) ?? []),
+        ]) {
+          byId.set(r.id, r);
+        }
+        const list = Array.from(byId.values()).sort(
+          (a, b) =>
+            a.day_of_week - b.day_of_week ||
+            toMin((a.start_time || "").slice(0, 5)) - toMin((b.start_time || "").slice(0, 5)),
+        ) as MiniSlot[];
+        setSlots(list);
         setLoading(false);
       }
     })();
@@ -212,7 +234,11 @@ const ChildScheduleWidget = ({ studentIds, studentNames }: Props) => {
                                   key={slot.id}
                                   className="rounded text-center text-[10px] font-bold text-white px-1 py-0.5 leading-tight"
                                   style={{ backgroundColor: color }}
-                                  title={`${subject} · ${fmtTime(slot.start_time)}–${fmtTime(slot.end_time)}${
+                                  title={`${subject}${
+                                    slot.subject_groups?.name
+                                      ? ` · ${slot.subject_groups.name}`
+                                      : ""
+                                  } · ${fmtTime(slot.start_time)}–${fmtTime(slot.end_time)}${
                                     slot.week_parity !== "every"
                                       ? ` (${slot.week_parity === "odd" ? "lichý" : "sudý"} týden)`
                                       : ""
