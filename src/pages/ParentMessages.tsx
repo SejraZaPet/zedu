@@ -85,11 +85,15 @@ const ParentMessages = () => {
   useEffect(() => {
     if (!activeChild || !user) { setTeachers([]); return; }
     (async () => {
-      const { data: mems } = await supabase
-        .from("class_members")
-        .select("class_id")
-        .eq("user_id", activeChild);
+      const [{ data: mems }, { data: gmems }] = await Promise.all([
+        supabase.from("class_members").select("class_id").eq("user_id", activeChild),
+        supabase
+          .from("subject_group_members")
+          .select("group_id")
+          .eq("student_id", activeChild),
+      ]);
       const classIds = (mems ?? []).map((m: any) => m.class_id);
+      const groupIds = (gmems ?? []).map((m: any) => m.group_id);
       if (classIds.length === 0) { setTeachers([]); return; }
 
       const { data: classes } = await supabase

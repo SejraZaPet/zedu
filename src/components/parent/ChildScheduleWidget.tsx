@@ -234,7 +234,11 @@ const ChildScheduleWidget = ({ studentIds, studentNames }: Props) => {
                                   key={slot.id}
                                   className="rounded text-center text-[10px] font-bold text-white px-1 py-0.5 leading-tight"
                                   style={{ backgroundColor: color }}
-                                  title={`${subject} · ${fmtTime(slot.start_time)}–${fmtTime(slot.end_time)}${
+                                  title={`${subject}${
+                                    slot.subject_groups?.name
+                                      ? ` · ${slot.subject_groups.name}`
+                                      : ""
+                                  } · ${fmtTime(slot.start_time)}–${fmtTime(slot.end_time)}${
                                     slot.week_parity !== "every"
                                       ? ` (${slot.week_parity === "odd" ? "lichý" : "sudý"} týden)`
                                       : ""
