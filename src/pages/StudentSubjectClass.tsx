@@ -337,7 +337,7 @@ export default function StudentSubjectClass() {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, user, navigate, classId, rawSubjectParam]);
+  }, [authLoading, user, navigate, classId, groupId, isGroup, rawSubjectParam]);
 
   const canonicalSubject = (slots[0] as any)?.subjects ?? null;
   const subjectColor = getSubjectColor(slots[0] as any, canonicalSubject, subjectLabel);
