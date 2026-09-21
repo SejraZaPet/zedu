@@ -105,7 +105,7 @@ const StudentTextbooks = () => {
     // Class-linked
     for (const cb of classBooks) {
       const className =
-        (cb.class_id ? classNameById.get(cb.class_id) : undefined) ?? "Třída";
+        (cb.class_id ? classNameById.get(cb.class_id) : undefined) ?? "";
 
       if (cb.textbook_type === "teacher") {
         const tb = teacherById.get(cb.textbook_id);
