@@ -541,7 +541,7 @@ class AiError extends Error {
 const AI_CALL_TIMEOUT_MS = 75_000;
 /** Celkový rozpočet běhu funkce, ať nekončíme tichým timeoutem platformy. */
 const TOTAL_BUDGET_MS = 200_000;
-const startedAt = () => Date.now();
+/** Začátek aktuálního běhu (nastavuje se na začátku requestu). */
 let runStart = Date.now();
 const budgetLeft = () => TOTAL_BUDGET_MS - (Date.now() - runStart);
 
@@ -1253,6 +1253,7 @@ serve(async (req) => {
   try {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    runStart = Date.now();
 
     const { fileBase64, fileName, mimeType, mode, extractedText } = await req.json();
     if (!fileName) {
