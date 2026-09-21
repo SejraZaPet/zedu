@@ -206,7 +206,12 @@ function mergeShortSections(slides: any[]): any[] {
       if (nextBody) {
         base.projector.body = base.projector.body ? `${base.projector.body}\n\n${nextBody}` : nextBody;
       }
-      if (!base.backgroundOverride && next.backgroundOverride) base.backgroundOverride = next.backgroundOverride;
+      // Podbarvení přebírá celý snímek jen tehdy, když sekci i „adoptoval“
+      // (jinak barva zůstane u konkrétního mezititulku jako v lekci).
+      if (takeHeadline && !base.backgroundOverride && next.backgroundOverride) {
+        base.backgroundOverride = next.backgroundOverride;
+      }
+
       chars = bodyLen(base);
       j += 1;
     }
