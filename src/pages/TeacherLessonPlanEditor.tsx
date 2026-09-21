@@ -189,11 +189,13 @@ export default function TeacherLessonPlanEditor() {
     {
       subject: string;
       classId?: string;
+      groupId?: string;
       className?: string;
       date: string;
       time: string;
     }[]
   >([]);
+
 
   // Load existing plan from DB when editing
   useEffect(() => {
