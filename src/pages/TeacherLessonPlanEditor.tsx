@@ -1035,7 +1035,7 @@ export default function TeacherLessonPlanEditor() {
 
   // ===== Read-only náhled plánu =====
   if (isViewMode) {
-    const className = teacherClasses.find((c) => c.id === classId)?.name;
+    const className = selectedTargetName;
     const [startT, endT] = (linkedTime || "").split("-");
     return (
       <div className="min-h-screen bg-background flex flex-col">
