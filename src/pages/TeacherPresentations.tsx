@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import PresentationEditorDialog from "@/components/admin/PresentationEditorDialog";
 import { themeIdFromSlides } from "@/lib/presentation-themes";
+import { blocksToSlides } from "@/lib/blocks-to-slides";
+import { mergePresentationSlides } from "@/lib/presentation-merge";
 
 interface StandalonePresentation {
   id: string;
