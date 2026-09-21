@@ -1786,6 +1786,18 @@ export function SlideBody({
     ? "text-white [&_*]:text-inherit [&_h1]:text-inherit [&_h2]:text-inherit [&_h3]:text-inherit [&_.bg-card]:!bg-white/10 [&_.bg-muted\\/40]:!bg-white/10 [&_.bg-muted\\/30]:!bg-white/10 [&_.border]:!border-white/20"
     : "";
 
+  // Úroveň nadpisu z lekce (h1/h2 = hlavní téma, h3/h4 = podtéma) se přenáší
+  // do velikosti titulku snímku – hierarchie z učebnice tak zůstane vidět.
+  const headlineLevel = Number((slide as any)?.headlineLevel) || 0;
+  const headlineSizeClass =
+    layout === "title-only"
+      ? "text-7xl text-center"
+      : headlineLevel >= 4
+        ? "text-4xl"
+        : headlineLevel === 3
+          ? "text-5xl"
+          : "text-6xl";
+
   // Mimo editor prázdný nadpis vůbec nerenderujeme – jinak zabírá výšku
   // a obsah slidu se pak překrývá.
   const headlineEl = !editable && !headline ? null : (
@@ -1794,7 +1806,8 @@ export function SlideBody({
       editable={!!editable}
       value={headline}
       placeholder="Nadpis slidu"
-      className={`text-6xl font-bold leading-tight ${layout === "title-only" ? "text-center text-7xl" : ""}`}
+      className={`font-bold leading-tight ${headlineSizeClass}`}
+
       style={{
         background: `linear-gradient(90deg, ${headlineColors.primary}, ${headlineColors.secondary})`,
         WebkitBackgroundClip: "text",
