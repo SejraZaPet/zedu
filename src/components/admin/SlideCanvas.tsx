@@ -35,7 +35,9 @@ import {
 } from "@/lib/slide-typography";
 import { gradientCss } from "@/lib/slide-gradient";
 import { getActivitySlideAppearance } from "@/lib/activity-slide-appearance";
-import { headlineColorsForBackground, resolveSlideIsDark } from "@/lib/slide-contrast";
+import { headlineColorsForBackground, resolveSlideIsDark, cssColorLightness } from "@/lib/slide-contrast";
+import { blockBackgroundSlideColor } from "@/lib/block-backgrounds";
+
 
 const BLOCK_PLACEHOLDER = "Klikni pro psaní…";
 
@@ -1786,6 +1788,18 @@ export function SlideBody({
     ? "text-white [&_*]:text-inherit [&_h1]:text-inherit [&_h2]:text-inherit [&_h3]:text-inherit [&_.bg-card]:!bg-white/10 [&_.bg-muted\\/40]:!bg-white/10 [&_.bg-muted\\/30]:!bg-white/10 [&_.border]:!border-white/20"
     : "";
 
+  // Úroveň nadpisu z lekce (h1/h2 = hlavní téma, h3/h4 = podtéma) se přenáší
+  // do velikosti titulku snímku – hierarchie z učebnice tak zůstane vidět.
+  const headlineLevel = Number((slide as any)?.headlineLevel) || 0;
+  const headlineSizeClass =
+    layout === "title-only"
+      ? "text-7xl text-center"
+      : headlineLevel >= 4
+        ? "text-4xl"
+        : headlineLevel === 3
+          ? "text-5xl"
+          : "text-6xl";
+
   // Mimo editor prázdný nadpis vůbec nerenderujeme – jinak zabírá výšku
   // a obsah slidu se pak překrývá.
   const headlineEl = !editable && !headline ? null : (
@@ -1794,7 +1808,8 @@ export function SlideBody({
       editable={!!editable}
       value={headline}
       placeholder="Nadpis slidu"
-      className={`text-6xl font-bold leading-tight ${layout === "title-only" ? "text-center text-7xl" : ""}`}
+      className={`font-bold leading-tight ${headlineSizeClass}`}
+
       style={{
         background: `linear-gradient(90deg, ${headlineColors.primary}, ${headlineColors.secondary})`,
         WebkitBackgroundClip: "text",
@@ -1934,6 +1949,17 @@ export function SlideBody({
 
   const renderBlock = (b: Block, sliceIndex: number, asCard?: boolean) => {
     const globalIndex = blocks.findIndex((x) => x.id === b.id);
+    // Blok si nese vlastní podbarvení z lekce – kontrast textu se proto počítá
+    // pro každý barevný blok zvlášť, ne jen jednou pro celý snímek.
+    const ownBg = blockBackgroundSlideColor((b.props as any) || null);
+    const ownLightness = ownBg ? cssColorLightness(ownBg) : null;
+    const forceDarkText = isDark && ownLightness !== null && ownLightness > 0.6;
+    const forceLightText = !isDark && ownLightness !== null && ownLightness <= 0.35;
+    const contrastClass = forceDarkText
+      ? "text-foreground [&_*]:text-inherit"
+      : forceLightText
+        ? "text-white [&_*]:text-inherit"
+        : "";
     const shell = (
       <BlockShell
         editable={editable}
@@ -1961,14 +1987,20 @@ export function SlideBody({
       </BlockShell>
     );
 
-    if (!editable) return <div key={b.id}>{shell}</div>;
+    if (!editable) return <div key={b.id} className={contrastClass}>{shell}</div>;
 
     return (
-      <div key={b.id} className="touch-none cursor-move" data-no-pan="true" onPointerDown={startPromoteDrag(b)}>
+      <div
+        key={b.id}
+        className={`touch-none cursor-move ${contrastClass}`}
+        data-no-pan="true"
+        onPointerDown={startPromoteDrag(b)}
+      >
         {shell}
       </div>
     );
   };
+
 
 
   let body: React.ReactNode = null;
