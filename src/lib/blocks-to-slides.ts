@@ -26,7 +26,7 @@ function getText(props: any): string {
   return stripHtml(props.text || props.html || props.content || props.value || "");
 }
 
-function blockToBodyText(block: any): { text: string; assetRef?: string; activitySpec?: any; tableData?: any; cardData?: any } {
+function blockToBodyText(block: any): { text: string; assetRef?: string; assetRefs?: string[]; activitySpec?: any; tableData?: any; cardData?: any } {
   const type = block.type;
   const props = block.props || {};
   switch (type) {
