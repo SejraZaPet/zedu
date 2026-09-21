@@ -124,61 +124,6 @@ export function usePresentationLauncher() {
   };
 
   /**
-   * Bloky snímku: obsah se aktualizuje z lekce, ale blok, který učitel ručně
-   * upravil (`editedByTeacher`), se zachová i s velikostí písma a barvami.
-   * Uložené bloky bez předlohy v lekci (ručně přidané) zůstávají na konci.
-   */
-  const mergeBlocks = (freshBlocks: any[], savedBlocks: any[]): any[] => {
-    const fresh = Array.isArray(freshBlocks) ? freshBlocks : [];
-    const saved = Array.isArray(savedBlocks) ? savedBlocks : [];
-    if (saved.length === 0) return fresh;
-    const savedById = new Map<string, any>();
-    saved.forEach((b: any) => { if (b?.id) savedById.set(String(b.id), b); });
-
-    const merged = fresh.map((freshBlock: any) => {
-      const savedBlock = freshBlock?.id ? savedById.get(String(freshBlock.id)) : null;
-      if (!savedBlock) return freshBlock;
-      if (savedBlock.editedByTeacher) return savedBlock;
-      // Vizuální nastavení z editoru drží i u neupraveného obsahu.
-      return {
-        ...freshBlock,
-        ...(savedBlock.frame ? { frame: savedBlock.frame } : {}),
-        ...(typeof savedBlock.zIndex === "number" ? { zIndex: savedBlock.zIndex } : {}),
-      };
-    });
-
-    const freshIds = new Set(fresh.map((b: any) => String(b?.id || "")));
-    const addedByTeacher = saved.filter((b: any) => b?.editedByTeacher && !freshIds.has(String(b?.id || "")));
-    return [...merged, ...addedByTeacher];
-  };
-
-  /** Sloučí nově vygenerovaný snímek s dřív uloženými ručními úpravami. */
-  const mergeSlide = (freshSlide: any, savedSlide: any) => {
-    // Zamčený snímek se z lekce vůbec neaktualizuje.
-    if (savedSlide?.lockedFromLesson) return savedSlide;
-    return {
-      ...savedSlide,
-      ...freshSlide,
-      projector: {
-        ...savedSlide.projector,
-        ...freshSlide.projector,
-        fontScale: savedSlide.projector?.fontScale ?? freshSlide.projector?.fontScale,
-      },
-      device: savedSlide.device ?? freshSlide.device,
-      teacherNotes: savedSlide.teacherNotes ?? freshSlide.teacherNotes,
-      layout: savedSlide.layout ?? freshSlide.layout,
-      themeId: savedSlide.themeId ?? freshSlide.themeId,
-      backgroundOverride: savedSlide.backgroundOverride ?? freshSlide.backgroundOverride,
-      heroImage: savedSlide.heroImage ?? freshSlide.heroImage,
-      activitySpec: savedSlide.activitySpec ?? freshSlide.activitySpec,
-      blocks: mergeBlocks(freshSlide.blocks, savedSlide.blocks),
-      tableData: freshSlide.tableData,
-      cardData: freshSlide.cardData,
-      type: freshSlide.type,
-    };
-  };
-
-  /**
    * Snímky pro spuštění: vždy vygenerované z aktuálního obsahu lekce,
    * doplněné ručními úpravami z dřív uložené prezentace (tiché přegenerování).
    */
@@ -186,24 +131,9 @@ export function usePresentationLauncher() {
     const freshSlides = blocksToSlides(lesson.blocks || [], lesson.title);
     const savedSlides = await loadSavedSlides(lesson);
     if (!savedSlides) return freshSlides;
-
-    const savedKeys = buildSlideKeys(savedSlides);
-    const savedByKey = new Map<string, any>();
-    savedSlides.forEach((slide: any, index: number) => savedByKey.set(savedKeys[index], slide));
-
-    const freshKeys = buildSlideKeys(freshSlides);
-    const usedKeys = new Set<string>();
-    const merged = freshSlides.map((freshSlide, index) => {
-      const key = freshKeys[index];
-      const savedSlide = savedByKey.get(key);
-      if (!savedSlide) return freshSlide;
-      usedKeys.add(key);
-      return mergeSlide(freshSlide, savedSlide);
-    });
-    // Ručně přidané i nespárované upravené snímky se nesmí zahodit.
-    const customSlides = savedSlides.filter((_slide: any, index: number) => !usedKeys.has(savedKeys[index]));
-    return [...merged, ...customSlides];
+    return mergePresentationSlides(freshSlides, savedSlides);
   };
+
 
 
   const openEditor = async (lesson: LessonItem) => {
