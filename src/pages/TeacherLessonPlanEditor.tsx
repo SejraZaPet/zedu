@@ -660,7 +660,8 @@ export default function TeacherLessonPlanEditor() {
   function handleExportPdf(template: LessonPlanTemplate) {
     try {
       const [start, end] = (linkedTime || "").split("-");
-      const className = teacherClasses.find((c) => c.id === classId)?.name;
+      const className = selectedTargetName;
+
       exportLessonPlanPdf(template, {
         title: title?.trim() || "Plán hodiny",
         subject: subject || undefined,
