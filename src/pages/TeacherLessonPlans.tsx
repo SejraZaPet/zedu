@@ -236,9 +236,25 @@ export default function TeacherLessonPlans() {
     return [];
   }
 
+  /** Názvy tříd / skupin, ke kterým plán patří. */
+  function planTargetNames(plan: PlanRow): string[] {
+    const set = new Set<string>();
+    const inp: any = plan.input_data || {};
+    if (inp.targetName) set.add(String(inp.targetName));
+    const slots: LinkedSlot[] = inp.linkedSlots ?? [];
+    for (const sl of slots) if (sl.className) set.add(sl.className);
+    return Array.from(set);
+  }
+
   const allSubjects = useMemo(() => {
     const set = new Set<string>();
     for (const p of items) for (const s of planSubjects(p)) set.add(s);
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "cs"));
+  }, [items]);
+
+  const allTargets = useMemo(() => {
+    const set = new Set<string>();
+    for (const p of items) for (const t of planTargetNames(p)) set.add(t);
     return Array.from(set).sort((a, b) => a.localeCompare(b, "cs"));
   }, [items]);
 
@@ -250,14 +266,21 @@ export default function TeacherLessonPlans() {
         (it) =>
           (it.title || "").toLowerCase().includes(q) ||
           (it.subject || "").toLowerCase().includes(q) ||
-          planSubjects(it).some((s) => s.toLowerCase().includes(q)),
+          planSubjects(it).some((s) => s.toLowerCase().includes(q)) ||
+          planTargetNames(it).some((t) => t.toLowerCase().includes(q)),
       );
     }
     if (subjectFilter !== "__all") {
       list = list.filter((it) => planSubjects(it).includes(subjectFilter));
     }
+    if (targetFilter === "__none") {
+      list = list.filter((it) => planTargetNames(it).length === 0);
+    } else if (targetFilter !== "__all") {
+      list = list.filter((it) => planTargetNames(it).includes(targetFilter));
+    }
     return list;
-  }, [items, search, subjectFilter]);
+  }, [items, search, subjectFilter, targetFilter]);
+
 
   /** Group filtered plans by subject (a plan with multiple subjects shows in each group). */
   const grouped = useMemo(() => {
