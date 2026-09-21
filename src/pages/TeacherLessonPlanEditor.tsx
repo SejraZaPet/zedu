@@ -219,7 +219,10 @@ export default function TeacherLessonPlanEditor() {
       if (input.linkedTime) setLinkedTime(input.linkedTime);
       if (input.textbookId) setTextbookId(input.textbookId);
       if (input.lessonId) setLessonId(input.lessonId);
-      if (input.classId) setClassId(input.classId);
+      // Cíl plánu může být třída nebo skupina (stejné rozlišení jako v rozvrhu).
+      const savedTarget = input.classId || input.groupId || input.targetId;
+      if (savedTarget) setClassId(savedTarget);
+
       if (Array.isArray(input.linkedSlots)) setLinkedSlots(input.linkedSlots);
       if (input.phases) setPhases({ ...emptyPhases(), ...input.phases });
       if ((data as any).shared_visibility) setSharedVisibility((data as any).shared_visibility);
