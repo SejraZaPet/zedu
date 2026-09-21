@@ -348,15 +348,25 @@ export default function TeacherLessonPlanEditor() {
   /** Classes the teacher belongs to (for filtering schedule occurrences) */
   const { classes: teacherClasses } = useTeacherClasses();
 
+  /**
+   * Vybraný cíl plánu — může to být třída NEBO skupina předmětu.
+   * Držíme jen jedno id (stejné rozlišení jako v kalendáři/rozvrhu),
+   * typ se dopočítá z nabídky `targetOptions`.
+   */
   const [classId, setClassId] = useState<string>("");
 
   /**
-   * (subject, classId) pairs derived from both the personal schedule
+   * (subject, target) pairs derived from both the personal schedule
    * (localStorage) and the DB-backed `class_schedule_slots`. Used to
-   * cross-filter the Subject and Class pickers.
+   * cross-filter the Subject and Class/Group pickers.
    */
   const schedulePairs = useMemo(() => {
-    const pairs: { subject: string; classId?: string; className?: string }[] = [];
+    const pairs: {
+      subject: string;
+      targetId?: string;
+      targetName?: string;
+      kind: "class" | "group";
+    }[] = [];
     // Personal schedule (all weeks pooled)
     const ps = loadSchedule();
     const allLessons = [...ps.lessonsBoth, ...ps.lessonsOdd, ...ps.lessonsEven];
@@ -364,40 +374,70 @@ export default function TeacherLessonPlanEditor() {
       if (!l.subject) continue;
       pairs.push({
         subject: l.subject.trim(),
-        classId: l.classId || undefined,
-        className: l.className || undefined,
+        targetId: l.classId || undefined,
+        targetName: l.className || undefined,
+        kind: "class",
       });
     }
-    // DB schedule slots
+    // DB schedule slots (class slots have class_id, group slots have group_id)
     for (const s of dbSlots as any[]) {
-      const subj = (s.subject_label || "").trim();
+      const subj = (s.subject_label || s.subjects?.name || "").trim();
       if (!subj) continue;
-      pairs.push({
-        subject: subj,
-        classId: s.class_id || undefined,
-        className: s.classes?.name || undefined,
-      });
+      if (s.group_id) {
+        pairs.push({
+          subject: subj,
+          targetId: s.group_id,
+          targetName: s.subject_groups?.name || undefined,
+          kind: "group",
+        });
+      } else {
+        pairs.push({
+          subject: subj,
+          targetId: s.class_id || undefined,
+          targetName: s.classes?.name || undefined,
+          kind: "class",
+        });
+      }
     }
     return pairs;
   }, [dbSlots]);
 
-  /** Class IDs that have the chosen subject scheduled. */
+  /** Skupiny předmětů, které se objevují v rozvrhových slotech. */
+  const scheduleGroups = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const s of dbSlots as any[]) {
+      if (!s.group_id) continue;
+      map.set(s.group_id, s.subject_groups?.name || "Skupina");
+    }
+    return Array.from(map, ([id, name]) => ({ id, name }));
+  }, [dbSlots]);
+
+  /** Všechny možné cíle plánu: třídy učitele + skupiny z rozvrhu. */
+  const targetOptions = useMemo(
+    () => [
+      ...teacherClasses.map((c) => ({ id: c.id, name: c.name, kind: "class" as const })),
+      ...scheduleGroups.map((g) => ({ id: g.id, name: g.name, kind: "group" as const })),
+    ],
+    [teacherClasses, scheduleGroups],
+  );
+
+  /** Target IDs (třídy i skupiny) that have the chosen subject scheduled. */
   const allowedClassIds = useMemo(() => {
     if (!subject) return null; // null = no filter
     const set = new Set<string>();
     const target = subject.trim().toLowerCase();
     for (const p of schedulePairs) {
-      if (p.classId && p.subject.toLowerCase() === target) set.add(p.classId);
+      if (p.targetId && p.subject.toLowerCase() === target) set.add(p.targetId);
     }
     return set;
   }, [schedulePairs, subject]);
 
-  /** Subject labels that are scheduled for the chosen class. */
+  /** Subject labels that are scheduled for the chosen class/group. */
   const allowedSubjects = useMemo(() => {
     if (!classId) return null;
     const set = new Set<string>();
     for (const p of schedulePairs) {
-      if (p.classId === classId) set.add(p.subject.toLowerCase());
+      if (p.targetId === classId) set.add(p.subject.toLowerCase());
     }
     return set;
   }, [schedulePairs, classId]);
@@ -415,17 +455,25 @@ export default function TeacherLessonPlanEditor() {
     return filtered;
   }, [subjects, allowedSubjects, subject]);
 
-  /** Filtered classes for the Class picker. */
+  /** Filtered classes AND groups for the target picker. */
   const filteredClasses = useMemo(() => {
-    if (!allowedClassIds) return teacherClasses;
-    const filtered = teacherClasses.filter((c) => allowedClassIds.has(c.id));
-    if (classId && !filtered.some((c) => c.id === classId)) {
-      const cur = teacherClasses.find((c) => c.id === classId);
+    const base = allowedClassIds
+      ? targetOptions.filter((t) => allowedClassIds.has(t.id))
+      : targetOptions;
+    const filtered = [...base];
+    if (classId && !filtered.some((t) => t.id === classId)) {
+      const cur = targetOptions.find((t) => t.id === classId);
       if (cur) filtered.unshift(cur);
     }
     return filtered;
-  }, [teacherClasses, allowedClassIds, classId]);
+  }, [targetOptions, allowedClassIds, classId]);
 
+  const selectedTarget = useMemo(
+    () => targetOptions.find((t) => t.id === classId) ?? null,
+    [targetOptions, classId],
+  );
+  /** Název vybrané třídy/skupiny (pro PDF, náhled a přiřazené termíny). */
+  const selectedTargetName = selectedTarget?.name;
 
   /** Schedule occurrences for the chosen subject */
   const occurrences = useMemo<(ScheduledOccurrence & { classId?: string })[]>(() => {
@@ -442,7 +490,9 @@ export default function TeacherLessonPlanEditor() {
     const seen = new Set<string>();
     const list: (ScheduledOccurrence & { classId?: string })[] = [];
     for (const e of all.sort((a, b) => a.start.getTime() - b.start.getTime())) {
-      const key = `${format(e.start, "yyyy-MM-dd")}-${formatTime(e.start)}-${e.classId ?? ""}`;
+      // U skupinových hodin je cílem skupina, u třídních třída.
+      const targetId = (e as any).groupId ?? e.classId;
+      const key = `${format(e.start, "yyyy-MM-dd")}-${formatTime(e.start)}-${targetId ?? ""}`;
       if (seen.has(key)) continue;
       seen.add(key);
       list.push({
@@ -451,7 +501,7 @@ export default function TeacherLessonPlanEditor() {
         end: formatTime(e.end),
         className: e.className,
         room: e.room,
-        classId: e.classId,
+        classId: targetId,
       });
     }
     return list;
@@ -461,6 +511,7 @@ export default function TeacherLessonPlanEditor() {
     () => (classId ? occurrences.filter((o) => o.classId === classId) : occurrences),
     [occurrences, classId],
   );
+
 
   const availableDates = useMemo(() => {
     const set = new Map<string, ScheduledOccurrence>();
