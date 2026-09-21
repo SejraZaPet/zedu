@@ -217,6 +217,8 @@ export function usePresentationLauncher() {
         .from(lessonTable)
         .update({ presentation_slides: slides } as any)
         .eq("id", lesson.id);
+      // Prezentace musí být i v seznamu „Prezentace“, aby ji šlo upravovat.
+      await savePresentationRow(lesson, slides);
       toast({ title: "Prezentace spuštěna", description: `Kód: ${gameCode}` });
       showProjector(data.id);
       navigate(`/live/ucitel/${data.id}`);
@@ -278,6 +280,8 @@ export function usePresentationLauncher() {
     pendingLaunchData, setPendingLaunchData,
     hasSavedPresentation,
     openEditor, launchLiveSession, launchNew, quickLaunch, showProjector,
+    savePresentationRow, buildSlidesForLesson,
+
 
   };
 }
