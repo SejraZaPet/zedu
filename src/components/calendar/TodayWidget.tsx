@@ -297,7 +297,12 @@ const TodayWidget = ({ role }: Props) => {
                   <span className="font-mono text-xs w-24 shrink-0 text-muted-foreground">
                     {formatTime(ev.start)} – {formatTime(ev.end)}
                   </span>
-                  <span className="flex-1 truncate">{ev.title}</span>
+                  <span className="flex-1 truncate">
+                    {ev.title}
+                    {ev.groupId && ev.className && (
+                      <span className="text-xs text-muted-foreground"> · {ev.className}</span>
+                    )}
+                  </span>
                   {ev.room && (
                     <span className="text-xs text-muted-foreground shrink-0">{ev.room}</span>
                   )}
