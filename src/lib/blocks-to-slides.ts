@@ -584,10 +584,13 @@ export function blocksToSlides(blocks: any[], lessonTitle: string): any[] {
       sectionSourceId = block.id ?? null;
       sectionPart = 0;
       current = newSlide(headline, block.id);
+      const level = Number(props.level) || 0;
+      if (level) current.headlineLevel = level;
       const headingBg = blockBackgroundSlideColor(props);
       if (headingBg) current.backgroundOverride = { color: headingBg };
       continue;
     }
+
 
 
     const converted = blockToBodyText(block);
