@@ -5,7 +5,7 @@ export interface StudentTextbookLink {
   textbook_type: "teacher" | "global";
   class_id: string | null;
   subject_id: string | null;
-  source: "class" | "class_subject" | "schedule" | "group";
+  source: "class" | "class_subject" | "schedule" | "group" | "placement";
 }
 
 const asType = (raw: unknown): "teacher" | "global" =>
