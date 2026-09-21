@@ -1246,7 +1246,7 @@ export default function TeacherLessonPlanEditor() {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="plan-class">Třída</Label>
+              <Label htmlFor="plan-class">Třída / skupina</Label>
               <Select
                 value={classId || undefined}
                 onValueChange={(v) => {
@@ -1259,10 +1259,10 @@ export default function TeacherLessonPlanEditor() {
                   <SelectValue
                     placeholder={
                       filteredClasses.length
-                        ? "Vyber třídu…"
+                        ? "Vyber třídu nebo skupinu…"
                         : subject
-                          ? "Žádná třída nemá tento předmět v rozvrhu"
-                          : "Žádné třídy"
+                          ? "Žádná třída ani skupina nemá tento předmět v rozvrhu"
+                          : "Žádné třídy ani skupiny"
                     }
                   />
                 </SelectTrigger>
@@ -1270,6 +1270,7 @@ export default function TeacherLessonPlanEditor() {
                   {filteredClasses.map((c) => (
                     <SelectItem key={c.id} value={c.id}>
                       {c.name}
+                      {c.kind === "group" ? " · skupina" : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -1277,8 +1278,9 @@ export default function TeacherLessonPlanEditor() {
             </div>
           </div>
           <p className="text-xs text-muted-foreground -mt-2">
-            Předmět a třída se vzájemně filtrují podle rozvrhu (rozvrhové sloty).
+            Předmět a třída/skupina se vzájemně filtrují podle rozvrhu (rozvrhové sloty).
           </p>
+
 
           {/* Učebnice + lekce */}
           <div className="grid sm:grid-cols-2 gap-4">
