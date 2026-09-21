@@ -366,14 +366,16 @@ export default function StudentSubjectClass() {
 
   // Témata a materiály k proběhlým hodinám (zapisuje učitel v této Výuce).
   useEffect(() => {
-    if (!user || !classId || !subjectLabel) return;
+    if (!user || !subjectLabel) return;
+    if (isGroup ? !groupId : !classId) return;
     let cancelled = false;
     (async () => {
-      const { data } = await supabase
+      let q = supabase
         .from("lesson_topics")
         .select("lesson_date, topic, materials")
-        .eq("class_id", classId)
         .eq("subject", subjectLabel);
+      q = isGroup ? q.eq("group_id", groupId) : q.eq("class_id", classId);
+      const { data } = await q;
       if (cancelled) return;
       const map: Record<string, StudentLessonTopic> = {};
       for (const r of data ?? []) {
@@ -388,7 +390,7 @@ export default function StudentSubjectClass() {
     return () => {
       cancelled = true;
     };
-  }, [user, classId, subjectLabel]);
+  }, [user, classId, groupId, isGroup, subjectLabel]);
 
 
   // Compute student's own results
