@@ -286,16 +286,33 @@ export default function StudentSubjectClass() {
           .maybeSingle();
         subjectIdKey = ((subjRow as any)?.id as string) ?? null;
       }
-      const links = await fetchStudentClassTextbookLinks(user.id, [classId]);
-      const match =
-        links.find(
-          (l) =>
-            l.textbook_type === "teacher" &&
-            subjectIdKey &&
-            l.subject_id === subjectIdKey,
-        ) ??
-        links.find((l) => l.textbook_type === "teacher" && l.class_id === classId && !l.subject_id);
-      if (!cancelled) setExtraTextbookId(match?.textbook_id ?? null);
+      if (isGroup) {
+        // U skupiny bereme učebnici z rozvrhu, z propojení skupiny nebo ze samotné skupiny.
+        const { data: gLinks } = await supabase
+          .from("subject_group_textbooks" as any)
+          .select("textbook_id, textbook_type")
+          .eq("subject_group_id", groupId);
+        const gMatch =
+          ((gLinks as any[]) ?? []).find((l) => l.textbook_type === "teacher") ??
+          ((gLinks as any[]) ?? [])[0];
+        const fallback =
+          (headerRow as any)?.textbook_id && (headerRow as any)?.textbook_type === "teacher"
+            ? (headerRow as any).textbook_id
+            : null;
+        if (!cancelled)
+          setExtraTextbookId((gMatch?.textbook_id as string) ?? fallback ?? null);
+      } else {
+        const links = await fetchStudentClassTextbookLinks(user.id, [classId]);
+        const match =
+          links.find(
+            (l) =>
+              l.textbook_type === "teacher" &&
+              subjectIdKey &&
+              l.subject_id === subjectIdKey,
+          ) ??
+          links.find((l) => l.textbook_type === "teacher" && l.class_id === classId && !l.subject_id);
+        if (!cancelled) setExtraTextbookId(match?.textbook_id ?? null);
+      }
 
 
       const _assignments = (assignRes.data as AssignmentRow[]) ?? [];
