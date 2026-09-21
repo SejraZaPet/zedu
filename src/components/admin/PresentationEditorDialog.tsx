@@ -66,7 +66,9 @@ import LiveActivitySpecEditor from "@/components/admin/LiveActivitySpecEditor";
 
 import {
   HelpCircle, Cloud, MessageSquare, Users2, KeyRound, SplitSquareHorizontal,
+  Lock, LockOpen,
 } from "lucide-react";
+
 
 import GameBackgroundPickerDialog from "@/components/game/GameBackgroundPickerDialog";
 import { useNavigate } from "react-router-dom";
